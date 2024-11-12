@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdFinanceCategoryMapper">
+
+    <resultMap type="FdFinanceCategory" id="FdFinanceCategoryResult">
+        <result property="financeCategoryId"    column="finance_category_id"    />
+        <result property="financeCategoryCode"    column="finance_category_code"    />
+        <result property="financeCategoryName"    column="finance_category_name"    />
+        <result property="financeCategoryAddress"    column="finance_category_address"    />
+        <result property="financeCategoryContact"    column="finance_category_contact"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectFdFinanceCategoryVo">
+        select finance_category_id, finance_category_code, finance_category_name, finance_category_address, finance_category_contact, del_flag, create_by, create_time, update_by, update_time from fd_finance_category
+    </sql>
+
+    <select id="selectFdFinanceCategoryList" parameterType="FdFinanceCategory" resultMap="FdFinanceCategoryResult">
+        <include refid="selectFdFinanceCategoryVo"/>
+        where del_flag != 1
+        <if test="financeCategoryCode != null  and financeCategoryCode != ''"> and finance_category_code = #{financeCategoryCode}</if>
+        <if test="financeCategoryName != null  and financeCategoryName != ''"> and finance_category_name like concat('%', #{financeCategoryName}, '%')</if>
+        <if test="financeCategoryAddress != null  and financeCategoryAddress != ''"> and finance_category_address = #{financeCategoryAddress}</if>
+        <if test="financeCategoryContact != null  and financeCategoryContact != ''"> and finance_category_contact = #{financeCategoryContact}</if>
+    </select>
+
+    <select id="selectFdFinanceCategoryByFinanceCategoryId" parameterType="Long" resultMap="FdFinanceCategoryResult">
+        <include refid="selectFdFinanceCategoryVo"/>
+        where finance_category_id = #{financeCategoryId}
+    </select>
+
+    <insert id="insertFdFinanceCategory" parameterType="FdFinanceCategory" useGeneratedKeys="true" keyProperty="financeCategoryId">
+        insert into fd_finance_category
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="financeCategoryCode != null and financeCategoryCode != ''">finance_category_code,</if>
+            <if test="financeCategoryName != null and financeCategoryName != ''">finance_category_name,</if>
+            <if test="financeCategoryAddress != null">finance_category_address,</if>
+            <if test="financeCategoryContact != null">finance_category_contact,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="financeCategoryCode != null and financeCategoryCode != ''">#{financeCategoryCode},</if>
+            <if test="financeCategoryName != null and financeCategoryName != ''">#{financeCategoryName},</if>
+            <if test="financeCategoryAddress != null">#{financeCategoryAddress},</if>
+            <if test="financeCategoryContact != null">#{financeCategoryContact},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdFinanceCategory" parameterType="FdFinanceCategory">
+        update fd_finance_category
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="financeCategoryCode != null and financeCategoryCode != ''">finance_category_code = #{financeCategoryCode},</if>
+            <if test="financeCategoryName != null and financeCategoryName != ''">finance_category_name = #{financeCategoryName},</if>
+            <if test="financeCategoryAddress != null">finance_category_address = #{financeCategoryAddress},</if>
+            <if test="financeCategoryContact != null">finance_category_contact = #{financeCategoryContact},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where finance_category_id = #{financeCategoryId}
+    </update>
+
+    <delete id="deleteFdFinanceCategoryByFinanceCategoryId" parameterType="Long">
+        delete from fd_finance_category where finance_category_id = #{financeCategoryId}
+    </delete>
+
+    <delete id="deleteFdFinanceCategoryByFinanceCategoryIds" parameterType="String">
+        delete from fd_finance_category where finance_category_id in
+        <foreach item="financeCategoryId" collection="array" open="(" separator="," close=")">
+            #{financeCategoryId}
+        </foreach>
+    </delete>
+</mapper>

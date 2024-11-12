@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdWarehouseCategoryMapper">
+
+    <resultMap type="FdWarehouseCategory" id="FdWarehouseCategoryResult">
+        <result property="warehouseCategoryId"    column="warehouse_category_id"    />
+        <result property="warehouseCategoryCode"    column="warehouse_category_code"    />
+        <result property="warehouseCategoryName"    column="warehouse_category_name"    />
+        <result property="warehouseCategoryAddress"    column="warehouse_category_address"    />
+        <result property="warehouseCategoryContact"    column="warehouse_category_contact"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectFdWarehouseCategoryVo">
+        select warehouse_category_id, warehouse_category_code, warehouse_category_name, warehouse_category_address, warehouse_category_contact, del_flag, create_by, create_time, update_by, update_time from fd_warehouse_category
+    </sql>
+
+    <select id="selectFdWarehouseCategoryList" parameterType="FdWarehouseCategory" resultMap="FdWarehouseCategoryResult">
+        <include refid="selectFdWarehouseCategoryVo"/>
+        where del_flag != 1
+        <if test="warehouseCategoryCode != null  and warehouseCategoryCode != ''"> and warehouse_category_code = #{warehouseCategoryCode}</if>
+        <if test="warehouseCategoryName != null  and warehouseCategoryName != ''"> and warehouse_category_name like concat('%', #{warehouseCategoryName}, '%')</if>
+    </select>
+
+    <select id="selectFdWarehouseCategoryByWarehouseCategoryId" parameterType="Long" resultMap="FdWarehouseCategoryResult">
+        <include refid="selectFdWarehouseCategoryVo"/>
+        where warehouse_category_id = #{warehouseCategoryId}
+    </select>
+
+    <insert id="insertFdWarehouseCategory" parameterType="FdWarehouseCategory" useGeneratedKeys="true" keyProperty="warehouseCategoryId">
+        insert into fd_warehouse_category
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="warehouseCategoryCode != null">warehouse_category_code,</if>
+            <if test="warehouseCategoryName != null">warehouse_category_name,</if>
+            <if test="warehouseCategoryAddress != null">warehouse_category_address,</if>
+            <if test="warehouseCategoryContact != null">warehouse_category_contact,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="warehouseCategoryCode != null">#{warehouseCategoryCode},</if>
+            <if test="warehouseCategoryName != null">#{warehouseCategoryName},</if>
+            <if test="warehouseCategoryAddress != null">#{warehouseCategoryAddress},</if>
+            <if test="warehouseCategoryContact != null">#{warehouseCategoryContact},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdWarehouseCategory" parameterType="FdWarehouseCategory">
+        update fd_warehouse_category
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="warehouseCategoryCode != null">warehouse_category_code = #{warehouseCategoryCode},</if>
+            <if test="warehouseCategoryName != null">warehouse_category_name = #{warehouseCategoryName},</if>
+            <if test="warehouseCategoryAddress != null">warehouse_category_address = #{warehouseCategoryAddress},</if>
+            <if test="warehouseCategoryContact != null">warehouse_category_contact = #{warehouseCategoryContact},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where warehouse_category_id = #{warehouseCategoryId}
+    </update>
+
+<!--    <delete id="deleteFdWarehouseCategoryByWarehouseCategoryId" parameterType="Long">-->
+<!--        delete from fd_warehouse_category where warehouse_category_id = #{warehouseCategoryId}-->
+<!--    </delete>-->
+
+<!--    <delete id="deleteFdWarehouseCategoryByWarehouseCategoryIds" parameterType="String">-->
+<!--        delete from fd_warehouse_category where warehouse_category_id in -->
+<!--        <foreach item="warehouseCategoryId" collection="array" open="(" separator="," close=")">-->
+<!--            #{warehouseCategoryId}-->
+<!--        </foreach>-->
+<!--    </delete>-->
+</mapper>

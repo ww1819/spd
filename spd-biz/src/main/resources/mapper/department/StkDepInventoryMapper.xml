@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.StkDepInventoryMapper">
+
+    <resultMap type="StkDepInventory" id="StkDepInventoryResult">
+        <result property="id"    column="id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="qty"    column="qty"    />
+        <result property="unitPrice"    column="unit_price"    />
+        <result property="amt"    column="amt"    />
+        <result property="batchNo"    column="batch_no"    />
+        <result property="materialNo"    column="material_no"    />
+        <result property="materialDate"    column="material_date"    />
+        <result property="warehouseDate"    column="warehouse_date"    />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+    </resultMap>
+
+    <sql id="selectStkDepInventoryVo">
+        select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
+			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
+			d.id dId,d.code departmentCode,d.name departmentName,
+			m.id mId,m.code materialCode,m.name materialName
+        from stk_dep_inventory stk
+        left join fd_department d on stk.department_id = d.id
+        left join fd_material m on stk.material_id = m.id
+    </sql>
+
+    <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
+        <include refid="selectStkDepInventoryVo"/>
+        where stk.qty &gt; 0
+        <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="qty != null "> and stk.qty = #{qty}</if>
+        <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
+        <if test="amt != null "> and stk.amt = #{amt}</if>
+        <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
+        <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
+        <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        order by stk.warehouse_date desc
+    </select>
+
+    <select id="selectStkDepInventoryById" parameterType="Long" resultMap="StkDepInventoryResult">
+        <include refid="selectStkDepInventoryVo"/>
+        where stk.id = #{id}
+    </select>
+
+    <insert id="insertStkDepInventory" parameterType="StkDepInventory" useGeneratedKeys="true" keyProperty="id">
+        insert into stk_dep_inventory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="materialId != null">material_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="qty != null">qty,</if>
+            <if test="unitPrice != null">unit_price,</if>
+            <if test="amt != null">amt,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="materialNo != null">material_no,</if>
+            <if test="materialDate != null">material_date,</if>
+            <if test="warehouseDate != null">warehouse_date,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="materialId != null">#{materialId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="qty != null">#{qty},</if>
+            <if test="unitPrice != null">#{unitPrice},</if>
+            <if test="amt != null">#{amt},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="materialNo != null">#{materialNo},</if>
+            <if test="materialDate != null">#{materialDate},</if>
+            <if test="warehouseDate != null">#{warehouseDate},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStkDepInventory" parameterType="StkDepInventory">
+        update stk_dep_inventory
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="amt != null">amt = #{amt},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="materialNo != null">material_no = #{materialNo},</if>
+            <if test="materialDate != null">material_date = #{materialDate},</if>
+            <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStkDepInventoryById" parameterType="Long">
+        delete from stk_dep_inventory where id = #{id}
+    </delete>
+
+    <delete id="deleteStkDepInventoryByIds" parameterType="String">
+        delete from stk_dep_inventory where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectStkDepInventoryOne" parameterType="java.lang.String" resultMap="StkDepInventoryResult">
+        select * from stk_dep_inventory where batch_no = #{batchNo}
+    </select>
+
+    <select id="selectTKStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
+        select SUM(IFNULL(qty, 0)) from stk_dep_inventory
+        where batch_no = #{batchNo}
+    </select>
+
+</mapper>

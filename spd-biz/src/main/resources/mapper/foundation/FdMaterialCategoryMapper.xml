@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdMaterialCategoryMapper">
+
+    <resultMap type="FdMaterialCategory" id="FdMaterialCategoryResult">
+        <result property="materialCategoryId"    column="material_category_id"    />
+        <result property="materialCategoryCode"    column="material_category_code"    />
+        <result property="materialCategoryName"    column="material_category_name"    />
+        <result property="materialCategoryAddress"    column="material_category_address"    />
+        <result property="materialCategoryContact"    column="material_category_contact"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectFdMaterialCategoryVo">
+        select material_category_id, material_category_code, material_category_name, material_category_address, material_category_contact, del_flag, create_by, create_time, update_by, update_time from fd_material_category
+    </sql>
+
+    <select id="selectFdMaterialCategoryList" parameterType="FdMaterialCategory" resultMap="FdMaterialCategoryResult">
+        <include refid="selectFdMaterialCategoryVo"/>
+        where del_flag != 1
+        <if test="materialCategoryCode != null  and materialCategoryCode != ''"> and material_category_code = #{materialCategoryCode}</if>
+        <if test="materialCategoryName != null  and materialCategoryName != ''"> and material_category_name like concat('%', #{materialCategoryName}, '%')</if>
+        <if test="materialCategoryAddress != null  and materialCategoryAddress != ''"> and material_category_address = #{materialCategoryAddress}</if>
+        <if test="materialCategoryContact != null  and materialCategoryContact != ''"> and material_category_contact = #{materialCategoryContact}</if>
+    </select>
+
+    <select id="selectFdMaterialCategoryByMaterialCategoryId" parameterType="Long" resultMap="FdMaterialCategoryResult">
+        <include refid="selectFdMaterialCategoryVo"/>
+        where material_category_id = #{materialCategoryId}
+    </select>
+
+    <insert id="insertFdMaterialCategory" parameterType="FdMaterialCategory" useGeneratedKeys="true" keyProperty="materialCategoryId">
+        insert into fd_material_category
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="materialCategoryCode != null and materialCategoryCode != ''">material_category_code,</if>
+            <if test="materialCategoryName != null and materialCategoryName != ''">material_category_name,</if>
+            <if test="materialCategoryAddress != null">material_category_address,</if>
+            <if test="materialCategoryContact != null">material_category_contact,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="materialCategoryCode != null and materialCategoryCode != ''">#{materialCategoryCode},</if>
+            <if test="materialCategoryName != null and materialCategoryName != ''">#{materialCategoryName},</if>
+            <if test="materialCategoryAddress != null">#{materialCategoryAddress},</if>
+            <if test="materialCategoryContact != null">#{materialCategoryContact},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdMaterialCategory" parameterType="FdMaterialCategory">
+        update fd_material_category
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialCategoryCode != null and materialCategoryCode != ''">material_category_code = #{materialCategoryCode},</if>
+            <if test="materialCategoryName != null and materialCategoryName != ''">material_category_name = #{materialCategoryName},</if>
+            <if test="materialCategoryAddress != null">material_category_address = #{materialCategoryAddress},</if>
+            <if test="materialCategoryContact != null">material_category_contact = #{materialCategoryContact},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where material_category_id = #{materialCategoryId}
+    </update>
+
+    <delete id="deleteFdMaterialCategoryByMaterialCategoryId" parameterType="Long">
+        delete from fd_material_category where material_category_id = #{materialCategoryId}
+    </delete>
+
+    <delete id="deleteFdMaterialCategoryByMaterialCategoryIds" parameterType="String">
+        delete from fd_material_category where material_category_id in
+        <foreach item="materialCategoryId" collection="array" open="(" separator="," close=")">
+            #{materialCategoryId}
+        </foreach>
+    </delete>
+</mapper>

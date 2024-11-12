@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdMaterialMapper">
+
+    <resultMap type="FdMaterial" id="FdMaterialResult">
+        <result property="id"    column="id"    />
+        <result property="code"    column="m_code"    />
+        <result property="name"    column="m_name"    />
+        <result property="supplierId"    column="supplier_id"    />
+        <result property="speci"    column="speci"    />
+        <result property="model"    column="model"    />
+        <result property="prince"    column="prince"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="referredName"    column="referred_name"    />
+        <result property="useName"    column="use_name"    />
+        <result property="factoryId"    column="factory_id"    />
+        <result property="storeroomId"    column="storeroom_id"    />
+        <result property="financeCategoryId"    column="finance_category_id"    />
+        <result property="unitId"    column="unit_id"    />
+        <result property="registerName"    column="register_name"    />
+        <result property="registerNo"    column="register_no"    />
+        <result property="medicalName"    column="medical_name"    />
+        <result property="medicalNo"    column="medical_no"    />
+        <result property="periodDate"    column="period_date"    />
+        <result property="successfulType"    column="successful_type"    />
+        <result property="successfulNo"    column="successful_no"    />
+        <result property="successfulPrice"    column="successful_price"    />
+        <result property="salePrice"    column="sale_price"    />
+        <result property="packageSpeci"    column="package_speci"    />
+        <result property="producer"    column="producer"    />
+        <result property="materialLevel"    column="material_level"    />
+        <result property="registerLevel"    column="register_level"    />
+        <result property="riskLevel"    column="risk_level"    />
+        <result property="firstaidLevel"    column="firstaid_level"    />
+        <result property="doctorLevel"    column="doctor_level"    />
+        <result property="brand"    column="brand"    />
+        <result property="useto"    column="useto"    />
+        <result property="quality"    column="quality"    />
+        <result property="function"    column="function"    />
+        <result property="isWay"    column="is_way"    />
+        <result property="udiNo"    column="udi_no"    />
+        <result property="permitNo"    column="permit_no"    />
+        <result property="countryNo"    column="country_no"    />
+        <result property="countryName"    column="country_name"    />
+        <result property="description"    column="description"    />
+        <result property="isUse"    column="is_use"    />
+        <result property="isProcure"    column="is_procure"    />
+        <result property="isMonitor"    column="is_monitor"    />
+        <result property="isGz"    column="is_gz"    />
+        <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
+        <association property="fdWarehouseCategory"    column="warehouse_category_id" javaType="FdWarehouseCategory" resultMap="fdWarehouseCategoryResult" />
+        <association property="fdUnit"    column="id" javaType="FdUnit" resultMap="fdUnitResult" />
+    </resultMap>
+
+    <resultMap id="supplierResult" type="FdSupplier">
+        <id     property="id"    column="sid"     />
+        <result property="code"  column="supplier_code"   />
+        <result property="name"  column="supplier_name"   />
+    </resultMap>
+
+    <resultMap id="fdFactoryResult" type="FdFactory">
+        <id     property="factoryId"    column="fid"     />
+        <result property="factoryCode"  column="f_code"   />
+        <result property="factoryName"  column="f_name"   />
+    </resultMap>
+
+    <resultMap id="fdWarehouseCategoryResult" type="FdWarehouseCategory">
+        <id     property="warehouseCategoryId"    column="wid"     />
+        <result property="warehouseCategoryCode"  column="w_code"   />
+        <result property="warehouseCategoryName"  column="w_name"   />
+    </resultMap>
+
+    <resultMap id="fdUnitResult" type="FdUnit">
+        <id     property="unitId"    column="uid"     />
+        <result property="unitCode"  column="u_code"   />
+        <result property="unitName"  column="u_name"   />
+    </resultMap>
+
+    <sql id="selectFdMaterialVo">
+        select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
+            m.prince, m.create_by, m.create_time, m.update_by, m.update_time,m.del_flag,
+            m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
+            m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
+            m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.producer, m.material_level,
+            m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
+            m.function, m.is_way, m.udi_no, m.permit_no, m.country_no, m.country_name, m.description,
+            m.is_use, m.is_procure, m.is_monitor,m.is_gz,
+            s.id sid, s.code supplier_code,s.name supplier_name,
+            w.warehouse_category_id wid, w.warehouse_category_code w_code,w.warehouse_category_name w_name,
+            f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
+            u.unit_id uid,u.unit_code u_code,u.unit_name u_name
+        from fd_material m
+        left join fd_supplier s on m.supplier_id = s.id
+        left join fd_warehouse_category w on m.storeroom_id = w.warehouse_category_id
+        left join fd_factory f on m.finance_category_id = f.factory_id
+        left join fd_unit u on u.unit_id = m.unit_id
+    </sql>
+
+    <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.del_flag != 1
+        <if test="code != null  and code != ''"> and m.code = #{code}</if>
+        <if test="name != null  and name != ''"> and m.name like concat('%', #{name}, '%')</if>
+        <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
+        <if test="id != null "> and m.id = #{id}</if>
+        <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
+        <if test="isGz != null "> and m.is_gz = #{isGz}</if>
+        <if test="beginDate != null "> and m.create_time &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
+    </select>
+
+    <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.id = #{id}
+    </select>
+
+    <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
+        insert into fd_material
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="code != null and code != ''">code,</if>
+            <if test="name != null">name,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="speci != null">speci,</if>
+            <if test="model != null">model,</if>
+            <if test="prince != null">prince,</if>
+            <if test="referredName != null">referred_name,</if>
+            <if test="useName != null">use_name,</if>
+            <if test="factoryId != null">factory_id,</if>
+            <if test="storeroomId != null">storeroom_id,</if>
+            <if test="financeCategoryId != null">finance_category_id,</if>
+            <if test="unitId != null">unit_id,</if>
+            <if test="registerName != null">register_name,</if>
+            <if test="registerNo != null">register_no,</if>
+            <if test="medicalName != null">medical_name,</if>
+            <if test="medicalNo != null">medical_no,</if>
+            <if test="periodDate != null">period_date,</if>
+            <if test="successfulType != null">successful_type,</if>
+            <if test="successfulNo != null">successful_no,</if>
+            <if test="successfulPrice != null">successful_price,</if>
+            <if test="salePrice != null">sale_price,</if>
+            <if test="packageSpeci != null">package_speci,</if>
+            <if test="producer != null">producer,</if>
+            <if test="materialLevel != null">material_level,</if>
+            <if test="registerLevel != null">register_level,</if>
+            <if test="riskLevel != null">risk_level,</if>
+            <if test="firstaidLevel != null">firstaid_level,</if>
+            <if test="doctorLevel != null">doctor_level,</if>
+            <if test="brand != null">brand,</if>
+            <if test="useto != null">useto,</if>
+            <if test="quality != null">quality,</if>
+            <if test="function != null">function,</if>
+            <if test="isWay != null">is_way,</if>
+            <if test="udiNo != null">udi_no,</if>
+            <if test="permitNo != null">permit_no,</if>
+            <if test="countryNo != null">country_no,</if>
+            <if test="countryName != null">country_name,</if>
+            <if test="description != null">description,</if>
+            <if test="isUse != null">is_use,</if>
+            <if test="isProcure != null">is_procure,</if>
+            <if test="isMonitor != null">is_monitor,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="isGz != null">is_gz,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="code != null and code != ''">#{code},</if>
+            <if test="name != null">#{name},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="speci != null">#{speci},</if>
+            <if test="model != null">#{model},</if>
+            <if test="prince != null">#{prince},</if>
+            <if test="referredName != null">#{referredName},</if>
+            <if test="useName != null">#{useName},</if>
+            <if test="factoryId != null">#{factoryId},</if>
+            <if test="storeroomId != null">#{storeroomId},</if>
+            <if test="financeCategoryId != null">#{financeCategoryId},</if>
+            <if test="unitId != null">#{unitId},</if>
+            <if test="registerName != null">#{registerName},</if>
+            <if test="registerNo != null">#{registerNo},</if>
+            <if test="medicalName != null">#{medicalName},</if>
+            <if test="medicalNo != null">#{medicalNo},</if>
+            <if test="periodDate != null">#{periodDate},</if>
+            <if test="successfulType != null">#{successfulType},</if>
+            <if test="successfulNo != null">#{successfulNo},</if>
+            <if test="successfulPrice != null">#{successfulPrice},</if>
+            <if test="salePrice != null">#{salePrice},</if>
+            <if test="packageSpeci != null">#{packageSpeci},</if>
+            <if test="producer != null">#{producer},</if>
+            <if test="materialLevel != null">#{materialLevel},</if>
+            <if test="registerLevel != null">#{registerLevel},</if>
+            <if test="riskLevel != null">#{riskLevel},</if>
+            <if test="firstaidLevel != null">#{firstaidLevel},</if>
+            <if test="doctorLevel != null">#{doctorLevel},</if>
+            <if test="brand != null">#{brand},</if>
+            <if test="useto != null">#{useto},</if>
+            <if test="quality != null">#{quality},</if>
+            <if test="function != null">#{function},</if>
+            <if test="isWay != null">#{isWay},</if>
+            <if test="udiNo != null">#{udiNo},</if>
+            <if test="permitNo != null">#{permitNo},</if>
+            <if test="countryNo != null">#{countryNo},</if>
+            <if test="countryName != null">#{countryName},</if>
+            <if test="description != null">#{description},</if>
+            <if test="isUse != null">#{isUse},</if>
+            <if test="isProcure != null">#{isProcure},</if>
+            <if test="isMonitor != null">#{isMonitor},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="isGz != null">#{isGz},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdMaterial" parameterType="FdMaterial">
+        update fd_material
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="code != null and code != ''">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="speci != null">speci = #{speci},</if>
+            <if test="model != null">model = #{model},</if>
+            <if test="prince != null">prince = #{prince},</if>
+            <if test="referredName != null">referred_name = #{referredName},</if>
+            <if test="useName != null">use_name = #{useName},</if>
+            <if test="factoryId != null">factory_id = #{factoryId},</if>
+            <if test="storeroomId != null">storeroom_id = #{storeroomId},</if>
+            <if test="financeCategoryId != null">finance_category_id = #{financeCategoryId},</if>
+            <if test="unitId != null">unit_id = #{unitId},</if>
+            <if test="registerName != null">register_name = #{registerName},</if>
+            <if test="registerNo != null">register_no = #{registerNo},</if>
+            <if test="medicalName != null">medical_name = #{medicalName},</if>
+            <if test="medicalNo != null">medical_no = #{medicalNo},</if>
+            <if test="periodDate != null">period_date = #{periodDate},</if>
+            <if test="successfulType != null">successful_type = #{successfulType},</if>
+            <if test="successfulNo != null">successful_no = #{successfulNo},</if>
+            <if test="successfulPrice != null">successful_price = #{successfulPrice},</if>
+            <if test="salePrice != null">sale_price = #{salePrice},</if>
+            <if test="packageSpeci != null">package_speci = #{packageSpeci},</if>
+            <if test="producer != null">producer = #{producer},</if>
+            <if test="materialLevel != null">material_level = #{materialLevel},</if>
+            <if test="registerLevel != null">register_level = #{registerLevel},</if>
+            <if test="riskLevel != null">risk_level = #{riskLevel},</if>
+            <if test="firstaidLevel != null">firstaid_level = #{firstaidLevel},</if>
+            <if test="doctorLevel != null">doctor_level = #{doctorLevel},</if>
+            <if test="brand != null">brand = #{brand},</if>
+            <if test="useto != null">useto = #{useto},</if>
+            <if test="quality != null">quality = #{quality},</if>
+            <if test="function != null">function = #{function},</if>
+            <if test="isWay != null">is_way = #{isWay},</if>
+            <if test="udiNo != null">udi_no = #{udiNo},</if>
+            <if test="permitNo != null">permit_no = #{permitNo},</if>
+            <if test="countryNo != null">country_no = #{countryNo},</if>
+            <if test="countryName != null">country_name = #{countryName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="isUse != null">is_use = #{isUse},</if>
+            <if test="isProcure != null">is_procure = #{isProcure},</if>
+            <if test="isMonitor != null">is_monitor = #{isMonitor},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="isGz != null">is_gz = #{isGz},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFdMaterialById" parameterType="Long">
+        delete from fd_material where id = #{id}
+    </delete>
+
+    <delete id="deleteFdMaterialByIds" parameterType="String">
+        delete from fd_material where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

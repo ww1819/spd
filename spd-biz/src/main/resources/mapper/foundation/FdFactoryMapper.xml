@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdFactoryMapper">
+
+    <resultMap type="FdFactory" id="FdFactoryResult">
+        <result property="factoryId"    column="factory_id"    />
+        <result property="factoryCode"    column="factory_code"    />
+        <result property="factoryName"    column="factory_name"    />
+        <result property="factoryAddress"    column="factory_address"    />
+        <result property="factoryContact"    column="factory_contact"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="factoryReferredCode"    column="factory_referred_code"    />
+        <result property="factoryStatus"    column="factory_status"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectFdFactoryVo">
+        select factory_id, factory_code, factory_name, factory_address, factory_contact, del_flag,
+        create_by, create_time, update_by, update_time,factory_referred_code,factory_status,remark from fd_factory
+    </sql>
+
+    <select id="selectFdFactoryList" parameterType="FdFactory" resultMap="FdFactoryResult">
+        <include refid="selectFdFactoryVo"/>
+        where del_flag != 1
+        <if test="factoryCode != null  and factoryCode != ''"> and factory_code = #{factoryCode}</if>
+        <if test="factoryName != null  and factoryName != ''"> and factory_name like concat('%', #{factoryName}, '%')</if>
+        <if test="factoryAddress != null  and factoryAddress != ''"> and factory_address = #{factoryAddress}</if>
+        <if test="factoryContact != null  and factoryContact != ''"> and factory_contact = #{factoryContact}</if>
+    </select>
+
+    <select id="selectFdFactoryByFactoryId" parameterType="Long" resultMap="FdFactoryResult">
+        <include refid="selectFdFactoryVo"/>
+        where factory_id = #{factoryId}
+    </select>
+
+    <insert id="insertFdFactory" parameterType="FdFactory" useGeneratedKeys="true" keyProperty="factoryId">
+        insert into fd_factory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="factoryCode != null and factoryCode != ''">factory_code,</if>
+            <if test="factoryName != null and factoryName != ''">factory_name,</if>
+            <if test="factoryAddress != null and factoryAddress != ''">factory_address,</if>
+            <if test="factoryContact != null and factoryContact != ''">factory_contact,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="factoryReferredCode != null">factory_referred_code,</if>
+            <if test="factoryStatus != null">factory_status,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="factoryCode != null and factoryCode != ''">#{factoryCode},</if>
+            <if test="factoryName != null and factoryName != ''">#{factoryName},</if>
+            <if test="factoryAddress != null and factoryAddress != ''">#{factoryAddress},</if>
+            <if test="factoryContact != null and factoryContact != ''">#{factoryContact},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="factoryReferredCode != null">#{factoryReferredCode},</if>
+            <if test="factoryStatus != null">#{factoryStatus},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdFactory" parameterType="FdFactory">
+        update fd_factory
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="factoryCode != null and factoryCode != ''">factory_code = #{factoryCode},</if>
+            <if test="factoryName != null and factoryName != ''">factory_name = #{factoryName},</if>
+            <if test="factoryAddress != null and factoryAddress != ''">factory_address = #{factoryAddress},</if>
+            <if test="factoryContact != null and factoryContact != ''">factory_contact = #{factoryContact},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="factoryReferredCode != null">factory_referred_code = #{factoryReferredCode},</if>
+            <if test="factoryStatus != null">factory_status = #{factoryStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where factory_id = #{factoryId}
+    </update>
+
+    <delete id="deleteFdFactoryByFactoryId" parameterType="Long">
+        delete from fd_factory where factory_id = #{factoryId}
+    </delete>
+
+    <delete id="deleteFdFactoryByFactoryIds" parameterType="String">
+        delete from fd_factory where factory_id in
+        <foreach item="factoryId" collection="array" open="(" separator="," close=")">
+            #{factoryId}
+        </foreach>
+    </delete>
+
+    <select id="selectFdFactoryIsExist" parameterType="Long" resultType="int">
+        select count(*) from stk_io_bill
+        where del_flag !=1
+        and factory_id = #{id}
+    </select>
+</mapper>

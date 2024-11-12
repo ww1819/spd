@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdWarehouseMapper">
+
+    <resultMap type="FdWarehouse" id="FdWarehouseResult">
+        <result property="id"    column="id"    />
+        <result property="code"    column="code"    />
+        <result property="name"    column="name"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="warehousePerson"    column="warehouse_person"    />
+        <result property="warehousePhone"    column="warehouse_phone"    />
+        <result property="warehouseStatus"    column="warehouse_status"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <resultMap type="FdWarehouse" id="FdUserWarehouseResult">
+        <result property="id"    column="id"    />
+        <result property="code"    column="code"    />
+        <result property="name"    column="name"    />
+    </resultMap>
+
+    <sql id="selectFdWarehouseVo">
+        select id, code, name, create_by, create_time, update_by, update_time,warehouse_person,warehouse_phone,warehouse_status,remark from fd_warehouse
+    </sql>
+
+    <select id="selectFdWarehouseList" parameterType="FdWarehouse" resultMap="FdWarehouseResult">
+        <include refid="selectFdWarehouseVo"/>
+        where del_flag != 1
+        <if test="code != null  and code != ''"> and code = #{code}</if>
+        <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+    </select>
+
+    <select id="selectUserWarehouseAll" parameterType="Long" resultMap="FdUserWarehouseResult">
+        select w.id,w.code,w.name
+        from fd_warehouse w
+        left join sys_user_warehouse uw on uw.warehouse_id = w.id
+        left join sys_user u on u.user_id = uw.user_id
+        where w.del_flag != 1
+        <if test="userId != null  and userId != ''"> and u.user_id = #{userId}</if>
+    </select>
+
+    <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">
+        <include refid="selectFdWarehouseVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectwarehouseAll" resultMap="FdWarehouseResult">
+        <include refid="selectFdWarehouseVo"/>
+        where del_flag != 1
+    </select>
+
+    <select id="selectWarehouseListByUserId" parameterType="Long" resultType="Long">
+        select w.id
+        from fd_warehouse w
+        left join sys_user_warehouse uw on uw.warehouse_id = w.id
+        left join sys_user u on u.user_id = uw.user_id
+        where w.del_flag != 1
+        <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
+	</select>
+
+    <insert id="insertFdWarehouse" parameterType="FdWarehouse">
+        insert into fd_warehouse
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="code != null and code != ''">code,</if>
+            <if test="name != null">name,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="warehousePerson != null">warehouse_person,</if>
+            <if test="warehousePhone != null">warehouse_phone,</if>
+            <if test="warehouseStatus != null">warehouse_status,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="code != null and code != ''">#{code},</if>
+            <if test="name != null">#{name},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="warehousePerson != null">#{warehousePerson},</if>
+            <if test="warehousePhone != null">#{warehousePhone},</if>
+            <if test="warehouseStatus != null">#{warehouseStatus},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdWarehouse" parameterType="FdWarehouse">
+        update fd_warehouse
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="code != null and code != ''">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="warehousePerson != null">warehouse_person = #{warehousePerson},</if>
+            <if test="warehousePhone != null">warehouse_phone = #{warehousePhone},</if>
+            <if test="warehouseStatus != null">warehouse_status = #{warehouseStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFdWarehouseById" parameterType="String">
+        delete from fd_warehouse where id = #{id}
+    </delete>
+
+    <delete id="deleteFdWarehouseByIds" parameterType="String">
+        delete from fd_warehouse where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectWarehouseIsExist" parameterType="Long" resultType="int">
+        select count(*) from stk_io_bill
+        where del_flag !=1
+        and warehouse_id = #{id}
+    </select>
+</mapper>

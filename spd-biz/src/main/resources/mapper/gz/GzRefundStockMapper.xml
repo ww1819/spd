@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzRefundStockMapper">
+
+    <resultMap type="GzRefundStock" id="GzRefundStockResult">
+        <result property="id"    column="id"    />
+        <result property="stockNo"    column="stock_no"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="stockDate"    column="stock_date"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="stockStatus"    column="stock_status"    />
+        <result property="stockType"    column="stock_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="sId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="FdWarehouse">
+        <id     property="id"    column="wId"     />
+        <result property="code"  column="warehouseCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="GzRefundStockGzRefundStockEntryResult" type="GzRefundStock" extends="GzRefundStockResult">
+        <collection property="gzRefundStockEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="GzRefundStockEntryResult" />
+    </resultMap>
+
+    <resultMap type="GzRefundStockEntry" id="GzRefundStockEntryResult">
+        <result property="id"    column="sub_id"    />
+        <result property="parenId"    column="sub_paren_id"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="qty"    column="sub_qty"    />
+        <result property="price"    column="sub_price"    />
+        <result property="amt"    column="sub_amt"    />
+        <result property="batchNo"    column="sub_batch_no"    />
+        <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="beginTime"    column="sub_begin_time"    />
+        <result property="andTime"    column="sub_and_time"    />
+        <result property="delFlag"    column="sub_del_flag"    />
+        <result property="remark"    column="sub_remark"    />
+    </resultMap>
+
+    <sql id="selectGzRefundStockVo">
+        select gz.id, gz.stock_no, gz.department_id, gz.stock_date, gz.warehouse_id,
+				gz.stock_status, gz.stock_type, gz.del_flag, gz.audit_date, gz.create_by,
+				gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				d.id dId,d.code departmentCode,d.name departmentName,
+				w.id wId,w.code warehouseCode,w.name warehouseName
+        from gz_refund_stock gz
+        left join fd_department d on gz.department_id = d.id
+        left join fd_warehouse w on gz.warehouse_id = w.id
+    </sql>
+
+    <select id="selectGzRefundStockList" parameterType="GzRefundStock" resultMap="GzRefundStockResult">
+        <include refid="selectGzRefundStockVo"/>
+        where gz.del_flag != 1
+        <if test="stockNo != null  and stockNo != ''"> and gz.stock_no like concat('%', #{stockNo}, '%')</if>
+        <if test="departmentId != null "> and gz.department_id = #{departmentId}</if>
+        <if test="stockDate != null "> and gz.stock_date = #{stockDate}</if>
+        <if test="warehouseId != null "> and gz.warehouse_id = #{warehouseId}</if>
+        <if test="stockStatus != null "> and gz.stock_status = #{stockStatus}</if>
+        <if test="stockType != null "> and gz.stock_type = #{stockType}</if>
+        <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
+    </select>
+
+    <select id="selectGzRefundStockById" parameterType="Long" resultMap="GzRefundStockGzRefundStockEntryResult">
+        select a.id, a.stock_no, a.department_id, a.stock_date, a.warehouse_id, a.stock_status, a.stock_type, a.del_flag,
+                a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
+                b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
+                b.begin_time as sub_begin_time, b.and_time as sub_and_time, b.del_flag as sub_del_flag, b.remark as sub_remark
+        from gz_refund_stock a
+        left join gz_refund_stock_entry b on b.paren_id = a.id
+        where a.id = #{id}
+    </select>
+
+    <insert id="insertGzRefundStock" parameterType="GzRefundStock" useGeneratedKeys="true" keyProperty="id">
+        insert into gz_refund_stock
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="stockNo != null">stock_no,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="stockDate != null">stock_date,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="stockStatus != null">stock_status,</if>
+            <if test="stockType != null">stock_type,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="stockNo != null">#{stockNo},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="stockDate != null">#{stockDate},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="stockStatus != null">#{stockStatus},</if>
+            <if test="stockType != null">#{stockType},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGzRefundStock" parameterType="GzRefundStock">
+        update gz_refund_stock
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="stockNo != null">stock_no = #{stockNo},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="stockDate != null">stock_date = #{stockDate},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="stockStatus != null">stock_status = #{stockStatus},</if>
+            <if test="stockType != null">stock_type = #{stockType},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGzRefundStockById" parameterType="Long">
+        delete from gz_refund_stock where id = #{id}
+    </delete>
+
+    <delete id="deleteGzRefundStockByIds" parameterType="String">
+        delete from gz_refund_stock where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteGzRefundStockEntryByParenIds" parameterType="String">
+        delete from gz_refund_stock_entry where paren_id in
+        <foreach item="parenId" collection="array" open="(" separator="," close=")">
+            #{parenId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteGzRefundStockEntryByParenId" parameterType="Long">
+        delete from gz_refund_stock_entry where paren_id = #{parenId}
+    </delete>
+
+    <insert id="batchGzRefundStockEntry">
+        insert into gz_refund_stock_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, and_time, del_flag, remark) values
+		<foreach item="item" index="index" collection="list" separator=",">
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.andTime}, #{item.delFlag}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <select id="selectMaxBillNo" resultType="String">
+        select max(stock_no) from gz_refund_stock
+        where stock_no like concat('%',#{date},'%')
+    </select>
+
+    <update id="updateGzRefundStockEntry" parameterType="GzRefundStockEntry">
+        update gz_refund_stock_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+        </trim>
+        where paren_id = #{parenId}
+    </update>
+</mapper>

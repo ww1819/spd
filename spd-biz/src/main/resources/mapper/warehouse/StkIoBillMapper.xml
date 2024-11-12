@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkIoBillMapper">
+
+    <resultMap type="StkIoBill" id="StkIoBillResult">
+        <result property="id"    column="id"    />
+        <result property="billNo"    column="bill_no"    />
+        <result property="supplerId"    column="suppler_id"    />
+        <result property="billDate"    column="bill_date"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="billStatus"    column="bill_status"    />
+        <result property="userId"    column="stk_user_id"    />
+        <result property="billType"    column="bill_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="delPerson"    column="del_person"    />
+        <result property="telephone"    column="telephone"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="invoiceNumber"    column="invoice_number"    />
+        <result property="invoiceAmount"    column="invoice_amount"    />
+        <result property="invoiceTime"    column="invoice_time"    />
+        <result property="proPerson"    column="pro_person"    />
+        <result property="isMonthInit"    column="is_month_init"    />
+        <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
+    </resultMap>
+
+    <resultMap id="supplierResult" type="FdSupplier">
+        <id     property="id"    column="sId"     />
+        <result property="code"  column="supplierCode"   />
+        <result property="name"  column="supplierName"   />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="FdWarehouse">
+        <id     property="id"    column="wId"     />
+        <result property="code"  column="warehouseCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="userResult" type="SysUser">
+        <id     property="userId"    column="userId"     />
+        <result property="nickName"  column="nickName"   />
+        <result property="userName"  column="userName"   />
+    </resultMap>
+
+    <resultMap id="StkIoBillStkIoBillEntryResult" type="StkIoBill" extends="StkIoBillResult">
+        <collection property="stkIoBillEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="StkIoBillEntryResult" />
+    </resultMap>
+
+    <resultMap type="StkIoBillEntry" id="StkIoBillEntryResult">
+        <result property="id"    column="sub_id"    />
+        <result property="parenId"    column="sub_paren_id"    />
+        <result property="commodityId"    column="sub_commodity_id"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="unitPrice"    column="sub_unit_price"    />
+        <result property="qty"    column="sub_qty"    />
+        <result property="price"    column="sub_price"    />
+        <result property="amt"    column="sub_amt"    />
+        <result property="batchNo"    column="sub_batch_no"    />
+        <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="beginTime"    column="sub_begin_time"    />
+        <result property="andTime"    column="sub_and_time"    />
+        <result property="delFlag"    column="sub_del_flag"    />
+        <result property="remark"    column="sub_remark"    />
+        <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+    </resultMap>
+
+    <sql id="selectStkIoBillVo">
+        select stk.id, stk.bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
+				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag,stk.audit_date, stk.create_by, stk.create_time,
+				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
+				stk.invoice_time,stk.pro_person,
+				s.id sId,s.code supplierCode,s.name supplierName,
+				d.id dId,d.code departmentCode,d.name departmentName,
+				w.id wId,w.code warehouseCode,w.name warehouseName,
+				u.user_id userId,u.nick_name nickName,u.user_name userName
+        from stk_io_bill stk
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_department d on stk.department_id = d.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join sys_user u on stk.user_id = u.user_id
+    </sql>
+
+    <select id="selectStkIoBillList" parameterType="StkIoBill" resultMap="StkIoBillResult">
+        <include refid="selectStkIoBillVo"/>
+        where stk.del_flag != 1
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="billStatus != null "> and stk.bill_status = #{billStatus}</if>
+        <if test="userId != null "> and stk.user_id = #{userId}</if>
+        <if test="billType != null "> and stk.bill_type = #{billType}</if>
+
+        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        order by stk.bill_date desc
+    </select>
+
+    <select id="selectRTHStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
+                stk.bill_type billType,b.qty materialQty, b.price unitPrice,
+                b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                b.and_time andTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                s.name supplierName, w.name warehouseName
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        where stk.del_flag != 1
+        and stk.bill_type in (101,301)
+        and stk.bill_status = 2
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+
+        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+    </select>
+
+    <select id="selectRTHStkIoBillSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
+                sum(b.qty) materialQty, b.price unitPrice,ROUND(sum(b.qty) * b.price, 2) materialAmt,
+                m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                f.factory_name factoryName,s.name supplierName, w.name warehouseName
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        where stk.del_flag != 1
+        and stk.bill_type in (101,301)
+        and stk.bill_status = 2
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+
+        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        GROUP BY m.name,stk.bill_type
+    </select>
+
+    <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
+        select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
+                sum(b.qty) materialQty, b.unit_price unitPrice,ROUND(sum(b.qty) * b.unit_price, 2) materialAmt,
+                m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                f.factory_name factoryName,d.name departmentName, w.name warehouseName
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id
+        left join fd_department d on stk.department_id = d.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        where stk.del_flag != 1
+        and stk.bill_type in (201,401)
+        and stk.bill_status = 2
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+
+        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        GROUP BY m.name,stk.bill_type
+    </select>
+
+    <select id="selectCTKStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
+                stk.bill_type billType,b.qty materialQty, b.unit_price unitPrice,
+                b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                b.and_time andTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                d.name departmentName, w.name warehouseName
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id
+        left join fd_department d on stk.department_id = d.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        where stk.del_flag != 1
+        and stk.bill_type in (201,401)
+        and stk.bill_status = 2
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+
+        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+    </select>
+
+    <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
+        select a.id, a.bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
+				a.invoice_time,a.pro_person,
+                b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price,
+                b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.and_time as sub_and_time,
+                b.remark as sub_remark
+        from stk_io_bill a
+        left join stk_io_bill_entry b on b.paren_id = a.id
+        where a.id = #{id}
+    </select>
+
+    <insert id="insertStkIoBill" parameterType="StkIoBill" useGeneratedKeys="true" keyProperty="id">
+        insert into stk_io_bill
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="billNo != null and billNo != ''">bill_no,</if>
+            <if test="supplerId != null">suppler_id,</if>
+            <if test="billDate != null">bill_date,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="billStatus != null">bill_status,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="billType != null">bill_type,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delPerson != null">del_person,</if>
+            <if test="telephone != null">telephone,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="invoiceNumber != null">invoice_number,</if>
+            <if test="invoiceAmount != null">invoice_amount,</if>
+            <if test="invoiceTime != null">invoice_time,</if>
+            <if test="proPerson != null">pro_person,</if>
+            <if test="isMonthInit != null">is_month_init,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="billNo != null and billNo != ''">#{billNo},</if>
+            <if test="supplerId != null">#{supplerId},</if>
+            <if test="billDate != null">#{billDate},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="billStatus != null">#{billStatus},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="billType != null">#{billType},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delPerson != null">#{delPerson},</if>
+            <if test="telephone != null">#{telephone},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="invoiceNumber != null">#{invoiceNumber},</if>
+            <if test="invoiceAmount != null">#{invoiceAmount},</if>
+            <if test="invoiceTime != null">#{invoiceTime},</if>
+            <if test="proPerson != null">#{proPerson},</if>
+            <if test="isMonthInit != null">#{isMonthInit},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStkIoBill" parameterType="StkIoBill">
+        update stk_io_bill
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="billNo != null and billNo != ''">bill_no = #{billNo},</if>
+            <if test="supplerId != null">suppler_id = #{supplerId},</if>
+            <if test="billDate != null">bill_date = #{billDate},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="billStatus != null">bill_status = #{billStatus},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="billType != null">bill_type = #{billType},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="delPerson != null">del_person = #{delPerson},</if>
+            <if test="telephone != null">telephone = #{telephone},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="invoiceNumber != null">invoice_number = #{invoiceNumber},</if>
+            <if test="invoiceAmount != null">invoice_amount = #{invoiceAmount},</if>
+            <if test="invoiceTime != null">invoice_time = #{invoiceTime},</if>
+            <if test="proPerson != null">pro_person = #{proPerson},</if>
+            <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updatestkIobillEntry" parameterType="StkIoBillEntry">
+        update stk_io_bill_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+        </trim>
+        where paren_id = #{parenId}
+    </update>
+
+<!--    <delete id="deleteStkIoBillById" parameterType="Long">-->
+<!--        delete from stk_io_bill where id = #{id}-->
+<!--    </delete>-->
+
+<!--    <delete id="deleteStkIoBillByIds" parameterType="String">-->
+<!--        delete from stk_io_bill where id in-->
+<!--        <foreach item="id" collection="array" open="(" separator="," close=")">-->
+<!--            #{id}-->
+<!--        </foreach>-->
+<!--    </delete>-->
+
+    <select id="selectStkIobillEntryMaterialIsExist" parameterType="Long" resultType="int">
+        select count(*) from stk_io_bill_entry
+        where del_flag !=1
+        and material_id = #{id}
+    </select>
+
+    <delete id="deleteStkIoBillEntryByParenIds" parameterType="String">
+        delete from stk_io_bill_entry where paren_id in
+        <foreach item="parenId" collection="array" open="(" separator="," close=")">
+            #{parenId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteStkIoBillEntryByParenId" parameterType="Long">
+        delete from stk_io_bill_entry where paren_id = #{parenId}
+    </delete>
+
+    <insert id="batchStkIoBillEntry">
+        insert into stk_io_bill_entry(paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, and_time, del_flag, remark) values
+		<foreach item="item" index="index" collection="list" separator=",">
+            (#{item.parenId}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.andTime}, #{item.delFlag}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <select id="selectMaxBillNo" resultType="String">
+        select max(bill_no) from stk_io_bill
+        where bill_no like concat('%',#{billNo},'%')
+        and bill_type = 101
+    </select>
+
+    <select id="selectOutMaxBillNo" resultType="String">
+        select max(bill_no) from stk_io_bill
+        where bill_no like concat('%',#{billNo},'%')
+        and bill_type = 201
+    </select>
+
+    <select id="selectTHMaxBillNo" resultType="String">
+        select max(bill_no) from stk_io_bill
+        where bill_no like concat('%',#{billNo},'%')
+        and bill_type = 301
+    </select>
+
+    <select id="selectTKMaxBillNo" resultType="String">
+        select max(bill_no) from stk_io_bill
+        where bill_no like concat('%',#{billNo},'%')
+        and bill_type = 401
+    </select>
+
+    <select id="selectHistoryInventory" parameterType="String" resultType="java.util.HashMap">
+        select m.name materialName,sum(b.qty) historyQty from stk_io_bill a
+        left join stk_io_bill_entry b on b.paren_id = a.id
+        left join fd_material m on b.material_id = m.id
+        where a.bill_status = 2
+        and a.bill_type = '101'
+        and a.create_time concat('%',#{previousDateString},'%')
+        GROUP BY m.name
+    </select>
+
+    <select id="selectListPurInventory" parameterType="StkIoBill" resultType="java.util.HashMap">
+        select id,materialCode,materialName,billNo,billDate,billType,materialQty,price,materialAmt,
+                batchNo,batchNumber,beginTime,andTime,materialSpeci,materialModel,unitName,factoryName,
+                financeCategoryName,departmentName,warehouseName,supplierName
+        from (
+            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,b.qty materialQty, b.price price,
+                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                    b.and_time andTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                    d.name departmentName, w.name warehouseName,s.name supplierName
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join fd_department d on stk.department_id = d.id
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,301)
+            union
+            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,b.qty materialQty, b.unit_price price,
+                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                    b.and_time andTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                    d.name departmentName, w.name warehouseName,s.name supplierName
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join fd_department d on stk.department_id = d.id
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201,401)
+            union
+            select a.id,m.code materialCode,m.name materialName, a.stock_no billNo, a.stock_date billDate,
+                    a.stock_type billType,b.qty materialQty, b.price price,
+                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                    b.and_time andTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                    d.name departmentName, w.name warehouseName,s.name supplierName
+            from stk_io_stocktaking a
+            left join stk_io_stocktaking_entry b on b.paren_id = a.id
+            left join fd_department d on a.department_id = d.id
+            left join fd_warehouse w on a.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where a.del_flag != 1 and a.stock_status = 2
+        ) t
+        <where>
+            <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
+            <if test="materialName != null "> and materialName like concat('%', #{materialName}, '%')</if>
+            <if test="warehouseName != null "> and warehouseName like concat('%', #{warehouseName}, '%')</if>
+            <if test="beginDate != null "> and billDate &gt;= #{beginDate}</if>
+            <if test="endDate != null "> and billDate &lt;= #{endDate}</if>
+        </where>
+    </select>
+
+    <select id="selectMonthInitDataList" resultType="java.util.HashMap">
+        select wCategoryName,sum(initAmount) initAmount,sum(beginAmount) beginAmount,sum(endAmount) endAmount,
+				sum(beginAmount) - sum(endAmount) settleAmount,
+				sum(profitAmount) profitAmount,sum(loseAmount) loseAmount,
+				sum(initAmount)+sum(beginAmount)- sum(endAmount) settleRealityAmount
+        from (
+            select wCategoryName,
+                    case when alias = '进项' then totalAmount else 0 end beginAmount,
+                    case when alias = '出项' then totalAmount else 0 end endAmount,
+                    case when alias = '盘盈' then totalAmount else 0 end profitAmount,
+                    case when alias = '盘亏' then totalAmount else 0 end loseAmount,
+                    case when alias = '期初' then totalAmount else 0 end initAmount
+            from (
+                select fw.warehouse_category_name wCategoryName,
+                        sum(b.amt) totalAmount,'进项' as alias
+                from stk_io_bill stk
+                left join stk_io_bill_entry b on b.paren_id = stk.id
+                left join fd_material m on b.material_id = m.id
+                left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+                left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
+                where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101)
+                and stk.bill_date &gt;= #{beginDate} and stk.bill_date &lt;= #{endDate}
+                GROUP BY fw.warehouse_category_name
+                union
+                select fw.warehouse_category_name wCategoryName,
+                        sum(b.amt) totalAmount,'出项' as alias
+                from stk_io_bill stk
+                left join stk_io_bill_entry b on b.paren_id = stk.id
+                left join fd_material m on b.material_id = m.id
+                left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+                left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
+                where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201)
+                and stk.bill_date &gt;= #{beginDate} and stk.bill_date &lt;= #{endDate}
+                GROUP BY fw.warehouse_category_name
+                union
+                select fw.warehouse_category_name wCategoryName,
+                        sum(b.amt) totalAmount,'盘盈' as alias
+                from stk_io_stocktaking a
+                left join stk_io_stocktaking_entry b on b.paren_id = a.id
+                left join fd_material m on b.material_id = m.id
+                left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+                left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
+                where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502)
+                and a.stock_date &gt;= #{beginDate} and a.stock_date &lt;= #{endDate}
+                GROUP BY fw.warehouse_category_name
+                union
+                select fw.warehouse_category_name wCategoryName,
+                        sum(b.amt) totalAmount,'盘亏' as alias
+                from stk_io_stocktaking a
+                left join stk_io_stocktaking_entry b on b.paren_id = a.id
+                left join fd_material m on b.material_id = m.id
+                left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+                left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
+                where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502)
+                and a.stock_date &gt;= #{beginDate} and a.stock_date &lt;= #{endDate}
+                GROUP BY fw.warehouse_category_name
+                union
+                select DISTINCT wCategoryName,sum(totalAmount) totalAmount,'期初' as alias
+                from (
+                    select fw.warehouse_category_name wCategoryName,
+                            sum(b.amt) totalAmount
+                    from stk_io_bill stk
+                    left join stk_io_bill_entry b on b.paren_id = stk.id
+                    left join fd_material m on b.material_id = m.id
+                    left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+                    left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
+                    where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,401)
+                    and stk.bill_date &gt;= #{beginDate} and stk.bill_date &lt;= #{endDate}
+                    GROUP BY fw.warehouse_category_name
+                    union
+                    select fw.warehouse_category_name wCategoryName,
+                            sum(b.stock_amount) totalAmount
+                    from stk_io_stocktaking a
+                    left join stk_io_stocktaking_entry b on b.paren_id = a.id
+                    left join fd_material m on b.material_id = m.id
+                    left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+                    left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
+                    where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502)
+                    and a.stock_date &gt;= #{beginDate} and a.stock_date &lt;= #{endDate}
+                    GROUP BY fw.warehouse_category_name
+                ) qc where 1=1
+            GROUP BY wCategoryName
+            ) wt
+        ) t where 1=1
+        GROUP BY wCategoryName
+    </select>
+
+    <select id="getMonthHandleDataList" resultMap="StkIoBillResult">
+        select * from stk_io_bill
+        where bill_date &gt;= #{beginDate} and bill_date &lt;= #{endDate}
+    </select>
+
+</mapper>

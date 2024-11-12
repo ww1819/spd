@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdSupplierMapper">
+
+    <resultMap type="FdSupplier" id="FdSupplierResult">
+        <result property="id"    column="id"    />
+        <result property="code"    column="code"    />
+        <result property="name"    column="name"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="taxNumber"    column="tax_number"    />
+        <result property="referredCode"    column="referred_code"    />
+        <result property="regMoney"    column="reg_money"    />
+        <result property="validTime"    column="valid_time"    />
+        <result property="contacts"    column="contacts"    />
+        <result property="contactsPhone"    column="contacts_phone"    />
+        <result property="website"    column="website"    />
+        <result property="legalPerson"    column="legal_person"    />
+        <result property="zipCode"    column="zip_code"    />
+        <result property="email"    column="email"    />
+        <result property="address"    column="address"    />
+        <result property="companyPerson"    column="company_person"    />
+        <result property="phone"    column="phone"    />
+        <result property="certNumber"    column="cert_number"    />
+        <result property="fax"    column="fax"    />
+        <result property="bankAccount"    column="bank_account"    />
+        <result property="companyReferred"    column="company_referred"    />
+        <result property="supplierRange"    column="supplier_range"    />
+        <result property="supplierStatus"    column="supplier_status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectFdSupplierVo">
+        select id, code, name, del_flag, tax_number, referred_code, reg_money, valid_time, contacts, contacts_phone,
+                website, legal_person, zip_code, email, address, company_person, phone, cert_number, fax, bank_account,
+                company_referred, supplier_range, supplier_status, create_by, create_time, update_by, update_time, remark
+        from fd_supplier
+    </sql>
+
+    <select id="selectFdSupplierList" parameterType="FdSupplier" resultMap="FdSupplierResult">
+        <include refid="selectFdSupplierVo"/>
+        where del_flag != 1
+        <if test="code != null  and code != ''"> and code = #{code}</if>
+        <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+    </select>
+
+    <select id="selectFdSupplierById" parameterType="Long" resultMap="FdSupplierResult">
+        <include refid="selectFdSupplierVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFdSupplier" parameterType="FdSupplier" useGeneratedKeys="true" keyProperty="id">
+        insert into fd_supplier
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="code != null and code != ''">code,</if>
+            <if test="name != null">name,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="taxNumber != null">tax_number,</if>
+            <if test="referredCode != null">referred_code,</if>
+            <if test="regMoney != null">reg_money,</if>
+            <if test="validTime != null">valid_time,</if>
+            <if test="contacts != null">contacts,</if>
+            <if test="contactsPhone != null">contacts_phone,</if>
+            <if test="website != null">website,</if>
+            <if test="legalPerson != null">legal_person,</if>
+            <if test="zipCode != null">zip_code,</if>
+            <if test="email != null">email,</if>
+            <if test="address != null">address,</if>
+            <if test="companyPerson != null">company_person,</if>
+            <if test="phone != null">phone,</if>
+            <if test="certNumber != null">cert_number,</if>
+            <if test="fax != null">fax,</if>
+            <if test="bankAccount != null">bank_account,</if>
+            <if test="companyReferred != null">company_referred,</if>
+            <if test="supplierRange != null">supplier_range,</if>
+            <if test="supplierStatus != null">supplier_status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="code != null and code != ''">#{code},</if>
+            <if test="name != null">#{name},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="taxNumber != null">#{taxNumber},</if>
+            <if test="referredCode != null">#{referredCode},</if>
+            <if test="regMoney != null">#{regMoney},</if>
+            <if test="validTime != null">#{validTime},</if>
+            <if test="contacts != null">#{contacts},</if>
+            <if test="contactsPhone != null">#{contactsPhone},</if>
+            <if test="website != null">#{website},</if>
+            <if test="legalPerson != null">#{legalPerson},</if>
+            <if test="zipCode != null">#{zipCode},</if>
+            <if test="email != null">#{email},</if>
+            <if test="address != null">#{address},</if>
+            <if test="companyPerson != null">#{companyPerson},</if>
+            <if test="phone != null">#{phone},</if>
+            <if test="certNumber != null">#{certNumber},</if>
+            <if test="fax != null">#{fax},</if>
+            <if test="bankAccount != null">#{bankAccount},</if>
+            <if test="companyReferred != null">#{companyReferred},</if>
+            <if test="supplierRange != null">#{supplierRange},</if>
+            <if test="supplierStatus != null">#{supplierStatus},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFdSupplier" parameterType="FdSupplier">
+        update fd_supplier
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="code != null and code != ''">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="taxNumber != null">tax_number = #{taxNumber},</if>
+            <if test="referredCode != null">referred_code = #{referredCode},</if>
+            <if test="regMoney != null">reg_money = #{regMoney},</if>
+            <if test="validTime != null">valid_time = #{validTime},</if>
+            <if test="contacts != null">contacts = #{contacts},</if>
+            <if test="contactsPhone != null">contacts_phone = #{contactsPhone},</if>
+            <if test="website != null">website = #{website},</if>
+            <if test="legalPerson != null">legal_person = #{legalPerson},</if>
+            <if test="zipCode != null">zip_code = #{zipCode},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="companyPerson != null">company_person = #{companyPerson},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="certNumber != null">cert_number = #{certNumber},</if>
+            <if test="fax != null">fax = #{fax},</if>
+            <if test="bankAccount != null">bank_account = #{bankAccount},</if>
+            <if test="companyReferred != null">company_referred = #{companyReferred},</if>
+            <if test="supplierRange != null">supplier_range = #{supplierRange},</if>
+            <if test="supplierStatus != null">supplier_status = #{supplierStatus},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFdSupplierById" parameterType="Long">
+        delete from fd_supplier where id = #{id}
+    </delete>
+
+    <delete id="deleteFdSupplierByIds" parameterType="String">
+        delete from fd_supplier where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectSupplierIsExist" parameterType="Long" resultType="int">
+        select count(*) from stk_io_bill
+        where del_flag !=1
+        and suppler_id = #{id}
+    </select>
+</mapper>

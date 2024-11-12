@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzShipmentMapper">
+
+    <resultMap type="GzShipment" id="GzShipmentResult">
+        <result property="id"    column="id"    />
+        <result property="shipmentNo"    column="shipment_no"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="shipmentDate"    column="shipment_date"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="shipmentStatus"    column="shipment_status"    />
+        <result property="shipmentType"    column="shipment_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="sId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="FdWarehouse">
+        <id     property="id"    column="wId"     />
+        <result property="code"  column="warehouseCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="GzShipmentGzShipmentEntryResult" type="GzShipment" extends="GzShipmentResult">
+        <collection property="gzShipmentEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="GzShipmentEntryResult" />
+    </resultMap>
+
+    <resultMap type="GzShipmentEntry" id="GzShipmentEntryResult">
+        <result property="id"    column="sub_id"    />
+        <result property="parenId"    column="sub_paren_id"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="qty"    column="sub_qty"    />
+        <result property="price"    column="sub_price"    />
+        <result property="amt"    column="sub_amt"    />
+        <result property="batchNo"    column="sub_batch_no"    />
+        <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="beginTime"    column="sub_begin_time"    />
+        <result property="andTime"    column="sub_and_time"    />
+        <result property="delFlag"    column="sub_del_flag"    />
+        <result property="remark"    column="sub_remark"    />
+    </resultMap>
+
+    <sql id="selectGzShipmentVo">
+        select gz.id, gz.shipment_no, gz.department_id, gz.shipment_date, gz.warehouse_id,
+				gz.shipment_status, gz.shipment_type, gz.del_flag, gz.audit_date, gz.create_by,
+				gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				d.id dId,d.code departmentCode,d.name departmentName,
+				w.id wId,w.code warehouseCode,w.name warehouseName
+        from gz_shipment gz
+        left join fd_department d on gz.department_id = d.id
+        left join fd_warehouse w on gz.warehouse_id = w.id
+    </sql>
+
+    <select id="selectGzShipmentList" parameterType="GzShipment" resultMap="GzShipmentResult">
+        <include refid="selectGzShipmentVo"/>
+        where gz.del_flag != 1
+        <if test="shipmentNo != null  and shipmentNo != ''"> and gz.shipment_no like concat('%', #{shipmentNo}, '%')</if>
+        <if test="departmentId != null "> and gz.department_id = #{departmentId}</if>
+        <if test="shipmentDate != null "> and gz.shipment_date = #{shipmentDate}</if>
+        <if test="warehouseId != null "> and gz.warehouse_id = #{warehouseId}</if>
+        <if test="shipmentStatus != null "> and gz.shipment_status = #{shipmentStatus}</if>
+        <if test="shipmentType != null "> and gz.shipment_type = #{shipmentType}</if>
+        <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
+    </select>
+
+    <select id="selectGzShipmentById" parameterType="Long" resultMap="GzShipmentGzShipmentEntryResult">
+        select a.id, a.shipment_no, a.department_id, a.shipment_date, a.warehouse_id, a.shipment_status, a.shipment_type,
+                a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty, b.price as sub_price,
+                b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number, b.begin_time as sub_begin_time,
+                b.and_time as sub_and_time, b.del_flag as sub_del_flag, b.remark as sub_remark
+        from gz_shipment a
+        left join gz_shipment_entry b on b.paren_id = a.id
+        where a.id = #{id}
+    </select>
+
+    <insert id="insertGzShipment" parameterType="GzShipment" useGeneratedKeys="true" keyProperty="id">
+        insert into gz_shipment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="shipmentNo != null">shipment_no,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="shipmentDate != null">shipment_date,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="shipmentStatus != null">shipment_status,</if>
+            <if test="shipmentType != null">shipment_type,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="shipmentNo != null">#{shipmentNo},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="shipmentDate != null">#{shipmentDate},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="shipmentStatus != null">#{shipmentStatus},</if>
+            <if test="shipmentType != null">#{shipmentType},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGzShipment" parameterType="GzShipment">
+        update gz_shipment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="shipmentNo != null">shipment_no = #{shipmentNo},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="shipmentDate != null">shipment_date = #{shipmentDate},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="shipmentStatus != null">shipment_status = #{shipmentStatus},</if>
+            <if test="shipmentType != null">shipment_type = #{shipmentType},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGzShipmentById" parameterType="Long">
+        delete from gz_shipment where id = #{id}
+    </delete>
+
+    <delete id="deleteGzShipmentByIds" parameterType="String">
+        delete from gz_shipment where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteGzShipmentEntryByParenId" parameterType="Long">
+        delete from gz_shipment_entry where paren_id = #{parenId}
+    </delete>
+
+    <insert id="batchGzShipmentEntry">
+        insert into gz_shipment_entry(paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, and_time, del_flag, remark) values
+		<foreach item="item" index="index" collection="list" separator=",">
+            ( #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.andTime}, #{item.delFlag}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <select id="selectMaxBillNo" resultType="String">
+        select max(shipment_no) from gz_shipment
+        where shipment_no like concat('%',#{date},'%')
+    </select>
+
+    <update id="updateGzShipmentEntry" parameterType="GzShipmentEntry">
+        update gz_shipment_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+        </trim>
+        where paren_id = #{parenId}
+    </update>
+</mapper>

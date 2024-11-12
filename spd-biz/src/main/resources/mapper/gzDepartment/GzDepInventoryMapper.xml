@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzDepInventoryMapper">
+
+    <resultMap type="GzDepInventory" id="GzDepInventoryResult">
+        <result property="id"    column="id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="qty"    column="qty"    />
+        <result property="unitPrice"    column="unit_price"    />
+        <result property="amt"    column="amt"    />
+        <result property="batchNo"    column="batch_no"    />
+        <result property="materialNo"    column="material_no"    />
+        <result property="materialDate"    column="material_date"    />
+        <result property="warehouseDate"    column="warehouse_date"    />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+    </resultMap>
+
+    <sql id="selectGzDepInventoryVo">
+        select gz.id, gz.material_id, gz.department_id, gz.qty, gz.unit_price, gz.amt,
+				gz.batch_no, gz.material_no, gz.material_date, gz.warehouse_date,
+				d.id dId,d.code departmentCode,d.name departmentName,
+				m.id mId,m.code materialCode,m.name materialName
+        from gz_dep_inventory gz
+        left join fd_department d on gz.department_id = d.id
+        left join fd_material m on gz.material_id = m.id
+    </sql>
+
+    <select id="selectGzDepInventoryList" parameterType="GzDepInventory" resultMap="GzDepInventoryResult">
+        <include refid="selectGzDepInventoryVo"/>
+        where gz.qty &gt; 0
+        <if test="materialId != null "> and gz.material_id = #{materialId}</if>
+        <if test="departmentId != null "> and gz.department_id = #{departmentId}</if>
+        <if test="qty != null "> and gz.qty = #{qty}</if>
+        <if test="unitPrice != null "> and gz.unit_price = #{unitPrice}</if>
+        <if test="amt != null "> and gz.amt = #{amt}</if>
+        <if test="batchNo != null  and batchNo != ''"> and gz.batch_no = #{batchNo}</if>
+        <if test="materialNo != null  and materialNo != ''"> and gz.material_no = #{materialNo}</if>
+        <if test="materialDate != null "> and gz.material_date = #{materialDate}</if>
+        <if test="warehouseDate != null "> and gz.warehouse_date = #{warehouseDate}</if>
+    </select>
+
+    <select id="selectGzDepInventoryById" parameterType="Long" resultMap="GzDepInventoryResult">
+        <include refid="selectGzDepInventoryVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
+        insert into gz_dep_inventory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="materialId != null">material_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="qty != null">qty,</if>
+            <if test="unitPrice != null">unit_price,</if>
+            <if test="amt != null">amt,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="materialNo != null">material_no,</if>
+            <if test="materialDate != null">material_date,</if>
+            <if test="warehouseDate != null">warehouse_date,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="materialId != null">#{materialId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="qty != null">#{qty},</if>
+            <if test="unitPrice != null">#{unitPrice},</if>
+            <if test="amt != null">#{amt},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="materialNo != null">#{materialNo},</if>
+            <if test="materialDate != null">#{materialDate},</if>
+            <if test="warehouseDate != null">#{warehouseDate},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGzDepInventory" parameterType="GzDepInventory">
+        update gz_dep_inventory
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="amt != null">amt = #{amt},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="materialNo != null">material_no = #{materialNo},</if>
+            <if test="materialDate != null">material_date = #{materialDate},</if>
+            <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGzDepInventoryById" parameterType="Long">
+        delete from gz_dep_inventory where id = #{id}
+    </delete>
+
+    <delete id="deleteGzDepInventoryByIds" parameterType="String">
+        delete from gz_dep_inventory where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectGzDepInventoryOne" parameterType="java.lang.String" resultMap="GzDepInventoryResult">
+        select * from gz_dep_inventory where batch_no = #{batchNo}
+    </select>
+
+    <select id="selectTKDepInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
+        select SUM(IFNULL(qty, 0)) from gz_dep_inventory
+        where batch_no = #{batchNo}
+    </select>
+</mapper>
