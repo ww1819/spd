@@ -106,7 +106,7 @@ public class ExcelUtil<T>
     /**
      * Excel sheet最大行数，默认65536
      */
-    public static final int sheetSize = 65536;
+    public static final int sheetSize = 1000000;
 
     /**
      * 工作表名称
