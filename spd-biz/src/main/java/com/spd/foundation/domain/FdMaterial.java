@@ -113,7 +113,7 @@ public class FdMaterial extends BaseEntity
     private BigDecimal successfulPrice;
 
     /** 销售价（最小单位） */
-    @Excel(name = "销售价", readConverterExp = "最=小单位")
+    @Excel(name = "销售价")
     private BigDecimal salePrice;
 
     /** 包装规格 */

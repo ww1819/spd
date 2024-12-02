@@ -120,7 +120,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdMaterialVo"/>
         where m.id = #{id}
     </select>
-
+    <select id="selectFdMaterialByCode" parameterType="String" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.code = #{code}
+    </select>
     <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
         insert into fd_material
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -155,7 +158,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="brand != null">brand,</if>
             <if test="useto != null">useto,</if>
             <if test="quality != null">quality,</if>
-            <if test="function != null">function,</if>
+            <if test="function != null">`function`,</if>
             <if test="isWay != null">is_way,</if>
             <if test="udiNo != null">udi_no,</if>
             <if test="permitNo != null">permit_no,</if>
@@ -255,7 +258,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="brand != null">brand = #{brand},</if>
             <if test="useto != null">useto = #{useto},</if>
             <if test="quality != null">quality = #{quality},</if>
-            <if test="function != null">function = #{function},</if>
+            <if test="function != null">`function` = #{function},</if>
             <if test="isWay != null">is_way = #{isWay},</if>
             <if test="udiNo != null">udi_no = #{udiNo},</if>
             <if test="permitNo != null">permit_no = #{permitNo},</if>

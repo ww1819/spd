@@ -1,6 +1,8 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+
+import com.spd.common.core.domain.entity.SysUser;
 import com.spd.foundation.domain.FdMaterial;
 
 /**
@@ -50,6 +52,19 @@ public interface IFdMaterialService
      * @return 结果
      */
     public int deleteFdMaterialByIds(Long ids);
+
+
+
+    /**
+     * 导入耗材档案数据
+     *
+     * @param fdmaterialList 耗材档案数据列表
+     * @param isUpdateSupport 是否更新支持，如果已存在，则进行更新数据
+     * @param operName 操作耗材档案
+     * @return 结果
+     */
+    public String importFdMaterial(List<FdMaterial> fdmaterialList, Boolean isUpdateSupport, String operName);
+
 
 //    /**
 //     * 批量删除耗材产品

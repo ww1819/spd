@@ -14,6 +14,14 @@ public interface FdMaterialMapper
     /**
      * 查询耗材产品
      *
+     * @param code 耗材产品编码
+     * @return 耗材产品
+     */
+
+    public FdMaterial selectFdMaterialByCode(String code);
+    /**
+     * 查询耗材产品
+     *
      * @param id 耗材产品主键
      * @return 耗材产品
      */

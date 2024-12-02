@@ -3,6 +3,7 @@ package com.spd.foundation.controller;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
+import com.spd.common.core.domain.entity.SysUser;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdWarehouse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 耗材产品Controller
@@ -114,4 +116,25 @@ public class FdMaterialController extends BaseController
     {
         return toAjax(fdMaterialService.deleteFdMaterialByIds(ids));
     }
+
+    @Log(title = "耗材产品导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport) throws Exception
+    {
+        ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
+        List<FdMaterial> fdmaterialList = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        String message = fdMaterialService.importFdMaterial(fdmaterialList, updateSupport, operName);
+        return success(message);
+    }
+
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
+        util.importTemplateExcel(response, "耗材数据");
+    }
+
+
 }
