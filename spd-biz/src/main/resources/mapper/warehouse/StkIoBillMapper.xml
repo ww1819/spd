@@ -166,7 +166,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
-        GROUP BY m.name,stk.bill_type
+        GROUP BY stk.id,m.code,m.name, stk.bill_type,
+         b.price,
+        m.speci,m.model,u.unit_name,
+        f.factory_name,s.name, w.name
     </select>
 
     <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
