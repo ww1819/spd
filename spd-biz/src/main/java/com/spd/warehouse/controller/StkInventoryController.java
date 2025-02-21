@@ -62,7 +62,6 @@ public class StkInventoryController extends BaseController
     {
         List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
         List<StkInventorySummaryVo> summaryVoList = new ArrayList<StkInventorySummaryVo>();
-
         for(Map<String, Object> map : mapList){
             StkInventorySummaryVo inventoryVo = new StkInventorySummaryVo();
             inventoryVo.setId((Long) map.get("id"));
