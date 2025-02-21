@@ -6,6 +6,7 @@ import com.spd.warehouse.service.IStkIoBillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jca.context.SpringContextResourceAdapter;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.beanvalidation.SpringConstraintValidatorFactory;
@@ -24,6 +25,7 @@ public class SynHistoryInventoryTask {
 
     protected Logger logger = LoggerFactory.getLogger(SynHistoryInventoryTask.class);
 
+    @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
 

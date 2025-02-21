@@ -9,6 +9,7 @@ import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.yj.vo.MonthInitVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -25,6 +26,7 @@ import java.util.Map;
 @RequestMapping("/warehouse/yj")
 public class MonthInitController extends BaseController
 {
+    @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
 
@@ -48,7 +50,7 @@ public class MonthInitController extends BaseController
             for(Map<String, Object> map : mapList){
                 MonthInitVo monthInitVo = new MonthInitVo();
                 monthInitVo.setwCategoryName(map.get("wCategoryName").toString());
-                monthInitVo.setInitAmount((BigDecimal) map.get("initAmount"));
+                monthInitVo.setInitAmont((BigDecimal) map.get("initAmount"));
                 monthInitVo.setBeginAmount((BigDecimal) map.get("beginAmount"));
                 monthInitVo.setEndAmount((BigDecimal) map.get("endAmount"));
                 monthInitVo.setSettleAmount((BigDecimal) map.get("settleAmount"));

@@ -6,7 +6,9 @@ import java.util.Map;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 
 /**
  * 出入库Mapper接口
@@ -14,6 +16,8 @@ import org.apache.ibatis.annotations.Param;
  * @author spd
  * @date 2023-12-17
  */
+@Mapper
+@Repository
 public interface StkIoBillMapper
 {
     /**

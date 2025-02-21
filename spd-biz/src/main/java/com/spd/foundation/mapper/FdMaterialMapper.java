@@ -2,6 +2,8 @@ package com.spd.foundation.mapper;
 
 import java.util.List;
 import com.spd.foundation.domain.FdMaterial;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
 
 /**
  * 耗材产品Mapper接口
@@ -9,6 +11,8 @@ import com.spd.foundation.domain.FdMaterial;
  * @author spd
  * @date 2023-12-23
  */
+@Mapper
+@Repository
 public interface FdMaterialMapper
 {
     /**

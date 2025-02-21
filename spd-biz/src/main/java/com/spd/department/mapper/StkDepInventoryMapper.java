@@ -3,6 +3,8 @@ package com.spd.department.mapper;
 import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.StkDepInventory;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
 
 /**
  * 科室库存Mapper接口
@@ -10,6 +12,8 @@ import com.spd.department.domain.StkDepInventory;
  * @author spd
  * @date 2024-03-04
  */
+@Mapper
+@Repository
 public interface StkDepInventoryMapper
 {
     /**

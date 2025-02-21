@@ -6,6 +6,7 @@ import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.warehouse.vo.StkCTKVo;
 import com.spd.warehouse.vo.StkRTHVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ import java.util.Map;
 @RequestMapping("/warehouse/rthWarehouse")
 public class StkIoRThBillController extends BaseController
 {
+    @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
 

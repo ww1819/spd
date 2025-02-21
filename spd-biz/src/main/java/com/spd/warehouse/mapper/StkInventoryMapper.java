@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.spd.warehouse.domain.StkInventory;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
 
 /**
  * 库存明细Mapper接口
@@ -12,6 +14,8 @@ import com.spd.warehouse.domain.StkInventory;
  * @author spd
  * @date 2023-12-17
  */
+@Mapper
+@Repository
 public interface StkInventoryMapper
 {
     /**
