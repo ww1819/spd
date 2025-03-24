@@ -10,7 +10,7 @@
 
     <name>spd</name>
     <url>http://www.spd.vip</url>
-    <description>spd管理系统</description>
+    <description>医疗物资管理系统</description>
     
     <properties>
         <spd.version>3.8.6</spd.version>

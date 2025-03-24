@@ -139,7 +139,6 @@ public interface StkIoBillMapper
      * @return
      */
     List<Map<String, Object>> selectCTKStkIoBillList(StkIoBill stkIoBill);
-
     /**
      * 查询入退货汇总列表
      * @param stkIoBill
