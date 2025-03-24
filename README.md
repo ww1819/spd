@@ -1,1 +1,5 @@
-克隆项目     https://github.com/ww1819/spd-ui
+## 开发
+
+```bash
+# 克隆项目
+git clone https://github.com/ww1819/spd-ui
