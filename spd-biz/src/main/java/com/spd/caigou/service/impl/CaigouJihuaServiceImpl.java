@@ -1,5 +1,6 @@
 package com.spd.caigou.service.impl;
 
+import com.spd.caigou.service.CaigouJihuaService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -32,7 +33,7 @@ import java.util.Map;
  * @date 2023-12-17
  */
 @Service
-public class CaigouJihuaServiceImpl implements IStkIoBillService
+public class CaigouJihuaServiceImpl implements CaigouJihuaService
 {
     @Autowired
     private StkIoBillMapper stkIoBillMapper;

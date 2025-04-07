@@ -60,6 +60,8 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "出入库类型")
     private Integer billType;
 
+    private String materialId;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -180,6 +182,14 @@ public class StkIoBill extends BaseEntity
     public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
+    }
+
+    public String getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(String materialId) {
+        this.materialId = materialId;
     }
 
     public Long getDepartmentId()

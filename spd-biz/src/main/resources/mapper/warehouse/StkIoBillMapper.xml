@@ -136,11 +136,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where stk.del_flag != 1
         and stk.bill_type in (101,301)
-        and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
-
+        <if test="materialId != null "> and m.id = #{materialId}</if>
+        <choose>
+            <when test="billStatus != null">
+                and stk.bill_status = #{billStatus}
+            </when>
+            <otherwise>
+                and stk.bill_status =2
+            </otherwise>
+        </choose>
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
     </select>
@@ -213,14 +220,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where stk.del_flag != 1
         and stk.bill_type in (201,401)
-        and stk.bill_status = 2
+--         and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
-
+        <if test="materialId != null "> and m.id = #{materialId}</if>
+        <choose>
+            <when test="billStatus != null">
+                and stk.bill_status = #{billStatus}
+            </when>
+            <otherwise>
+                and stk.bill_status =2
+            </otherwise>
+        </choose>
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
     </select>
+
 
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
         select a.id, a.bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
