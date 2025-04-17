@@ -1,6 +1,7 @@
 package com.spd.warehouse.controller;
 
 import com.spd.common.core.controller.BaseController;
+import com.spd.common.utils.StringUtils;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.warehouse.vo.StkCTKVo;
@@ -42,9 +43,9 @@ public class StkIoRThBillController extends BaseController
             for(Map<String, Object> map : mapList){
                 StkRTHVo stkRTHVo = new StkRTHVo();
                 stkRTHVo.setId((Long) map.get("id"));
-                stkRTHVo.setMaterialCode(map.get("materialCode").toString());
-                stkRTHVo.setMaterialName(map.get("materialName").toString());
-                stkRTHVo.setMaterialModel(map.get("materialModel").toString());
+                stkRTHVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"),"").toString());
+                stkRTHVo.setMaterialName(StringUtils.nvl(map.get("materialName"),"").toString());
+                stkRTHVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"),"").toString());
                 stkRTHVo.setMaterialQty((BigDecimal) map.get("materialQty"));
                 stkRTHVo.setMaterialSpeci(map.get("materialSpeci").toString());
                 stkRTHVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
