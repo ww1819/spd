@@ -78,6 +78,7 @@
 
 	<root level="info">
 		<appender-ref ref="console" />
+		<appender-ref ref="file_info" />
 	</root>
 	
 	<!--系统操作日志-->
@@ -90,4 +91,4 @@
     <logger name="sys-user" level="info">
         <appender-ref ref="sys-user"/>
     </logger>
-</configuration> 
+</configuration>
