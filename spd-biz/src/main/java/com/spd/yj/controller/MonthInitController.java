@@ -50,7 +50,7 @@ public class MonthInitController extends BaseController
             for(Map<String, Object> map : mapList){
                 MonthInitVo monthInitVo = new MonthInitVo();
                 monthInitVo.setwCategoryName(map.get("wCategoryName").toString());
-                monthInitVo.setInitAmont((BigDecimal) map.get("initAmount"));
+//                monthInitVo.setInitAmont((BigDecimal) map.get("initAmount"));
                 monthInitVo.setBeginAmount((BigDecimal) map.get("beginAmount"));
                 monthInitVo.setEndAmount((BigDecimal) map.get("endAmount"));
                 monthInitVo.setSettleAmount((BigDecimal) map.get("settleAmount"));

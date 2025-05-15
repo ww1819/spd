@@ -28,7 +28,7 @@ import java.util.List;
 public class CaigouJihuaController extends BaseController
 {
     @Autowired
-    @Qualifier("caigouJihuaServiceImpl")
+//    @Qualifier("caigouJihuaServiceImpl")
     private IStkIoBillService stkIoBillService;
 
     /**
