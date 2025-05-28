@@ -1,11 +1,14 @@
 package com.sb.sbInfo.service.impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.sb.sbInfo.domain.SbInfo;
 import com.sb.sbInfo.domain.ZMPrinter.LabelFormat;
 import com.sb.sbInfo.domain.ZMPrinter.LabelObject;
 import com.sb.sbInfo.domain.ZMPrinter.PrinterStyle;
 import com.sb.sbInfo.domain.ZMPrinter.ZMPrinter;
 import com.sb.sbInfo.service.SbInfoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public class SbInfoServiceImpl implements SbInfoService {
+    private static final Logger log = LoggerFactory.getLogger(SbInfoServiceImpl.class);
+
     @Override
     public SbInfo selectSbInfoById(Long id) {
         return null;
@@ -106,7 +111,14 @@ public class SbInfoServiceImpl implements SbInfoService {
         map.put("Operate", "print");
 
         String labelInfo = null;
+        labelInfo = JSON.toJSONString(map);
+        log.info("Label Info: {}\n" + labelInfo);
 //        labelInfo = convertMapToJson(map);
         return labelInfo;
+    }
+
+    public static void main(String[] args) {
+        SbInfoServiceImpl sbInfoService = new SbInfoServiceImpl();
+        String labelInfo = sbInfoService.getSbLabelInfo("SB123456");
     }
 }
