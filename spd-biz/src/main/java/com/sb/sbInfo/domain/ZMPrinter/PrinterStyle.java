@@ -8,13 +8,13 @@ public enum PrinterStyle {
     RFID_USB(4),
     RFID_NET(5);
 
-    private final int value;
+    private final Integer value;
 
-    PrinterStyle(int value) {
+    PrinterStyle(Integer value) {
         this.value = value;
     }
 
-    public int getValue() {
+    public Integer getValue() {
         return value;
     }
 

@@ -1,64 +1,64 @@
 package com.sb.sbInfo.domain.ZMPrinter;
 
 public class ZMLabel {
-    private float labelwidth;//标签宽度
-    private float labelheight;//标签高度
-    private float labelrowgap;//行距
-    private float labelcolumngap;//列距
-    private int labelrownum;//行数
-    private int labelcolumnnum;//列数
-    private float leftoffset;//左侧位置微调
-    private float topoffset;//顶部位置微调
-    private float pageleftedges;//左空
-    private float pagerightedges;//右空
-    private int pagestartlocation;//多行列时起始位置，0为左上，1为右上，2为左下，3为右下
-    private int pagelabelorder;// 多行列时标签顺序，0为水平，1为垂直
+    private Float labelwidth;//标签宽度
+    private Float labelheight;//标签高度
+    private Float labelrowgap;//行距
+    private Float labelcolumngap;//列距
+    private Integer labelrownum;//行数
+    private Integer labelcolumnnum;//列数
+    private Float leftoffset;//左侧位置微调
+    private Float topoffset;//顶部位置微调
+    private Float pageleftedges;//左空
+    private Float pagerightedges;//右空
+    private Integer pagestartlocation;//多行列时起始位置，0为左上，1为右上，2为左下，3为右下
+    private Integer pagelabelorder;// 多行列时标签顺序，0为水平，1为垂直
 
 
     public ZMLabel() {
         // Default constructor
-        this.setLabelwidth(104);
-        this.setLabelheight(75);
-        this.setLabelrowgap(2);
-        this.setLabelcolumngap(2);
+        this.setLabelwidth(104f);
+        this.setLabelheight(75f);
+        this.setLabelrowgap(2f);
+        this.setLabelcolumngap(2f);
         this.setLabelrownum(1);
         this.setLabelcolumnnum(1);
-        this.setLeftoffset(0);
-        this.setTopoffset(0);
-        this.setPageleftedges(0);
-        this.setPagerightedges(0);
+        this.setLeftoffset(0f);
+        this.setTopoffset(0f);
+        this.setPageleftedges(0f);
+        this.setPagerightedges(0f);
         this.setPagestartlocation(0);
         this.setPagelabelorder(0);
     }
-    public float getLabelwidth() {
+    public Float getLabelwidth() {
         return labelwidth;
     }
 
-    public void setLabelwidth(float labelwidth) {
+    public void setLabelwidth(Float labelwidth) {
         this.labelwidth = labelwidth;
     }
 
-    public float getLabelheight() {
+    public Float getLabelheight() {
         return labelheight;
     }
 
-    public void setLabelheight(float labelheight) {
+    public void setLabelheight(Float labelheight) {
         this.labelheight = labelheight;
     }
 
-    public float getLabelrowgap() {
+    public Float getLabelrowgap() {
         return labelrowgap;
     }
 
-    public void setLabelrowgap(float labelrowgap) {
+    public void setLabelrowgap(Float labelrowgap) {
         this.labelrowgap = labelrowgap;
     }
 
-    public float getLabelcolumngap() {
+    public Float getLabelcolumngap() {
         return labelcolumngap;
     }
 
-    public void setLabelcolumngap(float labelcolumngap) {
+    public void setLabelcolumngap(Float labelcolumngap) {
         this.labelcolumngap = labelcolumngap;
     }
 
@@ -66,63 +66,63 @@ public class ZMLabel {
         return labelrownum;
     }
 
-    public void setLabelrownum(int labelrownum) {
+    public void setLabelrownum(Integer labelrownum) {
         this.labelrownum = labelrownum;
     }
 
-    public int getLabelcolumnnum() {
+    public Integer getLabelcolumnnum() {
         return labelcolumnnum;
     }
 
-    public void setLabelcolumnnum(int labelcolumnnum) {
+    public void setLabelcolumnnum(Integer labelcolumnnum) {
         this.labelcolumnnum = labelcolumnnum;
     }
 
-    public float getLeftoffset() {
+    public Float getLeftoffset() {
         return leftoffset;
     }
 
-    public void setLeftoffset(float leftoffset) {
+    public void setLeftoffset(Float leftoffset) {
         this.leftoffset = leftoffset;
     }
 
-    public float getTopoffset() {
+    public Float getTopoffset() {
         return topoffset;
     }
 
-    public void setTopoffset(float topoffset) {
+    public void setTopoffset(Float topoffset) {
         this.topoffset = topoffset;
     }
 
-    public float getPageleftedges() {
+    public Float getPageleftedges() {
         return pageleftedges;
     }
 
-    public void setPageleftedges(float pageleftedges) {
+    public void setPageleftedges(Float pageleftedges) {
         this.pageleftedges = pageleftedges;
     }
 
-    public float getPagerightedges() {
+    public Float getPagerightedges() {
         return pagerightedges;
     }
 
-    public void setPagerightedges(float pagerightedges) {
+    public void setPagerightedges(Float pagerightedges) {
         this.pagerightedges = pagerightedges;
     }
 
-    public int getPagestartlocation() {
+    public Integer getPagestartlocation() {
         return pagestartlocation;
     }
 
-    public void setPagestartlocation(int pagestartlocation) {
+    public void setPagestartlocation(Integer pagestartlocation) {
         this.pagestartlocation = pagestartlocation;
     }
 
-    public int getPagelabelorder() {
+    public Integer getPagelabelorder() {
         return pagelabelorder;
     }
 
-    public void setPagelabelorder(int pagelabelorder) {
+    public void setPagelabelorder(Integer pagelabelorder) {
         this.pagelabelorder = pagelabelorder;
     }
 }

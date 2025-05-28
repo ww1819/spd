@@ -4,15 +4,15 @@ public class ZMPrinter {
     private PrinterStyle printerinterface;//打印机的数据传输接口类型
     private String printername;//打印机名称
     private String printermbsn;//打印机主板序号，如需要控制多台打印机则必须设置
-    private int printerdpi;//打印机分辨率，203，300，600dpi
-    private int printSpeed;//打印速度，单位英寸每秒，2~8有效
-    private int printDarkness;//打印黑度，0~20有效，值越大打印温度越高
+    private Integer printerdpi;//打印机分辨率，203，300，600dpi
+    private Integer printSpeed;//打印速度，单位英寸每秒，2~8有效
+    private Integer printDarkness;//打印黑度，0~20有效，值越大打印温度越高
     private String printernetip;//打印机网卡ip地址，网络打印时必须设置
-    private int printnum;//打印数量
-    private int copynum;//复制份数
+    private Integer printnum;//打印数量
+    private Integer copynum;//复制份数
     private Boolean reverse;//是否旋转180度打印，即反向打印
     private Boolean labelhavegap;//有间隙标签请设置为true，连续纸请设置为false
-    private int pageDirection;//1 竖向，2 横向
+    private Integer pageDirection;//1 竖向，2 横向
 
     public ZMPrinter() {
         this.setPrinterinterface(PrinterStyle.RFID_DRIVER);
@@ -52,27 +52,27 @@ public class ZMPrinter {
         this.printermbsn = printermbsn;
     }
 
-    public int getPrinterdpi() {
+    public Integer getPrinterdpi() {
         return printerdpi;
     }
 
-    public void setPrinterdpi(int printerdpi) {
+    public void setPrinterdpi(Integer printerdpi) {
         this.printerdpi = printerdpi;
     }
 
-    public int getPrintSpeed() {
+    public Integer getPrintSpeed() {
         return printSpeed;
     }
 
-    public void setPrintSpeed(int printSpeed) {
+    public void setPrintSpeed(Integer printSpeed) {
         this.printSpeed = printSpeed;
     }
 
-    public int getPrintDarkness() {
+    public Integer getPrintDarkness() {
         return printDarkness;
     }
 
-    public void setPrintDarkness(int printDarkness) {
+    public void setPrintDarkness(Integer printDarkness) {
         this.printDarkness = printDarkness;
     }
 
@@ -84,19 +84,19 @@ public class ZMPrinter {
         this.printernetip = printernetip;
     }
 
-    public int getPrintnum() {
+    public Integer getPrintnum() {
         return printnum;
     }
 
-    public void setPrintnum(int printnum) {
+    public void setPrintnum(Integer printnum) {
         this.printnum = printnum;
     }
 
-    public int getCopynum() {
+    public Integer getCopynum() {
         return copynum;
     }
 
-    public void setCopynum(int copynum) {
+    public void setCopynum(Integer copynum) {
         this.copynum = copynum;
     }
 
@@ -116,11 +116,11 @@ public class ZMPrinter {
         this.labelhavegap = labelhavegap;
     }
 
-    public int getPageDirection() {
+    public Integer getPageDirection() {
         return pageDirection;
     }
 
-    public void setPageDirection(int pageDirection) {
+    public void setPageDirection(Integer pageDirection) {
         this.pageDirection = pageDirection;
     }
 }
