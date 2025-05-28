@@ -1,7 +1,16 @@
 package com.sb.sbInfo.service.impl;
 
 import com.sb.sbInfo.domain.SbInfo;
+import com.sb.sbInfo.domain.ZMPrinter.LabelFormat;
+import com.sb.sbInfo.domain.ZMPrinter.LabelObject;
+import com.sb.sbInfo.domain.ZMPrinter.PrinterStyle;
+import com.sb.sbInfo.domain.ZMPrinter.ZMPrinter;
 import com.sb.sbInfo.service.SbInfoService;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SbInfoServiceImpl implements SbInfoService {
     @Override
@@ -19,65 +28,85 @@ public class SbInfoServiceImpl implements SbInfoService {
         if (code == null || code.isEmpty()) {
             return "";
         }
-        String labelInfo = null;
-        labelInfo = "{\n" +
-                "  \"Printer\": {\n" +
-                "    \"printerinterface\": \"RFID_USB\",\n" +
-                "    \"printerdpi\": \"300\",\n" +
-                "    \"printSpeed\": \"4\",\n" +
-                "    \"printDarkness\": \"10\"\n" +
-                "  },\n" +
-                "  \"LabelFormat\": {\n" +
-                "    \"labelwidth\": \"80\",\n" +
-                "    \"labelheight\": \"20\",\n" +
-                "    \"labelrowgap\": \"2\"\n" +
-                "  },\n" +
-                "  \"LabelObjectList\": [\n" +
-                "    {\n" +
-                "      \"ObjectName\": \"text-01\",\n" +
-                "      \"objectdata\": \"XX1234567890\",\n" +
-                "      \"Xposition\": \"30\",\n" +
-                "      \"Yposition\": \"5\",\n" +
-                "      \"textfont\": \"黑体\",\n" +
-                "      \"fontsize\": \"10\",\n" +
-                "      \"texttextalign\": \"1\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"ObjectName\": \"barcode-01\",\n" +
-                "      \"objectdata\": \"XX1234567890\",\n" +
-                "      \"Xposition\": \"30\",\n" +
-                "      \"Yposition\": \"10\",\n" +
-                "      \"barcodekind\": \"Code 128 Auto\",\n" +
-                "      \"barcodescale\": \"3\",\n" +
-                "      \"barcodeheight\": \"6\",\n" +
-                "      \"barcodealign\": \"1\",\n" +
-                "      \"textfont\": \"Arial\",\n" +
-                "      \"fontsize\": \"10\",\n" +
-                "      \"textposition\": \"2\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"ObjectName\": \"barcode-02\",\n" +
-                "      \"objectdata\": \"XX1234567890\",\n" +
-                "      \"Xposition\": \"58\",\n" +
-                "      \"Yposition\": \"3\",\n" +
-                "      \"barcodekind\": \"QR Code(2D)\",\n" +
-                "      \"barcodescale\": \"5\",\n" +
-                "      \"barcodealign\": \"0\",\n" +
-                "      \"textposition\": \"2\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"ObjectName\": \"rfiduhf-01\",\n" +
-                "      \"objectdata\": \"12345679\",\n" +
-                "      \"RFIDEncodertype\": 0,\n" +
-                "      \"RFIDDatablock\": \"0\",\n" +
-                "      \"RFIDDatatype\": \"1\",\n" +
-                "      \"RFIDerrortimes\": \"2\",\n" +
-                "      \"RFIDTextencoding\": 1\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"Operate\": \"print\"\n" +
-                "}";
 
+        SbInfo sbInfo = new SbInfo();
+        sbInfo.setId(1L);
+        sbInfo.setName("测试设备");
+        sbInfo.setType("测试类型");
+        sbInfo.setCode(code);
+        sbInfo.setStatus("正常");
+        sbInfo.setLocation("测试位置");
+        sbInfo.setDescription("这是一个测试设备");
+
+
+        ZMPrinter zmPrinter = new ZMPrinter();
+        zmPrinter.setPrinterinterface(PrinterStyle.RFID_USB);
+        zmPrinter.setPrinterdpi(300);
+        zmPrinter.setPrintSpeed(4);
+        zmPrinter.setPrintDarkness(10);
+
+        LabelFormat labelFormat = new LabelFormat();
+        labelFormat.setLabelwidth(80);
+        labelFormat.setLabelheight(20);
+        labelFormat.setLabelrowgap(2);
+
+        //编码
+        LabelObject text01Object = new LabelObject();
+        text01Object.setObjectName("text-01");
+        text01Object.setObjectdata(sbInfo.getCode());
+        text01Object.setXposition(30f);
+        text01Object.setYposition(5f);
+        text01Object.setTextfont("黑体");
+        text01Object.setTextalign(1);
+
+        //条形码
+        LabelObject barcode01Object = new LabelObject();
+        barcode01Object.setObjectName("barcode-01");
+        barcode01Object.setObjectdata(sbInfo.getCode());
+        barcode01Object.setXposition(30f);
+        barcode01Object.setYposition(10f);
+        barcode01Object.setBarcodekind("Code 128 Auto");
+        barcode01Object.setBarcodescale(3f);
+        barcode01Object.setBarcodeheight(6f);
+        barcode01Object.setBarcodealign(1);
+        barcode01Object.setTextfont("Arial");
+        barcode01Object.setFontsize(10f);
+        barcode01Object.setTextposition(2);
+
+        //二维码
+        LabelObject barcode02Object = new LabelObject();
+        barcode02Object.setObjectName("barcode-02");
+        barcode02Object.setObjectdata(sbInfo.getCode());
+        barcode02Object.setXposition(58f);
+        barcode02Object.setYposition(3f);
+        barcode02Object.setBarcodekind("QR Code(2D)");
+        barcode02Object.setBarcodescale(5f);
+        barcode02Object.setBarcodealign(0);
+        barcode02Object.setTextposition(2);
+
+        // RFID标签
+        LabelObject rfidUHFObject = new LabelObject();
+        rfidUHFObject.setObjectName("rfiduhf-01");
+        rfidUHFObject.setObjectdata("12345678");
+        rfidUHFObject.setRFIDDatablock(0);
+        rfidUHFObject.setRFIDDatatype(1);
+        rfidUHFObject.setRFIDerrortimes(2);
+
+        List<LabelObject> labelObjectList = new ArrayList<>();
+        labelObjectList.add(text01Object);
+        labelObjectList.add(barcode01Object);
+        labelObjectList.add(barcode02Object);
+        labelObjectList.add(rfidUHFObject);
+
+
+        Map map = new HashMap<>();
+        map.put("Printer", zmPrinter);
+        map.put("LabelFormat", labelFormat);
+        map.put("LabelObjectList", labelObjectList);
+        map.put("Operate", "print");
+
+        String labelInfo = null;
+//        labelInfo = convertMapToJson(map);
         return labelInfo;
     }
 }
