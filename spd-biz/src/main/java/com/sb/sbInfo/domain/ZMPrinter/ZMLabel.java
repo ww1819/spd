@@ -16,22 +16,9 @@ public class ZMLabel {
 
 
     public ZMLabel() {
-        // Default constructor
-        this.setLabelwidth(104f);
-        this.setLabelheight(75f);
-        this.setLabelrowgap(2f);
-        this.setLabelcolumngap(2f);
-        this.setLabelrownum(1);
-        this.setLabelcolumnnum(1);
-        this.setLeftoffset(0f);
-        this.setTopoffset(0f);
-        this.setPageleftedges(0f);
-        this.setPagerightedges(0f);
-        this.setPagestartlocation(0);
-        this.setPagelabelorder(0);
     }
     public Float getLabelwidth() {
-        return labelwidth;
+        return this.labelwidth;
     }
 
     public void setLabelwidth(Float labelwidth) {
@@ -39,7 +26,7 @@ public class ZMLabel {
     }
 
     public Float getLabelheight() {
-        return labelheight;
+        return this.labelheight;
     }
 
     public void setLabelheight(Float labelheight) {
@@ -47,7 +34,7 @@ public class ZMLabel {
     }
 
     public Float getLabelrowgap() {
-        return labelrowgap;
+        return this.labelrowgap;
     }
 
     public void setLabelrowgap(Float labelrowgap) {
@@ -55,7 +42,7 @@ public class ZMLabel {
     }
 
     public Float getLabelcolumngap() {
-        return labelcolumngap;
+        return this.labelcolumngap;
     }
 
     public void setLabelcolumngap(Float labelcolumngap) {
@@ -63,7 +50,7 @@ public class ZMLabel {
     }
 
     public int getLabelrownum() {
-        return labelrownum;
+        return this.labelrownum;
     }
 
     public void setLabelrownum(Integer labelrownum) {
@@ -71,7 +58,7 @@ public class ZMLabel {
     }
 
     public Integer getLabelcolumnnum() {
-        return labelcolumnnum;
+        return this.labelcolumnnum;
     }
 
     public void setLabelcolumnnum(Integer labelcolumnnum) {
@@ -79,7 +66,7 @@ public class ZMLabel {
     }
 
     public Float getLeftoffset() {
-        return leftoffset;
+        return this.leftoffset;
     }
 
     public void setLeftoffset(Float leftoffset) {
@@ -87,7 +74,7 @@ public class ZMLabel {
     }
 
     public Float getTopoffset() {
-        return topoffset;
+        return this.topoffset;
     }
 
     public void setTopoffset(Float topoffset) {
@@ -95,7 +82,7 @@ public class ZMLabel {
     }
 
     public Float getPageleftedges() {
-        return pageleftedges;
+        return this.pageleftedges;
     }
 
     public void setPageleftedges(Float pageleftedges) {
@@ -103,7 +90,7 @@ public class ZMLabel {
     }
 
     public Float getPagerightedges() {
-        return pagerightedges;
+        return this.pagerightedges;
     }
 
     public void setPagerightedges(Float pagerightedges) {
@@ -111,7 +98,7 @@ public class ZMLabel {
     }
 
     public Integer getPagestartlocation() {
-        return pagestartlocation;
+        return this.pagestartlocation;
     }
 
     public void setPagestartlocation(Integer pagestartlocation) {
@@ -119,7 +106,7 @@ public class ZMLabel {
     }
 
     public Integer getPagelabelorder() {
-        return pagelabelorder;
+        return this.pagelabelorder;
     }
 
     public void setPagelabelorder(Integer pagelabelorder) {

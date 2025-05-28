@@ -15,21 +15,9 @@ public class ZMPrinter {
     private Integer pageDirection;//1 竖向，2 横向
 
     public ZMPrinter() {
-        this.setPrinterinterface(PrinterStyle.RFID_DRIVER);
-        this.setPrintername("Default");
-        this.setPrintermbsn("");
-        this.setPrinterdpi(300);
-        this.setPrintSpeed(4);
-        this.setPrintDarkness(10);
-        this.setPrinternetip("192.168.8.180");
-        this.setPrintnum(1);
-        this.setCopynum(1);
-        this.setReverse(false);
-        this.setLabelhavegap(true);
-        this.setPageDirection(1);
     }
     public PrinterStyle getPrinterinterface() {
-        return printerinterface;
+        return this.printerinterface;
     }
 
     public void setPrinterinterface(PrinterStyle printerinterface) {
@@ -37,7 +25,7 @@ public class ZMPrinter {
     }
 
     public String getPrintername() {
-        return printername;
+        return this.printername;
     }
 
     public void setPrintername(String printername) {
@@ -45,7 +33,7 @@ public class ZMPrinter {
     }
 
     public String getPrintermbsn() {
-        return printermbsn;
+        return this.printermbsn;
     }
 
     public void setPrintermbsn(String printermbsn) {
@@ -53,7 +41,7 @@ public class ZMPrinter {
     }
 
     public Integer getPrinterdpi() {
-        return printerdpi;
+        return this.printerdpi;
     }
 
     public void setPrinterdpi(Integer printerdpi) {
@@ -61,7 +49,7 @@ public class ZMPrinter {
     }
 
     public Integer getPrintSpeed() {
-        return printSpeed;
+        return this.printSpeed;
     }
 
     public void setPrintSpeed(Integer printSpeed) {
@@ -69,7 +57,7 @@ public class ZMPrinter {
     }
 
     public Integer getPrintDarkness() {
-        return printDarkness;
+        return this.printDarkness;
     }
 
     public void setPrintDarkness(Integer printDarkness) {
@@ -77,7 +65,7 @@ public class ZMPrinter {
     }
 
     public String getPrinternetip() {
-        return printernetip;
+        return this.printernetip;
     }
 
     public void setPrinternetip(String printernetip) {
@@ -85,7 +73,7 @@ public class ZMPrinter {
     }
 
     public Integer getPrintnum() {
-        return printnum;
+        return this.printnum;
     }
 
     public void setPrintnum(Integer printnum) {
@@ -93,7 +81,7 @@ public class ZMPrinter {
     }
 
     public Integer getCopynum() {
-        return copynum;
+        return this.copynum;
     }
 
     public void setCopynum(Integer copynum) {
@@ -101,7 +89,7 @@ public class ZMPrinter {
     }
 
     public Boolean getReverse() {
-        return reverse;
+        return this.reverse;
     }
 
     public void setReverse(Boolean reverse) {
@@ -109,7 +97,7 @@ public class ZMPrinter {
     }
 
     public Boolean getLabelhavegap() {
-        return labelhavegap;
+        return this.labelhavegap;
     }
 
     public void setLabelhavegap(Boolean labelhavegap) {
@@ -117,7 +105,7 @@ public class ZMPrinter {
     }
 
     public Integer getPageDirection() {
-        return pageDirection;
+        return this.pageDirection;
     }
 
     public void setPageDirection(Integer pageDirection) {
