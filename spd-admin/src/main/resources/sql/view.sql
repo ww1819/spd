@@ -2,6 +2,7 @@
 CREATE OR REPLACE VIEW VIEW_ZS_HC_KS_ALL_DETAIL AS
 SELECT
     'CK' AS SHEET_LX
+     ,A.CODE AS DJH
      ,A.ID AS M_ID
      ,B.ID AS MX_ID
      ,A.KS_NO
@@ -24,6 +25,7 @@ WHERE
 UNION ALL
 SELECT
     'KT' AS SHEET_LX
+     ,A.CODE AS DJH
      ,A.ID AS M_ID
      ,B.ID AS MX_ID
      ,A.KS_NO
@@ -45,6 +47,7 @@ WHERE
 UNION ALL
 SELECT
     'DC' AS SHEET_LX
+     ,A.CODE AS DJH
      ,A.ID AS M_ID
      ,B.ID AS MX_ID
      ,A.YKS_NO
@@ -66,6 +69,7 @@ WHERE
 UNION ALL
 SELECT
     'DR' AS SHEET_LX
+     ,A.CODE AS DJH
      ,A.ID AS M_ID
      ,B.ID AS MX_ID
      ,A.KS_NO
@@ -87,6 +91,7 @@ WHERE
 UNION ALL
 SELECT
     A.LX AS SHEET_LX
+     ,A.CODE AS DJH
      ,A.ID AS M_ID
      ,B.ID AS MX_ID
      ,A.KS_NO
@@ -102,7 +107,7 @@ SELECT
            WHEN A.LX IN ('ZZT') THEN -B.SL
     END) * B.DJ AS JE
      ,-B.SL AS KCYS_SL
-     ,(-B.SL * B.DJ) * B.DJ AS KCYS_JE
+     ,(-B.SL * B.DJ) AS KCYS_JE
 FROM
     T_HC_XH_MASTER A
         LEFT JOIN T_HC_XH_DETAIL B ON A.ID = B.M_NO
