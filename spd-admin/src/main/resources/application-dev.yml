@@ -79,21 +79,23 @@ spring:
         main:
             banner-mode: off
     datasource:
-        type: com.alibaba.druid.pool.DruidDataSource
-        driverClassName: com.mysql.cj.jdbc.Driver
+        # type: com.alibaba.druid.pool.DruidDataSource
+        # driverClassName: com.mysql.cj.jdbc.Driver
         druid:
             # 主库数据源
             master:
                 url: jdbc:mysql://rm-bp1tov1b3948fc5inbo.mysql.rds.aliyuncs.com:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 username: spd
                 password: Spd@456ww
+                driver-class-name: com.mysql.cj.jdbc.Driver
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
-                enabled: false
-                url:
-                username:
-                password:
+                enabled: true
+                url: jdbc:oracle:thin:@localhost:1521:orcl
+                username: cesoft
+                password: cesoft2018
+                driver-class-name: oracle.jdbc.driver.OracleDriver
             # 初始连接数
             initialSize: 5
             # 最小连接池数量

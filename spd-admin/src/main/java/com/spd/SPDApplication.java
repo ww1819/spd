@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
  *
  * @author spd
  */
-@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
+@SpringBootApplication(scanBasePackages = {"com.spd", "com.sb"}, exclude = { DataSourceAutoConfiguration.class })
 public class SPDApplication
 {
     public static void main(String[] args)

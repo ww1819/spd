@@ -3,7 +3,9 @@ package com.spd.foundation.service.impl;
 import java.util.Arrays;
 import java.util.List;
 
+import com.spd.common.annotation.DataSource;
 import com.spd.common.core.domain.entity.SysUser;
+import com.spd.common.enums.DataSourceType;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -59,6 +61,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
      * @return 耗材产品
      */
     @Override
+    @DataSource(DataSourceType.MASTER)
     public List<FdMaterial> selectFdMaterialList(FdMaterial fdMaterial)
     {
         return fdMaterialMapper.selectFdMaterialList(fdMaterial);
