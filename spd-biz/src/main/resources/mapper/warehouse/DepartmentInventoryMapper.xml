@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.DepartmentInventoryMapper">
+
+    <resultMap type="com.spd.warehouse.vo.DepartmentInventoryVo" id="DepartmentInventoryResult">
+        <result property="KS_NO" column="KS_NO"/>
+        <result property="KS_CODE" column="KS_CODE"/>
+        <result property="KS_NAME" column="KS_NAME"/>
+        <result property="HC_NO" column="HC_NO"/>
+        <result property="HC_CODE" column="HC_CODE"/>
+        <result property="HC_NAME" column="HC_NAME"/>
+        <result property="GG" column="GG"/>
+        <result property="XH" column="XH"/>
+        <result property="DW" column="DW"/>
+        <result property="QC_SL" column="QC_SL"/>
+        <result property="QC_JE" column="QC_JE"/>
+        <result property="CK_SL" column="CK_SL"/>
+        <result property="CK_JE" column="CK_JE"/>
+        <result property="TK_SL" column="TK_SL"/>
+        <result property="TK_JE" column="TK_JE"/>
+        <result property="DR_SL" column="DR_SL"/>
+        <result property="DR_JE" column="DR_JE"/>
+        <result property="DC_SL" column="DC_SL"/>
+        <result property="DC_JE" column="DC_JE"/>
+        <result property="KSXH_SL" column="KSXH_SL"/>
+        <result property="KSXH_JE" column="KSXH_JE"/>
+        <result property="ZZJ_SL" column="ZZJ_SL"/>
+        <result property="ZZJ_JE" column="ZZJ_JE"/>
+        <result property="ZZT_SL" column="ZZT_SL"/>
+        <result property="ZZT_JE" column="ZZT_JE"/>
+        <result property="JC_SL" column="JC_SL"/>
+        <result property="JC_JE" column="JC_JE"/>
+    </resultMap>
+
+            <select id="selectDepartmentInventoryList" parameterType="com.spd.warehouse.domain.DepartmentInventoryQuery" resultMap="DepartmentInventoryResult">
+        SELECT
+            A.KS_NO AS KS_NO,
+            B.CODE AS KS_CODE,
+            B.NAME AS KS_NAME,
+            A.HC_NO AS HC_NO,
+            C.CODE AS HC_CODE,
+            C.NAME AS HC_NAME,
+            C.GG AS GG,
+            C.XH AS XH,
+            C.DW AS DW,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &lt; TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.KCYS_SL ELSE 0 END), 0) AS QC_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &lt; TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.KCYS_JE ELSE 0 END), 0) AS QC_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('CK')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS CK_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('CK')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS CK_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('TK')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS TK_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('TK')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS TK_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('DR')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS DR_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('DR')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS DR_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('DC')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS DC_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('DC')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS DC_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('KSXH')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS KSXH_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('KSXH')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS KSXH_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('ZZJ')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS ZZJ_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('ZZJ')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS ZZJ_JE,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('ZZT')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.SL ELSE 0 END), 0) AS ZZT_SL,
+            NVL(SUM(CASE WHEN 
+                <if test="qcDate != null and qcDate != ''">
+                  A.DT_FHR &gt;= TO_DATE(#{qcDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND A.SHEET_LX IN ('ZZT')
+                </if>
+                <if test="qcDate == null or qcDate == ''">
+                  1=2
+                </if>
+             THEN A.JE ELSE 0 END), 0) AS ZZT_JE,
+            NVL(SUM(A.KCYS_SL), 0) AS JC_SL,
+            NVL(SUM(A.KCYS_JE), 0) AS JC_JE
+        FROM
+            VIEW_ZS_HC_KS_ALL_DETAIL A
+            LEFT JOIN T_BI_KS B ON A.KS_NO = B.ID
+            LEFT JOIN T_HC_INFO C ON A.HC_NO = C.ID
+        WHERE
+            1 = 1
+            <if test="ksName != null and ksName != ''">
+                AND B.NAME LIKE '%' || #{ksName} || '%'
+            </if>
+            <if test="hcName != null and hcName != ''">
+                AND C.NAME LIKE '%' || #{hcName} || '%'
+            </if>
+            <if test="hcCode != null and hcCode != ''">
+                AND C.CODE LIKE '%' || #{hcCode} || '%'
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND A.DT_FHR &lt;= TO_DATE(#{endDate} || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+            </if>
+        GROUP BY
+            A.KS_NO,
+            B.CODE,
+            B.NAME,
+            A.HC_NO,
+            C.CODE,
+            C.NAME,
+            C.GG,
+            C.XH,
+            C.DW
+    </select>
+
+</mapper> 

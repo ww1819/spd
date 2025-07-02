@@ -92,10 +92,22 @@ spring:
             slave:
                 # 从数据源开关/默认关闭
                 enabled: true
-                url: jdbc:oracle:thin:@localhost:1521:orcl
+                url: jdbc:oracle:thin:@localhost:1521:orcl?characterEncoding=UTF-8&useUnicode=true&oracle.jdbc.defaultNChar=false&oracle.jdbc.defaultNClob=false
                 username: cesoft
                 password: cesoft2018
                 driver-class-name: oracle.jdbc.driver.OracleDriver
+                # Oracle特有配置
+                initialSize: 5
+                minIdle: 10
+                maxActive: 20
+                maxWait: 60000
+                timeBetweenEvictionRunsMillis: 60000
+                minEvictableIdleTimeMillis: 300000
+                maxEvictableIdleTimeMillis: 900000
+                validationQuery: SELECT 1 FROM DUAL
+                testWhileIdle: true
+                testOnBorrow: false
+                testOnReturn: false
             # 初始连接数
             initialSize: 5
             # 最小连接池数量
