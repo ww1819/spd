@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.common.core.domain.entity.SysUser;
+import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdWarehouse;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -58,6 +59,9 @@ public class BasApply extends BaseEntity
 
     /** 操作人对象 */
     private SysUser user;
+
+    /** 科室对象 */
+    private FdDepartment department;
 
     public void setId(Long id) 
     {
@@ -176,5 +180,13 @@ public class BasApply extends BaseEntity
 
     public void setDepartmentId(Long departmentId) {
         this.departmentId = departmentId;
+    }
+
+    public FdDepartment getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(FdDepartment department) {
+        this.department = department;
     }
 }
