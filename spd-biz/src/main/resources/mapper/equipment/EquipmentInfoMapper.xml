@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.EquipmentInfoMapper">
+    
+    <resultMap type="EquipmentInfo" id="EquipmentInfoResult">
+        <result property="id"    column="id"    />
+        <result property="assetCode"    column="asset_code"    />
+        <result property="hospitalCode"    column="hospital_code"    />
+        <result property="barcode"    column="barcode"    />
+        <result property="assetName"    column="asset_name"    />
+        <result property="assetAlias"    column="asset_alias"    />
+        <result property="auxiliaryCategory"    column="auxiliary_category"    />
+        <result property="assetStatus"    column="asset_status"    />
+        <result property="financialCategory"    column="financial_category"    />
+        <result property="financialCode"    column="financial_code"    />
+        <result property="brand"    column="brand"    />
+        <result property="origin"    column="origin"    />
+        <result property="country"    column="country"    />
+        <result property="specification"    column="specification"    />
+        <result property="model"    column="model"    />
+        <result property="unit"    column="unit"    />
+        <result property="archiveCode"    column="archive_code"    />
+        <result property="serialNumber"    column="serial_number"    />
+        <result property="assetManager"    column="asset_manager"    />
+        <result property="maintenanceManager"    column="maintenance_manager"    />
+        <result property="useDepartment"    column="use_department"    />
+        <result property="manageDepartment"    column="manage_department"    />
+        <result property="storageLocation"    column="storage_location"    />
+        <result property="assetType"    column="asset_type"    />
+        <result property="factoryNumber"    column="factory_number"    />
+        <result property="productionDate"    column="production_date"    />
+        <result property="registrationNumber"    column="registration_number"    />
+        <result property="expectedOperationDate"    column="expected_operation_date"    />
+        <result property="fundSource"    column="fund_source"    />
+        <result property="invoiceNumber"    column="invoice_number"    />
+        <result property="invoiceAmount"    column="invoice_amount"    />
+        <result property="attachedAssetFlag"    column="attached_asset_flag"    />
+        <result property="emergencyAsset"    column="emergency_asset"    />
+        <result property="specialAsset"    column="special_asset"    />
+        <result property="measurementAsset"    column="measurement_asset"    />
+        <result property="attachedMaterials"    column="attached_materials"    />
+        <result property="benefitAnalysis"    column="benefit_analysis"    />
+        <result property="remark"    column="remark"    />
+        <result property="power"    column="power"    />
+        <result property="theoryOperationTime"    column="theory_operation_time"    />
+        <result property="publicEquipment"    column="public_equipment"    />
+        <result property="creator"    column="creator"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="modifier"    column="modifier"    />
+        <result property="modifyTime"    column="modify_time"    />
+        <result property="archiveUsage"    column="archive_usage"    />
+        <result property="contractConsistent"    column="contract_consistent"    />
+        <result property="specialNetworkAsset"    column="special_network_asset"    />
+        <result property="building"    column="building"    />
+        <result property="floor"    column="floor"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="contractName"    column="contract_name"    />
+        <result property="contractPrice"    column="contract_price"    />
+        <result property="signDate"    column="sign_date"    />
+        <result property="purchaseDate"    column="purchase_date"    />
+        <result property="acceptanceDate"    column="acceptance_date"    />
+        <result property="reviewTime"    column="review_time"    />
+        <result property="warrantyExpireDate"    column="warranty_expire_date"    />
+        <result property="bidDate"    column="bid_date"    />
+        <result property="supplyNoticeDate"    column="supply_notice_date"    />
+        <result property="firstAcceptanceDate"    column="first_acceptance_date"    />
+        <result property="deliveryDeadline"    column="delivery_deadline"    />
+        <result property="secondAcceptanceDate"    column="second_acceptance_date"    />
+        <result property="warrantyOutDate"    column="warranty_out_date"    />
+        <result property="supplier"    column="supplier"    />
+        <result property="supplierContact"    column="supplier_contact"    />
+        <result property="supplierPhone"    column="supplier_phone"    />
+        <result property="maintenanceCompany"    column="maintenance_company"    />
+        <result property="maintenanceContact"    column="maintenance_contact"    />
+        <result property="maintenancePhone"    column="maintenance_phone"    />
+        <result property="manufacturer"    column="manufacturer"    />
+        <result property="purchaseMethod"    column="purchase_method"    />
+        <result property="biddingForm"    column="bidding_form"    />
+        <result property="singleBudget"    column="single_budget"    />
+        <result property="projectBasis"    column="project_basis"    />
+        <result property="biddingNumber"    column="bidding_number"    />
+        <result property="biddingDate"    column="bidding_date"    />
+        <result property="biddingAmount"    column="bidding_amount"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectEquipmentInfoVo">
+        select id, asset_code, hospital_code, barcode, asset_name, asset_alias, auxiliary_category, asset_status, financial_category, financial_code, brand, origin, country, specification, model, unit, archive_code, serial_number, asset_manager, maintenance_manager, use_department, manage_department, storage_location, asset_type, factory_number, production_date, registration_number, expected_operation_date, fund_source, invoice_number, invoice_amount, attached_asset_flag, emergency_asset, special_asset, measurement_asset, attached_materials, benefit_analysis, remark, power, theory_operation_time, public_equipment, creator, create_time, modifier, modify_time, archive_usage, contract_consistent, special_network_asset, building, floor, quantity, contract_name, contract_price, sign_date, purchase_date, acceptance_date, review_time, warranty_expire_date, bid_date, supply_notice_date, first_acceptance_date, delivery_deadline, second_acceptance_date, warranty_out_date, supplier, supplier_contact, supplier_phone, maintenance_company, maintenance_contact, maintenance_phone, manufacturer, purchase_method, bidding_form, single_budget, project_basis, bidding_number, bidding_date, bidding_amount, del_flag, create_by, update_by, update_time from equipment_info
+    </sql>
+
+    <select id="selectEquipmentInfoList" parameterType="EquipmentInfo" resultMap="EquipmentInfoResult">
+        <include refid="selectEquipmentInfoVo"/>
+        <where>  
+            <if test="assetCode != null  and assetCode != ''"> and asset_code like concat('%', #{assetCode}, '%')</if>
+            <if test="assetName != null  and assetName != ''"> and asset_name like concat('%', #{assetName}, '%')</if>
+            <if test="useDepartment != null  and useDepartment != ''"> and use_department like concat('%', #{useDepartment}, '%')</if>
+            <if test="assetStatus != null  and assetStatus != ''"> and asset_status = #{assetStatus}</if>
+            <if test="assetType != null  and assetType != ''"> and asset_type = #{assetType}</if>
+            <if test="supplier != null  and supplier != ''"> and supplier like concat('%', #{supplier}, '%')</if>
+            <if test="brand != null  and brand != ''"> and brand like concat('%', #{brand}, '%')</if>
+            <if test="params.beginDate != null and params.beginDate != ''"><!-- 开始时间检索 -->
+                and date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginDate},'%y%m%d')
+            </if>
+            <if test="params.endDate != null and params.endDate != ''"><!-- 结束时间检索 -->
+                and date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endDate},'%y%m%d')
+            </if>
+            and del_flag = '0'
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectEquipmentInfoById" parameterType="String" resultMap="EquipmentInfoResult">
+        <include refid="selectEquipmentInfoVo"/>
+        where id = #{id} and del_flag = '0'
+    </select>
+
+    <select id="selectEquipmentInfoByAssetCode" parameterType="String" resultMap="EquipmentInfoResult">
+        <include refid="selectEquipmentInfoVo"/>
+        where asset_code = #{assetCode} and del_flag = '0'
+    </select>
+        
+    <insert id="insertEquipmentInfo" parameterType="EquipmentInfo" useGeneratedKeys="false">
+        insert into equipment_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="assetCode != null">asset_code,</if>
+            <if test="hospitalCode != null">hospital_code,</if>
+            <if test="barcode != null">barcode,</if>
+            <if test="assetName != null">asset_name,</if>
+            <if test="assetAlias != null">asset_alias,</if>
+            <if test="auxiliaryCategory != null">auxiliary_category,</if>
+            <if test="assetStatus != null">asset_status,</if>
+            <if test="financialCategory != null">financial_category,</if>
+            <if test="financialCode != null">financial_code,</if>
+            <if test="brand != null">brand,</if>
+            <if test="origin != null">origin,</if>
+            <if test="country != null">country,</if>
+            <if test="specification != null">specification,</if>
+            <if test="model != null">model,</if>
+            <if test="unit != null">unit,</if>
+            <if test="archiveCode != null">archive_code,</if>
+            <if test="serialNumber != null">serial_number,</if>
+            <if test="assetManager != null">asset_manager,</if>
+            <if test="maintenanceManager != null">maintenance_manager,</if>
+            <if test="useDepartment != null">use_department,</if>
+            <if test="manageDepartment != null">manage_department,</if>
+            <if test="storageLocation != null">storage_location,</if>
+            <if test="assetType != null">asset_type,</if>
+            <if test="factoryNumber != null">factory_number,</if>
+            <if test="productionDate != null">production_date,</if>
+            <if test="registrationNumber != null">registration_number,</if>
+            <if test="expectedOperationDate != null">expected_operation_date,</if>
+            <if test="fundSource != null">fund_source,</if>
+            <if test="invoiceNumber != null">invoice_number,</if>
+            <if test="invoiceAmount != null">invoice_amount,</if>
+            <if test="attachedAssetFlag != null">attached_asset_flag,</if>
+            <if test="emergencyAsset != null">emergency_asset,</if>
+            <if test="specialAsset != null">special_asset,</if>
+            <if test="measurementAsset != null">measurement_asset,</if>
+            <if test="attachedMaterials != null">attached_materials,</if>
+            <if test="benefitAnalysis != null">benefit_analysis,</if>
+            <if test="remark != null">remark,</if>
+            <if test="power != null">power,</if>
+            <if test="theoryOperationTime != null">theory_operation_time,</if>
+            <if test="publicEquipment != null">public_equipment,</if>
+            <if test="creator != null">creator,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="modifier != null">modifier,</if>
+            <if test="modifyTime != null">modify_time,</if>
+            <if test="archiveUsage != null">archive_usage,</if>
+            <if test="contractConsistent != null">contract_consistent,</if>
+            <if test="specialNetworkAsset != null">special_network_asset,</if>
+            <if test="building != null">building,</if>
+            <if test="floor != null">floor,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="contractName != null">contract_name,</if>
+            <if test="contractPrice != null">contract_price,</if>
+            <if test="signDate != null">sign_date,</if>
+            <if test="purchaseDate != null">purchase_date,</if>
+            <if test="acceptanceDate != null">acceptance_date,</if>
+            <if test="reviewTime != null">review_time,</if>
+            <if test="warrantyExpireDate != null">warranty_expire_date,</if>
+            <if test="bidDate != null">bid_date,</if>
+            <if test="supplyNoticeDate != null">supply_notice_date,</if>
+            <if test="firstAcceptanceDate != null">first_acceptance_date,</if>
+            <if test="deliveryDeadline != null">delivery_deadline,</if>
+            <if test="secondAcceptanceDate != null">second_acceptance_date,</if>
+            <if test="warrantyOutDate != null">warranty_out_date,</if>
+            <if test="supplier != null">supplier,</if>
+            <if test="supplierContact != null">supplier_contact,</if>
+            <if test="supplierPhone != null">supplier_phone,</if>
+            <if test="maintenanceCompany != null">maintenance_company,</if>
+            <if test="maintenanceContact != null">maintenance_contact,</if>
+            <if test="maintenancePhone != null">maintenance_phone,</if>
+            <if test="manufacturer != null">manufacturer,</if>
+            <if test="purchaseMethod != null">purchase_method,</if>
+            <if test="biddingForm != null">bidding_form,</if>
+            <if test="singleBudget != null">single_budget,</if>
+            <if test="projectBasis != null">project_basis,</if>
+            <if test="biddingNumber != null">bidding_number,</if>
+            <if test="biddingDate != null">bidding_date,</if>
+            <if test="biddingAmount != null">bidding_amount,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="assetCode != null">#{assetCode},</if>
+            <if test="hospitalCode != null">#{hospitalCode},</if>
+            <if test="barcode != null">#{barcode},</if>
+            <if test="assetName != null">#{assetName},</if>
+            <if test="assetAlias != null">#{assetAlias},</if>
+            <if test="auxiliaryCategory != null">#{auxiliaryCategory},</if>
+            <if test="assetStatus != null">#{assetStatus},</if>
+            <if test="financialCategory != null">#{financialCategory},</if>
+            <if test="financialCode != null">#{financialCode},</if>
+            <if test="brand != null">#{brand},</if>
+            <if test="origin != null">#{origin},</if>
+            <if test="country != null">#{country},</if>
+            <if test="specification != null">#{specification},</if>
+            <if test="model != null">#{model},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="archiveCode != null">#{archiveCode},</if>
+            <if test="serialNumber != null">#{serialNumber},</if>
+            <if test="assetManager != null">#{assetManager},</if>
+            <if test="maintenanceManager != null">#{maintenanceManager},</if>
+            <if test="useDepartment != null">#{useDepartment},</if>
+            <if test="manageDepartment != null">#{manageDepartment},</if>
+            <if test="storageLocation != null">#{storageLocation},</if>
+            <if test="assetType != null">#{assetType},</if>
+            <if test="factoryNumber != null">#{factoryNumber},</if>
+            <if test="productionDate != null">#{productionDate},</if>
+            <if test="registrationNumber != null">#{registrationNumber},</if>
+            <if test="expectedOperationDate != null">#{expectedOperationDate},</if>
+            <if test="fundSource != null">#{fundSource},</if>
+            <if test="invoiceNumber != null">#{invoiceNumber},</if>
+            <if test="invoiceAmount != null">#{invoiceAmount},</if>
+            <if test="attachedAssetFlag != null">#{attachedAssetFlag},</if>
+            <if test="emergencyAsset != null">#{emergencyAsset},</if>
+            <if test="specialAsset != null">#{specialAsset},</if>
+            <if test="measurementAsset != null">#{measurementAsset},</if>
+            <if test="attachedMaterials != null">#{attachedMaterials},</if>
+            <if test="benefitAnalysis != null">#{benefitAnalysis},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="power != null">#{power},</if>
+            <if test="theoryOperationTime != null">#{theoryOperationTime},</if>
+            <if test="publicEquipment != null">#{publicEquipment},</if>
+            <if test="creator != null">#{creator},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="modifier != null">#{modifier},</if>
+            <if test="modifyTime != null">#{modifyTime},</if>
+            <if test="archiveUsage != null">#{archiveUsage},</if>
+            <if test="contractConsistent != null">#{contractConsistent},</if>
+            <if test="specialNetworkAsset != null">#{specialNetworkAsset},</if>
+            <if test="building != null">#{building},</if>
+            <if test="floor != null">#{floor},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="contractName != null">#{contractName},</if>
+            <if test="contractPrice != null">#{contractPrice},</if>
+            <if test="signDate != null">#{signDate},</if>
+            <if test="purchaseDate != null">#{purchaseDate},</if>
+            <if test="acceptanceDate != null">#{acceptanceDate},</if>
+            <if test="reviewTime != null">#{reviewTime},</if>
+            <if test="warrantyExpireDate != null">#{warrantyExpireDate},</if>
+            <if test="bidDate != null">#{bidDate},</if>
+            <if test="supplyNoticeDate != null">#{supplyNoticeDate},</if>
+            <if test="firstAcceptanceDate != null">#{firstAcceptanceDate},</if>
+            <if test="deliveryDeadline != null">#{deliveryDeadline},</if>
+            <if test="secondAcceptanceDate != null">#{secondAcceptanceDate},</if>
+            <if test="warrantyOutDate != null">#{warrantyOutDate},</if>
+            <if test="supplier != null">#{supplier},</if>
+            <if test="supplierContact != null">#{supplierContact},</if>
+            <if test="supplierPhone != null">#{supplierPhone},</if>
+            <if test="maintenanceCompany != null">#{maintenanceCompany},</if>
+            <if test="maintenanceContact != null">#{maintenanceContact},</if>
+            <if test="maintenancePhone != null">#{maintenancePhone},</if>
+            <if test="manufacturer != null">#{manufacturer},</if>
+            <if test="purchaseMethod != null">#{purchaseMethod},</if>
+            <if test="biddingForm != null">#{biddingForm},</if>
+            <if test="singleBudget != null">#{singleBudget},</if>
+            <if test="projectBasis != null">#{projectBasis},</if>
+            <if test="biddingNumber != null">#{biddingNumber},</if>
+            <if test="biddingDate != null">#{biddingDate},</if>
+            <if test="biddingAmount != null">#{biddingAmount},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateEquipmentInfo" parameterType="EquipmentInfo">
+        update equipment_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="assetCode != null">asset_code = #{assetCode},</if>
+            <if test="hospitalCode != null">hospital_code = #{hospitalCode},</if>
+            <if test="barcode != null">barcode = #{barcode},</if>
+            <if test="assetName != null">asset_name = #{assetName},</if>
+            <if test="assetAlias != null">asset_alias = #{assetAlias},</if>
+            <if test="auxiliaryCategory != null">auxiliary_category = #{auxiliaryCategory},</if>
+            <if test="assetStatus != null">asset_status = #{assetStatus},</if>
+            <if test="financialCategory != null">financial_category = #{financialCategory},</if>
+            <if test="financialCode != null">financial_code = #{financialCode},</if>
+            <if test="brand != null">brand = #{brand},</if>
+            <if test="origin != null">origin = #{origin},</if>
+            <if test="country != null">country = #{country},</if>
+            <if test="specification != null">specification = #{specification},</if>
+            <if test="model != null">model = #{model},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="archiveCode != null">archive_code = #{archiveCode},</if>
+            <if test="serialNumber != null">serial_number = #{serialNumber},</if>
+            <if test="assetManager != null">asset_manager = #{assetManager},</if>
+            <if test="maintenanceManager != null">maintenance_manager = #{maintenanceManager},</if>
+            <if test="useDepartment != null">use_department = #{useDepartment},</if>
+            <if test="manageDepartment != null">manage_department = #{manageDepartment},</if>
+            <if test="storageLocation != null">storage_location = #{storageLocation},</if>
+            <if test="assetType != null">asset_type = #{assetType},</if>
+            <if test="factoryNumber != null">factory_number = #{factoryNumber},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="registrationNumber != null">registration_number = #{registrationNumber},</if>
+            <if test="expectedOperationDate != null">expected_operation_date = #{expectedOperationDate},</if>
+            <if test="fundSource != null">fund_source = #{fundSource},</if>
+            <if test="invoiceNumber != null">invoice_number = #{invoiceNumber},</if>
+            <if test="invoiceAmount != null">invoice_amount = #{invoiceAmount},</if>
+            <if test="attachedAssetFlag != null">attached_asset_flag = #{attachedAssetFlag},</if>
+            <if test="emergencyAsset != null">emergency_asset = #{emergencyAsset},</if>
+            <if test="specialAsset != null">special_asset = #{specialAsset},</if>
+            <if test="measurementAsset != null">measurement_asset = #{measurementAsset},</if>
+            <if test="attachedMaterials != null">attached_materials = #{attachedMaterials},</if>
+            <if test="benefitAnalysis != null">benefit_analysis = #{benefitAnalysis},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="power != null">power = #{power},</if>
+            <if test="theoryOperationTime != null">theory_operation_time = #{theoryOperationTime},</if>
+            <if test="publicEquipment != null">public_equipment = #{publicEquipment},</if>
+            <if test="creator != null">creator = #{creator},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="modifier != null">modifier = #{modifier},</if>
+            <if test="modifyTime != null">modify_time = #{modifyTime},</if>
+            <if test="archiveUsage != null">archive_usage = #{archiveUsage},</if>
+            <if test="contractConsistent != null">contract_consistent = #{contractConsistent},</if>
+            <if test="specialNetworkAsset != null">special_network_asset = #{specialNetworkAsset},</if>
+            <if test="building != null">building = #{building},</if>
+            <if test="floor != null">floor = #{floor},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="contractName != null">contract_name = #{contractName},</if>
+            <if test="contractPrice != null">contract_price = #{contractPrice},</if>
+            <if test="signDate != null">sign_date = #{signDate},</if>
+            <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>
+            <if test="acceptanceDate != null">acceptance_date = #{acceptanceDate},</if>
+            <if test="reviewTime != null">review_time = #{reviewTime},</if>
+            <if test="warrantyExpireDate != null">warranty_expire_date = #{warrantyExpireDate},</if>
+            <if test="bidDate != null">bid_date = #{bidDate},</if>
+            <if test="supplyNoticeDate != null">supply_notice_date = #{supplyNoticeDate},</if>
+            <if test="firstAcceptanceDate != null">first_acceptance_date = #{firstAcceptanceDate},</if>
+            <if test="deliveryDeadline != null">delivery_deadline = #{deliveryDeadline},</if>
+            <if test="secondAcceptanceDate != null">second_acceptance_date = #{secondAcceptanceDate},</if>
+            <if test="warrantyOutDate != null">warranty_out_date = #{warrantyOutDate},</if>
+            <if test="supplier != null">supplier = #{supplier},</if>
+            <if test="supplierContact != null">supplier_contact = #{supplierContact},</if>
+            <if test="supplierPhone != null">supplier_phone = #{supplierPhone},</if>
+            <if test="maintenanceCompany != null">maintenance_company = #{maintenanceCompany},</if>
+            <if test="maintenanceContact != null">maintenance_contact = #{maintenanceContact},</if>
+            <if test="maintenancePhone != null">maintenance_phone = #{maintenancePhone},</if>
+            <if test="manufacturer != null">manufacturer = #{manufacturer},</if>
+            <if test="purchaseMethod != null">purchase_method = #{purchaseMethod},</if>
+            <if test="biddingForm != null">bidding_form = #{biddingForm},</if>
+            <if test="singleBudget != null">single_budget = #{singleBudget},</if>
+            <if test="projectBasis != null">project_basis = #{projectBasis},</if>
+            <if test="biddingNumber != null">bidding_number = #{biddingNumber},</if>
+            <if test="biddingDate != null">bidding_date = #{biddingDate},</if>
+            <if test="biddingAmount != null">bidding_amount = #{biddingAmount},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteEquipmentInfoById" parameterType="String">
+        update equipment_info set del_flag = '2' where id = #{id}
+    </delete>
+
+    <delete id="deleteEquipmentInfoByIds" parameterType="String">
+        update equipment_info set del_flag = '2' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectEquipmentInfoStatistics" parameterType="EquipmentInfo" resultMap="EquipmentInfoResult">
+        select 
+            asset_type,
+            count(*) as quantity,
+            sum(invoice_amount) as invoice_amount
+        from equipment_info
+        <where>
+            <if test="assetStatus != null and assetStatus != ''"> and asset_status = #{assetStatus}</if>
+            <if test="useDepartment != null and useDepartment != ''"> and use_department = #{useDepartment}</if>
+            and del_flag = '0'
+        </where>
+        group by asset_type
+    </select>
+</mapper> 

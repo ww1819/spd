@@ -342,16 +342,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where paren_id = #{parenId}
     </update>
 
-<!--    <delete id="deleteStkIoBillById" parameterType="Long">-->
-<!--        delete from stk_io_bill where id = #{id}-->
-<!--    </delete>-->
-
-<!--    <delete id="deleteStkIoBillByIds" parameterType="String">-->
-<!--        delete from stk_io_bill where id in-->
-<!--        <foreach item="id" collection="array" open="(" separator="," close=")">-->
-<!--            #{id}-->
-<!--        </foreach>-->
-<!--    </delete>-->
 
     <select id="selectStkIobillEntryMaterialIsExist" parameterType="Long" resultType="int">
         select count(*) from stk_io_bill_entry

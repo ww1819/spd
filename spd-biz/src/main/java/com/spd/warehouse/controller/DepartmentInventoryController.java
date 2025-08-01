@@ -37,4 +37,4 @@ public class DepartmentInventoryController extends BaseController {
         List<DepartmentInventoryVo> list = departmentInventoryService.selectDepartmentInventoryList(query);
         return success(list);
     }
-} 
+}
