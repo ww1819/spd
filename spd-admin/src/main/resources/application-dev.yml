@@ -93,7 +93,7 @@ spring:
                 # 从数据源开关/默认关闭
                 enabled: true
                 url: jdbc:oracle:thin:@localhost:1521:orcl?characterEncoding=UTF-8&useUnicode=true&oracle.jdbc.defaultNChar=false&oracle.jdbc.defaultNClob=false
-                username: cesoft
+                username: cesoft_xhzxy
                 password: cesoft2018
                 driver-class-name: oracle.jdbc.driver.OracleDriver
                 # Oracle特有配置

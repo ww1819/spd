@@ -9,6 +9,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="applyBillNo"    column="apply_bill_no"    />
         <result property="applyBillDate"    column="apply_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
         <result property="userId"    column="user_id"    />
         <result property="applyBillStatus"    column="apply_bill_status"    />
         <result property="delFlag"    column="del_flag"    />
@@ -25,6 +26,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="wId"     />
         <result property="code"  column="warehouseCode"   />
         <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
     </resultMap>
 
     <resultMap id="userResult" type="SysUser">

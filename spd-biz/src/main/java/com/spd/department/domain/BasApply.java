@@ -36,6 +36,9 @@ public class BasApply extends BaseEntity
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    @Excel(name = "科室ID")
+    private Long departmentId;
+
     /** 操作人ID */
     @Excel(name = "操作人ID")
     private Long userId;
@@ -165,5 +168,13 @@ public class BasApply extends BaseEntity
                 .append("warehouse", getWarehouse())
                 .append("user", getUser())
             .toString();
+    }
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
     }
 }
