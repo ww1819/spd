@@ -3,7 +3,6 @@ package com.spd.warehouse.service;
 import java.util.List;
 import java.util.Map;
 
-import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 
 /**
@@ -163,4 +162,6 @@ public interface IStkIoBillService
      * @return
      */
     List<StkIoBill> getMonthHandleDataList(String beginDate, String endDate);
+
+
 }

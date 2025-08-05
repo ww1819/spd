@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spd.common.utils.uuid.UUID7;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.equipment.mapper.EquipmentInfoMapper;
@@ -85,7 +86,7 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
     public int insertEquipmentInfo(EquipmentInfo equipmentInfo)
     {
                         // 生成UUID作为主键
-                equipmentInfo.setId(UUID.randomUUID().toString().replace("-", ""));
+                equipmentInfo.setId(UUID7.generateUUID7Simple());
                 
                 // 设置默认删除标志
                 equipmentInfo.setDelFlag("0");

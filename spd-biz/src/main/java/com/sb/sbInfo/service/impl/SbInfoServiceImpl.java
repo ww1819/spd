@@ -119,8 +119,4 @@ public class SbInfoServiceImpl implements SbInfoService {
         return labelInfo;
     }
 
-    public static void main(String[] args) {
-        SbInfoServiceImpl sbInfoService = new SbInfoServiceImpl();
-        String labelInfo = sbInfoService.getSbLabelInfo("SB123456");
-    }
 }

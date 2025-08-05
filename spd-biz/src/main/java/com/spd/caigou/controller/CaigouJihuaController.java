@@ -1,6 +1,7 @@
 package com.spd.caigou.controller;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
@@ -110,7 +111,6 @@ public class CaigouJihuaController extends BaseController
     {
         return toAjax(stkIoBillService.deleteStkIoBillById(ids));
     }
-
 
 
 }
