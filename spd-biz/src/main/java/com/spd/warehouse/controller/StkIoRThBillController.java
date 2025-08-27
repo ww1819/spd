@@ -1,6 +1,7 @@
 package com.spd.warehouse.controller;
 
 import com.spd.common.core.controller.BaseController;
+import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.StringUtils;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -35,7 +36,7 @@ public class StkIoRThBillController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('inWarehouse:inWarehouseQuery:list')")
     @GetMapping("/RTHList")
-    public List<StkRTHVo> RTHList(StkIoBill stkIoBill)
+    public TableDataInfo RTHList(StkIoBill stkIoBill)
     {
         List<StkRTHVo> stkRTHVoList = new ArrayList<StkRTHVo>();
         List<Map<String, Object>> mapList = stkIoBillService.selectRTHStkIoBillList(stkIoBill);
@@ -78,7 +79,7 @@ public class StkIoRThBillController extends BaseController
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        return stkRTHVoList;
+        return getDataTable(stkRTHVoList);
     }
 
     /**
