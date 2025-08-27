@@ -35,7 +35,11 @@ public class FdFinanceCategory extends BaseEntity
     private String financeCategoryContact;
 
     /** 删除标识 */
+    @Excel(name = "删除标识")
     private Integer delFlag;
+
+    @Excel(name = "使用状态", readConverterExp = "停用/在用")
+    private String isUse;
 
     public void setFinanceCategoryId(Long financeCategoryId) 
     {
@@ -105,6 +109,15 @@ public class FdFinanceCategory extends BaseEntity
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
+                .append("isUser", getIsUse())
             .toString();
+    }
+
+    public String getIsUse() {
+        return isUse;
+    }
+
+    public void setIsUse(String isUse) {
+        this.isUse = isUse;
     }
 }
