@@ -150,6 +150,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </choose>
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="billType != null "> and stk.bill_Type = #{billType}</if>
     </select>
 
     <select id="selectRTHStkIoBillSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
@@ -237,6 +238,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </choose>
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="billType != null "> and stk.bill_Type = #{billType}</if>
     </select>
 
 
