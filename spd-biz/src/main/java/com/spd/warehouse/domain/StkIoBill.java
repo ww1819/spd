@@ -457,6 +457,8 @@ public class StkIoBill extends BaseEntity
             .append("isMonthInit", getIsMonthInit())
                 .append("createrName", getCreaterName())
                 .append("auditPersonName", getAuditPersonName())
+                .append("creater", getCreater())
+                .append("auditPerson", getAuditPerson())
             .toString();
     }
 
