@@ -302,6 +302,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="invoiceTime != null">invoice_time,</if>
             <if test="proPerson != null">pro_person,</if>
             <if test="isMonthInit != null">is_month_init,</if>
+            <if test="auditBy != null">audit_by,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">#{billNo},</if>
@@ -327,6 +328,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="invoiceTime != null">#{invoiceTime},</if>
             <if test="proPerson != null">#{proPerson},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
+            <if test="auditBy != null">#{auditBy},</if>
          </trim>
     </insert>
 
@@ -356,6 +358,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="invoiceTime != null">invoice_time = #{invoiceTime},</if>
             <if test="proPerson != null">pro_person = #{proPerson},</if>
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
         </trim>
         where id = #{id}
     </update>

@@ -130,6 +130,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditDate != null">audit_date,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="applyBillNo != null">#{applyBillNo},</if>
@@ -144,6 +146,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditDate != null">#{auditDate},</if>
          </trim>
     </insert>
 
@@ -162,6 +166,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
         </trim>
         where id = #{id}
     </update>
