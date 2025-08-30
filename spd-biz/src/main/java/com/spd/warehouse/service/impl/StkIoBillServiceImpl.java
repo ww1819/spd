@@ -65,6 +65,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         for(StkIoBillEntry entry : stkIoBillEntryList){
             Long materialId = entry.getMaterialId();
             FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
+            entry.setMaterial(fdMaterial);
             materialList.add(fdMaterial);
         }
         stkIoBill.setMaterialList(materialList);
