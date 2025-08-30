@@ -48,14 +48,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap id="createrResult" type="SysUser">
-        <id     property="userId"    column="createUserId"     />
+        <id     property="userId"    column="create_by"     />
         <result property="nickName"  column="createNickName"   />
         <result property="userName"  column="createUserName"   />
     </resultMap>
 
 
     <resultMap id="auditPersonResult" type="SysUser">
-        <id     property="userId"    column="auditUserId"     />
+        <id     property="userId"    column="audit_by"     />
         <result property="nickName"  column="auditNickName"   />
         <result property="userName"  column="auditUserName"   />
     </resultMap>
@@ -80,10 +80,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectBasApplyVo">
         select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id,
                 a.apply_bill_status, a.del_flag, a.create_by, a.create_time, a.update_by,
-                a.update_time, a.remark,w.id wId,w.code warehouseCode,w.name warehouseName,
+                a.update_time, a.remark,w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
-                cu.user_id createUserId,cu.nick_name createNickName,cu.user_name createUserName,
-                au.user_id auditUserId,au.nick_name auditNickName,au.user_name auditUserName
+               cu.nick_name createNickName,cu.user_name createUserName,
+               au.nick_name auditNickName,au.user_name auditUserName
         from bas_apply a
         left join fd_warehouse w on a.warehouse_id = w.id
         left join sys_user u on a.user_id = u.user_id

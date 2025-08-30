@@ -66,13 +66,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap id="auditUserResult" type="SysUser">
-        <id     property="userId"    column="auditUserId"     />
+        <id     property="userId"    column="audit_by"     />
         <result property="nickName"  column="auditNickName"   />
         <result property="userName"  column="auditUserName"   />
     </resultMap>
 
     <resultMap id="createrResult" type="SysUser">
-        <id     property="userId"    column="createrId"     />
+        <id     property="userId"    column="create_by"     />
         <result property="nickName"  column="createrNickName"   />
         <result property="userName"  column="createrUserName"   />
     </resultMap>
@@ -109,20 +109,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, stk.bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag,stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
-				stk.invoice_time,stk.pro_person,
+				stk.invoice_time,stk.pro_person,stk.audit_by,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				u.user_id userId,u.nick_name nickName,u.user_name userName,
-               stk.audit_by auditUserId,au.nick_name auditNickName,au.user_name auditUserName,
-               stk.create_by createrId,cu.nick_name createrNickName,cu.user_name createrUserName
+               au.nick_name auditNickName,au.user_name auditUserName,
+               cu.nick_name createrNickName,cu.user_name createrUserName
         from stk_io_bill stk
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join sys_user u on stk.user_id = u.user_id
         left join sys_user au on stk.audit_by = au.user_id
-        left join sys_user cu on stk.create_by = au.user_id
+        left join sys_user cu on stk.create_by = cu.user_id
     </sql>
 
     <select id="selectStkIoBillList" parameterType="StkIoBill" resultMap="StkIoBillResult">
