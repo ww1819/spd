@@ -48,6 +48,16 @@ public class BasApply extends BaseEntity
     @Excel(name = "申请状态")
     private Integer applyBillStatus;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核时间", width = 70, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date auditDate;
+
+    /** 审核人姓名 */
+    @Excel(name = "审核人")
+    private String auditPersonName;
+    /** 审核人ID */
+    private String auditPersonId;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -62,6 +72,8 @@ public class BasApply extends BaseEntity
 
     /** 科室对象 */
     private FdDepartment department;
+    /** 审核人对象 */
+    private SysUser auditPerson;
 
     public void setId(Long id) 
     {
@@ -188,5 +200,37 @@ public class BasApply extends BaseEntity
 
     public void setDepartment(FdDepartment department) {
         this.department = department;
+    }
+
+    public Date getAuditDate() {
+        return auditDate;
+    }
+
+    public void setAuditDate(Date auditDate) {
+        this.auditDate = auditDate;
+    }
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
+    }
+
+    public String getAuditPersonId() {
+        return auditPersonId;
+    }
+
+    public void setAuditPersonId(String auditPersonId) {
+        this.auditPersonId = auditPersonId;
+    }
+
+    public SysUser getAuditPerson() {
+        return auditPerson;
+    }
+
+    public void setAuditPerson(SysUser auditPerson) {
+        this.auditPerson = auditPerson;
     }
 }
