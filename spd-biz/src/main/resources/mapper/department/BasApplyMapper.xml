@@ -17,10 +17,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="auditDate"    column="audit_date"    />
         <result property="remark"    column="remark"    />
+        <result property="auditPersonName"    column="auditUserName"    />
+        <result property="createrNmae"    column="createUserName"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="creater"    column="id" javaType="SysUser" resultMap="createrResult" />
+        <association property="auditPerson"    column="user_id" javaType="SysUser" resultMap="auditPersonResult" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="FdWarehouse">
@@ -39,6 +45,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="userId"    column="userId"     />
         <result property="nickName"  column="nickName"   />
         <result property="userName"  column="userName"   />
+    </resultMap>
+
+    <resultMap id="createrResult" type="SysUser">
+        <id     property="userId"    column="createUserId"     />
+        <result property="nickName"  column="createNickName"   />
+        <result property="userName"  column="createUserName"   />
+    </resultMap>
+
+
+    <resultMap id="auditPersonResult" type="SysUser">
+        <id     property="userId"    column="auditUserId"     />
+        <result property="nickName"  column="auditNickName"   />
+        <result property="userName"  column="auditUserName"   />
     </resultMap>
 
     <resultMap id="BasApplyBasApplyEntryResult" type="BasApply" extends="BasApplyResult">
@@ -62,11 +81,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id,
                 a.apply_bill_status, a.del_flag, a.create_by, a.create_time, a.update_by,
                 a.update_time, a.remark,w.id wId,w.code warehouseCode,w.name warehouseName,
-                u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName
+                u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
+                cu.user_id createUserId,cu.nick_name createNickName,cu.user_name createUserName,
+                au.user_id auditUserId,au.nick_name auditNickName,au.user_name auditUserName
         from bas_apply a
         left join fd_warehouse w on a.warehouse_id = w.id
         left join sys_user u on a.user_id = u.user_id
         left join fd_department d on a.department_id = d.id
+        left join sys_user cu on a.create_by = cu.user_id
+        left join sys_user au on a.audit_by = au.user_id
     </sql>
 
     <select id="selectBasApplyList" parameterType="BasApply" resultMap="BasApplyResult">

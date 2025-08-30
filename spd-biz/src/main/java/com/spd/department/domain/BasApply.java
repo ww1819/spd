@@ -54,7 +54,7 @@ public class BasApply extends BaseEntity
     private String auditPersonName;
 
     /** 制单人姓名 */
-    @Excel(name = "制单人人")
+    @Excel(name = "制单人")
     private String createrNmae;
 
     /** 删除标识 */
