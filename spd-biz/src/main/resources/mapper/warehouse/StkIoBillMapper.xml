@@ -29,10 +29,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="invoiceTime"    column="invoice_time"    />
         <result property="proPerson"    column="pro_person"    />
         <result property="isMonthInit"    column="is_month_init"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="createrName"    column="createrUserName"    />
+        <result property="auditPersonName"    column="auditUserName"    />
+
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
+        <association property="auditPerson"    column="user_id" javaType="SysUser" resultMap="auditUserResult" />
+        <association property="creater"    column="user_id" javaType="SysUser" resultMap="createrResult" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -57,6 +63,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="userId"    column="userId"     />
         <result property="nickName"  column="nickName"   />
         <result property="userName"  column="userName"   />
+    </resultMap>
+
+    <resultMap id="auditUserResult" type="SysUser">
+        <id     property="userId"    column="auditUserId"     />
+        <result property="nickName"  column="auditNickName"   />
+        <result property="userName"  column="auditUserName"   />
+    </resultMap>
+
+    <resultMap id="createrResult" type="SysUser">
+        <id     property="userId"    column="createrId"     />
+        <result property="nickName"  column="createrNickName"   />
+        <result property="userName"  column="createrUserName"   />
     </resultMap>
 
     <resultMap id="StkIoBillStkIoBillEntryResult" type="StkIoBill" extends="StkIoBillResult">
@@ -95,12 +113,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
-				u.user_id userId,u.nick_name nickName,u.user_name userName
+				u.user_id userId,u.nick_name nickName,u.user_name userName,
+               stk.audit_by auditUserId,au.nick_name auditNickName,au.user_name auditUserName,
+               stk.create_by createrId,cu.nick_name createrNickName,cu.user_name createrUserName
         from stk_io_bill stk
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join sys_user u on stk.user_id = u.user_id
+        left join sys_user au on stk.audit_by = au.user_id
+        left join sys_user cu on stk.create_by = au.user_id
     </sql>
 
     <select id="selectStkIoBillList" parameterType="StkIoBill" resultMap="StkIoBillResult">

@@ -121,12 +121,18 @@ public class StkIoBill extends BaseEntity
     /** 审核人 */
     private SysUser auditPerson;
 
-    /** 审核人ID */
-    private String auditPersonId;
 
     /** 审核人姓名 */
     @Excel(name = "审核人")
     private String auditPersonName;
+
+    /** 制单人 */
+    private SysUser creater;
+
+
+    /** 制单人姓名 */
+    @Excel(name = "制单人")
+    private String createrName;
 
 
     /** 是否月结 */
@@ -424,9 +430,11 @@ public class StkIoBill extends BaseEntity
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
-            .append("updateBy", getUpdateBy())
-            .append("updateTime", getUpdateTime())
-            .append("remark", getRemark())
+                .append("updateBy", getUpdateBy())
+                .append("updateTime", getUpdateTime())
+                .append("auditBy", getAuditBy())
+                .append("auditDate", getAuditDate())
+                .append("remark", getRemark())
             .append("stkIoBillEntryList", getStkIoBillEntryList())
             .append("supplier", getSupplier())
 //            .append("material", getMaterial())
@@ -447,6 +455,8 @@ public class StkIoBill extends BaseEntity
             .append("invoiceTime", getInvoiceTime())
             .append("proPerson", getProPerson())
             .append("isMonthInit", getIsMonthInit())
+                .append("createrName", getCreaterName())
+                .append("auditPersonName", getAuditPersonName())
             .toString();
     }
 
@@ -458,13 +468,6 @@ public class StkIoBill extends BaseEntity
         this.auditPerson = auditPerson;
     }
 
-    public String getAuditPersonId() {
-        return auditPersonId;
-    }
-
-    public void setAuditPersonId(String auditPersonId) {
-        this.auditPersonId = auditPersonId;
-    }
 
     public String getAuditPersonName() {
         return auditPersonName;
@@ -472,5 +475,22 @@ public class StkIoBill extends BaseEntity
 
     public void setAuditPersonName(String auditPersonName) {
         this.auditPersonName = auditPersonName;
+    }
+
+    public SysUser getCreater() {
+        return creater;
+    }
+
+    public void setCreater(SysUser creater) {
+        this.creater = creater;
+    }
+
+
+    public String getCreaterName() {
+        return createrName;
+    }
+
+    public void setCreaterName(String createrName) {
+        this.createrName = createrName;
     }
 }
