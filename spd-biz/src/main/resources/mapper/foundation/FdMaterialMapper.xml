@@ -57,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="fdWarehouseCategory"    column="warehouse_category_id" javaType="FdWarehouseCategory" resultMap="fdWarehouseCategoryResult" />
         <association property="fdUnit"    column="id" javaType="FdUnit" resultMap="fdUnitResult" />
+        <association property="financeCategory"    column="finance_category_id" javaType="FdFinanceCategory" resultMap="financeCategoryResult" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -77,6 +78,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseCategoryName"  column="w_name"   />
     </resultMap>
 
+    <resultMap id="financeCategoryResult" type="FdFinanceCategory">
+        <id     property="financeCategoryId"    column="finance_category_id"     />
+        <result property="financeCategoryCode"  column="cwfl_code"   />
+        <result property="financeCategoryName"  column="cwfl_name"   />
+    </resultMap>
+
     <resultMap id="fdUnitResult" type="FdUnit">
         <id     property="unitId"    column="uid"     />
         <result property="unitCode"  column="u_code"   />
@@ -95,12 +102,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             s.id sid, s.code supplier_code,s.name supplier_name,
             w.warehouse_category_id wid, w.warehouse_category_code w_code,w.warehouse_category_name w_name,
             f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
-            u.unit_id uid,u.unit_code u_code,u.unit_name u_name
+            u.unit_id uid,u.unit_code u_code,u.unit_name u_name,ff.finance_category_code cwfl_code,ff.finance_category_name cwfl_name
         from fd_material m
         left join fd_supplier s on m.supplier_id = s.id
         left join fd_warehouse_category w on m.storeroom_id = w.warehouse_category_id
         left join fd_factory f on m.finance_category_id = f.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category cwfl on m.finance_category_id = cwfl.finance_category_id
     </sql>
 
     <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">

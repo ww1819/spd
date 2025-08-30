@@ -202,6 +202,9 @@ public class FdMaterial extends BaseEntity
     /** 库房分类对象 */
     private FdWarehouseCategory fdWarehouseCategory;
 
+    /** 财务分类对象 */
+    private FdFinanceCategory fdFinanceCategory;
+
     /** 单位分类对象 */
     private FdUnit fdUnit;
 
