@@ -84,8 +84,8 @@ public class StkIoBill extends BaseEntity
     private SysUser user;
 
     /** 审核日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
 
     /** 配送员 */
@@ -117,6 +117,18 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "采购员")
     private Long proPerson;
 
+
+    /** 审核人 */
+    private SysUser auditPerson;
+
+    /** 审核人ID */
+    private String auditPersonId;
+
+    /** 审核人姓名 */
+    @Excel(name = "审核人")
+    private String auditPersonName;
+
+
     /** 是否月结 */
     private Integer isMonthInit;
 
@@ -131,6 +143,8 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：仓库 */
     private String warehouseName;
+
+
 
     private List<FdMaterial> materialList;
 
@@ -434,5 +448,29 @@ public class StkIoBill extends BaseEntity
             .append("proPerson", getProPerson())
             .append("isMonthInit", getIsMonthInit())
             .toString();
+    }
+
+    public SysUser getAuditPerson() {
+        return auditPerson;
+    }
+
+    public void setAuditPerson(SysUser auditPerson) {
+        this.auditPerson = auditPerson;
+    }
+
+    public String getAuditPersonId() {
+        return auditPersonId;
+    }
+
+    public void setAuditPersonId(String auditPersonId) {
+        this.auditPersonId = auditPersonId;
+    }
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
     }
 }
