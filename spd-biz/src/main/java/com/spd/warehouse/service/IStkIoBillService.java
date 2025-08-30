@@ -67,7 +67,7 @@ public interface IStkIoBillService
      * @param id
      * @return 结果
      */
-    int auditStkIoBill(String id);
+    int auditStkIoBill(String id,String auditBy);
 
     /**
      * 新增出库

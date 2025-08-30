@@ -179,7 +179,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
      */
     @Override
     @Transactional
-    public int auditStkIoBill(String id) {
+    public int auditStkIoBill(String id, String auditBy) {
         StkIoBill stkIoBill = stkIoBillMapper.selectStkIoBillById(Long.parseLong(id));
         if(stkIoBill == null){
             throw new ServiceException(String.format("入库业务ID：%s，不存在!", id));
@@ -191,6 +191,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
         stkIoBill.setBillStatus(2);//已审核状态
         stkIoBill.setAuditDate(new Date());
+        stkIoBill.setAuditBy(auditBy);
         int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
         return res;
     }
