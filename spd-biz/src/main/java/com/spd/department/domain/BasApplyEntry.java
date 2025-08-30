@@ -1,6 +1,8 @@
 package com.spd.department.domain;
 
 import java.math.BigDecimal;
+
+import com.spd.foundation.domain.FdMaterial;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -50,6 +52,9 @@ public class BasApplyEntry extends BaseEntity
     /** 批号 */
     @Excel(name = "批号")
     private String batchNumer;
+
+    /** 耗材对象 */
+    private FdMaterial material;
 
     public void setId(Long id) 
     {
@@ -147,5 +152,13 @@ public class BasApplyEntry extends BaseEntity
             .append("batchNumer", getBatchNumer())
             .append("remark", getRemark())
             .toString();
+    }
+
+    public FdMaterial getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(FdMaterial material) {
+        this.material = material;
     }
 }

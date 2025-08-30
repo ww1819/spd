@@ -6,6 +6,8 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -27,6 +29,8 @@ public class BasApplyServiceImpl implements IBasApplyService
 {
     @Autowired
     private BasApplyMapper basApplyMapper;
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
 
     /**
      * 查询科室申领
@@ -37,7 +41,13 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public BasApply selectBasApplyById(Long id)
     {
-        return basApplyMapper.selectBasApplyById(id);
+        BasApply basApply = basApplyMapper.selectBasApplyById(id);
+        List<BasApplyEntry> basApplyEntryList = basApply.getBasApplyEntryList();
+        for (BasApplyEntry basApplyEntry : basApplyEntryList) {
+            FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(basApplyEntry.getMaterialId());
+            basApplyEntry.setMaterial(material);
+        }
+        return basApply;
     }
 
     /**

@@ -75,6 +75,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="batchNo"    column="sub_batch_no"    />
         <result property="batchNumer"    column="sub_batch_numer"    />
         <result property="remark"    column="sub_remark"    />
+        <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="sub_material_id"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
     </resultMap>
 
     <sql id="selectBasApplyVo">
@@ -111,11 +118,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
                 b.batch_numer as sub_batch_numer, b.remark as sub_remark,
                au.nick_name auditNickName,au.user_name auditUserName,
-               cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by
+               cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
         from bas_apply a
         left join bas_apply_entry b on b.paren_id = a.id
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
+        left join fd_material m on b.material_id = m.id
         where a.id = #{id}
     </select>
 
