@@ -109,9 +109,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price,
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
-                b.batch_numer as sub_batch_numer, b.remark as sub_remark
+                b.batch_numer as sub_batch_numer, b.remark as sub_remark,
+               au.nick_name auditNickName,au.user_name auditUserName,
+               cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by
         from bas_apply a
         left join bas_apply_entry b on b.paren_id = a.id
+        left join sys_user au on a.audit_by = au.user_id
+        left join sys_user cu on a.create_by = cu.user_id
         where a.id = #{id}
     </select>
 
