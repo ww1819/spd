@@ -217,7 +217,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     stkInventory.setWarehouseDate(new Date());
                     stkInventory.setSupplierId(supplerId);
                     stkInventory.setBeginTime(entry.getBeginTime());
-                    stkInventory.setEndTime(entry.getAndTime());
+                    stkInventory.setEndTime(entry.getEndTime());
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
                     stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
