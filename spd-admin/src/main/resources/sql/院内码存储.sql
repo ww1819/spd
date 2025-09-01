@@ -26,7 +26,7 @@ BEGIN
     DECLARE masterBarcode VARCHAR(200);
     DECLARE secondaryBarcode VARCHAR(200);
     declare cur_entry cursor for
-SELECT b.id, a.suppler_id, a.order_no, a.warehouse_id, b.material_id, b.price, b.qty, b.batch_no, b.batch_number, b.and_time, b.master_barcode, b.secondary_barcode
+SELECT b.id, a.suppler_id, a.order_no, a.warehouse_id, b.material_id, b.price, b.qty, b.batch_no, b.batch_number, b.end_time, b.master_barcode, b.secondary_barcode
 FROM `gz_order` a INNER JOIN `gz_order_entry` b ON a.id = b.paren_id
 WHERE a.id = parentId;
 
