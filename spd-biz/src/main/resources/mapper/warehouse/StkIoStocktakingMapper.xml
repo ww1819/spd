@@ -101,7 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 a.stock_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
                 b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
-                b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.and_time as sub_and_time,
+                b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.del_flag as sub_del_flag, b.remark as sub_remark,b.stock_qty as sub_stock_qty,b.profit_qty as sub_profit_qty,
                 b.stock_amount as sub_stock_amount,b.profit_amount as sub_profit_amount
         from stk_io_stocktaking a
