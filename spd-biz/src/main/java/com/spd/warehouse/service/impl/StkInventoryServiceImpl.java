@@ -3,6 +3,9 @@ package com.spd.warehouse.service.impl;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.mapper.FdMaterialMapper;
+import javafx.scene.paint.Material;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.warehouse.mapper.StkInventoryMapper;
@@ -20,6 +23,8 @@ public class StkInventoryServiceImpl implements IStkInventoryService
 {
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
 
     /**
      * 查询库存明细
@@ -42,7 +47,15 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public List<StkInventory> selectStkInventoryList(StkInventory stkInventory)
     {
-        return stkInventoryMapper.selectStkInventoryList(stkInventory);
+        List<StkInventory> list = stkInventoryMapper.selectStkInventoryList(stkInventory);
+        if (list != null && list.size() > 0) {
+            for (StkInventory inventory : list) {
+                Long materialId = inventory.getMaterialId();
+                FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(materialId);
+                inventory.setMaterial(material);
+            }
+        }
+        return list;
     }
 
     /**
