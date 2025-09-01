@@ -46,12 +46,11 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     public List<StkDepInventory> selectStkDepInventoryList(StkDepInventory stkDepInventory)
     {
         List<StkDepInventory> list = stkDepInventoryMapper.selectStkDepInventoryList(stkDepInventory);
-        for (int i = 0; i < list.size(); i++) {
-            StkDepInventory stkDepInventory1 = list.get(i);
-            FdMaterial fdMaterial = this.fdMaterialMapper.selectFdMaterialById(stkDepInventory1.getMaterialId());
-            stkDepInventory1.setMaterial(fdMaterial);
+        for (StkDepInventory depInventory : list) {
+            FdMaterial fdMaterial = this.fdMaterialMapper.selectFdMaterialById(depInventory.getMaterialId());
+            depInventory.setMaterial(fdMaterial);
         }
-        return stkDepInventoryMapper.selectStkDepInventoryList(stkDepInventory);
+        return list;
     }
 
     /**
