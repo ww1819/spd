@@ -47,7 +47,7 @@ public class FdMaterial extends BaseEntity
 
     /** 价格 */
     @Excel(name = "价格")
-    private BigDecimal prince;
+    private BigDecimal price;
 
     /** 供应商对象 */
     private FdSupplier supplier;
