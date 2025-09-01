@@ -82,7 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
         b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
         b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
-        b.begin_time as sub_begin_time, b.and_time as sub_and_time, b.del_flag as sub_del_flag, b.remark as sub_remark
+        b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
         from gz_refund_goods a
         left join gz_refund_goods_entry b on b.paren_id = a.id
         where a.id = #{id}
