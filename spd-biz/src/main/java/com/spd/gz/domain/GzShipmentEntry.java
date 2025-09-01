@@ -174,7 +174,7 @@ public class GzShipmentEntry extends BaseEntity
             .append("batchNo", getBatchNo())
             .append("batchNumber", getBatchNumber())
             .append("beginTime", getBeginTime())
-            .append("andTime", getEndTime())
+            .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
             .append("remark", getRemark())
             .toString();
