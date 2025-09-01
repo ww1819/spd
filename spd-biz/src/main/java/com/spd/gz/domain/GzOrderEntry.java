@@ -57,7 +57,7 @@ public class GzOrderEntry extends BaseEntity
     /** 有效期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date andTime;
+    private Date endTime;
 
     /** 删除标识 */
     private Integer delFlag;
@@ -143,14 +143,14 @@ public class GzOrderEntry extends BaseEntity
     {
         return beginTime;
     }
-    public void setAndTime(Date andTime) 
+    public void setAndTime(Date endTime)
     {
-        this.andTime = andTime;
+        this.endTime = endTime;
     }
 
-    public Date getAndTime() 
+    public Date getEndTime()
     {
-        return andTime;
+        return endTime;
     }
     public void setDelFlag(Integer delFlag) 
     {
@@ -174,7 +174,7 @@ public class GzOrderEntry extends BaseEntity
             .append("batchNo", getBatchNo())
             .append("batchNumber", getBatchNumber())
             .append("beginTime", getBeginTime())
-            .append("andTime", getAndTime())
+            .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
             .append("remark", getRemark())
             .toString();
