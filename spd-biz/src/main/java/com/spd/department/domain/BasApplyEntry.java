@@ -63,7 +63,7 @@ public class BasApplyEntry extends BaseEntity
     /** 有效期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date andTime;
+    private Date endTime;
 
     /** 耗材对象 */
     private FdMaterial material;
