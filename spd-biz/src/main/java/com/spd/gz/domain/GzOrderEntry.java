@@ -143,7 +143,7 @@ public class GzOrderEntry extends BaseEntity
     {
         return beginTime;
     }
-    public void setAndTime(Date endTime)
+    public void setEndTime(Date endTime)
     {
         this.endTime = endTime;
     }
