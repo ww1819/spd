@@ -84,8 +84,8 @@ public class StkIoBill extends BaseEntity
     private SysUser user;
 
     /** 审核日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
 
     /** 配送员 */
@@ -117,6 +117,24 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "采购员")
     private Long proPerson;
 
+
+    /** 审核人 */
+    private SysUser auditPerson;
+
+
+    /** 审核人姓名 */
+    @Excel(name = "审核人")
+    private String auditPersonName;
+
+    /** 制单人 */
+    private SysUser creater;
+
+
+    /** 制单人姓名 */
+    @Excel(name = "制单人")
+    private String createrName;
+
+
     /** 是否月结 */
     private Integer isMonthInit;
 
@@ -131,6 +149,8 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：仓库 */
     private String warehouseName;
+
+
 
     private List<FdMaterial> materialList;
 
@@ -410,9 +430,11 @@ public class StkIoBill extends BaseEntity
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
-            .append("updateBy", getUpdateBy())
-            .append("updateTime", getUpdateTime())
-            .append("remark", getRemark())
+                .append("updateBy", getUpdateBy())
+                .append("updateTime", getUpdateTime())
+                .append("auditBy", getAuditBy())
+                .append("auditDate", getAuditDate())
+                .append("remark", getRemark())
             .append("stkIoBillEntryList", getStkIoBillEntryList())
             .append("supplier", getSupplier())
 //            .append("material", getMaterial())
@@ -433,6 +455,44 @@ public class StkIoBill extends BaseEntity
             .append("invoiceTime", getInvoiceTime())
             .append("proPerson", getProPerson())
             .append("isMonthInit", getIsMonthInit())
+                .append("createrName", getCreaterName())
+                .append("auditPersonName", getAuditPersonName())
+                .append("creater", getCreater())
+                .append("auditPerson", getAuditPerson())
             .toString();
+    }
+
+    public SysUser getAuditPerson() {
+        return auditPerson;
+    }
+
+    public void setAuditPerson(SysUser auditPerson) {
+        this.auditPerson = auditPerson;
+    }
+
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
+    }
+
+    public SysUser getCreater() {
+        return creater;
+    }
+
+    public void setCreater(SysUser creater) {
+        this.creater = creater;
+    }
+
+
+    public String getCreaterName() {
+        return createrName;
+    }
+
+    public void setCreaterName(String createrName) {
+        this.createrName = createrName;
     }
 }

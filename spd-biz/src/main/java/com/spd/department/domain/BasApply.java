@@ -48,6 +48,15 @@ public class BasApply extends BaseEntity
     @Excel(name = "申请状态")
     private Integer applyBillStatus;
 
+
+    /** 审核人姓名 */
+    @Excel(name = "审核人")
+    private String auditPersonName;
+
+    /** 制单人姓名 */
+    @Excel(name = "制单人")
+    private String createrNmae;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -62,6 +71,11 @@ public class BasApply extends BaseEntity
 
     /** 科室对象 */
     private FdDepartment department;
+    /** 审核人对象 */
+    private SysUser auditPerson;
+
+    /** 制单人对象 */
+    private SysUser creater;
 
     public void setId(Long id) 
     {
@@ -171,6 +185,10 @@ public class BasApply extends BaseEntity
             .append("basApplyEntryList", getBasApplyEntryList())
                 .append("warehouse", getWarehouse())
                 .append("user", getUser())
+                .append("createrNmae", getCreaterNmae())
+                .append("auditPersonName", getAuditPersonName())
+                .append("creater", getCreater())
+                .append("auditPerson", getAuditPerson())
             .toString();
     }
 
@@ -188,5 +206,39 @@ public class BasApply extends BaseEntity
 
     public void setDepartment(FdDepartment department) {
         this.department = department;
+    }
+
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
+    }
+
+
+    public SysUser getAuditPerson() {
+        return auditPerson;
+    }
+
+    public void setAuditPerson(SysUser auditPerson) {
+        this.auditPerson = auditPerson;
+    }
+
+    public String getCreaterNmae() {
+        return createrNmae;
+    }
+
+    public void setCreaterNmae(String createrNmae) {
+        this.createrNmae = createrNmae;
+    }
+
+    public SysUser getCreater() {
+        return creater;
+    }
+
+    public void setCreater(SysUser creater) {
+        this.creater = creater;
     }
 }

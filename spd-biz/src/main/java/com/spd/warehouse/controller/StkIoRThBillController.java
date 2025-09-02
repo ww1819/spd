@@ -69,9 +69,9 @@ public class StkIoRThBillController extends BaseController
                     Date beginTime = formatter.parse(map.get("beginTime").toString());
                     stkRTHVo.setBeginDate(beginTime);
                 }
-                if(map.get("andTime") != null){
-                    Date andTime = formatter.parse(map.get("andTime").toString());
-                    stkRTHVo.setEndDate(andTime);
+                if(map.get("endTime") != null){
+                    Date endTime = formatter.parse(map.get("endTime").toString());
+                    stkRTHVo.setEndDate(endTime);
                 }
                 stkRTHVo.setFinanceCategoryName(map.get("financeCategoryName").toString());
                 stkRTHVoList.add(stkRTHVo);
@@ -150,9 +150,9 @@ public class StkIoRThBillController extends BaseController
                     Date beginTime = formatter.parse(map.get("beginTime").toString());
                     stkCTKVo.setBeginDate(beginTime);
                 }
-                if(map.get("andTime") != null){
-                    Date andTime = formatter.parse(map.get("andTime").toString());
-                    stkCTKVo.setEndDate(andTime);
+                if(map.get("endTime") != null){
+                    Date endTime = formatter.parse(map.get("endTime").toString());
+                    stkCTKVo.setEndDate(endTime);
                 }
                 stkCTKVo.setFinanceCategoryName(map.get("financeCategoryName").toString());
                 stkRTHVoList.add(stkCTKVo);

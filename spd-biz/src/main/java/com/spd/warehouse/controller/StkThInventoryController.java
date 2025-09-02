@@ -82,7 +82,7 @@ public class StkThInventoryController extends BaseController {
     @PutMapping("/auditThInventory")
     public AjaxResult auditThInventory(@RequestBody JSONObject json)
     {
-        int result = stkIoBillService.auditStkIoBill(json.getString("id"));
+        int result = stkIoBillService.auditStkIoBill(json.getString("id"), json.getString("auditBy"));
         return toAjax(result);
     }
 

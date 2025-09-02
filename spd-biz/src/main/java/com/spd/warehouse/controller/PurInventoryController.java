@@ -78,9 +78,9 @@ public class PurInventoryController extends BaseController
                     Date beginTime = formatter.parse(map.get("beginTime").toString());
                     inventoryVo.setBeginDate(beginTime);
                 }
-                if(map.get("andTime") != null){
-                    Date andTime = formatter.parse(map.get("andTime").toString());
-                    inventoryVo.setEndDate(andTime);
+                if(map.get("endTime") != null){
+                    Date endTime = formatter.parse(map.get("endTime").toString());
+                    inventoryVo.setEndDate(endTime);
                 }
                 inventoryVo.setFinanceCategoryName(map.get("financeCategoryName").toString());
                 purInventoryVoList.add(inventoryVo);

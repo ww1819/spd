@@ -67,7 +67,7 @@ public class StkIoBillEntry extends BaseEntity
     /** 有效期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date andTime;
+    private Date endTime;
 
     /** 删除标识 */
     private Integer delFlag;
@@ -173,12 +173,12 @@ public class StkIoBillEntry extends BaseEntity
         this.beginTime = beginTime;
     }
 
-    public Date getAndTime() {
-        return andTime;
+    public Date getEndTime() {
+        return endTime;
     }
 
-    public void setAndTime(Date andTime) {
-        this.andTime = andTime;
+    public void setEndTime(Date endTime) {
+        this.endTime = endTime;
     }
 
     public Integer getDelFlag() {
@@ -212,7 +212,7 @@ public class StkIoBillEntry extends BaseEntity
             .append("remark", getRemark())
             .append("batchNumber", getBatchNumber())
             .append("beginTime", getBeginTime())
-            .append("andTime", getAndTime())
+            .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
             .append("material", getMaterial())
             .toString();

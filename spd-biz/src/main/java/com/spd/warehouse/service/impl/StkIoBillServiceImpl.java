@@ -65,6 +65,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         for(StkIoBillEntry entry : stkIoBillEntryList){
             Long materialId = entry.getMaterialId();
             FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
+            entry.setMaterial(fdMaterial);
             materialList.add(fdMaterial);
         }
         stkIoBill.setMaterialList(materialList);
@@ -179,7 +180,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
      */
     @Override
     @Transactional
-    public int auditStkIoBill(String id) {
+    public int auditStkIoBill(String id, String auditBy) {
         StkIoBill stkIoBill = stkIoBillMapper.selectStkIoBillById(Long.parseLong(id));
         if(stkIoBill == null){
             throw new ServiceException(String.format("入库业务ID：%s，不存在!", id));
@@ -191,6 +192,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
         stkIoBill.setBillStatus(2);//已审核状态
         stkIoBill.setAuditDate(new Date());
+        stkIoBill.setAuditBy(auditBy);
         int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
         return res;
     }
@@ -217,7 +219,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkInventory.setWarehouseDate(new Date());
                     stkInventory.setSupplierId(supplerId);
                     stkInventory.setBeginTime(entry.getBeginTime());
-                    stkInventory.setEndTime(entry.getAndTime());
+                    stkInventory.setEndTime(entry.getEndTime());
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
                     stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());

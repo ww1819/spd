@@ -1,6 +1,10 @@
 package com.spd.department.domain;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.spd.foundation.domain.FdMaterial;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -50,6 +54,19 @@ public class BasApplyEntry extends BaseEntity
     /** 批号 */
     @Excel(name = "批号")
     private String batchNumer;
+
+    /** 生产日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "生产日期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date beginTime;
+
+    /** 有效期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date endTime;
+
+    /** 耗材对象 */
+    private FdMaterial material;
 
     public void setId(Long id) 
     {
@@ -147,5 +164,13 @@ public class BasApplyEntry extends BaseEntity
             .append("batchNumer", getBatchNumer())
             .append("remark", getRemark())
             .toString();
+    }
+
+    public FdMaterial getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(FdMaterial material) {
+        this.material = material;
     }
 }
