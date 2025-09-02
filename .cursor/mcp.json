@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mysql_mcp_server"],
+      "env": {
+        "MYSQL_HOST": "rm-bp1tov1b3948fc5inbo.mysql.rds.aliyuncs.com",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "spd",
+        "MYSQL_PASSWORD": "Spd@456ww",
+        "MYSQL_DATABASE": "aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8"
+      }
+    }
+  }
+}

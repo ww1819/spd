@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.DepPurchaseApplyMapper">
+    
+    <resultMap type="DepPurchaseApply" id="DepPurchaseApplyResult">
+        <result property="id"    column="id"    />
+        <result property="purchaseBillNo"    column="purchase_bill_no"    />
+        <result property="purchaseBillDate"    column="purchase_bill_date"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="purchaseBillStatus"    column="purchase_bill_status"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="urgencyLevel"    column="urgency_level"    />
+        <result property="expectedDeliveryDate"    column="expected_delivery_date"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <association property="warehouse" javaType="FdWarehouse">
+            <result property="id" column="w_id"/>
+            <result property="name" column="w_name"/>
+        </association>
+        <association property="user" javaType="SysUser">
+            <result property="userId" column="u_user_id"/>
+            <result property="userName" column="u_user_name"/>
+        </association>
+        <association property="department" javaType="FdDepartment">
+            <result property="id" column="d_id"/>
+            <result property="name" column="d_name"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="DepPurchaseApplyDepPurchaseApplyEntryResult" type="DepPurchaseApply" extends="DepPurchaseApplyResult">
+        <collection property="depPurchaseApplyEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="DepPurchaseApplyEntryResult" />
+    </resultMap>
+
+    <resultMap type="DepPurchaseApplyEntry" id="DepPurchaseApplyEntryResult">
+        <result property="id"    column="sub_id"    />
+        <result property="parentId"    column="sub_parent_id"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="materialName"    column="sub_material_name"    />
+        <result property="materialSpec"    column="sub_material_spec"    />
+        <result property="unit"    column="sub_unit"    />
+        <result property="unitPrice"    column="sub_unit_price"    />
+        <result property="qty"    column="sub_qty"    />
+        <result property="amt"    column="sub_amt"    />
+        <result property="reason"    column="sub_reason"    />
+        <result property="supplierName"    column="sub_supplier_name"    />
+        <result property="brand"    column="sub_brand"    />
+        <result property="model"    column="sub_model"    />
+        <result property="createBy"    column="sub_create_by"    />
+        <result property="createTime"    column="sub_create_time"    />
+        <result property="updateBy"    column="sub_update_by"    />
+        <result property="updateTime"    column="sub_update_time"    />
+        <result property="remark"    column="sub_remark"    />
+    </resultMap>
+
+    <sql id="selectDepPurchaseApplyVo">
+        select 
+            dpa.id, 
+            dpa.purchase_bill_no, 
+            dpa.purchase_bill_date, 
+            dpa.warehouse_id, 
+            dpa.department_id, 
+            dpa.user_id, 
+            dpa.purchase_bill_status, 
+            dpa.total_amount, 
+            dpa.urgency_level, 
+            dpa.expected_delivery_date, 
+            dpa.del_flag, 
+            dpa.create_by, 
+            dpa.create_time, 
+            dpa.update_by, 
+            dpa.update_time, 
+            dpa.remark,
+            w.id as w_id,
+            w.name as w_name,
+            u.user_id as u_user_id,
+            u.user_name as u_user_name,
+            d.id as d_id,
+            d.name as d_name
+        from dep_purchase_apply dpa
+        left join fd_warehouse w on dpa.warehouse_id = w.id
+        left join sys_user u on dpa.user_id = u.user_id
+        left join fd_department d on dpa.department_id = d.id
+    </sql>
+
+    <select id="selectDepPurchaseApplyList" parameterType="DepPurchaseApply" resultMap="DepPurchaseApplyResult">
+        <include refid="selectDepPurchaseApplyVo"/>
+        <where>  
+            <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
+            <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
+            <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
+            <if test="userId != null "> and dpa.user_id = #{userId}</if>
+            <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
+            <if test="urgencyLevel != null "> and dpa.urgency_level = #{urgencyLevel}</if>
+            <if test="expectedDeliveryDate != null "> and dpa.expected_delivery_date = #{expectedDeliveryDate}</if>
+            and dpa.del_flag = 0
+        </where>
+        order by dpa.create_time desc
+    </select>
+    
+    <select id="selectDepPurchaseApplyById" parameterType="Long" resultMap="DepPurchaseApplyDepPurchaseApplyEntryResult">
+        select 
+            dpa.id, 
+            dpa.purchase_bill_no, 
+            dpa.purchase_bill_date, 
+            dpa.warehouse_id, 
+            dpa.department_id, 
+            dpa.user_id, 
+            dpa.purchase_bill_status, 
+            dpa.total_amount, 
+            dpa.urgency_level, 
+            dpa.expected_delivery_date, 
+            dpa.del_flag, 
+            dpa.create_by, 
+            dpa.create_time, 
+            dpa.update_by, 
+            dpa.update_time, 
+            dpa.remark,
+            w.id as w_id,
+            w.name as w_name,
+            u.user_id as u_user_id,
+            u.user_name as u_user_name,
+            d.id as d_id,
+            d.name as d_name,
+            dpae.id as sub_id,
+            dpae.parent_id as sub_parent_id,
+            dpae.material_id as sub_material_id,
+            dpae.material_name as sub_material_name,
+            dpae.material_spec as sub_material_spec,
+            dpae.unit as sub_unit,
+            dpae.unit_price as sub_unit_price,
+            dpae.qty as sub_qty,
+            dpae.amt as sub_amt,
+            dpae.reason as sub_reason,
+            dpae.supplier_name as sub_supplier_name,
+            dpae.brand as sub_brand,
+            dpae.model as sub_model,
+            dpae.create_by as sub_create_by,
+            dpae.create_time as sub_create_time,
+            dpae.update_by as sub_update_by,
+            dpae.update_time as sub_update_time,
+            dpae.remark as sub_remark
+        from dep_purchase_apply dpa
+        left join fd_warehouse w on dpa.warehouse_id = w.id
+        left join sys_user u on dpa.user_id = u.user_id
+        left join fd_department d on dpa.department_id = d.id
+        left join dep_purchase_apply_entry dpae on dpae.parent_id = dpa.id
+        where dpa.id = #{id}
+    </select>
+        
+    <insert id="insertDepPurchaseApply" parameterType="DepPurchaseApply" useGeneratedKeys="true" keyProperty="id">
+        insert into dep_purchase_apply
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="purchaseBillNo != null and purchaseBillNo != ''">purchase_bill_no,</if>
+            <if test="purchaseBillDate != null">purchase_bill_date,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="purchaseBillStatus != null">purchase_bill_status,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="urgencyLevel != null">urgency_level,</if>
+            <if test="expectedDeliveryDate != null">expected_delivery_date,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="purchaseBillNo != null and purchaseBillNo != ''">#{purchaseBillNo},</if>
+            <if test="purchaseBillDate != null">#{purchaseBillDate},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="purchaseBillStatus != null">#{purchaseBillStatus},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="urgencyLevel != null">#{urgencyLevel},</if>
+            <if test="expectedDeliveryDate != null">#{expectedDeliveryDate},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateDepPurchaseApply" parameterType="DepPurchaseApply">
+        update dep_purchase_apply
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="purchaseBillNo != null and purchaseBillNo != ''">purchase_bill_no = #{purchaseBillNo},</if>
+            <if test="purchaseBillDate != null">purchase_bill_date = #{purchaseBillDate},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="purchaseBillStatus != null">purchase_bill_status = #{purchaseBillStatus},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="urgencyLevel != null">urgency_level = #{urgencyLevel},</if>
+            <if test="expectedDeliveryDate != null">expected_delivery_date = #{expectedDeliveryDate},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteDepPurchaseApplyById" parameterType="Long">
+        update dep_purchase_apply set del_flag = 1 where id = #{id}
+    </delete>
+
+    <delete id="deleteDepPurchaseApplyByIds" parameterType="String">
+        update dep_purchase_apply set del_flag = 1 where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <delete id="deleteDepPurchaseApplyEntryByParentIds" parameterType="String">
+        delete from dep_purchase_apply_entry where parent_id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteDepPurchaseApplyEntryByParentId" parameterType="Long">
+        delete from dep_purchase_apply_entry where parent_id = #{id}
+    </delete>
+
+    <insert id="batchDepPurchaseApplyEntry">
+        insert into dep_purchase_apply_entry( id, parent_id, material_id, material_name, material_spec, unit, unit_price, qty, amt, reason, supplier_name, brand, model, create_by, create_time, update_by, update_time, remark) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            ( #{item.id}, #{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt}, #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}, #{item.remark})
+        </foreach>
+    </insert>
+</mapper>
