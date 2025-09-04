@@ -123,4 +123,64 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where batch_no = #{batchNo}
     </select>
 
+    <!-- 库存汇总查询 -->
+    <select id="selectInventorySummaryList" parameterType="StkDepInventory" resultType="com.spd.department.vo.InventorySummaryVo">
+        select 
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as specification,
+            m.model,
+            '' as unit,
+            d.name as departmentName,
+            '' as warehouseName,
+            SUM(stk.qty) as totalQty,
+            AVG(stk.unit_price) as avgUnitPrice,
+            SUM(stk.amt) as totalAmount,
+            COUNT(DISTINCT stk.batch_no) as batchCount
+        from stk_dep_inventory stk
+        left join fd_department d on stk.department_id = d.id
+        left join fd_material m on stk.material_id = m.id
+        where stk.qty &gt; 0
+        <if test="materialId != null"> and stk.material_id = #{materialId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
+        order by m.code, d.name
+    </select>
+
+    <!-- 科室进销存明细查询 -->
+    <select id="selectDepartmentInOutDetailList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentInOutDetailVo">
+        select 
+            bill.id,
+            bill.bill_no as billNo,
+            bill.bill_type as billType,
+            bill.bill_status as billStatus,
+            bill.bill_date as billDate,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as specification,
+            m.model,
+            d.name as departmentName,
+            w.name as warehouseName,
+            entry.qty,
+            entry.unit_price as unitPrice,
+            entry.amt as amount,
+            entry.batch_no as batchNo,
+            bill.create_by as createBy,
+            bill.remark
+        from stk_io_bill bill
+        left join stk_io_bill_entry entry on bill.id = entry.paren_id
+        left join fd_department d on bill.department_id = d.id
+        left join fd_material m on entry.material_id = m.id
+        left join fd_warehouse w on bill.warehouse_id = w.id
+        where bill.del_flag = 0
+        <if test="materialId != null"> and entry.material_id = #{materialId}</if>
+        <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
+        <if test="warehouseId != null"> and bill.warehouse_id = #{warehouseId}</if>
+        <if test="billType != null"> and bill.bill_type = #{billType}</if>
+        <if test="billStatus != null"> and bill.bill_status = #{billStatus}</if>
+        <if test="beginDate != null"> and bill.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and bill.bill_date &lt;= #{endDate}</if>
+        order by bill.bill_date desc, bill.bill_no
+    </select>
+
 </mapper>

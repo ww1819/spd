@@ -187,7 +187,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
 
-        //更新库存
+        //更新库存   
         updateInventory(stkIoBill,stkIoBillEntryList);
 
         stkIoBill.setBillStatus(2);//已审核状态

@@ -3,6 +3,8 @@ package com.spd.department.mapper;
 import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.vo.InventorySummaryVo;
+import com.spd.department.vo.DepartmentInOutDetailVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
@@ -77,4 +79,20 @@ public interface StkDepInventoryMapper
      * @return
      */
     BigDecimal selectTKStkInvntoryByBatchNo(String batchNo);
+
+    /**
+     * 查询库存汇总列表
+     *
+     * @param stkDepInventory 查询条件
+     * @return 库存汇总集合
+     */
+    public List<InventorySummaryVo> selectInventorySummaryList(StkDepInventory stkDepInventory);
+
+    /**
+     * 查询科室进销存明细列表
+     *
+     * @param stkDepInventory 查询条件
+     * @return 进销存明细集合
+     */
+    public List<DepartmentInOutDetailVo> selectDepartmentInOutDetailList(StkDepInventory stkDepInventory);
 }

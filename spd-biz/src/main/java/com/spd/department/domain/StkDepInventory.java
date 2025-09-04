@@ -61,6 +61,21 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "入库日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date warehouseDate;
 
+    /** 仓库ID */
+    private Long warehouseId;
+
+    /** 单据类型 */
+    private Integer billType;
+
+    /** 单据状态 */
+    private Integer billStatus;
+
+    /** 开始日期 */
+    private Date beginDate;
+
+    /** 结束日期 */
+    private Date endDate;
+
     /** 耗材对象 */
     private FdMaterial material;
 
@@ -156,6 +171,46 @@ public class StkDepInventory extends BaseEntity
     public Date getWarehouseDate()
     {
         return warehouseDate;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
+    }
+
+    public Integer getBillType() {
+        return billType;
+    }
+
+    public void setBillType(Integer billType) {
+        this.billType = billType;
+    }
+
+    public Integer getBillStatus() {
+        return billStatus;
+    }
+
+    public void setBillStatus(Integer billStatus) {
+        this.billStatus = billStatus;
+    }
+
+    public Date getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(Date beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 
     public FdMaterial getMaterial() {
