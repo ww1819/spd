@@ -29,6 +29,8 @@ public interface IStkInventoryService
      */
     public List<StkInventory> selectStkInventoryList(StkInventory stkInventory);
 
+    public Map selectStkInventoryListTotal(StkInventory stkInventory);
+
     /**
      * 新增库存明细
      *

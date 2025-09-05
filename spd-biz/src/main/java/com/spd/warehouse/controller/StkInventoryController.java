@@ -51,6 +51,7 @@ public class StkInventoryController extends BaseController
     {
         startPage();
         List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
+        Map totalMap = stkInventoryService.selectStkInventoryListTotal(stkInventory);
         return getDataTable(list);
     }
 

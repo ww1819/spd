@@ -1,5 +1,6 @@
 package com.spd.warehouse.service.impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +57,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
             }
         }
         return list;
+    }
+
+    @Override
+    public Map selectStkInventoryListTotal(StkInventory stkInventory) {
+        return this.stkInventoryMapper.selectStkInventoryListTotal(stkInventory);
     }
 
     /**
