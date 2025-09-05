@@ -55,16 +55,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on stk.material_id = m.id
     </sql>
 
-    <sql id="selectStkInventoryTotalQtyVo">
-        select SUM(IFNULL(stk.qty,0)) totalQty
-        from stk_inventory stk
-                 left join fd_warehouse w on stk.warehouse_id = w.id
-                 left join fd_supplier s on stk.supplier_id = s.id
-                 left join fd_material m on stk.material_id = m.id
-    </sql>
-
-    <sql id="selectStkInventoryTotalAmtVo">
-        select SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
+    <sql id="selectStkInventoryTotalVo">
+        select SUM(IFNULL(stk.qty,0)) totalQty,SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
         from stk_inventory stk
                  left join fd_warehouse w on stk.warehouse_id = w.id
                  left join fd_supplier s on stk.supplier_id = s.id
@@ -109,8 +101,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.warehouse_date desc
     </select>
 
-    <select id="selectStkInventoryListTotalQty" parameterType="StkInventory" resultMap="java.math.BigDecimal">
-        <include refid="selectStkInventoryTotalQtyVo"/>
+    <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultMap="java.util.Map">
+        <include refid="selectStkInventoryTotalVo"/>
         where stk.qty &gt; 0
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
