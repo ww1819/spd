@@ -18,6 +18,8 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.service.IStkDepInventoryService;
+import com.spd.department.vo.InventorySummaryVo;
+import com.spd.department.vo.DepartmentInOutDetailVo;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
@@ -100,5 +102,29 @@ public class StkDepInventoryController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(stkDepInventoryService.deleteStkDepInventoryByIds(ids));
+    }
+
+    /**
+     * 查询库存汇总列表
+     */
+    @PreAuthorize("@ss.hasPermi('department:depInventory:list')")
+    @GetMapping("/summary")
+    public TableDataInfo summary(StkDepInventory stkDepInventory)
+    {
+        startPage();
+        List<InventorySummaryVo> list = stkDepInventoryService.selectInventorySummaryList(stkDepInventory);
+        return getDataTable(list);
+    }
+
+    /**
+     * 查询科室进销存明细列表
+     */
+    @PreAuthorize("@ss.hasPermi('department:depInventory:list')")
+    @GetMapping("/inout")
+    public TableDataInfo inout(StkDepInventory stkDepInventory)
+    {
+        startPage();
+        List<DepartmentInOutDetailVo> list = stkDepInventoryService.selectDepartmentInOutDetailList(stkDepInventory);
+        return getDataTable(list);
     }
 }

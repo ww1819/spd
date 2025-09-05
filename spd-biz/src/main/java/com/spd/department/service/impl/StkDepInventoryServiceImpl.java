@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.service.IStkDepInventoryService;
+import com.spd.department.vo.InventorySummaryVo;
+import com.spd.department.vo.DepartmentInOutDetailVo;
 
 /**
  * 科室库存Service业务层处理
@@ -99,5 +101,29 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     public int deleteStkDepInventoryById(Long id)
     {
         return stkDepInventoryMapper.deleteStkDepInventoryById(id);
+    }
+
+    /**
+     * 查询库存汇总列表
+     * 
+     * @param stkDepInventory 查询条件
+     * @return 库存汇总集合
+     */
+    @Override
+    public List<InventorySummaryVo> selectInventorySummaryList(StkDepInventory stkDepInventory)
+    {
+        return stkDepInventoryMapper.selectInventorySummaryList(stkDepInventory);
+    }
+
+    /**
+     * 查询科室进销存明细列表
+     * 
+     * @param stkDepInventory 查询条件
+     * @return 进销存明细集合
+     */
+    @Override
+    public List<DepartmentInOutDetailVo> selectDepartmentInOutDetailList(StkDepInventory stkDepInventory)
+    {
+        return stkDepInventoryMapper.selectDepartmentInOutDetailList(stkDepInventory);
     }
 }

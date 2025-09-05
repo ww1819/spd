@@ -2,6 +2,8 @@ package com.spd.department.service;
 
 import java.util.List;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.vo.InventorySummaryVo;
+import com.spd.department.vo.DepartmentInOutDetailVo;
 
 /**
  * 科室库存Service接口
@@ -58,4 +60,20 @@ public interface IStkDepInventoryService
      * @return 结果
      */
     public int deleteStkDepInventoryById(Long id);
+
+    /**
+     * 查询库存汇总列表
+     * 
+     * @param stkDepInventory 查询条件
+     * @return 库存汇总集合
+     */
+    public List<InventorySummaryVo> selectInventorySummaryList(StkDepInventory stkDepInventory);
+
+    /**
+     * 查询科室进销存明细列表
+     * 
+     * @param stkDepInventory 查询条件
+     * @return 进销存明细集合
+     */
+    public List<DepartmentInOutDetailVo> selectDepartmentInOutDetailList(StkDepInventory stkDepInventory);
 }
