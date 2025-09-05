@@ -40,16 +40,9 @@ public interface StkInventoryMapper
      * @param stkInventory 库存明细
      * @return 库存明细集合
      */
-    public BigDecimal selectStkInventoryListTotalQty(StkInventory stkInventory);
+    public Map selectStkInventoryListTotal(StkInventory stkInventory);
 
 
-    /**
-     * 查询库存汇总金额
-     *
-     * @param stkInventory 库存明细
-     * @return 库存明细集合
-     */
-    public BigDecimal selectStkInventoryListTotalAmt(StkInventory stkInventory);
 
     /**
      * 新增库存明细

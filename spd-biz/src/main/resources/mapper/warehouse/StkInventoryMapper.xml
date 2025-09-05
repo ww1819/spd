@@ -118,23 +118,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
         order by stk.warehouse_date desc
     </select>
-    <select id="selectStkInventoryListTotalAmt" parameterType="StkInventory" resultMap="java.math.BigDecimal">
-        <include refid="selectStkInventoryTotalAmtVo"/>
-        where stk.qty &gt; 0
-        <if test="materialId != null "> and stk.material_id = #{materialId}</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
-        <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
-        <if test="amt != null "> and stk.amt = #{amt}</if>
-        <if test="qty != null "> and stk.qty = #{qty}</if>
-        <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
-        <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
-        <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
-        <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
-        <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
-        <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        order by stk.warehouse_date desc
-    </select>
 
     <select id="selectStkInventoryListSummary" parameterType="StkInventory" resultType="java.util.HashMap">
         select stk.id, m.code materialCode,m.name materialName,sum(stk.qty) materialQty,m.speci materialSpeci,
