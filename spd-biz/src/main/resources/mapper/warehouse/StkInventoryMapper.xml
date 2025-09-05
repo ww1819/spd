@@ -101,7 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.warehouse_date desc
     </select>
 
-    <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultMap="com.spd.common.core.page.TotalInfo">
+    <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
         <include refid="selectStkInventoryTotalVo"/>
         where stk.qty &gt; 0
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
