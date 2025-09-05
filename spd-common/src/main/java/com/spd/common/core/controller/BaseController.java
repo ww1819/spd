@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.WebDataBinder;
@@ -92,10 +93,10 @@ public class BaseController
         return rspData;
     }
 
-    protected TableDataInfo getDataTable(List<?> list, Map totalMap)
+    protected TableDataInfo getDataTable(List<?> list, TotalInfo totalInfo)
     {
         TableDataInfo rspData = getDataTable(list);
-        rspData.setTotalMap(totalMap);
+        rspData.setTotalInfo(totalInfo);
         return rspData;
     }
 

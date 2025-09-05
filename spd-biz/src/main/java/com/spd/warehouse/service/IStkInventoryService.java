@@ -3,6 +3,7 @@ package com.spd.warehouse.service;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkInventory;
 
 /**
@@ -29,7 +30,7 @@ public interface IStkInventoryService
      */
     public List<StkInventory> selectStkInventoryList(StkInventory stkInventory);
 
-    public Map selectStkInventoryListTotal(StkInventory stkInventory);
+    public TotalInfo selectStkInventoryListTotal(StkInventory stkInventory);
 
     /**
      * 新增库存明细

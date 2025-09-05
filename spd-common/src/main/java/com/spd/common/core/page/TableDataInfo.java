@@ -26,7 +26,7 @@ public class TableDataInfo implements Serializable
     private String msg;
 
     /** 相关汇总信息 */
-    private Map totalMap;
+    private TotalInfo totalInfo;
 
     /**
      * 表格数据对象
@@ -87,11 +87,11 @@ public class TableDataInfo implements Serializable
         this.msg = msg;
     }
 
-    public Map getTotalMap() {
-        return totalMap;
+    public TotalInfo getTotalInfo() {
+        return totalInfo;
     }
 
-    public void setTotalMap(Map totalMap) {
-        this.totalMap = totalMap;
+    public void setTotalInfo(TotalInfo totalInfo) {
+        this.totalInfo = totalInfo;
     }
 }

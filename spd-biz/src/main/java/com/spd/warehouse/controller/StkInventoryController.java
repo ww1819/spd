@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.warehouse.vo.StkInventorySummaryVo;
@@ -51,8 +52,8 @@ public class StkInventoryController extends BaseController
     {
         startPage();
         List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
-        Map totalMap = stkInventoryService.selectStkInventoryListTotal(stkInventory);
-        return getDataTable(list);
+        TotalInfo totalInfo = stkInventoryService.selectStkInventoryListTotal(stkInventory);
+        return getDataTable(list, totalInfo);
     }
 
     /**

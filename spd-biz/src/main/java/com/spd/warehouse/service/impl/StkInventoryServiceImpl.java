@@ -1,12 +1,11 @@
 package com.spd.warehouse.service.impl;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
-import javafx.scene.paint.Material;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.warehouse.mapper.StkInventoryMapper;
@@ -60,7 +59,7 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     }
 
     @Override
-    public Map selectStkInventoryListTotal(StkInventory stkInventory) {
+    public TotalInfo selectStkInventoryListTotal(StkInventory stkInventory) {
         return this.stkInventoryMapper.selectStkInventoryListTotal(stkInventory);
     }
 
