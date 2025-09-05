@@ -55,6 +55,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on stk.material_id = m.id
     </sql>
 
+    <sql id="selectStkInventorySummaryVo">
+        select SUM(IFNULL(stk.qty,0)) totalQty,SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
+        from stk_inventory stk
+                 left join fd_warehouse w on stk.warehouse_id = w.id
+                 left join fd_supplier s on stk.supplier_id = s.id
+                 left join fd_material m on stk.material_id = m.id
+    </sql>
+
     <sql id="selectStkInventoryMaterialVo">
         select stk.id,m.name materialName
         from stk_inventory stk
