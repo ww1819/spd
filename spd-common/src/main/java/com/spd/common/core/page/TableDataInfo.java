@@ -2,6 +2,7 @@ package com.spd.common.core.page;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 表格分页数据对象
@@ -23,6 +24,9 @@ public class TableDataInfo implements Serializable
 
     /** 消息内容 */
     private String msg;
+
+    /** 相关汇总信息 */
+    private Map totalMap;
 
     /**
      * 表格数据对象
@@ -81,5 +85,13 @@ public class TableDataInfo implements Serializable
     public void setMsg(String msg)
     {
         this.msg = msg;
+    }
+
+    public Map getTotalMap() {
+        return totalMap;
+    }
+
+    public void setTotalMap(Map totalMap) {
+        this.totalMap = totalMap;
     }
 }
