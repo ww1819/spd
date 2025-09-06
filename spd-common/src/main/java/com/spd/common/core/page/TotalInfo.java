@@ -9,18 +9,33 @@ public class TotalInfo extends BaseEntity {
     private BigDecimal totalQty;
     private BigDecimal totalAmt;
 
+    private BigDecimal subTotalQty;
+    private BigDecimal subTotalAmt;
+
     private BigDecimal totalInWarehouseQty;
     private BigDecimal totalInWarehouseAmt;
 
+    private BigDecimal subTotalInWarehouseQty;
+    private BigDecimal subTotalInWarehouseAmt;
+
     private BigDecimal totalRefundGoodsApplyQty;
     private BigDecimal totalRefundGoodsApplyAmt;
+
+    private BigDecimal subTotalRefundGoodsApplyQty;
+    private BigDecimal subTotalRefundGoodsApplyAmt;
 
 
     private BigDecimal totalOutWarehouseQty;
     private BigDecimal totalOutWarehouseAmt;
 
+    private BigDecimal subTotalOutWarehouseQty;
+    private BigDecimal subTotalOutWarehouseAmt;
+
     private BigDecimal totalRefundDepotApplyQty;
     private BigDecimal totalRefundDepotApplyAmt;
+
+    private BigDecimal subTotalRefundDepotApplyQty;
+    private BigDecimal subTotalRefundDepotApplyAmt;
 
     public BigDecimal getTotalQty() {
         return totalQty;
@@ -100,5 +115,85 @@ public class TotalInfo extends BaseEntity {
 
     public void setTotalRefundDepotApplyAmt(BigDecimal totalRefundDepotApplyAmt) {
         this.totalRefundDepotApplyAmt = totalRefundDepotApplyAmt;
+    }
+
+    public BigDecimal getSubTotalQty() {
+        return subTotalQty;
+    }
+
+    public void setSubTotalQty(BigDecimal subTotalQty) {
+        this.subTotalQty = subTotalQty;
+    }
+
+    public BigDecimal getSubTotalAmt() {
+        return subTotalAmt;
+    }
+
+    public void setSubTotalAmt(BigDecimal subTotalAmt) {
+        this.subTotalAmt = subTotalAmt;
+    }
+
+    public BigDecimal getSubTotalInWarehouseQty() {
+        return subTotalInWarehouseQty;
+    }
+
+    public void setSubTotalInWarehouseQty(BigDecimal subTotalInWarehouseQty) {
+        this.subTotalInWarehouseQty = subTotalInWarehouseQty;
+    }
+
+    public BigDecimal getSubTotalInWarehouseAmt() {
+        return subTotalInWarehouseAmt;
+    }
+
+    public void setSubTotalInWarehouseAmt(BigDecimal subTotalInWarehouseAmt) {
+        this.subTotalInWarehouseAmt = subTotalInWarehouseAmt;
+    }
+
+    public BigDecimal getSubTotalRefundGoodsApplyQty() {
+        return subTotalRefundGoodsApplyQty;
+    }
+
+    public void setSubTotalRefundGoodsApplyQty(BigDecimal subTotalRefundGoodsApplyQty) {
+        this.subTotalRefundGoodsApplyQty = subTotalRefundGoodsApplyQty;
+    }
+
+    public BigDecimal getSubTotalRefundGoodsApplyAmt() {
+        return subTotalRefundGoodsApplyAmt;
+    }
+
+    public void setSubTotalRefundGoodsApplyAmt(BigDecimal subTotalRefundGoodsApplyAmt) {
+        this.subTotalRefundGoodsApplyAmt = subTotalRefundGoodsApplyAmt;
+    }
+
+    public BigDecimal getSubTotalOutWarehouseQty() {
+        return subTotalOutWarehouseQty;
+    }
+
+    public void setSubTotalOutWarehouseQty(BigDecimal subTotalOutWarehouseQty) {
+        this.subTotalOutWarehouseQty = subTotalOutWarehouseQty;
+    }
+
+    public BigDecimal getSubTotalOutWarehouseAmt() {
+        return subTotalOutWarehouseAmt;
+    }
+
+    public void setSubTotalOutWarehouseAmt(BigDecimal subTotalOutWarehouseAmt) {
+        this.subTotalOutWarehouseAmt = subTotalOutWarehouseAmt;
+    }
+
+    public BigDecimal getSubTotalRefundDepotApplyQty() {
+        return subTotalRefundDepotApplyQty;
+    }
+
+    public void setSubTotalRefundDepotApplyQty(BigDecimal subTotalRefundDepotApplyQty) {
+        this.subTotalRefundDepotApplyQty = subTotalRefundDepotApplyQty;
+    }
+
+    public BigDecimal getSubTotalRefundDepotApplyAmt() {
+        return subTotalRefundDepotApplyAmt;
+    }
+
+    public void setSubTotalRefundDepotApplyAmt(BigDecimal subTotalRefundDepotApplyAmt) {
+        this.subTotalRefundDepotApplyAmt = subTotalRefundDepotApplyAmt;
     }
 }
