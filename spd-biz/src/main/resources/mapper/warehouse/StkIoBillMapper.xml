@@ -147,7 +147,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                s.name supplierName, w.name warehouseName
+                s.name supplierName, w.name warehouseName,b.material_id materialId
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id
         left join fd_supplier s on stk.suppler_id = s.id
@@ -179,7 +179,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
                 sum(b.qty) materialQty, b.price unitPrice,ROUND(sum(b.qty) * b.price, 2) materialAmt,
                 m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
-                f.factory_name factoryName,s.name supplierName, w.name warehouseName
+                f.factory_name factoryName,s.name supplierName, w.name warehouseName,b.material_id materialId
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id
         left join fd_supplier s on stk.suppler_id = s.id
@@ -199,14 +199,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY stk.id,m.code,m.name, stk.bill_type,
          b.price,
         m.speci,m.model,u.unit_name,
-        f.factory_name,s.name, w.name
+        f.factory_name,s.name, w.name,b.material_id
     </select>
 
     <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
         select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
                 sum(b.qty) materialQty, b.unit_price unitPrice,ROUND(sum(b.qty) * b.unit_price, 2) materialAmt,
                 m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
-                f.factory_name factoryName,d.name departmentName, w.name warehouseName
+                f.factory_name factoryName,d.name departmentName, w.name warehouseName,b.material_id materialId
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id
         left join fd_department d on stk.department_id = d.id
@@ -225,7 +225,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
         GROUP BY stk.id,m.code,m.name, stk.bill_type, b.unit_price,
         m.speci,m.model,u.unit_name,
-        f.factory_name,d.name, w.name
+        f.factory_name,d.name, w.name,b.material_id
     </select>
 
     <select id="selectCTKStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
@@ -234,7 +234,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                d.name departmentName, w.name warehouseName
+                d.name departmentName, w.name warehouseName,b.material_id materialId
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id
         left join fd_department d on stk.department_id = d.id
