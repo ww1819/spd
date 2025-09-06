@@ -60,7 +60,7 @@ public class StkInventoryController extends BaseController
      * 查询库存明细汇总列表
      */
     @GetMapping("/listInventorySummary")
-    public List<StkInventorySummaryVo> listInventorySummary(StkInventory stkInventory)
+    public TableDataInfo listInventorySummary(StkInventory stkInventory)
     {
         List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
         List<StkInventorySummaryVo> summaryVoList = new ArrayList<StkInventorySummaryVo>();
@@ -80,7 +80,9 @@ public class StkInventoryController extends BaseController
             inventoryVo.setSupplierName(map.get("supplierName").toString());
             summaryVoList.add(inventoryVo);
         }
-        return summaryVoList;
+        TotalInfo totalInfo = stkInventoryService.selectStkInventoryListSummaryTotal(stkInventory);
+
+        return getDataTable(summaryVoList,totalInfo);
     }
 
     /**

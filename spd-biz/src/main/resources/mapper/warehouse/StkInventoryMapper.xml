@@ -170,9 +170,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        GROUP BY stk.id, m.code,m.name,m.speci,
-        m.model,u.unit_name,stk.material_id,stk.unit_price,
-        w.name,f.factory_name,s.name
     </select>
 
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">
