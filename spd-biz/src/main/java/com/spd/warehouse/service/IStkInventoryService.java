@@ -85,4 +85,11 @@ public interface IStkInventoryService
      */
     List<Map<String, Object>> selectStkInventoryListSummary(StkInventory stkInventory);
 
+    /**
+     * 查询库存明细汇总列表
+     * @param stkInventory
+     * @return
+     */
+    TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory);
+
 }

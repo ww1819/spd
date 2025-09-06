@@ -136,4 +136,9 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         return stkInventoryMapper.selectStkInventoryListSummary(stkInventory);
     }
 
+    @Override
+    public TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory) {
+        return stkInventoryMapper.selectStkInventoryListSummaryTotal(stkInventory);
+    }
+
 }
