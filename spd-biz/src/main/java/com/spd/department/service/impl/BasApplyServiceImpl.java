@@ -140,13 +140,14 @@ public class BasApplyServiceImpl implements IBasApplyService
      * @return
      */
     @Override
-    public int auditApply(String id) {
+    public int auditApply(String id, String auditBy) {
         BasApply basApply = basApplyMapper.selectBasApplyById(Long.parseLong(id));
         if(basApply == null){
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
         }
         basApply.setApplyBillStatus(2);//已审核状态
-
+        basApply.setAuditBy(auditBy);
+        basApply.setAuditDate(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
         return res;
     }
