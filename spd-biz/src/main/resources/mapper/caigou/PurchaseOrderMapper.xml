@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.PurchaseOrderMapper">
+    
+    <resultMap type="PurchaseOrder" id="PurchaseOrderResult">
+        <result property="id"    column="id"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="orderDate"    column="order_date"    />
+        <result property="supplierId"    column="supplier_id"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="orderStatus"    column="order_status"    />
+        <result property="orderType"    column="order_type"    />
+        <result property="urgencyLevel"    column="urgency_level"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="paidAmount"    column="paid_amount"    />
+        <result property="unpaidAmount"    column="unpaid_amount"    />
+        <result property="expectedDeliveryDate"    column="expected_delivery_date"    />
+        <result property="actualDeliveryDate"    column="actual_delivery_date"    />
+        <result property="paymentTerms"    column="payment_terms"    />
+        <result property="deliveryAddress"    column="delivery_address"    />
+        <result property="contactPerson"    column="contact_person"    />
+        <result property="contactPhone"    column="contact_phone"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="auditOpinion"    column="audit_opinion"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
+        <collection property="purchaseOrderEntryList" ofType="PurchaseOrderEntry" resultMap="PurchaseOrderEntryResult" />
+    </resultMap>
+
+    <resultMap type="PurchaseOrderEntry" id="PurchaseOrderEntryResult">
+        <result property="id"    column="id"    />
+        <result property="parentId"    column="parent_id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="materialCode"    column="material_code"    />
+        <result property="materialName"    column="material_name"    />
+        <result property="materialSpec"    column="material_spec"    />
+        <result property="materialUnit"    column="material_unit"    />
+        <result property="orderQty"    column="order_qty"    />
+        <result property="receivedQty"    column="received_qty"    />
+        <result property="unitPrice"    column="unit_price"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="expectedDeliveryDate"    column="expected_delivery_date"    />
+        <result property="actualDeliveryDate"    column="actual_delivery_date"    />
+        <result property="qualityStatus"    column="quality_status"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <association property="material"    column="material_id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap type="FdSupplier" id="supplierResult">
+        <result property="id"    column="supplier_id"    />
+        <result property="name"    column="supplier_name"    />
+        <result property="code"    column="supplier_code"    />
+    </resultMap>
+
+    <resultMap type="FdWarehouse" id="warehouseResult">
+        <result property="id"    column="warehouse_id"    />
+        <result property="name"    column="warehouse_name"    />
+        <result property="code"    column="warehouse_code"    />
+    </resultMap>
+
+    <resultMap type="FdDepartment" id="departmentResult">
+        <result property="id"    column="department_id"    />
+        <result property="name"    column="dept_name"    />
+        <result property="code"    column="dept_code"    />
+    </resultMap>
+
+    <resultMap type="FdMaterial" id="materialResult">
+        <result property="id"    column="material_id"    />
+        <result property="name"    column="material_name"    />
+        <result property="code"    column="material_code"    />
+        <result property="speci"    column="material_spec"    />
+        <result property="model"    column="material_unit"    />
+    </resultMap>
+
+    <sql id="selectPurchaseOrderVo">
+        select po.id, po.order_no, po.order_date, po.supplier_id, po.warehouse_id, po.department_id, 
+               po.order_status, po.order_type, po.urgency_level, po.total_amount, po.paid_amount, 
+               po.unpaid_amount, po.expected_delivery_date, po.actual_delivery_date, po.payment_terms, 
+               po.delivery_address, po.contact_person, po.contact_phone, po.audit_by, po.audit_date, 
+               po.audit_opinion, po.remark, po.del_flag, po.create_by, po.create_time, po.update_by, po.update_time,
+        s.name as supplier_name, s.code as supplier_code,
+        w.name as warehouse_name, w.code as warehouse_code,
+        d.name as dept_name, d.code as dept_code
+        from purchase_order po
+        left join fd_supplier s on po.supplier_id = s.id
+        left join fd_warehouse w on po.warehouse_id = w.id
+        left join fd_department d on po.department_id = d.id
+    </sql>
+
+    <select id="selectPurchaseOrderList" parameterType="PurchaseOrder" resultMap="PurchaseOrderResult">
+        <include refid="selectPurchaseOrderVo"/>
+        <where>  
+            po.del_flag = '0'
+            <if test="orderNo != null  and orderNo != ''"> and po.order_no like concat('%', #{orderNo}, '%')</if>
+            <if test="supplierId != null "> and po.supplier_id = #{supplierId}</if>
+            <if test="warehouseId != null "> and po.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null "> and po.department_id = #{departmentId}</if>
+            <if test="orderStatus != null  and orderStatus != ''"> and po.order_status = #{orderStatus}</if>
+            <if test="orderType != null  and orderType != ''"> and po.order_type = #{orderType}</if>
+            <if test="urgencyLevel != null  and urgencyLevel != ''"> and po.urgency_level = #{urgencyLevel}</if>
+            <if test="beginDate != null and beginDate != ''"><!-- 开始时间检索 -->
+                and date_format(po.order_date,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+            </if>
+            <if test="endDate != null and endDate != ''"><!-- 结束时间检索 -->
+                and date_format(po.order_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+            </if>
+        </where>
+        order by po.create_time desc
+    </select>
+    
+    <select id="selectPurchaseOrderById" parameterType="Long" resultMap="PurchaseOrderResult">
+        <include refid="selectPurchaseOrderVo"/>
+        where po.id = #{id}
+    </select>
+
+    <select id="selectPurchaseOrderEntryByParentId" parameterType="Long" resultMap="PurchaseOrderEntryResult">
+        select poe.id, poe.parent_id, poe.material_id, poe.material_code, poe.material_name, 
+               poe.material_spec, poe.material_unit, poe.order_qty, poe.received_qty, poe.unit_price, 
+               poe.total_amount, poe.expected_delivery_date, poe.actual_delivery_date, poe.quality_status, 
+               poe.remark, poe.del_flag, poe.create_by, poe.create_time, poe.update_by, poe.update_time,
+               m.name as material_name, m.code as material_code, m.speci as material_spec, m.model as material_unit
+        from purchase_order_entry poe
+        left join fd_material m on poe.material_id = m.id
+        where poe.parent_id = #{parentId} and poe.del_flag = '0'
+        order by poe.id
+    </select>
+        
+    <insert id="insertPurchaseOrder" parameterType="PurchaseOrder" useGeneratedKeys="true" keyProperty="id">
+        insert into purchase_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="orderNo != null and orderNo != ''">order_no,</if>
+            <if test="orderDate != null">order_date,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="orderStatus != null">order_status,</if>
+            <if test="orderType != null">order_type,</if>
+            <if test="urgencyLevel != null">urgency_level,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="paidAmount != null">paid_amount,</if>
+            <if test="unpaidAmount != null">unpaid_amount,</if>
+            <if test="expectedDeliveryDate != null">expected_delivery_date,</if>
+            <if test="actualDeliveryDate != null">actual_delivery_date,</if>
+            <if test="paymentTerms != null">payment_terms,</if>
+            <if test="deliveryAddress != null">delivery_address,</if>
+            <if test="contactPerson != null">contact_person,</if>
+            <if test="contactPhone != null">contact_phone,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="orderNo != null and orderNo != ''">#{orderNo},</if>
+            <if test="orderDate != null">#{orderDate},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="orderStatus != null">#{orderStatus},</if>
+            <if test="orderType != null">#{orderType},</if>
+            <if test="urgencyLevel != null">#{urgencyLevel},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="paidAmount != null">#{paidAmount},</if>
+            <if test="unpaidAmount != null">#{unpaidAmount},</if>
+            <if test="expectedDeliveryDate != null">#{expectedDeliveryDate},</if>
+            <if test="actualDeliveryDate != null">#{actualDeliveryDate},</if>
+            <if test="paymentTerms != null">#{paymentTerms},</if>
+            <if test="deliveryAddress != null">#{deliveryAddress},</if>
+            <if test="contactPerson != null">#{contactPerson},</if>
+            <if test="contactPhone != null">#{contactPhone},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <insert id="insertPurchaseOrderEntry" parameterType="PurchaseOrderEntry">
+        insert into purchase_order_entry
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">parent_id,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="materialCode != null">material_code,</if>
+            <if test="materialName != null">material_name,</if>
+            <if test="materialSpec != null">material_spec,</if>
+            <if test="materialUnit != null">material_unit,</if>
+            <if test="orderQty != null">order_qty,</if>
+            <if test="receivedQty != null">received_qty,</if>
+            <if test="unitPrice != null">unit_price,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="expectedDeliveryDate != null">expected_delivery_date,</if>
+            <if test="actualDeliveryDate != null">actual_delivery_date,</if>
+            <if test="qualityStatus != null">quality_status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">#{parentId},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="materialCode != null">#{materialCode},</if>
+            <if test="materialName != null">#{materialName},</if>
+            <if test="materialSpec != null">#{materialSpec},</if>
+            <if test="materialUnit != null">#{materialUnit},</if>
+            <if test="orderQty != null">#{orderQty},</if>
+            <if test="receivedQty != null">#{receivedQty},</if>
+            <if test="unitPrice != null">#{unitPrice},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="expectedDeliveryDate != null">#{expectedDeliveryDate},</if>
+            <if test="actualDeliveryDate != null">#{actualDeliveryDate},</if>
+            <if test="qualityStatus != null">#{qualityStatus},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <insert id="batchPurchaseOrderEntry" parameterType="java.util.List">
+        insert into purchase_order_entry(parent_id, material_id, material_code, material_name, material_spec, material_unit, 
+                                       order_qty, received_qty, unit_price, total_amount, expected_delivery_date, 
+                                       actual_delivery_date, quality_status, remark, del_flag, create_by, create_time)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.parentId}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
+             #{item.materialUnit}, #{item.orderQty}, #{item.receivedQty}, #{item.unitPrice}, #{item.totalAmount}, 
+             #{item.expectedDeliveryDate}, #{item.actualDeliveryDate}, #{item.qualityStatus}, #{item.remark}, 
+             #{item.delFlag}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <update id="updatePurchaseOrder" parameterType="PurchaseOrder">
+        update purchase_order
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="orderDate != null">order_date = #{orderDate},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="orderType != null">order_type = #{orderType},</if>
+            <if test="urgencyLevel != null">urgency_level = #{urgencyLevel},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="paidAmount != null">paid_amount = #{paidAmount},</if>
+            <if test="unpaidAmount != null">unpaid_amount = #{unpaidAmount},</if>
+            <if test="expectedDeliveryDate != null">expected_delivery_date = #{expectedDeliveryDate},</if>
+            <if test="actualDeliveryDate != null">actual_delivery_date = #{actualDeliveryDate},</if>
+            <if test="paymentTerms != null">payment_terms = #{paymentTerms},</if>
+            <if test="deliveryAddress != null">delivery_address = #{deliveryAddress},</if>
+            <if test="contactPerson != null">contact_person = #{contactPerson},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="auditPurchaseOrder" parameterType="PurchaseOrder">
+        update purchase_order
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deletePurchaseOrderById" parameterType="Long">
+        update purchase_order set del_flag = '1' where id = #{id}
+    </delete>
+
+    <delete id="deletePurchaseOrderByIds" parameterType="String">
+        update purchase_order set del_flag = '1' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deletePurchaseOrderEntryByParentId" parameterType="Long">
+        update purchase_order_entry set del_flag = '1' where parent_id = #{parentId}
+    </delete>
+
+</mapper>

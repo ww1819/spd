@@ -167,6 +167,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         for(StkIoBillEntry entry : stkIoBillEntryList){
             entry.setDelFlag(1);
             entry.setParenId(id);
+            
             stkIoBillMapper.updatestkIobillEntry(entry);
         }
 

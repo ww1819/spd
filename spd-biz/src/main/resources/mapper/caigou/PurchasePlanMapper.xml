@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.PurchasePlanMapper">
+    
+    <resultMap type="PurchasePlan" id="PurchasePlanResult">
+        <result property="id"    column="id"    />
+        <result property="planNo"    column="plan_no"    />
+        <result property="supplierId"    column="supplier_id"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="planDate"    column="plan_date"    />
+        <result property="planStatus"    column="plan_status"    />
+        <result property="proPerson"    column="pro_person"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="telephone"    column="telephone"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="auditDate"    column="audit_date"    />
+        <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
+        <collection property="purchasePlanEntryList" ofType="PurchasePlanEntry" resultMap="PurchasePlanEntryResult" />
+    </resultMap>
+
+    <resultMap type="PurchasePlanEntry" id="PurchasePlanEntryResult">
+        <result property="id"    column="entry_id"    />
+        <result property="parentId"    column="parent_id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="qty"    column="qty"    />
+        <result property="price"    column="price"    />
+        <result property="amt"    column="amt"    />
+        <result property="speci"    column="speci"    />
+        <result property="model"    column="model"    />
+        <result property="remark"    column="entry_remark"    />
+        <result property="delFlag"    column="entry_del_flag"    />
+        <result property="createBy"    column="entry_create_by"    />
+        <result property="createTime"    column="entry_create_time"    />
+        <result property="updateBy"    column="entry_update_by"    />
+        <result property="updateTime"    column="entry_update_time"    />
+        <association property="material"    column="material_id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="supplierResult" type="FdSupplier">
+        <id     property="id"    column="sId"     />
+        <result property="code"  column="supplierCode"   />
+        <result property="name"  column="supplierName"   />
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="FdWarehouse">
+        <id     property="id"    column="wId"     />
+        <result property="code"  column="warehouseCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+        <result property="speci"  column="materialSpeci"   />
+        <result property="model"  column="materialModel"   />
+    </resultMap>
+
+    <sql id="selectPurchasePlanVo">
+        select pp.id, pp.plan_no, pp.supplier_id, pp.warehouse_id, pp.department_id, pp.plan_date, pp.plan_status,
+               pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.create_by, pp.create_time,
+               pp.update_by, pp.update_time, pp.audit_by, pp.audit_date,
+               s.id sId, s.code supplierCode, s.name supplierName,
+               w.id wId, w.code warehouseCode, w.name warehouseName,
+               d.id dId, d.code departmentCode, d.name departmentName
+        from purchase_plan pp
+        left join fd_supplier s on pp.supplier_id = s.id
+        left join fd_warehouse w on pp.warehouse_id = w.id
+        left join fd_department d on pp.department_id = d.id
+    </sql>
+
+    <sql id="selectPurchasePlanEntryVo">
+        select ppe.id entry_id, ppe.parent_id, ppe.material_id, ppe.qty, ppe.price, ppe.amt, ppe.speci, ppe.model,
+               ppe.remark entry_remark, ppe.del_flag entry_del_flag, ppe.create_by entry_create_by, ppe.create_time entry_create_time,
+               ppe.update_by entry_update_by, ppe.update_time entry_update_time,
+               m.id mId, m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel
+        from purchase_plan_entry ppe
+        left join fd_material m on ppe.material_id = m.id
+    </sql>
+
+    <select id="selectPurchasePlanList" parameterType="PurchasePlan" resultMap="PurchasePlanResult">
+        <include refid="selectPurchasePlanVo"/>
+        <where>  
+            pp.del_flag = '0'
+            <if test="planNo != null  and planNo != ''"> and pp.plan_no like concat('%', #{planNo}, '%')</if>
+            <if test="supplierId != null "> and pp.supplier_id = #{supplierId}</if>
+            <if test="warehouseId != null "> and pp.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null "> and pp.department_id = #{departmentId}</if>
+            <if test="planDate != null "> and pp.plan_date = #{planDate}</if>
+            <if test="planStatus != null  and planStatus != ''"> and pp.plan_status = #{planStatus}</if>
+            <if test="proPerson != null  and proPerson != ''"> and pp.pro_person like concat('%', #{proPerson}, '%')</if>
+            <if test="beginDate != null and beginDate != ''"><!-- 开始时间检索 -->
+                and date_format(pp.plan_date,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+            </if>
+            <if test="endDate != null and endDate != ''"><!-- 结束时间检索 -->
+                and date_format(pp.plan_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+            </if>
+        </where>
+        order by pp.plan_date desc
+    </select>
+    
+    <select id="selectPurchasePlanById" parameterType="Long" resultMap="PurchasePlanResult">
+        <include refid="selectPurchasePlanVo"/>
+        where pp.id = #{id} and pp.del_flag = '0'
+    </select>
+
+    <select id="selectPurchasePlanEntryByParentId" parameterType="Long" resultMap="PurchasePlanEntryResult">
+        <include refid="selectPurchasePlanEntryVo"/>
+        where ppe.parent_id = #{parentId} and ppe.del_flag = '0'
+    </select>
+        
+    <insert id="insertPurchasePlan" parameterType="PurchasePlan" useGeneratedKeys="true" keyProperty="id">
+        insert into purchase_plan
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planNo != null and planNo != ''">plan_no,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="planDate != null">plan_date,</if>
+            <if test="planStatus != null">plan_status,</if>
+            <if test="proPerson != null">pro_person,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="telephone != null">telephone,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditDate != null">audit_date,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planNo != null and planNo != ''">#{planNo},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="planDate != null">#{planDate},</if>
+            <if test="planStatus != null">#{planStatus},</if>
+            <if test="proPerson != null">#{proPerson},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="telephone != null">#{telephone},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+         </trim>
+    </insert>
+
+    <insert id="insertPurchasePlanEntry" parameterType="PurchasePlanEntry" useGeneratedKeys="true" keyProperty="id">
+        insert into purchase_plan_entry
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">parent_id,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="qty != null">qty,</if>
+            <if test="price != null">price,</if>
+            <if test="amt != null">amt,</if>
+            <if test="speci != null">speci,</if>
+            <if test="model != null">model,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">#{parentId},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="qty != null">#{qty},</if>
+            <if test="price != null">#{price},</if>
+            <if test="amt != null">#{amt},</if>
+            <if test="speci != null">#{speci},</if>
+            <if test="model != null">#{model},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <insert id="batchPurchasePlanEntry" parameterType="java.util.List">
+        insert into purchase_plan_entry(parent_id, material_id, qty, price, amt, speci, model, remark, del_flag, create_by, create_time)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.parentId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <update id="updatePurchasePlan" parameterType="PurchasePlan">
+        update purchase_plan
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="planDate != null">plan_date = #{planDate},</if>
+            <if test="planStatus != null">plan_status = #{planStatus},</if>
+            <if test="proPerson != null">pro_person = #{proPerson},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="telephone != null">telephone = #{telephone},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updatePurchasePlanEntry" parameterType="PurchasePlanEntry">
+        update purchase_plan_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="amt != null">amt = #{amt},</if>
+            <if test="speci != null">speci = #{speci},</if>
+            <if test="model != null">model = #{model},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="auditPurchasePlan" parameterType="PurchasePlan">
+        update purchase_plan
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planStatus != null">plan_status = #{planStatus},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deletePurchasePlanById" parameterType="Long">
+        update purchase_plan set del_flag = '1' where id = #{id}
+    </delete>
+
+    <delete id="deletePurchasePlanByIds" parameterType="String">
+        update purchase_plan set del_flag = '1' where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deletePurchasePlanEntryByParentId" parameterType="Long">
+        update purchase_plan_entry set del_flag = '1' where parent_id = #{parentId}
+    </delete>
+
+    <delete id="deletePurchasePlanEntryByParentIds" parameterType="String">
+        update purchase_plan_entry set del_flag = '1' where parent_id in 
+        <foreach item="parentId" collection="array" open="(" separator="," close=")">
+            #{parentId}
+        </foreach>
+    </delete>
+
+    <select id="selectMaxPlanNo" parameterType="String" resultType="String">
+        select max(plan_no) from purchase_plan where plan_no like concat('JH', #{date}, '%')
+    </select>
+</mapper>

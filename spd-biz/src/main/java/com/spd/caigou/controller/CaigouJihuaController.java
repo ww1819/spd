@@ -1,17 +1,15 @@
 package com.spd.caigou.controller;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.github.f4b6a3.uuid.UuidCreator;
+import com.spd.caigou.domain.PurchasePlan;
+import com.spd.caigou.service.IPurchasePlanService;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.poi.ExcelUtil;
-import com.spd.warehouse.domain.StkIoBill;
-import com.spd.warehouse.service.IStkIoBillService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,18 +27,17 @@ import java.util.List;
 public class CaigouJihuaController extends BaseController
 {
     @Autowired
-//    @Qualifier("caigouJihuaServiceImpl")
-    private IStkIoBillService stkIoBillService;
+    private IPurchasePlanService purchasePlanService;
 
     /**
      * 查询采购计划列表
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:list')")
     @GetMapping("/list")
-    public TableDataInfo list(StkIoBill stkIoBill)
+    public TableDataInfo list(PurchasePlan purchasePlan)
     {
         startPage();
-        List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
+        List<PurchasePlan> list = purchasePlanService.selectPurchasePlanList(purchasePlan);
         return getDataTable(list);
     }
 
@@ -48,13 +45,13 @@ public class CaigouJihuaController extends BaseController
      * 导出采购计划列表
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:export')")
-    @Log(title = "出采购计划", businessType = BusinessType.EXPORT)
+    @Log(title = "采购计划", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, StkIoBill stkIoBill)
+    public void export(HttpServletResponse response, PurchasePlan purchasePlan)
     {
-        List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
-        ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
-        util.exportExcel(response, list, "出采购计划数据");
+        List<PurchasePlan> list = purchasePlanService.selectPurchasePlanList(purchasePlan);
+        ExcelUtil<PurchasePlan> util = new ExcelUtil<PurchasePlan>(PurchasePlan.class);
+        util.exportExcel(response, list, "采购计划数据");
     }
 
     /**
@@ -64,7 +61,7 @@ public class CaigouJihuaController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(stkIoBillService.selectStkIoBillById(id));
+        return success(purchasePlanService.selectPurchasePlanById(id));
     }
 
     /**
@@ -73,9 +70,9 @@ public class CaigouJihuaController extends BaseController
     @PreAuthorize("@ss.hasPermi('caigou:jihua:add')")
     @Log(title = "采购计划", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody StkIoBill stkIoBill)
+    public AjaxResult add(@RequestBody PurchasePlan purchasePlan)
     {
-        return toAjax(stkIoBillService.insertStkIoBill(stkIoBill));
+        return toAjax(purchasePlanService.insertPurchasePlan(purchasePlan));
     }
 
     /**
@@ -84,9 +81,9 @@ public class CaigouJihuaController extends BaseController
     @PreAuthorize("@ss.hasPermi('caigou:jihua:edit')")
     @Log(title = "采购计划", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody StkIoBill stkIoBill)
+    public AjaxResult edit(@RequestBody PurchasePlan purchasePlan)
     {
-        return toAjax(stkIoBillService.updateStkIoBill(stkIoBill));
+        return toAjax(purchasePlanService.updatePurchasePlan(purchasePlan));
     }
 
     /**
@@ -94,10 +91,12 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:audit')")
     @Log(title = "采购计划", businessType = BusinessType.UPDATE)
-    @PutMapping("/auditWarehouse")
+    @PutMapping("/audit")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = stkIoBillService.auditStkIoBill(json.getString("id"),json.getString("auditBy"));
+        Long id = json.getLong("id");
+        String auditBy = json.getString("auditBy");
+        int result = purchasePlanService.auditPurchasePlan(id, auditBy);
         return toAjax(result);
     }
 
@@ -109,7 +108,7 @@ public class CaigouJihuaController extends BaseController
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long ids)
     {
-        return toAjax(stkIoBillService.deleteStkIoBillById(ids));
+        return toAjax(purchasePlanService.deletePurchasePlanById(ids));
     }
 
 
