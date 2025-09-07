@@ -1,6 +1,7 @@
 package com.spd.warehouse.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.spd.foundation.domain.FdMaterial;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -76,6 +77,10 @@ public class StkRTHVo {
 
     /** 财务分类 */
     private String financeCategoryName;
+
+    private FdMaterial material;
+
+    private Long materialId;
 
     public Long getId() {
         return id;
@@ -263,4 +268,19 @@ public class StkRTHVo {
                 .toString();
     }
 
+    public FdMaterial getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(FdMaterial material) {
+        this.material = material;
+    }
+
+    public Long getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(Long materialId) {
+        this.materialId = materialId;
+    }
 }

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkInventory;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
@@ -33,6 +34,16 @@ public interface StkInventoryMapper
      * @return 库存明细集合
      */
     public List<StkInventory> selectStkInventoryList(StkInventory stkInventory);
+
+    /**
+     * 查询库存汇总数量
+     *
+     * @param stkInventory 库存明细
+     * @return 库存明细集合
+     */
+    public TotalInfo selectStkInventoryListTotal(StkInventory stkInventory);
+
+
 
     /**
      * 新增库存明细
@@ -99,5 +110,11 @@ public interface StkInventoryMapper
      * @return
      */
     List<Map<String, Object>> selectStkInventoryListSummary(StkInventory stkInventory);
+    /**
+     * 查询库存明细汇总列表
+     * @param stkInventory
+     * @return
+     */
+    TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory);
 
 }

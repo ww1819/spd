@@ -55,6 +55,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on stk.material_id = m.id
     </sql>
 
+    <sql id="selectStkInventoryTotalVo">
+        select SUM(IFNULL(stk.qty,0)) totalQty,SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
+        from stk_inventory stk
+                 left join fd_warehouse w on stk.warehouse_id = w.id
+                 left join fd_supplier s on stk.supplier_id = s.id
+                 left join fd_material m on stk.material_id = m.id
+    </sql>
+
     <sql id="selectStkInventoryMaterialVo">
         select stk.id,m.name materialName
         from stk_inventory stk
@@ -77,6 +85,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectStkInventoryList" parameterType="StkInventory" resultMap="StkInventoryResult">
         <include refid="selectStkInventoryVo"/>
+        where stk.qty &gt; 0
+        <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
+        <if test="amt != null "> and stk.amt = #{amt}</if>
+        <if test="qty != null "> and stk.qty = #{qty}</if>
+        <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
+        <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
+        <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
+        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        order by stk.warehouse_date desc
+    </select>
+
+    <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
+        <include refid="selectStkInventoryTotalVo"/>
         where stk.qty &gt; 0
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
@@ -120,6 +146,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY stk.id, m.code,m.name,m.speci,
         m.model,u.unit_name,stk.material_id,stk.unit_price,
         w.name,f.factory_name,s.name
+    </select>
+
+
+    <select id="selectStkInventoryListSummaryTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
+        select SUM(IFNULL(stk.qty,0)) totalQty,SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
+        from stk_inventory stk
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_supplier s on stk.supplier_id = s.id
+        left join fd_material m on stk.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory f on f.factory_id = m.factory_id
+        where stk.qty &gt; 0
+        <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
+        <if test="amt != null "> and stk.amt = #{amt}</if>
+        <if test="qty != null "> and stk.qty = #{qty}</if>
+        <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
+        <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
+        <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
+        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
     </select>
 
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">

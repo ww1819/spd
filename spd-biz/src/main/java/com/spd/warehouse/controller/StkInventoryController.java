@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.warehouse.vo.StkInventorySummaryVo;
@@ -51,17 +52,29 @@ public class StkInventoryController extends BaseController
     {
         startPage();
         List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
-        return getDataTable(list);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        for (StkInventory inventory : list) {
+            subTotalQty = subTotalQty.add(inventory.getQty());
+            subTotalAmt = subTotalAmt.add(inventory.getAmt());
+        }
+
+        TotalInfo totalInfo = stkInventoryService.selectStkInventoryListTotal(stkInventory);
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        return getDataTable(list, totalInfo);
     }
 
     /**
      * 查询库存明细汇总列表
      */
     @GetMapping("/listInventorySummary")
-    public List<StkInventorySummaryVo> listInventorySummary(StkInventory stkInventory)
+    public TableDataInfo listInventorySummary(StkInventory stkInventory)
     {
         List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
         List<StkInventorySummaryVo> summaryVoList = new ArrayList<StkInventorySummaryVo>();
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
         for(Map<String, Object> map : mapList){
             StkInventorySummaryVo inventoryVo = new StkInventorySummaryVo();
             inventoryVo.setId((Long) map.get("id"));
@@ -77,8 +90,13 @@ public class StkInventoryController extends BaseController
             inventoryVo.setFactoryName(map.get("factoryName").toString());
             inventoryVo.setSupplierName(map.get("supplierName").toString());
             summaryVoList.add(inventoryVo);
+            subTotalQty = subTotalQty.add((BigDecimal) map.get("materialQty"));
+            subTotalAmt = subTotalAmt.add((BigDecimal) map.get("materialAmt"));
         }
-        return summaryVoList;
+        TotalInfo totalInfo = stkInventoryService.selectStkInventoryListSummaryTotal(stkInventory);
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        return getDataTable(summaryVoList,totalInfo);
     }
 
     /**

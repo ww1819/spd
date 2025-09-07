@@ -3,6 +3,8 @@ package com.spd.warehouse.controller;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.StringUtils;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.service.IFdMaterialService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.warehouse.vo.StkCTKVo;
@@ -30,6 +32,8 @@ public class StkIoRThBillController extends BaseController
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
+    @Autowired
+    private IFdMaterialService fdMaterialService;
 
     /**
      * 查询入退货列表
@@ -44,7 +48,13 @@ public class StkIoRThBillController extends BaseController
 
         try {
             for(Map<String, Object> map : mapList){
+
                 StkRTHVo stkRTHVo = new StkRTHVo();
+                Long materialId = (Long) map.get("materialId");
+                if (materialId != null){
+                    FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
+                    stkRTHVo.setMaterial(fdMaterial);
+                }
                 stkRTHVo.setId((Long) map.get("id"));
                 stkRTHVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"),"").toString());
                 stkRTHVo.setMaterialName(StringUtils.nvl(map.get("materialName"),"").toString());
@@ -94,6 +104,11 @@ public class StkIoRThBillController extends BaseController
 
         for(Map<String, Object> map : mapList){
             StkRTHVo stkRTHVo = new StkRTHVo();
+            Long materialId = (Long) map.get("materialId");
+            if (materialId != null){
+                FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
+                stkRTHVo.setMaterial(fdMaterial);
+            }
             stkRTHVo.setId((Long) map.get("id"));
             stkRTHVo.setMaterialCode(map.get("materialCode").toString());
             stkRTHVo.setMaterialName(map.get("materialName").toString());
@@ -126,6 +141,11 @@ public class StkIoRThBillController extends BaseController
         try {
             for(Map<String, Object> map : mapList){
                 StkCTKVo stkCTKVo = new StkCTKVo();
+                Long materialId = (Long) map.get("materialId");
+                if (materialId != null){
+                    FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
+                    stkCTKVo.setMaterial(fdMaterial);
+                }
                 stkCTKVo.setId((Long) map.get("id"));
                 stkCTKVo.setMaterialCode(map.get("materialCode").toString());
                 stkCTKVo.setMaterialName(map.get("materialName").toString());
@@ -174,6 +194,11 @@ public class StkIoRThBillController extends BaseController
         List<Map<String, Object>> mapList = stkIoBillService.selectCTKStkIoBillListSummary(stkIoBill);
         for(Map<String, Object> map : mapList){
             StkCTKVo stkCTKVo = new StkCTKVo();
+            Long materialId = (Long) map.get("materialId");
+            if (materialId != null){
+                FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
+                stkCTKVo.setMaterial(fdMaterial);
+            }
             stkCTKVo.setId((Long) map.get("id"));
             stkCTKVo.setMaterialCode(map.get("materialCode").toString());
             stkCTKVo.setMaterialName(map.get("materialName").toString());

@@ -3,9 +3,9 @@ package com.spd.warehouse.service.impl;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
-import javafx.scene.paint.Material;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.warehouse.mapper.StkInventoryMapper;
@@ -56,6 +56,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
             }
         }
         return list;
+    }
+
+    @Override
+    public TotalInfo selectStkInventoryListTotal(StkInventory stkInventory) {
+        return this.stkInventoryMapper.selectStkInventoryListTotal(stkInventory);
     }
 
     /**
@@ -129,6 +134,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public List<Map<String, Object>> selectStkInventoryListSummary(StkInventory stkInventory) {
         return stkInventoryMapper.selectStkInventoryListSummary(stkInventory);
+    }
+
+    @Override
+    public TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory) {
+        return stkInventoryMapper.selectStkInventoryListSummaryTotal(stkInventory);
     }
 
 }

@@ -64,5 +64,5 @@ public interface IBasApplyService
      * @param id
      * @return
      */
-    int auditApply(String id);
+    int auditApply(String id, String auditBy);
 }

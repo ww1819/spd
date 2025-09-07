@@ -3,6 +3,9 @@ package com.spd.common.core.controller;
 import java.beans.PropertyEditorSupport;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+
+import com.spd.common.core.page.TotalInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.WebDataBinder;
@@ -87,6 +90,13 @@ public class BaseController
         rspData.setMsg("查询成功!");
         rspData.setRows(list);
         rspData.setTotal(new PageInfo(list).getTotal());
+        return rspData;
+    }
+
+    protected TableDataInfo getDataTable(List<?> list, TotalInfo totalInfo)
+    {
+        TableDataInfo rspData = getDataTable(list);
+        rspData.setTotalInfo(totalInfo);
         return rspData;
     }
 
