@@ -101,11 +101,4 @@ public interface PurchaseOrderMapper
      */
     public int deletePurchaseOrderEntryByParentId(Long parentId);
 
-    /**
-     * 审核采购订单
-     *
-     * @param purchaseOrder 采购订单
-     * @return 结果
-     */
-    public int auditPurchaseOrder(PurchaseOrder purchaseOrder);
 }

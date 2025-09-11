@@ -70,13 +70,4 @@ public interface IPurchaseOrderService
      */
     public int auditPurchaseOrder(Long id, String auditBy, String auditOpinion);
 
-    /**
-     * 审核采购订单
-     *
-     * @param id 采购订单主键
-     * @param auditBy 审核人
-     * @param auditOpinion 审核意见
-     * @return 结果
-     */
-    public int auditPurchaseOrder(Long id, String auditBy, String auditOpinion);
 }
