@@ -341,6 +341,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setMaterialNo(inventory.getMaterialNo());
             stkDepInventory.setMaterialDate(inventory.getMaterialDate());
             stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
+            stkDepInventory.setBeginDate(inventory.getBeginTime());
+            stkDepInventory.setEndDate(inventory.getEndTime());
+            stkDepInventory.setSupplierId(inventory.getSupplierId().toString());
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
             BigDecimal oldQty = stkDepInventory.getQty();
