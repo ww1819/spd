@@ -5,6 +5,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -76,11 +77,18 @@ public class StkDepInventory extends BaseEntity
     /** 结束日期 */
     private Date endDate;
 
+    /** 供应商ID */
+    @Excel(name = "供应商ID")
+    private String supplierId;
+
     /** 耗材对象 */
     private FdMaterial material;
 
     /** 科室对象 */
     private FdDepartment department;
+
+    /** 供应商对象 */
+    private FdSupplier supplier;
 
     public void setId(Long id)
     {
@@ -245,5 +253,21 @@ public class StkDepInventory extends BaseEntity
             .append("material", getMaterial())
             .append("department", getDepartment())
             .toString();
+    }
+
+    public String getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(String supplierId) {
+        this.supplierId = supplierId;
+    }
+
+    public FdSupplier getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(FdSupplier supplier) {
+        this.supplier = supplier;
     }
 }

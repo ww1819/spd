@@ -15,8 +15,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="materialNo"    column="material_no"    />
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
+        <result property="beginDate"    column="begin_date"    />
+        <result property="endDate"    column="end_date"    />
+        <result property="supplierId"    column="supplier_id"    />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
+        <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
     </resultMap>
 
     <resultMap id="departmentResult" type="FdDepartment">
@@ -31,14 +35,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"  column="materialName"   />
     </resultMap>
 
+    <resultMap id="supplierResult" type="FdSupplier">
+        <id     property="id"    column="sId"     />
+        <result property="code"  column="supplierCode"   />
+        <result property="name"  column="supplierName"   />
+    </resultMap>
+
     <sql id="selectStkDepInventoryVo">
         select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
 			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
 			d.id dId,d.code departmentCode,d.name departmentName,
-			m.id mId,m.code materialCode,m.name materialName
+			m.id mId,m.code materialCode,m.name materialName,
+               s.id sId,s.code supplierCode,s.name supplierName
         from stk_dep_inventory stk
         left join fd_department d on stk.department_id = d.id
         left join fd_material m on stk.material_id = m.id
+        left join fd_supplier s on stk.supplier_id = s.id
     </sql>
 
     <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
@@ -73,6 +85,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialNo != null">material_no,</if>
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
+            <if test="beginDate != null">begin_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="supplierId != null">supplier_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
@@ -84,6 +99,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialNo != null">#{materialNo},</if>
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
+            <if test="beginDate != null">#{beginDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="supplierId != null">#{supplierId},</if>
          </trim>
     </insert>
 
@@ -99,6 +117,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialNo != null">material_no = #{materialNo},</if>
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
+            <if test="beginDate != null">begin_date = #{beginDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
         </trim>
         where id = #{id}
     </update>
