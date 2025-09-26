@@ -3,6 +3,7 @@ package com.spd.warehouse.mapper;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
@@ -35,6 +36,15 @@ public interface StkIoBillMapper
      * @return 出入库集合
      */
     public List<StkIoBill> selectStkIoBillList(StkIoBill stkIoBill);
+
+
+    /**
+     * 查询出入库汇总
+     *
+     * @param stkIoBill 出入库
+     * @return 出入库集合
+     */
+    public TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill);
 
     /**
      * 新增出入库
