@@ -125,8 +125,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user cu on stk.create_by = cu.user_id
     </sql>
 
+    <sql id="selectStkIoBillTotalVo">
+        select sum(stk.total_amount) totalAmt,
+               sum(case when stk.bill_type in (101) then stk.total_amount else 0 end) totalRkAmt,
+               sum(case when stk.bill_type in (201) then stk.total_amount else 0 end) totalCkAmt,
+               sum(case when stk.bill_type in (301) then stk.total_amount else 0 end) totalTkAmt,
+               sum(case when stk.bill_type in (401) then stk.total_amount else 0 end) totalThAmt
+        from stk_io_bill stk
+                 left join fd_supplier s on stk.suppler_id = s.id
+                 left join fd_department d on stk.department_id = d.id
+                 left join fd_warehouse w on stk.warehouse_id = w.id
+                 left join sys_user u on stk.user_id = u.user_id
+                 left join sys_user au on stk.audit_by = au.user_id
+                 left join sys_user cu on stk.create_by = cu.user_id
+    </sql>
+
     <select id="selectStkIoBillList" parameterType="StkIoBill" resultMap="StkIoBillResult">
         <include refid="selectStkIoBillVo"/>
+        where stk.del_flag != 1
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="billStatus != null "> and stk.bill_status = #{billStatus}</if>
+        <if test="userId != null "> and stk.user_id = #{userId}</if>
+        <if test="billType != null "> and stk.bill_type = #{billType}</if>
+
+        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        order by stk.bill_date desc
+    </select>
+
+    <select id="selectStkIoBillTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <include refid="selectStkIoBillTotalVo"/>
         where stk.del_flag != 1
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
