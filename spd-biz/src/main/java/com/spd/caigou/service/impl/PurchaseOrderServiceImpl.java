@@ -224,8 +224,29 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             List<PurchaseOrderEntry> list = new ArrayList<PurchaseOrderEntry>();
             for (PurchaseOrderEntry purchaseOrderEntry : purchaseOrderEntryList)
             {
+                // 验证必填字段
+                if (purchaseOrderEntry.getMaterialId() == null) {
+                    throw new RuntimeException("耗材ID不能为空");
+                }
+                if (purchaseOrderEntry.getOrderQty() == null || purchaseOrderEntry.getOrderQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new RuntimeException("订单数量不能为空且必须大于0");
+                }
+                if (purchaseOrderEntry.getUnitPrice() == null || purchaseOrderEntry.getUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new RuntimeException("单价不能为空且不能小于0");
+                }
+                
+                // 设置默认值
+                if (StringUtils.isEmpty(purchaseOrderEntry.getDelFlag())) {
+                    purchaseOrderEntry.setDelFlag("0");
+                }
+                if (StringUtils.isEmpty(purchaseOrderEntry.getQualityStatus())) {
+                    purchaseOrderEntry.setQualityStatus("0");
+                }
+                if (purchaseOrderEntry.getReceivedQty() == null) {
+                    purchaseOrderEntry.setReceivedQty(BigDecimal.ZERO);
+                }
+                
                 purchaseOrderEntry.setParentId(id);
-                purchaseOrderEntry.setDelFlag("0");
                 list.add(purchaseOrderEntry);
             }
             if (list.size() > 0)

@@ -254,7 +254,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         values
         <foreach collection="list" item="item" index="index" separator=",">
             (#{item.parentId}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
-             #{item.materialUnit}, #{item.orderQty}, #{item.receivedQty}, #{item.unitPrice}, #{item.totalAmount}, 
+             #{item.materialUnit}, 
+             <![CDATA[#{item.orderQty}]]>, 
+             <![CDATA[#{item.receivedQty}]]>, 
+             <![CDATA[#{item.unitPrice}]]>, 
+             <![CDATA[#{item.totalAmount}]]>, 
              #{item.expectedDeliveryDate}, #{item.actualDeliveryDate}, #{item.qualityStatus}, #{item.remark}, 
              #{item.delFlag}, #{item.createBy}, #{item.createTime})
         </foreach>
