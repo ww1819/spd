@@ -110,4 +110,14 @@ public class StkIoBillOutController extends BaseController {
         ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
         util.exportExcel(response, list, "出入库数据");
     }
+
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createEntriesByDApply')")
+    @Log(title = "根据科室申请单生成出库明细", businessType = BusinessType.EXPORT)
+    @PostMapping("/createEntriesByDApply")
+    public void createEntriesByDApply(HttpServletResponse response, StkIoBill stkIoBill)
+    {
+        List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
+        ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
+        util.exportExcel(response, list, "出入库数据");
+    }
 }
