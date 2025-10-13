@@ -112,7 +112,6 @@ public class StkIoBillOutController extends BaseController {
     }
 
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createEntriesByDApply')")
-    @Log(title = "根据科室申请单生成出库明细", businessType = BusinessType.EXPORT)
     @PostMapping("/createEntriesByDApply")
     public void createEntriesByDApply(HttpServletResponse response, StkIoBill stkIoBill)
     {

@@ -154,6 +154,11 @@ public class StkIoBill extends BaseEntity
 
     private List<FdMaterial> materialList;
 
+    /**
+     * 科室申请单id
+     */
+    private String dApplyId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -494,5 +499,13 @@ public class StkIoBill extends BaseEntity
 
     public void setCreaterName(String createrName) {
         this.createrName = createrName;
+    }
+
+    public String getdApplyId() {
+        return dApplyId;
+    }
+
+    public void setdApplyId(String dApplyId) {
+        this.dApplyId = dApplyId;
     }
 }
