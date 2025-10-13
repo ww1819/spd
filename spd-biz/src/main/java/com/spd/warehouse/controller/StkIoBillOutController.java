@@ -113,10 +113,15 @@ public class StkIoBillOutController extends BaseController {
 
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createEntriesByDApply')")
     @PostMapping("/createEntriesByDApply")
-    public void createEntriesByDApply(HttpServletResponse response, StkIoBill stkIoBill)
-    {
-        List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
-        ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
-        util.exportExcel(response, list, "出入库数据");
+    public AjaxResult createEntriesByDApply(@RequestBody StkIoBill stkIoBill) {
+        if (stkIoBill == null){
+            throw new RuntimeException("科室申领ID不能为空");
+        }
+        String dApplyId = stkIoBill.getDApplyId();
+        if (dApplyId == null) {
+            throw new RuntimeException("科室申领ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(dApplyId);
+        return toAjax(stkIoBillService.insertOutStkIoBill(stkIoBill1));
     }
 }

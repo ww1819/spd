@@ -501,11 +501,11 @@ public class StkIoBill extends BaseEntity
         this.createrName = createrName;
     }
 
-    public String getdApplyId() {
+    public String getDApplyId() {
         return dApplyId;
     }
 
-    public void setdApplyId(String dApplyId) {
+    public void setDApplyId(String dApplyId) {
         this.dApplyId = dApplyId;
     }
 }

@@ -8,7 +8,10 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.department.domain.BasApply;
+import com.spd.department.domain.BasApplyEntry;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.mapper.BasApplyMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -46,6 +49,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private BasApplyMapper basApplyMapper;
 
     /**
      * 查询出入库
@@ -633,5 +639,33 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
 
         }
+    }
+
+    @Override
+    public StkIoBill createEntriesByDApply(String dApplyId) {
+        BasApply basApply = this.basApplyMapper.selectBasApplyById(Long.valueOf(dApplyId));
+        if (basApply == null) {
+            throw new ServiceException(String.format("科室申领ID：%s，不存在!", dApplyId));
+        }
+        if (basApply.getApplyBillStatus() != 2) {
+            throw new ServiceException(String.format("科室申领ID：%s，未审核，不能生成出库单!", dApplyId));
+        }
+        StkIoBill stkIoBill = new StkIoBill();
+        List<BasApplyEntry> list = basApply.getBasApplyEntryList();
+        if (list == null || list.size() == 0) {
+            throw new ServiceException(String.format("科室申领ID：%s，明细不存在!", dApplyId));
+        }
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (BasApplyEntry basApplyEntry : list) {
+            StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
+            stkIoBillEntry.setMaterialId(basApplyEntry.getMaterialId());
+            stkIoBillEntry.setQty(basApplyEntry.getQty());
+            stkIoBillEntry.setUnitPrice(basApplyEntry.getUnitPrice());
+            stkIoBillEntry.setAmt(basApplyEntry.getAmt());
+            entryList.add(stkIoBillEntry);
+        }
+        stkIoBill.setStkIoBillEntryList(entryList);
+        stkIoBill.setDepartmentId(basApply.getDepartmentId());
+        return stkIoBill;
     }
 }
