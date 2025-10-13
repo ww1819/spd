@@ -122,6 +122,6 @@ public class StkIoBillOutController extends BaseController {
             throw new RuntimeException("科室申领ID不能为空");
         }
         StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(dApplyId);
-        return toAjax(stkIoBillService.insertOutStkIoBill(stkIoBill1));
+        return success(stkIoBill1);
     }
 }
