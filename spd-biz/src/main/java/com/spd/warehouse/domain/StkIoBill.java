@@ -159,6 +159,11 @@ public class StkIoBill extends BaseEntity
      */
     private String dApplyId;
 
+    /**
+     * 订单ID
+     */
+    private String dingdanId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -507,5 +512,13 @@ public class StkIoBill extends BaseEntity
 
     public void setDApplyId(String dApplyId) {
         this.dApplyId = dApplyId;
+    }
+
+    public String getDingdanId() {
+        return dingdanId;
+    }
+
+    public void setDingdanId(String dingdanId) {
+        this.dingdanId = dingdanId;
     }
 }

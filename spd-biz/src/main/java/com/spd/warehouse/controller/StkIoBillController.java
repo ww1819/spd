@@ -7,14 +7,7 @@ import com.alibaba.fastjson2.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
@@ -118,6 +111,20 @@ public class StkIoBillController extends BaseController
         return toAjax(stkIoBillService.deleteStkIoBillById(ids));
     }
 
+
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createEntriesByDingdan')")
+    @GetMapping("/createEntriesByDingdan")
+    public AjaxResult createEntriesByDingdan(@RequestParam String dingdanId) {
+//        if (stkIoBill == null){
+//            throw new RuntimeException("科室申领ID不能为空");
+//        }
+//        String dingdanId = stkIoBill.getDApplyId();
+        if (dingdanId == null) {
+            throw new RuntimeException("科室申领ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(dingdanId);
+        return success(stkIoBill1);
+    }
 
 
 }
