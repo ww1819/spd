@@ -109,4 +109,24 @@ public class StkThInventoryController extends BaseController {
         ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
         util.exportExcel(response, list, "退货数据");
     }
+
+    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:createThEntriesByRkApply')")
+    @GetMapping("/createThEntriesByRkApply")
+    public AjaxResult createThEntriesByRkApply(@RequestParam String rkApplyId) {
+        if (rkApplyId == null) {
+            throw new RuntimeException("入库单ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createThEntriesByRkApply(rkApplyId);
+        return success(stkIoBill1);
+    }
+
+    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:createThEntriesByTkApply')")
+    @GetMapping("/createThEntriesByTkApply")
+    public AjaxResult createThEntriesByTkApply(@RequestParam String tkApplyId) {
+        if (tkApplyId == null) {
+            throw new RuntimeException("科室退库单ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createThEntriesByTkApply(tkApplyId);
+        return success(stkIoBill1);
+    }
 }
