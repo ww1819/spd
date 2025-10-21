@@ -164,9 +164,9 @@ public interface IStkIoBillService
     List<StkIoBill> getMonthHandleDataList(String beginDate, String endDate);
 
 
-    public StkIoBill createEntriesByDApply(String dApplyId);
+    public StkIoBill createCkEntriesByDApply(String dApplyId);
 
-    public StkIoBill createEntriesByRkApply(String rkApplyId);
+    public StkIoBill createCkEntriesByRkApply(String rkApplyId);
 
 
 }

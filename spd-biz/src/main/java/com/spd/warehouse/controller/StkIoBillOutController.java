@@ -111,9 +111,9 @@ public class StkIoBillOutController extends BaseController {
         util.exportExcel(response, list, "出入库数据");
     }
 
-    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createEntriesByDApply')")
-    @GetMapping("/createEntriesByDApply")
-    public AjaxResult createEntriesByDApply(@RequestParam String dApplyId) {
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")
+    @GetMapping("/createCkEntriesByDApply")
+    public AjaxResult createCkEntriesByDApply(@RequestParam String dApplyId) {
 //        if (stkIoBill == null){
 //            throw new RuntimeException("科室申领ID不能为空");
 //        }
@@ -121,21 +121,21 @@ public class StkIoBillOutController extends BaseController {
         if (dApplyId == null) {
             throw new RuntimeException("科室申领ID不能为空");
         }
-        StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(dApplyId);
+        StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByDApply(dApplyId);
         return success(stkIoBill1);
     }
 
-    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createEntriesByRkApply')")
-    @GetMapping("/createEntriesByRkApply")
-    public AjaxResult createEntriesByRkApply(@RequestParam String rkApplyId) {
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByRkApply')")
+    @GetMapping("/createCkEntriesByRkApply")
+    public AjaxResult createCkEntriesByRkApply(@RequestParam String rkApplyId) {
 //        if (stkIoBill == null){
 //            throw new RuntimeException("科室申领ID不能为空");
 //        }
 //        String dApplyId = stkIoBill.getDApplyId();
         if (rkApplyId == null) {
-            throw new RuntimeException("科室申领ID不能为空");
+            throw new RuntimeException("入库单ID不能为空");
         }
-        StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(rkApplyId);
+        StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByRkApply(rkApplyId);
         return success(stkIoBill1);
     }
 }

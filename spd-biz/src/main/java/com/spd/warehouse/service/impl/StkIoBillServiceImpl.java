@@ -642,7 +642,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
-    public StkIoBill createEntriesByDApply(String dApplyId) {
+    public StkIoBill createCkEntriesByDApply(String dApplyId) {
         BasApply basApply = this.basApplyMapper.selectBasApplyById(Long.valueOf(dApplyId));
         if (basApply == null) {
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", dApplyId));
@@ -670,7 +670,37 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
-    public StkIoBill createEntriesByRkApply(String rkApplyId) {
-        return null;
+    public StkIoBill createCkEntriesByRkApply(String rkApplyId) {
+        StkIoBill rkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(rkApplyId));
+        if (rkBill == null) {
+            throw new ServiceException(String.format("入库单ID：%s，不存在!", rkApplyId));
+        }
+        if (rkBill.getBillStatus() != 2) {
+            throw new ServiceException(String.format("入库单ID：%s，未审核，不能生成出库单!", rkApplyId));
+        }
+
+        List<StkIoBillEntry> list = rkBill.getStkIoBillEntryList();
+        if (list == null || list.size() == 0) {
+            throw new ServiceException(String.format("入库单ID：%s，明细不存在!", rkApplyId));
+        }
+
+        StkIoBill ckBill = new StkIoBill();
+        ckBill.setWarehouseId(rkBill.getWarehouseId());
+
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (StkIoBillEntry rkEntry : list) {
+            StkIoBillEntry ckEntry = new StkIoBillEntry();
+            ckEntry.setMaterialId(rkEntry.getMaterialId());
+            ckEntry.setQty(rkEntry.getQty());
+            ckEntry.setUnitPrice(rkEntry.getUnitPrice());
+            ckEntry.setAmt(rkEntry.getAmt());
+            ckEntry.setBatchNo(rkEntry.getBatchNo());
+            ckEntry.setBatchNumber(rkEntry.getBatchNumber());
+            ckEntry.setBeginTime(rkEntry.getBeginTime());
+            ckEntry.setEndTime(rkEntry.getEndTime());
+            entryList.add(ckEntry);
+        }
+        ckBill.setStkIoBillEntryList(entryList);
+        return ckBill;
     }
 }

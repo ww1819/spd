@@ -122,7 +122,7 @@ public class StkIoBillController extends BaseController
         if (dingdanId == null) {
             throw new RuntimeException("科室申领ID不能为空");
         }
-        StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(dingdanId);
+        StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByDApply(dingdanId);
         return success(stkIoBill1);
     }
 
