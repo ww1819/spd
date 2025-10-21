@@ -668,4 +668,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setDepartmentId(basApply.getDepartmentId());
         return stkIoBill;
     }
+
+    @Override
+    public StkIoBill createEntriesByRkApply(String rkApplyId) {
+        return null;
+    }
 }

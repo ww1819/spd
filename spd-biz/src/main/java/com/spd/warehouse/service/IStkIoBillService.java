@@ -166,5 +166,7 @@ public interface IStkIoBillService
 
     public StkIoBill createEntriesByDApply(String dApplyId);
 
+    public StkIoBill createEntriesByRkApply(String rkApplyId);
+
 
 }

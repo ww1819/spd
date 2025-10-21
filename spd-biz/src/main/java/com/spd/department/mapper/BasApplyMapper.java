@@ -3,6 +3,8 @@ package com.spd.department.mapper;
 import java.util.List;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
 
 /**
  * 科室申领Mapper接口
@@ -10,6 +12,8 @@ import com.spd.department.domain.BasApplyEntry;
  * @author spd
  * @date 2024-02-26
  */
+@Mapper
+@Repository
 public interface BasApplyMapper 
 {
     /**

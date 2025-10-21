@@ -124,4 +124,18 @@ public class StkIoBillOutController extends BaseController {
         StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(dApplyId);
         return success(stkIoBill1);
     }
+
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createEntriesByRkApply')")
+    @GetMapping("/createEntriesByRkApply")
+    public AjaxResult createEntriesByRkApply(@RequestParam String rkApplyId) {
+//        if (stkIoBill == null){
+//            throw new RuntimeException("科室申领ID不能为空");
+//        }
+//        String dApplyId = stkIoBill.getDApplyId();
+        if (rkApplyId == null) {
+            throw new RuntimeException("科室申领ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createEntriesByDApply(rkApplyId);
+        return success(stkIoBill1);
+    }
 }
