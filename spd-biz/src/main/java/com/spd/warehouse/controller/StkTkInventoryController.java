@@ -109,4 +109,15 @@ public class StkTkInventoryController extends BaseController {
         ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
         util.exportExcel(response, list, "退库数据");
     }
+
+
+    @PreAuthorize("@ss.hasPermi('outWarehouse:refundDepotApply:createTkEntriesByCkApply')")
+    @GetMapping("/createTkEntriesByCkApply")
+    public AjaxResult createTkEntriesByCkApply(@RequestParam String ckApplyId) {
+        if (ckApplyId == null) {
+            throw new RuntimeException("出库单ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createTkEntriesByCkApply(ckApplyId);
+        return success(stkIoBill1);
+    }
 }
