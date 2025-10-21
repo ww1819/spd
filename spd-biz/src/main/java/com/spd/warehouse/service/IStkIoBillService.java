@@ -163,12 +163,48 @@ public interface IStkIoBillService
      */
     List<StkIoBill> getMonthHandleDataList(String beginDate, String endDate);
 
+    /**
+     * 引用科室申请但生成出库明细
+     * @param dApplyId 科室申请单id
+     * @return
+     */
 
     public StkIoBill createCkEntriesByDApply(String dApplyId);
 
+    /**
+     * 引用入库单生成出库明细
+     * @param rkApplyId 入库单id
+     * @return
+     */
     public StkIoBill createCkEntriesByRkApply(String rkApplyId);
 
+    /**
+     * 引用订单生成入库单明细
+     * @param dingdanId 订单id
+     * @return
+     */
     public StkIoBill createRkEntriesByDingdan(String dingdanId);
+
+    /**
+     * 引用入库单生成退货单明细
+     * @param rkApplyId 入库单id
+     * @return
+     */
+    public StkIoBill createThEntriesByRkApply(String rkApplyId);
+
+    /**
+     * 引用出库单生成退库单明细
+     * @param ckApplyId 出库单id
+     * @return
+     */
+    public StkIoBill createTkEntriesByCkApply(String ckApplyId);
+
+    /**
+     * 引用科室退库单生成退货明细
+     * @param tkApplyId
+     * @return
+     */
+    public StkIoBill createThEntriesByTkApply(String tkApplyId);
 
 
 }

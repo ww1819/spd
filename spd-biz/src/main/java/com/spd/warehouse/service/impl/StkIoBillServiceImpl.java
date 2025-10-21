@@ -658,6 +658,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("科室申领ID：%s，未审核，不能生成出库单!", dApplyId));
         }
         StkIoBill stkIoBill = new StkIoBill();
+        stkIoBill.setDApplyId(dApplyId);
+        stkIoBill.setDepartmentId(basApply.getDepartmentId());
+        stkIoBill.setWarehouseId(basApply.getWarehouseId());
+        stkIoBill.setBillType(201);
         List<BasApplyEntry> list = basApply.getBasApplyEntryList();
         if (list == null || list.size() == 0) {
             throw new ServiceException(String.format("科室申领ID：%s，明细不存在!", dApplyId));
@@ -693,7 +697,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
         StkIoBill ckBill = new StkIoBill();
         ckBill.setWarehouseId(rkBill.getWarehouseId());
-
+        ckBill.setBillType(201);
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (StkIoBillEntry rkEntry : list) {
             StkIoBillEntry ckEntry = new StkIoBillEntry();
@@ -727,6 +731,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         StkIoBill stkIoBill = new StkIoBill();
         stkIoBill.setWarehouseId(purchaseOrder.getWarehouseId());
         stkIoBill.setSupplerId(purchaseOrder.getSupplierId());
+        stkIoBill.setBillType(101);
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (PurchaseOrderEntry purchaseOrderEntry : list) {
             StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
@@ -738,5 +743,114 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
+    }
+
+    @Override
+    public StkIoBill createThEntriesByRkApply(String rkApplyId) {
+        StkIoBill rkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(rkApplyId));
+        if (rkBill == null) {
+            throw new ServiceException(String.format("入库单ID：%s，不存在!", rkApplyId));
+        }
+        if (rkBill.getBillStatus() != 2) {
+            throw new ServiceException(String.format("入库单ID：%s，未审核，不能生成出库单!", rkApplyId));
+        }
+
+        List<StkIoBillEntry> list = rkBill.getStkIoBillEntryList();
+        if (list == null || list.size() == 0) {
+            throw new ServiceException(String.format("入库单ID：%s，明细不存在!", rkApplyId));
+        }
+        StkIoBill thBill = new StkIoBill();
+        thBill.setWarehouseId(rkBill.getWarehouseId());
+        thBill.setSupplerId(rkBill.getSupplerId());
+        thBill.setBillType(301);
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (StkIoBillEntry stkIoBillEntry : list) {
+            StkIoBillEntry thEntry = new StkIoBillEntry();
+            thEntry.setMaterialId(stkIoBillEntry.getMaterialId());
+            thEntry.setQty(stkIoBillEntry.getQty());
+            thEntry.setUnitPrice(stkIoBillEntry.getUnitPrice());
+            thEntry.setAmt(stkIoBillEntry.getAmt());
+            thEntry.setBatchNo(stkIoBillEntry.getBatchNo());
+            thEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
+            thEntry.setBeginTime(stkIoBillEntry.getBeginTime());
+            thEntry.setEndTime(stkIoBillEntry.getEndTime());
+            entryList.add(thEntry);
+        }
+        thBill.setStkIoBillEntryList(entryList);
+
+        return thBill;
+    }
+
+    @Override
+    public StkIoBill createTkEntriesByCkApply(String ckApplyId) {
+        StkIoBill ckBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(ckApplyId));
+        if (ckBill == null) {
+            throw new ServiceException(String.format("出库单ID：%s，不存在!", ckApplyId));
+        }
+        if (ckBill.getBillStatus() != 2) {
+            throw new ServiceException(String.format("出库单ID：%s，未审核，不能生成出库单!", ckApplyId));
+        }
+
+        List<StkIoBillEntry> list = ckBill.getStkIoBillEntryList();
+        if (list == null || list.size() == 0) {
+            throw new ServiceException(String.format("出库单ID：%s，明细不存在!", ckApplyId));
+        }
+
+        StkIoBill tkBill = new StkIoBill();
+        tkBill.setWarehouseId(ckBill.getWarehouseId());
+        tkBill.setDepartmentId(ckBill.getDepartmentId());
+        tkBill.setBillType(401);
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (StkIoBillEntry stkIoBillEntry : list) {
+            StkIoBillEntry tkEntry = new StkIoBillEntry();
+            tkEntry.setMaterialId(stkIoBillEntry.getMaterialId());
+            tkEntry.setQty(stkIoBillEntry.getQty());
+            tkEntry.setUnitPrice(stkIoBillEntry.getUnitPrice());
+            tkEntry.setAmt(stkIoBillEntry.getAmt());
+            tkEntry.setBatchNo(stkIoBillEntry.getBatchNo());
+            tkEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
+            tkEntry.setBeginTime(stkIoBillEntry.getBeginTime());
+            tkEntry.setEndTime(stkIoBillEntry.getEndTime());
+            entryList.add(tkEntry);
+        }
+        tkBill.setStkIoBillEntryList(entryList);
+        return tkBill;
+    }
+
+
+    @Override
+    public StkIoBill createThEntriesByTkApply(String tkApplyId) {
+        StkIoBill tkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(tkApplyId));
+        if (tkBill == null) {
+            throw new ServiceException(String.format("入库单ID：%s，不存在!", tkApplyId));
+        }
+        if (tkBill.getBillStatus() != 2) {
+            throw new ServiceException(String.format("入库单ID：%s，未审核，不能生成出库单!", tkApplyId));
+        }
+
+        List<StkIoBillEntry> list = tkBill.getStkIoBillEntryList();
+        if (list == null || list.size() == 0) {
+            throw new ServiceException(String.format("入库单ID：%s，明细不存在!", tkApplyId));
+        }
+        StkIoBill thBill = new StkIoBill();
+        thBill.setWarehouseId(tkBill.getWarehouseId());
+        thBill.setSupplerId(tkBill.getSupplerId());
+        thBill.setBillType(301);
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (StkIoBillEntry stkIoBillEntry : list) {
+            StkIoBillEntry thEntry = new StkIoBillEntry();
+            thEntry.setMaterialId(stkIoBillEntry.getMaterialId());
+            thEntry.setQty(stkIoBillEntry.getQty());
+            thEntry.setUnitPrice(stkIoBillEntry.getUnitPrice());
+            thEntry.setAmt(stkIoBillEntry.getAmt());
+            thEntry.setBatchNo(stkIoBillEntry.getBatchNo());
+            thEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
+            thEntry.setBeginTime(stkIoBillEntry.getBeginTime());
+            thEntry.setEndTime(stkIoBillEntry.getEndTime());
+            entryList.add(thEntry);
+        }
+        thBill.setStkIoBillEntryList(entryList);
+
+        return thBill;
     }
 }
