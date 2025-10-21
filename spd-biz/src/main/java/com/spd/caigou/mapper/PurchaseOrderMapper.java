@@ -2,6 +2,8 @@ package com.spd.caigou.mapper;
 
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -11,6 +13,8 @@ import java.util.List;
  * @author spd
  * @date 2024-01-15
  */
+@Mapper
+@Repository
 public interface PurchaseOrderMapper 
 {
     /**

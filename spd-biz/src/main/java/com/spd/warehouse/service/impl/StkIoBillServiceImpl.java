@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+import com.spd.caigou.domain.PurchaseOrder;
+import com.spd.caigou.domain.PurchaseOrderEntry;
+import com.spd.caigou.mapper.PurchaseOrderMapper;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -52,6 +55,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private BasApplyMapper basApplyMapper;
+    @Autowired
+    private FdMaterialMapper materialMapper;
+    @Autowired
+    private PurchaseOrderMapper purchaseOrderMapper;
 
     /**
      * 查询出入库
@@ -702,5 +709,34 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         ckBill.setStkIoBillEntryList(entryList);
         return ckBill;
+    }
+
+    @Override
+    public StkIoBill createRkEntriesByDingdan(String dingdanId) {
+        PurchaseOrder purchaseOrder = this.purchaseOrderMapper.selectPurchaseOrderById(Long.valueOf(dingdanId));
+        if (purchaseOrder == null) {
+            throw new ServiceException(String.format("采购订单ID：%s，不存在!", dingdanId));
+        }
+        if (!"1".equals(purchaseOrder.getOrderStatus())) {
+            throw new ServiceException(String.format("采购订单ID：%s，未审核，不能生成入库单!", dingdanId));
+        }
+        List<PurchaseOrderEntry> list = purchaseOrder.getPurchaseOrderEntryList();
+        if (list == null || list.size() == 0) {
+            throw new ServiceException(String.format("采购订单ID：%s，明细不存在!", dingdanId));
+        }
+        StkIoBill stkIoBill = new StkIoBill();
+        stkIoBill.setWarehouseId(purchaseOrder.getWarehouseId());
+        stkIoBill.setSupplerId(purchaseOrder.getSupplierId());
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (PurchaseOrderEntry purchaseOrderEntry : list) {
+            StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
+            stkIoBillEntry.setMaterialId(purchaseOrderEntry.getMaterialId());
+            stkIoBillEntry.setQty(purchaseOrderEntry.getOrderQty());
+            stkIoBillEntry.setUnitPrice(purchaseOrderEntry.getUnitPrice());
+            stkIoBillEntry.setAmt(purchaseOrderEntry.getOrderQty().multiply(purchaseOrderEntry.getUnitPrice()));
+            entryList.add(stkIoBillEntry);
+        }
+        stkIoBill.setStkIoBillEntryList(entryList);
+        return stkIoBill;
     }
 }

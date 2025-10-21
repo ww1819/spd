@@ -168,5 +168,7 @@ public interface IStkIoBillService
 
     public StkIoBill createCkEntriesByRkApply(String rkApplyId);
 
+    public StkIoBill createRkEntriesByDingdan(String dingdanId);
+
 
 }

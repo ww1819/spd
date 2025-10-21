@@ -112,17 +112,13 @@ public class StkIoBillController extends BaseController
     }
 
 
-    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createEntriesByDingdan')")
-    @GetMapping("/createEntriesByDingdan")
-    public AjaxResult createEntriesByDingdan(@RequestParam String dingdanId) {
-//        if (stkIoBill == null){
-//            throw new RuntimeException("科室申领ID不能为空");
-//        }
-//        String dingdanId = stkIoBill.getDApplyId();
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createRkEntriesByDingdan')")
+    @GetMapping("/createRkEntriesByDingdan")
+    public AjaxResult createRkEntriesByDingdan(@RequestParam String dingdanId) {
         if (dingdanId == null) {
-            throw new RuntimeException("科室申领ID不能为空");
+            throw new RuntimeException("采购订单ID不能为空");
         }
-        StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByDApply(dingdanId);
+        StkIoBill stkIoBill1 = stkIoBillService.createRkEntriesByDingdan(dingdanId);
         return success(stkIoBill1);
     }
 
