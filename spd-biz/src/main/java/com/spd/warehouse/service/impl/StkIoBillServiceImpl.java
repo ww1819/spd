@@ -445,6 +445,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     public int insertOutStkIoBill(StkIoBill stkIoBill)
     {
         stkIoBill.setBillNo(getBillNumber("CK"));
+        // 如果制单日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertOutStkIoBillEntry(stkIoBill);
@@ -464,6 +468,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int updateOutStkIoBill(StkIoBill stkIoBill) {
+        // 如果退货日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
         insertOutStkIoBillEntry(stkIoBill);
@@ -474,6 +482,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int insertTkStkIoBill(StkIoBill stkIoBill) {
         stkIoBill.setBillNo(getTKNumber("TK"));
+        // 如果制单日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertTKStkIoBillEntry(stkIoBill);
@@ -497,6 +509,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int insertTHStkIoBill(StkIoBill stkIoBill) {
+        // 如果退货日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setBillNo(getTHNumber("TH"));
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -507,6 +523,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int updateTKStkIoBill(StkIoBill stkIoBill) {
+        // 如果制单日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
         insertTKStkIoBillEntry(stkIoBill);
@@ -641,7 +661,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             String batchNo = stkIoBillEntry.getBatchNo();
             BigDecimal qty = stkIoBillEntry.getQty();//出库数量
 
-            if(!oldBatchNo.equals(batchNo)){
+            if(oldBatchNo == null || batchNo == null || !oldBatchNo.equals(batchNo)){
                 continue;
             }
 
@@ -669,6 +689,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setDepartmentId(basApply.getDepartmentId());
         stkIoBill.setWarehouseId(basApply.getWarehouseId());
         stkIoBill.setBillType(201);
+        // 设置引用单号为科室申请单号
+        stkIoBill.setRefBillNo(basApply.getApplyBillNo());
         List<BasApplyEntry> list = basApply.getBasApplyEntryList();
         if (list == null || list.size() == 0) {
             throw new ServiceException(String.format("科室申领ID：%s，明细不存在!", dApplyId));
@@ -680,6 +702,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBillEntry.setQty(basApplyEntry.getQty());
             stkIoBillEntry.setUnitPrice(basApplyEntry.getUnitPrice());
             stkIoBillEntry.setAmt(basApplyEntry.getAmt());
+            // 加载完整的material对象
+            if (basApplyEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(basApplyEntry.getMaterialId());
+                stkIoBillEntry.setMaterial(material);
+            }
             entryList.add(stkIoBillEntry);
         }
         stkIoBill.setStkIoBillEntryList(entryList);
@@ -705,6 +732,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         StkIoBill ckBill = new StkIoBill();
         ckBill.setWarehouseId(rkBill.getWarehouseId());
         ckBill.setBillType(201);
+        // 设置引用单号为入库单号
+        ckBill.setRefBillNo(rkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (StkIoBillEntry rkEntry : list) {
             StkIoBillEntry ckEntry = new StkIoBillEntry();
@@ -716,6 +745,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             ckEntry.setBatchNumber(rkEntry.getBatchNumber());
             ckEntry.setBeginTime(rkEntry.getBeginTime());
             ckEntry.setEndTime(rkEntry.getEndTime());
+            // 加载完整的material对象
+            if (rkEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(rkEntry.getMaterialId());
+                ckEntry.setMaterial(material);
+            }
             entryList.add(ckEntry);
         }
         ckBill.setStkIoBillEntryList(entryList);
@@ -783,6 +817,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         thBill.setWarehouseId(rkBill.getWarehouseId());
         thBill.setSupplerId(rkBill.getSupplerId());
         thBill.setBillType(301);
+        // 设置引用单号为入库单号
+        thBill.setRefBillNo(rkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (StkIoBillEntry stkIoBillEntry : list) {
             StkIoBillEntry thEntry = new StkIoBillEntry();
@@ -794,6 +830,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             thEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
             thEntry.setBeginTime(stkIoBillEntry.getBeginTime());
             thEntry.setEndTime(stkIoBillEntry.getEndTime());
+            // 加载耗材详细信息，前端表格需要显示耗材的名称、规格等信息
+            if (stkIoBillEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(stkIoBillEntry.getMaterialId());
+                thEntry.setMaterial(material);
+            }
             entryList.add(thEntry);
         }
         thBill.setStkIoBillEntryList(entryList);
@@ -820,6 +861,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         tkBill.setWarehouseId(ckBill.getWarehouseId());
         tkBill.setDepartmentId(ckBill.getDepartmentId());
         tkBill.setBillType(401);
+        // 设置引用单号为出库单号
+        tkBill.setRefBillNo(ckBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (StkIoBillEntry stkIoBillEntry : list) {
             StkIoBillEntry tkEntry = new StkIoBillEntry();
@@ -831,6 +874,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             tkEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
             tkEntry.setBeginTime(stkIoBillEntry.getBeginTime());
             tkEntry.setEndTime(stkIoBillEntry.getEndTime());
+            // 加载完整的material对象
+            if (stkIoBillEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(stkIoBillEntry.getMaterialId());
+                tkEntry.setMaterial(material);
+            }
             entryList.add(tkEntry);
         }
         tkBill.setStkIoBillEntryList(entryList);
@@ -856,6 +904,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         thBill.setWarehouseId(tkBill.getWarehouseId());
         thBill.setSupplerId(tkBill.getSupplerId());
         thBill.setBillType(301);
+        // 设置引用单号为科室退库单号
+        thBill.setRefBillNo(tkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (StkIoBillEntry stkIoBillEntry : list) {
             StkIoBillEntry thEntry = new StkIoBillEntry();
@@ -867,6 +917,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             thEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
             thEntry.setBeginTime(stkIoBillEntry.getBeginTime());
             thEntry.setEndTime(stkIoBillEntry.getEndTime());
+            // 加载耗材详细信息，前端表格需要显示耗材的名称、规格等信息
+            if (stkIoBillEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(stkIoBillEntry.getMaterialId());
+                thEntry.setMaterial(material);
+            }
             entryList.add(thEntry);
         }
         thBill.setStkIoBillEntryList(entryList);
