@@ -61,7 +61,7 @@ public class CaptchaController
         BufferedImage image = null;
 
         // 生成验证码
-        String captchaType = SPDConfig.getCaptchaType();
+        String captchaType = SPDConfig.getCaptchaType(); 
         if ("math".equals(captchaType))
         {
             String capText = captchaProducerMath.createText();

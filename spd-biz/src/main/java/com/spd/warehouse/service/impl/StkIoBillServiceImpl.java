@@ -107,7 +107,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int insertStkIoBill(StkIoBill stkIoBill)
     {
-
+        // 如果制单日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setBillNo(getNumber());
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -137,6 +140,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int updateStkIoBill(StkIoBill stkIoBill)
     {
+        // 如果制单日期为空，自动设置为当前日期
+        if (stkIoBill.getBillDate() == null) {
+            stkIoBill.setBillDate(DateUtils.getNowDate());
+        }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
         updateStkIoBillEntry(stkIoBill);
@@ -724,7 +731,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (!"1".equals(purchaseOrder.getOrderStatus())) {
             throw new ServiceException(String.format("采购订单ID：%s，未审核，不能生成入库单!", dingdanId));
         }
-        List<PurchaseOrderEntry> list = purchaseOrder.getPurchaseOrderEntryList();
+        // 手动查询采购订单明细数据
+        List<PurchaseOrderEntry> list = purchaseOrderMapper.selectPurchaseOrderEntryByParentId(Long.valueOf(dingdanId));
         if (list == null || list.size() == 0) {
             throw new ServiceException(String.format("采购订单ID：%s，明细不存在!", dingdanId));
         }
@@ -732,13 +740,25 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setWarehouseId(purchaseOrder.getWarehouseId());
         stkIoBill.setSupplerId(purchaseOrder.getSupplierId());
         stkIoBill.setBillType(101);
+        // 设置引用单号为采购订单号
+        stkIoBill.setRefBillNo(purchaseOrder.getOrderNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (PurchaseOrderEntry purchaseOrderEntry : list) {
             StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
             stkIoBillEntry.setMaterialId(purchaseOrderEntry.getMaterialId());
             stkIoBillEntry.setQty(purchaseOrderEntry.getOrderQty());
             stkIoBillEntry.setUnitPrice(purchaseOrderEntry.getUnitPrice());
-            stkIoBillEntry.setAmt(purchaseOrderEntry.getOrderQty().multiply(purchaseOrderEntry.getUnitPrice()));
+            // 计算金额，添加null检查避免空指针异常
+            if (purchaseOrderEntry.getOrderQty() != null && purchaseOrderEntry.getUnitPrice() != null) {
+                stkIoBillEntry.setAmt(purchaseOrderEntry.getOrderQty().multiply(purchaseOrderEntry.getUnitPrice()));
+            } else {
+                stkIoBillEntry.setAmt(BigDecimal.ZERO);
+            }
+            // 加载耗材详细信息，前端表格需要显示耗材的名称、规格等信息
+            if (purchaseOrderEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(purchaseOrderEntry.getMaterialId());
+                stkIoBillEntry.setMaterial(material);
+            }
             entryList.add(stkIoBillEntry);
         }
         stkIoBill.setStkIoBillEntryList(entryList);

@@ -31,6 +31,10 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "出入库单号")
     private String billNo;
 
+    /** 引用单号 */
+    @Excel(name = "引用单号")
+    private String refBillNo;
+
     /** 供应商ID */
     @Excel(name = "供应商ID")
     private Long supplerId;
@@ -181,6 +185,15 @@ public class StkIoBill extends BaseEntity
     public String getBillNo()
     {
         return billNo;
+    }
+    public void setRefBillNo(String refBillNo)
+    {
+        this.refBillNo = refBillNo;
+    }
+
+    public String getRefBillNo()
+    {
+        return refBillNo;
     }
     public void setSupplerId(Long supplerId)
     {
@@ -430,6 +443,7 @@ public class StkIoBill extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("billNo", getBillNo())
+            .append("refBillNo", getRefBillNo())
             .append("supplerId", getSupplerId())
             .append("billDate", getBillDate())
             .append("warehouseId", getWarehouseId())

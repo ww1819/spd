@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="StkIoBill" id="StkIoBillResult">
         <result property="id"    column="id"    />
         <result property="billNo"    column="bill_no"    />
+        <result property="refBillNo"    column="ref_bill_no"    />
         <result property="supplerId"    column="suppler_id"    />
         <result property="billDate"    column="bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
@@ -106,7 +107,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectStkIoBillVo">
-        select stk.id, stk.bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
+        select stk.id, stk.bill_no, stk.ref_bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag,stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
 				stk.invoice_time,stk.pro_person,stk.audit_by,
@@ -314,6 +315,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into stk_io_bill
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">bill_no,</if>
+            <if test="refBillNo != null and refBillNo != ''">ref_bill_no,</if>
             <if test="supplerId != null">suppler_id,</if>
             <if test="billDate != null">bill_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
@@ -340,6 +342,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">#{billNo},</if>
+            <if test="refBillNo != null and refBillNo != ''">#{refBillNo},</if>
             <if test="supplerId != null">#{supplerId},</if>
             <if test="billDate != null">#{billDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
@@ -370,6 +373,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update stk_io_bill
         <trim prefix="SET" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">bill_no = #{billNo},</if>
+            <if test="refBillNo != null and refBillNo != ''">ref_bill_no = #{refBillNo},</if>
             <if test="supplerId != null">suppler_id = #{supplerId},</if>
             <if test="billDate != null">bill_date = #{billDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
