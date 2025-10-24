@@ -762,7 +762,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (purchaseOrder == null) {
             throw new ServiceException(String.format("采购订单ID：%s，不存在!", dingdanId));
         }
-        if (!"1".equals(purchaseOrder.getOrderStatus())) {
+        if (!"2".equals(purchaseOrder.getOrderStatus())) {
             throw new ServiceException(String.format("采购订单ID：%s，未审核，不能生成入库单!", dingdanId));
         }
         // 手动查询采购订单明细数据

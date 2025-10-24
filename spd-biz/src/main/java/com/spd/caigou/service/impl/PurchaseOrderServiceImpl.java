@@ -200,7 +200,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     {
         PurchaseOrder purchaseOrder = new PurchaseOrder();
         purchaseOrder.setId(id);
-        purchaseOrder.setOrderStatus("1"); // 已审核
+        purchaseOrder.setOrderStatus("2"); // 已审核
         purchaseOrder.setAuditBy(auditBy);
         purchaseOrder.setAuditDate(new Date());
         purchaseOrder.setAuditOpinion(auditOpinion);

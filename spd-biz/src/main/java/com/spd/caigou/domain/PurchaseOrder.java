@@ -44,8 +44,8 @@ public class PurchaseOrder extends BaseEntity
     /** 部门ID */
     private Long departmentId;
 
-    /** 订单状态（0待审核 1已审核 2已执行 3已取消） */
-    @Excel(name = "订单状态", readConverterExp = "0=待审核,1=已审核,2=已执行,3=已取消")
+    /** 订单状态（0待审核 2已审核 3已执行 4已取消） */
+    @Excel(name = "订单状态", readConverterExp = "0=待审核,2=已审核,3=已执行,4=已取消")
     private String orderStatus;
 
     /** 订单类型（1采购订单 2退货订单） */
