@@ -90,8 +90,19 @@ public class StkInventoryController extends BaseController
             inventoryVo.setFactoryName(map.get("factoryName").toString());
             inventoryVo.setSupplierName(map.get("supplierName").toString());
             summaryVoList.add(inventoryVo);
-            subTotalQty = subTotalQty.add((BigDecimal) map.get("materialQty"));
-            subTotalAmt = subTotalAmt.add((BigDecimal) map.get("materialAmt"));
+            BigDecimal materialQty, materialAmt;
+            if (map.get("materialQty") == null) {
+                materialQty = BigDecimal.ZERO;
+            } else {
+                materialQty = (BigDecimal) map.get("materialQty");
+            }
+            if (map.get("materialAmt") == null) {
+                materialAmt = BigDecimal.ZERO;
+            } else {
+                materialAmt = (BigDecimal) map.get("materialAmt");
+            }
+            subTotalQty = subTotalQty.add(materialQty);
+            subTotalAmt = subTotalAmt.add(materialAmt);
         }
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListSummaryTotal(stkInventory);
         totalInfo.setSubTotalQty(subTotalQty);
