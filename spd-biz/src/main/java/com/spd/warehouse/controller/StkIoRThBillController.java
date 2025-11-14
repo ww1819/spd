@@ -1,7 +1,9 @@
 package com.spd.warehouse.controller;
 
 import com.spd.common.core.controller.BaseController;
+import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TableSupport;
 import com.spd.common.utils.StringUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.service.IFdMaterialService;
@@ -42,6 +44,8 @@ public class StkIoRThBillController extends BaseController
     @GetMapping("/RTHList")
     public TableDataInfo RTHList(StkIoBill stkIoBill)
     {
+        // 启动分页
+        startPage();
         List<StkRTHVo> stkRTHVoList = new ArrayList<StkRTHVo>();
         List<Map<String, Object>> mapList = stkIoBillService.selectRTHStkIoBillList(stkIoBill);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -99,7 +103,29 @@ public class StkIoRThBillController extends BaseController
             System.out.println(e.getMessage());
         }
         logger.info("loopCount:" + loopCount);
-        return getDataTable(stkRTHVoList);
+        
+        // 根据分页参数截取数据
+        List<StkRTHVo> pageList = new ArrayList<>();
+        try {
+            PageDomain pageDomain = TableSupport.buildPageRequest();
+            int pageNum = pageDomain.getPageNum();
+            int pageSize = pageDomain.getPageSize();
+            int total = stkRTHVoList.size();
+            
+            // 计算分页截取的开始和结束索引
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, total);
+            
+            if (startIndex < total) {
+                pageList = stkRTHVoList.subList(startIndex, endIndex);
+            }
+        } catch (Exception e) {
+            logger.error("分页处理失败", e);
+            // 发生异常时返回原始列表
+            pageList = stkRTHVoList;
+        }
+        
+        return getDataTable(pageList);
     }
 
     /**
