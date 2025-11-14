@@ -1,6 +1,7 @@
 package com.spd.common.core.controller;
 
 import java.beans.PropertyEditorSupport;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -208,5 +209,35 @@ public class BaseController
     public String getUsername()
     {
         return getLoginUser().getUsername();
+    }
+
+
+    /**
+     * 处理非MyBatis查询数据分页问题
+     * @param list
+     * @return
+     */
+    public List subListPage(List list){
+        // 根据分页参数截取数据
+        List pageList = new ArrayList<>();
+        try {
+            PageDomain pageDomain = TableSupport.buildPageRequest();
+            int pageNum = pageDomain.getPageNum();
+            int pageSize = pageDomain.getPageSize();
+            int total = list.size();
+
+            // 计算分页截取的开始和结束索引
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, total);
+
+            if (startIndex < total) {
+                pageList = list.subList(startIndex, endIndex);
+            }
+        } catch (Exception e) {
+            logger.error("分页处理失败", e);
+            // 发生异常时返回原始列表
+            pageList = list;
+        }
+        return pageList;
     }
 }
