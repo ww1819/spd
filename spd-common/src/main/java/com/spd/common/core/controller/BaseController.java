@@ -94,10 +94,11 @@ public class BaseController
         return rspData;
     }
 
-    protected TableDataInfo getDataTable(List<?> list, TotalInfo totalInfo)
+    protected TableDataInfo getDataTable(List<?> list, TotalInfo totalInfo, Long total)
     {
         TableDataInfo rspData = getDataTable(list);
         rspData.setTotalInfo(totalInfo);
+        rspData.setTotal(total);
         return rspData;
     }
 

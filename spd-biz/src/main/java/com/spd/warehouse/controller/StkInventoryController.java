@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.pagehelper.PageInfo;
+import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouse;
@@ -62,7 +64,8 @@ public class StkInventoryController extends BaseController
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListTotal(stkInventory);
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
-        return getDataTable(list, totalInfo);
+        Long total = new PageInfo(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -71,8 +74,8 @@ public class StkInventoryController extends BaseController
     @GetMapping("/listInventorySummary")
     public TableDataInfo listInventorySummary(StkInventory stkInventory)
     {
-        startPage();
         List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
+//        startPage();
         List<StkInventorySummaryVo> summaryVoList = new ArrayList<StkInventorySummaryVo>();
         BigDecimal subTotalQty = BigDecimal.ZERO;
         BigDecimal subTotalAmt = BigDecimal.ZERO;
@@ -105,11 +108,12 @@ public class StkInventoryController extends BaseController
             subTotalQty = subTotalQty.add(materialQty);
             subTotalAmt = subTotalAmt.add(materialAmt);
         }
+        Long total = Long.valueOf(summaryVoList.size());
         summaryVoList = subListPage(summaryVoList);
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListSummaryTotal(stkInventory);
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
-        return getDataTable(summaryVoList,totalInfo);
+        return getDataTable(summaryVoList,totalInfo, total);
     }
 
     /**
