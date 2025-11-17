@@ -71,6 +71,7 @@ public class StkInventoryController extends BaseController
     @GetMapping("/listInventorySummary")
     public TableDataInfo listInventorySummary(StkInventory stkInventory)
     {
+        startPage();
         List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
         List<StkInventorySummaryVo> summaryVoList = new ArrayList<StkInventorySummaryVo>();
         BigDecimal subTotalQty = BigDecimal.ZERO;
@@ -104,6 +105,7 @@ public class StkInventoryController extends BaseController
             subTotalQty = subTotalQty.add(materialQty);
             subTotalAmt = subTotalAmt.add(materialAmt);
         }
+        summaryVoList = subListPage(summaryVoList);
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListSummaryTotal(stkInventory);
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
