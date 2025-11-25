@@ -290,8 +290,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         throw new ServiceException(String.format("实际库存不足！退货数量：%s，实际库存：%s", qty,inventoryQty));
                     }else{
                         BigDecimal subQty = inventoryQty.subtract(qty);
+                        if (unitPrice == null || subQty == null) {
+                            throw new ServiceException("单价或库存数量为空");
+                        }
                         inventory.setQty(subQty);
-                        inventory.setAmt(subQty.multiply(unitPrice));
+                        BigDecimal amt = subQty.multiply(unitPrice);
+                        inventory.setAmt(amt);
                         inventory.setUpdateTime(new Date());
                         inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
                         //更新库存明细表
