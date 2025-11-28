@@ -175,7 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectRTHStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
         select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                stk.bill_type billType,b.qty materialQty, b.price unitPrice,
+                stk.bill_type billType,b.qty materialQty, b.unit_price unitPrice,
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,
