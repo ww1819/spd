@@ -1,10 +1,8 @@
 package com.spd.foundation.service.impl;
 
-import java.util.Arrays;
 import java.util.List;
 
 import com.spd.common.annotation.DataSource;
-import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.enums.DataSourceType;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;

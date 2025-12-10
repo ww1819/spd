@@ -85,8 +85,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialNo != null">material_no,</if>
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
-            <if test="beginDate != null">begin_date,</if>
-            <if test="endDate != null">end_date,</if>
             <if test="supplierId != null">supplier_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -99,8 +97,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialNo != null">#{materialNo},</if>
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
-            <if test="beginDate != null">#{beginDate},</if>
-            <if test="endDate != null">#{endDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
          </trim>
     </insert>
@@ -117,8 +113,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialNo != null">material_no = #{materialNo},</if>
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
-            <if test="beginDate != null">begin_date = #{beginDate},</if>
-            <if test="endDate != null">end_date = #{endDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
         </trim>
         where id = #{id}
@@ -136,7 +130,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectStkDepInventoryOne" parameterType="java.lang.String" resultMap="StkDepInventoryResult">
-        select * from stk_dep_inventory where batch_no = #{batchNo}
+        select * from stk_dep_inventory where batch_no = #{batchNo} order by id desc limit 1
     </select>
 
     <select id="selectTKStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">

@@ -105,4 +105,12 @@ public interface PurchaseOrderMapper
      */
     public int deletePurchaseOrderEntryByParentId(Long parentId);
 
+    /**
+     * 查询最大订单单号
+     *
+     * @param date 日期字符串（格式：yymmdd）
+     * @return 最大订单单号
+     */
+    public String selectMaxOrderNo(String date);
+
 }

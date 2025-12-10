@@ -1,9 +1,7 @@
 package com.spd.warehouse.controller;
 
-import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
-import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.DepartmentInventoryQuery;
 import com.spd.warehouse.service.IDepartmentInventoryService;
 import com.spd.warehouse.vo.DepartmentInventoryVo;

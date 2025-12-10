@@ -3,10 +3,10 @@ package com.spd.gz.domain;
 import java.util.List;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.FdDepartment;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -42,6 +42,10 @@ public class GzOrder extends BaseEntity
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 科室ID */
+    @Excel(name = "科室ID")
+    private Long departmentId;
+
     /** 单据状态 */
     @Excel(name = "单据状态")
     private Integer orderStatus;
@@ -58,6 +62,10 @@ public class GzOrder extends BaseEntity
     @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date auditDate;
 
+    /** 是否跟台标识 */
+    @Excel(name = "是否跟台标识", readConverterExp = "1=是,2=否")
+    private String isFollowFlag;
+
     /** 高值退货明细信息 */
     private List<GzOrderEntry> gzOrderEntryList;
 
@@ -66,6 +74,9 @@ public class GzOrder extends BaseEntity
 
     /** 仓库对象 */
     private FdWarehouse warehouse;
+
+    /** 科室对象 */
+    private FdDepartment department;
 
     private List<FdMaterial> materialList;
 
@@ -114,6 +125,15 @@ public class GzOrder extends BaseEntity
     {
         return warehouseId;
     }
+    public void setDepartmentId(Long departmentId)
+    {
+        this.departmentId = departmentId;
+    }
+
+    public Long getDepartmentId()
+    {
+        return departmentId;
+    }
     public void setOrderStatus(Integer orderStatus)
     {
         this.orderStatus = orderStatus;
@@ -150,6 +170,15 @@ public class GzOrder extends BaseEntity
     {
         return auditDate;
     }
+    public void setIsFollowFlag(String isFollowFlag)
+    {
+        this.isFollowFlag = isFollowFlag;
+    }
+
+    public String getIsFollowFlag()
+    {
+        return isFollowFlag;
+    }
 
     public List<GzOrderEntry> getGzOrderEntryList()
     {
@@ -177,6 +206,14 @@ public class GzOrder extends BaseEntity
         this.warehouse = warehouse;
     }
 
+    public FdDepartment getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(FdDepartment department) {
+        this.department = department;
+    }
+
     public List<FdMaterial> getMaterialList() {
         return materialList;
     }
@@ -193,10 +230,12 @@ public class GzOrder extends BaseEntity
             .append("supplerId", getSupplerId())
             .append("orderDate", getOrderDate())
             .append("warehouseId", getWarehouseId())
+            .append("departmentId", getDepartmentId())
             .append("orderStatus", getOrderStatus())
             .append("orderType", getOrderType())
             .append("delFlag", getDelFlag())
             .append("auditDate", getAuditDate())
+            .append("isFollowFlag", getIsFollowFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

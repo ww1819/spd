@@ -67,6 +67,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where unit_id = #{unitId}
     </update>
 
+    <select id="selectMaxUnitCode" resultType="String">
+        SELECT unit_code 
+        FROM fd_unit 
+        WHERE unit_code LIKE 'D%' 
+        AND del_flag != 1
+        AND CAST(SUBSTRING(unit_code, 2) AS UNSIGNED) = (
+            SELECT MAX(CAST(SUBSTRING(unit_code, 2) AS UNSIGNED))
+            FROM fd_unit
+            WHERE unit_code LIKE 'D%' 
+            AND del_flag != 1
+        )
+        ORDER BY unit_id DESC
+        LIMIT 1
+    </select>
+
 <!--    <delete id="deleteFdUnitByUnitId" parameterType="Long">-->
 <!--        delete from fd_unit where unit_id = #{unitId}-->
 <!--    </delete>-->

@@ -57,6 +57,16 @@ public class FdWarehouseCategoryController extends BaseController
     }
 
     /**
+     * 查询库房分类树形列表
+     */
+    @GetMapping("/treeselect")
+    public AjaxResult treeselect()
+    {
+        List<FdWarehouseCategory> list = fdWarehouseCategoryService.selectFdWarehouseCategoryTree();
+        return success(list);
+    }
+
+    /**
      * 导出库房分类列表
      */
     @PreAuthorize("@ss.hasPermi('foundation:warehouseCategory:export')")

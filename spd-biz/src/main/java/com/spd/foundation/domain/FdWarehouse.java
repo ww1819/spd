@@ -42,6 +42,10 @@ public class FdWarehouse extends BaseEntity
     @Excel(name = "仓库状态")
     private String warehouseStatus;
 
+    /** 仓库类型 */
+    @Excel(name = "仓库类型")
+    private String warehouseType;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -102,6 +106,14 @@ public class FdWarehouse extends BaseEntity
         this.warehouseStatus = warehouseStatus;
     }
 
+    public String getWarehouseType() {
+        return warehouseType;
+    }
+
+    public void setWarehouseType(String warehouseType) {
+        this.warehouseType = warehouseType;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -116,6 +128,7 @@ public class FdWarehouse extends BaseEntity
             .append("warehousePerson", getWarehousePerson())
             .append("warehousePhone", getWarehousePhone())
             .append("warehouseStatus", getWarehouseStatus())
+            .append("warehouseType", getWarehouseType())
             .toString();
     }
 }

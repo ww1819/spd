@@ -7,6 +7,7 @@ import java.util.Map;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkInventory;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -96,6 +97,15 @@ public interface StkInventoryMapper
      * @return 库存明细
      */
     public StkInventory selectStkInventoryOne(String batchNo);
+
+    /**
+     * 按批次号和仓库ID查询库存明细
+     *
+     * @param batchNo 批次号
+     * @param warehouseId 仓库ID
+     * @return 库存明细
+     */
+    public StkInventory selectStkInventoryByBatchNoAndWarehouse(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 按仓库筛选实时库存、基础耗材

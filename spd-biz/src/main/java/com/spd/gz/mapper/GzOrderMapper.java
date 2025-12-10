@@ -1,6 +1,7 @@
 package com.spd.gz.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzOrder;
 import com.spd.gz.domain.GzOrderEntry;
 
@@ -71,10 +72,11 @@ public interface GzOrderMapper
 
     /**
      * 查询当天最大的单号
-     * @param date
+     * @param prefix 单号前缀（GZRK或GZCK）
+     * @param date 日期
      * @return
      */
-    String selectMaxBillNo(String date);
+    String selectMaxBillNo(@Param("prefix") String prefix, @Param("date") String date);
 
     /**
      * 逻辑删除
@@ -82,4 +84,11 @@ public interface GzOrderMapper
      * @return
      */
     int updateGzOrderEntry(GzOrderEntry entry);
+
+    /**
+     * 根据院内码查询是否有未出库的出库单
+     * @param inHospitalCode 院内码
+     * @return 出库单号列表
+     */
+    List<String> selectOutboundOrderNosByInHospitalCode(String inHospitalCode);
 }

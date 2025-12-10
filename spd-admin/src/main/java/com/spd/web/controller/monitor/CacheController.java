@@ -57,13 +57,16 @@ public class CacheController
         result.put("dbSize", dbSize);
 
         List<Map<String, String>> pieList = new ArrayList<>();
-        commandStats.stringPropertyNames().forEach(key -> {
-            Map<String, String> data = new HashMap<>(2);
-            String property = commandStats.getProperty(key);
-            data.put("name", StringUtils.removeStart(key, "cmdstat_"));
-            data.put("value", StringUtils.substringBetween(property, "calls=", ",usec"));
-            pieList.add(data);
-        });
+        if (commandStats != null)
+        {
+            commandStats.stringPropertyNames().forEach(key -> {
+                Map<String, String> data = new HashMap<>(2);
+                String property = commandStats.getProperty(key);
+                data.put("name", StringUtils.removeStart(key, "cmdstat_"));
+                data.put("value", StringUtils.substringBetween(property, "calls=", ",usec"));
+                pieList.add(data);
+            });
+        }
         result.put("commandStats", pieList);
         return AjaxResult.success(result);
     }

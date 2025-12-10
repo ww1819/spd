@@ -18,6 +18,12 @@ public class FdWarehouseCategory extends BaseEntity
     /** ID */
     private Long warehouseCategoryId;
 
+    /** 父分类ID */
+    private Long parentId;
+
+    /** 子分类列表 */
+    private java.util.List<FdWarehouseCategory> children;
+
     /** 库房分类编码 */
     @Excel(name = "库房分类编码")
     private String warehouseCategoryCode;
@@ -25,14 +31,6 @@ public class FdWarehouseCategory extends BaseEntity
     /** 库房分类名称 */
     @Excel(name = "库房分类名称")
     private String warehouseCategoryName;
-
-    /** 库房分类地址 */
-    @Excel(name = "库房分类地址")
-    private String warehouseCategoryAddress;
-
-    /** 库房分类联系方式 */
-    @Excel(name = "库房分类联系方式")
-    private String warehouseCategoryContact;
 
     /** 删除标识 */
     private Integer delFlag;
@@ -64,24 +62,6 @@ public class FdWarehouseCategory extends BaseEntity
     {
         return warehouseCategoryName;
     }
-    public void setWarehouseCategoryAddress(String warehouseCategoryAddress) 
-    {
-        this.warehouseCategoryAddress = warehouseCategoryAddress;
-    }
-
-    public String getWarehouseCategoryAddress() 
-    {
-        return warehouseCategoryAddress;
-    }
-    public void setWarehouseCategoryContact(String warehouseCategoryContact) 
-    {
-        this.warehouseCategoryContact = warehouseCategoryContact;
-    }
-
-    public String getWarehouseCategoryContact() 
-    {
-        return warehouseCategoryContact;
-    }
     public void setDelFlag(Integer delFlag) 
     {
         this.delFlag = delFlag;
@@ -91,15 +71,32 @@ public class FdWarehouseCategory extends BaseEntity
     {
         return delFlag;
     }
+    public void setParentId(Long parentId) 
+    {
+        this.parentId = parentId;
+    }
+
+    public Long getParentId() 
+    {
+        return parentId;
+    }
+    public void setChildren(java.util.List<FdWarehouseCategory> children) 
+    {
+        this.children = children;
+    }
+
+    public java.util.List<FdWarehouseCategory> getChildren() 
+    {
+        return children;
+    }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("warehouseCategoryId", getWarehouseCategoryId())
+            .append("parentId", getParentId())
             .append("warehouseCategoryCode", getWarehouseCategoryCode())
             .append("warehouseCategoryName", getWarehouseCategoryName())
-            .append("warehouseCategoryAddress", getWarehouseCategoryAddress())
-            .append("warehouseCategoryContact", getWarehouseCategoryContact())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())

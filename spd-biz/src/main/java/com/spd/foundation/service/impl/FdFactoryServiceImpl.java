@@ -104,16 +104,4 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         fdFactory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
         return fdFactoryMapper.updateFdFactory(fdFactory);
     }
-
-    /**
-     * 校验厂家是否已存在出入库业务
-     * @param id
-     */
-    private void checkFdFactoryIsExist(Long id){
-
-        int count = fdFactoryMapper.selectFdFactoryIsExist(id);
-        if(count > 0){
-            throw new ServiceException(String.format("已存在出入库业务的厂家不能进行删除!"));
-        }
-    }
 }

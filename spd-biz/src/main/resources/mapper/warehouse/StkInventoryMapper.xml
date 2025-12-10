@@ -64,13 +64,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <sql id="selectStkInventoryMaterialVo">
-        select stk.id,m.name materialName
+        select stk.id,stk.material_id,
+               m.id mId,m.code materialCode,m.name materialName
         from stk_inventory stk
         left join fd_material m on stk.material_id = m.id
     </sql>
 
     <select id="selectPDInventoryFilter" parameterType="StkInventory" resultMap="StkInventoryResult">
-        select stk.id, stk.qty, stk.material_id, stk.warehouse_id, stk.unit_price,stk.amt,
+        select stk.id, stk.qty, stk.material_id, stk.warehouse_id, 
+				COALESCE(stk.unit_price, 
+					(select COALESCE(entry.unit_price, entry.price) 
+					 from stk_io_bill_entry entry
+					 inner join stk_io_bill bill on bill.id = entry.paren_id
+					 where bill.bill_no = stk.receipt_order_no 
+					   and bill.bill_type = 101
+					   and entry.material_id = stk.material_id 
+					   and entry.batch_no = stk.batch_no
+					   and entry.del_flag != 1
+					 limit 1
+					),
+					CASE 
+						WHEN stk.amt IS NOT NULL AND stk.qty IS NOT NULL AND stk.qty > 0 
+						THEN stk.amt / stk.qty 
+						ELSE NULL 
+					END
+				) as unit_price,
+				stk.amt,
 				stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
 				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
@@ -255,6 +274,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkInventoryOne" parameterType="java.lang.String" resultMap="StkInventoryResult">
-        select * from stk_inventory where batch_no = #{batchNo}
+        select * from stk_inventory where batch_no = #{batchNo} order by id desc limit 1
+    </select>
+
+    <select id="selectStkInventoryByBatchNoAndWarehouse" resultMap="StkInventoryResult">
+        select * from stk_inventory where batch_no = #{batchNo} and warehouse_id = #{warehouseId} order by id desc limit 1
     </select>
 </mapper>

@@ -2,7 +2,6 @@ package com.spd.foundation.service;
 
 import java.util.List;
 
-import com.spd.common.core.domain.entity.SysUser;
 import com.spd.foundation.domain.FdMaterial;
 
 /**

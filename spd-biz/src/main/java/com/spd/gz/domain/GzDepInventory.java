@@ -5,6 +5,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdWarehouse;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -30,6 +31,12 @@ public class GzDepInventory extends BaseEntity
     /** 科室ID */
     @Excel(name = "科室ID")
     private Long departmentId;
+
+    /** 供应商ID（用于查询条件） */
+    private Long supplierId;
+
+    /** 耗材名称（用于查询条件） */
+    private String materialName;
 
     /** 数量 */
     @Excel(name = "数量")
@@ -61,11 +68,36 @@ public class GzDepInventory extends BaseEntity
     @Excel(name = "入库日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date warehouseDate;
 
+    /** 院内码 */
+    @Excel(name = "院内码")
+    private String inHospitalCode;
+
+    /** 有效期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date endTime;
+
     /** 耗材对象 */
     private FdMaterial material;
 
     /** 科室对象 */
     private FdDepartment department;
+
+    /** 仓库对象 */
+    private FdWarehouse warehouse;
+
+    /** 出库单号 */
+    @Excel(name = "出库单号")
+    private String shipmentNo;
+
+    /** 出库审核人 */
+    @Excel(name = "出库审核人")
+    private String auditBy;
+
+    /** 审核日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date auditDate;
 
     public void setId(Long id)
     {
@@ -93,6 +125,24 @@ public class GzDepInventory extends BaseEntity
     public Long getDepartmentId()
     {
         return departmentId;
+    }
+    public void setSupplierId(Long supplierId)
+    {
+        this.supplierId = supplierId;
+    }
+
+    public Long getSupplierId()
+    {
+        return supplierId;
+    }
+    public void setMaterialName(String materialName)
+    {
+        this.materialName = materialName;
+    }
+
+    public String getMaterialName()
+    {
+        return materialName;
     }
     public void setQty(BigDecimal qty)
     {
@@ -174,6 +224,54 @@ public class GzDepInventory extends BaseEntity
         this.department = department;
     }
 
+    public String getInHospitalCode() {
+        return inHospitalCode;
+    }
+
+    public void setInHospitalCode(String inHospitalCode) {
+        this.inHospitalCode = inHospitalCode;
+    }
+
+    public Date getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Date endTime) {
+        this.endTime = endTime;
+    }
+
+    public FdWarehouse getWarehouse() {
+        return warehouse;
+    }
+
+    public void setWarehouse(FdWarehouse warehouse) {
+        this.warehouse = warehouse;
+    }
+
+    public String getShipmentNo() {
+        return shipmentNo;
+    }
+
+    public void setShipmentNo(String shipmentNo) {
+        this.shipmentNo = shipmentNo;
+    }
+
+    public String getAuditBy() {
+        return auditBy;
+    }
+
+    public void setAuditBy(String auditBy) {
+        this.auditBy = auditBy;
+    }
+
+    public Date getAuditDate() {
+        return auditDate;
+    }
+
+    public void setAuditDate(Date auditDate) {
+        this.auditDate = auditDate;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -187,8 +285,14 @@ public class GzDepInventory extends BaseEntity
             .append("materialNo", getMaterialNo())
             .append("materialDate", getMaterialDate())
             .append("warehouseDate", getWarehouseDate())
+            .append("inHospitalCode", getInHospitalCode())
+            .append("endTime", getEndTime())
             .append("material", getMaterial())
             .append("department", getDepartment())
+            .append("warehouse", getWarehouse())
+            .append("shipmentNo", getShipmentNo())
+            .append("auditBy", getAuditBy())
+            .append("auditDate", getAuditDate())
             .toString();
     }
 }

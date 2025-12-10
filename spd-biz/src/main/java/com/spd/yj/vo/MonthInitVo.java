@@ -10,8 +10,6 @@ import java.math.BigDecimal;
  */
 public class MonthInitVo {
 
-    private static final long serialVersionUID = 1L;
-
     /** 耗材分类 */
     private String wCategoryName;
 

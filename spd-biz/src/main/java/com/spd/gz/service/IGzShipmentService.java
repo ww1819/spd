@@ -7,7 +7,7 @@ import com.spd.gz.domain.GzShipment;
  * 高值出库Service接口
  *
  * @author spd
- * @date 2024-06-11
+ * @date 2024-12-08
  */
 public interface IGzShipmentService
 {
@@ -56,5 +56,6 @@ public interface IGzShipmentService
      * @param id
      * @return
      */
-    int auditShipment(String id);
+    int auditGzShipment(String id);
 }
+

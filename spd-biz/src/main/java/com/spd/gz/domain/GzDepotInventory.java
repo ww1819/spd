@@ -66,6 +66,15 @@ public class GzDepotInventory extends BaseEntity
     @Excel(name = "供应商ID")
     private Long supplierId;
 
+    /** 院内码 */
+    @Excel(name = "院内码")
+    private String inHospitalCode;
+
+    /** 有效期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date endTime;
+
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
@@ -80,6 +89,15 @@ public class GzDepotInventory extends BaseEntity
 
     /** 查询参数：耗材名称 */
     private String materialName;
+
+    /** 查询参数：开始日期 */
+    private String beginDate;
+
+    /** 查询参数：结束日期 */
+    private String endDate;
+
+    /** 查询参数：入库单号（模糊查询） */
+    private String orderNo;
 
     public void setId(Long id)
     {
@@ -181,6 +199,26 @@ public class GzDepotInventory extends BaseEntity
         return supplierId;
     }
 
+    public void setInHospitalCode(String inHospitalCode)
+    {
+        this.inHospitalCode = inHospitalCode;
+    }
+
+    public String getInHospitalCode()
+    {
+        return inHospitalCode;
+    }
+
+    public void setEndTime(Date endTime)
+    {
+        this.endTime = endTime;
+    }
+
+    public Date getEndTime()
+    {
+        return endTime;
+    }
+
     public FdWarehouse getWarehouse() {
         return warehouse;
     }
@@ -221,6 +259,30 @@ public class GzDepotInventory extends BaseEntity
         this.materialName = materialName;
     }
 
+    public String getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(String beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setOrderNo(String orderNo) {
+        this.orderNo = orderNo;
+    }
+
+    public String getOrderNo() {
+        return orderNo;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -235,6 +297,8 @@ public class GzDepotInventory extends BaseEntity
             .append("materialDate", getMaterialDate())
             .append("warehouseDate", getWarehouseDate())
             .append("supplierId", getSupplierId())
+            .append("inHospitalCode", getInHospitalCode())
+            .append("endTime", getEndTime())
             .append("warehouse", getWarehouse())
             .append("material", getMaterial())
             .append("supplier", getSupplier())

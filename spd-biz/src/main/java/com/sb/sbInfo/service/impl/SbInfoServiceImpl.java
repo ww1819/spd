@@ -106,7 +106,7 @@ public class SbInfoServiceImpl implements SbInfoService {
         labelObjectList.add(rfidUHFObject);
 
 
-        Map map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         map.put("Printer", zmPrinter);
         map.put("LabelFormat", labelFormat);
         map.put("LabelObjectList", labelObjectList);

@@ -30,6 +30,10 @@ public class PurchaseOrder extends BaseEntity
     @Excel(name = "订单单号")
     private String orderNo;
 
+    /** 关联采购计划单号 */
+    @Excel(name = "关联采购计划单号")
+    private String planNo;
+
     /** 订单日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "订单日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -146,6 +150,16 @@ public class PurchaseOrder extends BaseEntity
     public String getOrderNo() 
     {
         return orderNo;
+    }
+
+    public void setPlanNo(String planNo) 
+    {
+        this.planNo = planNo;
+    }
+
+    public String getPlanNo() 
+    {
+        return planNo;
     }
 
     public void setOrderDate(Date orderDate) 
@@ -413,6 +427,7 @@ public class PurchaseOrder extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("orderNo", getOrderNo())
+            .append("planNo", getPlanNo())
             .append("orderDate", getOrderDate())
             .append("supplierId", getSupplierId())
             .append("warehouseId", getWarehouseId())

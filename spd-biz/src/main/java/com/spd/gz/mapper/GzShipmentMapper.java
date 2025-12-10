@@ -1,6 +1,7 @@
 package com.spd.gz.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzShipment;
 import com.spd.gz.domain.GzShipmentEntry;
 
@@ -8,7 +9,7 @@ import com.spd.gz.domain.GzShipmentEntry;
  * 高值出库Mapper接口
  *
  * @author spd
- * @date 2024-06-11
+ * @date 2024-12-08
  */
 public interface GzShipmentMapper
 {
@@ -53,14 +54,6 @@ public interface GzShipmentMapper
     public int deleteGzShipmentById(Long id);
 
     /**
-     * 批量删除高值出库
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteGzShipmentByIds(Long[] ids);
-
-    /**
      * 批量新增高值出库明细
      *
      * @param gzShipmentEntryList 高值出库明细列表
@@ -69,11 +62,20 @@ public interface GzShipmentMapper
     public int batchGzShipmentEntry(List<GzShipmentEntry> gzShipmentEntryList);
 
     /**
-     * 查询出库表当天最大的单号
-     * @param date
+     * 通过高值出库主键删除高值出库明细信息
+     *
+     * @param id 高值出库ID
+     * @return 结果
+     */
+    public int deleteGzShipmentEntryByParenId(Long id);
+
+    /**
+     * 查询当天最大的单号
+     * @param prefix 单号前缀（GZCK）
+     * @param date 日期
      * @return
      */
-    String selectMaxBillNo(String date);
+    String selectMaxBillNo(@Param("prefix") String prefix, @Param("date") String date);
 
     /**
      * 逻辑删除
@@ -81,11 +83,5 @@ public interface GzShipmentMapper
      * @return
      */
     int updateGzShipmentEntry(GzShipmentEntry entry);
-
-    /**
-     * 通过高值出库主键删除高值退货明细信息
-     * @param id
-     * @return
-     */
-    int deleteGzShipmentEntryByParenId(Long id);
 }
+

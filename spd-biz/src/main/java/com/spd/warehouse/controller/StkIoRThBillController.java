@@ -190,7 +190,16 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setMaterialSpeci(map.get("materialSpeci").toString());
                 stkCTKVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
                 stkCTKVo.setUnitName(map.get("unitName").toString());
-                stkCTKVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
+                // 如果单价为空，但有金额和数量，通过金额/数量计算单价
+                BigDecimal unitPrice = (BigDecimal) map.get("unitPrice");
+                if(unitPrice == null) {
+                    BigDecimal amt = (BigDecimal) map.get("materialAmt");
+                    BigDecimal qty = (BigDecimal) map.get("materialQty");
+                    if(amt != null && qty != null && qty.compareTo(BigDecimal.ZERO) > 0) {
+                        unitPrice = amt.divide(qty, 2, BigDecimal.ROUND_HALF_UP);
+                    }
+                }
+                stkCTKVo.setUnitPrice(unitPrice);
                 stkCTKVo.setWarehouseName(map.get("warehouseName").toString());
                 stkCTKVo.setFactoryName(map.get("factoryName").toString());
                 stkCTKVo.setDepartmentName(map.get("departmentName").toString());

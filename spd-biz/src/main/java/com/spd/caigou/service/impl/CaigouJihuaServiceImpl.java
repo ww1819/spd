@@ -15,7 +15,6 @@ import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
-import com.spd.warehouse.service.IStkIoBillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -211,7 +210,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     stkInventory.setMaterialId(entry.getMaterialId());
                     stkInventory.setWarehouseId(stkIoBill.getWarehouseId());
                     stkInventory.setQty(entry.getQty());
-                    stkInventory.setUnitPrice(entry.getPrice());
+                    // 优先使用 unitPrice，如果为空则使用 price
+                    BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                    stkInventory.setUnitPrice(unitPrice);
                     stkInventory.setAmt(entry.getAmt());
                     stkInventory.setMaterialDate(new Date());
                     stkInventory.setWarehouseDate(new Date());
@@ -255,12 +256,12 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
                     StkInventory inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
-                    BigDecimal inventoryQty = inventory.getQty();//实际库存数量
-                    BigDecimal unitPrice = inventory.getUnitPrice();
 
                     if(inventory == null){
                         throw new ServiceException(String.format("退货-批次号：%s，不存在!", batchNo));
                     }
+                    BigDecimal inventoryQty = inventory.getQty();//实际库存数量
+                    BigDecimal unitPrice = inventory.getUnitPrice();
 
                     //退货数量不能大于库存数量
                     if(qty.compareTo(inventoryQty) > 0){

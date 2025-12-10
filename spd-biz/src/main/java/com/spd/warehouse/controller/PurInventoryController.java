@@ -93,7 +93,7 @@ public class PurInventoryController extends BaseController
         rspData.setCode(HttpStatus.SUCCESS);
         rspData.setMsg("查询成功");
         rspData.setRows(mapPage);
-        rspData.setTotal(new PageInfo(purInventoryVoList).getTotal());
+        rspData.setTotal(new PageInfo<PurInventoryVo>(purInventoryVoList).getTotal());
 //        return getDataTable(purInventoryVoList);
         return rspData;
     }

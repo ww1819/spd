@@ -96,7 +96,8 @@ public class CaigouJihuaController extends BaseController
     {
         Long id = json.getLong("id");
         String auditBy = json.getString("auditBy");
-        int result = purchasePlanService.auditPurchasePlan(id, auditBy);
+        String auditOpinion = json.getString("auditOpinion");
+        int result = purchasePlanService.auditPurchasePlan(id, auditBy, auditOpinion);
         return toAjax(result);
     }
 

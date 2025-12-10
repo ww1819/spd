@@ -80,7 +80,9 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求参数类型不匹配'{}',发生系统异常.", requestURI, e);
-        return AjaxResult.error(String.format("请求参数类型不匹配，参数[%s]要求类型为：'%s'，但输入值为：'%s'", e.getName(), e.getRequiredType().getName(), e.getValue()));
+        Class<?> requiredType = e.getRequiredType();
+        String requiredTypeName = (requiredType != null) ? requiredType.getName() : "未知类型";
+        return AjaxResult.error(String.format("请求参数类型不匹配，参数[%s]要求类型为：'%s'，但输入值为：'%s'", e.getName(), requiredTypeName, e.getValue()));
     }
 
     /**
@@ -91,7 +93,8 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
-        return AjaxResult.error(e.getMessage());
+        String errorMessage = e.getMessage() != null ? e.getMessage() : "系统运行时异常";
+        return AjaxResult.error(errorMessage);
     }
 
     /**
@@ -102,7 +105,8 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生系统异常.", requestURI, e);
-        return AjaxResult.error(e.getMessage());
+        String errorMessage = e.getMessage() != null ? e.getMessage() : "系统异常";
+        return AjaxResult.error(errorMessage);
     }
 
     /**
@@ -112,7 +116,11 @@ public class GlobalExceptionHandler
     public AjaxResult handleBindException(BindException e)
     {
         log.error(e.getMessage(), e);
-        String message = e.getAllErrors().get(0).getDefaultMessage();
+        String message = "参数验证失败";
+        if (e.getAllErrors() != null && !e.getAllErrors().isEmpty())
+        {
+            message = e.getAllErrors().get(0).getDefaultMessage();
+        }
         return AjaxResult.error(message);
     }
 
@@ -123,7 +131,12 @@ public class GlobalExceptionHandler
     public Object handleMethodArgumentNotValidException(MethodArgumentNotValidException e)
     {
         log.error(e.getMessage(), e);
-        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+        String message = "参数验证失败";
+        org.springframework.validation.FieldError fieldError = e.getBindingResult().getFieldError();
+        if (fieldError != null)
+        {
+            message = fieldError.getDefaultMessage();
+        }
         return AjaxResult.error(message);
     }
 

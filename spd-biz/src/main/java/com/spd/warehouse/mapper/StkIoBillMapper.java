@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
-import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import org.apache.ibatis.annotations.Mapper;

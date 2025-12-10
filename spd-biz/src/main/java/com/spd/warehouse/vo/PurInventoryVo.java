@@ -12,8 +12,6 @@ import java.util.Date;
  */
 public class PurInventoryVo {
 
-    private static final long serialVersionUID = 1L;
-
     /** ID */
     private Long id;
 

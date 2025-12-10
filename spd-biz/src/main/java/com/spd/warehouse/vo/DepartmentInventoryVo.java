@@ -10,8 +10,6 @@ import java.math.BigDecimal;
  */
 public class DepartmentInventoryVo {
 
-    private static final long serialVersionUID = 1L;
-
     /** 科室ID */
     private String KS_NO;
 

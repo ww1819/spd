@@ -46,7 +46,12 @@ public class DruidConfig
     public DataSource slaveDataSource(DruidProperties druidProperties)
     {
         DruidDataSource dataSource = DruidDataSourceBuilder.create().build();
-        return druidProperties.dataSource(dataSource);
+        DruidDataSource configuredDataSource = druidProperties.dataSource(dataSource);
+        // 设置延迟初始化，避免启动时连接失败导致启动失败
+        configuredDataSource.setInitialSize(0);
+        configuredDataSource.setTestOnBorrow(false);
+        configuredDataSource.setTestWhileIdle(true);
+        return configuredDataSource;
     }
 
     @Bean(name = "dynamicDataSource")
@@ -71,10 +76,16 @@ public class DruidConfig
         try
         {
             DataSource dataSource = SpringUtils.getBean(beanName);
-            targetDataSources.put(sourceName, dataSource);
+            if (dataSource != null)
+            {
+                targetDataSources.put(sourceName, dataSource);
+            }
         }
         catch (Exception e)
         {
+            // 从库数据源不存在或连接失败，不影响启动
+            org.slf4j.LoggerFactory.getLogger(DruidConfig.class)
+                .debug("从库数据源 {} 不可用，已跳过", beanName);
         }
     }
 

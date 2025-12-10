@@ -57,4 +57,11 @@ public interface IGzOrderService
      * @return
      */
     int auditGzOrder(String id);
+
+    /**
+     * 根据院内码查询是否有未出库的出库单
+     * @param inHospitalCode 院内码
+     * @return 出库单号列表
+     */
+    List<String> selectOutboundOrderNosByInHospitalCode(String inHospitalCode);
 }

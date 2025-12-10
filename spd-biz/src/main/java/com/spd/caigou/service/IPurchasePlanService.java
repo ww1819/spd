@@ -65,7 +65,8 @@ public interface IPurchasePlanService
      *
      * @param id 采购计划主键
      * @param auditBy 审核人
+     * @param auditOpinion 审核意见
      * @return 结果
      */
-    public int auditPurchasePlan(Long id, String auditBy);
+    public int auditPurchasePlan(Long id, String auditBy, String auditOpinion);
 }

@@ -2,7 +2,6 @@ package com.spd.equipment.service.impl;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spd.common.utils.uuid.UUID7;

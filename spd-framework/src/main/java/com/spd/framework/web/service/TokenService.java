@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,6 +31,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @Component
 public class TokenService
 {
+    private static final Logger log = LoggerFactory.getLogger(TokenService.class);
+
     // 令牌自定义标识
     @Value("${token.header}")
     private String header;
@@ -72,6 +76,7 @@ public class TokenService
             }
             catch (Exception e)
             {
+                log.warn("获取用户信息异常，token可能已过期或无效", e);
             }
         }
         return null;
@@ -126,11 +131,21 @@ public class TokenService
      */
     public void verifyToken(LoginUser loginUser)
     {
-        long expireTime = loginUser.getExpireTime();
-        long currentTime = System.currentTimeMillis();
-        if (expireTime - currentTime <= MILLIS_MINUTE_REFRESH_THRESHOLD)
+        try
         {
-            refreshToken(loginUser);
+            if (loginUser != null && loginUser.getExpireTime() != null)
+            {
+                long expireTime = loginUser.getExpireTime();
+                long currentTime = System.currentTimeMillis();
+                if (expireTime - currentTime <= MILLIS_MINUTE_REFRESH_THRESHOLD)
+                {
+                    refreshToken(loginUser);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("验证令牌有效期异常", e);
         }
     }
 
@@ -155,12 +170,27 @@ public class TokenService
      */
     public void setUserAgent(LoginUser loginUser)
     {
-        UserAgent userAgent = UserAgent.parseUserAgentString(ServletUtils.getRequest().getHeader("User-Agent"));
-        String ip = IpUtils.getIpAddr();
-        loginUser.setIpaddr(ip);
-        loginUser.setLoginLocation(AddressUtils.getRealAddressByIP(ip));
-        loginUser.setBrowser(userAgent.getBrowser().getName());
-        loginUser.setOs(userAgent.getOperatingSystem().getName());
+        try
+        {
+            HttpServletRequest request = ServletUtils.getRequest();
+            if (request != null)
+            {
+                String userAgentStr = request.getHeader("User-Agent");
+                if (StringUtils.isNotEmpty(userAgentStr))
+                {
+                    UserAgent userAgent = UserAgent.parseUserAgentString(userAgentStr);
+                    loginUser.setBrowser(userAgent.getBrowser().getName());
+                    loginUser.setOs(userAgent.getOperatingSystem().getName());
+                }
+            }
+            String ip = IpUtils.getIpAddr();
+            loginUser.setIpaddr(ip);
+            loginUser.setLoginLocation(AddressUtils.getRealAddressByIP(ip));
+        }
+        catch (Exception e)
+        {
+            log.warn("设置用户代理信息异常", e);
+        }
     }
 
     /**

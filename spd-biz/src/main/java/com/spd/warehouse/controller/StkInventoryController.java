@@ -7,10 +7,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import com.github.pagehelper.PageInfo;
-import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TotalInfo;
-import com.spd.foundation.domain.FdMaterial;
-import com.spd.foundation.domain.FdWarehouse;
 import com.spd.warehouse.vo.StkInventorySummaryVo;
 import com.spd.warehouse.vo.StkInventoryVo;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +24,7 @@ import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
+import com.spd.foundation.domain.FdMaterial;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.service.IStkInventoryService;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -64,7 +62,7 @@ public class StkInventoryController extends BaseController
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListTotal(stkInventory);
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
-        Long total = new PageInfo(list).getTotal();
+        Long total = new PageInfo<StkInventory>(list).getTotal();
         return getDataTable(list, totalInfo, total);
     }
 
@@ -140,7 +138,10 @@ public class StkInventoryController extends BaseController
             StkInventoryVo stkInventoryVo = new StkInventoryVo();
             stkInventoryVo.setId(list.getId());
             FdMaterial material = list.getMaterial();
-            stkInventoryVo.setMaterialName(material.getName());
+            if (material != null)
+            {
+                stkInventoryVo.setMaterialName(material.getName());
+            }
             stkInventoryVos.add(stkInventoryVo);
         }
         return stkInventoryVos;

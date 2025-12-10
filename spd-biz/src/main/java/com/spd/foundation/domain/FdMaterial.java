@@ -5,8 +5,7 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
+import lombok.EqualsAndHashCode;
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
 
@@ -18,6 +17,7 @@ import com.spd.common.core.domain.BaseEntity;
  * @date 2023-12-23
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class FdMaterial extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -211,6 +211,10 @@ public class FdMaterial extends BaseEntity
     /** 是否高值 */
     @Excel(name = "是否高值", readConverterExp = "1=是,2=否")
     private String isGz;
+
+    /** 是否跟台 */
+    @Excel(name = "是否跟台", readConverterExp = "1=是,2=否")
+    private String isFollow;
 
     /** 查询参数：起始日期 */
     private Date beginDate;

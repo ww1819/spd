@@ -8,7 +8,6 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
-import com.spd.common.utils.spring.SpringUtils;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -173,7 +172,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                     stkInventory.setMaterialId(entry.getMaterialId());
                     stkInventory.setWarehouseId(stkIoStocktaking.getWarehouseId());
                     stkInventory.setQty(entry.getQty());
-                    stkInventory.setUnitPrice(entry.getPrice());
+                    // 优先使用 unitPrice，如果为空则使用 price
+                    BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                    stkInventory.setUnitPrice(unitPrice);
                     stkInventory.setAmt(entry.getAmt());
                     stkInventory.setMaterialDate(new Date());
                     stkInventory.setWarehouseDate(new Date());

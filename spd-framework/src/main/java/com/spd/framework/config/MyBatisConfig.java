@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import javax.sql.DataSource;
 import org.apache.ibatis.io.VFS;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -126,7 +127,10 @@ public class MyBatisConfig
         sessionFactory.setDataSource(dataSource);
         sessionFactory.setTypeAliasesPackage(typeAliasesPackage);
         sessionFactory.setMapperLocations(resolveMapperLocations(StringUtils.split(mapperLocations, ",")));
-        sessionFactory.setConfigLocation(new DefaultResourceLoader().getResource(configLocation));
+        if (StringUtils.isNotEmpty(configLocation))
+        {
+            sessionFactory.setConfigLocation(new DefaultResourceLoader().getResource(Objects.requireNonNull(configLocation)));
+        }
         return sessionFactory.getObject();
     }
 }

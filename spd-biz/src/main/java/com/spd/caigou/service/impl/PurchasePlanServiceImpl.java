@@ -4,6 +4,7 @@ import com.spd.caigou.domain.PurchasePlan;
 import com.spd.caigou.domain.PurchasePlanEntry;
 import com.spd.caigou.mapper.PurchasePlanMapper;
 import com.spd.caigou.service.IPurchasePlanService;
+import com.spd.caigou.service.IPurchaseOrderService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -33,6 +34,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private IPurchaseOrderService purchaseOrderService;
 
     /**
      * 查询采购计划
@@ -81,7 +85,10 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     public int insertPurchasePlan(PurchasePlan purchasePlan)
     {
         purchasePlan.setPlanNo(getPlanNumber());
-        purchasePlan.setPlanStatus("1"); // 待审核状态
+        // 如果前端没有传入状态，则默认为"未提交"（0），否则使用前端传入的状态
+        if (purchasePlan.getPlanStatus() == null || purchasePlan.getPlanStatus().isEmpty()) {
+            purchasePlan.setPlanStatus("0"); // 未提交状态
+        }
         purchasePlan.setCreateTime(DateUtils.getNowDate());
         purchasePlan.setCreateBy(SecurityUtils.getLoginUser().getUsername());
         int rows = purchasePlanMapper.insertPurchasePlan(purchasePlan);
@@ -154,24 +161,45 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      *
      * @param id 采购计划主键
      * @param auditBy 审核人
+     * @param auditOpinion 审核意见
      * @return 结果
      */
     @Transactional
     @Override
-    public int auditPurchasePlan(Long id, String auditBy)
+    public int auditPurchasePlan(Long id, String auditBy, String auditOpinion)
     {
         PurchasePlan purchasePlan = purchasePlanMapper.selectPurchasePlanById(id);
         if(purchasePlan == null){
             throw new ServiceException(String.format("采购计划ID：%s，不存在!", id));
         }
 
+        // 检查状态是否为"未提交"（1，已提交但未审核）
+        if(!"1".equals(purchasePlan.getPlanStatus())){
+            throw new ServiceException(String.format("采购计划ID：%s，状态不正确，只能审核未提交状态的计划!", id));
+        }
+
         purchasePlan.setPlanStatus("2"); // 已审核状态
         purchasePlan.setAuditBy(auditBy);
         purchasePlan.setAuditDate(new Date());
+        purchasePlan.setAuditOpinion(auditOpinion != null ? auditOpinion : "");
         purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
         purchasePlan.setUpdateTime(new Date());
 
-        return purchasePlanMapper.auditPurchasePlan(purchasePlan);
+        int result = purchasePlanMapper.auditPurchasePlan(purchasePlan);
+        
+        // 审核通过后，自动按供应商拆分生成订单
+        if (result > 0) {
+            try {
+                purchaseOrderService.generateOrdersFromPlan(id);
+                // 订单生成成功，计划状态已在generateOrdersFromPlan中更新为"已执行"
+            } catch (Exception e) {
+                // 如果生成订单失败，记录日志但不影响审核结果
+                // 可以在这里添加日志记录
+                throw new ServiceException("审核成功，但生成订单失败：" + e.getMessage());
+            }
+        }
+
+        return result;
     }
 
     /**

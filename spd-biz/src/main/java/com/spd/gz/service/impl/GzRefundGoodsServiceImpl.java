@@ -9,7 +9,6 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.gz.domain.GzDepotInventory;
-import com.spd.gz.domain.GzShipmentEntry;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

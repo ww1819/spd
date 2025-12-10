@@ -27,7 +27,7 @@ import com.spd.common.core.page.TableDataInfo;
  * 高值出库Controller
  *
  * @author spd
- * @date 2024-06-11
+ * @date 2024-12-08
  */
 @RestController
 @RequestMapping("/gz/shipment")
@@ -39,7 +39,7 @@ public class GzShipmentController extends BaseController
     /**
      * 查询高值出库列表
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:list')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzShipment gzShipment)
     {
@@ -51,7 +51,7 @@ public class GzShipmentController extends BaseController
     /**
      * 导出高值出库列表
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:export')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:export')")
     @Log(title = "高值出库", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, GzShipment gzShipment)
@@ -64,7 +64,7 @@ public class GzShipmentController extends BaseController
     /**
      * 获取高值出库详细信息
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:query')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -74,7 +74,7 @@ public class GzShipmentController extends BaseController
     /**
      * 新增高值出库
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:add')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:add')")
     @Log(title = "高值出库", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody GzShipment gzShipment)
@@ -85,7 +85,7 @@ public class GzShipmentController extends BaseController
     /**
      * 修改高值出库
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:edit')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:edit')")
     @Log(title = "高值出库", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody GzShipment gzShipment)
@@ -96,7 +96,7 @@ public class GzShipmentController extends BaseController
     /**
      * 删除高值出库
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:remove')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:remove')")
     @Log(title = "高值出库", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long ids)
@@ -105,14 +105,15 @@ public class GzShipmentController extends BaseController
     }
 
     /**
-     * 审核高值入库
+     * 审核高值出库
      */
-    @PreAuthorize("@ss.hasPermi('gzShipment:apply:audit')")
-    @Log(title = "高值入库", businessType = BusinessType.UPDATE)
-    @PutMapping("/auditShipment")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:audit')")
+    @Log(title = "高值出库", businessType = BusinessType.UPDATE)
+    @PutMapping("/auditOrder")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = gzShipmentService.auditShipment(json.getString("id"));
+        int result = gzShipmentService.auditGzShipment(json.getString("id"));
         return toAjax(result);
     }
 }
+

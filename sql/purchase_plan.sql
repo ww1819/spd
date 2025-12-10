@@ -6,7 +6,7 @@ CREATE TABLE `purchase_plan` (
   `warehouse_id` bigint(20) DEFAULT NULL COMMENT '仓库ID',
   `department_id` bigint(20) DEFAULT NULL COMMENT '部门ID',
   `plan_date` date NOT NULL COMMENT '计划日期',
-  `plan_status` char(1) NOT NULL DEFAULT '1' COMMENT '计划状态（1待审核 2已审核 3已执行 4已取消）',
+  `plan_status` char(1) NOT NULL DEFAULT '0' COMMENT '计划状态（0未提交 1未提交 2已审核 3已执行 4已取消）',
   `pro_person` varchar(50) DEFAULT NULL COMMENT '采购员',
   `total_amount` decimal(15,2) DEFAULT '0.00' COMMENT '总金额',
   `telephone` varchar(20) DEFAULT NULL COMMENT '联系电话',

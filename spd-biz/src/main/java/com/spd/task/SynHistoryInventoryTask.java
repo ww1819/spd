@@ -1,15 +1,11 @@
 package com.spd.task;
 
-import com.spd.common.utils.spring.SpringUtils;
-import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jca.context.SpringContextResourceAdapter;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.beanvalidation.SpringConstraintValidatorFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -54,6 +50,7 @@ public class SynHistoryInventoryTask {
         for(Map<String, Object> map : mapList){
             //插入到历史库存表中
 
+            logger.debug("处理历史库存数据: {}", map);
         }
     }
 

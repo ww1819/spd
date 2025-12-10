@@ -4,7 +4,6 @@ import java.beans.PropertyEditorSupport;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
 import org.slf4j.Logger;
@@ -218,9 +217,9 @@ public class BaseController
      * @param list
      * @return
      */
-    public List subListPage(List list){
+    public <T> List<T> subListPage(List<T> list){
         // 根据分页参数截取数据
-        List pageList = new ArrayList<>();
+        List<T> pageList = new ArrayList<>();
         try {
             PageDomain pageDomain = TableSupport.buildPageRequest();
             int pageNum = pageDomain.getPageNum();

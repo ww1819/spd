@@ -8,6 +8,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -27,7 +28,7 @@ public class ResourcesConfig implements WebMvcConfigurer
     private RepeatSubmitInterceptor repeatSubmitInterceptor;
 
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry)
+    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry)
     {
         /** 本地文件上传路径 */
         registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/**")
@@ -43,7 +44,7 @@ public class ResourcesConfig implements WebMvcConfigurer
      * 自定义拦截规则
      */
     @Override
-    public void addInterceptors(InterceptorRegistry registry)
+    public void addInterceptors(@NonNull InterceptorRegistry registry)
     {
         registry.addInterceptor(repeatSubmitInterceptor).addPathPatterns("/**");
     }

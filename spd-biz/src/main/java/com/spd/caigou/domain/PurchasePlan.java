@@ -44,8 +44,8 @@ public class PurchasePlan extends BaseEntity
     @Excel(name = "计划日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date planDate;
 
-    /** 计划状态（1待审核 2已审核 3已执行 4已取消） */
-    @Excel(name = "计划状态", readConverterExp = "1=待审核,2=已审核,3=已执行,4=已取消")
+    /** 计划状态（0未提交 1未提交 2已审核 3已执行 4已取消） */
+    @Excel(name = "计划状态", readConverterExp = "0=未提交,1=未提交,2=已审核,3=已执行,4=已取消")
     private String planStatus;
 
     /** 采购员 */
@@ -68,6 +68,10 @@ public class PurchasePlan extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
+
+    /** 审核意见 */
+    @Excel(name = "审核意见")
+    private String auditOpinion;
 
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
@@ -208,6 +212,16 @@ public class PurchasePlan extends BaseEntity
     public Date getAuditDate() 
     {
         return auditDate;
+    }
+
+    public void setAuditOpinion(String auditOpinion) 
+    {
+        this.auditOpinion = auditOpinion;
+    }
+
+    public String getAuditOpinion() 
+    {
+        return auditOpinion;
     }
 
     public void setDelFlag(String delFlag) 

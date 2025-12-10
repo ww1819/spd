@@ -262,7 +262,48 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectCTKStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
         select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                stk.bill_type billType,b.qty materialQty, b.unit_price unitPrice,
+                stk.bill_type billType,b.qty materialQty, 
+                IFNULL(b.unit_price, 
+                    IFNULL(
+                        CASE 
+                            WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 
+                            THEN ROUND(b.amt / b.qty, 2)
+                            ELSE NULL 
+                        END,
+                        IFNULL(
+                            (select inv.unit_price 
+                             from stk_inventory inv
+                             where inv.batch_no = b.batch_no 
+                               and inv.material_id = b.material_id
+                               and inv.warehouse_id = stk.warehouse_id
+                               and inv.qty > 0
+                             order by inv.id desc
+                             limit 1
+                            ),
+                            IFNULL(
+                                (select inv.unit_price 
+                                 from stk_inventory inv
+                                 where inv.batch_no = b.batch_no 
+                                   and inv.material_id = b.material_id
+                                   and inv.qty > 0
+                                 order by inv.id desc
+                                 limit 1
+                                ),
+                                (select COALESCE(entry.unit_price, entry.price)
+                                 from stk_io_bill_entry entry
+                                 inner join stk_io_bill bill on bill.id = entry.paren_id
+                                 where bill.bill_type = 101
+                                   and entry.material_id = b.material_id
+                                   and entry.batch_no = b.batch_no
+                                   and entry.del_flag != 1
+                                   and bill.del_flag != 1
+                                 order by bill.id desc
+                                 limit 1
+                                )
+                            )
+                        )
+                    )
+                ) as unitPrice,
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,

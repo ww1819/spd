@@ -16,6 +16,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
         <result property="supplierId"    column="supplier_id"    />
+        <result property="inHospitalCode"    column="in_hospital_code"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="orderNo"    column="orderNo"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -31,6 +34,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="mId"     />
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
+        <result property="speci"  column="materialSpeci"   />
+        <result property="model"  column="materialModel"   />
+        <result property="periodDate"  column="materialPeriodDate"   />
+        <result property="registerNo"  column="materialRegisterNo"   />
+        <result property="medicalNo"  column="materialMedicalNo"   />
+        <association property="fdFactory"    column="factoryId" javaType="FdFactory" resultMap="fdFactoryResult" />
+        <association property="supplier"    column="materialSupplierId" javaType="FdSupplier" resultMap="materialSupplierResult" />
+    </resultMap>
+
+    <resultMap id="materialSupplierResult" type="FdSupplier">
+        <id     property="id"    column="msId"     />
+        <result property="code"  column="materialSupplierCode"   />
+        <result property="name"  column="materialSupplierName"   />
+    </resultMap>
+
+    <resultMap id="fdFactoryResult" type="FdFactory">
+        <id     property="factoryId"    column="factoryId"     />
+        <result property="factoryName"  column="factoryName"   />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -42,31 +63,49 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectGzDepotInventoryVo">
         select gz.id, gz.qty, gz.material_id, gz.warehouse_id, gz.unit_price,gz.amt,
 				gz.batch_no, gz.material_no, gz.material_date, gz.warehouse_date,gz.supplier_id,
+				gz.in_hospital_code,
+				goe.end_time,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
-				s.id sId,s.code supplierCode,s.name supplierName
+				m.speci as materialSpeci,
+				m.model as materialModel,
+				m.period_date as materialPeriodDate,
+				m.register_no as materialRegisterNo,
+				m.medical_no as materialMedicalNo,
+				m.supplier_id as materialSupplierId,
+				f.factory_id as factoryId,f.factory_name as factoryName,
+				ms.id msId,ms.code materialSupplierCode,ms.name materialSupplierName,
+				s.id sId,s.code supplierCode,s.name supplierName,
+				go.order_no as orderNo
         from gz_depot_inventory gz
         left join fd_warehouse w on gz.warehouse_id = w.id
         left join fd_material m on gz.material_id = m.id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_supplier s on gz.supplier_id = s.id
+        left join gz_order_entry goe on gz.batch_no = goe.batch_no
+        left join gz_order go on goe.paren_id = go.id
     </sql>
 
     <select id="selectGzDepotInventoryList" parameterType="GzDepotInventory" resultMap="GzDepotInventoryResult">
         <include refid="selectGzDepotInventoryVo"/>
         where gz.qty &gt; 0
+        <!-- 只查询高值仓库的库存 -->
+        and w.warehouse_type = '高值'
         <if test="qty != null "> and gz.qty = #{qty}</if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and gz.warehouse_id = #{warehouseId}</if>
         <if test="unitPrice != null "> and gz.unit_price = #{unitPrice}</if>
         <if test="amt != null "> and gz.amt = #{amt}</if>
         <if test="batchNo != null  and batchNo != ''"> and gz.batch_no = #{batchNo}</if>
-        <if test="materialNo != null  and materialNo != ''"> and gz.material_no = #{materialNo}</if>
-        <if test="materialDate != null "> and gz.material_date = #{materialDate}</if>
-        <if test="warehouseDate != null "> and gz.warehouse_date = #{warehouseDate}</if>
         <if test="supplierId != null "> and gz.supplier_id = #{supplierId}</if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
-        order by gz.warehouse_date desc
+        <if test="orderNo != null and orderNo != ''"> and go.order_no like concat('%', #{orderNo}, '%')</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''"> and gz.in_hospital_code like concat('%', #{inHospitalCode}, '%')</if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.warehouse_date >= #{beginDate}]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and gz.warehouse_date <= #{endDate}]]></if>
+        order by gz.id desc, gz.warehouse_date desc
     </select>
 
     <select id="selectGzDepotInventoryById" parameterType="Long" resultMap="GzDepotInventoryResult">
@@ -87,6 +126,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="inHospitalCode != null">in_hospital_code,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -99,6 +139,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="inHospitalCode != null">#{inHospitalCode},</if>
          </trim>
     </insert>
 
@@ -136,6 +177,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzDepotInventoryOne" parameterType="java.lang.String" resultMap="GzDepotInventoryResult">
-        select * from gz_depot_inventory where batch_no = #{batchNo}
+        select * from gz_depot_inventory where batch_no = #{batchNo} order by id desc limit 1
+    </select>
+
+    <select id="selectGzDepotInventoryByBatchNoAndWarehouse" resultType="java.math.BigDecimal">
+        select SUM(IFNULL(qty, 0)) from gz_depot_inventory
+        where batch_no = #{batchNo} and warehouse_id = #{warehouseId} and qty > 0
     </select>
 </mapper>

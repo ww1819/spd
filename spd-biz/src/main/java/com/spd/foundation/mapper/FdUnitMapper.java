@@ -43,6 +43,13 @@ public interface FdUnitMapper
      */
     public int updateFdUnit(FdUnit fdUnit);
 
+    /**
+     * 查询最大的D开头的单位编码
+     *
+     * @return 最大编码
+     */
+    public String selectMaxUnitCode();
+
 //    /**
 //     * 删除单位明细
 //     *

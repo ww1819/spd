@@ -6,11 +6,13 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.service.IFdUnitService;
+import java.text.DecimalFormat;
 
 /**
  * 单位明细Service业务层处理
@@ -57,8 +59,44 @@ public class FdUnitServiceImpl implements IFdUnitService
     @Override
     public int insertFdUnit(FdUnit fdUnit)
     {
+        // 如果单位编码为空，自动生成D开头的编码
+        if (StringUtils.isEmpty(fdUnit.getUnitCode()))
+        {
+            fdUnit.setUnitCode(generateUnitCode());
+        }
         fdUnit.setCreateTime(DateUtils.getNowDate());
         return fdUnitMapper.insertFdUnit(fdUnit);
+    }
+
+    /**
+     * 自动生成单位编码（D开头+7位数字）
+     *
+     * @return 单位编码
+     */
+    private String generateUnitCode()
+    {
+        String maxCode = fdUnitMapper.selectMaxUnitCode();
+        int nextNum = 1000024; // 默认起始编号（对应D0100024）
+        
+        if (StringUtils.isNotEmpty(maxCode) && maxCode.startsWith("D") && maxCode.length() > 1)
+        {
+            try
+            {
+                // 提取D后面的数字部分（去掉前导0后转换为整数）
+                String numStr = maxCode.substring(1);
+                int maxNum = Integer.parseInt(numStr);
+                nextNum = maxNum + 1;
+            }
+            catch (NumberFormatException e)
+            {
+                // 如果解析失败，使用默认值
+                nextNum = 1000024;
+            }
+        }
+        
+        // 格式化为7位数字，前面补0
+        DecimalFormat df = new DecimalFormat("0000000");
+        return "D" + df.format(nextNum);
     }
 
     /**

@@ -70,4 +70,12 @@ public interface IPurchaseOrderService
      */
     public int auditPurchaseOrder(Long id, String auditBy, String auditOpinion);
 
+    /**
+     * 从采购计划生成订单（按供应商拆分）
+     * 
+     * @param planId 采购计划主键
+     * @return 生成的订单数量
+     */
+    public int generateOrdersFromPlan(Long planId);
+
 }

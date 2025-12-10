@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -720,8 +721,9 @@ public class ExcelUtil<T>
                 Excel excel = (Excel) os[1];
                 if (Collection.class.isAssignableFrom(field.getType()) && StringUtils.isNotNull(subList))
                 {
+                    Collection<?> nonNullSubList = Objects.requireNonNull(subList);
                     boolean subFirst = false;
-                    for (Object obj : subList)
+                    for (Object obj : nonNullSubList)
                     {
                         if (subFirst)
                         {
@@ -742,7 +744,7 @@ public class ExcelUtil<T>
                         }
                         subFirst = true;
                     }
-                    this.subMergedFirstRowNum = this.subMergedFirstRowNum + subList.size();
+                    this.subMergedFirstRowNum = this.subMergedFirstRowNum + nonNullSubList.size();
                 }
                 else
                 {

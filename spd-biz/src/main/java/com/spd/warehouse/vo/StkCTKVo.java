@@ -13,8 +13,6 @@ import java.util.Date;
  */
 public class StkCTKVo {
 
-    private static final long serialVersionUID = 1L;
-
     /** ID */
     private Long id;
 

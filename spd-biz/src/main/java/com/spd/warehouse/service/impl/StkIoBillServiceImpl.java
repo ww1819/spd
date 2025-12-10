@@ -55,8 +55,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private BasApplyMapper basApplyMapper;
-    @Autowired
-    private FdMaterialMapper materialMapper;
+
     @Autowired
     private PurchaseOrderMapper purchaseOrderMapper;
 
@@ -234,7 +233,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkInventory.setMaterialId(entry.getMaterialId());
                     stkInventory.setWarehouseId(stkIoBill.getWarehouseId());
                     stkInventory.setQty(entry.getQty());
-                    stkInventory.setUnitPrice(entry.getPrice());
+                    // 优先使用 unitPrice，如果为空则使用 price
+                    BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                    stkInventory.setUnitPrice(unitPrice);
                     stkInventory.setAmt(entry.getAmt());
                     stkInventory.setMaterialDate(new Date());
                     stkInventory.setWarehouseDate(new Date());
@@ -249,7 +250,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
-                    StkInventory inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                    Long warehouseId = stkIoBill.getWarehouseId();
+                    // 优先使用批次号和仓库ID精确查询，如果查不到再使用仅批次号查询
+                    StkInventory inventory = null;
+                    if(warehouseId != null){
+                        inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, warehouseId);
+                    }
+                    if(inventory == null){
+                        inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                    }
 
                     if(inventory == null){
                         throw new ServiceException(String.format("出库-批次号：%s，不存在!", batchNo));
@@ -266,7 +275,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     }
                     BigDecimal subQty = inventoryQty.subtract(qty);
                     inventory.setQty(subQty);
-                    inventory.setAmt(subQty.multiply(unitPrice));
+                    // 如果单价为空，金额也设为0，避免空指针异常
+                    if(unitPrice != null && subQty != null){
+                        inventory.setAmt(subQty.multiply(unitPrice));
+                    } else {
+                        inventory.setAmt(BigDecimal.ZERO);
+                    }
                     inventory.setUpdateTime(new Date());
                     inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
                     //更新库存明细表
@@ -278,12 +292,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
                     StkInventory inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
-                    BigDecimal inventoryQty = inventory.getQty();//实际库存数量
-                    BigDecimal unitPrice = inventory.getUnitPrice();
 
                     if(inventory == null){
                         throw new ServiceException(String.format("退货-批次号：%s，不存在!", batchNo));
                     }
+                    BigDecimal inventoryQty = inventory.getQty();//实际库存数量
+                    BigDecimal unitPrice = inventory.getUnitPrice();
 
                     //退货数量不能大于库存数量
                     if(qty.compareTo(inventoryQty) > 0){

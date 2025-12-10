@@ -8,7 +8,6 @@ import javax.validation.Validator;
 
 import com.spd.system.domain.*;
 import com.spd.system.mapper.*;
-import com.spd.system.service.ISysRoleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

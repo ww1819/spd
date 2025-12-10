@@ -94,7 +94,7 @@ spring:
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
-                enabled: true
+                enabled: false
                 url: jdbc:oracle:thin:@localhost:1521:orcl?characterEncoding=UTF-8&useUnicode=true&oracle.jdbc.defaultNChar=false&oracle.jdbc.defaultNClob=false
                 username: cesoft_xhzxy
                 password: cesoft2018

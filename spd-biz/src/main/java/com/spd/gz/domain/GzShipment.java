@@ -3,9 +3,9 @@ package com.spd.gz.domain;
 import java.util.List;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.FdDepartment;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -15,7 +15,7 @@ import com.spd.common.core.domain.BaseEntity;
  * 高值出库对象 gz_shipment
  *
  * @author spd
- * @date 2024-06-11
+ * @date 2024-12-08
  */
 public class GzShipment extends BaseEntity
 {
@@ -60,13 +60,16 @@ public class GzShipment extends BaseEntity
     /** 高值出库明细信息 */
     private List<GzShipmentEntry> gzShipmentEntryList;
 
-    /** 科室 */
-    private FdDepartment department;
-
-    /** 仓库 */
+    /** 仓库对象 */
     private FdWarehouse warehouse;
 
+    /** 科室对象 */
+    private FdDepartment department;
+
     private List<FdMaterial> materialList;
+
+    /** 总金额（用于列表显示） */
+    private java.math.BigDecimal totalAmt;
 
     public void setId(Long id)
     {
@@ -86,6 +89,23 @@ public class GzShipment extends BaseEntity
     {
         return shipmentNo;
     }
+    
+    /**
+     * 为了前端兼容，提供 orderNo 的 getter，返回 shipmentNo 的值
+     */
+    public String getOrderNo()
+    {
+        return shipmentNo;
+    }
+    
+    /**
+     * 为了前端兼容，提供 orderNo 的 setter，设置 shipmentNo 的值
+     */
+    public void setOrderNo(String orderNo)
+    {
+        this.shipmentNo = orderNo;
+    }
+    
     public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
@@ -104,6 +124,23 @@ public class GzShipment extends BaseEntity
     {
         return shipmentDate;
     }
+    
+    /**
+     * 为了前端兼容，提供 orderDate 的 getter，返回 shipmentDate 的值
+     */
+    public Date getOrderDate()
+    {
+        return shipmentDate;
+    }
+    
+    /**
+     * 为了前端兼容，提供 orderDate 的 setter，设置 shipmentDate 的值
+     */
+    public void setOrderDate(Date orderDate)
+    {
+        this.shipmentDate = orderDate;
+    }
+    
     public void setWarehouseId(Long warehouseId)
     {
         this.warehouseId = warehouseId;
@@ -122,6 +159,23 @@ public class GzShipment extends BaseEntity
     {
         return shipmentStatus;
     }
+    
+    /**
+     * 为了前端兼容，提供 orderStatus 的 getter，返回 shipmentStatus 的值
+     */
+    public Integer getOrderStatus()
+    {
+        return shipmentStatus;
+    }
+    
+    /**
+     * 为了前端兼容，提供 orderStatus 的 setter，设置 shipmentStatus 的值
+     */
+    public void setOrderStatus(Integer orderStatus)
+    {
+        this.shipmentStatus = orderStatus;
+    }
+    
     public void setShipmentType(Integer shipmentType)
     {
         this.shipmentType = shipmentType;
@@ -131,6 +185,23 @@ public class GzShipment extends BaseEntity
     {
         return shipmentType;
     }
+    
+    /**
+     * 为了前端兼容，提供 orderType 的 getter，返回 shipmentType 的值
+     */
+    public Integer getOrderType()
+    {
+        return shipmentType;
+    }
+    
+    /**
+     * 为了前端兼容，提供 orderType 的 setter，设置 shipmentType 的值
+     */
+    public void setOrderType(Integer orderType)
+    {
+        this.shipmentType = orderType;
+    }
+    
     public void setDelFlag(Integer delFlag)
     {
         this.delFlag = delFlag;
@@ -159,13 +230,21 @@ public class GzShipment extends BaseEntity
     {
         this.gzShipmentEntryList = gzShipmentEntryList;
     }
-
-    public FdDepartment getDepartment() {
-        return department;
+    
+    /**
+     * 为了前端兼容，提供 gzOrderEntryList 的 getter，返回 gzShipmentEntryList 的值
+     */
+    public List<GzShipmentEntry> getGzOrderEntryList()
+    {
+        return gzShipmentEntryList;
     }
-
-    public void setDepartment(FdDepartment department) {
-        this.department = department;
+    
+    /**
+     * 为了前端兼容，提供 gzOrderEntryList 的 setter，设置 gzShipmentEntryList 的值
+     */
+    public void setGzOrderEntryList(List<GzShipmentEntry> gzOrderEntryList)
+    {
+        this.gzShipmentEntryList = gzOrderEntryList;
     }
 
     public FdWarehouse getWarehouse() {
@@ -176,12 +255,28 @@ public class GzShipment extends BaseEntity
         this.warehouse = warehouse;
     }
 
+    public FdDepartment getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(FdDepartment department) {
+        this.department = department;
+    }
+
     public List<FdMaterial> getMaterialList() {
         return materialList;
     }
 
     public void setMaterialList(List<FdMaterial> materialList) {
         this.materialList = materialList;
+    }
+
+    public java.math.BigDecimal getTotalAmt() {
+        return totalAmt;
+    }
+
+    public void setTotalAmt(java.math.BigDecimal totalAmt) {
+        this.totalAmt = totalAmt;
     }
 
     @Override
@@ -202,9 +297,10 @@ public class GzShipment extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
             .append("gzShipmentEntryList", getGzShipmentEntryList())
-            .append("department", getDepartment())
             .append("warehouse", getWarehouse())
+            .append("department", getDepartment())
             .append("materialList", getMaterialList())
             .toString();
     }
 }
+

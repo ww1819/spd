@@ -1,20 +1,7 @@
 package com.spd.caigou.domain;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
-import com.spd.common.core.domain.entity.SysUser;
-import com.spd.foundation.domain.FdDepartment;
-import com.spd.foundation.domain.FdMaterial;
-import com.spd.foundation.domain.FdSupplier;
-import com.spd.foundation.domain.FdWarehouse;
-import com.spd.warehouse.domain.StkIoBillEntry;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 
 /**
  * 出入库对象 stk_io_bill
@@ -33,4 +20,23 @@ public class CaigouJihua extends BaseEntity
     @Excel(name = "采购计划单号")
     private String code;
 
+    public void setId(Long id)
+    {
+        this.id = id;
+    }
+
+    public Long getId()
+    {
+        return id;
+    }
+
+    public void setCode(String code)
+    {
+        this.code = code;
+    }
+
+    public String getCode()
+    {
+        return code;
+    }
 }

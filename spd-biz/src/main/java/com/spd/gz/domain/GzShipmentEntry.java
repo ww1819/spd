@@ -12,7 +12,7 @@ import com.spd.common.core.domain.BaseEntity;
  * 高值出库明细对象 gz_shipment_entry
  * 
  * @author spd
- * @date 2024-06-11
+ * @date 2024-12-08
  */
 public class GzShipmentEntry extends BaseEntity
 {
@@ -61,6 +61,15 @@ public class GzShipmentEntry extends BaseEntity
 
     /** 删除标识 */
     private Integer delFlag;
+
+    /** 主条码 */
+    private String masterBarcode;
+
+    /** 次条码 */
+    private String secondaryBarcode;
+
+    /** 院内码 */
+    private String inHospitalCode;
 
     public void setId(Long id) 
     {
@@ -162,6 +171,30 @@ public class GzShipmentEntry extends BaseEntity
         return delFlag;
     }
 
+    public String getMasterBarcode() {
+        return masterBarcode;
+    }
+
+    public void setMasterBarcode(String masterBarcode) {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getSecondaryBarcode() {
+        return secondaryBarcode;
+    }
+
+    public void setSecondaryBarcode(String secondaryBarcode) {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
+    public String getInHospitalCode() {
+        return inHospitalCode;
+    }
+
+    public void setInHospitalCode(String inHospitalCode) {
+        this.inHospitalCode = inHospitalCode;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -176,7 +209,11 @@ public class GzShipmentEntry extends BaseEntity
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
+            .append("masterBarcode", getMasterBarcode())
+            .append("secondaryBarcode", getSecondaryBarcode())
+            .append("inHospitalCode", getInHospitalCode())
             .append("remark", getRemark())
             .toString();
     }
 }
+

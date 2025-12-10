@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="PurchaseOrder" id="PurchaseOrderResult">
         <result property="id"    column="id"    />
         <result property="orderNo"    column="order_no"    />
+        <result property="planNo"    column="plan_no"    />
         <result property="orderDate"    column="order_date"    />
         <result property="supplierId"    column="supplier_id"    />
         <result property="warehouseId"    column="warehouse_id"    />
@@ -89,7 +90,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectPurchaseOrderVo">
-        select po.id, po.order_no, po.order_date, po.supplier_id, po.warehouse_id, po.department_id, 
+        select po.id, po.order_no, po.plan_no, po.order_date, po.supplier_id, po.warehouse_id, po.department_id, 
                po.order_status, po.order_type, po.urgency_level, po.total_amount, po.paid_amount, 
                po.unpaid_amount, po.expected_delivery_date, po.actual_delivery_date, po.payment_terms, 
                po.delivery_address, po.contact_person, po.contact_phone, po.audit_by, po.audit_date, 
@@ -145,6 +146,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into purchase_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">order_no,</if>
+            <if test="planNo != null and planNo != ''">plan_no,</if>
             <if test="orderDate != null">order_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
@@ -173,6 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">#{orderNo},</if>
+            <if test="planNo != null and planNo != ''">#{planNo},</if>
             <if test="orderDate != null">#{orderDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
@@ -268,6 +271,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update purchase_order
         <trim prefix="SET" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
             <if test="orderDate != null">order_date = #{orderDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
@@ -321,5 +325,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deletePurchaseOrderEntryByParentId" parameterType="Long">
         update purchase_order_entry set del_flag = '1' where parent_id = #{parentId}
     </delete>
+
+    <select id="selectMaxOrderNo" parameterType="String" resultType="String">
+        select max(order_no) from purchase_order where order_no like concat('PO', #{date}, '%')
+    </select>
 
 </mapper>

@@ -28,6 +28,13 @@ public interface IFdWarehouseCategoryService
     public List<FdWarehouseCategory> selectFdWarehouseCategoryList(FdWarehouseCategory fdWarehouseCategory);
 
     /**
+     * 查询库房分类树形列表
+     *
+     * @return 库房分类集合
+     */
+    public List<FdWarehouseCategory> selectFdWarehouseCategoryTree();
+
+    /**
      * 新增库房分类
      *
      * @param fdWarehouseCategory 库房分类

@@ -10,8 +10,6 @@ import java.math.BigDecimal;
  */
 public class StkInventorySummaryVo {
 
-    private static final long serialVersionUID = 1L;
-
     /** ID */
     private Long id;
 

@@ -3,8 +3,6 @@ package com.spd.foundation.controller;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
-import com.spd.common.core.domain.entity.SysUser;
-import com.spd.foundation.domain.FdMaterial;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
+import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.enums.BusinessType;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.service.IFdDepartmentService;

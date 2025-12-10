@@ -23,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="auditBy"    column="audit_by"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="auditOpinion"    column="audit_opinion"    />
         <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -71,12 +72,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"  column="materialName"   />
         <result property="speci"  column="materialSpeci"   />
         <result property="model"  column="materialModel"   />
+        <association property="fdUnit"    column="mId" javaType="FdUnit" resultMap="fdUnitResult" />
+    </resultMap>
+    
+    <resultMap id="fdUnitResult" type="FdUnit">
+        <id     property="unitId"    column="uid"     />
+        <result property="unitCode"  column="u_code"   />
+        <result property="unitName"  column="u_name"   />
     </resultMap>
 
     <sql id="selectPurchasePlanVo">
         select pp.id, pp.plan_no, pp.supplier_id, pp.warehouse_id, pp.department_id, pp.plan_date, pp.plan_status,
                pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.create_by, pp.create_time,
-               pp.update_by, pp.update_time, pp.audit_by, pp.audit_date,
+               pp.update_by, pp.update_time, pp.audit_by, pp.audit_date, pp.audit_opinion,
                s.id sId, s.code supplierCode, s.name supplierName,
                w.id wId, w.code warehouseCode, w.name warehouseName,
                d.id dId, d.code departmentCode, d.name departmentName
@@ -90,9 +98,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select ppe.id entry_id, ppe.parent_id, ppe.material_id, ppe.qty, ppe.price, ppe.amt, ppe.speci, ppe.model,
                ppe.remark entry_remark, ppe.del_flag entry_del_flag, ppe.create_by entry_create_by, ppe.create_time entry_create_time,
                ppe.update_by entry_update_by, ppe.update_time entry_update_time,
-               m.id mId, m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel
+               m.id mId, m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel,
+               u.unit_id uid, u.unit_code u_code, u.unit_name u_name
         from purchase_plan_entry ppe
         left join fd_material m on ppe.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
     </sql>
 
     <select id="selectPurchasePlanList" parameterType="PurchasePlan" resultMap="PurchasePlanResult">
@@ -146,6 +156,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             <if test="auditBy != null">audit_by,</if>
             <if test="auditDate != null">audit_date,</if>
+            <if test="auditOpinion != null">audit_opinion,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">#{planNo},</if>
@@ -165,6 +176,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
+            <if test="auditOpinion != null">#{auditOpinion},</if>
          </trim>
     </insert>
 
@@ -230,6 +242,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
         </trim>
         where id = #{id}
     </update>
@@ -260,6 +273,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planStatus != null">plan_status = #{planStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

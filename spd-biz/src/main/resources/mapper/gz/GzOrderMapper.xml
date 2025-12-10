@@ -10,10 +10,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="supplerId"    column="suppler_id"    />
         <result property="orderDate"    column="order_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
         <result property="orderStatus"    column="order_status"    />
         <result property="orderType"    column="order_type"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="isFollowFlag"    column="is_follow_flag"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -21,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="remark"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -33,6 +36,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="wId"     />
         <result property="code"  column="warehouseCode"   />
         <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
     </resultMap>
 
     <resultMap id="GzOrderGzOrderEntryResult" type="GzOrder" extends="GzOrderResult">
@@ -56,13 +65,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectGzOrderVo">
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, gz.create_by,
+				<!-- 注意：如果执行 SQL 后仍然报错，请先验证字段是否真的存在 -->
+				<!-- 验证 SQL: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_order' AND COLUMN_NAME = 'department_id'; -->
+				<!-- 如果字段存在，取消下面的注释，并删除 NULL as department_id -->
+				NULL as department_id,
+				<!-- gz.department_id, -->
+				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
+				<!-- 临时注释：等执行 SQL 添加 is_follow_flag 字段后，取消下面的注释，并删除 NULL as is_follow_flag -->
+				NULL as is_follow_flag,
+				<!-- gz.is_follow_flag, -->
+				gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id sId,s.code supplierCode,s.name supplierName,
-				w.id wId,w.code warehouseCode,w.name warehouseName
+				w.id wId,w.code warehouseCode,w.name warehouseName,
+				d.id dId,d.code departmentCode,d.name departmentName
         from gz_order gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
+        left join fd_department d on NULL = d.id
     </sql>
 
     <select id="selectGzOrderList" parameterType="GzOrder" resultMap="GzOrderResult">
@@ -75,11 +95,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="orderStatus != null "> and gz.order_status = #{orderStatus}</if>
         <if test="orderType != null "> and gz.order_type = #{orderType}</if>
         <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
+        order by gz.order_date desc, gz.id desc
     </select>
 
     <select id="selectGzOrderById" parameterType="Long" resultMap="GzOrderGzOrderEntryResult">
-        select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, a.order_status, a.order_type, a.del_flag,
-                a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+        select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, 
+				<!-- 注意：如果执行 SQL 后仍然报错，请先验证字段是否真的存在 -->
+				<!-- 验证 SQL: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_order' AND COLUMN_NAME = 'department_id'; -->
+				<!-- 如果字段存在，取消下面的注释，并删除 NULL as department_id -->
+				NULL as department_id,
+				<!-- a.department_id, -->
+				a.order_status, a.order_type, a.del_flag,
+                a.audit_date, 
+				<!-- 临时注释：等执行 SQL 添加 is_follow_flag 字段后，取消下面的注释，并删除 NULL as is_follow_flag -->
+				NULL as is_follow_flag,
+				<!-- a.is_follow_flag, -->
+				a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
                 b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
                 b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
@@ -95,10 +126,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id,</if>
             <if test="orderDate != null">order_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <!-- 临时注释：等执行 SQL 添加 department_id 字段后，取消下面的注释 -->
+            <!-- <if test="departmentId != null">department_id,</if> -->
             <if test="orderStatus != null">order_status,</if>
             <if test="orderType != null">order_type,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
+            <if test="isFollowFlag != null and isFollowFlag != ''">is_follow_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -110,10 +144,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">#{supplerId},</if>
             <if test="orderDate != null">#{orderDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <!-- 临时注释：等执行 SQL 添加 department_id 字段后，取消下面的注释 -->
+            <!-- <if test="departmentId != null">#{departmentId},</if> -->
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="orderType != null">#{orderType},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
+            <if test="isFollowFlag != null and isFollowFlag != ''">#{isFollowFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -129,10 +166,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id = #{supplerId},</if>
             <if test="orderDate != null">order_date = #{orderDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <!-- 临时注释：等执行 SQL 添加 department_id 字段后，取消下面的注释 -->
+            <!-- <if test="departmentId != null">department_id = #{departmentId},</if> -->
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="orderType != null">order_type = #{orderType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="isFollowFlag != null">is_follow_flag = #{isFollowFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -159,8 +199,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectMaxBillNo" resultType="String">
         select max(order_no) from gz_order
-        where order_no like concat('%',#{date},'%')
---         and order_type = 101
+        where order_no like concat(#{prefix},'%')
+        and order_no like concat('%',#{date},'%')
     </select>
 
     <update id="updateGzOrderEntry" parameterType="GzOrderEntry">
@@ -170,4 +210,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </trim>
         where paren_id = #{parenId}
     </update>
+
+    <!-- 根据院内码查询是否有未出库的出库单 -->
+    <select id="selectOutboundOrderNosByInHospitalCode" parameterType="String" resultType="String">
+        select distinct go.order_no
+        from gz_order go
+        inner join gz_order_entry goe on go.id = goe.paren_id
+        inner join gz_depot_inventory gdi on goe.batch_no = gdi.batch_no
+        where gdi.in_hospital_code = #{inHospitalCode}
+        and go.order_type = 102
+        and go.order_status = 1
+        and go.del_flag != 1
+        and goe.del_flag != 1
+    </select>
 </mapper>

@@ -48,6 +48,17 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     }
 
     /**
+     * 查询库房分类树形列表
+     *
+     * @return 库房分类集合
+     */
+    @Override
+    public List<FdWarehouseCategory> selectFdWarehouseCategoryTree()
+    {
+        return fdWarehouseCategoryMapper.selectFdWarehouseCategoryTree();
+    }
+
+    /**
      * 新增库房分类
      *
      * @param fdWarehouseCategory 库房分类
