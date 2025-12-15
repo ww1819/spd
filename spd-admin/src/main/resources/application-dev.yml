@@ -10,6 +10,8 @@ server:
         uri-encoding: UTF-8
         # 连接数满后的排队数，默认为100
         accept-count: 1000
+        # POST请求最大大小（默认为2MB，设置为20MB以支持文件上传）
+        max-post-size: 20971520
         threads:
             # tomcat最大线程数，默认为200
             max: 800
@@ -33,6 +35,10 @@ spd:
     addressEnabled: false
     # 验证码类型 math 数字计算 char 字符验证
     captchaType: math
+    # 服务器interface配置
+    interface:
+        # 服务器interface接口URL
+        url: http://localhost:8088
 
 
 # 数据源配置
@@ -41,13 +47,13 @@ spring:
     messages:
         # 国际化资源文件路径
         basename: i18n/messages
-        # 文件上传
-        servlet:
-            multipart:
-                # 单个文件大小
-                max-file-size: 10MB
-                # 设置总上传的文件大小
-                max-request-size: 20MB
+    # 文件上传
+    servlet:
+        multipart:
+            # 单个文件大小
+            max-file-size: 10MB
+            # 设置总上传的文件大小
+            max-request-size: 20MB
         # 服务模块
         devtools:
             restart:

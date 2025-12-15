@@ -110,7 +110,16 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillDate() == null) {
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
-        stkIoBill.setBillNo(getNumber());
+        // 根据billType生成不同的单据号
+        if (stkIoBill.getBillNo() == null || stkIoBill.getBillNo().isEmpty()) {
+            if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 501) {
+                // 结算类型，使用JS前缀
+                stkIoBill.setBillNo(getJSNumber("JS"));
+            } else {
+                // 默认入库类型，使用RK前缀
+                stkIoBill.setBillNo(getNumber());
+            }
+        }
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertStkIoBillEntry(stkIoBill);
@@ -520,6 +529,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     public String getTHNumber(String str) {
         String date = FillRuleUtil.getDateNum();
         String maxNum = stkIoBillMapper.selectTHMaxBillNo(date);
+        String result = FillRuleUtil.getNumber(str,maxNum,date);
+        return result;
+    }
+
+    public String getJSNumber(String str) {
+        String date = FillRuleUtil.getDateNum();
+        String maxNum = stkIoBillMapper.selectJSMaxBillNo(date);
         String result = FillRuleUtil.getNumber(str,maxNum,date);
         return result;
     }
@@ -945,5 +961,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         thBill.setStkIoBillEntryList(entryList);
 
         return thBill;
+    }
+
+    /**
+     * 查询结算明细：根据供应商、日期范围、仓库结算类型查询出库明细
+     */
+    @Override
+    public List<StkIoBillEntry> selectSettlementDetails(StkIoBill stkIoBill) {
+        return stkIoBillMapper.selectSettlementDetails(stkIoBill);
     }
 }

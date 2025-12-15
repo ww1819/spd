@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehousePhone"    column="warehouse_phone"    />
         <result property="warehouseStatus"    column="warehouse_status"    />
         <result property="warehouseType"    column="warehouse_type"    />
+        <result property="settlementType"    column="settlement_type"    />
         <result property="remark"    column="remark"    />
     </resultMap>
 
@@ -28,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdWarehouseVo">
         select id, code, name, create_by, create_time, update_by, update_time,warehouse_person,warehouse_phone,warehouse_status,
-        COALESCE(warehouse_type, '低值') as warehouse_type,remark from fd_warehouse
+        COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark from fd_warehouse
     </sql>
 
     <select id="selectFdWarehouseList" parameterType="FdWarehouse" resultMap="FdWarehouseResult">
@@ -80,6 +81,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehousePhone != null">warehouse_phone,</if>
             <if test="warehouseStatus != null">warehouse_status,</if>
             <if test="warehouseType != null and warehouseType != ''">warehouse_type,</if>
+            <if test="settlementType != null and settlementType != ''">settlement_type,</if>
             <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -94,6 +96,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehousePhone != null">#{warehousePhone},</if>
             <if test="warehouseStatus != null">#{warehouseStatus},</if>
             <if test="warehouseType != null and warehouseType != ''">#{warehouseType},</if>
+            <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
             <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
@@ -112,6 +115,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehousePhone != null">warehouse_phone = #{warehousePhone},</if>
             <if test="warehouseStatus != null">warehouse_status = #{warehouseStatus},</if>
             <if test="warehouseType != null and warehouseType != ''">warehouse_type = #{warehouseType},</if>
+            <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
         where id = #{id}

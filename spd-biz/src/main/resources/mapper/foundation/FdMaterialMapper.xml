@@ -54,11 +54,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isMonitor"    column="is_monitor"    />
         <result property="isGz"    column="is_gz"    />
         <result property="isFollow"    column="is_follow"    />
+        <result property="locationId"    column="location_id"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="fdWarehouseCategory"    column="storeroom_id" javaType="FdWarehouseCategory" resultMap="fdWarehouseCategoryResult" />
         <association property="fdUnit"    column="id" javaType="FdUnit" resultMap="fdUnitResult" />
         <association property="fdFinanceCategory"    column="finance_category_id" javaType="FdFinanceCategory" resultMap="fdFinanceCategoryResult" />
+        <association property="fdLocation"    column="location_id" javaType="FdLocation" resultMap="fdLocationResult" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -91,6 +93,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="unitName"  column="u_name"   />
     </resultMap>
 
+    <resultMap id="fdLocationResult" type="FdLocation">
+        <id     property="locationId"    column="lid"     />
+        <result property="locationName"  column="l_name"   />
+    </resultMap>
+
     <sql id="selectFdMaterialVo">
         select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
             m.price, m.create_by, m.create_time, m.update_by, m.update_time,m.del_flag,
@@ -102,16 +109,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.is_use, m.is_procure, m.is_monitor, m.is_gz, 
 			<!-- 如果报错 Unknown column 'm.is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
 			m.is_follow,
+			<!-- 如果报错 Unknown column 'm.location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
+			m.location_id,
             s.id sid, s.code supplier_code,s.name supplier_name,
             w.warehouse_category_id wid, w.warehouse_category_code w_code,w.warehouse_category_name w_name,
             f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
-            u.unit_id uid,u.unit_code u_code,u.unit_name u_name,cwfl.finance_category_code cwfl_code,cwfl.finance_category_name cwfl_name
+            u.unit_id uid,u.unit_code u_code,u.unit_name u_name,cwfl.finance_category_code cwfl_code,cwfl.finance_category_name cwfl_name,
+            l.location_id lid, l.location_name l_name
         from fd_material m
         left join fd_supplier s on m.supplier_id = s.id
         left join fd_warehouse_category w on m.storeroom_id = w.warehouse_category_id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category cwfl on m.finance_category_id = cwfl.finance_category_id
+        left join fd_location l on m.location_id = l.location_id
     </sql>
 
     <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
@@ -187,6 +198,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isGz != null">is_gz,</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">is_follow,</if>
+            <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
+            <if test="locationId != null">location_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">#{code},</if>
@@ -237,6 +250,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isGz != null">#{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">#{isFollow},</if>
+            <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
+            <if test="locationId != null">#{locationId},</if>
          </trim>
     </insert>
 
@@ -292,6 +307,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isGz != null">is_gz = #{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null">is_follow = #{isFollow},</if>
+            <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
+            <if test="locationId != null">location_id = #{locationId},</if>
         </trim>
         where id = #{id}
     </update>

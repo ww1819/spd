@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdLocationMapper">
+
+    <resultMap type="FdLocation" id="FdLocationResult">
+        <result property="locationId"    column="location_id"    />
+        <result property="parentId"    column="parent_id"    />
+        <result property="locationCode"    column="location_code"    />
+        <result property="locationName"    column="location_name"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="warehouseName"    column="warehouse_name"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectFdLocationVo">
+        select l.location_id, l.parent_id, l.location_code, l.location_name, l.warehouse_id, 
+               w.name as warehouse_name, l.del_flag, l.create_by, l.create_time, l.update_by, l.update_time, l.remark 
+        from fd_location l
+        left join fd_warehouse w on l.warehouse_id = w.id
+    </sql>
+
+    <select id="selectFdLocationList" parameterType="FdLocation" resultMap="FdLocationResult">
+        <include refid="selectFdLocationVo"/>
+        where l.del_flag != 1
+        <if test="locationCode != null  and locationCode != ''"> and l.location_code = #{locationCode}</if>
+        <if test="locationName != null  and locationName != ''"> and l.location_name like concat('%', #{locationName}, '%')</if>
+        <if test="parentId != null"> and l.parent_id = #{parentId}</if>
+        <if test="warehouseId != null"> and l.warehouse_id = #{warehouseId}</if>
+        order by l.parent_id, l.location_id
+    </select>
+
+    <select id="selectFdLocationTree" resultMap="FdLocationResult">
+        <include refid="selectFdLocationVo"/>
+        where l.del_flag != 1
+        order by l.parent_id, l.location_id
+    </select>
+
+    <select id="selectFdLocationByLocationId" parameterType="Long" resultMap="FdLocationResult">
+        <include refid="selectFdLocationVo"/>
+        where l.location_id = #{locationId}
+    </select>
+
+    <insert id="insertFdLocation" parameterType="FdLocation" useGeneratedKeys="true" keyProperty="locationId">
+        insert into fd_location
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">parent_id,</if>
+            <if test="locationCode != null">location_code,</if>
+            <if test="locationName != null">location_name,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">#{parentId},</if>
+            <if test="locationCode != null">#{locationCode},</if>
+            <if test="locationName != null">#{locationName},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFdLocation" parameterType="FdLocation">
+        update fd_location
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="locationCode != null">location_code = #{locationCode},</if>
+            <if test="locationName != null">location_name = #{locationName},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where location_id = #{locationId}
+    </update>
+
+    <delete id="deleteFdLocationByLocationId" parameterType="Long">
+        update fd_location set del_flag = 1 where location_id = #{locationId}
+    </delete>
+</mapper>
+

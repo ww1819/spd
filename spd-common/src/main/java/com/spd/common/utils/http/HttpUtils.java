@@ -126,6 +126,19 @@ public class HttpUtils
      */
     public static String sendPost(String url, String param)
     {
+        return sendPost(url, param, "application/x-www-form-urlencoded;charset=UTF-8");
+    }
+
+    /**
+     * 向指定 URL 发送POST方法的请求
+     *
+     * @param url 发送请求的 URL
+     * @param param 请求参数
+     * @param contentType Content-Type请求头
+     * @return 所代表远程资源的响应结果
+     */
+    public static String sendPost(String url, String param, String contentType)
+    {
         PrintWriter out = null;
         BufferedReader in = null;
         StringBuilder result = new StringBuilder();
@@ -138,7 +151,7 @@ public class HttpUtils
             conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
             conn.setRequestProperty("Accept-Charset", "utf-8");
-            conn.setRequestProperty("contentType", "utf-8");
+            conn.setRequestProperty("Content-Type", contentType);
             conn.setDoOutput(true);
             conn.setDoInput(true);
             out = new PrintWriter(conn.getOutputStream());

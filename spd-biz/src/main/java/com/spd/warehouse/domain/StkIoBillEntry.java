@@ -75,6 +75,12 @@ public class StkIoBillEntry extends BaseEntity
     /** 耗材对象 */
     private FdMaterial material;
 
+    /** 查询参数：仓库名称 */
+    private String warehouseName;
+
+    /** 查询参数：结算类型 */
+    private String settlementType;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -195,6 +201,22 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setMaterial(FdMaterial material) {
         this.material = material;
+    }
+
+    public String getWarehouseName() {
+        return warehouseName;
+    }
+
+    public void setWarehouseName(String warehouseName) {
+        this.warehouseName = warehouseName;
+    }
+
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
     }
 
     @Override

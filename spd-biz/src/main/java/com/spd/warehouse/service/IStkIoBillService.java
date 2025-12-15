@@ -206,5 +206,12 @@ public interface IStkIoBillService
      */
     public StkIoBill createThEntriesByTkApply(String tkApplyId);
 
+    /**
+     * 查询结算明细：根据供应商、日期范围、仓库结算类型查询出库明细
+     * @param stkIoBill 查询条件
+     * @return 结算明细列表
+     */
+    public List<com.spd.warehouse.domain.StkIoBillEntry> selectSettlementDetails(StkIoBill stkIoBill);
+
 
 }

@@ -140,6 +140,13 @@ public interface StkIoBillMapper
     String selectTKMaxBillNo(String date);
 
     /**
+     * 查询出入库表结算当天最大的单号
+     * @param date 当天日期
+     * @return
+     */
+    String selectJSMaxBillNo(String date);
+
+    /**
      * 查询入退货列表
      * @param stkIoBill
      * @return
@@ -194,4 +201,11 @@ public interface StkIoBillMapper
      * @return
      */
     List<StkIoBill> getMonthHandleDataList(@Param("beginDate") String beginDate,@Param("endDate") String endDate);
+
+    /**
+     * 查询结算明细：根据供应商、日期范围、仓库结算类型查询出库明细
+     * @param stkIoBill 查询条件
+     * @return 结算明细列表
+     */
+    List<StkIoBillEntry> selectSettlementDetails(StkIoBill stkIoBill);
 }

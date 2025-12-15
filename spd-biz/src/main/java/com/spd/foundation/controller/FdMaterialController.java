@@ -21,6 +21,8 @@ import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Map;
 
 /**
  * 耗材产品Controller
@@ -34,6 +36,10 @@ public class FdMaterialController extends BaseController
 {
     @Autowired
     private IFdMaterialService fdMaterialService;
+
+    /** 服务器interface接口URL */
+    @Value("${spd.interface.url:http://localhost:8081}")
+    private String interfaceUrl;
 
     /**
      * 查询耗材产品列表
@@ -130,6 +136,66 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
         util.importTemplateExcel(response, "耗材数据");
+    }
+
+    /**
+     * 推送档案
+     * 调用服务器interface接口推送供应商档案
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:push')")
+    @Log(title = "推送档案", businessType = BusinessType.OTHER)
+    @PostMapping("/pushArchive")
+    public AjaxResult pushArchive(@RequestBody Map<String, Object> params)
+    {
+        try
+        {
+            Long supplierId = null;
+            if (params.get("supplierId") instanceof Number)
+            {
+                supplierId = ((Number) params.get("supplierId")).longValue();
+            }
+            else if (params.get("supplierId") != null)
+            {
+                supplierId = Long.parseLong(params.get("supplierId").toString());
+            }
+
+            if (supplierId == null)
+            {
+                return error("供应商ID不能为空");
+            }
+
+            // 调用服务器interface接口
+            String url = interfaceUrl;
+            if (!url.endsWith("/"))
+            {
+                url += "/";
+            }
+            url += "api/spd/pushSupplier";
+            
+            Map<String, Object> requestData = new java.util.HashMap<>();
+            requestData.put("supplierId", supplierId);
+            
+            String jsonData = com.alibaba.fastjson2.JSON.toJSONString(requestData);
+            String result = com.spd.common.utils.http.HttpUtils.sendPost(url, jsonData, "application/json;charset=UTF-8");
+            
+            // 解析返回结果
+            com.alibaba.fastjson2.JSONObject jsonResult = com.alibaba.fastjson2.JSON.parseObject(result);
+            Integer code = jsonResult.getInteger("code");
+            String msg = jsonResult.getString("msg");
+            
+            if (code != null && code == 200)
+            {
+                return success(jsonResult.get("data"));
+            }
+            else
+            {
+                return error(msg != null ? msg : "推送失败");
+            }
+        }
+        catch (Exception e)
+        {
+            return error("推送档案失败: " + e.getMessage());
+        }
     }
 
 

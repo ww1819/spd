@@ -97,6 +97,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="endTime"    column="sub_end_time"    />
         <result property="delFlag"    column="sub_del_flag"    />
         <result property="remark"    column="sub_remark"    />
+        <result property="warehouseName"    column="warehouseName"    />
+        <result property="settlementType"    column="settlementType"    />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -104,7 +106,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="mId"     />
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
+        <result property="speci"  column="speci"   />
+        <result property="model"  column="model"   />
+        <result property="supplierId"  column="supplier_id"   />
+        <result property="storeroomId"  column="storeroom_id"   />
+        <result property="factoryId"  column="factory_id"   />
+        <result property="unitId"  column="unit_id"   />
+        <result property="financeCategoryId"  column="finance_category_id"   />
+        <result property="packageSpeci"  column="package_speci"   />
+        <result property="registerNo"  column="register_no"   />
+        <association property="fdUnit" javaType="FdUnit">
+            <id     property="unitId"    column="unit_id"     />
+            <result property="unitCode"  column="u_code"   />
+            <result property="unitName"  column="u_name"   />
+        </association>
+        <association property="fdFactory" javaType="FdFactory">
+            <id     property="factoryId"    column="factory_id"     />
+            <result property="factoryCode"  column="f_code"   />
+            <result property="factoryName"  column="f_name"   />
+        </association>
+        <association property="fdWarehouseCategory" javaType="FdWarehouseCategory">
+            <id     property="warehouseCategoryId"    column="wid"     />
+            <result property="warehouseCategoryCode"  column="wc_code"   />
+            <result property="warehouseCategoryName"  column="wc_name"   />
+        </association>
+        <association property="fdFinanceCategory" javaType="FdFinanceCategory">
+            <id     property="financeCategoryId"    column="finance_category_id"     />
+            <result property="financeCategoryCode"  column="fc_code"   />
+            <result property="financeCategoryName"  column="fc_name"   />
+        </association>
+        <association property="supplier" javaType="FdSupplier">
+            <id     property="id"    column="sid"     />
+            <result property="code"  column="supplier_code"   />
+            <result property="name"  column="supplier_name"   />
+        </association>
     </resultMap>
+
 
     <sql id="selectStkIoBillVo">
         select stk.id, stk.bill_no, stk.ref_bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
@@ -501,6 +538,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and bill_type = 401
     </select>
 
+    <select id="selectJSMaxBillNo" resultType="String">
+        select max(bill_no) from stk_io_bill
+        where bill_no like concat('%',#{billNo},'%')
+        and bill_type = 501
+    </select>
+
     <select id="selectHistoryInventory" parameterType="String" resultType="java.util.HashMap">
         select m.name materialName,sum(b.qty) historyQty from stk_io_bill a
         left join stk_io_bill_entry b on b.paren_id = a.id
@@ -666,6 +709,92 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="getMonthHandleDataList" resultMap="StkIoBillResult">
         select * from stk_io_bill
         where bill_date &gt;= #{beginDate} and bill_date &lt;= #{endDate}
+    </select>
+
+    <!-- 查询结算明细：根据供应商、日期范围、仓库结算类型查询出库明细，排除已结算的产品 -->
+    <select id="selectSettlementDetails" parameterType="StkIoBill" resultMap="StkIoBillEntryResult">
+        select 
+            b.id as sub_id,
+            b.paren_id as sub_paren_id,
+            b.commodity_id as sub_commodity_id,
+            b.material_id as sub_material_id,
+            b.unit_price as sub_unit_price,
+            b.qty as sub_qty,
+            b.price as sub_price,
+            b.amt as sub_amt,
+            b.batch_no as sub_batch_no,
+            b.batch_number as sub_batch_number,
+            b.begin_time as sub_begin_time,
+            b.end_time as sub_end_time,
+            b.del_flag as sub_del_flag,
+            b.remark as sub_remark,
+            m.id as mId,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci,
+            m.model,
+            m.supplier_id,
+            m.storeroom_id,
+            m.factory_id,
+            m.unit_id,
+            m.finance_category_id,
+            m.package_speci,
+            m.register_no,
+            u.unit_id,
+            u.unit_code as u_code,
+            u.unit_name as u_name,
+            f.factory_id,
+            f.factory_code as f_code,
+            f.factory_name as f_name,
+            fc.finance_category_id,
+            fc.finance_category_code as fc_code,
+            fc.finance_category_name as fc_name,
+            wc.warehouse_category_id as wid,
+            wc.warehouse_category_code as wc_code,
+            wc.warehouse_category_name as wc_name,
+            s.id as sid,
+            s.code as supplier_code,
+            s.name as supplier_name,
+            w.id as wId,
+            w.name as warehouseName,
+            w.settlement_type as settlementType
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and b.del_flag != 1
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        left join fd_warehouse_category wc on wc.warehouse_category_id = m.storeroom_id
+        left join fd_supplier s on s.id = m.supplier_id
+        where stk.del_flag != 1
+        and stk.bill_status = 2
+        <if test="supplerId != null"> and m.supplier_id = #{supplerId}</if>
+        <if test="beginDate != null"> and DATE(stk.audit_date) &gt;= DATE(#{beginDate})</if>
+        <if test="endDate != null"> and DATE(stk.audit_date) &lt;= DATE(#{endDate})</if>
+        <!-- 根据仓库结算类型筛选：查询所有结算类型的明细 -->
+        <!-- 入库结算（settlement_type=1）：查询入库单（bill_type=101） -->
+        <!-- 出库结算（settlement_type=2）：查询出库单（bill_type=201） -->
+        <!-- 消耗结算（settlement_type=3）：查询出库单（bill_type=201） -->
+        <!-- 如果仓库没有设置结算类型，也查询出来（兼容旧数据，查询入库和出库单） -->
+        and (
+            (w.settlement_type = '1' and stk.bill_type = 101) or
+            (w.settlement_type = '2' and stk.bill_type = 201) or
+            (w.settlement_type = '3' and stk.bill_type = 201) or
+            (w.settlement_type IS NULL and (stk.bill_type = 101 or stk.bill_type = 201))
+        )
+        <!-- 排除已经生成结算单的产品：检查该产品是否已经在结算单明细中 -->
+        and not exists (
+            select 1 
+            from stk_io_bill settlement
+            left join stk_io_bill_entry settlement_entry on settlement_entry.paren_id = settlement.id and settlement_entry.del_flag != 1
+            where settlement.del_flag != 1
+            and settlement.bill_type = 501
+            and settlement_entry.material_id = b.material_id
+            and settlement_entry.batch_no = b.batch_no
+            and settlement.bill_status = 2
+        )
+        order by stk.audit_date desc, stk.id desc, b.id desc
     </select>
 
 </mapper>

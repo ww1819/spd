@@ -208,6 +208,9 @@ public class FdMaterial extends BaseEntity
     /** 单位分类对象 */
     private FdUnit fdUnit;
 
+    /** 货位对象 */
+    private FdLocation fdLocation;
+
     /** 是否高值 */
     @Excel(name = "是否高值", readConverterExp = "1=是,2=否")
     private String isGz;
@@ -215,6 +218,10 @@ public class FdMaterial extends BaseEntity
     /** 是否跟台 */
     @Excel(name = "是否跟台", readConverterExp = "1=是,2=否")
     private String isFollow;
+
+    /** 货位ID */
+    @Excel(name = "货位ID")
+    private Long locationId;
 
     /** 查询参数：起始日期 */
     private Date beginDate;
