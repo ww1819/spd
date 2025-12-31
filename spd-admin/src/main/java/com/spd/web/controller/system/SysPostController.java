@@ -21,6 +21,7 @@ import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.system.domain.SysPost;
 import com.spd.system.service.ISysPostService;
+import com.spd.system.service.impl.SysPostServiceImpl;
 
 /**
  * 岗位信息操作处理
@@ -63,7 +64,18 @@ public class SysPostController extends BaseController
     @GetMapping(value = "/{postId}")
     public AjaxResult getInfo(@PathVariable Long postId)
     {
-        return success(postService.selectPostById(postId));
+        SysPost post = postService.selectPostById(postId);
+        if (post != null)
+        {
+            // 获取权限ID列表
+            List<Long> menuIds = ((SysPostServiceImpl) postService).selectMenuListByPostId(postId);
+            List<Long> departmentIds = ((SysPostServiceImpl) postService).selectDepartmentListByPostId(postId);
+            List<Long> warehouseIds = ((SysPostServiceImpl) postService).selectWarehouseListByPostId(postId);
+            post.setMenuIds(menuIds != null ? menuIds.toArray(new Long[0]) : new Long[0]);
+            post.setDepartmentIds(departmentIds != null ? departmentIds.toArray(new Long[0]) : new Long[0]);
+            post.setWarehouseIds(warehouseIds != null ? warehouseIds.toArray(new Long[0]) : new Long[0]);
+        }
+        return success(post);
     }
 
     /**
@@ -122,6 +134,16 @@ public class SysPostController extends BaseController
      */
     @GetMapping("/optionselect")
     public AjaxResult optionselect()
+    {
+        List<SysPost> posts = postService.selectPostAll();
+        return success(posts);
+    }
+
+    /**
+     * 获取岗位下拉树列表（工作组树形结构）
+     */
+    @GetMapping("/treeselect")
+    public AjaxResult treeselect()
     {
         List<SysPost> posts = postService.selectPostAll();
         return success(posts);

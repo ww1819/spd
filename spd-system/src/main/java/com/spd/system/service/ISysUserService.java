@@ -203,4 +203,12 @@ public interface ISysUserService
      * @return 结果
      */
     public String importUser(List<SysUser> userList, Boolean isUpdateSupport, String operName);
+
+    /**
+     * 通过用户ID查询菜单ID列表
+     *
+     * @param userId 用户ID
+     * @return 菜单ID列表
+     */
+    public List<Long> selectMenuListByUserId(Long userId);
 }

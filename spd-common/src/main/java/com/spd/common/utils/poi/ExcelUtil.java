@@ -51,6 +51,7 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.PictureData;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
@@ -887,7 +888,40 @@ public class ExcelUtil<T>
         // 创建列
         Cell cell = row.createCell(column);
         // 写入列信息
-        cell.setCellValue(attr.name());
+        String headerName = attr.name();
+        // 如果列名以*结尾，创建富文本，将星号设置为红色
+        if (headerName != null && headerName.endsWith("*"))
+        {
+            RichTextString richText = wb.getCreationHelper().createRichTextString(headerName);
+            
+            // 创建默认字体（使用表头字体样式）
+            Font defaultFont = wb.createFont();
+            defaultFont.setFontName("Arial");
+            defaultFont.setFontHeightInPoints((short) 10);
+            defaultFont.setBold(true);
+            defaultFont.setColor(attr.headerColor().index);
+            
+            // 创建红色字体用于星号
+            Font redFont = wb.createFont();
+            redFont.setFontName("Arial");
+            redFont.setFontHeightInPoints((short) 10);
+            redFont.setBold(true);
+            redFont.setColor(IndexedColors.RED.getIndex());
+            
+            // 先设置整个文本为默认字体
+            richText.applyFont(defaultFont);
+            
+            // 然后将星号部分设置为红色（从星号位置开始到结尾）
+            int starIndex = headerName.lastIndexOf("*");
+            richText.applyFont(starIndex, headerName.length(), redFont);
+            
+            cell.setCellValue(richText);
+        }
+        else
+        {
+            cell.setCellValue(headerName);
+        }
+        
         setDataValidation(attr, row, column);
         cell.setCellStyle(styles.get(StringUtils.format("header_{}_{}", attr.headerColor(), attr.headerBackgroundColor())));
         if (isSubList())

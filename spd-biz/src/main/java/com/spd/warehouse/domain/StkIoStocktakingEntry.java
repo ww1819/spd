@@ -7,6 +7,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
+import com.spd.foundation.domain.FdMaterial;
 
 /**
  * 盘点明细对象 stk_io_stocktaking_entry
@@ -85,6 +86,9 @@ public class StkIoStocktakingEntry extends BaseEntity
     /** 盈亏金额 */
     @Excel(name = "盈亏金额")
     private BigDecimal profitAmount;
+
+    /** 耗材对象 */
+    private FdMaterial material;
 
     public void setId(Long id)
     {
@@ -234,6 +238,14 @@ public class StkIoStocktakingEntry extends BaseEntity
 
     public void setProfitAmount(BigDecimal profitAmount) {
         this.profitAmount = profitAmount;
+    }
+
+    public FdMaterial getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(FdMaterial material) {
+        this.material = material;
     }
 
     @Override

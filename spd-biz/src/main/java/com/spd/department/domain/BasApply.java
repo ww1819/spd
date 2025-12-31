@@ -57,6 +57,15 @@ public class BasApply extends BaseEntity
     @Excel(name = "制单人")
     private String createrNmae;
 
+    /** 总金额 */
+    private java.math.BigDecimal totalAmount;
+
+    /** 驳回原因 */
+    private String rejectReason;
+
+    /** 单据类型 (1-申领单, 2-申购单, 3-转科申请单) */
+    private Integer billType;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -240,5 +249,29 @@ public class BasApply extends BaseEntity
 
     public void setCreater(SysUser creater) {
         this.creater = creater;
+    }
+
+    public java.math.BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(java.math.BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
+    }
+
+    public Integer getBillType() {
+        return billType;
+    }
+
+    public void setBillType(Integer billType) {
+        this.billType = billType;
     }
 }

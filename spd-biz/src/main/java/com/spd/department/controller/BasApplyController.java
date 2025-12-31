@@ -79,7 +79,12 @@ public class BasApplyController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody BasApply basApply)
     {
-        return toAjax(basApplyService.insertBasApply(basApply));
+        int result = basApplyService.insertBasApply(basApply);
+        if (result > 0) {
+            // 插入成功后返回basApply对象，此时id已被自动填充
+            return success(basApply);
+        }
+        return toAjax(result);
     }
 
     /**

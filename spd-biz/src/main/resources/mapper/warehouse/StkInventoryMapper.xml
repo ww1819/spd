@@ -34,6 +34,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="mId"     />
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
+        <result property="speci"    column="m_speci"    />
+        <result property="model"    column="m_model"    />
+        <result property="registerNo"    column="m_registerNo"    />
+        <association property="fdUnit"    javaType="FdUnit" resultMap="fdUnitResult" />
+        <association property="fdFactory"    javaType="FdFactory" resultMap="fdFactoryResult" />
+        <association property="supplier"    javaType="FdSupplier" resultMap="materialSupplierResult" />
+    </resultMap>
+
+    <resultMap id="fdUnitResult" type="FdUnit">
+        <id     property="unitId"    column="u_id"     />
+        <result property="unitCode"  column="u_code"   />
+        <result property="unitName"  column="u_name"   />
+    </resultMap>
+
+    <resultMap id="fdFactoryResult" type="FdFactory">
+        <id     property="factoryId"    column="f_id"     />
+        <result property="factoryCode"  column="f_code"   />
+        <result property="factoryName"  column="f_name"   />
+    </resultMap>
+
+    <resultMap id="materialSupplierResult" type="FdSupplier">
+        <id     property="id"    column="ms_id"     />
+        <result property="code"  column="ms_code"   />
+        <result property="name"  column="ms_name"   />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -94,12 +118,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
+				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
+				m.unit_id m_unitId, m.factory_id m_factoryId, m.supplier_id m_supplierId,
+				u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
+				f.factory_id f_id, f.factory_code f_code, f.factory_name f_name,
+				ms.id ms_id, ms.code ms_code, ms.name ms_name,
 				s.id sId,s.code supplierCode,s.name supplierName
         from stk_inventory stk
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_supplier s on stk.supplier_id = s.id
-        right join fd_material m on stk.material_id = m.id and stk.qty &gt; 0
-        where m.del_flag != 1 and m.is_gz != 1
+        inner join fd_material m on stk.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier ms on m.supplier_id = ms.id
+        where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        order by stk.material_id, stk.batch_no, stk.id
     </select>
 
     <select id="selectStkInventoryList" parameterType="StkInventory" resultMap="StkInventoryResult">

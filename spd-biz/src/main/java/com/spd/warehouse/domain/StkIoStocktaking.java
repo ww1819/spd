@@ -68,6 +68,12 @@ public class StkIoStocktaking extends BaseEntity
     /** 是否月结 */
     private Integer isMonthInit;
 
+    /** 盈亏金额（用于列表显示，从明细汇总） */
+    private java.math.BigDecimal profitAmount;
+
+    /** 总金额（用于列表显示，从明细汇总） */
+    private java.math.BigDecimal totalAmount;
+
     /** 盘点明细信息 */
     private List<StkIoStocktakingEntry> stkIoStocktakingEntryList;
 
@@ -188,6 +194,22 @@ public class StkIoStocktaking extends BaseEntity
         this.isMonthInit = isMonthInit;
     }
 
+    public java.math.BigDecimal getProfitAmount() {
+        return profitAmount;
+    }
+
+    public void setProfitAmount(java.math.BigDecimal profitAmount) {
+        this.profitAmount = profitAmount;
+    }
+
+    public java.math.BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(java.math.BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
     public List<StkIoStocktakingEntry> getStkIoStocktakingEntryList()
     {
         return stkIoStocktakingEntryList;
@@ -246,6 +268,8 @@ public class StkIoStocktaking extends BaseEntity
             .append("department", getDepartment())
             .append("warehouse", getWarehouse())
             .append("isMonthInit", getIsMonthInit())
+            .append("profitAmount", getProfitAmount())
+            .append("totalAmount", getTotalAmount())
             .toString();
     }
 }

@@ -95,6 +95,12 @@ public class SysUser extends BaseEntity
     /** 科室组 */
     private Long[] departmentIds;
 
+    /** 菜单组 */
+    private Long[] menuIds;
+
+    /** 岗位名称（用于列表显示） */
+    private String postName;
+
     public SysUser()
     {
 
@@ -317,6 +323,22 @@ public class SysUser extends BaseEntity
 
     public void setDepartmentIds(Long[] departmentIds) {
         this.departmentIds = departmentIds;
+    }
+
+    public Long[] getMenuIds() {
+        return menuIds;
+    }
+
+    public void setMenuIds(Long[] menuIds) {
+        this.menuIds = menuIds;
+    }
+
+    public String getPostName() {
+        return postName;
+    }
+
+    public void setPostName(String postName) {
+        this.postName = postName;
     }
 
     @Override

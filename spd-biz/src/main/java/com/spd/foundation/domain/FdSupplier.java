@@ -108,6 +108,10 @@ public class FdSupplier extends BaseEntity
     @Excel(name = "状态", readConverterExp = "启用/停用")
     private String supplierStatus;
 
+    /** 供应商类型 */
+    @Excel(name = "供应商类型")
+    private String supplierType;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -315,6 +319,15 @@ public class FdSupplier extends BaseEntity
     {
         return supplierStatus;
     }
+    public void setSupplierType(String supplierType)
+    {
+        this.supplierType = supplierType;
+    }
+
+    public String getSupplierType()
+    {
+        return supplierType;
+    }
 
     @Override
     public String toString() {
@@ -342,6 +355,7 @@ public class FdSupplier extends BaseEntity
             .append("companyReferred", getCompanyReferred())
             .append("supplierRange", getSupplierRange())
             .append("supplierStatus", getSupplierStatus())
+            .append("supplierType", getSupplierType())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

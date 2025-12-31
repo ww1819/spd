@@ -81,6 +81,10 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "供应商ID")
     private String supplierId;
 
+    /** 出库单号 */
+    @Excel(name = "出库单号")
+    private String outOrderNo;
+
     /** 耗材对象 */
     private FdMaterial material;
 
@@ -269,5 +273,13 @@ public class StkDepInventory extends BaseEntity
 
     public void setSupplier(FdSupplier supplier) {
         this.supplier = supplier;
+    }
+
+    public String getOutOrderNo() {
+        return outOrderNo;
+    }
+
+    public void setOutOrderNo(String outOrderNo) {
+        this.outOrderNo = outOrderNo;
     }
 }

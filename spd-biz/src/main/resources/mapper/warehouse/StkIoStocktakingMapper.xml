@@ -22,6 +22,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="isMonthInit"    column="is_month_init"    />
+        <result property="profitAmount"    column="profit_amount"    />
+        <result property="totalAmount"    column="total_amount"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
@@ -68,12 +70,48 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="profitQty"    column="sub_profit_qty"    />
         <result property="stockAmount"    column="sub_stock_amount"    />
         <result property="profitAmount"    column="sub_profit_amount"    />
+        <association property="material"    javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+        <result property="speci"    column="m_speci"    />
+        <result property="model"    column="m_model"    />
+        <result property="registerNo"    column="m_registerNo"    />
+        <result property="unitId"    column="m_unitId"    />
+        <result property="factoryId"    column="m_factoryId"    />
+        <result property="supplierId"    column="m_supplierId"    />
+        <association property="fdUnit"    javaType="FdUnit" resultMap="fdUnitResult" />
+        <association property="fdFactory"    javaType="FdFactory" resultMap="fdFactoryResult" />
+        <association property="supplier"    javaType="FdSupplier" resultMap="materialSupplierResult" />
+    </resultMap>
+
+    <resultMap id="fdUnitResult" type="FdUnit">
+        <id     property="unitId"    column="u_id"     />
+        <result property="unitCode"  column="u_code"   />
+        <result property="unitName"  column="u_name"   />
+    </resultMap>
+
+    <resultMap id="fdFactoryResult" type="FdFactory">
+        <id     property="factoryId"    column="f_id"     />
+        <result property="factoryCode"  column="f_code"   />
+        <result property="factoryName"  column="f_name"   />
+    </resultMap>
+
+    <resultMap id="materialSupplierResult" type="FdSupplier">
+        <id     property="id"    column="ms_id"     />
+        <result property="code"  column="ms_code"   />
+        <result property="name"  column="ms_name"   />
     </resultMap>
 
     <sql id="selectStkIoStocktakingVo">
         select stk.id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
 				stk.stock_status, stk.user_id stk_user_id, stk.stock_type, stk.del_flag,stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,
+				COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
+				COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName
@@ -99,13 +137,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkIoStocktakingById" parameterType="Long" resultMap="StkIoStocktakingStkIoStocktakingEntryResult">
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
                 a.stock_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
+                COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
+                s.id as sId, s.code as supplierCode, s.name as supplierName,
+                d.id as dId, d.code as departmentCode, d.name as departmentName,
+                w.id as wId, w.code as warehouseCode, w.name as warehouseName,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
                 b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
                 b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.del_flag as sub_del_flag, b.remark as sub_remark,b.stock_qty as sub_stock_qty,b.profit_qty as sub_profit_qty,
-                b.stock_amount as sub_stock_amount,b.profit_amount as sub_profit_amount
+                b.stock_amount as sub_stock_amount,b.profit_amount as sub_profit_amount,
+                m.id as mId, m.code as materialCode, m.name as materialName,
+                m.speci as m_speci, m.model as m_model, m.register_no as m_registerNo,
+                m.unit_id as m_unitId, m.factory_id as m_factoryId, m.supplier_id as m_supplierId,
+                u.unit_id as u_id, u.unit_code as u_code, u.unit_name as u_name,
+                f.factory_id as f_id, f.factory_code as f_code, f.factory_name as f_name,
+                ms.id as ms_id, ms.code as ms_code, ms.name as ms_name
         from stk_io_stocktaking a
-        left join stk_io_stocktaking_entry b on b.paren_id = a.id
+        left join fd_supplier s on a.suppler_id = s.id
+        left join fd_department d on a.department_id = d.id
+        left join fd_warehouse w on a.warehouse_id = w.id
+        left join stk_io_stocktaking_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_material m on b.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier ms on m.supplier_id = ms.id
         where a.id = #{id}
     </select>
 

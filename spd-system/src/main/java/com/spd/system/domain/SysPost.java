@@ -41,6 +41,15 @@ public class SysPost extends BaseEntity
     /** 用户是否存在此岗位标识 默认不存在 */
     private boolean flag = false;
 
+    /** 菜单权限ID数组 */
+    private Long[] menuIds;
+
+    /** 科室权限ID数组 */
+    private Long[] departmentIds;
+
+    /** 仓库权限ID数组 */
+    private Long[] warehouseIds;
+
     public Long getPostId()
     {
         return postId;
@@ -104,6 +113,36 @@ public class SysPost extends BaseEntity
     public void setFlag(boolean flag)
     {
         this.flag = flag;
+    }
+
+    public Long[] getMenuIds()
+    {
+        return menuIds;
+    }
+
+    public void setMenuIds(Long[] menuIds)
+    {
+        this.menuIds = menuIds;
+    }
+
+    public Long[] getDepartmentIds()
+    {
+        return departmentIds;
+    }
+
+    public void setDepartmentIds(Long[] departmentIds)
+    {
+        this.departmentIds = departmentIds;
+    }
+
+    public Long[] getWarehouseIds()
+    {
+        return warehouseIds;
+    }
+
+    public void setWarehouseIds(Long[] warehouseIds)
+    {
+        this.warehouseIds = warehouseIds;
     }
     
     @Override

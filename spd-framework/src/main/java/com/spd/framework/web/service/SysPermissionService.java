@@ -62,6 +62,7 @@ public class SysPermissionService
         }
         else
         {
+            // 先获取角色关联的菜单权限（用于设置role.setPermissions）
             List<SysRole> roles = user.getRoles();
             if (!CollectionUtils.isEmpty(roles))
             {
@@ -73,10 +74,10 @@ public class SysPermissionService
                     perms.addAll(rolePerms);
                 }
             }
-            else
-            {
-                perms.addAll(menuService.selectMenuPermsByUserId(user.getUserId()));
-            }
+            // 获取用户直接关联的菜单权限并合并（selectMenuPermsByUserId已包含角色和用户直接权限）
+            // 这里调用它会自动包含角色权限和用户直接权限，Set会自动去重
+            Set<String> allUserPerms = menuService.selectMenuPermsByUserId(user.getUserId());
+            perms.addAll(allUserPerms);
         }
         return perms;
     }

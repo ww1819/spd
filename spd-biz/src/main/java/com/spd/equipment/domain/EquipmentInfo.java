@@ -29,12 +29,12 @@ public class EquipmentInfo extends BaseEntity
     @Excel(name = "资产编号")
     private String assetCode;
 
-    /** 院内编码 */
-    @Excel(name = "院内编码")
+    /** 院内编码（仓库） */
+    @Excel(name = "仓库")
     private String hospitalCode;
 
-    /** 条码号 */
-    @Excel(name = "条码号")
+    /** 条码号（价格/元） */
+    @Excel(name = "价格/元")
     private String barcode;
 
     /** 资产名称 */
@@ -42,7 +42,6 @@ public class EquipmentInfo extends BaseEntity
     private String assetName;
 
     /** 资产别名 */
-    @Excel(name = "资产别名")
     private String assetAlias;
 
     /** 辅助分类 */
@@ -85,8 +84,8 @@ public class EquipmentInfo extends BaseEntity
     @Excel(name = "单位")
     private String unit;
 
-    /** 档案编号 */
-    @Excel(name = "档案编号")
+    /** 档案编号（保修类型） */
+    @Excel(name = "保修类型")
     private String archiveCode;
 
     /** 资产序列号 */
@@ -113,8 +112,8 @@ public class EquipmentInfo extends BaseEntity
     @Excel(name = "存放地点")
     private String storageLocation;
 
-    /** 资产类型 */
-    @Excel(name = "资产类型")
+    /** 资产类型（资产分类） */
+    @Excel(name = "资产分类")
     private String assetType;
 
     /** 出厂编号 */
@@ -197,12 +196,10 @@ public class EquipmentInfo extends BaseEntity
     private Date createTime;
 
     /** 最后修改人 */
-    @Excel(name = "最后修改人")
     private String modifier;
 
     /** 最后修改时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "最后修改时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date modifyTime;
 
     /** 档案使用情况（0否 1是） */
@@ -230,127 +227,104 @@ public class EquipmentInfo extends BaseEntity
     private Integer quantity;
 
     /** 合同名称 */
-    @Excel(name = "合同名称")
     private String contractName;
 
     /** 合同价格 */
-    @Excel(name = "合同价格")
     private BigDecimal contractPrice;
 
     /** 签订日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "签订日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date signDate;
 
     /** 购入日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "购入日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date purchaseDate;
 
     /** 验收合格日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "验收合格日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date acceptanceDate;
 
     /** 送审时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "送审时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date reviewTime;
 
     /** 保修到期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "保修到期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date warrantyExpireDate;
 
     /** 中标日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "中标日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date bidDate;
 
     /** 通知供货时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "通知供货时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date supplyNoticeDate;
 
     /** 首次验收日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "首次验收日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date firstAcceptanceDate;
 
     /** 交货截止日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "交货截止日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date deliveryDeadline;
 
     /** 二次验收日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "二次验收日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date secondAcceptanceDate;
 
     /** 出保日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "出保日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date warrantyOutDate;
 
     /** 供应商 */
-    @Excel(name = "供应商")
     private String supplier;
 
     /** 供应商联系人 */
-    @Excel(name = "供应商联系人")
     private String supplierContact;
 
     /** 供应电话 */
-    @Excel(name = "供应电话")
     private String supplierPhone;
 
     /** 维修公司 */
-    @Excel(name = "维修公司")
     private String maintenanceCompany;
 
     /** 维修联系人 */
-    @Excel(name = "维修联系人")
     private String maintenanceContact;
 
     /** 维修电话 */
-    @Excel(name = "维修电话")
     private String maintenancePhone;
 
     /** 生产厂商 */
-    @Excel(name = "生产厂商")
     private String manufacturer;
 
     /** 采购方式 */
-    @Excel(name = "采购方式")
     private String purchaseMethod;
 
     /** 招标形式 */
-    @Excel(name = "招标形式")
     private String biddingForm;
 
     /** 单项预算 */
-    @Excel(name = "单项预算")
     private BigDecimal singleBudget;
 
     /** 立项依据 */
-    @Excel(name = "立项依据")
     private String projectBasis;
 
     /** 招标编号 */
-    @Excel(name = "招标编号")
     private String biddingNumber;
 
     /** 招标日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "招标日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date biddingDate;
 
     /** 中标金额 */
-    @Excel(name = "中标金额")
     private BigDecimal biddingAmount;
 
     /** 删除标志（0代表存在 2代表删除） */
     private String delFlag;
+
+    /** 备注 */
+    @Excel(name = "备注")
+    private String remark;
 
     public void setId(String id) 
     {

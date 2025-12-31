@@ -123,6 +123,46 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
     }
 
+    /**
+     * 生成6位数字编码
+     * 
+     * @return 编码
+     */
+    private String generateMaterialCode()
+    {
+        // 查询所有耗材编码，找出最大的6位数字编码
+        List<FdMaterial> allMaterials = fdMaterialMapper.selectFdMaterialList(new FdMaterial());
+        int maxCode = 99999; // 从100000开始，所以初始值为99999
+        
+        for (FdMaterial material : allMaterials)
+        {
+            String code = material.getCode();
+            if (StringUtils.isNotEmpty(code) && code.matches("^\\d{6}$"))
+            {
+                try
+                {
+                    int codeValue = Integer.parseInt(code);
+                    if (codeValue >= 100000 && codeValue <= 999999 && codeValue > maxCode)
+                    {
+                        maxCode = codeValue;
+                    }
+                }
+                catch (NumberFormatException e)
+                {
+                    // 忽略非数字编码
+                }
+            }
+        }
+        
+        int nextCode = maxCode + 1;
+        if (nextCode > 999999)
+        {
+            nextCode = 100000; // 如果超过最大值，从100000重新开始
+        }
+        
+        return String.format("%06d", nextCode);
+    }
+
     @Override
     public String importFdMaterial(List<FdMaterial> fdmaterialList, Boolean isUpdateSupport, String operName)
     {
@@ -138,6 +178,11 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             try
             {
+                // 如果编码为空或空白，自动生成编码
+                if (StringUtils.isEmpty(fdmaterial.getCode()))
+                {
+                    fdmaterial.setCode(generateMaterialCode());
+                }
 
                 // 验证是否存在这个耗材
                 FdMaterial u = fdMaterialMapper.selectFdMaterialByCode(fdmaterial.getCode());

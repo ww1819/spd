@@ -58,6 +58,9 @@ public class SysUserServiceImpl implements ISysUserService
     private SysUserDepartmentMapper userDepartmentMapper;
 
     @Autowired
+    private SysUserMenuMapper userMenuMapper;
+
+    @Autowired
     private ISysConfigService configService;
 
     @Autowired
@@ -264,8 +267,8 @@ public class SysUserServiceImpl implements ISysUserService
         insertUserPost(user);
         // 新增用户与角色管理
         insertUserRole(user);
-        // 新增角色
-        insertRole(user);
+        // 新增角色 - 已禁用，不再自动创建角色
+        // insertRole(user);
         // 新增用户仓库关联
         insertUserWarehouse(user);
         // 新增用户科室关联
@@ -296,6 +299,7 @@ public class SysUserServiceImpl implements ISysUserService
     public int updateUser(SysUser user)
     {
         Long userId = user.getUserId();
+        log.info("更新用户信息 - userId: {}, menuIds: {}", userId, user.getMenuIds() != null ? java.util.Arrays.toString(user.getMenuIds()) : "null");
         // 删除用户与角色关联
         userRoleMapper.deleteUserRoleByUserId(userId);
         // 新增用户与角色管理
@@ -306,6 +310,9 @@ public class SysUserServiceImpl implements ISysUserService
         userWarehouseMapper.deleteUserWarehouseByUserId(userId);
         // 删除用户与科室关联
         userDepartmentMapper.deleteUserDepartmentByUserId(userId);
+        // 删除用户与菜单关联
+        userMenuMapper.deleteUserMenuByUserId(userId);
+        log.info("已删除用户菜单关联 - userId: {}", userId);
 
         // 新增用户与岗位管理
         insertUserPost(user);
@@ -313,6 +320,8 @@ public class SysUserServiceImpl implements ISysUserService
         insertUserWarehouse(user);
         // 新增用户科室关联
         insertUserDepartment(user);
+        // 新增用户菜单关联
+        insertUserMenu(user);
         return userMapper.updateUser(user);
     }
 
@@ -482,6 +491,67 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
+     * 新增用户菜单信息
+     * @param user
+     */
+    public void insertUserMenu(SysUser user){
+        Long[] menuIds = user.getMenuIds();
+        log.info("保存用户菜单权限 - userId: {}, menuIds: {}, menuIds长度: {}", 
+            user.getUserId(), 
+            menuIds != null ? java.util.Arrays.toString(menuIds) : "null",
+            menuIds != null ? menuIds.length : 0);
+        if (menuIds != null && menuIds.length > 0)
+        {
+            try {
+                // 新增用户与菜单关联
+                List<SysUserMenu> list = new ArrayList<SysUserMenu>(menuIds.length);
+                for (Long menuId : menuIds)
+                {
+                    if (menuId != null && menuId > 0)
+                    {
+                        SysUserMenu um = new SysUserMenu();
+                        um.setUserId(user.getUserId());
+                        um.setMenuId(menuId);
+                        list.add(um);
+                        log.debug("添加菜单关联 - userId: {}, menuId: {}", user.getUserId(), menuId);
+                    }
+                    else
+                    {
+                        log.warn("跳过无效的menuId - userId: {}, menuId: {}", user.getUserId(), menuId);
+                    }
+                }
+                if (list.size() > 0)
+                {
+                    int result = userMenuMapper.batchUserMenu(list);
+                    log.info("保存用户菜单权限成功 - userId: {}, 保存数量: {}", user.getUserId(), result);
+                    if (result <= 0)
+                    {
+                        log.error("保存用户菜单权限失败 - 插入行数为0 - userId: {}, menuIds: {}", 
+                            user.getUserId(), java.util.Arrays.toString(menuIds));
+                    }
+                }
+                else
+                {
+                    log.warn("保存用户菜单权限 - 没有有效的menuId - userId: {}, menuIds: {}", 
+                        user.getUserId(), java.util.Arrays.toString(menuIds));
+                }
+            }
+            catch (Exception e)
+            {
+                log.error("保存用户菜单权限异常 - userId: {}, menuIds: {}, 错误: {}", 
+                    user.getUserId(), 
+                    menuIds != null ? java.util.Arrays.toString(menuIds) : "null",
+                    e.getMessage(), e);
+                throw e;
+            }
+        }
+        else
+        {
+            log.warn("保存用户菜单权限 - menuIds为空或null - userId: {}", user.getUserId());
+        }
+    }
+
+    /**
      * 新增用户角色信息
      *
      * @param userId 用户ID
@@ -613,5 +683,19 @@ public class SysUserServiceImpl implements ISysUserService
             successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
         }
         return successMsg.toString();
+    }
+
+    /**
+     * 通过用户ID查询菜单ID列表
+     *
+     * @param userId 用户ID
+     * @return 菜单ID列表
+     */
+    @Override
+    public List<Long> selectMenuListByUserId(Long userId)
+    {
+        List<Long> menuIds = userMenuMapper.selectMenuListByUserId(userId);
+        log.info("获取用户菜单权限 - userId: {}, menuIds: {}", userId, menuIds);
+        return menuIds != null ? menuIds : new ArrayList<>();
     }
 }

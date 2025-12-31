@@ -26,27 +26,27 @@ public class FdMaterial extends BaseEntity
     private Long id;
 
     /** 耗材编码 */
-    @Excel(name = "耗材编码")
+    @Excel(name = "耗材编码*")
     private String code;
 
     /** 耗材名称 */
-    @Excel(name = "耗材名称")
+    @Excel(name = "耗材名称*")
     private String name;
 
     /** 供应商ID */
-    @Excel(name = "供应商ID")
+    @Excel(name = "供应商*")
     private Long supplierId;
 
     /** 规格 */
-    @Excel(name = "规格")
+    @Excel(name = "规格*")
     private String speci;
 
     /** 型号 */
-    @Excel(name = "型号")
+    @Excel(name = "型号*")
     private String model;
 
     /** 价格 */
-    @Excel(name = "价格")
+    @Excel(name = "价格*")
     private BigDecimal price;
 
     /** 供应商对象 */
@@ -64,19 +64,19 @@ public class FdMaterial extends BaseEntity
     private String useName;
 
     /** 生产厂家ID */
-    @Excel(name = "生产厂家ID")
+    @Excel(name = "生产厂家*")
     private Long factoryId;
 
     /** 库房分类ID */
-    @Excel(name = "库房分类ID")
+    @Excel(name = "库房分类*")
     private Long storeroomId;
 
     /** 财务分类ID */
-    @Excel(name = "财务分类ID")
+    @Excel(name = "财务分类*")
     private Long financeCategoryId;
 
     /** 单位分类ID */
-    @Excel(name = "单位分类ID")
+    @Excel(name = "单位*")
     private Long unitId;
 
     /** 注册证名称 */
@@ -220,7 +220,7 @@ public class FdMaterial extends BaseEntity
     private String isFollow;
 
     /** 货位ID */
-    @Excel(name = "货位ID")
+    @Excel(name = "货位")
     private Long locationId;
 
     /** 查询参数：起始日期 */

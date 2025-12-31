@@ -28,6 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="companyReferred"    column="company_referred"    />
         <result property="supplierRange"    column="supplier_range"    />
         <result property="supplierStatus"    column="supplier_status"    />
+        <result property="supplierType"    column="supplier_type"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -38,7 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectFdSupplierVo">
         select id, code, name, del_flag, tax_number, referred_code, reg_money, valid_time, contacts, contacts_phone,
                 website, legal_person, zip_code, email, address, company_person, phone, cert_number, fax, bank_account,
-                company_referred, supplier_range, supplier_status, create_by, create_time, update_by, update_time, remark
+                company_referred, supplier_range, supplier_status, supplier_type, create_by, create_time, update_by, update_time, remark
         from fd_supplier
     </sql>
 
@@ -79,6 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="companyReferred != null">company_referred,</if>
             <if test="supplierRange != null">supplier_range,</if>
             <if test="supplierStatus != null">supplier_status,</if>
+            <if test="supplierType != null">supplier_type,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -108,6 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="companyReferred != null">#{companyReferred},</if>
             <if test="supplierRange != null">#{supplierRange},</if>
             <if test="supplierStatus != null">#{supplierStatus},</if>
+            <if test="supplierType != null">#{supplierType},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -141,6 +144,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="companyReferred != null">company_referred = #{companyReferred},</if>
             <if test="supplierRange != null">supplier_range = #{supplierRange},</if>
             <if test="supplierStatus != null">supplier_status = #{supplierStatus},</if>
+            <if test="supplierType != null">supplier_type = #{supplierType},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

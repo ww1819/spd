@@ -1,5 +1,6 @@
 package com.spd.web.controller.system;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
@@ -34,6 +35,8 @@ import com.spd.system.service.ISysDeptService;
 import com.spd.system.service.ISysPostService;
 import com.spd.system.service.ISysRoleService;
 import com.spd.system.service.ISysUserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 用户信息
@@ -44,6 +47,7 @@ import com.spd.system.service.ISysUserService;
 @RequestMapping("/system/user")
 public class SysUserController extends BaseController
 {
+    private static final Logger logger = LoggerFactory.getLogger(SysUserController.class);
     @Autowired
     private ISysUserService userService;
 
@@ -135,6 +139,8 @@ public class SysUserController extends BaseController
             ajax.put("roleIds", sysUser.getRoles().stream().map(SysRole::getRoleId).collect(Collectors.toList()));
             ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
             ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
+            List<Long> menuIds = userService.selectMenuListByUserId(userId);
+            ajax.put("menuIds", menuIds != null ? menuIds : new ArrayList<>());
         }
         return ajax;
     }
@@ -172,6 +178,8 @@ public class SysUserController extends BaseController
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody SysUser user)
     {
+        logger.info("接收更新用户请求 - userId: {}, menuIds: {}", user.getUserId(), 
+            user.getMenuIds() != null ? java.util.Arrays.toString(user.getMenuIds()) : "null");
         userService.checkUserAllowed(user);
         userService.checkUserDataScope(user.getUserId());
         if (!userService.checkUserNameUnique(user))

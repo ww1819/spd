@@ -20,6 +20,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.utils.file.FileUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
@@ -132,9 +133,11 @@ public class FdMaterialController extends BaseController
     }
 
     @PostMapping("/importTemplate")
-    public void importTemplate(HttpServletResponse response)
+    public void importTemplate(HttpServletResponse response) throws Exception
     {
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
+        // 设置文件名响应头
+        FileUtils.setAttachmentResponseHeader(response, "耗材产品档案基础字典导入.xlsx");
         util.importTemplateExcel(response, "耗材数据");
     }
 

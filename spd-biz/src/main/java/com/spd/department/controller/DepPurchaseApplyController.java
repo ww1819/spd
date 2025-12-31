@@ -77,7 +77,12 @@ public class DepPurchaseApplyController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody DepPurchaseApply depPurchaseApply)
     {
-        return toAjax(depPurchaseApplyService.insertDepPurchaseApply(depPurchaseApply));
+        int result = depPurchaseApplyService.insertDepPurchaseApply(depPurchaseApply);
+        if (result > 0) {
+            // 插入成功后返回depPurchaseApply对象，此时id已被自动填充
+            return success(depPurchaseApply);
+        }
+        return toAjax(result);
     }
 
     /**

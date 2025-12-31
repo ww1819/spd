@@ -1,14 +1,22 @@
 package com.spd.system.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SysPost;
+import com.spd.system.domain.SysPostMenu;
+import com.spd.system.domain.SysPostDepartment;
+import com.spd.system.domain.SysPostWarehouse;
 import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
+import com.spd.system.mapper.SysPostMenuMapper;
+import com.spd.system.mapper.SysPostDepartmentMapper;
+import com.spd.system.mapper.SysPostWarehouseMapper;
 import com.spd.system.service.ISysPostService;
 
 /**
@@ -24,6 +32,15 @@ public class SysPostServiceImpl implements ISysPostService
 
     @Autowired
     private SysUserPostMapper userPostMapper;
+
+    @Autowired
+    private SysPostMenuMapper postMenuMapper;
+
+    @Autowired
+    private SysPostDepartmentMapper postDepartmentMapper;
+
+    @Autowired
+    private SysPostWarehouseMapper postWarehouseMapper;
 
     /**
      * 查询岗位信息集合
@@ -143,10 +160,9 @@ public class SysPostServiceImpl implements ISysPostService
     {
         for (Long postId : postIds)
         {
-            SysPost post = selectPostById(postId);
             if (countUserPostById(postId) > 0)
             {
-                throw new ServiceException(String.format("%1$s已分配,不能删除", post.getPostName()));
+                throw new ServiceException("该工作组内有用户不能删除");
             }
         }
         return postMapper.deletePostByIds(postIds);
@@ -171,8 +187,152 @@ public class SysPostServiceImpl implements ISysPostService
      * @return 结果
      */
     @Override
+    @Transactional
     public int updatePost(SysPost post)
     {
-        return postMapper.updatePost(post);
+        int result = postMapper.updatePost(post);
+        // 保存权限信息
+        if (result > 0)
+        {
+            // 保存菜单权限
+            insertPostMenu(post);
+            // 保存科室权限
+            insertPostDepartment(post);
+            // 保存仓库权限
+            insertPostWarehouse(post);
+        }
+        return result;
+    }
+
+    /**
+     * 新增工作组菜单权限
+     */
+    public void insertPostMenu(SysPost post)
+    {
+        Long postId = post.getPostId();
+        Long[] menuIds = post.getMenuIds();
+        if (StringUtils.isNotNull(menuIds))
+        {
+            // 删除原有权限
+            postMenuMapper.deletePostMenuByPostId(postId);
+            // 新增权限
+            if (menuIds.length > 0)
+            {
+                List<SysPostMenu> list = new ArrayList<SysPostMenu>(menuIds.length);
+                for (Long menuId : menuIds)
+                {
+                    if (menuId != null && menuId > 0)
+                    {
+                        SysPostMenu pm = new SysPostMenu();
+                        pm.setPostId(postId);
+                        pm.setMenuId(menuId);
+                        list.add(pm);
+                    }
+                }
+                if (list.size() > 0)
+                {
+                    postMenuMapper.batchPostMenu(list);
+                }
+            }
+        }
+    }
+
+    /**
+     * 新增工作组科室权限
+     */
+    public void insertPostDepartment(SysPost post)
+    {
+        Long postId = post.getPostId();
+        Long[] departmentIds = post.getDepartmentIds();
+        if (StringUtils.isNotNull(departmentIds))
+        {
+            // 删除原有权限
+            postDepartmentMapper.deletePostDepartmentByPostId(postId);
+            // 新增权限
+            if (departmentIds.length > 0)
+            {
+                List<SysPostDepartment> list = new ArrayList<SysPostDepartment>(departmentIds.length);
+                for (Long departmentId : departmentIds)
+                {
+                    if (departmentId != null && departmentId > 0)
+                    {
+                        SysPostDepartment pd = new SysPostDepartment();
+                        pd.setPostId(postId);
+                        pd.setDepartmentId(departmentId);
+                        list.add(pd);
+                    }
+                }
+                if (list.size() > 0)
+                {
+                    postDepartmentMapper.batchPostDepartment(list);
+                }
+            }
+        }
+    }
+
+    /**
+     * 新增工作组仓库权限
+     */
+    public void insertPostWarehouse(SysPost post)
+    {
+        Long postId = post.getPostId();
+        Long[] warehouseIds = post.getWarehouseIds();
+        if (StringUtils.isNotNull(warehouseIds))
+        {
+            // 删除原有权限
+            postWarehouseMapper.deletePostWarehouseByPostId(postId);
+            // 新增权限
+            if (warehouseIds.length > 0)
+            {
+                List<SysPostWarehouse> list = new ArrayList<SysPostWarehouse>(warehouseIds.length);
+                for (Long warehouseId : warehouseIds)
+                {
+                    if (warehouseId != null && warehouseId > 0)
+                    {
+                        SysPostWarehouse pw = new SysPostWarehouse();
+                        pw.setPostId(postId);
+                        pw.setWarehouseId(warehouseId);
+                        list.add(pw);
+                    }
+                }
+                if (list.size() > 0)
+                {
+                    postWarehouseMapper.batchPostWarehouse(list);
+                }
+            }
+        }
+    }
+
+    /**
+     * 通过工作组ID查询菜单ID列表
+     *
+     * @param postId 工作组ID
+     * @return 菜单ID列表
+     */
+    public List<Long> selectMenuListByPostId(Long postId)
+    {
+        return postMenuMapper.selectMenuListByPostId(postId);
+    }
+
+    /**
+     * 通过工作组ID查询科室ID列表
+     *
+     * @param postId 工作组ID
+     * @return 科室ID列表
+     */
+    public List<Long> selectDepartmentListByPostId(Long postId)
+    {
+        return postDepartmentMapper.selectDepartmentListByPostId(postId);
+    }
+
+    /**
+     * 通过工作组ID查询仓库ID列表
+     *
+     * @param postId 工作组ID
+     * @return 仓库ID列表
+     */
+    public List<Long> selectWarehouseListByPostId(Long postId)
+    {
+        return postWarehouseMapper.selectWarehouseListByPostId(postId);
     }
 }
