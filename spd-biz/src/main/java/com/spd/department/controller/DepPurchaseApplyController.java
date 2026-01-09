@@ -20,6 +20,7 @@ import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.alibaba.fastjson2.JSONObject;
 
 /**
  * 科室申购Controller
@@ -105,5 +106,29 @@ public class DepPurchaseApplyController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(depPurchaseApplyService.deleteDepPurchaseApplyByIds(ids));
+    }
+
+    /**
+     * 审核科室申购
+     */
+    @PreAuthorize("@ss.hasPermi('department:purchase:audit')")
+    @Log(title = "科室申购审核", businessType = BusinessType.UPDATE)
+    @PutMapping("/auditApply")
+    public AjaxResult audit(@RequestBody JSONObject json)
+    {
+        int result = depPurchaseApplyService.auditPurchaseApply(json.getString("id"), json.getString("auditBy"));
+        return toAjax(result);
+    }
+
+    /**
+     * 驳回科室申购
+     */
+    @PreAuthorize("@ss.hasPermi('department:purchase:reject')")
+    @Log(title = "科室申购驳回", businessType = BusinessType.UPDATE)
+    @PutMapping("/reject")
+    public AjaxResult reject(@RequestBody JSONObject json)
+    {
+        int result = depPurchaseApplyService.rejectPurchaseApply(json.getString("id"), json.getString("rejectReason"));
+        return toAjax(result);
     }
 }

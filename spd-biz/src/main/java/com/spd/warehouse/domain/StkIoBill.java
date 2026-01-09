@@ -81,6 +81,9 @@ public class StkIoBill extends BaseEntity
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
+    /** 调入仓库对象（用于调拨单） */
+    private FdWarehouse toWarehouse;
+
 //    /** 耗材对象 */
 //    private FdMaterial material;
 
@@ -308,6 +311,14 @@ public class StkIoBill extends BaseEntity
 
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
+    }
+
+    public FdWarehouse getToWarehouse() {
+        return toWarehouse;
+    }
+
+    public void setToWarehouse(FdWarehouse toWarehouse) {
+        this.toWarehouse = toWarehouse;
     }
 
 //    public FdMaterial getMaterial() {

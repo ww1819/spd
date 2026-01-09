@@ -92,7 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectBasApplyVo">
         select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id,
                 a.apply_bill_status, a.del_flag, a.create_by, a.create_time, a.update_by,
-                a.update_time, a.remark, a.reject_reason, 1 as bill_type, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
+                a.update_time, a.remark, a.reject_reason, COALESCE(a.bill_type, 1) as bill_type, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
                cu.nick_name createNickName,cu.user_name createUserName,
                au.nick_name auditNickName,au.user_name auditUserName,
@@ -114,7 +114,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null "> and a.department_id = #{departmentId}</if>
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
-            <if test="billType != null "> and 1 = #{billType}</if>
+            <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
         </where>
     </select>
 
@@ -143,6 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null">department_id,</if>
             <if test="userId != null">user_id,</if>
             <if test="applyBillStatus != null">apply_bill_status,</if>
+            <if test="billType != null">bill_type,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -160,6 +161,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null">#{departmentId},</if>
             <if test="userId != null">#{userId},</if>
             <if test="applyBillStatus != null">#{applyBillStatus},</if>
+            <if test="billType != null">#{billType},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -181,6 +183,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null">department_Id = #{departmentId},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="applyBillStatus != null">apply_bill_status = #{applyBillStatus},</if>
+            <if test="billType != null">bill_type = #{billType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>

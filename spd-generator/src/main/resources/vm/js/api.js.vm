@@ -42,3 +42,11 @@ export function del${BusinessName}(${pkColumn.javaField}) {
     method: 'delete'
   })
 }
+
+// 审核${functionName}
+export function audit${BusinessName}(${pkColumn.javaField}) {
+  return request({
+    url: '/${moduleName}/${businessName}/audit/' + ${pkColumn.javaField},
+    method: 'put'
+  })
+}

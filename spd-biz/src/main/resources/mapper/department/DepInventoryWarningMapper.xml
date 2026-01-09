@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.DepInventoryWarningMapper">
+
+    <resultMap type="DepInventoryWarning" id="DepInventoryWarningResult">
+        <result property="id"    column="id"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="minQtyWarning"    column="min_qty_warning"    />
+        <result property="maxQtyWarning"    column="max_qty_warning"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="material"    column="material_id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+        <result property="speci"  column="specification"   />
+        <result property="model"  column="model"   />
+        <result property="price"  column="unitPrice"   />
+        <result property="registerNo"  column="registerNo"   />
+        <association property="fdUnit"    column="mId" javaType="FdUnit" resultMap="unitResult" />
+        <association property="fdFactory"    column="mId" javaType="FdFactory" resultMap="factoryResult" />
+        <association property="supplier"    column="mId" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="fdWarehouseCategory"    column="mId" javaType="FdWarehouseCategory" resultMap="warehouseCategoryResult" />
+        <association property="fdFinanceCategory"    column="mId" javaType="FdFinanceCategory" resultMap="financeCategoryResult" />
+    </resultMap>
+
+    <resultMap id="unitResult" type="FdUnit">
+        <id     property="unitId"    column="uId"     />
+        <result property="unitName"  column="unitName"   />
+    </resultMap>
+
+    <resultMap id="factoryResult" type="FdFactory">
+        <id     property="factoryId"    column="fId"     />
+        <result property="factoryName"  column="factoryName"   />
+    </resultMap>
+
+    <resultMap id="supplierResult" type="FdSupplier">
+        <id     property="id"    column="sId"     />
+        <result property="name"  column="supplierName"   />
+    </resultMap>
+
+    <resultMap id="warehouseCategoryResult" type="FdWarehouseCategory">
+        <id     property="warehouseCategoryId"    column="wcId"     />
+        <result property="warehouseCategoryName"  column="warehouseCategoryName"   />
+    </resultMap>
+
+    <resultMap id="financeCategoryResult" type="FdFinanceCategory">
+        <id     property="financeCategoryId"    column="fcId"     />
+        <result property="financeCategoryName"  column="financeCategoryName"   />
+    </resultMap>
+
+    <sql id="selectDepInventoryWarningVo">
+        select w.id, w.department_id, w.material_id, w.min_qty_warning, w.max_qty_warning, w.del_flag,
+            w.create_by, w.create_time, w.update_by, w.update_time, w.remark,
+            d.id dId, d.code departmentCode, d.name departmentName,
+            m.id mId, m.code materialCode, m.name materialName, m.speci specification, m.model,
+            m.price unitPrice, m.register_no registerNo,
+            u.unit_id uId, u.unit_name unitName,
+            f.factory_id fId, f.factory_name factoryName,
+            s.id sId, s.name supplierName,
+            wc.warehouse_category_id wcId, wc.warehouse_category_name warehouseCategoryName,
+            fc.finance_category_id fcId, fc.finance_category_name financeCategoryName
+        from dep_inventory_warning w
+        left join fd_department d on w.department_id = d.id
+        left join fd_material m on w.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on m.supplier_id = s.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+    </sql>
+
+    <select id="selectDepInventoryWarningList" parameterType="DepInventoryWarning" resultMap="DepInventoryWarningResult">
+        <include refid="selectDepInventoryWarningVo"/>
+        where w.del_flag = 0
+        <if test="departmentId != null "> and w.department_id = #{departmentId}</if>
+        <if test="materialId != null "> and w.material_id = #{materialId}</if>
+        <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
+        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        order by w.create_time desc
+    </select>
+
+    <select id="selectDepInventoryWarningById" parameterType="Long" resultMap="DepInventoryWarningResult">
+        <include refid="selectDepInventoryWarningVo"/>
+        where w.id = #{id} and w.del_flag = 0
+    </select>
+
+    <insert id="insertDepInventoryWarning" parameterType="DepInventoryWarning" useGeneratedKeys="true" keyProperty="id">
+        insert into dep_inventory_warning
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="departmentId != null">department_id,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="minQtyWarning != null">min_qty_warning,</if>
+            <if test="maxQtyWarning != null">max_qty_warning,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="minQtyWarning != null">#{minQtyWarning},</if>
+            <if test="maxQtyWarning != null">#{maxQtyWarning},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateDepInventoryWarning" parameterType="DepInventoryWarning">
+        update dep_inventory_warning
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="minQtyWarning != null">min_qty_warning = #{minQtyWarning},</if>
+            <if test="maxQtyWarning != null">max_qty_warning = #{maxQtyWarning},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteDepInventoryWarningById" parameterType="Long">
+        update dep_inventory_warning set del_flag = 1 where id = #{id}
+    </delete>
+
+    <delete id="deleteDepInventoryWarningByIds" parameterType="String">
+        update dep_inventory_warning set del_flag = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>
+

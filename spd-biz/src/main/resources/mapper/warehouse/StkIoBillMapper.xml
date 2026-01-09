@@ -37,6 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="toWarehouse"    column="id" javaType="FdWarehouse" resultMap="toWarehouseResult" />
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
         <association property="auditPerson"    column="user_id" javaType="SysUser" resultMap="auditUserResult" />
         <association property="creater"    column="user_id" javaType="SysUser" resultMap="createrResult" />
@@ -58,6 +59,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="wId"     />
         <result property="code"  column="warehouseCode"   />
         <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="toWarehouseResult" type="FdWarehouse">
+        <id     property="id"    column="twId"     />
+        <result property="code"  column="toWarehouseCode"   />
+        <result property="name"  column="toWarehouseName"   />
     </resultMap>
 
     <resultMap id="userResult" type="SysUser">
@@ -151,6 +158,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
+				tw.id twId,tw.code toWarehouseCode,tw.name toWarehouseName,
 				u.user_id userId,u.nick_name nickName,u.user_name userName,
                au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName
@@ -158,6 +166,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_warehouse tw on stk.department_id = tw.id and stk.bill_type = 501
         left join sys_user u on stk.user_id = u.user_id
         left join sys_user au on stk.audit_by = au.user_id
         left join sys_user cu on stk.create_by = cu.user_id
@@ -187,7 +196,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="billStatus != null "> and stk.bill_status = #{billStatus}</if>
         <if test="userId != null "> and stk.user_id = #{userId}</if>
-        <if test="billType != null "> and stk.bill_type = #{billType}</if>
+        <if test="billType != null "> 
+            and stk.bill_type = #{billType}
+            <!-- 如果是调拨单(billType=501)，排除JS开头的结算单据 -->
+            <if test="billType == 501"> and stk.bill_no not like 'JS%'</if>
+        </if>
 
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
@@ -382,10 +395,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.remark as sub_remark,au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,
-               m.id as mId, m.code as materialCode, m.name as materialName
+               m.id as mId, m.code as materialCode, m.name as materialName, m.speci, m.model, m.register_no, m.supplier_id, m.factory_id, m.unit_id, m.finance_category_id, m.storeroom_id,
+               u.unit_id, u.unit_code as u_code, u.unit_name as u_name,
+               f.factory_id, f.factory_code as f_code, f.factory_name as f_name,
+               wc.warehouse_category_id as wid, wc.warehouse_category_code as wc_code, wc.warehouse_category_name as wc_name,
+               fc.finance_category_id, fc.finance_category_code as fc_code, fc.finance_category_name as fc_name,
+               s.id as sid, s.code as supplier_code, s.name as supplier_name
         from stk_io_bill a
-        left join stk_io_bill_entry b on b.paren_id = a.id
+        left join stk_io_bill_entry b on b.paren_id = a.id and b.del_flag != 1
         left join fd_material m on b.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        left join fd_supplier s on m.supplier_id = s.id
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
         where a.id = #{id}
@@ -575,6 +598,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,301)
+            <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
             select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                     stk.bill_type billType,b.qty materialQty, b.unit_price price,
@@ -592,6 +616,46 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201,401)
+            <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+            union
+            -- 调拨单：调出仓库记录（数量为负数，表示出库）
+            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,-b.qty materialQty, b.unit_price price,
+                    -b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                    b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                    d.name departmentName, w.name warehouseName,s.name supplierName
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join fd_department d on stk.department_id = d.id
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%'
+            <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+            union
+            -- 调拨单：调入仓库记录（数量为正数，表示入库）
+            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,b.qty materialQty, b.unit_price price,
+                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                    b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                    d.name departmentName, tw.name warehouseName,s.name supplierName
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join fd_department d on stk.department_id = d.id
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_warehouse tw on stk.department_id = tw.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%'
+            <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union
             select a.id,m.code materialCode,m.name materialName, a.stock_no billNo, a.stock_date billDate,
                     a.stock_type billType,b.qty materialQty, b.price price,
@@ -616,6 +680,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseName != null "> and warehouseName like concat('%', #{warehouseName}, '%')</if>
             <if test="beginDate != null "> and billDate &gt;= #{beginDate}</if>
             <if test="endDate != null "> and billDate &lt;= #{endDate}</if>
+            <if test="params.billTypeList != null and params.billTypeList.size() > 0">
+                and billType in
+                <foreach collection="params.billTypeList" item="type" open="(" separator="," close=")">
+                    #{type}
+                </foreach>
+            </if>
+            <if test="(params.billTypeList == null or params.billTypeList.size() == 0) and billType != null">
+                and billType = #{billType}
+            </if>
         </where>
     </select>
 

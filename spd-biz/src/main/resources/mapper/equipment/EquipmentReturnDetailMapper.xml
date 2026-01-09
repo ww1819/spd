@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.EquipmentReturnDetailMapper">
+    
+    <resultMap type="EquipmentReturnDetail" id="EquipmentReturnDetailResult">
+        <result property="detailId"    column="detail_id"    />
+        <result property="returnId"    column="return_id"    />
+        <result property="equipmentCode"    column="equipment_code"    />
+        <result property="equipmentName"    column="equipment_name"    />
+        <result property="categoryCode"    column="category_code"    />
+        <result property="specification"    column="specification"    />
+        <result property="model"    column="model"    />
+        <result property="spec"    column="spec"    />
+        <result property="modelNo"    column="model_no"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="totalBoxes"    column="total_boxes"    />
+        <result property="unitPrice"    column="unit_price"    />
+        <result property="totalPrice"    column="total_price"    />
+        <result property="amount"    column="amount"    />
+        <result property="amountInWords"    column="amount_in_words"    />
+        <result property="inspectionNo"    column="inspection_no"    />
+        <result property="registrationNo"    column="registration_no"    />
+        <result property="serialNo"    column="serial_no"    />
+        <result property="productionDate"    column="production_date"    />
+        <result property="usagePeriod"    column="usage_period"    />
+        <result property="manufacturer"    column="manufacturer"    />
+        <result property="manufacturerContact"    column="manufacturer_contact"    />
+        <result property="dealer"    column="dealer"    />
+        <result property="dealerContact"    column="dealer_contact"    />
+        <result property="packagingType"    column="packaging_type"    />
+        <result property="packagingStatus"    column="packaging_status"    />
+        <result property="packagingDamage"    column="packaging_damage"    />
+        <result property="appearance"    column="appearance"    />
+        <result property="accessories"    column="accessories"    />
+        <result property="techParamMatch"    column="tech_param_match"    />
+        <result property="manualCount"    column="manual_count"    />
+        <result property="certificateCount"    column="certificate_count"    />
+        <result property="packingListCount"    column="packing_list_count"    />
+        <result property="acceptanceFormCount"    column="acceptance_form_count"    />
+        <result property="acceptanceResult"    column="acceptance_result"    />
+        <result property="acceptanceDate"    column="acceptance_date"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectEquipmentReturnDetailVo">
+        select detail_id, return_id, equipment_code, equipment_name, category_code, specification, model, 
+               spec, model_no, quantity, total_boxes, unit_price, total_price, amount, amount_in_words,
+               inspection_no, registration_no, serial_no, production_date, usage_period,
+               manufacturer, manufacturer_contact, dealer, dealer_contact,
+               packaging_type, packaging_status, packaging_damage, appearance, accessories,
+               tech_param_match, manual_count, certificate_count, packing_list_count, acceptance_form_count,
+               acceptance_result, acceptance_date, remark 
+        from equipment_return_detail
+    </sql>
+
+    <select id="selectEquipmentReturnDetailList" parameterType="Long" resultMap="EquipmentReturnDetailResult">
+        <include refid="selectEquipmentReturnDetailVo"/>
+        where return_id = #{returnId}
+        order by detail_id
+    </select>
+        
+    <insert id="insertEquipmentReturnDetail" parameterType="EquipmentReturnDetail" useGeneratedKeys="true" keyProperty="detailId">
+        insert into equipment_return_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="detailId != null">detail_id,</if>
+            <if test="returnId != null">return_id,</if>
+            <if test="equipmentCode != null">equipment_code,</if>
+            <if test="equipmentName != null">equipment_name,</if>
+            <if test="categoryCode != null">category_code,</if>
+            <if test="specification != null">specification,</if>
+            <if test="model != null">model,</if>
+            <if test="spec != null">spec,</if>
+            <if test="modelNo != null">model_no,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="totalBoxes != null">total_boxes,</if>
+            <if test="unitPrice != null">unit_price,</if>
+            <if test="totalPrice != null">total_price,</if>
+            <if test="amount != null">amount,</if>
+            <if test="amountInWords != null">amount_in_words,</if>
+            <if test="inspectionNo != null">inspection_no,</if>
+            <if test="registrationNo != null">registration_no,</if>
+            <if test="serialNo != null">serial_no,</if>
+            <if test="productionDate != null">production_date,</if>
+            <if test="usagePeriod != null">usage_period,</if>
+            <if test="manufacturer != null">manufacturer,</if>
+            <if test="manufacturerContact != null">manufacturer_contact,</if>
+            <if test="dealer != null">dealer,</if>
+            <if test="dealerContact != null">dealer_contact,</if>
+            <if test="packagingType != null">packaging_type,</if>
+            <if test="packagingStatus != null">packaging_status,</if>
+            <if test="packagingDamage != null">packaging_damage,</if>
+            <if test="appearance != null">appearance,</if>
+            <if test="accessories != null">accessories,</if>
+            <if test="techParamMatch != null">tech_param_match,</if>
+            <if test="manualCount != null">manual_count,</if>
+            <if test="certificateCount != null">certificate_count,</if>
+            <if test="packingListCount != null">packing_list_count,</if>
+            <if test="acceptanceFormCount != null">acceptance_form_count,</if>
+            <if test="acceptanceResult != null">acceptance_result,</if>
+            <if test="acceptanceDate != null">acceptance_date,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="detailId != null">#{detailId},</if>
+            <if test="returnId != null">#{returnId},</if>
+            <if test="equipmentCode != null">#{equipmentCode},</if>
+            <if test="equipmentName != null">#{equipmentName},</if>
+            <if test="categoryCode != null">#{categoryCode},</if>
+            <if test="specification != null">#{specification},</if>
+            <if test="model != null">#{model},</if>
+            <if test="spec != null">#{spec},</if>
+            <if test="modelNo != null">#{modelNo},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="totalBoxes != null">#{totalBoxes},</if>
+            <if test="unitPrice != null">#{unitPrice},</if>
+            <if test="totalPrice != null">#{totalPrice},</if>
+            <if test="amount != null">#{amount},</if>
+            <if test="amountInWords != null">#{amountInWords},</if>
+            <if test="inspectionNo != null">#{inspectionNo},</if>
+            <if test="registrationNo != null">#{registrationNo},</if>
+            <if test="serialNo != null">#{serialNo},</if>
+            <if test="productionDate != null">#{productionDate},</if>
+            <if test="usagePeriod != null">#{usagePeriod},</if>
+            <if test="manufacturer != null">#{manufacturer},</if>
+            <if test="manufacturerContact != null">#{manufacturerContact},</if>
+            <if test="dealer != null">#{dealer},</if>
+            <if test="dealerContact != null">#{dealerContact},</if>
+            <if test="packagingType != null">#{packagingType},</if>
+            <if test="packagingStatus != null">#{packagingStatus},</if>
+            <if test="packagingDamage != null">#{packagingDamage},</if>
+            <if test="appearance != null">#{appearance},</if>
+            <if test="accessories != null">#{accessories},</if>
+            <if test="techParamMatch != null">#{techParamMatch},</if>
+            <if test="manualCount != null">#{manualCount},</if>
+            <if test="certificateCount != null">#{certificateCount},</if>
+            <if test="packingListCount != null">#{packingListCount},</if>
+            <if test="acceptanceFormCount != null">#{acceptanceFormCount},</if>
+            <if test="acceptanceResult != null">#{acceptanceResult},</if>
+            <if test="acceptanceDate != null">#{acceptanceDate},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <insert id="batchInsertEquipmentReturnDetail" parameterType="java.util.List">
+        insert into equipment_return_detail(return_id, equipment_code, equipment_name, category_code, specification, model, 
+               spec, model_no, quantity, total_boxes, unit_price, total_price, amount, amount_in_words,
+               inspection_no, registration_no, serial_no, production_date, usage_period,
+               manufacturer, manufacturer_contact, dealer, dealer_contact,
+               packaging_type, packaging_status, packaging_damage, appearance, accessories,
+               tech_param_match, manual_count, certificate_count, packing_list_count, acceptance_form_count,
+               acceptance_result, acceptance_date, remark)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.returnId}, #{item.equipmentCode}, #{item.equipmentName}, #{item.categoryCode}, #{item.specification}, #{item.model}, 
+             #{item.spec}, #{item.modelNo}, #{item.quantity}, #{item.totalBoxes}, #{item.unitPrice}, #{item.totalPrice}, #{item.amount}, #{item.amountInWords},
+             #{item.inspectionNo}, #{item.registrationNo}, #{item.serialNo}, #{item.productionDate}, #{item.usagePeriod},
+             #{item.manufacturer}, #{item.manufacturerContact}, #{item.dealer}, #{item.dealerContact},
+             #{item.packagingType}, #{item.packagingStatus}, #{item.packagingDamage}, #{item.appearance}, #{item.accessories},
+             #{item.techParamMatch}, #{item.manualCount}, #{item.certificateCount}, #{item.packingListCount}, #{item.acceptanceFormCount},
+             #{item.acceptanceResult}, #{item.acceptanceDate}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <delete id="deleteEquipmentReturnDetailByReturnId" parameterType="Long">
+        delete from equipment_return_detail where return_id = #{returnId}
+    </delete>
+
+    <delete id="deleteEquipmentReturnDetailByReturnIds" parameterType="String">
+        delete from equipment_return_detail where return_id in 
+        <foreach item="returnId" collection="array" open="(" separator="," close=")">
+            #{returnId}
+        </foreach>
+    </delete>
+</mapper>

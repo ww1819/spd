@@ -8,12 +8,12 @@ import com.spd.common.core.domain.BaseEntity;
 import com.spd.foundation.domain.FdMaterial;
 
 /**
- * 科室申购明细对象 dep_purchase_apply_entry
+ * 新品申购申请明细对象 new_product_apply_entry
  * 
  * @author spd
  * @date 2025-01-01
  */
-public class DepPurchaseApplyEntry extends BaseEntity
+public class NewProductApplyEntry extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
@@ -32,41 +32,50 @@ public class DepPurchaseApplyEntry extends BaseEntity
     @Excel(name = "耗材名称")
     private String materialName;
 
-    /** 规格型号 */
-    @Excel(name = "规格型号")
-    private String materialSpec;
+    /** 规格 */
+    @Excel(name = "规格")
+    private String speci;
+
+    /** 型号 */
+    @Excel(name = "型号")
+    private String model;
 
     /** 单位 */
     @Excel(name = "单位")
-    private String unit;
+    private String unitName;
 
     /** 单价 */
     @Excel(name = "单价")
-    private BigDecimal unitPrice;
+    private BigDecimal price;
 
-    /** 申购数量 */
-    @Excel(name = "申购数量")
+    /** 数量 */
+    @Excel(name = "数量")
     private BigDecimal qty;
 
     /** 金额 */
     @Excel(name = "金额")
     private BigDecimal amt;
 
-    /** 申购理由 */
-    @Excel(name = "申购理由")
-    private String reason;
+    /** 生产厂家 */
+    @Excel(name = "生产厂家")
+    private String factoryName;
 
-    /** 建议供应商 */
-    @Excel(name = "建议供应商")
+    /** 供应商 */
+    @Excel(name = "供应商")
     private String supplierName;
 
-    /** 品牌 */
-    @Excel(name = "品牌")
-    private String brand;
+    /** 备注 */
+    @Excel(name = "备注")
+    private String remark;
 
-    /** 型号 */
-    @Excel(name = "型号")
-    private String model;
+    /** 品牌要求 */
+    private String brandRequirement;
+
+    /** 特殊说明 */
+    private String specialNote;
+
+    /** 病案费用类别 */
+    private String caseFeeCategory;
 
     /** 耗材对象 */
     private FdMaterial material;
@@ -111,34 +120,44 @@ public class DepPurchaseApplyEntry extends BaseEntity
         return materialName;
     }
 
-    public void setMaterialSpec(String materialSpec) 
+    public void setSpeci(String speci) 
     {
-        this.materialSpec = materialSpec;
+        this.speci = speci;
     }
 
-    public String getMaterialSpec() 
+    public String getSpeci() 
     {
-        return materialSpec;
+        return speci;
     }
 
-    public void setUnit(String unit) 
+    public void setModel(String model) 
     {
-        this.unit = unit;
+        this.model = model;
     }
 
-    public String getUnit() 
+    public String getModel() 
     {
-        return unit;
+        return model;
     }
 
-    public void setUnitPrice(BigDecimal unitPrice) 
+    public void setUnitName(String unitName) 
     {
-        this.unitPrice = unitPrice;
+        this.unitName = unitName;
     }
 
-    public BigDecimal getUnitPrice() 
+    public String getUnitName() 
     {
-        return unitPrice;
+        return unitName;
+    }
+
+    public void setPrice(BigDecimal price) 
+    {
+        this.price = price;
+    }
+
+    public BigDecimal getPrice() 
+    {
+        return price;
     }
 
     public void setQty(BigDecimal qty) 
@@ -161,14 +180,14 @@ public class DepPurchaseApplyEntry extends BaseEntity
         return amt;
     }
 
-    public void setReason(String reason) 
+    public void setFactoryName(String factoryName) 
     {
-        this.reason = reason;
+        this.factoryName = factoryName;
     }
 
-    public String getReason() 
+    public String getFactoryName() 
     {
-        return reason;
+        return factoryName;
     }
 
     public void setSupplierName(String supplierName) 
@@ -181,34 +200,54 @@ public class DepPurchaseApplyEntry extends BaseEntity
         return supplierName;
     }
 
-    public void setBrand(String brand) 
+    public void setRemark(String remark) 
     {
-        this.brand = brand;
+        this.remark = remark;
     }
 
-    public String getBrand() 
+    public String getRemark() 
     {
-        return brand;
+        return remark;
     }
 
-    public void setModel(String model) 
+    public String getBrandRequirement() 
     {
-        this.model = model;
+        return brandRequirement;
     }
 
-    public String getModel() 
+    public void setBrandRequirement(String brandRequirement) 
     {
-        return model;
+        this.brandRequirement = brandRequirement;
     }
 
-    public void setMaterial(FdMaterial material) 
+    public String getSpecialNote() 
     {
-        this.material = material;
+        return specialNote;
     }
 
-    public FdMaterial getMaterial() 
+    public void setSpecialNote(String specialNote) 
+    {
+        this.specialNote = specialNote;
+    }
+
+    public String getCaseFeeCategory() 
+    {
+        return caseFeeCategory;
+    }
+
+    public void setCaseFeeCategory(String caseFeeCategory) 
+    {
+        this.caseFeeCategory = caseFeeCategory;
+    }
+
+    public FdMaterial getMaterial()
     {
         return material;
+    }
+
+    public void setMaterial(FdMaterial material)
+    {
+        this.material = material;
     }
 
     @Override
@@ -218,20 +257,20 @@ public class DepPurchaseApplyEntry extends BaseEntity
             .append("parentId", getParentId())
             .append("materialId", getMaterialId())
             .append("materialName", getMaterialName())
-            .append("materialSpec", getMaterialSpec())
-            .append("unit", getUnit())
-            .append("unitPrice", getUnitPrice())
+            .append("speci", getSpeci())
+            .append("model", getModel())
+            .append("unitName", getUnitName())
+            .append("price", getPrice())
             .append("qty", getQty())
             .append("amt", getAmt())
-            .append("reason", getReason())
+            .append("factoryName", getFactoryName())
             .append("supplierName", getSupplierName())
-            .append("brand", getBrand())
-            .append("model", getModel())
+            .append("remark", getRemark())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
-            .append("remark", getRemark())
             .toString();
     }
 }
+

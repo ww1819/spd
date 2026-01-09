@@ -36,8 +36,33 @@ public class PurInventoryController extends BaseController
      * 查询进销存明细列表
      */
     @GetMapping("/listPurInventory")
-    public TableDataInfo listPurInventory(StkIoBill stkIoBill)
+    public TableDataInfo listPurInventory(@RequestParam(required = false) String billTypeStr, StkIoBill stkIoBill)
     {
+        // 处理 billTypeStr 参数：如果是逗号分隔的字符串，转换为 List 存储到 params 中
+        if (billTypeStr != null && !billTypeStr.isEmpty()) {
+            if (stkIoBill.getParams() == null) {
+                stkIoBill.setParams(new java.util.HashMap<>());
+            }
+            // 将逗号分隔的字符串转换为 List<Integer>
+            List<Integer> billTypeList = new ArrayList<>();
+            String[] types = billTypeStr.split(",");
+            for (String type : types) {
+                try {
+                    billTypeList.add(Integer.parseInt(type.trim()));
+                } catch (NumberFormatException e) {
+                    // 忽略转换错误
+                }
+            }
+            if (!billTypeList.isEmpty()) {
+                stkIoBill.getParams().put("billTypeList", billTypeList);
+                // 如果只有一个值，也设置到 billType
+                if (billTypeList.size() == 1) {
+                    stkIoBill.setBillType(billTypeList.get(0));
+                } else {
+                    stkIoBill.setBillType(null);
+                }
+            }
+        }
         startPage();
         List<Map<String, Object>> mapPage = stkIoBillService.selectListPurInventory(stkIoBill);
         List<Map<String, Object>> mapList = stkIoBillService.selectListPurInventory(stkIoBill);

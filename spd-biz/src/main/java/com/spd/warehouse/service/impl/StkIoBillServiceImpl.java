@@ -113,8 +113,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         // 根据billType生成不同的单据号
         if (stkIoBill.getBillNo() == null || stkIoBill.getBillNo().isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 501) {
-                // 结算类型，使用JS前缀
-                stkIoBill.setBillNo(getJSNumber("JS"));
+                // 调拨单类型，使用DB前缀
+                stkIoBill.setBillNo(getJSNumber("DB"));
             } else {
                 // 默认入库类型，使用RK前缀
                 stkIoBill.setBillNo(getNumber());

@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.NewProductApplyMapper">
+    
+    <resultMap type="NewProductApply" id="NewProductApplyResult">
+        <result property="id"    column="id"    />
+        <result property="applyNo"    column="apply_no"    />
+        <result property="applyDate"    column="apply_date"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="applyStatus"    column="apply_status"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+        <result property="reasonAndBenefit"    column="reason_and_benefit"    />
+        <result property="medicalInsurance"    column="medical_insurance"    />
+        <result property="centralizedProcurement"    column="centralized_procurement"    />
+        <result property="procurementForm"    column="procurement_form"    />
+        <result property="platformPrice"    column="platform_price"    />
+        <association property="department" javaType="FdDepartment">
+            <result property="id" column="d_id"/>
+            <result property="name" column="d_name"/>
+        </association>
+        <association property="createByUser" javaType="SysUser">
+            <result property="userId" column="u_user_id"/>
+            <result property="userName" column="u_user_name"/>
+            <result property="nickName" column="u_nick_name"/>
+        </association>
+    </resultMap>
+
+    <resultMap type="NewProductApplyDetail" id="NewProductApplyDetailResult">
+        <result property="id"    column="detail_id"    />
+        <result property="parentId"    column="detail_parent_id"    />
+        <result property="similarProduct"    column="detail_similar_product"    />
+        <result property="speci"    column="detail_speci"    />
+        <result property="model"    column="detail_model"    />
+        <result property="createBy"    column="detail_create_by"    />
+        <result property="createTime"    column="detail_create_time"    />
+        <result property="updateBy"    column="detail_update_by"    />
+        <result property="updateTime"    column="detail_update_time"    />
+    </resultMap>
+
+    <resultMap id="NewProductApplyNewProductApplyEntryResult" type="NewProductApply" extends="NewProductApplyResult">
+        <collection property="applyEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="NewProductApplyEntryResult" />
+        <collection property="applyDetailList" notNullColumn="detail_id" javaType="java.util.List" resultMap="NewProductApplyDetailResult" />
+    </resultMap>
+
+    <resultMap type="NewProductApplyEntry" id="NewProductApplyEntryResult">
+        <result property="id"    column="sub_id"    />
+        <result property="parentId"    column="sub_parent_id"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="materialName"    column="sub_material_name"    />
+        <result property="speci"    column="sub_speci"    />
+        <result property="model"    column="sub_model"    />
+        <result property="unitName"    column="sub_unit_name"    />
+        <result property="price"    column="sub_price"    />
+        <result property="qty"    column="sub_qty"    />
+        <result property="amt"    column="sub_amt"    />
+        <result property="factoryName"    column="sub_factory_name"    />
+        <result property="supplierName"    column="sub_supplier_name"    />
+        <result property="remark"    column="sub_remark"    />
+        <result property="brandRequirement"    column="sub_brand_requirement"    />
+        <result property="specialNote"    column="sub_special_note"    />
+        <result property="caseFeeCategory"    column="sub_case_fee_category"    />
+        <result property="createBy"    column="sub_create_by"    />
+        <result property="createTime"    column="sub_create_time"    />
+        <result property="updateBy"    column="sub_update_by"    />
+        <result property="updateTime"    column="sub_update_time"    />
+        <association property="material" javaType="FdMaterial">
+            <result property="id" column="m_id"/>
+            <result property="code" column="m_code"/>
+            <result property="name" column="m_name"/>
+            <result property="speci" column="m_speci"/>
+            <result property="model" column="m_model"/>
+            <association property="fdFactory" javaType="FdFactory">
+                <id property="factoryId" column="f_id"/>
+                <result property="factoryName" column="f_name"/>
+            </association>
+            <association property="fdUnit" javaType="FdUnit">
+                <id property="unitId" column="mu_id"/>
+                <result property="unitName" column="mu_name"/>
+            </association>
+            <association property="fdWarehouseCategory" javaType="FdWarehouseCategory">
+                <id property="warehouseCategoryId" column="wc_id"/>
+                <result property="warehouseCategoryName" column="wc_name"/>
+            </association>
+            <association property="fdFinanceCategory" javaType="FdFinanceCategory">
+                <id property="financeCategoryId" column="fc_id"/>
+                <result property="financeCategoryName" column="fc_name"/>
+            </association>
+        </association>
+    </resultMap>
+
+    <sql id="selectNewProductApplyVo">
+        select 
+            npa.id, 
+            npa.apply_no, 
+            npa.apply_date, 
+            npa.department_id, 
+            npa.apply_status, 
+            npa.total_amount, 
+            npa.del_flag, 
+            npa.audit_date, 
+            npa.create_by, 
+            npa.create_time, 
+            npa.update_by, 
+            npa.update_time, 
+            npa.remark,
+            <!-- 以下字段需要先执行SQL添加字段后才能使用 -->
+            <!-- 执行 spd/sql/add_new_product_apply_fields_final.sql 后取消注释 -->
+            npa.reason_and_benefit,
+            npa.medical_insurance,
+            npa.centralized_procurement,
+            npa.procurement_form,
+            npa.platform_price,
+            d.id as d_id,
+            d.name as d_name,
+            u.user_id as u_user_id,
+            u.user_name as u_user_name,
+            u.nick_name as u_nick_name
+        from new_product_apply npa
+        left join fd_department d on npa.department_id = d.id
+        left join sys_user u on npa.create_by = u.user_name
+    </sql>
+
+    <select id="selectNewProductApplyList" parameterType="NewProductApply" resultMap="NewProductApplyResult">
+        <include refid="selectNewProductApplyVo"/>
+        <where>  
+            <if test="applyNo != null  and applyNo != ''"> and npa.apply_no like concat('%', #{applyNo}, '%')</if>
+            <if test="applyDate != null "> and npa.apply_date = #{applyDate}</if>
+            <if test="departmentId != null "> and npa.department_id = #{departmentId}</if>
+            <if test="applyStatus != null "> and npa.apply_status = #{applyStatus}</if>
+            <if test="beginDate != null and beginDate != ''"><!-- 开始时间检索 -->
+                and date_format(npa.apply_date,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+            </if>
+            <if test="endDate != null and endDate != ''"><!-- 结束时间检索 -->
+                and date_format(npa.apply_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+            </if>
+            and npa.del_flag = 0
+        </where>
+        order by npa.create_time desc
+    </select>
+    
+    <select id="selectNewProductApplyById" parameterType="Long" resultMap="NewProductApplyNewProductApplyEntryResult">
+        select 
+            npa.id, 
+            npa.apply_no, 
+            npa.apply_date, 
+            npa.department_id, 
+            npa.apply_status, 
+            npa.total_amount, 
+            npa.del_flag, 
+            npa.audit_date, 
+            npa.create_by, 
+            npa.create_time, 
+            npa.update_by, 
+            npa.update_time, 
+            npa.remark,
+            npa.reason_and_benefit,
+            npa.medical_insurance,
+            npa.centralized_procurement,
+            npa.procurement_form,
+            npa.platform_price,
+            d.id as d_id,
+            d.name as d_name,
+            u.user_id as u_user_id,
+            u.user_name as u_user_name,
+            u.nick_name as u_nick_name,
+            npae.id as sub_id,
+            npae.parent_id as sub_parent_id,
+            npae.material_id as sub_material_id,
+            npae.material_name as sub_material_name,
+            npae.speci as sub_speci,
+            npae.model as sub_model,
+            npae.unit_name as sub_unit_name,
+            npae.price as sub_price,
+            npae.qty as sub_qty,
+            npae.amt as sub_amt,
+            npae.factory_name as sub_factory_name,
+            npae.supplier_name as sub_supplier_name,
+            npae.remark as sub_remark,
+            npae.brand_requirement as sub_brand_requirement,
+            npae.special_note as sub_special_note,
+            npae.case_fee_category as sub_case_fee_category,
+            npae.create_by as sub_create_by,
+            npae.create_time as sub_create_time,
+            npae.update_by as sub_update_by,
+            npae.update_time as sub_update_time,
+            m.id as m_id,
+            m.code as m_code,
+            m.name as m_name,
+            m.speci as m_speci,
+            m.model as m_model,
+            f.factory_id as f_id,
+            f.factory_name as f_name,
+            mu.unit_id as mu_id,
+            mu.unit_name as mu_name,
+            wc.warehouse_category_id as wc_id,
+            wc.warehouse_category_name as wc_name,
+            fc.finance_category_id as fc_id,
+            fc.finance_category_name as fc_name,
+            npad.id as detail_id,
+            npad.parent_id as detail_parent_id,
+            npad.similar_product as detail_similar_product,
+            npad.speci as detail_speci,
+            npad.model as detail_model,
+            npad.create_by as detail_create_by,
+            npad.create_time as detail_create_time,
+            npad.update_by as detail_update_by,
+            npad.update_time as detail_update_time
+        from new_product_apply npa
+        left join fd_department d on npa.department_id = d.id
+        left join sys_user u on npa.create_by = u.user_name
+        left join new_product_apply_entry npae on npa.id = npae.parent_id
+        left join fd_material m on npae.material_id = m.id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_unit mu on m.unit_id = mu.unit_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        left join new_product_apply_detail npad on npa.id = npad.parent_id
+        where npa.id = #{id} and npa.del_flag = 0
+    </select>
+        
+    <insert id="insertNewProductApply" parameterType="NewProductApply" useGeneratedKeys="true" keyProperty="id">
+        insert into new_product_apply
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="applyNo != null and applyNo != ''">apply_no,</if>
+            <if test="applyDate != null">apply_date,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="applyStatus != null">apply_status,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            <if test="reasonAndBenefit != null and reasonAndBenefit != ''">reason_and_benefit,</if>
+            <if test="medicalInsurance != null and medicalInsurance != ''">medical_insurance,</if>
+            <if test="centralizedProcurement != null and centralizedProcurement != ''">centralized_procurement,</if>
+            <if test="procurementForm != null and procurementForm != ''">procurement_form,</if>
+            <if test="platformPrice != null">platform_price,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="applyNo != null and applyNo != ''">#{applyNo},</if>
+            <if test="applyDate != null">#{applyDate},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="applyStatus != null">#{applyStatus},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            <if test="reasonAndBenefit != null and reasonAndBenefit != ''">#{reasonAndBenefit},</if>
+            <if test="medicalInsurance != null and medicalInsurance != ''">#{medicalInsurance},</if>
+            <if test="centralizedProcurement != null and centralizedProcurement != ''">#{centralizedProcurement},</if>
+            <if test="procurementForm != null and procurementForm != ''">#{procurementForm},</if>
+            <if test="platformPrice != null">#{platformPrice},</if>
+         </trim>
+    </insert>
+
+    <update id="updateNewProductApply" parameterType="NewProductApply">
+        update new_product_apply
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="applyNo != null and applyNo != ''">apply_no = #{applyNo},</if>
+            <if test="applyDate != null">apply_date = #{applyDate},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="applyStatus != null">apply_status = #{applyStatus},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="createBy != null and createBy != ''">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="reasonAndBenefit != null and reasonAndBenefit != ''">reason_and_benefit = #{reasonAndBenefit},</if>
+            <if test="medicalInsurance != null and medicalInsurance != ''">medical_insurance = #{medicalInsurance},</if>
+            <if test="centralizedProcurement != null and centralizedProcurement != ''">centralized_procurement = #{centralizedProcurement},</if>
+            <if test="procurementForm != null and procurementForm != ''">procurement_form = #{procurementForm},</if>
+            <if test="platformPrice != null">platform_price = #{platformPrice},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteNewProductApplyById" parameterType="Long">
+        update new_product_apply set del_flag = 1 where id = #{id}
+    </delete>
+
+    <delete id="deleteNewProductApplyByIds" parameterType="String">
+        update new_product_apply set del_flag = 1 where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteNewProductApplyEntryByParentId" parameterType="Long">
+        delete from new_product_apply_entry where parent_id = #{parentId}
+    </delete>
+
+    <delete id="deleteNewProductApplyEntryByParentIds" parameterType="String">
+        delete from new_product_apply_entry where parent_id in 
+        <foreach item="parentId" collection="array" open="(" separator="," close=")">
+            #{parentId}
+        </foreach>
+    </delete>
+
+    <insert id="batchNewProductApplyEntry">
+        insert into new_product_apply_entry(parent_id, material_id, material_name, speci, model, unit_name, price, qty, amt, factory_name, supplier_name, remark, brand_requirement, special_note, case_fee_category, create_by, create_time) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.price}, #{item.qty}, #{item.amt}, #{item.factoryName}, #{item.supplierName}, #{item.remark}, #{item.brandRequirement}, #{item.specialNote}, #{item.caseFeeCategory}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <insert id="batchNewProductApplyDetail">
+        insert into new_product_apply_detail(parent_id, similar_product, speci, model, create_by, create_time) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.parentId}, #{item.similarProduct}, #{item.speci}, #{item.model}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <delete id="deleteNewProductApplyDetailByParentId" parameterType="Long">
+        delete from new_product_apply_detail where parent_id = #{parentId}
+    </delete>
+
+</mapper>

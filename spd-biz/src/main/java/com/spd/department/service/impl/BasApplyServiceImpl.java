@@ -73,7 +73,7 @@ public class BasApplyServiceImpl implements IBasApplyService
     public int insertBasApply(BasApply basApply)
     {
         basApply.setCreateTime(DateUtils.getNowDate());
-        basApply.setApplyBillNo(getNumber());
+        basApply.setApplyBillNo(getNumber(basApply.getBillType()));
         int rows = basApplyMapper.insertBasApply(basApply);
         insertBasApplyEntry(basApply);
         return rows;
@@ -82,8 +82,15 @@ public class BasApplyServiceImpl implements IBasApplyService
     //str：单号前缀
     //date：日期
     //result：最终结果，需要的流水号
-    public String getNumber() {
-        String str = "SL";
+    public String getNumber(Integer billType) {
+        String str = "SL"; // 默认申领单前缀
+        if (billType != null) {
+            if (billType == 2) {
+                str = "SG"; // 申购单前缀
+            } else if (billType == 3) {
+                str = "ZK"; // 转科申请单前缀
+            }
+        }
         String date = FillRuleUtil.getDateNum();
         String maxNum = basApplyMapper.selectMaxBillNo(date);
         String result = FillRuleUtil.getNumber(str,maxNum,date);

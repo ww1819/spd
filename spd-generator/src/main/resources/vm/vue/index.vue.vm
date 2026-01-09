@@ -62,6 +62,14 @@
 #end
 #end
       <el-form-item>
+        <el-button 
+          type="info" 
+          icon="el-icon-check" 
+          size="mini" 
+          :disabled="single"
+          @click="handleAudit"
+          v-hasPermi="['${moduleName}:${businessName}:audit']"
+        >审核</el-button>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
@@ -99,6 +107,17 @@
           @click="handleDelete"
           v-hasPermi="['${moduleName}:${businessName}:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-check"
+          size="mini"
+          :disabled="single"
+          @click="handleAudit"
+          v-hasPermi="['${moduleName}:${businessName}:audit']"
+        >审核</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -353,7 +372,7 @@
 </template>
 
 <script>
-import { list${BusinessName}, get${BusinessName}, del${BusinessName}, add${BusinessName}, update${BusinessName} } from "@/api/${moduleName}/${businessName}";
+import { list${BusinessName}, get${BusinessName}, del${BusinessName}, add${BusinessName}, update${BusinessName}, audit${BusinessName} } from "@/api/${moduleName}/${businessName}";
 
 export default {
   name: "${BusinessName}",
@@ -556,6 +575,16 @@ export default {
       }).then(() => {
         this.getList();
         this.#[[$modal]]#.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 审核按钮操作 */
+    handleAudit(row) {
+      const ${pkColumn.javaField} = row.${pkColumn.javaField} || this.ids[0];
+      this.#[[$modal]]#.confirm('是否确认审核${functionName}编号为"' + ${pkColumn.javaField} + '"的数据项？').then(() => {
+        return audit${BusinessName}(${pkColumn.javaField});
+      }).then(() => {
+        this.getList();
+        this.#[[$modal]]#.msgSuccess("审核成功");
       }).catch(() => {});
     },
 #if($table.sub)

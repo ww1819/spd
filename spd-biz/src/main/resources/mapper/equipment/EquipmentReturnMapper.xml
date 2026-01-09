@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.EquipmentReturnMapper">
+    
+    <resultMap type="EquipmentReturn" id="EquipmentReturnResult">
+        <result property="returnId"    column="return_id"    />
+        <result property="returnNo"    column="return_no"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="warehouseName"    column="warehouse_name"    />
+        <result property="returnStatus"    column="return_status"    />
+        <result property="createrId"    column="creater_id"    />
+        <result property="createrName"    column="creater_name"    />
+        <result property="billDate"    column="bill_date"    />
+        <result property="auditorId"    column="auditor_id"    />
+        <result property="auditorName"    column="auditor_name"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="returnAmount"    column="return_amount"    />
+        <result property="supplier"    column="supplier"    />
+        <result property="remark"    column="remark"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectEquipmentReturnVo">
+        select r.return_id, r.return_no, r.warehouse_id, w.name as warehouse_name, 
+               r.return_status, r.creater_id, u.nick_name as creater_name, 
+               r.bill_date, 
+               r.auditor_id, au.nick_name as auditor_name, r.audit_date,
+               r.return_amount, r.supplier, r.remark, 
+               r.create_by, r.create_time, r.update_by, r.update_time 
+        from equipment_return r
+        left join fd_warehouse w on r.warehouse_id = w.id
+        left join sys_user u on r.creater_id = u.user_id
+        left join sys_user au on r.auditor_id = au.user_id
+    </sql>
+
+    <select id="selectEquipmentReturnList" parameterType="EquipmentReturn" resultMap="EquipmentReturnResult">
+        <include refid="selectEquipmentReturnVo"/>
+        <where>  
+            <if test="returnNo != null  and returnNo != ''"> and r.return_no like concat('%', #{returnNo}, '%')</if>
+            <if test="warehouseId != null "> and r.warehouse_id = #{warehouseId}</if>
+            <if test="returnStatus != null  and returnStatus != ''"> and r.return_status = #{returnStatus}</if>
+            <if test="createrId != null "> and r.creater_id = #{createrId}</if>
+            <if test="billDate != null "> and date(r.bill_date) = date(#{billDate})</if>
+            <if test="params.beginDate != null and params.beginDate != ''"><!-- 开始时间检索 -->
+                and date_format(r.bill_date,'%y%m%d') &gt;= date_format(#{params.beginDate},'%y%m%d')
+            </if>
+            <if test="params.endDate != null and params.endDate != ''"><!-- 结束时间检索 -->
+                and date_format(r.bill_date,'%y%m%d') &lt;= date_format(#{params.endDate},'%y%m%d')
+            </if>
+            <if test="equipmentName != null and equipmentName != ''">
+                and exists (
+                    select 1 from equipment_return_detail d 
+                    where d.return_id = r.return_id 
+                    and d.equipment_name like concat('%', #{equipmentName}, '%')
+                )
+            </if>
+        </where>
+        order by r.create_time desc
+    </select>
+    
+    <select id="selectEquipmentReturnById" parameterType="Long" resultMap="EquipmentReturnResult">
+        <include refid="selectEquipmentReturnVo"/>
+        where r.return_id = #{returnId}
+    </select>
+        
+    <insert id="insertEquipmentReturn" parameterType="EquipmentReturn" useGeneratedKeys="true" keyProperty="returnId">
+        insert into equipment_return
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="returnId != null">return_id,</if>
+            <if test="returnNo != null">return_no,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="returnStatus != null">return_status,</if>
+            <if test="createrId != null">creater_id,</if>
+            <if test="billDate != null">bill_date,</if>
+            <if test="returnAmount != null">return_amount,</if>
+            <if test="supplier != null">supplier,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="returnId != null">#{returnId},</if>
+            <if test="returnNo != null">#{returnNo},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="returnStatus != null">#{returnStatus},</if>
+            <if test="createrId != null">#{createrId},</if>
+            <if test="billDate != null">#{billDate},</if>
+            <if test="returnAmount != null">#{returnAmount},</if>
+            <if test="supplier != null">#{supplier},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateEquipmentReturn" parameterType="EquipmentReturn">
+        update equipment_return
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="returnNo != null">return_no = #{returnNo},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="returnStatus != null">return_status = #{returnStatus},</if>
+            <if test="createrId != null">creater_id = #{createrId},</if>
+            <if test="billDate != null">bill_date = #{billDate},</if>
+            <if test="returnAmount != null">return_amount = #{returnAmount},</if>
+            <if test="supplier != null">supplier = #{supplier},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where return_id = #{returnId}
+    </update>
+
+    <delete id="deleteEquipmentReturnById" parameterType="Long">
+        delete from equipment_return where return_id = #{returnId}
+    </delete>
+
+    <delete id="deleteEquipmentReturnByIds" parameterType="String">
+        delete from equipment_return where return_id in 
+        <foreach item="returnId" collection="array" open="(" separator="," close=")">
+            #{returnId}
+        </foreach>
+    </delete>
+
+    <update id="auditEquipmentReturn" parameterType="EquipmentReturn">
+        update equipment_return
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="returnStatus != null">return_status = #{returnStatus},</if>
+            <if test="auditorId != null">auditor_id = #{auditorId},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where return_id = #{returnId}
+    </update>
+</mapper>

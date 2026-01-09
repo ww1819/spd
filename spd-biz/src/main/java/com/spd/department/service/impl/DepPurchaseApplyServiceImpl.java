@@ -1,8 +1,10 @@
 package com.spd.department.service.impl;
 
 import java.util.List;
+import java.util.Date;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -156,5 +158,46 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         // 简单的序号生成，实际项目中可能需要更复杂的逻辑
         String timestamp = String.valueOf(System.currentTimeMillis()).substring(8);
         return prefix + timestamp;
+    }
+
+    /**
+     * 审核科室申购
+     * 
+     * @param id 科室申购主键
+     * @param auditBy 审核人
+     * @return 结果
+     */
+    @Override
+    public int auditPurchaseApply(String id, String auditBy) {
+        DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
+        if(depPurchaseApply == null){
+            throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
+        }
+        depPurchaseApply.setPurchaseBillStatus(2);//已审核状态
+        depPurchaseApply.setUpdateBy(auditBy);
+        depPurchaseApply.setUpdateTime(new Date());
+        int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
+        return res;
+    }
+
+    /**
+     * 驳回科室申购
+     * 
+     * @param id 科室申购主键
+     * @param rejectReason 驳回原因
+     * @return 结果
+     */
+    @Override
+    public int rejectPurchaseApply(String id, String rejectReason) {
+        DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
+        if(depPurchaseApply == null){
+            throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
+        }
+        depPurchaseApply.setPlanStatus(2); // 驳回状态
+        depPurchaseApply.setRejectReason(rejectReason);
+        depPurchaseApply.setUpdateBy(SecurityUtils.getUsername());
+        depPurchaseApply.setUpdateTime(new Date());
+        int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
+        return res;
     }
 }

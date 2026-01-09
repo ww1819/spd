@@ -66,6 +66,12 @@ public class DepPurchaseApply extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 计划状态：0-未生成，1-已生成，2-驳回 */
+    private Integer planStatus;
+
+    /** 驳回原因 */
+    private String rejectReason;
+
     /** 科室申购明细信息 */
     private List<DepPurchaseApplyEntry> depPurchaseApplyEntryList;
 
@@ -186,6 +192,26 @@ public class DepPurchaseApply extends BaseEntity
     public Integer getDelFlag() 
     {
         return delFlag;
+    }
+
+    public void setPlanStatus(Integer planStatus) 
+    {
+        this.planStatus = planStatus;
+    }
+
+    public Integer getPlanStatus() 
+    {
+        return planStatus;
+    }
+
+    public void setRejectReason(String rejectReason) 
+    {
+        this.rejectReason = rejectReason;
+    }
+
+    public String getRejectReason() 
+    {
+        return rejectReason;
     }
 
     public List<DepPurchaseApplyEntry> getDepPurchaseApplyEntryList()

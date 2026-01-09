@@ -16,6 +16,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="urgencyLevel"    column="urgency_level"    />
         <result property="expectedDeliveryDate"    column="expected_delivery_date"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="planStatus"    column="plan_status"    />
+        <result property="rejectReason"    column="reject_reason"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -58,6 +60,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="sub_update_by"    />
         <result property="updateTime"    column="sub_update_time"    />
         <result property="remark"    column="sub_remark"    />
+        <association property="material" javaType="FdMaterial">
+            <result property="id" column="m_id"/>
+            <result property="code" column="m_code"/>
+            <result property="name" column="m_name"/>
+            <result property="speci" column="m_speci"/>
+            <result property="model" column="m_model"/>
+            <association property="fdFactory" javaType="FdFactory">
+                <id property="factoryId" column="f_id"/>
+                <result property="factoryName" column="f_name"/>
+            </association>
+            <association property="fdUnit" javaType="FdUnit">
+                <id property="unitId" column="u_id"/>
+                <result property="unitName" column="u_name"/>
+            </association>
+            <association property="fdWarehouseCategory" javaType="FdWarehouseCategory">
+                <id property="warehouseCategoryId" column="wc_id"/>
+                <result property="warehouseCategoryName" column="wc_name"/>
+            </association>
+            <association property="fdFinanceCategory" javaType="FdFinanceCategory">
+                <id property="financeCategoryId" column="fc_id"/>
+                <result property="financeCategoryName" column="fc_name"/>
+            </association>
+        </association>
     </resultMap>
 
     <sql id="selectDepPurchaseApplyVo">
@@ -73,6 +98,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.urgency_level, 
             dpa.expected_delivery_date, 
             dpa.del_flag, 
+            dpa.plan_status, 
+            dpa.reject_reason, 
             dpa.create_by, 
             dpa.create_time, 
             dpa.update_by, 
@@ -119,6 +146,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.urgency_level, 
             dpa.expected_delivery_date, 
             dpa.del_flag, 
+            dpa.plan_status, 
+            dpa.reject_reason, 
             dpa.create_by, 
             dpa.create_time, 
             dpa.update_by, 
@@ -147,12 +176,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpae.create_time as sub_create_time,
             dpae.update_by as sub_update_by,
             dpae.update_time as sub_update_time,
-            dpae.remark as sub_remark
+            dpae.remark as sub_remark,
+            m.id as m_id,
+            m.code as m_code,
+            m.name as m_name,
+            m.speci as m_speci,
+            m.model as m_model,
+            f.factory_id as f_id,
+            f.factory_name as f_name,
+            mu.unit_id as u_id,
+            mu.unit_name as u_name,
+            wc.warehouse_category_id as wc_id,
+            wc.warehouse_category_name as wc_name,
+            fc.finance_category_id as fc_id,
+            fc.finance_category_name as fc_name
         from dep_purchase_apply dpa
         left join fd_warehouse w on dpa.warehouse_id = w.id
         left join sys_user u on dpa.user_id = u.user_id
         left join fd_department d on dpa.department_id = d.id
         left join dep_purchase_apply_entry dpae on dpae.parent_id = dpa.id
+        left join fd_material m on dpae.material_id = m.id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_unit mu on m.unit_id = mu.unit_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where dpa.id = #{id}
     </select>
         
@@ -169,6 +216,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="urgencyLevel != null">urgency_level,</if>
             <if test="expectedDeliveryDate != null">expected_delivery_date,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="planStatus != null">plan_status,</if>
+            <if test="rejectReason != null">reject_reason,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -186,6 +235,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="urgencyLevel != null">#{urgencyLevel},</if>
             <if test="expectedDeliveryDate != null">#{expectedDeliveryDate},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="planStatus != null">#{planStatus},</if>
+            <if test="rejectReason != null">#{rejectReason},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -207,6 +258,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="urgencyLevel != null">urgency_level = #{urgencyLevel},</if>
             <if test="expectedDeliveryDate != null">expected_delivery_date = #{expectedDeliveryDate},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="planStatus != null">plan_status = #{planStatus},</if>
+            <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

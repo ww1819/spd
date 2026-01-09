@@ -58,4 +58,22 @@ public interface IDepPurchaseApplyService
      * @return 结果
      */
     public int deleteDepPurchaseApplyById(Long id);
+
+    /**
+     * 审核科室申购
+     * 
+     * @param id 科室申购主键
+     * @param auditBy 审核人
+     * @return 结果
+     */
+    public int auditPurchaseApply(String id, String auditBy);
+
+    /**
+     * 驳回科室申购
+     * 
+     * @param id 科室申购主键
+     * @param rejectReason 驳回原因
+     * @return 结果
+     */
+    public int rejectPurchaseApply(String id, String rejectReason);
 }
