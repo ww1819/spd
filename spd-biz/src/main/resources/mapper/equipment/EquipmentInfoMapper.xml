@@ -58,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="quantity"    column="quantity"    />
         <result property="contractName"    column="contract_name"    />
         <result property="contractPrice"    column="contract_price"    />
+        <result property="originalPrice"    column="original_price"    />
         <result property="signDate"    column="sign_date"    />
         <result property="purchaseDate"    column="purchase_date"    />
         <result property="acceptanceDate"    column="acceptance_date"    />
@@ -90,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectEquipmentInfoVo">
-        select id, asset_code, hospital_code, barcode, asset_name, asset_alias, auxiliary_category, asset_status, financial_category, financial_code, brand, origin, country, specification, model, unit, archive_code, serial_number, asset_manager, maintenance_manager, use_department, manage_department, storage_location, asset_type, factory_number, production_date, registration_number, expected_operation_date, fund_source, invoice_number, invoice_amount, attached_asset_flag, emergency_asset, special_asset, measurement_asset, attached_materials, benefit_analysis, remark, power, theory_operation_time, public_equipment, creator, create_time, modifier, modify_time, archive_usage, contract_consistent, special_network_asset, building, floor, quantity, contract_name, contract_price, sign_date, purchase_date, acceptance_date, review_time, warranty_expire_date, bid_date, supply_notice_date, first_acceptance_date, delivery_deadline, second_acceptance_date, warranty_out_date, supplier, supplier_contact, supplier_phone, maintenance_company, maintenance_contact, maintenance_phone, manufacturer, purchase_method, bidding_form, single_budget, project_basis, bidding_number, bidding_date, bidding_amount, del_flag, create_by, update_by, update_time from equipment_info
+        select id, asset_code, hospital_code, barcode, asset_name, asset_alias, auxiliary_category, asset_status, financial_category, financial_code, brand, origin, country, specification, model, unit, archive_code, serial_number, asset_manager, maintenance_manager, use_department, manage_department, storage_location, asset_type, factory_number, production_date, registration_number, expected_operation_date, fund_source, invoice_number, invoice_amount, attached_asset_flag, emergency_asset, special_asset, measurement_asset, attached_materials, benefit_analysis, remark, power, theory_operation_time, public_equipment, creator, create_time, modifier, modify_time, archive_usage, contract_consistent, special_network_asset, building, floor, quantity, contract_name, contract_price, original_price, sign_date, purchase_date, acceptance_date, review_time, warranty_expire_date, bid_date, supply_notice_date, first_acceptance_date, delivery_deadline, second_acceptance_date, warranty_out_date, supplier, supplier_contact, supplier_phone, maintenance_company, maintenance_contact, maintenance_phone, manufacturer, purchase_method, bidding_form, single_budget, project_basis, bidding_number, bidding_date, bidding_amount, del_flag, create_by, update_by, update_time from equipment_info
     </sql>
 
     <select id="selectEquipmentInfoList" parameterType="EquipmentInfo" resultMap="EquipmentInfoResult">
@@ -180,6 +181,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="quantity != null">quantity,</if>
             <if test="contractName != null">contract_name,</if>
             <if test="contractPrice != null">contract_price,</if>
+            <if test="originalPrice != null">original_price,</if>
             <if test="signDate != null">sign_date,</if>
             <if test="purchaseDate != null">purchase_date,</if>
             <if test="acceptanceDate != null">acceptance_date,</if>
@@ -264,6 +266,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="quantity != null">#{quantity},</if>
             <if test="contractName != null">#{contractName},</if>
             <if test="contractPrice != null">#{contractPrice},</if>
+            <if test="originalPrice != null">#{originalPrice},</if>
             <if test="signDate != null">#{signDate},</if>
             <if test="purchaseDate != null">#{purchaseDate},</if>
             <if test="acceptanceDate != null">#{acceptanceDate},</if>
@@ -351,6 +354,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="quantity != null">quantity = #{quantity},</if>
             <if test="contractName != null">contract_name = #{contractName},</if>
             <if test="contractPrice != null">contract_price = #{contractPrice},</if>
+            <if test="originalPrice != null">original_price = #{originalPrice},</if>
             <if test="signDate != null">sign_date = #{signDate},</if>
             <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>
             <if test="acceptanceDate != null">acceptance_date = #{acceptanceDate},</if>

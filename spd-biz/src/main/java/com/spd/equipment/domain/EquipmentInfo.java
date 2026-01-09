@@ -230,7 +230,12 @@ public class EquipmentInfo extends BaseEntity
     private String contractName;
 
     /** 合同价格 */
+    @Excel(name = "合同价格")
     private BigDecimal contractPrice;
+
+    /** 资产原值 */
+    @Excel(name = "资产原值")
+    private BigDecimal originalPrice;
 
     /** 签订日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -1203,4 +1208,12 @@ public class EquipmentInfo extends BaseEntity
             .append("updateTime", getUpdateTime())
             .toString();
     }
-} 
+
+    public BigDecimal getOriginalPrice() {
+        return originalPrice;
+    }
+
+    public void setOriginalPrice(BigDecimal originalPrice) {
+        this.originalPrice = originalPrice;
+    }
+}
