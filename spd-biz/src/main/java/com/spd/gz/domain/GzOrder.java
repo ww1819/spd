@@ -66,6 +66,17 @@ public class GzOrder extends BaseEntity
     @Excel(name = "是否跟台标识", readConverterExp = "1=是,2=否")
     private String isFollowFlag;
 
+    /** 开始日期（用于查询） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private String beginDate;
+
+    /** 结束日期（用于查询） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private String endDate;
+
+    /** 总金额 */
+    private java.math.BigDecimal totalAmt;
+
     /** 高值退货明细信息 */
     private List<GzOrderEntry> gzOrderEntryList;
 
@@ -220,6 +231,30 @@ public class GzOrder extends BaseEntity
 
     public void setMaterialList(List<FdMaterial> materialList) {
         this.materialList = materialList;
+    }
+
+    public String getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(String beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public java.math.BigDecimal getTotalAmt() {
+        return totalAmt;
+    }
+
+    public void setTotalAmt(java.math.BigDecimal totalAmt) {
+        this.totalAmt = totalAmt;
     }
 
     @Override

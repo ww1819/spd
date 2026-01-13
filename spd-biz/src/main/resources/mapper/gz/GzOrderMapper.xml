@@ -21,6 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="totalAmt"    column="totalAmt"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -86,7 +87,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzOrderList" parameterType="GzOrder" resultMap="GzOrderResult">
-        <include refid="selectGzOrderVo"/>
+        select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
+				NULL as department_id,
+				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
+				NULL as is_follow_flag,
+				gz.create_by,
+				gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				s.id sId,s.code supplierCode,s.name supplierName,
+				w.id wId,w.code warehouseCode,w.name warehouseName,
+				d.id dId,d.code departmentCode,d.name departmentName,
+				COALESCE(SUM(gze.amt), 0) as totalAmt
+        from gz_order gz
+        left join fd_supplier s on gz.suppler_id = s.id
+        left join fd_warehouse w on gz.warehouse_id = w.id
+        left join fd_department d on NULL = d.id
+        left join gz_order_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
         <if test="orderNo != null  and orderNo != ''"> and gz.order_no like concat('%', #{orderNo}, '%')</if>
         <if test="supplerId != null "> and gz.suppler_id = #{supplerId}</if>
@@ -95,6 +110,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="orderStatus != null "> and gz.order_status = #{orderStatus}</if>
         <if test="orderType != null "> and gz.order_type = #{orderType}</if>
         <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(gz.order_date) >= DATE(#{beginDate})]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(gz.order_date) <= DATE(#{endDate})]]></if>
+        group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
+				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
+				gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				s.id, s.code, s.name,
+				w.id, w.code, w.name,
+				d.id, d.code, d.name
         order by gz.order_date desc, gz.id desc
     </select>
 

@@ -19,9 +19,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="inHospitalCode"    column="in_hospital_code"    />
         <result property="endTime"    column="end_time"    />
         <result property="orderNo"    column="orderNo"    />
+        <result property="masterBarcode"    column="master_barcode"    />
+        <result property="secondaryBarcode"    column="secondary_barcode"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="order"    column="goId" javaType="GzOrder" resultMap="orderResult" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="FdWarehouse">
@@ -39,8 +42,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="periodDate"  column="materialPeriodDate"   />
         <result property="registerNo"  column="materialRegisterNo"   />
         <result property="medicalNo"  column="materialMedicalNo"   />
+        <result property="udiNo"  column="materialUdiNo"   />
+        <result property="unitId"  column="materialUnitId"   />
+        <result property="financeCategoryId"  column="materialFinanceCategoryId"   />
         <association property="fdFactory"    column="factoryId" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="supplier"    column="materialSupplierId" javaType="FdSupplier" resultMap="materialSupplierResult" />
+        <association property="fdUnit"    column="materialUnitId" javaType="FdUnit" resultMap="unitResult" />
+        <association property="fdFinanceCategory"    column="materialFinanceCategoryId" javaType="FdFinanceCategory" resultMap="financeCategoryResult" />
+        <association property="fdWarehouseCategory"    column="materialWarehouseCategoryId" javaType="FdWarehouseCategory" resultMap="warehouseCategoryResult" />
+    </resultMap>
+
+    <resultMap id="unitResult" type="FdUnit">
+        <id     property="unitId"    column="uId"     />
+        <result property="unitName"  column="unitName"   />
+    </resultMap>
+
+    <resultMap id="financeCategoryResult" type="FdFinanceCategory">
+        <id     property="financeCategoryId"    column="fcId"     />
+        <result property="financeCategoryName"  column="financeCategoryName"   />
+    </resultMap>
+
+    <resultMap id="warehouseCategoryResult" type="FdWarehouseCategory">
+        <id     property="warehouseCategoryId"    column="wcId"     />
+        <result property="warehouseCategoryName"  column="warehouseCategoryName"   />
     </resultMap>
 
     <resultMap id="materialSupplierResult" type="FdSupplier">
@@ -60,10 +84,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"  column="supplierName"   />
     </resultMap>
 
+    <resultMap id="orderResult" type="GzOrder">
+        <id     property="id"    column="goId"     />
+        <result property="orderNo"    column="orderNo"    />
+        <result property="createBy"    column="orderCreateBy"    />
+        <result property="orderDate"    column="orderDate"    />
+        <result property="updateBy"    column="orderUpdateBy"    />
+        <result property="auditDate"    column="orderAuditDate"    />
+        <result property="remark"    column="orderRemark"    />
+    </resultMap>
+
     <sql id="selectGzDepotInventoryVo">
         select gz.id, gz.qty, gz.material_id, gz.warehouse_id, gz.unit_price,gz.amt,
 				gz.batch_no, gz.material_no, gz.material_date, gz.warehouse_date,gz.supplier_id,
-				gz.in_hospital_code,
+				gz.in_hospital_code, gz.master_barcode, gz.secondary_barcode,
 				goe.end_time,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
@@ -72,11 +106,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				m.period_date as materialPeriodDate,
 				m.register_no as materialRegisterNo,
 				m.medical_no as materialMedicalNo,
+				m.udi_no as materialUdiNo,
 				m.supplier_id as materialSupplierId,
+				m.unit_id as materialUnitId,
+				m.finance_category_id as materialFinanceCategoryId,
+				m.storeroom_id as materialWarehouseCategoryId,
 				f.factory_id as factoryId,f.factory_name as factoryName,
 				ms.id msId,ms.code materialSupplierCode,ms.name materialSupplierName,
 				s.id sId,s.code supplierCode,s.name supplierName,
-				go.order_no as orderNo
+				go.id as goId,go.order_no as orderNo,
+				go.create_by as orderCreateBy,
+				go.order_date as orderDate,
+				go.update_by as orderUpdateBy,
+				go.audit_date as orderAuditDate,
+				go.remark as orderRemark,
+				u.unit_id uId,u.unit_name as unitName,
+				fc.finance_category_id fcId,fc.finance_category_name as financeCategoryName,
+				wc.warehouse_category_id wcId,wc.warehouse_category_name as warehouseCategoryName
         from gz_depot_inventory gz
         left join fd_warehouse w on gz.warehouse_id = w.id
         left join fd_material m on gz.material_id = m.id
@@ -85,6 +131,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on gz.supplier_id = s.id
         left join gz_order_entry goe on gz.batch_no = goe.batch_no
         left join gz_order go on goe.paren_id = go.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
     </sql>
 
     <select id="selectGzDepotInventoryList" parameterType="GzDepotInventory" resultMap="GzDepotInventoryResult">

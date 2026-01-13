@@ -37,7 +37,13 @@ public class SysConfigServiceImpl implements ISysConfigService
     @PostConstruct
     public void init()
     {
-        loadingConfigCache();
+        try {
+            loadingConfigCache();
+        } catch (Exception e) {
+            // Redis连接失败时不阻止应用启动，只记录日志
+            System.err.println("警告: Redis连接失败，配置缓存初始化跳过。错误信息: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -64,17 +70,25 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public String selectConfigByKey(String configKey)
     {
-        String configValue = Convert.toStr(redisCache.getCacheObject(getCacheKey(configKey)));
-        if (StringUtils.isNotEmpty(configValue))
-        {
-            return configValue;
+        try {
+            String configValue = Convert.toStr(redisCache.getCacheObject(getCacheKey(configKey)));
+            if (StringUtils.isNotEmpty(configValue))
+            {
+                return configValue;
+            }
+        } catch (Exception e) {
+            // Redis不可用时，直接从数据库查询
         }
         SysConfig config = new SysConfig();
         config.setConfigKey(configKey);
         SysConfig retConfig = configMapper.selectConfig(config);
         if (StringUtils.isNotNull(retConfig))
         {
-            redisCache.setCacheObject(getCacheKey(configKey), retConfig.getConfigValue());
+            try {
+                redisCache.setCacheObject(getCacheKey(configKey), retConfig.getConfigValue());
+            } catch (Exception e) {
+                // Redis不可用时，忽略缓存操作
+            }
             return retConfig.getConfigValue();
         }
         return StringUtils.EMPTY;
@@ -120,7 +134,11 @@ public class SysConfigServiceImpl implements ISysConfigService
         int row = configMapper.insertConfig(config);
         if (row > 0)
         {
-            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            try {
+                redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            } catch (Exception e) {
+                // Redis不可用时，忽略缓存操作
+            }
         }
         return row;
     }
@@ -137,13 +155,21 @@ public class SysConfigServiceImpl implements ISysConfigService
         SysConfig temp = configMapper.selectConfigById(config.getConfigId());
         if (!StringUtils.equals(temp.getConfigKey(), config.getConfigKey()))
         {
-            redisCache.deleteObject(getCacheKey(temp.getConfigKey()));
+            try {
+                redisCache.deleteObject(getCacheKey(temp.getConfigKey()));
+            } catch (Exception e) {
+                // Redis不可用时，忽略缓存操作
+            }
         }
 
         int row = configMapper.updateConfig(config);
         if (row > 0)
         {
-            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            try {
+                redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            } catch (Exception e) {
+                // Redis不可用时，忽略缓存操作
+            }
         }
         return row;
     }
@@ -164,7 +190,11 @@ public class SysConfigServiceImpl implements ISysConfigService
                 throw new ServiceException(String.format("内置参数【%1$s】不能删除 ", config.getConfigKey()));
             }
             configMapper.deleteConfigById(configId);
-            redisCache.deleteObject(getCacheKey(config.getConfigKey()));
+            try {
+                redisCache.deleteObject(getCacheKey(config.getConfigKey()));
+            } catch (Exception e) {
+                // Redis不可用时，忽略缓存操作
+            }
         }
     }
 
@@ -174,10 +204,16 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public void loadingConfigCache()
     {
-        List<SysConfig> configsList = configMapper.selectConfigList(new SysConfig());
-        for (SysConfig config : configsList)
-        {
-            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+        try {
+            List<SysConfig> configsList = configMapper.selectConfigList(new SysConfig());
+            for (SysConfig config : configsList)
+            {
+                redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            }
+        } catch (Exception e) {
+            // Redis连接失败时只记录日志，不抛出异常
+            System.err.println("警告: 加载配置缓存失败，Redis可能未启动。错误信息: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -187,8 +223,12 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public void clearConfigCache()
     {
-        Collection<String> keys = redisCache.keys(CacheConstants.SYS_CONFIG_KEY + "*");
-        redisCache.deleteObject(keys);
+        try {
+            Collection<String> keys = redisCache.keys(CacheConstants.SYS_CONFIG_KEY + "*");
+            redisCache.deleteObject(keys);
+        } catch (Exception e) {
+            // Redis不可用时，忽略缓存操作
+        }
     }
 
     /**

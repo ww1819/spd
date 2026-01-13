@@ -38,7 +38,13 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService
     @PostConstruct
     public void init()
     {
-        loadingDictCache();
+        try {
+            loadingDictCache();
+        } catch (Exception e) {
+            // Redis连接失败时不阻止应用启动，只记录日志
+            System.err.println("警告: 加载字典缓存失败，Redis可能未启动。错误信息: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**

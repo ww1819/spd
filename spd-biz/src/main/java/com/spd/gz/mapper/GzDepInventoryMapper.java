@@ -73,4 +73,12 @@ public interface GzDepInventoryMapper
      * @return
      */
     BigDecimal selectTKDepInvntoryByBatchNo(String batchNo);
+    
+    /**
+     * 根据院内码和科室ID查询库存（不过滤数量为0的记录）
+     * @param inHospitalCode 院内码
+     * @param departmentId 科室ID
+     * @return 库存记录
+     */
+    GzDepInventory selectGzDepInventoryByCodeAndDept(String inHospitalCode, Long departmentId);
 }

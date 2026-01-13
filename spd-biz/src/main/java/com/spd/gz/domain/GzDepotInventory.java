@@ -75,6 +75,14 @@ public class GzDepotInventory extends BaseEntity
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date endTime;
 
+    /** 主条码 */
+    @Excel(name = "主条码")
+    private String masterBarcode;
+
+    /** 辅条码 */
+    @Excel(name = "辅条码")
+    private String secondaryBarcode;
+
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
@@ -83,6 +91,9 @@ public class GzDepotInventory extends BaseEntity
 
     /** 供应商对象 */
     private FdSupplier supplier;
+
+    /** 订单对象（用于获取制单人、审核人等信息） */
+    private GzOrder order;
 
     /** 查询参数：仓库名称 */
     private String warehouseName;
@@ -219,6 +230,26 @@ public class GzDepotInventory extends BaseEntity
         return endTime;
     }
 
+    public void setMasterBarcode(String masterBarcode)
+    {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getMasterBarcode()
+    {
+        return masterBarcode;
+    }
+
+    public void setSecondaryBarcode(String secondaryBarcode)
+    {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
+    public String getSecondaryBarcode()
+    {
+        return secondaryBarcode;
+    }
+
     public FdWarehouse getWarehouse() {
         return warehouse;
     }
@@ -241,6 +272,14 @@ public class GzDepotInventory extends BaseEntity
 
     public void setSupplier(FdSupplier supplier) {
         this.supplier = supplier;
+    }
+
+    public GzOrder getOrder() {
+        return order;
+    }
+
+    public void setOrder(GzOrder order) {
+        this.order = order;
     }
 
     public String getWarehouseName() {

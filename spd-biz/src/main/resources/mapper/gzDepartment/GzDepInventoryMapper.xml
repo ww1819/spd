@@ -38,8 +38,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci"  column="materialSpeci"   />
         <result property="model"  column="materialModel"   />
         <result property="udiNo"  column="materialUdiNo"   />
+        <result property="unitId"  column="materialUnitId"   />
         <association property="fdFactory"    column="factoryId" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="supplier"    column="materialSupplierId" javaType="FdSupplier" resultMap="materialSupplierResult" />
+        <association property="fdUnit"    column="materialUnitId" javaType="FdUnit" resultMap="unitResult" />
+    </resultMap>
+    
+    <resultMap id="unitResult" type="FdUnit">
+        <id     property="unitId"    column="uId"     />
+        <result property="unitName"  column="unitName"   />
     </resultMap>
     
     <resultMap id="fdFactoryResult" type="FdFactory">
@@ -70,10 +77,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				m.model as materialModel,
 				m.udi_no as materialUdiNo,
 				m.supplier_id as materialSupplierId,
+				m.unit_id as materialUnitId,
 				f.factory_id as factoryId,f.factory_name as factoryName,
 				ms.id msId,ms.code materialSupplierCode,ms.name materialSupplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
+				u.unit_id uId,u.unit_name as unitName,
 				gs.shipment_no as shipmentNo,
+				gs.create_by as createBy,
+				gs.create_time as createTime,
 				gs.update_by as auditBy,
 				gs.audit_date as auditDate
         from gz_dep_inventory gz
@@ -81,6 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on gz.material_id = m.id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
+        left join fd_unit u on m.unit_id = u.unit_id
         left join gz_order_entry goe on gz.batch_no = goe.batch_no
         left join gz_order go on goe.paren_id = go.id
         left join fd_warehouse w on go.warehouse_id = w.id
@@ -90,9 +102,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectGzDepInventoryList" parameterType="GzDepInventory" resultMap="GzDepInventoryResult">
         <include refid="selectGzDepInventoryVo"/>
-        where gz.qty &gt; 0
+        where 1=1
         <!-- 只查询有院内码的记录，确保每个院内码一行 -->
         and gz.in_hospital_code IS NOT NULL and gz.in_hospital_code != ''
+        <!-- 根据showZeroStock参数决定是否过滤数量为0的记录 -->
+        <if test="showZeroStock == null or showZeroStock == false">
+            and gz.qty &gt; 0
+        </if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
         <if test="departmentId != null "> and gz.department_id = #{departmentId}</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
@@ -108,7 +124,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectGzDepInventoryById" parameterType="Long" resultMap="GzDepInventoryResult">
         <include refid="selectGzDepInventoryVo"/>
-        where id = #{id}
+        where gz.id = #{id}
     </select>
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
@@ -173,5 +189,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTKDepInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
         select SUM(IFNULL(qty, 0)) from gz_dep_inventory
         where batch_no = #{batchNo}
+    </select>
+    
+    <select id="selectGzDepInventoryByCodeAndDept" resultMap="GzDepInventoryResult">
+        <include refid="selectGzDepInventoryVo"/>
+        where gz.in_hospital_code = #{inHospitalCode}
+        and gz.department_id = #{departmentId}
+        <!-- 不过滤数量为0的记录 -->
+        limit 1
     </select>
 </mapper>

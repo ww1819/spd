@@ -2,6 +2,8 @@
 <configuration>
     <!-- 日志存放路径 -->
 	<property name="log.path" value="/home/spd/logs" />
+	<!-- 项目启动目录下的日志路径 -->
+	<property name="log.spd.path" value="${user.dir}/log/spd" />
     <!-- 日志输出格式 -->
 	<property name="log.pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - [%method,%line] - %msg%n" />
 
@@ -10,6 +12,22 @@
 		<encoder>
 			<pattern>${log.pattern}</pattern>
 		</encoder>
+	</appender>
+	
+	<!-- 控制台日志输出到文件（项目启动目录下的 log/spd 文件夹） -->
+	<appender name="console_file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!-- 当前日志文件路径 -->
+		<file>${log.spd.path}/spd.log</file>
+		<!-- 日志文件路径：项目启动目录/log/spd/yyyy-MM-dd.log -->
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- 日志文件名格式：按日期命名，每天一个文件 -->
+			<fileNamePattern>${log.spd.path}/%d{yyyy-MM-dd}.log</fileNamePattern>
+			<!-- 不设置 maxHistory，实现永不删除日志文件 -->
+		</rollingPolicy>
+		<encoder>
+			<pattern>${log.pattern}</pattern>
+		</encoder>
+		<!-- 输出所有级别的日志 -->
 	</appender>
 	
 	<!-- 系统日志输出 -->
@@ -78,6 +96,7 @@
 
 	<root level="info">
 		<appender-ref ref="console" />
+		<appender-ref ref="console_file" />
 		<appender-ref ref="file_info" />
 	</root>
 	

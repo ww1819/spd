@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzTraceabilityMapper">
+
+    <resultMap type="GzTraceability" id="GzTraceabilityResult">
+        <result property="id"    column="id"    />
+        <result property="traceNo"    column="trace_no"    />
+        <result property="medicalRecordNo"    column="medical_record_no"    />
+        <result property="patientName"    column="patient_name"    />
+        <result property="patientSex"    column="patient_sex"    />
+        <result property="patientAge"    column="patient_age"    />
+        <result property="hospitalNumber"    column="hospital_number"    />
+        <result property="ward"    column="ward"    />
+        <result property="wardNo"    column="ward_no"    />
+        <result property="bedNo"    column="bed_no"    />
+        <result property="applyDeptId"    column="apply_dept_id"    />
+        <result property="execDeptId"    column="exec_dept_id"    />
+        <result property="hospitalDate"    column="hospital_date"    />
+        <result property="contactPhone"    column="contact_phone"    />
+        <result property="contactAddress"    column="contact_address"    />
+        <result property="chiefSurgeon"    column="chief_surgeon"    />
+        <result property="surgeryDate"    column="surgery_date"    />
+        <result property="surgeryName"    column="surgery_name"    />
+        <result property="admissionDiagnosis"    column="admission_diagnosis"    />
+        <result property="surgeryId"    column="surgery_id"    />
+        <result property="remark"    column="remark"    />
+        <result property="orderStatus"    column="order_status"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <association property="applyDept"    column="apply_dept_id" javaType="FdDepartment" resultMap="applyDeptResult" />
+        <association property="execDept"    column="exec_dept_id" javaType="FdDepartment" resultMap="execDeptResult" />
+    </resultMap>
+
+    <resultMap id="applyDeptResult" type="FdDepartment">
+        <id     property="id"    column="applyDeptId"     />
+        <result property="code"  column="applyDeptCode"   />
+        <result property="name"  column="applyDeptName"   />
+    </resultMap>
+
+    <resultMap id="execDeptResult" type="FdDepartment">
+        <id     property="id"    column="execDeptId"     />
+        <result property="code"  column="execDeptCode"   />
+        <result property="name"  column="execDeptName"   />
+    </resultMap>
+
+    <resultMap id="GzTraceabilityWithEntryResult" type="GzTraceability" extends="GzTraceabilityResult">
+        <collection property="traceabilityEntryList" javaType="java.util.List" resultMap="GzTraceabilityEntryResult" />
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+        <result property="speci"  column="materialSpeci"   />
+        <result property="model"  column="materialModel"   />
+    </resultMap>
+
+    <resultMap type="GzTraceabilityEntry" id="GzTraceabilityEntryResult">
+        <result property="id"    column="entry_id"    />
+        <result property="parentId"    column="entry_parent_id"    />
+        <result property="materialId"    column="entry_material_id"    />
+        <result property="inventoryId"    column="entry_inventory_id"    />
+        <result property="materialName"    column="entry_material_name"    />
+        <result property="specification"    column="entry_specification"    />
+        <result property="model"    column="entry_model"    />
+        <result property="unit"    column="entry_unit"    />
+        <result property="quantity"    column="entry_quantity"    />
+        <result property="chargePrice"    column="entry_charge_price"    />
+        <result property="batchNo"    column="entry_batch_no"    />
+        <result property="expiryDate"    column="entry_expiry_date"    />
+        <result property="inHospitalCode"    column="entry_in_hospital_code"    />
+        <result property="manufacturer"    column="entry_manufacturer"    />
+        <result property="supplier"    column="entry_supplier"    />
+        <result property="certificateNo"    column="entry_certificate_no"    />
+        <result property="billingFollow"    column="entry_billing_follow"    />
+        <result property="delFlag"    column="entry_del_flag"    />
+        <result property="parentOrderStatus"    column="parent_order_status"    />
+        <result property="patientName"    column="patient_name"    />
+        <result property="patientSex"    column="patient_sex"    />
+        <result property="chiefSurgeon"    column="chief_surgeon"    />
+        <result property="surgicalDiagnosis"    column="surgical_diagnosis"    />
+        <result property="billingTime"    column="billing_time"    />
+        <result property="scanUser"    column="scan_user"    />
+        <result property="scanDate"    column="scan_date"    />
+        <result property="beginTime"    column="begin_time"    />
+        <result property="batchNumber"    column="batch_number"    />
+        <result property="materialDate"    column="material_date"    />
+        <result property="materialNo"    column="material_no"    />
+        <association property="material"    column="entry_material_id" javaType="FdMaterial" resultMap="materialResult" />
+    </resultMap>
+
+    <sql id="selectGzTraceabilityVo">
+        select t.id, t.trace_no, t.medical_record_no, t.patient_name, t.patient_sex, t.patient_age,
+               t.hospital_number, t.ward, t.ward_no, t.bed_no, t.apply_dept_id, t.exec_dept_id,
+               t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
+               t.surgery_date, t.surgery_name, t.admission_diagnosis, t.surgery_id, t.remark,
+               t.order_status, t.audit_date, t.audit_by, t.del_flag,
+               t.create_by, t.create_time, t.update_by, t.update_time,
+               ad.id as applyDeptId, ad.code as applyDeptCode, ad.name as applyDeptName,
+               ed.id as execDeptId, ed.code as execDeptCode, ed.name as execDeptName
+        from gz_traceability t
+        left join fd_department ad on t.apply_dept_id = ad.id
+        left join fd_department ed on t.exec_dept_id = ed.id
+    </sql>
+
+    <select id="selectGzTraceabilityList" parameterType="GzTraceability" resultMap="GzTraceabilityResult">
+        <include refid="selectGzTraceabilityVo"/>
+        <where>
+            t.del_flag = '0'
+            <if test="traceNo != null and traceNo != ''"> and t.trace_no = #{traceNo}</if>
+            <if test="medicalRecordNo != null and medicalRecordNo != ''"> and t.medical_record_no = #{medicalRecordNo}</if>
+            <if test="patientName != null and patientName != ''"> and t.patient_name like concat('%', #{patientName}, '%')</if>
+            <if test="hospitalNumber != null and hospitalNumber != ''"> and t.hospital_number = #{hospitalNumber}</if>
+            <if test="orderStatus != null"> and t.order_status = #{orderStatus}</if>
+            <if test="applyDeptId != null"> and t.apply_dept_id = #{applyDeptId}</if>
+            <if test="execDeptId != null"> and t.exec_dept_id = #{execDeptId}</if>
+        </where>
+        order by t.create_time desc
+    </select>
+
+    <select id="selectGzTraceabilityById" parameterType="Long" resultMap="GzTraceabilityWithEntryResult">
+        select t.id, t.trace_no, t.medical_record_no, t.patient_name, t.patient_sex, t.patient_age,
+               t.hospital_number, t.ward, t.ward_no, t.bed_no, t.apply_dept_id, t.exec_dept_id,
+               t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
+               t.surgery_date, t.surgery_name, t.admission_diagnosis, t.surgery_id, t.remark,
+               t.order_status, t.audit_date, t.audit_by, t.del_flag,
+               t.create_by, t.create_time, t.update_by, t.update_time,
+               ad.id as applyDeptId, ad.code as applyDeptCode, ad.name as applyDeptName,
+               ed.id as execDeptId, ed.code as execDeptCode, ed.name as execDeptName,
+               te.id as entry_id, te.parent_id as entry_parent_id, te.material_id as entry_material_id,
+               te.inventory_id as entry_inventory_id, te.material_name as entry_material_name,
+               te.specification as entry_specification, te.model as entry_model, te.unit as entry_unit,
+               te.quantity as entry_quantity, te.charge_price as entry_charge_price,
+               te.batch_no as entry_batch_no, te.expiry_date as entry_expiry_date,
+               te.in_hospital_code as entry_in_hospital_code, te.manufacturer as entry_manufacturer,
+               te.supplier as entry_supplier, te.certificate_no as entry_certificate_no,
+               te.billing_follow as entry_billing_follow, te.del_flag as entry_del_flag
+        from gz_traceability t
+        left join fd_department ad on t.apply_dept_id = ad.id
+        left join fd_department ed on t.exec_dept_id = ed.id
+        left join gz_traceability_entry te on te.parent_id = t.id and te.del_flag = '0'
+        where t.id = #{id} and t.del_flag = '0'
+    </select>
+
+    <select id="selectMaxTraceNo" resultType="String">
+        select max(trace_no) from gz_traceability
+        where trace_no like concat(#{prefix},'%')
+        and trace_no like concat('%',#{date},'%')
+    </select>
+
+    <insert id="insertGzTraceability" parameterType="GzTraceability" useGeneratedKeys="true" keyProperty="id">
+        insert into gz_traceability
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="traceNo != null and traceNo != ''">trace_no,</if>
+            <if test="medicalRecordNo != null">medical_record_no,</if>
+            <if test="patientName != null">patient_name,</if>
+            <if test="patientSex != null">patient_sex,</if>
+            <if test="patientAge != null">patient_age,</if>
+            <if test="hospitalNumber != null">hospital_number,</if>
+            <if test="ward != null">ward,</if>
+            <if test="wardNo != null">ward_no,</if>
+            <if test="bedNo != null">bed_no,</if>
+            <if test="applyDeptId != null">apply_dept_id,</if>
+            <if test="execDeptId != null">exec_dept_id,</if>
+            <if test="hospitalDate != null">hospital_date,</if>
+            <if test="contactPhone != null">contact_phone,</if>
+            <if test="contactAddress != null">contact_address,</if>
+            <if test="chiefSurgeon != null">chief_surgeon,</if>
+            <if test="surgeryDate != null">surgery_date,</if>
+            <if test="surgeryName != null">surgery_name,</if>
+            <if test="admissionDiagnosis != null">admission_diagnosis,</if>
+            <if test="surgeryId != null">surgery_id,</if>
+            <if test="remark != null">remark,</if>
+            <if test="orderStatus != null">order_status,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="traceNo != null and traceNo != ''">#{traceNo},</if>
+            <if test="medicalRecordNo != null">#{medicalRecordNo},</if>
+            <if test="patientName != null">#{patientName},</if>
+            <if test="patientSex != null">#{patientSex},</if>
+            <if test="patientAge != null">#{patientAge},</if>
+            <if test="hospitalNumber != null">#{hospitalNumber},</if>
+            <if test="ward != null">#{ward},</if>
+            <if test="wardNo != null">#{wardNo},</if>
+            <if test="bedNo != null">#{bedNo},</if>
+            <if test="applyDeptId != null">#{applyDeptId},</if>
+            <if test="execDeptId != null">#{execDeptId},</if>
+            <if test="hospitalDate != null">#{hospitalDate},</if>
+            <if test="contactPhone != null">#{contactPhone},</if>
+            <if test="contactAddress != null">#{contactAddress},</if>
+            <if test="chiefSurgeon != null">#{chiefSurgeon},</if>
+            <if test="surgeryDate != null">#{surgeryDate},</if>
+            <if test="surgeryName != null">#{surgeryName},</if>
+            <if test="admissionDiagnosis != null">#{admissionDiagnosis},</if>
+            <if test="surgeryId != null">#{surgeryId},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="orderStatus != null">#{orderStatus},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGzTraceability" parameterType="GzTraceability">
+        update gz_traceability
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="traceNo != null and traceNo != ''">trace_no = #{traceNo},</if>
+            <if test="medicalRecordNo != null">medical_record_no = #{medicalRecordNo},</if>
+            <if test="patientName != null">patient_name = #{patientName},</if>
+            <if test="patientSex != null">patient_sex = #{patientSex},</if>
+            <if test="patientAge != null">patient_age = #{patientAge},</if>
+            <if test="hospitalNumber != null">hospital_number = #{hospitalNumber},</if>
+            <if test="ward != null">ward = #{ward},</if>
+            <if test="wardNo != null">ward_no = #{wardNo},</if>
+            <if test="bedNo != null">bed_no = #{bedNo},</if>
+            <if test="applyDeptId != null">apply_dept_id = #{applyDeptId},</if>
+            <if test="execDeptId != null">exec_dept_id = #{execDeptId},</if>
+            <if test="hospitalDate != null">hospital_date = #{hospitalDate},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="contactAddress != null">contact_address = #{contactAddress},</if>
+            <if test="chiefSurgeon != null">chief_surgeon = #{chiefSurgeon},</if>
+            <if test="surgeryDate != null">surgery_date = #{surgeryDate},</if>
+            <if test="surgeryName != null">surgery_name = #{surgeryName},</if>
+            <if test="admissionDiagnosis != null">admission_diagnosis = #{admissionDiagnosis},</if>
+            <if test="surgeryId != null">surgery_id = #{surgeryId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGzTraceabilityById" parameterType="Long">
+        update gz_traceability set del_flag = '2' where id = #{id}
+    </delete>
+
+    <delete id="deleteGzTraceabilityByIds" parameterType="String">
+        update gz_traceability set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <insert id="batchGzTraceabilityEntry">
+        insert into gz_traceability_entry(parent_id, material_id, inventory_id, material_name, specification, model, unit, quantity, charge_price, batch_no, expiry_date, in_hospital_code, manufacturer, supplier, certificate_no, billing_follow, del_flag, create_by, create_time) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.parentId}, #{item.materialId}, #{item.inventoryId}, #{item.materialName}, #{item.specification}, #{item.model}, #{item.unit}, #{item.quantity}, #{item.chargePrice}, #{item.batchNo}, #{item.expiryDate}, #{item.inHospitalCode}, #{item.manufacturer}, #{item.supplier}, #{item.certificateNo}, #{item.billingFollow}, #{item.delFlag}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <delete id="deleteGzTraceabilityEntryByParentId" parameterType="Long">
+        update gz_traceability_entry set del_flag = '2' where parent_id = #{parentId}
+    </delete>
+
+    <!-- 查询追溯单明细列表（用于使用追溯明细表） -->
+    <select id="selectTraceabilityEntryList" parameterType="GzTraceability" resultMap="GzTraceabilityEntryResult">
+        select te.id as entry_id, te.parent_id as entry_parent_id, te.material_id as entry_material_id,
+               te.inventory_id as entry_inventory_id, te.material_name as entry_material_name,
+               te.specification as entry_specification, te.model as entry_model, te.unit as entry_unit,
+               te.quantity as entry_quantity, te.charge_price as entry_charge_price,
+               te.batch_no as entry_batch_no, te.expiry_date as entry_expiry_date,
+               te.in_hospital_code as entry_in_hospital_code, te.manufacturer as entry_manufacturer,
+               te.supplier as entry_supplier, te.certificate_no as entry_certificate_no,
+               te.billing_follow as entry_billing_follow, te.del_flag as entry_del_flag,
+               t.order_status as parent_order_status, t.patient_name, t.patient_sex, t.chief_surgeon,
+               t.admission_diagnosis as surgical_diagnosis, t.surgery_date as billing_time,
+               t.create_by as scan_user, t.create_time as scan_date,
+               m.id as mId, m.code as materialCode, m.name as materialName,
+               m.speci as materialSpeci, m.model as materialModel,
+               gdi.material_date as begin_time, gdi.material_no as batch_number,
+               gdi.material_date as material_date, gdi.material_no as material_no
+        from gz_traceability_entry te
+        left join gz_traceability t on te.parent_id = t.id
+        left join fd_material m on te.material_id = m.id
+        left join gz_dep_inventory gdi on te.inventory_id = gdi.id
+        where te.del_flag = '0' and t.del_flag = '0'
+        <!-- 显示所有已保存的追溯单明细（包括未审核和已审核），如果传入了orderStatus参数则使用参数值过滤 -->
+        <if test="orderStatus != null">
+            and t.order_status = #{orderStatus}
+        </if>
+        <if test="traceNo != null and traceNo != ''"> and t.trace_no = #{traceNo}</if>
+        <if test="patientName != null and patientName != ''"> and t.patient_name like concat('%', #{patientName}, '%')</if>
+        <if test="hospitalNumber != null and hospitalNumber != ''"> and t.hospital_number = #{hospitalNumber}</if>
+        <if test="applyDeptId != null"> and t.apply_dept_id = #{applyDeptId}</if>
+        <if test="execDeptId != null"> and t.exec_dept_id = #{execDeptId}</if>
+        order by t.create_time desc, te.id desc
+    </select>
+
+</mapper>

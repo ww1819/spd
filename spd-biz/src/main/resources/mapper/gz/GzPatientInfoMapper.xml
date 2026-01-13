@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzPatientInfoMapper">
+
+    <resultMap type="GzPatientInfo" id="GzPatientInfoResult">
+        <result property="id"    column="id"    />
+        <result property="medicalRecordNo"    column="medical_record_no"    />
+        <result property="name"    column="name"    />
+        <result property="sex"    column="sex"    />
+        <result property="age"    column="age"    />
+        <result property="hospitalNumber"    column="hospital_number"    />
+        <result property="ward"    column="ward"    />
+        <result property="wardNo"    column="ward_no"    />
+        <result property="bedNo"    column="bed_no"    />
+        <result property="applyDeptId"    column="apply_dept_id"    />
+        <result property="execDeptId"    column="exec_dept_id"    />
+        <result property="hospitalDate"    column="hospital_date"    />
+        <result property="contactPhone"    column="contact_phone"    />
+        <result property="contactAddress"    column="contact_address"    />
+        <result property="chiefSurgeon"    column="chief_surgeon"    />
+        <result property="surgeryDate"    column="surgery_date"    />
+        <result property="surgeryName"    column="surgery_name"    />
+        <result property="admissionDiagnosis"    column="admission_diagnosis"    />
+        <result property="surgeryId"    column="surgery_id"    />
+        <result property="remark"    column="remark"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <association property="applyDept"    column="apply_dept_id" javaType="FdDepartment" resultMap="applyDeptResult" />
+        <association property="execDept"    column="exec_dept_id" javaType="FdDepartment" resultMap="execDeptResult" />
+    </resultMap>
+
+    <resultMap id="applyDeptResult" type="FdDepartment">
+        <id     property="id"    column="applyDeptId"     />
+        <result property="code"  column="applyDeptCode"   />
+        <result property="name"  column="applyDeptName"   />
+    </resultMap>
+
+    <resultMap id="execDeptResult" type="FdDepartment">
+        <id     property="id"    column="execDeptId"     />
+        <result property="code"  column="execDeptCode"   />
+        <result property="name"  column="execDeptName"   />
+    </resultMap>
+
+    <sql id="selectGzPatientInfoVo">
+        select p.id, p.medical_record_no, p.name, p.sex, p.age, p.hospital_number,
+               p.ward, p.ward_no, p.bed_no, p.apply_dept_id, p.exec_dept_id,
+               p.hospital_date, p.contact_phone, p.contact_address, p.chief_surgeon,
+               p.surgery_date, p.surgery_name, p.admission_diagnosis, p.surgery_id, p.remark,
+               p.del_flag, p.create_by, p.create_time, p.update_by, p.update_time,
+               ad.id as applyDeptId, ad.code as applyDeptCode, ad.name as applyDeptName,
+               ed.id as execDeptId, ed.code as execDeptCode, ed.name as execDeptName
+        from gz_patient_info p
+        left join fd_department ad on p.apply_dept_id = ad.id
+        left join fd_department ed on p.exec_dept_id = ed.id
+    </sql>
+
+    <select id="selectGzPatientInfoList" parameterType="GzPatientInfo" resultMap="GzPatientInfoResult">
+        <include refid="selectGzPatientInfoVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="medicalRecordNo != null and medicalRecordNo != ''"> and p.medical_record_no = #{medicalRecordNo}</if>
+            <if test="name != null and name != ''"> and p.name like concat('%', #{name}, '%')</if>
+            <if test="hospitalNumber != null and hospitalNumber != ''"> and p.hospital_number = #{hospitalNumber}</if>
+            <if test="sex != null and sex != ''"> and p.sex = #{sex}</if>
+        </where>
+        order by p.create_time desc
+    </select>
+
+    <select id="selectGzPatientInfoById" parameterType="Long" resultMap="GzPatientInfoResult">
+        <include refid="selectGzPatientInfoVo"/>
+        where p.id = #{id} and p.del_flag = '0'
+    </select>
+
+    <select id="selectGzPatientInfoByMedicalRecordNo" parameterType="String" resultMap="GzPatientInfoResult">
+        <include refid="selectGzPatientInfoVo"/>
+        where p.medical_record_no = #{medicalRecordNo} and p.del_flag = '0'
+        limit 1
+    </select>
+
+    <insert id="insertGzPatientInfo" parameterType="GzPatientInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into gz_patient_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="medicalRecordNo != null and medicalRecordNo != ''">medical_record_no,</if>
+            <if test="name != null">name,</if>
+            <if test="sex != null">sex,</if>
+            <if test="age != null">age,</if>
+            <if test="hospitalNumber != null">hospital_number,</if>
+            <if test="ward != null">ward,</if>
+            <if test="wardNo != null">ward_no,</if>
+            <if test="bedNo != null">bed_no,</if>
+            <if test="applyDeptId != null">apply_dept_id,</if>
+            <if test="execDeptId != null">exec_dept_id,</if>
+            <if test="hospitalDate != null">hospital_date,</if>
+            <if test="contactPhone != null">contact_phone,</if>
+            <if test="contactAddress != null">contact_address,</if>
+            <if test="chiefSurgeon != null">chief_surgeon,</if>
+            <if test="surgeryDate != null">surgery_date,</if>
+            <if test="surgeryName != null">surgery_name,</if>
+            <if test="admissionDiagnosis != null">admission_diagnosis,</if>
+            <if test="surgeryId != null">surgery_id,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="medicalRecordNo != null and medicalRecordNo != ''">#{medicalRecordNo},</if>
+            <if test="name != null">#{name},</if>
+            <if test="sex != null">#{sex},</if>
+            <if test="age != null">#{age},</if>
+            <if test="hospitalNumber != null">#{hospitalNumber},</if>
+            <if test="ward != null">#{ward},</if>
+            <if test="wardNo != null">#{wardNo},</if>
+            <if test="bedNo != null">#{bedNo},</if>
+            <if test="applyDeptId != null">#{applyDeptId},</if>
+            <if test="execDeptId != null">#{execDeptId},</if>
+            <if test="hospitalDate != null">#{hospitalDate},</if>
+            <if test="contactPhone != null">#{contactPhone},</if>
+            <if test="contactAddress != null">#{contactAddress},</if>
+            <if test="chiefSurgeon != null">#{chiefSurgeon},</if>
+            <if test="surgeryDate != null">#{surgeryDate},</if>
+            <if test="surgeryName != null">#{surgeryName},</if>
+            <if test="admissionDiagnosis != null">#{admissionDiagnosis},</if>
+            <if test="surgeryId != null">#{surgeryId},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGzPatientInfo" parameterType="GzPatientInfo">
+        update gz_patient_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="medicalRecordNo != null and medicalRecordNo != ''">medical_record_no = #{medicalRecordNo},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="age != null">age = #{age},</if>
+            <if test="hospitalNumber != null">hospital_number = #{hospitalNumber},</if>
+            <if test="ward != null">ward = #{ward},</if>
+            <if test="wardNo != null">ward_no = #{wardNo},</if>
+            <if test="bedNo != null">bed_no = #{bedNo},</if>
+            <if test="applyDeptId != null">apply_dept_id = #{applyDeptId},</if>
+            <if test="execDeptId != null">exec_dept_id = #{execDeptId},</if>
+            <if test="hospitalDate != null">hospital_date = #{hospitalDate},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="contactAddress != null">contact_address = #{contactAddress},</if>
+            <if test="chiefSurgeon != null">chief_surgeon = #{chiefSurgeon},</if>
+            <if test="surgeryDate != null">surgery_date = #{surgeryDate},</if>
+            <if test="surgeryName != null">surgery_name = #{surgeryName},</if>
+            <if test="admissionDiagnosis != null">admission_diagnosis = #{admissionDiagnosis},</if>
+            <if test="surgeryId != null">surgery_id = #{surgeryId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGzPatientInfoById" parameterType="Long">
+        update gz_patient_info set del_flag = '2' where id = #{id}
+    </delete>
+
+    <delete id="deleteGzPatientInfoByIds" parameterType="String">
+        update gz_patient_info set del_flag = '2' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

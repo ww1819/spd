@@ -38,6 +38,9 @@ public class GzDepInventory extends BaseEntity
     /** 耗材名称（用于查询条件） */
     private String materialName;
 
+    /** 是否显示零库存（用于查询条件） */
+    private Boolean showZeroStock;
+
     /** 数量 */
     @Excel(name = "数量")
     private BigDecimal qty;
@@ -143,6 +146,15 @@ public class GzDepInventory extends BaseEntity
     public String getMaterialName()
     {
         return materialName;
+    }
+    public void setShowZeroStock(Boolean showZeroStock)
+    {
+        this.showZeroStock = showZeroStock;
+    }
+
+    public Boolean getShowZeroStock()
+    {
+        return showZeroStock;
     }
     public void setQty(BigDecimal qty)
     {
