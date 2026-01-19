@@ -5,6 +5,8 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdDepartment;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -40,6 +42,10 @@ public class GzRefundGoods extends BaseEntity
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 科室ID */
+    @Excel(name = "科室ID")
+    private Long departmentId;
+
     /** 单据状态 */
     @Excel(name = "单据状态")
     private Integer goodsStatus;
@@ -56,6 +62,10 @@ public class GzRefundGoods extends BaseEntity
     @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date auditDate;
 
+    /** 审核人 */
+    @Excel(name = "审核人")
+    private String auditBy;
+
     /** 高值退货明细信息 */
     private List<GzRefundGoodsEntry> gzRefundGoodsEntryList;
 
@@ -64,6 +74,15 @@ public class GzRefundGoods extends BaseEntity
 
     /** 仓库对象 */
     private FdWarehouse warehouse;
+
+    /** 科室对象 */
+    private FdDepartment department;
+
+    /** 耗材列表 */
+    private List<FdMaterial> materialList;
+
+    /** 总金额 */
+    private java.math.BigDecimal totalAmt;
 
     public void setId(Long id)
     {
@@ -110,6 +129,15 @@ public class GzRefundGoods extends BaseEntity
     {
         return warehouseId;
     }
+    public void setDepartmentId(Long departmentId)
+    {
+        this.departmentId = departmentId;
+    }
+
+    public Long getDepartmentId()
+    {
+        return departmentId;
+    }
     public void setGoodsStatus(Integer goodsStatus)
     {
         this.goodsStatus = goodsStatus;
@@ -146,6 +174,15 @@ public class GzRefundGoods extends BaseEntity
     {
         return auditDate;
     }
+    public void setAuditBy(String auditBy)
+    {
+        this.auditBy = auditBy;
+    }
+
+    public String getAuditBy()
+    {
+        return auditBy;
+    }
 
     public List<GzRefundGoodsEntry> getGzRefundGoodsEntryList()
     {
@@ -171,6 +208,30 @@ public class GzRefundGoods extends BaseEntity
 
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
+    }
+
+    public List<FdMaterial> getMaterialList() {
+        return materialList;
+    }
+
+    public void setMaterialList(List<FdMaterial> materialList) {
+        this.materialList = materialList;
+    }
+
+    public FdDepartment getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(FdDepartment department) {
+        this.department = department;
+    }
+
+    public java.math.BigDecimal getTotalAmt() {
+        return totalAmt;
+    }
+
+    public void setTotalAmt(java.math.BigDecimal totalAmt) {
+        this.totalAmt = totalAmt;
     }
 
     @Override

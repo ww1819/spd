@@ -2,6 +2,7 @@ package com.spd.gz.mapper;
 
 import java.math.BigDecimal;
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzDepInventory;
 
 /**
@@ -80,5 +81,5 @@ public interface GzDepInventoryMapper
      * @param departmentId 科室ID
      * @return 库存记录
      */
-    GzDepInventory selectGzDepInventoryByCodeAndDept(String inHospitalCode, Long departmentId);
+    GzDepInventory selectGzDepInventoryByCodeAndDept(@Param("inHospitalCode") String inHospitalCode, @Param("departmentId") Long departmentId);
 }

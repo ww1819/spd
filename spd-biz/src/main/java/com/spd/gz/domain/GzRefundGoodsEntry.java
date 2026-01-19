@@ -49,6 +49,10 @@ public class GzRefundGoodsEntry extends BaseEntity
     @Excel(name = "批号")
     private String batchNumber;
 
+    /** 院内码 */
+    @Excel(name = "院内码")
+    private String inHospitalCode;
+
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "生产日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -130,11 +134,20 @@ public class GzRefundGoodsEntry extends BaseEntity
         this.batchNumber = batchNumber;
     }
 
-    public String getBatchNumber() 
+    public String getBatchNumber()
     {
         return batchNumber;
     }
-    public void setBeginTime(Date beginTime) 
+    public void setInHospitalCode(String inHospitalCode)
+    {
+        this.inHospitalCode = inHospitalCode;
+    }
+
+    public String getInHospitalCode()
+    {
+        return inHospitalCode;
+    }
+    public void setBeginTime(Date beginTime)
     {
         this.beginTime = beginTime;
     }

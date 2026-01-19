@@ -19,6 +19,8 @@ import com.spd.gz.domain.GzRefundGoodsEntry;
 import com.spd.gz.mapper.GzRefundGoodsMapper;
 import com.spd.gz.domain.GzRefundGoods;
 import com.spd.gz.service.IGzRefundGoodsService;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.mapper.FdMaterialMapper;
 
 /**
  * 高值退货Service业务层处理
@@ -35,6 +37,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Autowired
     private GzDepotInventoryMapper gzDepotInventoryMapper;
 
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
+
     /**
      * 查询高值退货
      *
@@ -44,7 +49,26 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Override
     public GzRefundGoods selectGzRefundGoodsById(Long id)
     {
-        return gzRefundGoodsMapper.selectGzRefundGoodsById(id);
+        GzRefundGoods gzRefundGoods = gzRefundGoodsMapper.selectGzRefundGoodsById(id);
+        if(gzRefundGoods == null){
+            return null;
+        }
+
+        List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
+        if(gzRefundGoodsEntryList != null && !gzRefundGoodsEntryList.isEmpty()){
+            List<FdMaterial> materialList = new ArrayList<FdMaterial>();
+            for(GzRefundGoodsEntry entry : gzRefundGoodsEntryList){
+                Long materialId = entry.getMaterialId();
+                if(materialId != null){
+                    FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
+                    if(fdMaterial != null){
+                        materialList.add(fdMaterial);
+                    }
+                }
+            }
+            gzRefundGoods.setMaterialList(materialList);
+        }
+        return gzRefundGoods;
     }
 
     /**
@@ -78,7 +102,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
     //生成单号
     public String getOrderNo() {
-        String str = "GZTH";
+        String str = "GZTH-";
         String date = FillRuleUtil.getDateNum();
         String maxNum = gzRefundGoodsMapper.selectMaxBillNo(date);
         String result = FillRuleUtil.getNumber(str,maxNum,date);
@@ -144,12 +168,14 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
         gzRefundGoods.setGoodsStatus(2);
         gzRefundGoods.setAuditDate(new Date());
+        gzRefundGoods.setAuditBy(SecurityUtils.getLoginUser().getUsername());
         int res = gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
         return res;
     }
 
     /**
      * 更新高值库存明细表
+     * 备货退货逻辑：直接减少备货库存（仓库退货给供应商）
      * @param gzRefundGoods
      * @param gzRefundGoodsEntryList
      */
@@ -157,26 +183,24 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         for(GzRefundGoodsEntry entry : gzRefundGoodsEntryList){
             String batchNo = entry.getBatchNo();
             BigDecimal qty = entry.getQty();
-
+            
+            // 根据批次号查询备货库存
             GzDepotInventory gzDepotInventory = gzDepotInventoryMapper.selectGzDepotInventoryOne(batchNo);
-
             if(gzDepotInventory == null){
-                throw new ServiceException(String.format("高值退货-批次号：%s，不存在!", batchNo));
+                throw new ServiceException(String.format("高值退货-批次号：%s，在备货库存中不存在!", batchNo));
             }
-
-            validateGzDepotInventory(batchNo,gzRefundGoodsEntryList);
-
-            BigDecimal inventoryQty = gzDepotInventory.getQty();
-
-            //高值出库数量不能大于库存数量
-            if(qty.compareTo(inventoryQty) > 0){
-                throw new ServiceException(String.format("高值实际库存不足！高值退货数量：%s，高值实际库存：%s", qty,inventoryQty));
+            
+            BigDecimal depotInventoryQty = gzDepotInventory.getQty();
+            
+            // 备货库存数量不能小于退货数量
+            if(qty.compareTo(depotInventoryQty) > 0){
+                throw new ServiceException(String.format("高值备货库存不足！退货数量：%s，备货库存：%s", qty, depotInventoryQty));
             }
-
-            gzDepotInventory.setQty(inventoryQty.subtract(qty));
+            
+            // 减少备货库存（仓库退货给供应商）
+            gzDepotInventory.setQty(depotInventoryQty.subtract(qty));
             gzDepotInventory.setUpdateTime(new Date());
             gzDepotInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-
             gzDepotInventoryMapper.updateGzDepotInventory(gzDepotInventory);
         }
     }
@@ -208,22 +232,27 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     }
 
     /**
-     * 校验高值库存
+     * 校验高值备货库存
      */
     private void validateGzDepotInventory(String oldBatchNo,List<GzRefundGoodsEntry> gzRefundGoodsEntryList){
         for(GzRefundGoodsEntry entry : gzRefundGoodsEntryList){
             String batchNo = entry.getBatchNo();//批次号
-            BigDecimal qty = entry.getQty();//出库数量
+            BigDecimal qty = entry.getQty();//退货数量
 
             if(!oldBatchNo.equals(batchNo)){
                 continue;
             }
 
-            //当前批次实际数量
-            BigDecimal inventoryQty = gzDepotInventoryMapper.selectGzDepotInventoryByBatchNo(batchNo);
+            // 根据批次号查询备货库存
+            GzDepotInventory gzDepotInventory = gzDepotInventoryMapper.selectGzDepotInventoryOne(batchNo);
+            if(gzDepotInventory == null){
+                throw new ServiceException(String.format("高值退货-批次号：%s，在备货库存中不存在!", batchNo));
+            }
+            
+            BigDecimal inventoryQty = gzDepotInventory.getQty();
 
             if(qty.compareTo(inventoryQty) > 0){
-                throw new ServiceException(String.format("高值实际库存不足！出库数量：%s，实际库存：%s", qty,inventoryQty));
+                throw new ServiceException(String.format("高值备货库存不足！退货数量：%s，备货库存：%s", qty, inventoryQty));
             }
         }
     }

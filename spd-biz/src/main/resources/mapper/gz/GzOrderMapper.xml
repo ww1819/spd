@@ -110,8 +110,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="orderStatus != null "> and gz.order_status = #{orderStatus}</if>
         <if test="orderType != null "> and gz.order_type = #{orderType}</if>
         <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
-        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(gz.order_date) >= DATE(#{beginDate})]]></if>
-        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(gz.order_date) <= DATE(#{endDate})]]></if>
+        <!-- 如果输入了订单号，则不限制日期范围；否则应用日期范围限制 -->
+        <choose>
+            <when test="orderNo != null and orderNo != ''">
+                <!-- 输入了订单号，不限制日期范围 -->
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(gz.order_date) >= DATE(#{beginDate})]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(gz.order_date) <= DATE(#{endDate})]]></if>
+            </otherwise>
+        </choose>
         group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
 				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
 				gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,

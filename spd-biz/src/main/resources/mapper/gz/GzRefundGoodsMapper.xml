@@ -10,17 +10,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="supplerId"    column="suppler_id"    />
         <result property="goodsDate"    column="goods_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
+        <result property="departmentId"    column="department_id"    />
         <result property="goodsStatus"    column="goods_status"    />
         <result property="goodsType"    column="goods_type"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="auditBy"    column="audit_by"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="totalAmt"    column="totalAmt"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -33,6 +37,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="wId"     />
         <result property="code"  column="warehouseCode"   />
         <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="departmentResult" type="FdDepartment">
+        <id     property="id"    column="dId"     />
+        <result property="code"  column="departmentCode"   />
+        <result property="name"  column="departmentName"   />
     </resultMap>
 
     <resultMap id="GzRefundGoodsGzRefundGoodsEntryResult" type="GzRefundGoods" extends="GzRefundGoodsResult">
@@ -48,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="amt"    column="sub_amt"    />
         <result property="batchNo"    column="sub_batch_no"    />
         <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="inHospitalCode"    column="sub_in_hospital_code"    />
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
         <result property="delFlag"    column="sub_del_flag"    />
@@ -55,18 +66,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectGzRefundGoodsVo">
-        select gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id,
-				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.create_by,
+        select gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id, gz.department_id,
+				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.audit_by, gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id sId,s.code supplierCode,s.name supplierName,
-				w.id wId,w.code warehouseCode,w.name warehouseName
+				w.id wId,w.code warehouseCode,w.name warehouseName,
+				d.id dId,d.code departmentCode,d.name departmentName
         from gz_refund_goods gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
+        left join fd_department d on gz.department_id = d.id
     </sql>
 
     <select id="selectGzRefundGoodsList" parameterType="GzRefundGoods" resultMap="GzRefundGoodsResult">
-        <include refid="selectGzRefundGoodsVo"/>
+        select gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id, gz.department_id,
+				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.audit_by, gz.create_by,
+				gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				s.id sId,s.code supplierCode,s.name supplierName,
+				w.id wId,w.code warehouseCode,w.name warehouseName,
+				d.id dId,d.code departmentCode,d.name departmentName,
+				COALESCE(SUM(gze.amt), 0) as totalAmt
+        from gz_refund_goods gz
+        left join fd_supplier s on gz.suppler_id = s.id
+        left join fd_warehouse w on gz.warehouse_id = w.id
+        left join fd_department d on gz.department_id = d.id
+        left join gz_refund_goods_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
         <if test="goodsNo != null  and goodsNo != ''"> and gz.goods_no like concat('%', #{goodsNo}, '%')</if>
         <if test="supplerId != null "> and gz.suppler_id = #{supplerId}</if>
@@ -75,14 +99,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="goodsStatus != null "> and gz.goods_status = #{goodsStatus}</if>
         <if test="goodsType != null "> and gz.goods_type = #{goodsType}</if>
         <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
+        group by gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id, gz.department_id,
+				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.create_by,
+				gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				s.id, s.code, s.name,
+				w.id, w.code, w.name,
+				d.id, d.code, d.name
+        order by gz.goods_date desc, gz.id desc
     </select>
 
     <select id="selectGzRefundGoodsById" parameterType="Long" resultMap="GzRefundGoodsGzRefundGoodsEntryResult">
-        select a.id, a.goods_no, a.suppler_id, a.goods_date, a.warehouse_id, a.goods_status, a.goods_type, a.del_flag,
-        a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+        select a.id, a.goods_no, a.suppler_id, a.goods_date, a.warehouse_id, a.department_id, a.goods_status, a.goods_type, a.del_flag,
+        a.audit_date, a.audit_by, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
         b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
         b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
-        b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
+        b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
         from gz_refund_goods a
         left join gz_refund_goods_entry b on b.paren_id = a.id
         where a.id = #{id}
@@ -95,10 +126,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id,</if>
             <if test="goodsDate != null">goods_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
             <if test="goodsStatus != null">goods_status,</if>
             <if test="goodsType != null">goods_type,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
+            <if test="auditBy != null">audit_by,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -110,10 +143,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">#{supplerId},</if>
             <if test="goodsDate != null">#{goodsDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
             <if test="goodsStatus != null">#{goodsStatus},</if>
             <if test="goodsType != null">#{goodsType},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
+            <if test="auditBy != null">#{auditBy},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -129,10 +164,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id = #{supplerId},</if>
             <if test="goodsDate != null">goods_date = #{goodsDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
             <if test="goodsStatus != null">goods_status = #{goodsStatus},</if>
             <if test="goodsType != null">goods_type = #{goodsType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -158,9 +195,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">
-        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark) values
+        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code, begin_time, end_time, del_flag, remark) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark})
         </foreach>
     </insert>
 
