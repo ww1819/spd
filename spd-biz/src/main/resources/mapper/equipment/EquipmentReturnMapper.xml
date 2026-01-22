@@ -120,11 +120,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentReturnById" parameterType="Long">
-        delete from equipment_return where return_id = #{returnId}
+        update equipment_return set del_flag = 1, update_time = now() where return_id = #{returnId}
     </delete>
 
     <delete id="deleteEquipmentReturnByIds" parameterType="String">
-        delete from equipment_return where return_id in 
+        update equipment_return set del_flag = 1, update_time = now() where return_id in 
         <foreach item="returnId" collection="array" open="(" separator="," close=")">
             #{returnId}
         </foreach>

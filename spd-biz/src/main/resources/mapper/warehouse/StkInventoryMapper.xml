@@ -292,11 +292,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteStkInventoryById" parameterType="Long">
-        delete from stk_inventory where id = #{id}
+        update stk_inventory set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteStkInventoryByIds" parameterType="String">
-        delete from stk_inventory where id in
+        update stk_inventory set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

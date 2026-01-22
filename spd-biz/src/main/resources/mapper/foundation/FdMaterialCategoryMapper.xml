@@ -78,11 +78,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdMaterialCategoryByMaterialCategoryId" parameterType="Long">
-        delete from fd_material_category where material_category_id = #{materialCategoryId}
+        update fd_material_category set del_flag = 1, update_time = now() where material_category_id = #{materialCategoryId}
     </delete>
 
     <delete id="deleteFdMaterialCategoryByMaterialCategoryIds" parameterType="String">
-        delete from fd_material_category where material_category_id in
+        update fd_material_category set del_flag = 1, update_time = now() where material_category_id in
         <foreach item="materialCategoryId" collection="array" open="(" separator="," close=")">
             #{materialCategoryId}
         </foreach>

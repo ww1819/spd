@@ -164,11 +164,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteEquipmentStorageDetailByStorageId" parameterType="Long">
-        delete from equipment_storage_detail where storage_id = #{storageId}
+        update equipment_storage_detail set del_flag = 1, update_time = now() where storage_id = #{storageId}
     </delete>
 
     <delete id="deleteEquipmentStorageDetailByStorageIds" parameterType="String">
-        delete from equipment_storage_detail where storage_id in 
+        update equipment_storage_detail set del_flag = 1, update_time = now() where storage_id in 
         <foreach item="storageId" collection="array" open="(" separator="," close=")">
             #{storageId}
         </foreach>

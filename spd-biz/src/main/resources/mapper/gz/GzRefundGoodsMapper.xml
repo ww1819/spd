@@ -180,18 +180,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzRefundGoodsById" parameterType="Long">
-        delete from gz_refund_goods where id = #{id}
+        update gz_refund_goods set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteGzRefundGoodsEntryByParenIds" parameterType="String">
-        delete from gz_refund_goods_entry where paren_id in
+        update gz_refund_goods_entry set del_flag = 1, update_time = now() where paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
     <delete id="deleteGzRefundGoodsEntryByParenId" parameterType="Long">
-        delete from gz_refund_goods_entry where paren_id = #{parenId}
+        update gz_refund_goods_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">

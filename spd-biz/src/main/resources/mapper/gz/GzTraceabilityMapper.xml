@@ -252,11 +252,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzTraceabilityById" parameterType="Long">
-        update gz_traceability set del_flag = '2' where id = #{id}
+        update gz_traceability set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteGzTraceabilityByIds" parameterType="String">
-        update gz_traceability set del_flag = '2' where id in
+        update gz_traceability set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -270,7 +270,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteGzTraceabilityEntryByParentId" parameterType="Long">
-        update gz_traceability_entry set del_flag = '2' where parent_id = #{parentId}
+        update gz_traceability_entry set del_flag = 1, update_time = now() where parent_id = #{parentId}
     </delete>
 
     <!-- 查询追溯单明细列表（用于使用追溯明细表） -->

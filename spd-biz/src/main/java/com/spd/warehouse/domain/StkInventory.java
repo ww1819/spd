@@ -80,6 +80,9 @@ public class StkInventory extends BaseEntity
     @Excel(name = "入库单号")
     private String receiptOrderNo;
 
+    /** 删除标识 */
+    private Integer delFlag;
+
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
@@ -234,6 +237,14 @@ public class StkInventory extends BaseEntity
         this.receiptOrderNo = receiptOrderNo;
     }
 
+    public void setDelFlag(Integer delFlag) {
+        this.delFlag = delFlag;
+    }
+
+    public Integer getDelFlag() {
+        return delFlag;
+    }
+
     public FdSupplier getSupplier() {
         return supplier;
     }
@@ -280,6 +291,7 @@ public class StkInventory extends BaseEntity
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())
             .append("receiptOrderNo", getReceiptOrderNo())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

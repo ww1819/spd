@@ -135,11 +135,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteStkDepInventoryById" parameterType="Long">
-        delete from stk_dep_inventory where id = #{id}
+        update stk_dep_inventory set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteStkDepInventoryByIds" parameterType="String">
-        delete from stk_dep_inventory where id in
+        update stk_dep_inventory set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

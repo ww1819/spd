@@ -93,11 +93,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentCategoryByCategoryId" parameterType="Long">
-        update fd_equipment_category set del_flag = 1 where category_id = #{categoryId}
+        update fd_equipment_category set del_flag = 1, update_time = now() where category_id = #{categoryId}
     </delete>
 
     <delete id="deleteEquipmentCategoryByCategoryIds" parameterType="String">
-        update fd_equipment_category set del_flag = 1 where category_id in 
+        update fd_equipment_category set del_flag = 1, update_time = now() where category_id in 
         <foreach item="categoryId" collection="array" open="(" separator="," close=")">
             #{categoryId}
         </foreach>

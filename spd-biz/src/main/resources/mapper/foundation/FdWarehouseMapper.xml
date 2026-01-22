@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">
         <include refid="selectFdWarehouseVo"/>
-        where id = #{id}
+        where id = #{id} and (del_flag = 0 or del_flag is null)
     </select>
 
     <select id="selectwarehouseAll" resultMap="FdWarehouseResult">
@@ -122,11 +122,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdWarehouseById" parameterType="String">
-        delete from fd_warehouse where id = #{id}
+        update fd_warehouse set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteFdWarehouseByIds" parameterType="String">
-        delete from fd_warehouse where id in
+        update fd_warehouse set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

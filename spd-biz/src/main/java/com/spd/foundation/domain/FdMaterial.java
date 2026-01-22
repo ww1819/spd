@@ -228,4 +228,13 @@ public class FdMaterial extends BaseEntity
 
     /** 查询参数：截止日期 */
     private Date endDate;
+
+    /** 查询参数：阳采编码 */
+    private String sunshineCode;
+
+    /** 查询参数：是否计费 */
+    private String isBilling;
+
+    /** 查询参数：名称搜索（首字母） */
+    private String nameSearch;
 }

@@ -281,14 +281,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
     
     <delete id="deleteDepPurchaseApplyEntryByParentIds" parameterType="String">
-        delete from dep_purchase_apply_entry where parent_id in 
+        update dep_purchase_apply_entry set del_flag = 1, update_time = now() where parent_id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteDepPurchaseApplyEntryByParentId" parameterType="Long">
-        delete from dep_purchase_apply_entry where parent_id = #{id}
+        update dep_purchase_apply_entry set del_flag = 1, update_time = now() where parent_id = #{id}
     </delete>
 
     <insert id="batchDepPurchaseApplyEntry">

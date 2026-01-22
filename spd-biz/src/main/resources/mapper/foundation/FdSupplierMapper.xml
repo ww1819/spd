@@ -52,7 +52,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectFdSupplierById" parameterType="Long" resultMap="FdSupplierResult">
         <include refid="selectFdSupplierVo"/>
-        where id = #{id}
+        where id = #{id} and (del_flag = 0 or del_flag is null)
     </select>
 
     <insert id="insertFdSupplier" parameterType="FdSupplier" useGeneratedKeys="true" keyProperty="id">
@@ -155,11 +155,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdSupplierById" parameterType="Long">
-        delete from fd_supplier where id = #{id}
+        update fd_supplier set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteFdSupplierByIds" parameterType="String">
-        delete from fd_supplier where id in
+        update fd_supplier set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

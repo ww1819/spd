@@ -131,25 +131,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzDepApplyById" parameterType="Long">
-        delete from gz_dep_apply where id = #{id}
+        update gz_dep_apply set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteGzDepApplyByIds" parameterType="String">
-        delete from gz_dep_apply where id in
+        update gz_dep_apply set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteGzDepApplyEntryByParenIds" parameterType="String">
-        delete from gz_dep_apply_entry where paren_id in
+        update gz_dep_apply_entry set del_flag = 1, update_time = now() where paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
     <delete id="deleteGzDepApplyEntryByParenId" parameterType="Long">
-        delete from gz_dep_apply_entry where paren_id = #{parenId}
+        update gz_dep_apply_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
     </delete>
 
     <insert id="batchGzDepApplyEntry">

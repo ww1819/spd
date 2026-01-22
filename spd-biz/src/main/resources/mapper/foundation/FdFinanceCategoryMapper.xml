@@ -82,11 +82,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdFinanceCategoryByFinanceCategoryId" parameterType="Long">
-        delete from fd_finance_category where finance_category_id = #{financeCategoryId}
+        update fd_finance_category set del_flag = 1, update_time = now() where finance_category_id = #{financeCategoryId}
     </delete>
 
     <delete id="deleteFdFinanceCategoryByFinanceCategoryIds" parameterType="String">
-        delete from fd_finance_category where finance_category_id in
+        update fd_finance_category set del_flag = 1, update_time = now() where finance_category_id in
         <foreach item="financeCategoryId" collection="array" open="(" separator="," close=")">
             #{financeCategoryId}
         </foreach>

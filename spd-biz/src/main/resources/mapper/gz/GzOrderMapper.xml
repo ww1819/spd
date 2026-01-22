@@ -214,11 +214,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzOrderById" parameterType="Long">
-        delete from gz_order where id = #{id}
+        update gz_order set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteGzOrderEntryByParenId" parameterType="Long">
-        delete from gz_order_entry where paren_id = #{parenId}
+        update gz_order_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
     </delete>
 
     <insert id="batchGzOrderEntry">

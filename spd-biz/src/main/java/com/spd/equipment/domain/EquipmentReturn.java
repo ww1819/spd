@@ -73,6 +73,9 @@ public class EquipmentReturn extends BaseEntity
     @Excel(name = "备注")
     private String remark;
 
+    /** 删除标识 */
+    private Integer delFlag;
+
     /** 明细列表 */
     private List<EquipmentReturnDetail> detailList;
 
@@ -219,6 +222,16 @@ public class EquipmentReturn extends BaseEntity
         return remark;
     }
 
+    public void setDelFlag(Integer delFlag) 
+    {
+        this.delFlag = delFlag;
+    }
+
+    public Integer getDelFlag() 
+    {
+        return delFlag;
+    }
+
     public void setDetailList(List<EquipmentReturnDetail> detailList) 
     {
         this.detailList = detailList;
@@ -256,6 +269,7 @@ public class EquipmentReturn extends BaseEntity
             .append("returnAmount", getReturnAmount())
             .append("supplier", getSupplier())
             .append("remark", getRemark())
+            .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

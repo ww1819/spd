@@ -124,6 +124,9 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "采购员")
     private Long proPerson;
 
+    /** 退货原因 */
+    @Excel(name = "退货原因")
+    private String returnReason;
 
     /** 审核人 */
     private SysUser auditPerson;
@@ -441,6 +444,14 @@ public class StkIoBill extends BaseEntity
         this.proPerson = proPerson;
     }
 
+    public String getReturnReason() {
+        return returnReason;
+    }
+
+    public void setReturnReason(String returnReason) {
+        this.returnReason = returnReason;
+    }
+
     public Integer getIsMonthInit() {
         return isMonthInit;
     }
@@ -488,8 +499,9 @@ public class StkIoBill extends BaseEntity
             .append("invoiceNumber", getInvoiceNumber())
             .append("invoiceAmount", getInvoiceAmount())
             .append("invoiceTime", getInvoiceTime())
-            .append("proPerson", getProPerson())
-            .append("isMonthInit", getIsMonthInit())
+                .append("proPerson", getProPerson())
+                .append("returnReason", getReturnReason())
+                .append("isMonthInit", getIsMonthInit())
                 .append("createrName", getCreaterName())
                 .append("auditPersonName", getAuditPersonName())
                 .append("creater", getCreater())

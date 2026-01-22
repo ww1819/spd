@@ -294,22 +294,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteNewProductApplyById" parameterType="Long">
-        update new_product_apply set del_flag = 1 where id = #{id}
+        update new_product_apply set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteNewProductApplyByIds" parameterType="String">
-        update new_product_apply set del_flag = 1 where id in 
+        update new_product_apply set del_flag = 1, update_time = now() where id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteNewProductApplyEntryByParentId" parameterType="Long">
-        delete from new_product_apply_entry where parent_id = #{parentId}
+        update new_product_apply_entry set del_flag = 1, update_time = now() where parent_id = #{parentId}
     </delete>
 
     <delete id="deleteNewProductApplyEntryByParentIds" parameterType="String">
-        delete from new_product_apply_entry where parent_id in 
+        update new_product_apply_entry set del_flag = 1, update_time = now() where parent_id in 
         <foreach item="parentId" collection="array" open="(" separator="," close=")">
             #{parentId}
         </foreach>
@@ -330,7 +330,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteNewProductApplyDetailByParentId" parameterType="Long">
-        delete from new_product_apply_detail where parent_id = #{parentId}
+        update new_product_apply_detail set del_flag = 1, update_time = now() where parent_id = #{parentId}
     </delete>
 
 </mapper>

@@ -163,11 +163,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzShipmentById" parameterType="Long">
-        delete from gz_shipment where id = #{id}
+        update gz_shipment set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteGzShipmentEntryByParenId" parameterType="Long">
-        delete from gz_shipment_entry where paren_id = #{parenId}
+        update gz_shipment_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
     </delete>
 
     <insert id="batchGzShipmentEntry">

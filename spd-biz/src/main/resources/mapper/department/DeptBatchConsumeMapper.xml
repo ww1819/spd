@@ -2,16 +2,16 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.spd.department.mapper.BasApplyMapper">
+<mapper namespace="com.spd.department.mapper.DeptBatchConsumeMapper">
 
-    <resultMap type="BasApply" id="BasApplyResult">
+    <resultMap type="DeptBatchConsume" id="DeptBatchConsumeResult">
         <result property="id"    column="id"    />
-        <result property="applyBillNo"    column="apply_bill_no"    />
-        <result property="applyBillDate"    column="apply_bill_date"    />
+        <result property="consumeBillNo"    column="consume_bill_no"    />
+        <result property="consumeBillDate"    column="consume_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="departmentId"    column="department_id"    />
         <result property="userId"    column="user_id"    />
-        <result property="applyBillStatus"    column="apply_bill_status"    />
+        <result property="consumeBillStatus"    column="consume_bill_status"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -21,10 +21,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditDate"    column="audit_date"    />
         <result property="remark"    column="remark"    />
         <result property="auditPersonName"    column="auditUserName"    />
-        <result property="createrNmae"    column="createUserName"    />
+        <result property="createrName"    column="createUserName"    />
         <result property="totalAmount"    column="total_amount"    />
         <result property="rejectReason"    column="reject_reason"    />
-        <result property="billType"    column="bill_type"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -56,18 +55,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="userName"  column="createUserName"   />
     </resultMap>
 
-
     <resultMap id="auditPersonResult" type="SysUser">
         <id     property="userId"    column="audit_by"     />
         <result property="nickName"  column="auditNickName"   />
         <result property="userName"  column="auditUserName"   />
     </resultMap>
 
-    <resultMap id="BasApplyBasApplyEntryResult" type="BasApply" extends="BasApplyResult">
-        <collection property="basApplyEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="BasApplyEntryResult" />
+    <resultMap id="DeptBatchConsumeDeptBatchConsumeEntryResult" type="DeptBatchConsume" extends="DeptBatchConsumeResult">
+        <collection property="deptBatchConsumeEntryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="DeptBatchConsumeEntryResult" />
     </resultMap>
 
-    <resultMap type="BasApplyEntry" id="BasApplyEntryResult">
+    <resultMap type="DeptBatchConsumeEntry" id="DeptBatchConsumeEntryResult">
         <result property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="materialId"    column="sub_material_id"    />
@@ -80,6 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="sub_remark"    />
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
+        <result property="delFlag"    column="sub_del_flag"    />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -89,61 +88,64 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"  column="materialName"   />
     </resultMap>
 
-    <sql id="selectBasApplyVo">
-        select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id,
-                a.apply_bill_status, a.del_flag, a.create_by, a.create_time, a.update_by,
-                a.update_time, a.remark, a.reject_reason, COALESCE(a.bill_type, 1) as bill_type, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
+    <sql id="selectDeptBatchConsumeVo">
+        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id,
+                a.consume_bill_status, a.del_flag, a.create_by, a.create_time, a.update_by,
+                a.update_time, a.remark, a.reject_reason, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
                cu.nick_name createNickName,cu.user_name createUserName,
                au.nick_name auditNickName,au.user_name auditUserName,
-               COALESCE((select SUM(IFNULL(entry.amt, 0)) from bas_apply_entry entry where entry.paren_id = a.id), 0) as total_amount
-        from bas_apply a
+               COALESCE((select SUM(IFNULL(entry.amt, 0)) from t_hc_ks_xh_entry entry where entry.paren_id = a.id and entry.del_flag != 1), 0) as total_amount
+        from t_hc_ks_xh a
         left join fd_warehouse w on a.warehouse_id = w.id
         left join sys_user u on a.user_id = u.user_id
         left join fd_department d on a.department_id = d.id
         left join sys_user cu on a.create_by = cu.user_id
         left join sys_user au on a.audit_by = au.user_id
+        where a.del_flag != 1
     </sql>
 
-    <select id="selectBasApplyList" parameterType="BasApply" resultMap="BasApplyResult">
-        <include refid="selectBasApplyVo"/>
+    <select id="selectDeptBatchConsumeList" parameterType="DeptBatchConsume" resultMap="DeptBatchConsumeResult">
+        <include refid="selectDeptBatchConsumeVo"/>
         <where>
-            <if test="applyBillNo != null  and applyBillNo != ''"> and a.apply_bill_no = #{applyBillNo}</if>
-            <if test="applyBillDate != null "> and a.apply_bill_date = #{applyBillDate}</if>
+            <if test="consumeBillNo != null  and consumeBillNo != ''"> and a.consume_bill_no = #{consumeBillNo}</if>
+            <if test="consumeBillDate != null "> and a.consume_bill_date = #{consumeBillDate}</if>
             <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>
             <if test="departmentId != null "> and a.department_id = #{departmentId}</if>
             <if test="userId != null "> and a.user_id = #{userId}</if>
-            <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
-            <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
+            <if test="consumeBillStatus != null "> and a.consume_bill_status = #{consumeBillStatus}</if>
+            <if test="beginDate != null and beginDate != ''"> and a.consume_bill_date &gt;= #{beginDate}</if>
+            <if test="endDate != null and endDate != ''"> and a.consume_bill_date &lt;= #{endDate}</if>
         </where>
+        order by a.create_time desc
     </select>
 
-    <select id="selectBasApplyById" parameterType="Long" resultMap="BasApplyBasApplyEntryResult">
-        select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id, a.apply_bill_status, a.del_flag,
+    <select id="selectDeptBatchConsumeById" parameterType="Long" resultMap="DeptBatchConsumeDeptBatchConsumeEntryResult">
+        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id, a.consume_bill_status, a.del_flag,
                 a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price,
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
                 b.batch_numer as sub_batch_numer, b.remark as sub_remark, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
+                b.del_flag as sub_del_flag,
                au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
-        from bas_apply a
-        left join bas_apply_entry b on b.paren_id = a.id
+        from t_hc_ks_xh a
+        left join t_hc_ks_xh_entry b on b.paren_id = a.id and b.del_flag != 1
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
         left join fd_material m on b.material_id = m.id
-        where a.id = #{id}
+        where a.id = #{id} and a.del_flag != 1
     </select>
 
-    <insert id="insertBasApply" parameterType="BasApply" useGeneratedKeys="true" keyProperty="id">
-        insert into bas_apply
+    <insert id="insertDeptBatchConsume" parameterType="DeptBatchConsume" useGeneratedKeys="true" keyProperty="id">
+        insert into t_hc_ks_xh
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="applyBillNo != null">apply_bill_no,</if>
-            <if test="applyBillDate != null">apply_bill_date,</if>
+            <if test="consumeBillNo != null">consume_bill_no,</if>
+            <if test="consumeBillDate != null">consume_bill_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="departmentId != null">department_id,</if>
             <if test="userId != null">user_id,</if>
-            <if test="applyBillStatus != null">apply_bill_status,</if>
-            <if test="billType != null">bill_type,</if>
+            <if test="consumeBillStatus != null">consume_bill_status,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -155,13 +157,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="rejectReason != null">reject_reason,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="applyBillNo != null">#{applyBillNo},</if>
-            <if test="applyBillDate != null">#{applyBillDate},</if>
+            <if test="consumeBillNo != null">#{consumeBillNo},</if>
+            <if test="consumeBillDate != null">#{consumeBillDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="departmentId != null">#{departmentId},</if>
             <if test="userId != null">#{userId},</if>
-            <if test="applyBillStatus != null">#{applyBillStatus},</if>
-            <if test="billType != null">#{billType},</if>
+            <if test="consumeBillStatus != null">#{consumeBillStatus},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -174,16 +175,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
     </insert>
 
-    <update id="updateBasApply" parameterType="BasApply">
-        update bas_apply
+    <update id="updateDeptBatchConsume" parameterType="DeptBatchConsume">
+        update t_hc_ks_xh
         <trim prefix="SET" suffixOverrides=",">
-            <if test="applyBillNo != null">apply_bill_no = #{applyBillNo},</if>
-            <if test="applyBillDate != null">apply_bill_date = #{applyBillDate},</if>
+            <if test="consumeBillNo != null">consume_bill_no = #{consumeBillNo},</if>
+            <if test="consumeBillDate != null">consume_bill_date = #{consumeBillDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
-            <if test="departmentId != null">department_Id = #{departmentId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
             <if test="userId != null">user_id = #{userId},</if>
-            <if test="applyBillStatus != null">apply_bill_status = #{applyBillStatus},</if>
-            <if test="billType != null">bill_type = #{billType},</if>
+            <if test="consumeBillStatus != null">consume_bill_status = #{consumeBillStatus},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
@@ -197,37 +197,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteBasApplyById" parameterType="Long">
-        update bas_apply set del_flag = 1, update_time = now() where id = #{id}
-    </delete>
+    <update id="deleteDeptBatchConsumeById" parameterType="Long">
+        update t_hc_ks_xh set del_flag = 1, update_time = now() where id = #{id}
+    </update>
 
-    <delete id="deleteBasApplyByIds" parameterType="String">
-        update bas_apply set del_flag = 1, update_time = now() where id in
+    <update id="deleteDeptBatchConsumeByIds" parameterType="String">
+        update t_hc_ks_xh set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
-    </delete>
+    </update>
 
-    <delete id="deleteBasApplyEntryByParenIds" parameterType="String">
-        update bas_apply_entry set del_flag = 1, update_time = now() where paren_id in
+    <update id="deleteDeptBatchConsumeEntryByParenIds" parameterType="String">
+        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
-    </delete>
+    </update>
 
-    <delete id="deleteBasApplyEntryByParenId" parameterType="Long">
-        update bas_apply_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
-    </delete>
+    <update id="deleteDeptBatchConsumeEntryByParenId" parameterType="Long">
+        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    </update>
 
-    <insert id="batchBasApplyEntry">
-        insert into bas_apply_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_numer, remark, begin_time, end_time) values
+    <insert id="batchDeptBatchConsumeEntry">
+        insert into t_hc_ks_xh_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_numer, remark, begin_time, end_time, del_flag, create_by, create_time) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumer}, #{item.remark}, #{item.beginTime}, #{item.endTime})
+            (#{item.parenId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumer}, #{item.remark}, #{item.beginTime}, #{item.endTime}, 0, #{item.createBy}, now())
         </foreach>
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
-        select max(apply_bill_no) from bas_apply
-        where apply_bill_no like concat('%',#{date},'%')
+        select max(consume_bill_no) from t_hc_ks_xh
+        where consume_bill_no like concat('%',#{date},'%')
     </select>
 </mapper>

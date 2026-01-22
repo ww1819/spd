@@ -29,6 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="invoiceAmount"    column="invoice_amount"    />
         <result property="invoiceTime"    column="invoice_time"    />
         <result property="proPerson"    column="pro_person"    />
+        <result property="returnReason"    column="return_reason"    />
         <result property="isMonthInit"    column="is_month_init"    />
         <result property="auditBy"    column="audit_by"    />
         <result property="createrName"    column="createrUserName"    />
@@ -154,7 +155,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, stk.bill_no, stk.ref_bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag,stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
-				stk.invoice_time,stk.pro_person,stk.audit_by,
+				stk.invoice_time,stk.pro_person,stk.return_reason,stk.audit_by,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
@@ -390,7 +391,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
-				a.invoice_time,a.pro_person,
+				a.invoice_time,a.pro_person,a.return_reason,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price,
                 b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.remark as sub_remark,au.nick_name auditNickName,au.user_name auditUserName,
@@ -440,6 +441,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="invoiceAmount != null">invoice_amount,</if>
             <if test="invoiceTime != null">invoice_time,</if>
             <if test="proPerson != null">pro_person,</if>
+            <if test="returnReason != null and returnReason != ''">return_reason,</if>
             <if test="isMonthInit != null">is_month_init,</if>
             <if test="auditBy != null">audit_by,</if>
          </trim>
@@ -467,6 +469,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="invoiceAmount != null">#{invoiceAmount},</if>
             <if test="invoiceTime != null">#{invoiceTime},</if>
             <if test="proPerson != null">#{proPerson},</if>
+            <if test="returnReason != null and returnReason != ''">#{returnReason},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
             <if test="auditBy != null">#{auditBy},</if>
          </trim>
@@ -498,6 +501,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="invoiceAmount != null">invoice_amount = #{invoiceAmount},</if>
             <if test="invoiceTime != null">invoice_time = #{invoiceTime},</if>
             <if test="proPerson != null">pro_person = #{proPerson},</if>
+            <if test="returnReason != null and returnReason != ''">return_reason = #{returnReason},</if>
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
         </trim>
@@ -520,14 +524,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <delete id="deleteStkIoBillEntryByParenIds" parameterType="String">
-        delete from stk_io_bill_entry where paren_id in
+        update stk_io_bill_entry set del_flag = 1 where paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
     <delete id="deleteStkIoBillEntryByParenId" parameterType="Long">
-        delete from stk_io_bill_entry where paren_id = #{parenId}
+        update stk_io_bill_entry set del_flag = 1 where paren_id = #{parenId}
     </delete>
 
     <insert id="batchStkIoBillEntry">

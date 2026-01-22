@@ -135,17 +135,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
         <if test="isGz != null "> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
+        <if test="isUse != null and isUse != ''"> and m.is_use = #{isUse}</if>
+        <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
+        <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
+        <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
+        <if test="storeroomId != null "> and m.storeroom_id = #{storeroomId}</if>
+        <if test="financeCategoryId != null "> and m.finance_category_id = #{financeCategoryId}</if>
+        <if test="locationId != null "> and m.location_id = #{locationId}</if>
+        <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
+        <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
         <if test="beginDate != null "> and m.create_time &gt;= #{beginDate}</if>
         <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
     </select>
 
     <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">
         <include refid="selectFdMaterialVo"/>
-        where m.id = #{id}
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null)
     </select>
     <select id="selectFdMaterialByCode" parameterType="String" resultMap="FdMaterialResult">
         <include refid="selectFdMaterialVo"/>
-        where m.code = #{code}
+        where m.code = #{code} and (m.del_flag = 0 or m.del_flag is null)
     </select>
     <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
         insert into fd_material
@@ -314,11 +323,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdMaterialById" parameterType="Long">
-        delete from fd_material where id = #{id}
+        update fd_material set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteFdMaterialByIds" parameterType="String">
-        delete from fd_material where id in
+        update fd_material set del_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

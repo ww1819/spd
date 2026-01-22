@@ -92,11 +92,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentFileByFileId" parameterType="String">
-        delete from equipment_file where file_id = #{fileId}
+        update equipment_file set del_flag = 1, update_time = now() where file_id = #{fileId}
     </delete>
 
     <delete id="deleteEquipmentFileByFileIds" parameterType="String">
-        delete from equipment_file where file_id in 
+        update equipment_file set del_flag = 1, update_time = now() where file_id in 
         <foreach item="fileId" collection="array" open="(" separator="," close=")">
             #{fileId}
         </foreach>

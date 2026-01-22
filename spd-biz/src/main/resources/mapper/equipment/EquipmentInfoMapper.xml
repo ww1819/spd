@@ -388,11 +388,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentInfoById" parameterType="String">
-        update equipment_info set del_flag = '2' where id = #{id}
+        update equipment_info set del_flag = 1, update_time = now() where id = #{id}
     </delete>
 
     <delete id="deleteEquipmentInfoByIds" parameterType="String">
-        update equipment_info set del_flag = '2' where id in 
+        update equipment_info set del_flag = 1, update_time = now() where id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

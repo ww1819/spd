@@ -36,7 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectFdFactoryByFactoryId" parameterType="Long" resultMap="FdFactoryResult">
         <include refid="selectFdFactoryVo"/>
-        where factory_id = #{factoryId}
+        where factory_id = #{factoryId} and (del_flag = 0 or del_flag is null)
     </select>
 
     <insert id="insertFdFactory" parameterType="FdFactory" useGeneratedKeys="true" keyProperty="factoryId">
@@ -91,11 +91,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdFactoryByFactoryId" parameterType="Long">
-        delete from fd_factory where factory_id = #{factoryId}
+        update fd_factory set del_flag = 1, update_time = now() where factory_id = #{factoryId}
     </delete>
 
     <delete id="deleteFdFactoryByFactoryIds" parameterType="String">
-        delete from fd_factory where factory_id in
+        update fd_factory set del_flag = 1, update_time = now() where factory_id in
         <foreach item="factoryId" collection="array" open="(" separator="," close=")">
             #{factoryId}
         </foreach>
