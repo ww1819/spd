@@ -65,6 +65,10 @@ public class StkIoStocktaking extends BaseEntity
     @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date auditDate;
 
+    /** 驳回原因 */
+    @Excel(name = "驳回原因")
+    private String rejectReason;
+
     /** 是否月结 */
     private Integer isMonthInit;
 
@@ -73,6 +77,16 @@ public class StkIoStocktaking extends BaseEntity
 
     /** 总金额（用于列表显示，从明细汇总） */
     private java.math.BigDecimal totalAmount;
+
+    /** 查询参数：开始日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
+    private Date beginDate;
+
+    /** 查询参数：结束日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
+    private Date endDate;
 
     /** 盘点明细信息 */
     private List<StkIoStocktakingEntry> stkIoStocktakingEntryList;
@@ -186,6 +200,16 @@ public class StkIoStocktaking extends BaseEntity
         return auditDate;
     }
 
+    public String getRejectReason()
+    {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason)
+    {
+        this.rejectReason = rejectReason;
+    }
+
     public Integer getIsMonthInit() {
         return isMonthInit;
     }
@@ -208,6 +232,22 @@ public class StkIoStocktaking extends BaseEntity
 
     public void setTotalAmount(java.math.BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public Date getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(Date beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 
     public List<StkIoStocktakingEntry> getStkIoStocktakingEntryList()
@@ -258,6 +298,7 @@ public class StkIoStocktaking extends BaseEntity
             .append("stockType", getStockType())
             .append("delFlag", getDelFlag())
             .append("auditDate", getAuditDate())
+            .append("rejectReason", getRejectReason())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

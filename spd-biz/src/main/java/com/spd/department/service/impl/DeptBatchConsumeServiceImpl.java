@@ -2,6 +2,7 @@ package com.spd.department.service.impl;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
@@ -184,5 +185,29 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
                 deptBatchConsumeMapper.batchDeptBatchConsumeEntry(list);
             }
         }
+    }
+
+    /**
+     * 查询已审核的科室批量消耗明细列表（用于消耗追溯报表）
+     * 
+     * @param deptBatchConsume 查询条件
+     * @return 明细列表
+     */
+    @Override
+    public List<Map<String, Object>> selectAuditedConsumeDetailList(DeptBatchConsume deptBatchConsume)
+    {
+        return deptBatchConsumeMapper.selectAuditedConsumeDetailList(deptBatchConsume);
+    }
+
+    /**
+     * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）
+     * 
+     * @param deptBatchConsume 查询条件
+     * @return 汇总列表
+     */
+    @Override
+    public List<Map<String, Object>> selectAuditedConsumeSummaryList(DeptBatchConsume deptBatchConsume)
+    {
+        return deptBatchConsumeMapper.selectAuditedConsumeSummaryList(deptBatchConsume);
     }
 }

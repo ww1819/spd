@@ -28,7 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="creater"    column="id" javaType="SysUser" resultMap="createrResult" />
-        <association property="auditPerson"    column="user_id" javaType="SysUser" resultMap="auditPersonResult" />
+        <association property="auditPerson"    column="audit_by" javaType="SysUser" resultMap="auditPersonResult" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="FdWarehouse">
@@ -56,9 +56,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap id="auditPersonResult" type="SysUser">
-        <id     property="userId"    column="audit_by"     />
+        <result property="userName"    column="auditUserName"     />
         <result property="nickName"  column="auditNickName"   />
-        <result property="userName"  column="auditUserName"   />
     </resultMap>
 
     <resultMap id="DeptBatchConsumeDeptBatchConsumeEntryResult" type="DeptBatchConsume" extends="DeptBatchConsumeResult">
@@ -101,7 +100,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user u on a.user_id = u.user_id
         left join fd_department d on a.department_id = d.id
         left join sys_user cu on a.create_by = cu.user_id
-        left join sys_user au on a.audit_by = au.user_id
+        left join sys_user au on a.audit_by = au.user_name
         where a.del_flag != 1
     </sql>
 
@@ -131,7 +130,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
         from t_hc_ks_xh a
         left join t_hc_ks_xh_entry b on b.paren_id = a.id and b.del_flag != 1
-        left join sys_user au on a.audit_by = au.user_id
+        left join sys_user au on a.audit_by = au.user_name
         left join sys_user cu on a.create_by = cu.user_id
         left join fd_material m on b.material_id = m.id
         where a.id = #{id} and a.del_flag != 1
@@ -229,5 +228,83 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         select max(consume_bill_no) from t_hc_ks_xh
         where consume_bill_no like concat('%',#{date},'%')
+    </select>
+
+    <!-- 查询已审核的科室批量消耗明细列表（用于消耗追溯报表） -->
+    <select id="selectAuditedConsumeDetailList" parameterType="DeptBatchConsume" resultType="java.util.Map">
+        select 
+            a.consume_bill_no as billNo,
+            a.consume_bill_date as consumeDate,
+            d.name as departmentName,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as specification,
+            m.model as model,
+            e.unit_price as unitPrice,
+            e.qty as quantity,
+            e.amt as amount,
+            wc.warehouse_category_name as category,
+            fc.finance_category_name as financialCategory,
+            m.register_no as registrationNumber,
+            m.medical_no as medicalInsuranceCode,
+            NULL as hisChargeItemCode,
+            u.unit_name as unitName
+        from t_hc_ks_xh a
+        left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.del_flag != 1
+        left join fd_department d on a.department_id = d.id
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        where a.del_flag != 1 
+        and a.consume_bill_status = 2
+        <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
+        <if test="materialId != null"> and e.material_id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''"> 
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="specification != null and specification != ''"> and m.speci like concat('%', #{specification}, '%')</if>
+        <if test="model != null and model != ''"> and m.model like concat('%', #{model}, '%')</if>
+        <!-- hisChargeCode 字段暂不支持查询，fd_material 表中无此字段 -->
+        <if test="patientId != null and patientId != ''"> and a.remark like concat('%', #{patientId}, '%')</if>
+        <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
+        order by a.consume_bill_date desc, a.consume_bill_no desc
+    </select>
+
+    <!-- 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表） -->
+    <select id="selectAuditedConsumeSummaryList" parameterType="DeptBatchConsume" resultType="java.util.Map">
+        select 
+            d.name as departmentName,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as specification,
+            m.model as model,
+            u.unit_name as unit,
+            SUM(e.qty) as totalQuantity,
+            SUM(e.amt) as totalAmount,
+            AVG(e.unit_price) as averagePrice,
+            wc.warehouse_category_name as category
+        from t_hc_ks_xh a
+        left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.del_flag != 1
+        left join fd_department d on a.department_id = d.id
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        where a.del_flag != 1 
+        and a.consume_bill_status = 2
+        <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
+        <if test="materialId != null"> and e.material_id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''"> 
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="specification != null and specification != ''"> and m.speci like concat('%', #{specification}, '%')</if>
+        <if test="model != null and model != ''"> and m.model like concat('%', #{model}, '%')</if>
+        <!-- hisChargeCode 字段暂不支持查询，fd_material 表中无此字段 -->
+        <if test="patientId != null and patientId != ''"> and a.remark like concat('%', #{patientId}, '%')</if>
+        <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
+        group by d.id, d.name, m.id, m.code, m.name, m.speci, m.model, u.unit_id, u.unit_name, wc.warehouse_category_id, wc.warehouse_category_name
+        order by SUM(e.amt) desc
     </select>
 </mapper>

@@ -200,4 +200,53 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
         return res;
     }
+
+    /**
+     * 确认收货
+     * 
+     * @param id 科室申购主键
+     * @param confirmBy 确认人
+     * @return 结果
+     */
+    @Override
+    public int confirmReceipt(String id, String confirmBy) {
+        DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
+        if(depPurchaseApply == null){
+            throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
+        }
+        if(depPurchaseApply.getPurchaseBillStatus() != 2){
+            throw new ServiceException("只有已审核的申购单才能确认收货!");
+        }
+        // 使用planStatus字段标识收货状态：1=已确认收货
+        depPurchaseApply.setPlanStatus(1);
+        depPurchaseApply.setUpdateBy(confirmBy);
+        depPurchaseApply.setUpdateTime(new Date());
+        int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
+        return res;
+    }
+
+    /**
+     * 驳回收货
+     * 
+     * @param id 科室申购主键
+     * @param rejectReason 驳回原因
+     * @return 结果
+     */
+    @Override
+    public int rejectReceipt(String id, String rejectReason) {
+        DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
+        if(depPurchaseApply == null){
+            throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
+        }
+        if(depPurchaseApply.getPurchaseBillStatus() != 2){
+            throw new ServiceException("只有已审核的申购单才能驳回收货!");
+        }
+        // 使用planStatus字段标识收货状态：2=驳回收货
+        depPurchaseApply.setPlanStatus(2);
+        depPurchaseApply.setRejectReason(rejectReason);
+        depPurchaseApply.setUpdateBy(SecurityUtils.getUsername());
+        depPurchaseApply.setUpdateTime(new Date());
+        int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
+        return res;
+    }
 }

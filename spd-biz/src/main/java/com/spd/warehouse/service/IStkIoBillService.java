@@ -213,5 +213,12 @@ public interface IStkIoBillService
      */
     public List<com.spd.warehouse.domain.StkIoBillEntry> selectSettlementDetails(StkIoBill stkIoBill);
 
+    /**
+     * 批量确认收货
+     * @param ids 出库单ID列表（逗号分隔）
+     * @param confirmBy 确认人
+     * @return 结果
+     */
+    int confirmReceipt(String ids, String confirmBy);
 
 }

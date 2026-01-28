@@ -1,6 +1,7 @@
 package com.spd.department.controller;
 
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson2.JSONObject;
@@ -119,5 +120,29 @@ public class DeptBatchConsumeController extends BaseController
     {
         int result = deptBatchConsumeService.auditConsume(json.getString("id"), json.getString("auditBy"));
         return toAjax(result);
+    }
+
+    /**
+     * 查询已审核的科室批量消耗明细列表（用于消耗追溯报表）
+     */
+    @PreAuthorize("@ss.hasPermi('department:batchConsume:list')")
+    @GetMapping("/auditedDetailList")
+    public TableDataInfo auditedDetailList(DeptBatchConsume deptBatchConsume)
+    {
+        startPage();
+        List<Map<String, Object>> list = deptBatchConsumeService.selectAuditedConsumeDetailList(deptBatchConsume);
+        return getDataTable(list);
+    }
+
+    /**
+     * 查询已审核的科室批量消耗汇总列表（用于消耗追溯报表）
+     */
+    @PreAuthorize("@ss.hasPermi('department:batchConsume:list')")
+    @GetMapping("/auditedSummaryList")
+    public TableDataInfo auditedSummaryList(DeptBatchConsume deptBatchConsume)
+    {
+        startPage();
+        List<Map<String, Object>> list = deptBatchConsumeService.selectAuditedConsumeSummaryList(deptBatchConsume);
+        return getDataTable(list);
     }
 }

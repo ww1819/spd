@@ -76,4 +76,22 @@ public interface IDepPurchaseApplyService
      * @return 结果
      */
     public int rejectPurchaseApply(String id, String rejectReason);
+
+    /**
+     * 确认收货
+     * 
+     * @param id 科室申购主键
+     * @param confirmBy 确认人
+     * @return 结果
+     */
+    public int confirmReceipt(String id, String confirmBy);
+
+    /**
+     * 驳回收货
+     * 
+     * @param id 科室申购主键
+     * @param rejectReason 驳回原因
+     * @return 结果
+     */
+    public int rejectReceipt(String id, String rejectReason);
 }

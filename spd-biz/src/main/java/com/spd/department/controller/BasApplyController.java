@@ -121,4 +121,16 @@ public class BasApplyController extends BaseController
         int result = basApplyService.auditApply(json.getString("id"), json.getString("auditBy"));
         return toAjax(result);
     }
+
+    /**
+     * 驳回科室申领
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:reject')")
+    @Log(title = "科室申领驳回", businessType = BusinessType.UPDATE)
+    @PutMapping("/reject")
+    public AjaxResult reject(@RequestBody JSONObject json)
+    {
+        int result = basApplyService.rejectApply(json.getString("id"), json.getString("rejectReason"));
+        return toAjax(result);
+    }
 }

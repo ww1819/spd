@@ -295,8 +295,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     //更新库存明细表
                     stkInventoryMapper.updateStkInventory(inventory);
 
-                    //按批次号查询，不存在新增，则更新
-                    updateDepInventory(inventory,stkIoBill,entry);
+                    //出库单审核时不增加科室库存，需要在确认收货时才增加
+                    //updateDepInventory(inventory,stkIoBill,entry);
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -969,5 +969,70 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public List<StkIoBillEntry> selectSettlementDetails(StkIoBill stkIoBill) {
         return stkIoBillMapper.selectSettlementDetails(stkIoBill);
+    }
+
+    /**
+     * 批量确认收货
+     * @param ids 出库单ID列表（逗号分隔）
+     * @param confirmBy 确认人
+     * @return 结果
+     */
+    @Override
+    @Transactional
+    public int confirmReceipt(String ids, String confirmBy) {
+        if (StringUtils.isEmpty(ids)) {
+            throw new ServiceException("请选择要确认的出库单");
+        }
+        String[] idArray = ids.split(",");
+        int successCount = 0;
+        for (String idStr : idArray) {
+            Long id = Long.parseLong(idStr.trim());
+            StkIoBill stkIoBill = stkIoBillMapper.selectStkIoBillById(id);
+            if (stkIoBill == null) {
+                continue;
+            }
+            // 只确认已审核的出库单
+            if (stkIoBill.getBillStatus() != 2) {
+                continue;
+            }
+            // 只确认出库单（billType=201）
+            if (stkIoBill.getBillType() == null || stkIoBill.getBillType() != 201) {
+                continue;
+            }
+            // 只确认未确认收货的出库单
+            if (stkIoBill.getReceiptConfirmStatus() != null && stkIoBill.getReceiptConfirmStatus() == 1) {
+                continue;
+            }
+            
+            // 确认收货后，增加科室库存
+            List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
+            if (stkIoBillEntryList != null && !stkIoBillEntryList.isEmpty()) {
+                for (StkIoBillEntry entry : stkIoBillEntryList) {
+                    String batchNo = entry.getBatchNo();
+                    Long warehouseId = stkIoBill.getWarehouseId();
+                    // 查询库存
+                    StkInventory inventory = null;
+                    if(warehouseId != null){
+                        inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, warehouseId);
+                    }
+                    if(inventory == null){
+                        inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                    }
+                    if(inventory != null){
+                        // 增加科室库存
+                        updateDepInventory(inventory, stkIoBill, entry);
+                    }
+                }
+            }
+            
+            stkIoBill.setReceiptConfirmStatus(1); // 已确认
+            stkIoBill.setUpdateBy(confirmBy);
+            stkIoBill.setUpdateTime(new Date());
+            int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
+            if (res > 0) {
+                successCount++;
+            }
+        }
+        return successCount;
     }
 }

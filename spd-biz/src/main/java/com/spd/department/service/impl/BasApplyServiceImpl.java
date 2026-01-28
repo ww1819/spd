@@ -6,6 +6,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -155,6 +156,27 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setApplyBillStatus(2);//已审核状态
         basApply.setAuditBy(auditBy);
         basApply.setAuditDate(new Date());
+        int res = basApplyMapper.updateBasApply(basApply);
+        return res;
+    }
+
+    /**
+     * 驳回科室申领
+     * 
+     * @param id 科室申领主键
+     * @param rejectReason 驳回原因
+     * @return 结果
+     */
+    @Override
+    public int rejectApply(String id, String rejectReason) {
+        BasApply basApply = basApplyMapper.selectBasApplyById(Long.parseLong(id));
+        if(basApply == null){
+            throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
+        }
+        // 驳回时状态保持为1（待审核），但记录驳回原因
+        basApply.setRejectReason(rejectReason);
+        basApply.setUpdateBy(SecurityUtils.getUsername());
+        basApply.setUpdateTime(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
         return res;
     }

@@ -144,9 +144,17 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "制单人")
     private String createrName;
 
+    /** 更新人姓名 */
+    private String updateByUserName;
+
+    /** 更新人昵称 */
+    private String updateByNickName;
 
     /** 是否月结 */
     private Integer isMonthInit;
+
+    /** 收货确认状态（0=未确认，1=已确认） */
+    private Integer receiptConfirmStatus;
 
     /** 查询参数：起始日期 */
     private Date beginDate;
@@ -159,6 +167,9 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：仓库 */
     private String warehouseName;
+
+    /** 查询参数：批号 */
+    private String batchNo;
 
 
 
@@ -380,6 +391,14 @@ public class StkIoBill extends BaseEntity
         this.warehouseName = warehouseName;
     }
 
+    public String getBatchNo() {
+        return batchNo;
+    }
+
+    public void setBatchNo(String batchNo) {
+        this.batchNo = batchNo;
+    }
+
     public List<FdMaterial> getMaterialList() {
         return materialList;
     }
@@ -460,6 +479,14 @@ public class StkIoBill extends BaseEntity
         this.isMonthInit = isMonthInit;
     }
 
+    public Integer getReceiptConfirmStatus() {
+        return receiptConfirmStatus;
+    }
+
+    public void setReceiptConfirmStatus(Integer receiptConfirmStatus) {
+        this.receiptConfirmStatus = receiptConfirmStatus;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -502,6 +529,7 @@ public class StkIoBill extends BaseEntity
                 .append("proPerson", getProPerson())
                 .append("returnReason", getReturnReason())
                 .append("isMonthInit", getIsMonthInit())
+                .append("receiptConfirmStatus", getReceiptConfirmStatus())
                 .append("createrName", getCreaterName())
                 .append("auditPersonName", getAuditPersonName())
                 .append("creater", getCreater())
@@ -541,6 +569,22 @@ public class StkIoBill extends BaseEntity
 
     public void setCreaterName(String createrName) {
         this.createrName = createrName;
+    }
+
+    public String getUpdateByUserName() {
+        return updateByUserName;
+    }
+
+    public void setUpdateByUserName(String updateByUserName) {
+        this.updateByUserName = updateByUserName;
+    }
+
+    public String getUpdateByNickName() {
+        return updateByNickName;
+    }
+
+    public void setUpdateByNickName(String updateByNickName) {
+        this.updateByNickName = updateByNickName;
     }
 
     public String getDApplyId() {

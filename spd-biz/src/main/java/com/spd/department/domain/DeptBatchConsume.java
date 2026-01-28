@@ -91,10 +91,32 @@ public class DeptBatchConsume extends BaseEntity
     private SysUser creater;
 
     /** 查询参数：起始日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date beginDate;
 
     /** 查询参数：截止日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
+
+    /** 查询参数：耗材ID */
+    private Long materialId;
+
+    /** 查询参数：耗材名称 */
+    private String materialName;
+
+    /** 查询参数：规格 */
+    private String specification;
+
+    /** 查询参数：型号 */
+    private String model;
+
+    /** 查询参数：HIS收费编码 */
+    private String hisChargeCode;
+
+    /** 查询参数：患者住院号/门诊号 */
+    private String patientId;
 
     public void setId(Long id) 
     {
@@ -288,6 +310,54 @@ public class DeptBatchConsume extends BaseEntity
 
     public void setEndDate(Date endDate) {
         this.endDate = endDate;
+    }
+
+    public Long getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(Long materialId) {
+        this.materialId = materialId;
+    }
+
+    public String getMaterialName() {
+        return materialName;
+    }
+
+    public void setMaterialName(String materialName) {
+        this.materialName = materialName;
+    }
+
+    public String getSpecification() {
+        return specification;
+    }
+
+    public void setSpecification(String specification) {
+        this.specification = specification;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public String getHisChargeCode() {
+        return hisChargeCode;
+    }
+
+    public void setHisChargeCode(String hisChargeCode) {
+        this.hisChargeCode = hisChargeCode;
+    }
+
+    public String getPatientId() {
+        return patientId;
+    }
+
+    public void setPatientId(String patientId) {
+        this.patientId = patientId;
     }
 
     @Override

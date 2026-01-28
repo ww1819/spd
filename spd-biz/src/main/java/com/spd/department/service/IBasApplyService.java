@@ -65,4 +65,12 @@ public interface IBasApplyService
      * @return
      */
     int auditApply(String id, String auditBy);
+
+    /**
+     * 驳回科室申领
+     * @param id 科室申领主键
+     * @param rejectReason 驳回原因
+     * @return 结果
+     */
+    int rejectApply(String id, String rejectReason);
 }

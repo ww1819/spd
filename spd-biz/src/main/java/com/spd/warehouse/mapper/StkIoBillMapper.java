@@ -208,4 +208,25 @@ public interface StkIoBillMapper
      * @return 结算明细列表
      */
     List<StkIoBillEntry> selectSettlementDetails(StkIoBill stkIoBill);
+
+    /**
+     * 查询领用明细列表
+     * @param stkIoBill 查询条件
+     * @return 领用明细列表
+     */
+    List<Map<String, Object>> selectConsumeDetailList(StkIoBill stkIoBill);
+
+    /**
+     * 查询领用汇总列表（按耗材汇总）
+     * @param stkIoBill 查询条件
+     * @return 领用汇总列表
+     */
+    List<Map<String, Object>> selectConsumeSummaryList(StkIoBill stkIoBill);
+
+    /**
+     * 查询领用排名列表（按金额降序）
+     * @param stkIoBill 查询条件
+     * @return 领用排名列表
+     */
+    List<Map<String, Object>> selectConsumeRankingList(StkIoBill stkIoBill);
 }

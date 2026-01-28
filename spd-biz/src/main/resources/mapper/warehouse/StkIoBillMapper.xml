@@ -31,9 +31,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="proPerson"    column="pro_person"    />
         <result property="returnReason"    column="return_reason"    />
         <result property="isMonthInit"    column="is_month_init"    />
+        <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
         <result property="auditBy"    column="audit_by"    />
         <result property="createrName"    column="createrUserName"    />
         <result property="auditPersonName"    column="auditUserName"    />
+        <result property="updateByUserName"    column="updateByUserName"    />
+        <result property="updateByNickName"    column="updateByNickName"    />
 
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -155,14 +158,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, stk.bill_no, stk.ref_bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag,stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
-				stk.invoice_time,stk.pro_person,stk.return_reason,stk.audit_by,
+				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				tw.id twId,tw.code toWarehouseCode,tw.name toWarehouseName,
 				u.user_id userId,u.nick_name nickName,u.user_name userName,
                au.nick_name auditNickName,au.user_name auditUserName,
-               cu.nick_name createrNickName,cu.user_name createrUserName
+               cu.nick_name createrNickName,cu.user_name createrUserName,
+               uu.nick_name updateByNickName,uu.user_name updateByUserName
         from stk_io_bill stk
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
@@ -171,6 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user u on stk.user_id = u.user_id
         left join sys_user au on stk.audit_by = au.user_id
         left join sys_user cu on stk.create_by = cu.user_id
+        left join sys_user uu on stk.update_by = uu.user_id
     </sql>
 
     <sql id="selectStkIoBillTotalVo">
@@ -205,6 +210,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
         order by stk.bill_date desc
     </select>
 
@@ -391,7 +397,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
-				a.invoice_time,a.pro_person,a.return_reason,
+				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price,
                 b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.remark as sub_remark,au.nick_name auditNickName,au.user_name auditUserName,
@@ -443,6 +449,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="proPerson != null">pro_person,</if>
             <if test="returnReason != null and returnReason != ''">return_reason,</if>
             <if test="isMonthInit != null">is_month_init,</if>
+            <if test="receiptConfirmStatus != null">receipt_confirm_status,</if>
             <if test="auditBy != null">audit_by,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -471,6 +478,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="proPerson != null">#{proPerson},</if>
             <if test="returnReason != null and returnReason != ''">#{returnReason},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
+            <if test="receiptConfirmStatus != null">#{receiptConfirmStatus},</if>
             <if test="auditBy != null">#{auditBy},</if>
          </trim>
     </insert>
@@ -503,6 +511,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="proPerson != null">pro_person = #{proPerson},</if>
             <if test="returnReason != null and returnReason != ''">return_reason = #{returnReason},</if>
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
+            <if test="receiptConfirmStatus != null">receipt_confirm_status = #{receiptConfirmStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
         </trim>
         where id = #{id}
@@ -872,6 +881,105 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and settlement.bill_status = 2
         )
         order by stk.audit_date desc, stk.id desc, b.id desc
+    </select>
+
+    <!-- 查询领用明细列表 -->
+    <select id="selectConsumeDetailList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        SELECT 
+            stk.id, stk.bill_no billNo, stk.bill_date billDate, stk.warehouse_id warehouseId, stk.department_id departmentId,
+            m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel,
+            u.unit_name unitName, b.qty, b.unit_price unitPrice, b.amt,
+            b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
+            w.name warehouseName, d.name departmentName,
+            cu.user_name createrName, cu.nick_name createrNickName,
+            au.user_name auditPersonName, au.nick_name auditNickName, stk.audit_date auditDate,
+            f.factory_name factoryName, s.name supplierName
+        FROM stk_io_bill stk
+        LEFT JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
+        LEFT JOIN fd_material m ON b.material_id = m.id
+        LEFT JOIN fd_department d ON stk.department_id = d.id
+        LEFT JOIN fd_warehouse w ON stk.warehouse_id = w.id
+        LEFT JOIN fd_unit u ON m.unit_id = u.unit_id
+        LEFT JOIN sys_user cu ON stk.create_by = cu.user_id
+        LEFT JOIN sys_user au ON stk.audit_by = au.user_id
+        LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
+        LEFT JOIN fd_supplier s ON m.supplier_id = s.id
+        WHERE stk.del_flag != 1 
+          AND stk.bill_status = 2 
+          AND stk.bill_type = 201
+        <if test="billNo != null and billNo != ''"> AND stk.bill_no LIKE CONCAT('%', #{billNo}, '%')</if>
+        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
+        <if test="batchNo != null and batchNo != ''"> AND b.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+        ORDER BY stk.bill_date DESC, stk.id DESC, b.id DESC
+    </select>
+
+    <!-- 查询领用汇总列表（按耗材汇总） -->
+    <select id="selectConsumeSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        SELECT 
+            m.id materialId, m.code materialCode, m.name materialName, 
+            m.speci materialSpeci, m.model materialModel,
+            u.unit_name unitName, AVG(b.unit_price) unitPrice,
+            SUM(b.qty) totalQty, SUM(b.amt) totalAmt,
+            NULL as isBilling, m.register_no registerNo, m.period_date periodDate,
+            w.name warehouseName, f.factory_name factoryName, s.name supplierName
+        FROM stk_io_bill stk
+        LEFT JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
+        LEFT JOIN fd_material m ON b.material_id = m.id
+        LEFT JOIN fd_warehouse w ON stk.warehouse_id = w.id
+        LEFT JOIN fd_unit u ON m.unit_id = u.unit_id
+        LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
+        LEFT JOIN fd_supplier s ON m.supplier_id = s.id
+        WHERE stk.del_flag != 1 
+          AND stk.bill_status = 2 
+          AND stk.bill_type = 201
+        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
+        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+        GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, 
+                 m.register_no, m.period_date, w.name, f.factory_name, s.name
+        ORDER BY totalAmt DESC
+    </select>
+
+    <!-- 查询领用排名列表（按金额降序） -->
+    <select id="selectConsumeRankingList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        SELECT 
+            m.id materialId, m.code materialCode, m.name materialName,
+            m.speci materialSpeci, m.model materialModel,
+            u.unit_name unitName, AVG(b.unit_price) unitPrice,
+            SUM(b.qty) totalQty, SUM(b.amt) totalAmt,
+            ROUND((SUM(b.amt) / (SELECT IFNULL(SUM(amt), 1) FROM stk_io_bill_entry entry
+                INNER JOIN stk_io_bill bill ON bill.id = entry.paren_id
+                WHERE bill.del_flag != 1 AND bill.bill_status = 2 AND bill.bill_type = 201
+                AND entry.del_flag != 1
+                <if test="warehouseId != null"> AND bill.warehouse_id = #{warehouseId}</if>
+                <if test="departmentId != null"> AND bill.department_id = #{departmentId}</if>
+                <if test="beginDate != null"> AND bill.bill_date &gt;= #{beginDate}</if>
+                <if test="endDate != null"> AND bill.bill_date &lt;= #{endDate}</if>
+            )) * 100, 2) as percentage,
+            f.factory_name factoryName, s.name supplierName
+        FROM stk_io_bill stk
+        LEFT JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
+        LEFT JOIN fd_material m ON b.material_id = m.id
+        LEFT JOIN fd_unit u ON m.unit_id = u.unit_id
+        LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
+        LEFT JOIN fd_supplier s ON m.supplier_id = s.id
+        WHERE stk.del_flag != 1 
+          AND stk.bill_status = 2 
+          AND stk.bill_type = 201
+        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+        GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, f.factory_name, s.name
+        ORDER BY totalAmt DESC
     </select>
 
 </mapper>

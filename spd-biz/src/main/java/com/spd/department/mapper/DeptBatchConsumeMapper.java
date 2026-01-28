@@ -1,6 +1,7 @@
 package com.spd.department.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.domain.DeptBatchConsumeEntry;
 import org.apache.ibatis.annotations.Mapper;
@@ -96,4 +97,20 @@ public interface DeptBatchConsumeMapper
      * @return 最大单号
      */
     String selectMaxBillNo(String date);
+
+    /**
+     * 查询已审核的科室批量消耗明细列表（用于消耗追溯报表）
+     * 
+     * @param deptBatchConsume 查询条件
+     * @return 明细列表
+     */
+    List<Map<String, Object>> selectAuditedConsumeDetailList(DeptBatchConsume deptBatchConsume);
+
+    /**
+     * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）
+     * 
+     * @param deptBatchConsume 查询条件
+     * @return 汇总列表
+     */
+    List<Map<String, Object>> selectAuditedConsumeSummaryList(DeptBatchConsume deptBatchConsume);
 }
