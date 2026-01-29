@@ -81,6 +81,9 @@ public class StkIoBillEntry extends BaseEntity
     /** 查询参数：结算类型 */
     private String settlementType;
 
+    /** 科室库存明细id（反写） */
+    private Long kcNo;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -217,6 +220,14 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setSettlementType(String settlementType) {
         this.settlementType = settlementType;
+    }
+
+    public Long getKcNo() {
+        return kcNo;
+    }
+
+    public void setKcNo(Long kcNo) {
+        this.kcNo = kcNo;
     }
 
     @Override

@@ -119,6 +119,14 @@ public interface StkIoBillMapper
     int updatestkIobillEntry(StkIoBillEntry stkIoBillEntry);
 
     /**
+     * 反写出库单明细的科室库存id（kc_no）
+     * @param id 出库单明细id
+     * @param kcNo 科室库存明细id
+     * @return
+     */
+    int updateStkIoBillEntryKcNo(@Param("id") Long id, @Param("kcNo") Long kcNo);
+
+    /**
      * 查询出入库明细表耗材是否存在
      * @param id 耗材ID
      * @return

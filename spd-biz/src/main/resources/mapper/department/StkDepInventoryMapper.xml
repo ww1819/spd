@@ -19,6 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="endDate"    column="end_time"    />
         <result property="supplierId"    column="supplier_id"    />
         <result property="outOrderNo"    column="out_order_no"    />
+        <result property="kcNo"    column="kc_no"    />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -44,7 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectStkDepInventoryVo">
         select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
-			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
+			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no,
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
                s.id sId,s.code supplierCode,s.name supplierName,
@@ -102,6 +103,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="kcNo != null">kc_no,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
@@ -114,6 +116,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="kcNo != null">#{kcNo},</if>
          </trim>
     </insert>
 
@@ -130,6 +133,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="kcNo != null">kc_no = #{kcNo},</if>
         </trim>
         where id = #{id}
     </update>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.HcKsFlowMapper">
+
+    <insert id="insertHcKsFlow" parameterType="HcKsFlow" useGeneratedKeys="true" keyProperty="id">
+        insert into t_hc_ks_flow
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="billId != null">bill_id,</if>
+            <if test="entryId != null">entry_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="batchNumber != null">batch_number,</if>
+            <if test="qty != null">qty,</if>
+            <if test="unitPrice != null">unit_price,</if>
+            <if test="amt != null">amt,</if>
+            <if test="beginTime != null">begin_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="kcNo != null">kc_no,</if>
+            <if test="lx != null">lx,</if>
+            <if test="flowTime != null">flow_time,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="billId != null">#{billId},</if>
+            <if test="entryId != null">#{entryId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="qty != null">#{qty},</if>
+            <if test="unitPrice != null">#{unitPrice},</if>
+            <if test="amt != null">#{amt},</if>
+            <if test="beginTime != null">#{beginTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="kcNo != null">#{kcNo},</if>
+            <if test="lx != null">#{lx},</if>
+            <if test="flowTime != null">#{flowTime},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+        </trim>
+    </insert>
+</mapper>

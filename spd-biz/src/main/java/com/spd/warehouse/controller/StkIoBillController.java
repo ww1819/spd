@@ -68,13 +68,18 @@ public class StkIoBillController extends BaseController
 
     /**
      * 新增入库
+     * 返回带 id、billNo 的实体，供前端展示单据号并后续保存走修改逻辑
      */
     @PreAuthorize("@ss.hasPermi('inWarehouse:apply:add')")
     @Log(title = "入库", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody StkIoBill stkIoBill)
     {
-        return toAjax(stkIoBillService.insertStkIoBill(stkIoBill));
+        int rows = stkIoBillService.insertStkIoBill(stkIoBill);
+        if (rows > 0) {
+            return success(stkIoBill);
+        }
+        return AjaxResult.error("新增失败");
     }
 
     /**

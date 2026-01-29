@@ -162,6 +162,12 @@ public class StkIoBill extends BaseEntity
     /** 查询参数：截止日期 */
     private Date endDate;
 
+    /** 查询参数：审核日期起（出库日期） */
+    private Date auditBeginDate;
+
+    /** 查询参数：审核日期止（出库日期） */
+    private Date auditEndDate;
+
     /** 查询参数：耗材 */
     private String materialName;
 
@@ -373,6 +379,22 @@ public class StkIoBill extends BaseEntity
 
     public void setEndDate(Date endDate) {
         this.endDate = endDate;
+    }
+
+    public Date getAuditBeginDate() {
+        return auditBeginDate;
+    }
+
+    public void setAuditBeginDate(Date auditBeginDate) {
+        this.auditBeginDate = auditBeginDate;
+    }
+
+    public Date getAuditEndDate() {
+        return auditEndDate;
+    }
+
+    public void setAuditEndDate(Date auditEndDate) {
+        this.auditEndDate = auditEndDate;
     }
 
     public String getMaterialName() {

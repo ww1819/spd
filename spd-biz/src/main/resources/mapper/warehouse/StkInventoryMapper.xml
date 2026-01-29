@@ -19,6 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="beginTime"    column="begin_time"    />
         <result property="endTime"    column="end_time"    />
         <result property="receiptOrderNo"    column="receipt_order_no"    />
+        <result property="kcNo"    column="kc_no"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -69,7 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectStkInventoryVo">
         select stk.id, stk.qty, stk.material_id, stk.warehouse_id, stk.unit_price,stk.amt,
 				stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
-				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,
+				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
 				s.id sId,s.code supplierCode,s.name supplierName
@@ -253,6 +254,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginTime != null">begin_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="receiptOrderNo != null">receipt_order_no,</if>
+            <if test="kcNo != null">kc_no,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -268,6 +270,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginTime != null">#{beginTime},</if>
             <if test="endTime != null">#{endTime},</if>
             <if test="receiptOrderNo != null">#{receiptOrderNo},</if>
+            <if test="kcNo != null">#{kcNo},</if>
          </trim>
     </insert>
 
@@ -287,6 +290,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginTime != null">begin_time = #{beginTime},</if>
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="receiptOrderNo != null">receipt_order_no = #{receiptOrderNo},</if>
+            <if test="kcNo != null">kc_no = #{kcNo},</if>
         </trim>
         where id = #{id}
     </update>

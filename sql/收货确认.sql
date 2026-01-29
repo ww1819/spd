@@ -6,12 +6,15 @@
 -- ============================================
 -- 一、更新主菜单（收货确认）
 -- ============================================
--- 更新menu_id=1558的菜单配置
+-- 更新menu_id=1558的菜单配置（组件路径、权限字符、路由参数、是否缓存）
 UPDATE `sys_menu` SET
   `path` = 'receiptConfirm',
   `component` = 'department/receiptConfirm/index',
   `menu_type` = 'C',
   `perms` = 'department:receiptConfirm:list',
+  `query` = NULL,
+  `is_frame` = 1,
+  `is_cache` = 0,
   `icon` = 'fa fa-check-circle',
   `update_by` = 'admin',
   `update_time` = NOW()

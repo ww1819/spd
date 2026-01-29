@@ -85,6 +85,9 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "出库单号")
     private String outOrderNo;
 
+    /** 科室库存明细id（反写） */
+    private Long kcNo;
+
     /** 耗材对象 */
     private FdMaterial material;
 
@@ -281,5 +284,13 @@ public class StkDepInventory extends BaseEntity
 
     public void setOutOrderNo(String outOrderNo) {
         this.outOrderNo = outOrderNo;
+    }
+
+    public Long getKcNo() {
+        return kcNo;
+    }
+
+    public void setKcNo(Long kcNo) {
+        this.kcNo = kcNo;
     }
 }

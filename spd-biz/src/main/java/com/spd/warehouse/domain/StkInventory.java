@@ -80,6 +80,9 @@ public class StkInventory extends BaseEntity
     @Excel(name = "入库单号")
     private String receiptOrderNo;
 
+    /** 科室库存明细id（反写） */
+    private Long kcNo;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -235,6 +238,14 @@ public class StkInventory extends BaseEntity
 
     public void setReceiptOrderNo(String receiptOrderNo) {
         this.receiptOrderNo = receiptOrderNo;
+    }
+
+    public Long getKcNo() {
+        return kcNo;
+    }
+
+    public void setKcNo(Long kcNo) {
+        this.kcNo = kcNo;
     }
 
     public void setDelFlag(Integer delFlag) {
