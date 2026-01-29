@@ -30,6 +30,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="user" javaType="SysUser">
             <result property="userId" column="u_user_id"/>
             <result property="userName" column="u_user_name"/>
+            <result property="nickName" column="u_nick_name"/>
         </association>
         <association property="department" javaType="FdDepartment">
             <result property="id" column="d_id"/>
@@ -109,6 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             w.name as w_name,
             u.user_id as u_user_id,
             u.user_name as u_user_name,
+            u.nick_name as u_nick_name,
             d.id as d_id,
             d.name as d_name
         from dep_purchase_apply dpa
@@ -291,10 +293,48 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update dep_purchase_apply_entry set del_flag = 1, update_time = now() where parent_id = #{id}
     </delete>
 
+    <!-- 批量新增申购明细，主键ID使用自增，不再从代码端传入，避免重复主键错误 -->
     <insert id="batchDepPurchaseApplyEntry">
-        insert into dep_purchase_apply_entry( id, parent_id, material_id, material_name, material_spec, unit, unit_price, qty, amt, reason, supplier_name, brand, model, create_by, create_time, update_by, update_time, remark) values
+        insert into dep_purchase_apply_entry(
+            parent_id,
+            material_id,
+            material_name,
+            material_spec,
+            unit,
+            unit_price,
+            qty,
+            amt,
+            reason,
+            supplier_name,
+            brand,
+            model,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )
+        values
         <foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt}, #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}, #{item.remark})
+            (
+                #{item.parentId},
+                #{item.materialId},
+                #{item.materialName},
+                #{item.materialSpec},
+                #{item.unit},
+                #{item.unitPrice},
+                #{item.qty},
+                #{item.amt},
+                #{item.reason},
+                #{item.supplierName},
+                #{item.brand},
+                #{item.model},
+                #{item.createBy},
+                #{item.createTime},
+                #{item.updateBy},
+                #{item.updateTime},
+                #{item.remark}
+            )
         </foreach>
     </insert>
 </mapper>

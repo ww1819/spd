@@ -57,10 +57,30 @@
 	<select id="selectMenuListByUserId" parameterType="SysMenu" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
 		from sys_menu m
-		left join sys_role_menu rm on m.menu_id = rm.menu_id
-		left join sys_user_role ur on rm.role_id = ur.role_id
-		left join sys_role ro on ur.role_id = ro.role_id
-		where ur.user_id = #{params.userId}
+		where (
+			-- 通过角色关联的菜单
+			exists (
+				select 1 from sys_role_menu rm
+				inner join sys_user_role ur on rm.role_id = ur.role_id
+				inner join sys_role ro on ur.role_id = ro.role_id
+				where rm.menu_id = m.menu_id
+				and ur.user_id = #{params.userId}
+				and ro.status = 0
+			)
+			-- 或者通过用户直接关联的菜单
+			or exists (
+				select 1 from sys_user_menu um
+				where um.menu_id = m.menu_id
+				and um.user_id = #{params.userId}
+			)
+			-- 或者通过工作组关联的菜单
+			or exists (
+				select 1 from sys_post_menu pm
+				inner join sys_user_post up on pm.post_id = up.post_id
+				where pm.menu_id = m.menu_id
+				and up.user_id = #{params.userId}
+			)
+		)
 		<if test="menuName != null and menuName != ''">
             AND m.menu_name like concat('%', #{menuName}, '%')
 		</if>
@@ -92,6 +112,13 @@
 				select 1 from sys_user_menu um
 				where um.menu_id = m.menu_id
 				and um.user_id = #{userId}
+			)
+			-- 或者通过工作组关联的菜单
+			or exists (
+				select 1 from sys_post_menu pm
+				inner join sys_user_post up on pm.post_id = up.post_id
+				where pm.menu_id = m.menu_id
+				and up.user_id = #{userId}
 			)
 		)
 		order by m.parent_id, m.order_num
@@ -134,6 +161,13 @@
 				select 1 from sys_user_menu um
 				where um.menu_id = m.menu_id
 				and um.user_id = #{userId}
+			)
+			-- 或者通过工作组关联的菜单权限
+			or exists (
+				select 1 from sys_post_menu pm
+				inner join sys_user_post up on pm.post_id = up.post_id
+				where pm.menu_id = m.menu_id
+				and up.user_id = #{userId}
 			)
 		)
 	</select>
