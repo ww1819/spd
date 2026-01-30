@@ -234,6 +234,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.bill_date desc
     </select>
 
+    <select id="selectOutboundSummaryByDepartment" resultType="java.util.HashMap">
+        select stk.department_id as departmentId,
+               d.name as departmentName,
+               ifnull(sum(stk.total_amount), 0) as outboundAmount,
+               ifnull(sum(e.qty), 0) as outboundQuantity
+        from stk_io_bill stk
+        left join fd_department d on stk.department_id = d.id
+        left join stk_io_bill_entry e on e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
+        where stk.del_flag != 1
+          and stk.bill_type = 201
+          and stk.bill_status = 2
+          and stk.department_id is not null
+        group by stk.department_id, d.name
+        order by outboundAmount desc
+    </select>
+
     <select id="selectRTHStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
         select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                 stk.bill_type billType,b.qty materialQty, b.unit_price unitPrice,

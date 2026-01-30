@@ -122,6 +122,12 @@ public interface IStkIoBillService
 
 
     /**
+     * 按科室汇总出库总金额（出库单 bill_type=201 已审核）
+     * @return 列表项：departmentId, departmentName, outboundAmount
+     */
+    List<Map<String, Object>> selectOutboundSummaryByDepartment();
+
+    /**
      * 查询入退货汇总列表
      * @param stkIoBill
      * @return

@@ -46,6 +46,13 @@ public interface StkIoBillMapper
     public TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill);
 
     /**
+     * 按科室汇总出库总金额（出库单 bill_type=201 已审核 bill_status=2）
+     *
+     * @return 列表项：departmentId, departmentName, outboundAmount
+     */
+    List<Map<String, Object>> selectOutboundSummaryByDepartment();
+
+    /**
      * 新增出入库
      *
      * @param stkIoBill 出入库

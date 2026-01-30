@@ -677,6 +677,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return stkIoBillMapper.selectCTKStkIoBillList(stkIoBill);
     }
     @Override
+    public List<Map<String, Object>> selectOutboundSummaryByDepartment() {
+        return stkIoBillMapper.selectOutboundSummaryByDepartment();
+    }
+
     public List<Map<String, Object>> selectRTHStkIoBillSummaryList(StkIoBill stkIoBill) {
         return stkIoBillMapper.selectRTHStkIoBillSummaryList(stkIoBill);
     }

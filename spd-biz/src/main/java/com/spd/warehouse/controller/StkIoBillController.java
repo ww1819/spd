@@ -1,6 +1,7 @@
 package com.spd.warehouse.controller;
 
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson2.JSONObject;
@@ -127,5 +128,13 @@ public class StkIoBillController extends BaseController
         return success(stkIoBill1);
     }
 
-
+    /**
+     * 按科室汇总出库总金额（数据可视化大屏用）
+     * @return 列表项：departmentId, departmentName, outboundAmount
+     */
+    @GetMapping("/outboundSummaryByDepartment")
+    public AjaxResult outboundSummaryByDepartment() {
+        List<Map<String, Object>> list = stkIoBillService.selectOutboundSummaryByDepartment();
+        return success(list);
+    }
 }
