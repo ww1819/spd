@@ -60,7 +60,11 @@ public class StkThInventoryController extends BaseController {
     @PostMapping("/addThInventory")
     public AjaxResult addThInventory(@RequestBody StkIoBill stkIoBill)
     {
-        return toAjax(stkIoBillService.insertTHStkIoBill(stkIoBill));
+        int rows = stkIoBillService.insertTHStkIoBill(stkIoBill);
+        if (rows > 0) {
+            return success(stkIoBill);
+        }
+        return AjaxResult.error("新增失败");
     }
 
     /**

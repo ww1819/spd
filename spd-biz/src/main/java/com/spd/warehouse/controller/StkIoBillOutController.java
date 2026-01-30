@@ -61,7 +61,11 @@ public class StkIoBillOutController extends BaseController {
     @PostMapping("/addOutWarehouse")
     public AjaxResult addOutWarehouse(@RequestBody StkIoBill stkIoBill)
     {
-        return toAjax(stkIoBillService.insertOutStkIoBill(stkIoBill));
+        int rows = stkIoBillService.insertOutStkIoBill(stkIoBill);
+        if (rows > 0) {
+            return success(stkIoBill);
+        }
+        return AjaxResult.error("新增失败");
     }
 
     /**

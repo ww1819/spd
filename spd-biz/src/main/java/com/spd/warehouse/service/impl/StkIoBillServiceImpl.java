@@ -228,6 +228,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if(stkIoBill == null){
             throw new ServiceException(String.format("入库业务ID：%s，不存在!", id));
         }
+        if (stkIoBill.getBillStatus() != null && stkIoBill.getBillStatus() == 2) {
+            throw new ServiceException("该单据已审核，不能重复审核");
+        }
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
 
         //更新库存   
