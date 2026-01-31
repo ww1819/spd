@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkIoProfitLossMapper">
+
+    <resultMap type="com.spd.warehouse.domain.StkIoProfitLoss" id="StkIoProfitLossResult">
+        <id    property="id"    column="id"    />
+        <result property="billNo"    column="bill_no"    />
+        <result property="stocktakingId"    column="stocktaking_id"    />
+        <result property="stocktakingNo"    column="stocktaking_no"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="billStatus"    column="bill_status"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="auditDate"    column="audit_date"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="delFlag"    column="del_flag"    />
+        <association property="warehouse" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult" />
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="com.spd.foundation.domain.FdWarehouse">
+        <id     property="id"    column="wId"     />
+        <result property="code"  column="warehouseCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap type="com.spd.warehouse.domain.StkIoProfitLoss" id="StkIoProfitLossWithEntryResult" extends="StkIoProfitLossResult">
+        <collection property="entryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="StkIoProfitLossEntryResult" />
+    </resultMap>
+
+    <resultMap type="com.spd.warehouse.domain.StkIoProfitLossEntry" id="StkIoProfitLossEntryResult">
+        <id    property="id"    column="sub_id"    />
+        <result property="parenId"    column="sub_paren_id"    />
+        <result property="stocktakingEntryId"    column="sub_stocktaking_entry_id"    />
+        <result property="kcNo"    column="sub_kc_no"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="batchNo"    column="sub_batch_no"    />
+        <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="bookQty"    column="sub_book_qty"    />
+        <result property="stockQty"    column="sub_stock_qty"    />
+        <result property="profitQty"    column="sub_profit_qty"    />
+        <result property="unitPrice"    column="sub_unit_price"    />
+        <result property="profitAmount"    column="sub_profit_amount"    />
+        <result property="beginTime"    column="sub_begin_time"    />
+        <result property="endTime"    column="sub_end_time"    />
+        <result property="delFlag"    column="sub_del_flag"    />
+        <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult" />
+    </resultMap>
+
+    <resultMap id="profitLossMaterialResult" type="com.spd.foundation.domain.FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+    </resultMap>
+
+    <!-- 有盈亏的盘点明细（用于加载盈亏单草稿）：返回 StkIoStocktakingEntry，列名与表一致 -->
+    <resultMap type="com.spd.warehouse.domain.StkIoStocktakingEntry" id="StocktakingEntryWithProfitResult">
+        <id    property="id"    column="e_id"    />
+        <result property="parenId"    column="e_paren_id"    />
+        <result property="kcNo"    column="e_kc_no"    />
+        <result property="materialId"    column="e_material_id"    />
+        <result property="unitPrice"    column="e_unit_price"    />
+        <result property="price"    column="e_price"    />
+        <result property="qty"    column="e_qty"    />
+        <result property="batchNo"    column="e_batch_no"    />
+        <result property="batchNumber"    column="e_batch_number"    />
+        <result property="beginTime"    column="e_begin_time"    />
+        <result property="endTime"    column="e_end_time"    />
+        <result property="stockQty"    column="e_stock_qty"    />
+        <result property="profitQty"    column="e_profit_qty"    />
+        <result property="stockAmount"    column="e_stock_amount"    />
+        <result property="profitAmount"    column="e_profit_amount"    />
+        <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult2" />
+    </resultMap>
+
+    <resultMap id="profitLossMaterialResult2" type="com.spd.foundation.domain.FdMaterial">
+        <id     property="id"    column="em_id"     />
+        <result property="code"  column="em_code"   />
+        <result property="name"  column="em_name"   />
+    </resultMap>
+
+    <sql id="selectStkIoProfitLossVo">
+        select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
+               p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag,
+               w.id as wId, w.code as warehouseCode, w.name as warehouseName
+        from stk_io_profit_loss p
+        left join fd_warehouse w on p.warehouse_id = w.id
+    </sql>
+
+    <select id="selectStkIoProfitLossById" resultMap="StkIoProfitLossWithEntryResult">
+        select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
+               p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag,
+               w.id as wId, w.code as warehouseCode, w.name as warehouseName,
+               e.id as sub_id, e.paren_id as sub_paren_id, e.stocktaking_entry_id as sub_stocktaking_entry_id, e.kc_no as sub_kc_no,
+               e.material_id as sub_material_id, e.batch_no as sub_batch_no, e.batch_number as sub_batch_number,
+               e.book_qty as sub_book_qty, e.stock_qty as sub_stock_qty, e.profit_qty as sub_profit_qty, e.unit_price as sub_unit_price,
+               e.profit_amount as sub_profit_amount, e.begin_time as sub_begin_time, e.end_time as sub_end_time,
+               e.del_flag as sub_del_flag,
+               m.id as mId, m.code as materialCode, m.name as materialName
+        from stk_io_profit_loss p
+        left join fd_warehouse w on p.warehouse_id = w.id
+        left join stk_io_profit_loss_entry e on e.paren_id = p.id and (e.del_flag is null or e.del_flag != 1)
+        left join fd_material m on e.material_id = m.id
+        where p.id = #{id} and (p.del_flag is null or p.del_flag != 1)
+    </select>
+
+    <select id="selectStkIoProfitLossList" resultMap="StkIoProfitLossResult">
+        <include refid="selectStkIoProfitLossVo"/>
+        <where>
+            (p.del_flag is null or p.del_flag != 1)
+            <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="stocktakingId != null"> and p.stocktaking_id = #{stocktakingId}</if>
+            <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
+            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
+            <if test="billStatus != null"> and p.bill_status = #{billStatus}</if>
+        </where>
+        order by p.create_time desc
+    </select>
+
+    <insert id="insertStkIoProfitLoss" parameterType="com.spd.warehouse.domain.StkIoProfitLoss" useGeneratedKeys="true" keyProperty="id">
+        insert into stk_io_profit_loss
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="billNo != null">bill_no,</if>
+            <if test="stocktakingId != null">stocktaking_id,</if>
+            <if test="stocktakingNo != null">stocktaking_no,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="billStatus != null">bill_status,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="delFlag != null">del_flag,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="billNo != null">#{billNo},</if>
+            <if test="stocktakingId != null">#{stocktakingId},</if>
+            <if test="stocktakingNo != null">#{stocktakingNo},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="billStatus != null">#{billStatus},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+        </trim>
+    </insert>
+
+    <update id="updateStkIoProfitLoss" parameterType="com.spd.warehouse.domain.StkIoProfitLoss">
+        update stk_io_profit_loss
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="billNo != null">bill_no = #{billNo},</if>
+            <if test="stocktakingId != null">stocktaking_id = #{stocktakingId},</if>
+            <if test="stocktakingNo != null">stocktaking_no = #{stocktakingNo},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="billStatus != null">bill_status = #{billStatus},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteStkIoProfitLossById" parameterType="Long">
+        update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id}
+    </update>
+
+    <update id="deleteStkIoProfitLossEntryByParenId" parameterType="Long">
+        update stk_io_profit_loss_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    </update>
+
+    <insert id="batchStkIoProfitLossEntry">
+        insert into stk_io_profit_loss_entry (paren_id, stocktaking_entry_id, kc_no, material_id, batch_no, batch_number, book_qty, stock_qty, profit_qty, unit_price, profit_amount, begin_time, end_time, del_flag, create_by, create_time, update_by, update_time)
+        values
+        <foreach item="item" collection="list" separator=",">
+            ( #{item.parenId}, #{item.stocktakingEntryId}, #{item.kcNo}, #{item.materialId}, #{item.batchNo}, #{item.batchNumber}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime} )
+        </foreach>
+    </insert>
+
+    <!-- 根据盘点单ID查询有盈亏的盘点明细（profit_qty != 0 或 profit_amount != 0） -->
+    <select id="selectStocktakingEntriesWithProfitLoss" resultMap="StocktakingEntryWithProfitResult">
+        select e.id as e_id, e.paren_id as e_paren_id, e.kc_no as e_kc_no, e.material_id as e_material_id, e.unit_price as e_unit_price, e.price as e_price,
+               e.qty as e_qty, e.batch_no as e_batch_no, e.batch_number as e_batch_number,
+               e.begin_time as e_begin_time, e.end_time as e_end_time,
+               e.stock_qty as e_stock_qty, e.profit_qty as e_profit_qty, e.stock_amount as e_stock_amount, e.profit_amount as e_profit_amount,
+               m.id as em_id, m.code as em_code, m.name as em_name
+        from stk_io_stocktaking_entry e
+        left join fd_material m on e.material_id = m.id
+        where e.paren_id = #{stocktakingId}
+          and (e.del_flag is null or e.del_flag != 1)
+          and ( (e.profit_qty is not null and e.profit_qty != 0) or (e.profit_amount is not null and e.profit_amount != 0) )
+    </select>
+
+    <select id="selectMaxBillNo" resultType="java.lang.String">
+        select max(bill_no) from stk_io_profit_loss
+        where bill_no like concat(#{datePrefix}, '%')
+    </select>
+
+    <select id="countByStocktakingId" resultType="java.lang.Integer">
+        select count(1) from stk_io_profit_loss
+        where stocktaking_id = #{stocktakingId} and (del_flag is null or del_flag != 1)
+    </select>
+</mapper>

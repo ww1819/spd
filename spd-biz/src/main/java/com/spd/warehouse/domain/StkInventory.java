@@ -48,6 +48,9 @@ public class StkInventory extends BaseEntity
     @Excel(name = "入库批次号")
     private String batchNo;
 
+    /** 批次对象表ID（关联 stk_batch.id，用于追溯） */
+    private Long batchId;
+
     /** 耗材批次号 */
     @Excel(name = "耗材批次号")
     private String materialNo;
@@ -155,6 +158,12 @@ public class StkInventory extends BaseEntity
     public String getBatchNo()
     {
         return batchNo;
+    }
+    public Long getBatchId() {
+        return batchId;
+    }
+    public void setBatchId(Long batchId) {
+        this.batchId = batchId;
     }
     public void setMaterialNo(String materialNo)
     {
@@ -290,6 +299,7 @@ public class StkInventory extends BaseEntity
             .append("unitPrice", getUnitPrice())
             .append("amt", getAmt())
             .append("batchNo", getBatchNo())
+            .append("batchId", getBatchId())
             .append("materialNo", getMaterialNo())
             .append("materialDate", getMaterialDate())
             .append("warehouseDate", getWarehouseDate())

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkBatchMapper">
+
+    <resultMap type="com.spd.warehouse.domain.StkBatch" id="StkBatchResult">
+        <id     property="id"    column="id"    />
+        <result property="batchNo"    column="batch_no"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="materialCode"    column="material_code"    />
+        <result property="materialName"    column="material_name"    />
+        <result property="speci"    column="speci"    />
+        <result property="model"    column="model"    />
+        <result property="unitId"    column="unit_id"    />
+        <result property="unitName"    column="unit_name"    />
+        <result property="unitPrice"    column="unit_price"    />
+        <result property="batchNumber"    column="batch_number"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="beginTime"    column="begin_time"    />
+        <result property="sterilizeBatchNo"    column="sterilize_batch_no"    />
+        <result property="sterilizeEndTime"    column="sterilize_end_time"    />
+        <result property="useTimes"    column="use_times"    />
+        <result property="mainBarcode"    column="main_barcode"    />
+        <result property="subBarcode"    column="sub_barcode"    />
+        <result property="registerNo"    column="register_no"    />
+        <result property="permitNo"    column="permit_no"    />
+        <result property="factoryId"    column="factory_id"    />
+        <result property="factoryCode"    column="factory_code"    />
+        <result property="factoryName"    column="factory_name"    />
+        <result property="supplierId"    column="supplier_id"    />
+        <result property="supplierCode"    column="supplier_code"    />
+        <result property="supplierName"    column="supplier_name"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="warehouseCode"    column="warehouse_code"    />
+        <result property="warehouseName"    column="warehouse_name"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="departmentCode"    column="department_code"    />
+        <result property="departmentName"    column="department_name"    />
+        <result property="storeroomId"    column="storeroom_id"    />
+        <result property="storeroomCode"    column="storeroom_code"    />
+        <result property="storeroomName"    column="storeroom_name"    />
+        <result property="financeCategoryId"    column="finance_category_id"    />
+        <result property="financeCategoryCode"    column="finance_category_code"    />
+        <result property="financeCategoryName"    column="finance_category_name"    />
+        <result property="batchSource"    column="batch_source"    />
+        <result property="billId"    column="bill_id"    />
+        <result property="billNo"    column="bill_no"    />
+        <result property="entryId"    column="entry_id"    />
+        <result property="inCodeDetailId"    column="in_code_detail_id"    />
+        <result property="auditTime"    column="audit_time"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="delTime"    column="del_time"    />
+        <result property="delBy"    column="del_by"    />
+    </resultMap>
+
+    <insert id="insertStkBatch" parameterType="com.spd.warehouse.domain.StkBatch" useGeneratedKeys="true" keyProperty="id">
+        insert into stk_batch (
+            batch_no, material_id, material_code, material_name, speci, model,
+            unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
+            sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
+            register_no, permit_no, factory_id, factory_code, factory_name,
+            supplier_id, supplier_code, supplier_name, warehouse_id, warehouse_code, warehouse_name,
+            department_id, department_code, department_name,
+            storeroom_id, storeroom_code, storeroom_name,
+            finance_category_id, finance_category_code, finance_category_name,
+            batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
+            create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+        ) values (
+            #{batchNo}, #{materialId}, #{materialCode}, #{materialName}, #{speci}, #{model},
+            #{unitId}, #{unitName}, #{unitPrice}, #{batchNumber}, #{endTime}, #{beginTime},
+            #{sterilizeBatchNo}, #{sterilizeEndTime}, #{useTimes}, #{mainBarcode}, #{subBarcode},
+            #{registerNo}, #{permitNo}, #{factoryId}, #{factoryCode}, #{factoryName},
+            #{supplierId}, #{supplierCode}, #{supplierName}, #{warehouseId}, #{warehouseCode}, #{warehouseName},
+            #{departmentId}, #{departmentCode}, #{departmentName},
+            #{storeroomId}, #{storeroomCode}, #{storeroomName},
+            #{financeCategoryId}, #{financeCategoryCode}, #{financeCategoryName},
+            #{batchSource}, #{billId}, #{billNo}, #{entryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
+            #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}
+        )
+    </insert>
+
+    <select id="selectByBatchNo" resultMap="StkBatchResult">
+        select id, batch_no, material_id, material_code, material_name, speci, model,
+               unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
+               sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
+               register_no, permit_no, factory_id, factory_code, factory_name,
+               supplier_id, supplier_code, supplier_name, warehouse_id, warehouse_code, warehouse_name,
+               department_id, department_code, department_name,
+               storeroom_id, storeroom_code, storeroom_name,
+               finance_category_id, finance_category_code, finance_category_name,
+               batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+        from stk_batch
+        where batch_no = #{batchNo} and (del_flag = 0 or del_flag is null)
+        limit 1
+    </select>
+
+    <select id="selectStkBatchById" resultMap="StkBatchResult">
+        select id, batch_no, material_id, material_code, material_name, speci, model,
+               unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
+               sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
+               register_no, permit_no, factory_id, factory_code, factory_name,
+               supplier_id, supplier_code, supplier_name, warehouse_id, warehouse_code, warehouse_name,
+               department_id, department_code, department_name,
+               storeroom_id, storeroom_code, storeroom_name,
+               finance_category_id, finance_category_code, finance_category_name,
+               batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+        from stk_batch
+        where id = #{id}
+    </select>
+</mapper>

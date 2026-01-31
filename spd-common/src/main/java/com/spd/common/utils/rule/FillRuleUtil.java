@@ -52,13 +52,11 @@ public class FillRuleUtil {
         return str + newNum ;
     }
 
+    /** 单据号中的日期部分，取电脑（JVM 默认时区）的当天 yyyyMMdd */
     public static String getDateNum(){
-        // 获取当前时间
         LocalDate now = LocalDate.now();
-        // 格式化当前时间
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String prefix = now.format(formatter);
-        return prefix;
+        return now.format(formatter);
     }
 
     public static String createBatchNo() {

@@ -87,6 +87,21 @@ public interface StkIoStocktakingMapper
     public int deleteStkIoStocktakingEntryByParenId(Long id);
 
     /**
+     * 修改盘点明细（按主键）
+     */
+    int updateStkIoStocktakingEntry(StkIoStocktakingEntry entry);
+
+    /**
+     * 单条新增盘点明细（id 自增）
+     */
+    int insertStkIoStocktakingEntrySingle(StkIoStocktakingEntry entry);
+
+    /**
+     * 软删盘点明细：同一父单下、id 不在保留列表中的明细
+     */
+    int deleteStkIoStocktakingEntryByParenIdExceptIds(@Param("parenId") Long parenId, @Param("keepIds") List<Long> keepIds);
+
+    /**
      * 查询当天最大流水号
      * @param date
      * @return

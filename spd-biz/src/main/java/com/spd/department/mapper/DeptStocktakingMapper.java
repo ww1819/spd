@@ -4,6 +4,7 @@ import java.util.List;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -88,6 +89,21 @@ public interface DeptStocktakingMapper
      * @return 结果
      */
     public int deleteDeptStocktakingEntryByParenId(Long id);
+
+    /**
+     * 修改盘点明细（按主键）
+     */
+    int updateDeptStocktakingEntry(StkIoStocktakingEntry entry);
+
+    /**
+     * 单条新增盘点明细（id 自增）
+     */
+    int insertDeptStocktakingEntrySingle(StkIoStocktakingEntry entry);
+
+    /**
+     * 软删盘点明细：同一父单下、id 不在保留列表中的明细
+     */
+    int deleteDeptStocktakingEntryByParenIdExceptIds(@Param("parenId") Long parenId, @Param("keepIds") List<Long> keepIds);
 
     /**
      * 查询当天最大流水号

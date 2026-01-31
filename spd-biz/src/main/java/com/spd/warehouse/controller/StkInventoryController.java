@@ -54,12 +54,21 @@ public class StkInventoryController extends BaseController
         List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
         BigDecimal subTotalQty = BigDecimal.ZERO;
         BigDecimal subTotalAmt = BigDecimal.ZERO;
-        for (StkInventory inventory : list) {
-            subTotalQty = subTotalQty.add(inventory.getQty());
-            subTotalAmt = subTotalAmt.add(inventory.getAmt());
+        if (list != null) {
+            for (StkInventory inventory : list) {
+                if (inventory.getQty() != null) {
+                    subTotalQty = subTotalQty.add(inventory.getQty());
+                }
+                if (inventory.getAmt() != null) {
+                    subTotalAmt = subTotalAmt.add(inventory.getAmt());
+                }
+            }
         }
 
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListTotal(stkInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
         Long total = new PageInfo<StkInventory>(list).getTotal();
@@ -158,6 +167,28 @@ public class StkInventoryController extends BaseController
         List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
         ExcelUtil<StkInventory> util = new ExcelUtil<StkInventory>(StkInventory.class);
         util.exportExcel(response, list, "库存明细数据");
+    }
+
+    /**
+     * 库存预警列表（与 /{id} 区分，避免 listInventoryAlert 被当作 id）
+     */
+    @GetMapping("/listInventoryAlert")
+    public TableDataInfo listInventoryAlert(StkInventory stkInventory)
+    {
+        startPage();
+        List<Map<String, Object>> list = stkInventoryService.selectInventoryAlertList(stkInventory);
+        return getDataTable(list);
+    }
+
+    /**
+     * 有效期预警表列表（与 /{id} 区分，避免 listExpiryAlert 被当作 id）
+     */
+    @GetMapping("/listExpiryAlert")
+    public TableDataInfo listExpiryAlert(StkInventory stkInventory)
+    {
+        startPage();
+        List<Map<String, Object>> list = stkInventoryService.selectExpiryAlertList(stkInventory);
+        return getDataTable(list);
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.spd.warehouse.service.impl;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -8,8 +7,6 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
-import com.spd.warehouse.domain.StkInventory;
-import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -31,9 +28,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 {
     @Autowired
     private StkIoStocktakingMapper stkIoStocktakingMapper;
-
-    @Autowired
-    private StkInventoryMapper stkInventoryMapper;
 
     /**
      * 查询盘点
@@ -96,8 +90,24 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
-        stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenId(stkIoStocktaking.getId());
-        insertStkIoStocktakingEntry(stkIoStocktaking);
+        Long parenId = stkIoStocktaking.getId();
+        List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
+        List<Long> keepIds = new ArrayList<>();
+        if (StringUtils.isNotNull(entryList)) {
+            for (StkIoStocktakingEntry entry : entryList) {
+                entry.setParenId(parenId);
+                if (StringUtils.isEmpty(entry.getBatchNo())) {
+                    entry.setBatchNo(getBatchNumber());
+                }
+                if (entry.getId() != null) {
+                    stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
+                    keepIds.add(entry.getId());
+                } else {
+                    stkIoStocktakingMapper.insertStkIoStocktakingEntrySingle(entry);
+                }
+            }
+            stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIdExceptIds(parenId, keepIds);
+        }
         return stkIoStocktakingMapper.updateStkIoStocktaking(stkIoStocktaking);
     }
 
@@ -142,11 +152,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException(String.format("盘点业务ID：%s，不存在!", id));
         }
 
-        List<StkIoStocktakingEntry> stkIoStocktakingEntryList = stkIoStocktaking.getStkIoStocktakingEntryList();
-
-        //更新库存
-        updateInventory(stkIoStocktaking,stkIoStocktakingEntryList);
-
+        // 盘点单审核仅更新审核状态，不再改库存；库存变动由盈亏单审核完成
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);
 
@@ -157,93 +163,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public List<StkIoStocktaking> getMonthHandleDataList(String beginDate, String endDate) {
         return stkIoStocktakingMapper.getMonthHandleDataList(beginDate,endDate);
-    }
-
-    private void updateInventory(StkIoStocktaking stkIoStocktaking,List<StkIoStocktakingEntry> stkIoStocktakingEntryList){
-        Integer stockType = stkIoStocktaking.getStockType();
-        StkInventory stkInventory = null;
-
-        for(StkIoStocktakingEntry entry : stkIoStocktakingEntryList){
-            if(entry.getQty() != null && BigDecimal.ZERO.compareTo(entry.getQty()) != 0){
-
-                if(stockType == 501){//期初
-                    stkInventory = new StkInventory();
-                    stkInventory.setBatchNo(entry.getBatchNo());
-                    stkInventory.setMaterialId(entry.getMaterialId());
-                    stkInventory.setWarehouseId(stkIoStocktaking.getWarehouseId());
-                    stkInventory.setQty(entry.getQty());
-                    // 优先使用 unitPrice，如果为空则使用 price
-                    BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-                    stkInventory.setUnitPrice(unitPrice);
-                    stkInventory.setAmt(entry.getAmt());
-                    stkInventory.setMaterialDate(new Date());
-                    stkInventory.setWarehouseDate(new Date());
-                    stkInventory.setSupplierId(stkIoStocktaking.getSupplerId());
-                    stkInventory.setCreateTime(new Date());
-                    stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
-
-                    stkInventoryMapper.insertStkInventory(stkInventory);
-                }else if(stockType == 502){//盘点
-                    String batchNo = entry.getBatchNo();
-                    BigDecimal stockQty = entry.getStockQty();//盘点数量
-                    BigDecimal qty = entry.getQty();//库存数量
-
-                    StkInventory inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
-
-                    if(inventory == null){
-                        throw new ServiceException(String.format("库存批次号：%s，不存在!", batchNo));
-                    }
-
-                    if(stockQty.compareTo(qty) == 0){
-                        continue;
-                    }
-
-                    BigDecimal totalQty = BigDecimal.ZERO;
-                    BigDecimal totalAmt = BigDecimal.ZERO;
-
-                    if(stockQty.compareTo(qty) > 0){
-                        BigDecimal stkQty = stockQty.subtract(qty);//最终盘点数
-                        //库存数量+最终盘点数
-                        totalQty = totalQty.add(inventory.getQty().add(stkQty));
-                        totalAmt = totalAmt.add(inventory.getQty().add(stkQty).multiply(entry.getPrice()));
-                    }else{
-                        totalQty = totalQty.add(stockQty);//取盘点数
-                        totalAmt = totalAmt.add(stockQty.multiply(entry.getPrice()));
-                    }
-                    inventory.setQty(totalQty);
-                    inventory.setAmt(totalAmt);
-                    inventory.setUnitPrice(entry.getPrice());
-                    inventory.setWarehouseDate(new Date());
-
-                    stkInventoryMapper.updateStkInventory(inventory);
-
-//                    if(inventory == null){
-//                        inventory = new StkInventory();
-//
-//                        inventory.setBatchNo(entry.getBatchNo());
-//                        inventory.setMaterialId(entry.getMaterialId());
-//                        inventory.setWarehouseId(stkIoStocktaking.getWarehouseId());
-//                        inventory.setQty(entry.getQty());
-//                        inventory.setUnitPrice(entry.getPrice());
-//                        inventory.setAmt(entry.getAmt());
-//                        inventory.setMaterialDate(new Date());
-//                        inventory.setWarehouseDate(new Date());
-//                        inventory.setSupplierId(stkIoStocktaking.getSupplerId());
-//                        inventory.setCreateTime(new Date());
-//                        inventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
-//
-//                        stkInventoryMapper.insertStkInventory(inventory);
-//                    }else{
-//                        BigDecimal totalQty = inventory.getQty().add(entry.getQty());
-//                        inventory.setQty(totalQty);
-//                        inventory.setAmt(totalQty.multiply(entry.getPrice()));
-//                        inventory.setWarehouseDate(new Date());
-//
-//                        stkInventoryMapper.updateStkInventory(inventory);
-//                    }
-                }
-            }
-        }
     }
 
     /**

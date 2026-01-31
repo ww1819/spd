@@ -92,4 +92,18 @@ public interface IStkInventoryService
      */
     TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory);
 
+    /**
+     * 库存预警列表
+     * @param stkInventory 查询条件（仓库、耗材、预警状态、供应商等）
+     * @return 预警列表
+     */
+    List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory);
+
+    /**
+     * 有效期预警表列表
+     * @param stkInventory 查询条件
+     * @return 有效期预警列表
+     */
+    List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory);
+
 }

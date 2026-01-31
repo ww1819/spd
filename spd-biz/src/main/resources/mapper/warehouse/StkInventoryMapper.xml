@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="unitPrice"    column="unit_price"    />
         <result property="amt"    column="amt"    />
         <result property="batchNo"    column="batch_no"    />
+        <result property="batchId"    column="batch_id"    />
         <result property="materialNo"    column="material_no"    />
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
@@ -69,7 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectStkInventoryVo">
         select stk.id, stk.qty, stk.material_id, stk.warehouse_id, stk.unit_price,stk.amt,
-				stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
+				stk.batch_no, stk.batch_id, stk.material_no, stk.material_date, stk.warehouse_date,
 				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
@@ -247,6 +248,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
             <if test="batchNo != null">batch_no,</if>
+            <if test="batchId != null">batch_id,</if>
             <if test="materialNo != null">material_no,</if>
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
@@ -263,6 +265,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
             <if test="batchNo != null">#{batchNo},</if>
+            <if test="batchId != null">#{batchId},</if>
             <if test="materialNo != null">#{materialNo},</if>
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
@@ -283,6 +286,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="unitPrice != null">unit_price = #{unitPrice},</if>
             <if test="amt != null">amt = #{amt},</if>
             <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
             <if test="materialNo != null">material_no = #{materialNo},</if>
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
@@ -317,5 +321,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectStkInventoryByBatchNoAndWarehouse" resultMap="StkInventoryResult">
         select * from stk_inventory where batch_no = #{batchNo} and warehouse_id = #{warehouseId} order by id desc limit 1
+    </select>
+
+    <select id="selectStkInventoryByBatchNoAndMaterialIdAndWarehouse" resultMap="StkInventoryResult">
+        select * from stk_inventory where batch_no = #{batchNo} and material_id = #{materialId} and warehouse_id = #{warehouseId} order by id desc limit 1
+    </select>
+
+    <!-- 库存预警列表：占位查询（返回空集），避免 /listInventoryAlert 被 /{id} 匹配 -->
+    <select id="selectInventoryAlertList" resultType="java.util.HashMap">
+        select stk.id from stk_inventory stk where 1=0
+    </select>
+
+    <!-- 有效期预警表列表：占位查询（返回空集），避免 /listExpiryAlert 被 /{id} 匹配 -->
+    <select id="selectExpiryAlertList" resultType="java.util.HashMap">
+        select stk.id from stk_inventory stk where 1=0
     </select>
 </mapper>

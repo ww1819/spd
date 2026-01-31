@@ -61,6 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="price"    column="sub_price"    />
         <result property="amt"    column="sub_amt"    />
         <result property="batchNo"    column="sub_batch_no"    />
+        <result property="kcNo"    column="sub_kc_no"    />
         <result property="batchNumber"    column="sub_batch_number"    />
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
@@ -143,7 +144,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 d.id as dId, d.code as departmentCode, d.name as departmentName,
                 w.id as wId, w.code as warehouseCode, w.name as warehouseName,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
-                b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
+                b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.kc_no as sub_kc_no,
                 b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.del_flag as sub_del_flag, b.remark as sub_remark,b.stock_qty as sub_stock_qty,b.profit_qty as sub_profit_qty,
                 b.stock_amount as sub_stock_amount,b.profit_amount as sub_profit_amount,
@@ -240,20 +241,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteStkIoStocktakingEntryByParenIds" parameterType="String">
-        update stk_io_stocktaking_entry set del_flag = 1, update_time = now() where paren_id in
+        update stk_io_stocktaking_entry set del_flag = 1 where paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
     <delete id="deleteStkIoStocktakingEntryByParenId" parameterType="Long">
-        update stk_io_stocktaking_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+        update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId}
     </delete>
 
+    <update id="updateStkIoStocktakingEntry" parameterType="StkIoStocktakingEntry">
+        update stk_io_stocktaking_entry
+        set paren_id = #{parenId}, commodity_id = #{commodityId}, material_id = #{materialId}, unit_price = #{unitPrice},
+            qty = #{qty}, price = #{price}, amt = #{amt}, batch_no = #{batchNo}, kc_no = #{kcNo}, batch_number = #{batchNumber},
+            begin_time = #{beginTime}, end_time = #{endTime}, del_flag = #{delFlag}, remark = #{remark},
+            stock_qty = #{stockQty}, profit_qty = #{profitQty}, stock_amount = #{stockAmount}, profit_amount = #{profitAmount}
+        where id = #{id}
+    </update>
+
+    <insert id="insertStkIoStocktakingEntrySingle" parameterType="StkIoStocktakingEntry" useGeneratedKeys="true" keyProperty="id">
+        insert into stk_io_stocktaking_entry( paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount, profit_amount)
+        values ( #{parenId}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark}, #{stockQty}, #{profitQty}, #{stockAmount}, #{profitAmount})
+    </insert>
+
+    <update id="deleteStkIoStocktakingEntryByParenIdExceptIds">
+        update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId} and (del_flag is null or del_flag != 1)
+        <if test="keepIds != null and keepIds.size() > 0">
+            and id not in
+            <foreach item="id" collection="keepIds" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+    </update>
+
     <insert id="batchStkIoStocktakingEntry">
-        insert into stk_io_stocktaking_entry( id, paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount,profit_amount) values
-		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.stockQty}, #{item.profitQty}, #{item.stockAmount}, #{item.profitAmount})
+        insert into stk_io_stocktaking_entry( paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount, profit_amount) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            ( #{item.parenId}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.stockQty}, #{item.profitQty}, #{item.stockAmount}, #{item.profitAmount})
         </foreach>
     </insert>
 

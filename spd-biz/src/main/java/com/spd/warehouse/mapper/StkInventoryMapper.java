@@ -108,6 +108,16 @@ public interface StkInventoryMapper
     public StkInventory selectStkInventoryByBatchNoAndWarehouse(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
+     * 按批次号、耗材ID、仓库ID查询库存明细（盈亏单审核等场景精确匹配）
+     *
+     * @param batchNo 批次号
+     * @param materialId 耗材ID
+     * @param warehouseId 仓库ID
+     * @return 库存明细
+     */
+    public StkInventory selectStkInventoryByBatchNoAndMaterialIdAndWarehouse(@Param("batchNo") String batchNo, @Param("materialId") Long materialId, @Param("warehouseId") Long warehouseId);
+
+    /**
      * 按仓库筛选实时库存、基础耗材
      * @param stkInventory
      * @return
@@ -126,5 +136,19 @@ public interface StkInventoryMapper
      * @return
      */
     TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory);
+
+    /**
+     * 库存预警列表
+     * @param stkInventory 查询条件
+     * @return 预警列表（map：materialCode、materialName、currentQty、safetyStock、alertStatus 等）
+     */
+    List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory);
+
+    /**
+     * 有效期预警表列表
+     * @param stkInventory 查询条件
+     * @return 有效期预警列表
+     */
+    List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory);
 
 }

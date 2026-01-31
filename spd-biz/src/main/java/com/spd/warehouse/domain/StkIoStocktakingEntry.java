@@ -54,6 +54,9 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
+    /** 库存明细id（盘点时取自stk_inventory.id） */
+    private Long kcNo;
+
     /** 批号 */
     @Excel(name = "批号")
     private String batchNumber;
@@ -171,6 +174,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     {
         return batchNo;
     }
+    public Long getKcNo() { return kcNo; }
+    public void setKcNo(Long kcNo) { this.kcNo = kcNo; }
     public void setBatchNumber(String batchNumber)
     {
         this.batchNumber = batchNumber;
@@ -260,6 +265,7 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("price", getPrice())
             .append("amt", getAmt())
             .append("batchNo", getBatchNo())
+            .append("kcNo", getKcNo())
             .append("batchNumber", getBatchNumber())
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())

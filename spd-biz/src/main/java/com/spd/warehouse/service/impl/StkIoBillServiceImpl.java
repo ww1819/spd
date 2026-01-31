@@ -1,6 +1,7 @@
 package com.spd.warehouse.service.impl;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -18,11 +19,25 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.BasApplyMapper;
 import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
+import com.spd.foundation.domain.FdFactory;
+import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdUnit;
+import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.FdWarehouseCategory;
+import com.spd.foundation.mapper.FdFactoryMapper;
+import com.spd.foundation.mapper.FdFinanceCategoryMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.foundation.mapper.FdUnitMapper;
+import com.spd.foundation.mapper.FdWarehouseMapper;
+import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.warehouse.domain.HcCkFlow;
+import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.mapper.HcCkFlowMapper;
+import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,6 +77,27 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private StkBatchMapper stkBatchMapper;
+
+    @Autowired
+    private FdSupplierMapper fdSupplierMapper;
+
+    @Autowired
+    private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FdFactoryMapper fdFactoryMapper;
+
+    @Autowired
+    private FdWarehouseCategoryMapper fdWarehouseCategoryMapper;
+
+    @Autowired
+    private FdFinanceCategoryMapper fdFinanceCategoryMapper;
+
+    @Autowired
+    private FdUnitMapper fdUnitMapper;
 
     @Autowired
     private BasApplyMapper basApplyMapper;
@@ -123,8 +159,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         // 根据billType生成不同的单据号
         if (stkIoBill.getBillNo() == null || stkIoBill.getBillNo().isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 501) {
-                // 调拨单类型，使用DB前缀
-                stkIoBill.setBillNo(getJSNumber("DB"));
+                // 调拨单：单号里的日期 = 当前时间，SimpleDateFormat 转成 yyyyMMdd
+                Date date = new Date();
+                String dateStr = new SimpleDateFormat("yyyyMMdd").format(date);
+                stkIoBill.setBillNo(getJSNumber("DB", dateStr));
             } else {
                 // 默认入库类型，使用RK前缀
                 stkIoBill.setBillNo(getNumber());
@@ -253,8 +291,21 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
             if(entry.getQty() != null && BigDecimal.ZERO.compareTo(entry.getQty()) != 0){
                 if(billType == 101){//入库
+                    // 批次表：若该批次号不存在则插入一条批次记录，用于追溯；并关联 batch_id 到库存
+                    StkBatch stkBatch = null;
+                    if (StringUtils.isNotEmpty(entry.getBatchNo())) {
+                        stkBatch = stkBatchMapper.selectByBatchNo(entry.getBatchNo());
+                        if (stkBatch == null) {
+                            stkBatch = buildStkBatchForInbound(entry, stkIoBill, supplerId);
+                            stkBatchMapper.insertStkBatch(stkBatch);
+                        }
+                    }
+
                     stkInventory = new StkInventory();
                     stkInventory.setBatchNo(entry.getBatchNo());
+                    if (stkBatch != null) {
+                        stkInventory.setBatchId(stkBatch.getId());
+                    }
                     stkInventory.setMaterialNo(entry.getBatchNumber());
                     stkInventory.setMaterialId(entry.getMaterialId());
                     stkInventory.setWarehouseId(stkIoBill.getWarehouseId());
@@ -459,9 +510,240 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setCreateTime(new Date());
                     tkFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
                     hcCkFlowMapper.insertHcCkFlow(tkFlow);
+                } else if (billType == 501) {// 调拨：转出仓库扣减+流水ZC，转入仓库增加+流水ZR
+                    Long outWarehouseId = stkIoBill.getWarehouseId();  // 转出仓库
+                    Long inWarehouseId = stkIoBill.getDepartmentId(); // 调拨单中 department_id 存调入仓库id
+                    if (outWarehouseId == null) {
+                        throw new ServiceException("调拨单转出仓库不能为空");
+                    }
+                    if (inWarehouseId == null) {
+                        throw new ServiceException("调拨单调入仓库不能为空");
+                    }
+                    String batchNo = entry.getBatchNo();
+                    BigDecimal qty = entry.getQty();
+
+                    // 1) 转出仓库：优先按明细 kc_no（库存id）查库存，否则按批次号+转出仓库查；扣减并插流水 ZC
+                    StkInventory outInventory = null;
+                    if (entry.getKcNo() != null) {
+                        outInventory = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
+                    }
+                    if (outInventory == null) {
+                        outInventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, outWarehouseId);
+                    }
+                    if (outInventory == null) {
+                        outInventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                    }
+                    if (outInventory == null) {
+                        throw new ServiceException(String.format("调拨-批次号：%s，在转出仓库不存在!", batchNo));
+                    }
+                    if (!outWarehouseId.equals(outInventory.getWarehouseId())) {
+                        throw new ServiceException(String.format("调拨-批次号：%s，不在转出仓库!", batchNo));
+                    }
+                    validateInventory(batchNo, stkIoBillEntryList);
+                    BigDecimal outQty = outInventory.getQty();
+                    BigDecimal unitPrice = outInventory.getUnitPrice();
+                    if (qty.compareTo(outQty) > 0) {
+                        throw new ServiceException(String.format("调拨转出库存不足！数量：%s，实际库存：%s", qty, outQty));
+                    }
+                    BigDecimal outSubQty = outQty.subtract(qty);
+                    outInventory.setQty(outSubQty);
+                    outInventory.setAmt(unitPrice != null && outSubQty != null ? outSubQty.multiply(unitPrice) : BigDecimal.ZERO);
+                    outInventory.setUpdateTime(new Date());
+                    outInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkInventoryMapper.updateStkInventory(outInventory);
+
+                    HcCkFlow zcFlow = new HcCkFlow();
+                    zcFlow.setBillId(stkIoBill.getId());
+                    zcFlow.setEntryId(entry.getId());
+                    zcFlow.setWarehouseId(outWarehouseId);
+                    zcFlow.setMaterialId(entry.getMaterialId());
+                    zcFlow.setBatchNo(entry.getBatchNo());
+                    zcFlow.setBatchNumber(entry.getBatchNumber());
+                    zcFlow.setQty(entry.getQty());
+                    zcFlow.setUnitPrice(entry.getUnitPrice());
+                    zcFlow.setAmt(entry.getAmt());
+                    zcFlow.setBeginTime(entry.getBeginTime());
+                    zcFlow.setEndTime(entry.getEndTime());
+                    zcFlow.setSupplierId(outInventory.getSupplierId());
+                    zcFlow.setLx("ZC");
+                    zcFlow.setKcNo(outInventory.getId());
+                    zcFlow.setFlowTime(new Date());
+                    zcFlow.setDelFlag(0);
+                    zcFlow.setCreateTime(new Date());
+                    zcFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    hcCkFlowMapper.insertHcCkFlow(zcFlow);
+
+                    // 2) 转入仓库：增加库存，插流水 ZR
+                    StkInventory inInventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, inWarehouseId);
+                    if (inInventory == null) {
+                        StkBatch stkBatch = null;
+                        if (StringUtils.isNotEmpty(batchNo)) {
+                            stkBatch = stkBatchMapper.selectByBatchNo(batchNo);
+                            if (stkBatch == null) {
+                                stkBatch = buildStkBatchForInbound(entry, stkIoBill, supplerId);
+                                stkBatchMapper.insertStkBatch(stkBatch);
+                            }
+                        }
+                        inInventory = new StkInventory();
+                        inInventory.setBatchNo(batchNo);
+                        if (stkBatch != null) {
+                            inInventory.setBatchId(stkBatch.getId());
+                        }
+                        inInventory.setMaterialNo(entry.getBatchNumber());
+                        inInventory.setMaterialId(entry.getMaterialId());
+                        inInventory.setWarehouseId(inWarehouseId);
+                        inInventory.setQty(qty);
+                        BigDecimal inUnitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                        inInventory.setUnitPrice(inUnitPrice);
+                        inInventory.setAmt(entry.getAmt());
+                        inInventory.setMaterialDate(new Date());
+                        inInventory.setWarehouseDate(new Date());
+                        inInventory.setSupplierId(supplerId);
+                        inInventory.setBeginTime(entry.getBeginTime());
+                        inInventory.setEndTime(entry.getEndTime());
+                        inInventory.setReceiptOrderNo(stkIoBill.getBillNo());
+                        inInventory.setCreateTime(new Date());
+                        inInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        stkInventoryMapper.insertStkInventory(inInventory);
+
+                        HcCkFlow zrFlow = new HcCkFlow();
+                        zrFlow.setBillId(stkIoBill.getId());
+                        zrFlow.setEntryId(entry.getId());
+                        zrFlow.setWarehouseId(inWarehouseId);
+                        zrFlow.setMaterialId(entry.getMaterialId());
+                        zrFlow.setBatchNo(entry.getBatchNo());
+                        zrFlow.setBatchNumber(entry.getBatchNumber());
+                        zrFlow.setQty(entry.getQty());
+                        zrFlow.setUnitPrice(inInventory.getUnitPrice());
+                        zrFlow.setAmt(entry.getAmt());
+                        zrFlow.setBeginTime(entry.getBeginTime());
+                        zrFlow.setEndTime(entry.getEndTime());
+                        zrFlow.setSupplierId(supplerId);
+                        zrFlow.setLx("ZR");
+                        zrFlow.setKcNo(inInventory.getId());
+                        zrFlow.setFlowTime(new Date());
+                        zrFlow.setDelFlag(0);
+                        zrFlow.setCreateTime(new Date());
+                        zrFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        hcCkFlowMapper.insertHcCkFlow(zrFlow);
+                    } else {
+                        BigDecimal inQty = inInventory.getQty().add(qty);
+                        inInventory.setQty(inQty);
+                        BigDecimal inUp = inInventory.getUnitPrice();
+                        inInventory.setAmt(inUp != null && inQty != null ? inQty.multiply(inUp) : BigDecimal.ZERO);
+                        inInventory.setUpdateTime(new Date());
+                        inInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                        stkInventoryMapper.updateStkInventory(inInventory);
+
+                        HcCkFlow zrFlow = new HcCkFlow();
+                        zrFlow.setBillId(stkIoBill.getId());
+                        zrFlow.setEntryId(entry.getId());
+                        zrFlow.setWarehouseId(inWarehouseId);
+                        zrFlow.setMaterialId(entry.getMaterialId());
+                        zrFlow.setBatchNo(entry.getBatchNo());
+                        zrFlow.setBatchNumber(entry.getBatchNumber());
+                        zrFlow.setQty(entry.getQty());
+                        zrFlow.setUnitPrice(inInventory.getUnitPrice());
+                        zrFlow.setAmt(entry.getAmt());
+                        zrFlow.setBeginTime(entry.getBeginTime());
+                        zrFlow.setEndTime(entry.getEndTime());
+                        zrFlow.setSupplierId(inInventory.getSupplierId());
+                        zrFlow.setLx("ZR");
+                        zrFlow.setKcNo(inInventory.getId());
+                        zrFlow.setFlowTime(new Date());
+                        zrFlow.setDelFlag(0);
+                        zrFlow.setCreateTime(new Date());
+                        zrFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        hcCkFlowMapper.insertHcCkFlow(zrFlow);
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * 入库审核时组装批次记录（采购入库）
+     */
+    private StkBatch buildStkBatchForInbound(StkIoBillEntry entry, StkIoBill stkIoBill, Long supplerId) {
+        StkBatch b = new StkBatch();
+        b.setBatchNo(entry.getBatchNo());
+        b.setMaterialId(entry.getMaterialId());
+        b.setBatchNumber(entry.getBatchNumber());
+        b.setBeginTime(entry.getBeginTime());
+        b.setEndTime(entry.getEndTime());
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        b.setUnitPrice(unitPrice);
+        b.setBillId(stkIoBill.getId());
+        b.setBillNo(stkIoBill.getBillNo());
+        b.setEntryId(entry.getId());
+        b.setBatchSource("1"); // 采购入库
+        Date now = new Date();
+        String username = SecurityUtils.getLoginUser().getUsername();
+        b.setAuditTime(now);
+        b.setAuditBy(username);
+        b.setCreateTime(now);
+        b.setCreateBy(username);
+        b.setDelFlag(0);
+
+        if (entry.getMaterialId() != null) {
+            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            if (m != null) {
+                b.setMaterialCode(m.getCode());
+                b.setMaterialName(m.getName());
+                b.setSpeci(m.getSpeci());
+                b.setModel(m.getModel());
+                b.setRegisterNo(m.getRegisterNo());
+                b.setPermitNo(m.getPermitNo());
+                b.setUnitId(m.getUnitId());
+                if (m.getUnitId() != null) {
+                    FdUnit u = fdUnitMapper.selectFdUnitByUnitId(m.getUnitId());
+                    if (u != null) {
+                        b.setUnitName(u.getUnitName());
+                    }
+                }
+                if (m.getFactoryId() != null) {
+                    FdFactory f = fdFactoryMapper.selectFdFactoryByFactoryId(m.getFactoryId());
+                    if (f != null) {
+                        b.setFactoryId(f.getFactoryId());
+                        b.setFactoryCode(f.getFactoryCode());
+                        b.setFactoryName(f.getFactoryName());
+                    }
+                }
+                if (m.getStoreroomId() != null) {
+                    FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(m.getStoreroomId());
+                    if (wc != null) {
+                        b.setStoreroomId(wc.getWarehouseCategoryId());
+                        b.setStoreroomCode(wc.getWarehouseCategoryCode());
+                        b.setStoreroomName(wc.getWarehouseCategoryName());
+                    }
+                }
+                if (m.getFinanceCategoryId() != null) {
+                    FdFinanceCategory fc = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(m.getFinanceCategoryId());
+                    if (fc != null) {
+                        b.setFinanceCategoryId(fc.getFinanceCategoryId());
+                        b.setFinanceCategoryCode(fc.getFinanceCategoryCode());
+                        b.setFinanceCategoryName(fc.getFinanceCategoryName());
+                    }
+                }
+            }
+        }
+        if (supplerId != null) {
+            FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplerId);
+            if (sup != null) {
+                b.setSupplierId(sup.getId());
+                b.setSupplierCode(sup.getCode());
+                b.setSupplierName(sup.getName());
+            }
+        }
+        if (stkIoBill.getWarehouseId() != null) {
+            b.setWarehouseId(stkIoBill.getWarehouseId());
+            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
+            if (wh != null) {
+                b.setWarehouseCode(wh.getCode());
+                b.setWarehouseName(wh.getName());
+            }
+        }
+        return b;
     }
 
     /**
@@ -636,8 +918,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     public String getJSNumber(String str) {
         String date = FillRuleUtil.getDateNum();
         String maxNum = stkIoBillMapper.selectJSMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        return FillRuleUtil.getNumber(str, maxNum, date);
+    }
+
+    /** 按指定日期生成单号（调拨单用制单日期，与前端“今天”一致） */
+    public String getJSNumber(String str, String date) {
+        String maxNum = stkIoBillMapper.selectJSMaxBillNo(date);
+        return FillRuleUtil.getNumber(str, maxNum, date);
     }
 
     @Transactional
@@ -802,9 +1089,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if(oldBatchNo == null || batchNo == null || !oldBatchNo.equals(batchNo)){
                 continue;
             }
+            if (qty == null) {
+                continue;
+            }
 
             //当前批次实际数量
             BigDecimal inventoryQty = stkInventoryMapper.selectStkInvntoryByBatchNo(batchNo);
+            if (inventoryQty == null) {
+                continue;
+            }
 
             if(qty.compareTo(inventoryQty) > 0){
                 throw new ServiceException(String.format("实际库存不足！出库数量：%s，实际库存：%s", qty,inventoryQty));

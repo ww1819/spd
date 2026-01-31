@@ -103,8 +103,24 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
-        deptStocktakingMapper.deleteDeptStocktakingEntryByParenId(stkIoStocktaking.getId());
-        insertStkIoStocktakingEntry(stkIoStocktaking);
+        Long parenId = stkIoStocktaking.getId();
+        List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
+        List<Long> keepIds = new ArrayList<>();
+        if (StringUtils.isNotNull(entryList)) {
+            for (StkIoStocktakingEntry entry : entryList) {
+                entry.setParenId(parenId);
+                if (StringUtils.isEmpty(entry.getBatchNo())) {
+                    entry.setBatchNo(getBatchNumber());
+                }
+                if (entry.getId() != null) {
+                    deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+                    keepIds.add(entry.getId());
+                } else {
+                    deptStocktakingMapper.insertDeptStocktakingEntrySingle(entry);
+                }
+            }
+            deptStocktakingMapper.deleteDeptStocktakingEntryByParenIdExceptIds(parenId, keepIds);
+        }
         return deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
     }
 

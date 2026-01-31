@@ -141,4 +141,14 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         return stkInventoryMapper.selectStkInventoryListSummaryTotal(stkInventory);
     }
 
+    @Override
+    public List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory) {
+        return stkInventoryMapper.selectInventoryAlertList(stkInventory);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory) {
+        return stkInventoryMapper.selectExpiryAlertList(stkInventory);
+    }
+
 }
