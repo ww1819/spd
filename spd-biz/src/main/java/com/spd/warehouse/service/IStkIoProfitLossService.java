@@ -2,7 +2,9 @@ package com.spd.warehouse.service;
 
 import java.util.List;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoProfitLoss;
+import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
 /**
  * 盈亏单 Service 接口
@@ -46,4 +48,24 @@ public interface IStkIoProfitLossService {
      * 审核盈亏单：校验当前库存=账面数量后，盘亏扣库存+插流水PK，盘盈写批次+加库存+插流水PY
      */
     int auditStkIoProfitLoss(Long id);
+
+    /**
+     * 查询盈亏明细列表（用于报表）
+     */
+    List<StkProfitLossEntryVo> selectProfitLossEntryList(StkIoProfitLoss stkIoProfitLoss);
+
+    /**
+     * 查询盈亏明细汇总列表（用于报表）
+     */
+    List<StkProfitLossEntryVo> selectProfitLossEntrySummaryList(StkIoProfitLoss stkIoProfitLoss);
+
+    /**
+     * 查询盈亏明细列表合计（用于报表）
+     */
+    TotalInfo selectProfitLossEntryListTotal(StkIoProfitLoss stkIoProfitLoss);
+
+    /**
+     * 查询盈亏明细汇总列表合计（用于报表）
+     */
+    TotalInfo selectProfitLossEntrySummaryListTotal(StkIoProfitLoss stkIoProfitLoss);
 }

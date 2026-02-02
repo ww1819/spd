@@ -46,6 +46,9 @@ public class StkCTKVo {
     /** 厂家 */
     private String factoryName;
 
+    /** 供应商 */
+    private String supplierName;
+
     /** 科室 */
     private String departmentName;
 
@@ -75,6 +78,26 @@ public class StkCTKVo {
 
     /** 财务分类 */
     private String financeCategoryName;
+
+    /** 制单日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createTime;
+
+    /** 制单人昵称 */
+    private String createrNickName;
+
+    /** 制单人用户名 */
+    private String createrUserName;
+
+    /** 审核日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date auditDate;
+
+    /** 审核人昵称 */
+    private String auditNickName;
+
+    /** 审核人用户名 */
+    private String auditUserName;
 
     private Long materialId;
 
@@ -166,6 +189,14 @@ public class StkCTKVo {
 
     public void setFactoryName(String factoryName) {
         this.factoryName = factoryName;
+    }
+
+    public String getSupplierName() {
+        return supplierName;
+    }
+
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
     }
 
     public String getDepartmentName() {
@@ -280,5 +311,53 @@ public class StkCTKVo {
 
     public void setMaterial(FdMaterial material) {
         this.material = material;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getCreaterNickName() {
+        return createrNickName;
+    }
+
+    public void setCreaterNickName(String createrNickName) {
+        this.createrNickName = createrNickName;
+    }
+
+    public String getCreaterUserName() {
+        return createrUserName;
+    }
+
+    public void setCreaterUserName(String createrUserName) {
+        this.createrUserName = createrUserName;
+    }
+
+    public Date getAuditDate() {
+        return auditDate;
+    }
+
+    public void setAuditDate(Date auditDate) {
+        this.auditDate = auditDate;
+    }
+
+    public String getAuditNickName() {
+        return auditNickName;
+    }
+
+    public void setAuditNickName(String auditNickName) {
+        this.auditNickName = auditNickName;
+    }
+
+    public String getAuditUserName() {
+        return auditUserName;
+    }
+
+    public void setAuditUserName(String auditUserName) {
+        this.auditUserName = auditUserName;
     }
 }

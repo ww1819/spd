@@ -208,4 +208,112 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select count(1) from stk_io_profit_loss
         where stocktaking_id = #{stocktakingId} and (del_flag is null or del_flag != 1)
     </select>
+
+    <!-- 查询盈亏明细列表（用于报表） -->
+    <select id="selectProfitLossEntryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
+        select
+            e.id,
+            p.bill_no as billNo,
+            p.stocktaking_no as stocktakingNo,
+            w.name as warehouseName,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as materialSpeci,
+            m.model as materialModel,
+            u.unit_name as unitName,
+            e.batch_no as batchNo,
+            e.book_qty as bookQty,
+            e.stock_qty as stockQty,
+            e.profit_qty as profitQty,
+            e.unit_price as unitPrice,
+            e.profit_amount as profitAmount,
+            p.create_time as createTime,
+            cu.nick_name as createrName,
+            p.audit_date as auditDate,
+            au.user_name as auditBy
+        from stk_io_profit_loss_entry e
+        left join stk_io_profit_loss p on e.paren_id = p.id
+        left join fd_warehouse w on p.warehouse_id = w.id
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join sys_user cu on p.create_by = cu.user_id
+        left join sys_user au on p.audit_by = au.user_id
+        <where>
+            (e.del_flag is null or e.del_flag != 1)
+            and (p.del_flag is null or p.del_flag != 1)
+            <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
+            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
+            <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
+        </where>
+        order by p.create_time desc, e.id desc
+    </select>
+
+    <!-- 查询盈亏明细汇总列表（用于报表） -->
+    <select id="selectProfitLossEntrySummaryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
+        select
+            m.id as materialId,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as materialSpeci,
+            m.model as materialModel,
+            u.unit_name as unitName,
+            AVG(e.unit_price) as unitPrice,
+            SUM(e.profit_qty) as profitQty,
+            SUM(e.profit_amount) as profitAmount,
+            w.name as warehouseName
+        from stk_io_profit_loss_entry e
+        left join stk_io_profit_loss p on e.paren_id = p.id
+        left join fd_warehouse w on p.warehouse_id = w.id
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        <where>
+            (e.del_flag is null or e.del_flag != 1)
+            and (p.del_flag is null or p.del_flag != 1)
+            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
+            <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
+        </where>
+        group by m.id, m.code, m.name, m.speci, m.model, u.unit_name, w.name
+        order by m.code
+    </select>
+
+    <!-- 查询盈亏明细列表合计（用于报表） -->
+    <select id="selectProfitLossEntryListTotal" resultType="com.spd.common.core.page.TotalInfo">
+        select
+            COALESCE(SUM(e.profit_qty), 0) as totalQty,
+            COALESCE(SUM(e.profit_amount), 0) as totalAmt
+        from stk_io_profit_loss_entry e
+        left join stk_io_profit_loss p on e.paren_id = p.id
+        <where>
+            (e.del_flag is null or e.del_flag != 1)
+            and (p.del_flag is null or p.del_flag != 1)
+            <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
+            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
+            <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_profit_loss_entry e2 left join fd_material m2 on e2.material_id = m2.id where e2.paren_id = p.id and (m2.name like concat('%', #{materialName}, '%') or m2.code like concat('%', #{materialName}, '%')))</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
+        </where>
+    </select>
+
+    <!-- 查询盈亏明细汇总列表合计（用于报表） -->
+    <select id="selectProfitLossEntrySummaryListTotal" resultType="com.spd.common.core.page.TotalInfo">
+        select
+            COALESCE(SUM(e.profit_qty), 0) as totalQty,
+            COALESCE(SUM(e.profit_amount), 0) as totalAmt
+        from stk_io_profit_loss_entry e
+        left join stk_io_profit_loss p on e.paren_id = p.id
+        <where>
+            (e.del_flag is null or e.del_flag != 1)
+            and (p.del_flag is null or p.del_flag != 1)
+            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
+            <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_profit_loss_entry e2 left join fd_material m2 on e2.material_id = m2.id where e2.paren_id = p.id and (m2.name like concat('%', #{materialName}, '%') or m2.code like concat('%', #{materialName}, '%')))</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
+        </where>
+    </select>
 </mapper>

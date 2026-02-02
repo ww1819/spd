@@ -315,14 +315,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
                 sum(b.qty) materialQty, b.unit_price unitPrice,ROUND(sum(b.qty) * b.unit_price, 2) materialAmt,
                 m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
-                f.factory_name factoryName,d.name departmentName, w.name warehouseName,b.material_id materialId
+                f.factory_name factoryName,
+                MAX(IFNULL(inv_s.name, s.name)) as supplierName,
+                d.name departmentName, w.name warehouseName,b.material_id materialId,
+                stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
+                stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join stk_inventory inv on inv.batch_no = b.batch_no 
+            and inv.material_id = b.material_id
+            and inv.warehouse_id = stk.warehouse_id
+        left join fd_supplier inv_s on inv.supplier_id = inv_s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
+        left join sys_user cu on stk.create_by = cu.user_id
+        left join sys_user au on stk.audit_by = au.user_id
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.bill_type in (201,401)
         and stk.bill_status = 2
@@ -330,11 +341,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
 
-        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null "> and DATE(stk.create_time) &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and DATE(stk.create_time) &lt;= #{endDate}</if>
         GROUP BY stk.id,m.code,m.name, stk.bill_type, b.unit_price,
         m.speci,m.model,u.unit_name,
-        f.factory_name,d.name, w.name,b.material_id
+        f.factory_name,d.name, w.name,b.material_id,
+        stk.create_time, cu.nick_name, cu.user_name,
+        stk.audit_date, au.nick_name, au.user_name
     </select>
 
     <select id="selectCTKStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
@@ -384,15 +397,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                d.name departmentName, w.name warehouseName,b.material_id materialId
+                IFNULL(
+                    (select s2.name 
+                     from stk_inventory inv2
+                     left join fd_supplier s2 on inv2.supplier_id = s2.id
+                     where inv2.batch_no = b.batch_no 
+                       and inv2.material_id = b.material_id
+                       and inv2.warehouse_id = stk.warehouse_id
+                     order by inv2.id desc
+                     limit 1
+                    ),
+                    IFNULL(
+                        (select s2.name 
+                         from stk_inventory inv2
+                         left join fd_supplier s2 on inv2.supplier_id = s2.id
+                         where inv2.batch_no = b.batch_no 
+                           and inv2.material_id = b.material_id
+                         order by inv2.id desc
+                         limit 1
+                        ),
+                        s.name
+                    )
+                ) as supplierName,
+                d.name departmentName, w.name warehouseName,b.material_id materialId,
+                stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
+                stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        left join sys_user cu on stk.create_by = cu.user_id
+        left join sys_user au on stk.audit_by = au.user_id
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.bill_type in (201,401)
 --         and stk.bill_status = 2
@@ -408,11 +448,55 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and stk.bill_status =2
             </otherwise>
         </choose>
-        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null "> and DATE(stk.create_time) &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and DATE(stk.create_time) &lt;= #{endDate}</if>
         <if test="billType != null "> and stk.bill_Type = #{billType}</if>
     </select>
 
+    <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        select SUM(IFNULL(b.qty,0)) totalQty,SUM(IFNULL(b.amt,0)) totalAmt
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_department d on stk.department_id = d.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.bill_type in (201,401)
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="materialId != null "> and m.id = #{materialId}</if>
+        <choose>
+            <when test="billStatus != null">
+                and stk.bill_status = #{billStatus}
+            </when>
+            <otherwise>
+                and stk.bill_status =2
+            </otherwise>
+        </choose>
+        <if test="beginDate != null "> and DATE(stk.create_time) &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and DATE(stk.create_time) &lt;= #{endDate}</if>
+        <if test="billType != null "> and stk.bill_Type = #{billType}</if>
+    </select>
+
+    <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        select SUM(IFNULL(b.qty,0)) totalQty,SUM(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) totalAmt
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_department d on stk.department_id = d.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.bill_type in (201,401)
+        and stk.bill_status = 2
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="beginDate != null "> and DATE(stk.create_time) &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and DATE(stk.create_time) &lt;= #{endDate}</if>
+    </select>
 
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
