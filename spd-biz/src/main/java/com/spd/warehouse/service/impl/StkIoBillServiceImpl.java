@@ -8,6 +8,7 @@ import java.util.List;
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
 import com.spd.caigou.mapper.PurchaseOrderMapper;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -975,6 +976,16 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public List<Map<String, Object>> selectCTKStkIoBillListSummary(StkIoBill stkIoBill) {
         return stkIoBillMapper.selectCTKStkIoBillListSummary(stkIoBill);
+    }
+
+    @Override
+    public TotalInfo selectCTKStkIoBillListTotal(StkIoBill stkIoBill) {
+        return stkIoBillMapper.selectCTKStkIoBillListTotal(stkIoBill);
+    }
+
+    @Override
+    public TotalInfo selectCTKStkIoBillListSummaryTotal(StkIoBill stkIoBill) {
+        return stkIoBillMapper.selectCTKStkIoBillListSummaryTotal(stkIoBill);
     }
 
     @Override

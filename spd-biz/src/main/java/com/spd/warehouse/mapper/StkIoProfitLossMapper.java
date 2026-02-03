@@ -6,9 +6,11 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoProfitLoss;
 import com.spd.warehouse.domain.StkIoProfitLossEntry;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
+import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
 /**
  * 盈亏单 Mapper 接口
@@ -68,4 +70,24 @@ public interface StkIoProfitLossMapper {
      * 根据盘点单ID查询是否已存在盈亏单（一对一约束）
      */
     Integer countByStocktakingId(@Param("stocktakingId") Long stocktakingId);
+
+    /**
+     * 查询盈亏明细列表（用于报表）
+     */
+    List<StkProfitLossEntryVo> selectProfitLossEntryList(StkIoProfitLoss stkIoProfitLoss);
+
+    /**
+     * 查询盈亏明细汇总列表（用于报表）
+     */
+    List<StkProfitLossEntryVo> selectProfitLossEntrySummaryList(StkIoProfitLoss stkIoProfitLoss);
+
+    /**
+     * 查询盈亏明细列表合计（用于报表）
+     */
+    TotalInfo selectProfitLossEntryListTotal(StkIoProfitLoss stkIoProfitLoss);
+
+    /**
+     * 查询盈亏明细汇总列表合计（用于报表）
+     */
+    TotalInfo selectProfitLossEntrySummaryListTotal(StkIoProfitLoss stkIoProfitLoss);
 }

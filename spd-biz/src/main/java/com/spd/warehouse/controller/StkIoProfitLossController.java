@@ -19,8 +19,10 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoProfitLoss;
 import com.spd.warehouse.service.IStkIoProfitLossService;
+import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
 /**
  * 盈亏单 Controller
@@ -101,5 +103,33 @@ public class StkIoProfitLossController extends BaseController {
     @PutMapping("/audit/{id}")
     public AjaxResult audit(@PathVariable Long id) {
         return toAjax(stkIoProfitLossService.auditStkIoProfitLoss(id));
+    }
+
+    /**
+     * 查询盈亏明细列表（用于报表）
+     */
+    @PreAuthorize("@ss.hasPermi('warehouse:profitLoss:list')")
+    @GetMapping("/entry/list")
+    public TableDataInfo listEntry(StkIoProfitLoss stkIoProfitLoss) {
+        startPage();
+        List<StkProfitLossEntryVo> list = stkIoProfitLossService.selectProfitLossEntryList(stkIoProfitLoss);
+        TotalInfo totalInfo = stkIoProfitLossService.selectProfitLossEntryListTotal(stkIoProfitLoss);
+        TableDataInfo dataTable = getDataTable(list);
+        dataTable.setTotalInfo(totalInfo);
+        return dataTable;
+    }
+
+    /**
+     * 查询盈亏明细汇总列表（用于报表）
+     */
+    @PreAuthorize("@ss.hasPermi('warehouse:profitLoss:list')")
+    @GetMapping("/entry/summary")
+    public TableDataInfo listEntrySummary(StkIoProfitLoss stkIoProfitLoss) {
+        startPage();
+        List<StkProfitLossEntryVo> list = stkIoProfitLossService.selectProfitLossEntrySummaryList(stkIoProfitLoss);
+        TotalInfo totalInfo = stkIoProfitLossService.selectProfitLossEntrySummaryListTotal(stkIoProfitLoss);
+        TableDataInfo dataTable = getDataTable(list);
+        dataTable.setTotalInfo(totalInfo);
+        return dataTable;
     }
 }

@@ -3,6 +3,7 @@ package com.spd.warehouse.controller;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.core.page.TableSupport;
 import com.spd.common.utils.StringUtils;
 import com.spd.foundation.domain.FdMaterial;
@@ -168,11 +169,16 @@ public class StkIoRThBillController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:list')")
     @GetMapping("/CTKList")
-    public List<StkCTKVo> CTKList(StkIoBill stkIoBill)
+    public TableDataInfo CTKList(StkIoBill stkIoBill)
     {
+        // 启动分页
+        startPage();
         List<StkCTKVo> stkRTHVoList = new ArrayList<StkCTKVo>();
         List<Map<String, Object>> mapList = stkIoBillService.selectCTKStkIoBillList(stkIoBill);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
 
         try {
             for(Map<String, Object> map : mapList){
@@ -186,23 +192,26 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setMaterialCode(map.get("materialCode").toString());
                 stkCTKVo.setMaterialName(map.get("materialName").toString());
                 stkCTKVo.setMaterialModel(map.get("materialModel").toString());
-                stkCTKVo.setMaterialQty((BigDecimal) map.get("materialQty"));
+                BigDecimal materialQty = (BigDecimal) map.get("materialQty");
+                stkCTKVo.setMaterialQty(materialQty);
                 stkCTKVo.setMaterialSpeci(map.get("materialSpeci").toString());
-                stkCTKVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
+                BigDecimal materialAmt = (BigDecimal) map.get("materialAmt");
+                stkCTKVo.setMaterialAmt(materialAmt);
                 stkCTKVo.setUnitName(map.get("unitName").toString());
                 // 如果单价为空，但有金额和数量，通过金额/数量计算单价
                 BigDecimal unitPrice = (BigDecimal) map.get("unitPrice");
                 if(unitPrice == null) {
-                    BigDecimal amt = (BigDecimal) map.get("materialAmt");
-                    BigDecimal qty = (BigDecimal) map.get("materialQty");
-                    if(amt != null && qty != null && qty.compareTo(BigDecimal.ZERO) > 0) {
-                        unitPrice = amt.divide(qty, 2, BigDecimal.ROUND_HALF_UP);
+                    if(materialAmt != null && materialQty != null && materialQty.compareTo(BigDecimal.ZERO) > 0) {
+                        unitPrice = materialAmt.divide(materialQty, 2, BigDecimal.ROUND_HALF_UP);
                     }
                 }
                 stkCTKVo.setUnitPrice(unitPrice);
                 stkCTKVo.setWarehouseName(map.get("warehouseName").toString());
                 stkCTKVo.setFactoryName(map.get("factoryName").toString());
                 stkCTKVo.setDepartmentName(map.get("departmentName").toString());
+                if(map.get("supplierName") != null){
+                    stkCTKVo.setSupplierName(map.get("supplierName").toString());
+                }
                 stkCTKVo.setBatchNo(map.get("batchNo").toString());
                 stkCTKVo.setBatchNumber(map.get("batchNumber").toString());
                 stkCTKVo.setBillNo(map.get("billNo").toString());
@@ -220,12 +229,73 @@ public class StkIoRThBillController extends BaseController
                     stkCTKVo.setEndDate(endTime);
                 }
                 stkCTKVo.setFinanceCategoryName(map.get("financeCategoryName").toString());
+                // 制单日期和制单人
+                if(map.get("createTime") != null){
+                    Date createTime = formatter.parse(map.get("createTime").toString());
+                    stkCTKVo.setCreateTime(createTime);
+                }
+                if(map.get("createrNickName") != null){
+                    stkCTKVo.setCreaterNickName(map.get("createrNickName").toString());
+                }
+                if(map.get("createrUserName") != null){
+                    stkCTKVo.setCreaterUserName(map.get("createrUserName").toString());
+                }
+                // 审核日期和审核人
+                if(map.get("auditDate") != null){
+                    Date auditDate = formatter.parse(map.get("auditDate").toString());
+                    stkCTKVo.setAuditDate(auditDate);
+                }
+                if(map.get("auditNickName") != null){
+                    stkCTKVo.setAuditNickName(map.get("auditNickName").toString());
+                }
+                if(map.get("auditUserName") != null){
+                    stkCTKVo.setAuditUserName(map.get("auditUserName").toString());
+                }
                 stkRTHVoList.add(stkCTKVo);
+                
+                // 计算当前页合计
+                if(materialQty != null) {
+                    subTotalQty = subTotalQty.add(materialQty);
+                }
+                if(materialAmt != null) {
+                    subTotalAmt = subTotalAmt.add(materialAmt);
+                }
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        return stkRTHVoList;
+        
+        // 保存总数据大小（在分页前）
+        Long total = Long.valueOf(stkRTHVoList.size());
+        
+        // 根据分页参数截取数据
+        List<StkCTKVo> pageList = new ArrayList<>();
+        try {
+            PageDomain pageDomain = TableSupport.buildPageRequest();
+            int pageNum = pageDomain.getPageNum();
+            int pageSize = pageDomain.getPageSize();
+            
+            // 计算分页截取的开始和结束索引
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, total.intValue());
+            
+            if (startIndex < total.intValue()) {
+                pageList = stkRTHVoList.subList(startIndex, endIndex);
+            }
+        } catch (Exception e) {
+            logger.error("分页处理失败", e);
+            pageList = stkRTHVoList;
+        }
+        
+        // 计算总合计（需要查询所有数据）
+        TotalInfo totalInfo = stkIoBillService.selectCTKStkIoBillListTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        
+        return getDataTable(pageList, totalInfo, total);
     }
 
 
@@ -234,9 +304,16 @@ public class StkIoRThBillController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:list')")
     @GetMapping("/CTKListSummary")
-    public List<StkCTKVo> CTKListSummary(StkIoBill stkIoBill){
+    public TableDataInfo CTKListSummary(StkIoBill stkIoBill){
+        // 启动分页
+        startPage();
         List<StkCTKVo> stkRTHVoList = new ArrayList<StkCTKVo>();
         List<Map<String, Object>> mapList = stkIoBillService.selectCTKStkIoBillListSummary(stkIoBill);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        
         for(Map<String, Object> map : mapList){
             StkCTKVo stkCTKVo = new StkCTKVo();
             Long materialId = (Long) map.get("materialId");
@@ -248,18 +325,92 @@ public class StkIoRThBillController extends BaseController
             stkCTKVo.setMaterialCode(map.get("materialCode").toString());
             stkCTKVo.setMaterialName(map.get("materialName").toString());
             stkCTKVo.setMaterialModel(map.get("materialModel").toString());
-            stkCTKVo.setMaterialQty((BigDecimal) map.get("materialQty"));
+            BigDecimal materialQty = (BigDecimal) map.get("materialQty");
+            stkCTKVo.setMaterialQty(materialQty);
             stkCTKVo.setMaterialSpeci(map.get("materialSpeci").toString());
-            stkCTKVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
+            BigDecimal materialAmt = (BigDecimal) map.get("materialAmt");
+            stkCTKVo.setMaterialAmt(materialAmt);
             stkCTKVo.setUnitName(map.get("unitName").toString());
             stkCTKVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
             stkCTKVo.setWarehouseName(map.get("warehouseName").toString());
             stkCTKVo.setDepartmentName(map.get("departmentName").toString());
             stkCTKVo.setFactoryName(map.get("factoryName").toString());
+            if(map.get("supplierName") != null){
+                stkCTKVo.setSupplierName(map.get("supplierName").toString());
+            }
             stkCTKVo.setBillType((Integer) map.get("billType"));
+            // 制单日期和制单人
+            try {
+                if(map.get("createTime") != null){
+                    Date createTime = formatter.parse(map.get("createTime").toString());
+                    stkCTKVo.setCreateTime(createTime);
+                }
+            } catch (Exception e) {
+                logger.error("解析制单日期失败", e);
+            }
+            if(map.get("createrNickName") != null){
+                stkCTKVo.setCreaterNickName(map.get("createrNickName").toString());
+            }
+            if(map.get("createrUserName") != null){
+                stkCTKVo.setCreaterUserName(map.get("createrUserName").toString());
+            }
+            // 审核日期和审核人
+            try {
+                if(map.get("auditDate") != null){
+                    Date auditDate = formatter.parse(map.get("auditDate").toString());
+                    stkCTKVo.setAuditDate(auditDate);
+                }
+            } catch (Exception e) {
+                logger.error("解析审核日期失败", e);
+            }
+            if(map.get("auditNickName") != null){
+                stkCTKVo.setAuditNickName(map.get("auditNickName").toString());
+            }
+            if(map.get("auditUserName") != null){
+                stkCTKVo.setAuditUserName(map.get("auditUserName").toString());
+            }
             stkRTHVoList.add(stkCTKVo);
+            
+            // 计算当前页合计
+            if(materialQty != null) {
+                subTotalQty = subTotalQty.add(materialQty);
+            }
+            if(materialAmt != null) {
+                subTotalAmt = subTotalAmt.add(materialAmt);
+            }
         }
-        return stkRTHVoList;
+        
+        // 保存总数据大小（在分页前）
+        Long total = Long.valueOf(stkRTHVoList.size());
+        
+        // 根据分页参数截取数据
+        List<StkCTKVo> pageList = new ArrayList<>();
+        try {
+            PageDomain pageDomain = TableSupport.buildPageRequest();
+            int pageNum = pageDomain.getPageNum();
+            int pageSize = pageDomain.getPageSize();
+            
+            // 计算分页截取的开始和结束索引
+            int startIndex = (pageNum - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, total.intValue());
+            
+            if (startIndex < total.intValue()) {
+                pageList = stkRTHVoList.subList(startIndex, endIndex);
+            }
+        } catch (Exception e) {
+            logger.error("分页处理失败", e);
+            pageList = stkRTHVoList;
+        }
+        
+        // 计算总合计（需要查询所有数据）
+        TotalInfo totalInfo = stkIoBillService.selectCTKStkIoBillListSummaryTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        
+        return getDataTable(pageList, totalInfo, total);
     }
 
 }

@@ -41,6 +41,12 @@ public class StkIoProfitLoss extends BaseEntity {
     private List<StkIoProfitLossEntry> entryList;
     /** 仓库对象 */
     private FdWarehouse warehouse;
+    /** 耗材名称（查询条件，不持久化） */
+    private String materialName;
+    /** 开始日期（查询条件，不持久化） */
+    private String beginDate;
+    /** 结束日期（查询条件，不持久化） */
+    private String endDate;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -64,4 +70,10 @@ public class StkIoProfitLoss extends BaseEntity {
     public void setEntryList(List<StkIoProfitLossEntry> entryList) { this.entryList = entryList; }
     public FdWarehouse getWarehouse() { return warehouse; }
     public void setWarehouse(FdWarehouse warehouse) { this.warehouse = warehouse; }
+    public String getMaterialName() { return materialName; }
+    public void setMaterialName(String materialName) { this.materialName = materialName; }
+    public String getBeginDate() { return beginDate; }
+    public void setBeginDate(String beginDate) { this.beginDate = beginDate; }
+    public String getEndDate() { return endDate; }
+    public void setEndDate(String endDate) { this.endDate = endDate; }
 }

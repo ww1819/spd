@@ -3,6 +3,7 @@ package com.spd.warehouse.service;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoBill;
 
 /**
@@ -140,6 +141,20 @@ public interface IStkIoBillService
      * @return
      */
     List<Map<String, Object>> selectCTKStkIoBillListSummary(StkIoBill stkIoBill);
+
+    /**
+     * 查询出退库列表合计
+     * @param stkIoBill
+     * @return
+     */
+    TotalInfo selectCTKStkIoBillListTotal(StkIoBill stkIoBill);
+
+    /**
+     * 查询出退库汇总列表合计
+     * @param stkIoBill
+     * @return
+     */
+    TotalInfo selectCTKStkIoBillListSummaryTotal(StkIoBill stkIoBill);
 
     /**
      * 查询历史库存

@@ -44,6 +44,8 @@ import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoProfitLossMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoProfitLossService;
+import com.spd.common.core.page.TotalInfo;
+import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
 /**
  * 盈亏单 Service 实现
@@ -451,5 +453,25 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             }
         }
         return b;
+    }
+
+    @Override
+    public List<StkProfitLossEntryVo> selectProfitLossEntryList(StkIoProfitLoss stkIoProfitLoss) {
+        return stkIoProfitLossMapper.selectProfitLossEntryList(stkIoProfitLoss);
+    }
+
+    @Override
+    public List<StkProfitLossEntryVo> selectProfitLossEntrySummaryList(StkIoProfitLoss stkIoProfitLoss) {
+        return stkIoProfitLossMapper.selectProfitLossEntrySummaryList(stkIoProfitLoss);
+    }
+
+    @Override
+    public TotalInfo selectProfitLossEntryListTotal(StkIoProfitLoss stkIoProfitLoss) {
+        return stkIoProfitLossMapper.selectProfitLossEntryListTotal(stkIoProfitLoss);
+    }
+
+    @Override
+    public TotalInfo selectProfitLossEntrySummaryListTotal(StkIoProfitLoss stkIoProfitLoss) {
+        return stkIoProfitLossMapper.selectProfitLossEntrySummaryListTotal(stkIoProfitLoss);
     }
 }
