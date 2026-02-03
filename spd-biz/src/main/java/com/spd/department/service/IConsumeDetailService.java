@@ -35,4 +35,12 @@ public interface IConsumeDetailService
      * @return 领用排名列表
      */
     public List<Map<String, Object>> selectConsumeRankingList(StkIoBill stkIoBill);
+
+    /**
+     * 查询仓库进销存报表
+     *
+     * @param stkIoBill 查询条件
+     * @return 库存报表列表
+     */
+    public List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill);
 }

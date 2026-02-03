@@ -1006,4 +1006,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY totalAmt DESC
     </select>
 
+    <!-- 查询仓库进销存 -->
+    <select id="selectWarehousePsiReport" parameterType="StkIoBill" resultType="java.util.HashMap">
+        SELECT
+        vsadj.warehouse_id
+        ,vsadj.warehouse_code
+        ,vsadj.warehouse_name
+        ,vsadj.storeroom_id
+        ,vsadj.warehouse_category_code
+        ,vsadj.warehouse_category_name
+        ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_qty else 0 end) as qc_qty
+        ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_amt else 0 end) as qc_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_qty else 0 end) as rk_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_amt else 0 end) as rk_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_qty else 0 end) as ck_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_amt else 0 end) as ck_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBR') then vsadj.io_qty else 0 end) as dbr_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBR') then vsadj.io_amt else 0 end) as dbr_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_qty else 0 end) as dbc_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_amt else 0 end) as dbc_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_qty else 0 end) as pd_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_amt else 0 end) as pd_amt
+        ,sum(vsadj.jc_qty) as jc_qty
+        ,sum(vsadj.jc_amt) as jc_amt
+        FROM
+        view_stock_all_detail_jxc vsadj
+        WHERE
+        1 = 1
+        and vsadj.audit_date &lt;= #{endDate}
+        <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
+        GROUP BY
+        vsadj.warehouse_id
+        ,vsadj.warehouse_code
+        ,vsadj.warehouse_name
+        ,vsadj.warehouse_category_code
+        ,vsadj.warehouse_category_name
+    </select>
 </mapper>

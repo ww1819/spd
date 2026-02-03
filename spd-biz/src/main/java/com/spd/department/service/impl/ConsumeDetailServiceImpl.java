@@ -64,4 +64,19 @@ public class ConsumeDetailServiceImpl implements IConsumeDetailService
         stkIoBill.setBillStatus(2);
         return stkIoBillMapper.selectConsumeRankingList(stkIoBill);
     }
+
+    /**
+     * 查询领用排名列表（按金额降序）
+     *
+     * @param stkIoBill 查询条件
+     * @return 领用排名列表
+     */
+    @Override
+    public List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill)
+    {
+        // 设置查询条件：出库单（bill_type=201）且已审核（bill_status=2）
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(2);
+        return stkIoBillMapper.selectWarehousePsiReport(stkIoBill);
+    }
 }

@@ -61,6 +61,19 @@ public class ConsumeDetailController extends BaseController
         return getDataTable(list);
     }
 
+
+    /**
+     * 查询仓库进销存报表
+     */
+    @PreAuthorize("@ss.hasPermi('department:consumeDetail:list')")
+    @GetMapping("/selectWarehousePsiReport")
+    public TableDataInfo selectWarehousePsiReport(StkIoBill stkIoBill)
+    {
+        startPage();
+        List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReport(stkIoBill);
+        return getDataTable(list);
+    }
+
     // 注意：导出功能暂时未实现，因为查询返回的是Map类型，ExcelUtil需要实体类
     // 如需导出功能，可以：
     // 1. 创建对应的实体类并添加@Excel注解

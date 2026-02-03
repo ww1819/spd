@@ -244,4 +244,11 @@ public interface StkIoBillMapper
      * @return 领用排名列表
      */
     List<Map<String, Object>> selectConsumeRankingList(StkIoBill stkIoBill);
+
+    /**
+     * 查询仓库进销存
+     * @param stkIoBill
+     * @return
+     */
+    List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill);
 }
