@@ -1123,6 +1123,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         vsadj.warehouse_id
         ,vsadj.warehouse_code
         ,vsadj.warehouse_name
+        ,vsadj.storeroom_id
         ,vsadj.warehouse_category_code
         ,vsadj.warehouse_category_name
     </select>

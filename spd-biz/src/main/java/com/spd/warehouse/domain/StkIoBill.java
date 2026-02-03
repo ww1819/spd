@@ -5,10 +5,7 @@ import java.util.List;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.common.core.domain.entity.SysUser;
-import com.spd.foundation.domain.FdDepartment;
-import com.spd.foundation.domain.FdMaterial;
-import com.spd.foundation.domain.FdSupplier;
-import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.*;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -64,7 +61,11 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "出入库类型")
     private Integer billType;
 
+    @Excel(name = "产品档案ID")
     private String materialId;
+
+    @Excel(name = "库房分类ID")
+    private String warehouseCategoryId;
 
     /** 删除标识 */
     private Integer delFlag;
@@ -83,6 +84,10 @@ public class StkIoBill extends BaseEntity
 
     /** 调入仓库对象（用于调拨单） */
     private FdWarehouse toWarehouse;
+
+    /** 库房分类对象 */
+    private FdWarehouseCategory warehouseCategory;
+
 
 //    /** 耗材对象 */
 //    private FdMaterial material;
@@ -623,5 +628,21 @@ public class StkIoBill extends BaseEntity
 
     public void setDingdanId(String dingdanId) {
         this.dingdanId = dingdanId;
+    }
+
+    public String getWarehouseCategoryId() {
+        return warehouseCategoryId;
+    }
+
+    public void setWarehouseCategoryId(String warehouseCategoryId) {
+        this.warehouseCategoryId = warehouseCategoryId;
+    }
+
+    public FdWarehouseCategory getWarehouseCategory() {
+        return warehouseCategory;
+    }
+
+    public void setWarehouseCategory(FdWarehouseCategory warehouseCategory) {
+        this.warehouseCategory = warehouseCategory;
     }
 }

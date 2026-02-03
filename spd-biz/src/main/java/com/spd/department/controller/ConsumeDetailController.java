@@ -67,7 +67,7 @@ public class ConsumeDetailController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('department:consumeDetail:list')")
     @GetMapping("/selectWarehousePsiReport")
-    public TableDataInfo selectWarehousePsiReport(StkIoBill stkIoBill)
+        public TableDataInfo selectWarehousePsiReport(StkIoBill stkIoBill)
     {
         startPage();
         List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReport(stkIoBill);
