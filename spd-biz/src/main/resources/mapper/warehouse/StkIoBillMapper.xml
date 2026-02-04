@@ -1119,6 +1119,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         1 = 1
         and vsadj.audit_date &lt;= #{endDate}
         <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
+        <if test="warehouseCategoryId != null"> AND vsadj.storeroom_id = #{warehouseCategoryId}</if>
         GROUP BY
         vsadj.warehouse_id
         ,vsadj.warehouse_code
