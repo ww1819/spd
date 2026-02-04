@@ -332,8 +332,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id from stk_inventory stk where 1=0
     </select>
 
-    <!-- 有效期预警表列表：占位查询（返回空集），避免 /listExpiryAlert 被 /{id} 匹配 -->
-    <select id="selectExpiryAlertList" resultType="java.util.HashMap">
-        select stk.id from stk_inventory stk where 1=0
+    <!-- 有效期预警表列表：根据预警天数查询近效期库存明细 -->
+    <select id="selectExpiryAlertList" parameterType="StkInventory" resultType="java.util.HashMap">
+        select 
+            stk.id,
+            IFNULL(m.code, '') materialCode,
+            IFNULL(m.name, '') materialName,
+            IFNULL(m.speci, '') materialSpeci,
+            IFNULL(m.model, '') materialModel,
+            IFNULL(u.unit_name, '') unitName,
+            IFNULL(stk.unit_price, 0) unitPrice,
+            IFNULL(w.name, '') warehouseName,
+            IFNULL(stk.batch_no, '') batchNo,
+            stk.begin_time produceDate,
+            stk.end_time expiryDate,
+            DATEDIFF(stk.end_time, CURDATE()) daysRemaining,
+            IFNULL(stk.qty, 0) qty,
+            IFNULL(f.factory_name, '') factoryName,
+            IFNULL(s.name, '') supplierName
+        from stk_inventory stk
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_supplier s on stk.supplier_id = s.id
+        left join fd_material m on stk.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory f on f.factory_id = m.factory_id
+        where stk.qty &gt; 0
+        and stk.end_time IS NOT NULL
+        and (m.id IS NULL OR m.del_flag IS NULL OR m.del_flag != 1)
+        <if test="daysToExpiry != null">
+        <![CDATA[
+        and DATEDIFF(stk.end_time, CURDATE()) <= #{daysToExpiry}
+        and DATEDIFF(stk.end_time, CURDATE()) >= -#{daysToExpiry}
+        ]]>
+        </if>
+        <if test="daysToExpiry == null">
+        <![CDATA[
+        and DATEDIFF(stk.end_time, CURDATE()) <= 90
+        and DATEDIFF(stk.end_time, CURDATE()) >= -90
+        ]]>
+        </if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="materialName != null and materialName != ''"> 
+            and (IFNULL(m.name, '') like concat('%', #{materialName}, '%') or IFNULL(m.code, '') like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="supplierId != null"> 
+            and stk.supplier_id = #{supplierId} 
+        </if>
+        order by stk.end_time asc, stk.id asc
     </select>
 </mapper>

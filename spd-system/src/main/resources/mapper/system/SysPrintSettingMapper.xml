@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SysPrintSettingMapper">
+    
+    <resultMap type="SysPrintSetting" id="SysPrintSettingResult">
+        <id     property="id"            column="id"            />
+        <result property="templateName" column="template_name" />
+        <result property="billType"     column="bill_type"     />
+        <result property="pageWidth"    column="page_width"    />
+        <result property="pageHeight"   column="page_height"   />
+        <result property="orientation"  column="orientation"   />
+        <result property="marginTop"    column="margin_top"    />
+        <result property="marginBottom" column="margin_bottom" />
+        <result property="marginLeft"   column="margin_left"   />
+        <result property="marginRight"  column="margin_right"  />
+        <result property="fontSize"     column="font_size"     />
+        <result property="tableFontSize" column="table_font_size" />
+        <result property="columnSpacing" column="column_spacing" />
+        <result property="showPurchaser" column="show_purchaser" />
+        <result property="showCreator"  column="show_creator"  />
+        <result property="showAuditor"  column="show_auditor"  />
+        <result property="showReceiver" column="show_receiver" />
+        <result property="purchaserLabel" column="purchaser_label" />
+        <result property="creatorLabel" column="creator_label" />
+        <result property="auditorLabel" column="auditor_label" />
+        <result property="receiverLabel" column="receiver_label" />
+        <result property="columnConfig" column="column_config" />
+        <result property="isDefault"    column="is_default"   />
+        <result property="status"       column="status"        />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+    </resultMap>
+    
+    <sql id="selectSysPrintSettingVo">
+        select id, template_name, bill_type, page_width, page_height, orientation,
+               margin_top, margin_bottom, margin_left, margin_right,
+               font_size, table_font_size, column_spacing,
+               show_purchaser, show_creator, show_auditor, show_receiver,
+               purchaser_label, creator_label, auditor_label, receiver_label,
+               column_config, is_default, status,
+               create_by, create_time, update_by, update_time, remark
+        from sys_print_setting
+    </sql>
+    
+    <select id="selectSysPrintSettingList" parameterType="SysPrintSetting" resultMap="SysPrintSettingResult">
+        <include refid="selectSysPrintSettingVo"/>
+        <where>
+            <if test="templateName != null and templateName != ''">
+                AND template_name like concat('%', #{templateName}, '%')
+            </if>
+            <if test="billType != null">
+                AND bill_type = #{billType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        order by bill_type, is_default desc, create_time desc
+    </select>
+    
+    <select id="selectSysPrintSettingById" parameterType="Long" resultMap="SysPrintSettingResult">
+        <include refid="selectSysPrintSettingVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectDefaultByBillType" parameterType="Integer" resultMap="SysPrintSettingResult">
+        <include refid="selectSysPrintSettingVo"/>
+        where status = '0'
+        <if test="billType != null">
+            AND bill_type = #{billType}
+        </if>
+        <if test="billType == null">
+            AND bill_type IS NULL
+        </if>
+        AND is_default = 1
+        limit 1
+    </select>
+    
+    <insert id="insertSysPrintSetting" parameterType="SysPrintSetting" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_print_setting
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="templateName != null and templateName != ''">template_name,</if>
+            <if test="billType != null">bill_type,</if>
+            <if test="pageWidth != null">page_width,</if>
+            <if test="pageHeight != null">page_height,</if>
+            <if test="orientation != null and orientation != ''">orientation,</if>
+            <if test="marginTop != null">margin_top,</if>
+            <if test="marginBottom != null">margin_bottom,</if>
+            <if test="marginLeft != null">margin_left,</if>
+            <if test="marginRight != null">margin_right,</if>
+            <if test="fontSize != null">font_size,</if>
+            <if test="tableFontSize != null">table_font_size,</if>
+            <if test="columnSpacing != null">column_spacing,</if>
+            <if test="showPurchaser != null">show_purchaser,</if>
+            <if test="showCreator != null">show_creator,</if>
+            <if test="showAuditor != null">show_auditor,</if>
+            <if test="showReceiver != null">show_receiver,</if>
+            <if test="purchaserLabel != null and purchaserLabel != ''">purchaser_label,</if>
+            <if test="creatorLabel != null and creatorLabel != ''">creator_label,</if>
+            <if test="auditorLabel != null and auditorLabel != ''">auditor_label,</if>
+            <if test="receiverLabel != null and receiverLabel != ''">receiver_label,</if>
+            <if test="columnConfig != null">column_config,</if>
+            <if test="isDefault != null">is_default,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="templateName != null and templateName != ''">#{templateName},</if>
+            <if test="billType != null">#{billType},</if>
+            <if test="pageWidth != null">#{pageWidth},</if>
+            <if test="pageHeight != null">#{pageHeight},</if>
+            <if test="orientation != null and orientation != ''">#{orientation},</if>
+            <if test="marginTop != null">#{marginTop},</if>
+            <if test="marginBottom != null">#{marginBottom},</if>
+            <if test="marginLeft != null">#{marginLeft},</if>
+            <if test="marginRight != null">#{marginRight},</if>
+            <if test="fontSize != null">#{fontSize},</if>
+            <if test="tableFontSize != null">#{tableFontSize},</if>
+            <if test="columnSpacing != null">#{columnSpacing},</if>
+            <if test="showPurchaser != null">#{showPurchaser},</if>
+            <if test="showCreator != null">#{showCreator},</if>
+            <if test="showAuditor != null">#{showAuditor},</if>
+            <if test="showReceiver != null">#{showReceiver},</if>
+            <if test="purchaserLabel != null and purchaserLabel != ''">#{purchaserLabel},</if>
+            <if test="creatorLabel != null and creatorLabel != ''">#{creatorLabel},</if>
+            <if test="auditorLabel != null and auditorLabel != ''">#{auditorLabel},</if>
+            <if test="receiverLabel != null and receiverLabel != ''">#{receiverLabel},</if>
+            <if test="columnConfig != null">#{columnConfig},</if>
+            <if test="isDefault != null">#{isDefault},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+    
+    <update id="updateSysPrintSetting" parameterType="SysPrintSetting">
+        update sys_print_setting
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
+            <if test="billType != null">bill_type = #{billType},</if>
+            <if test="pageWidth != null">page_width = #{pageWidth},</if>
+            <if test="pageHeight != null">page_height = #{pageHeight},</if>
+            <if test="orientation != null and orientation != ''">orientation = #{orientation},</if>
+            <if test="marginTop != null">margin_top = #{marginTop},</if>
+            <if test="marginBottom != null">margin_bottom = #{marginBottom},</if>
+            <if test="marginLeft != null">margin_left = #{marginLeft},</if>
+            <if test="marginRight != null">margin_right = #{marginRight},</if>
+            <if test="fontSize != null">font_size = #{fontSize},</if>
+            <if test="tableFontSize != null">table_font_size = #{tableFontSize},</if>
+            <if test="columnSpacing != null">column_spacing = #{columnSpacing},</if>
+            <if test="showPurchaser != null">show_purchaser = #{showPurchaser},</if>
+            <if test="showCreator != null">show_creator = #{showCreator},</if>
+            <if test="showAuditor != null">show_auditor = #{showAuditor},</if>
+            <if test="showReceiver != null">show_receiver = #{showReceiver},</if>
+            <if test="purchaserLabel != null">purchaser_label = #{purchaserLabel},</if>
+            <if test="creatorLabel != null">creator_label = #{creatorLabel},</if>
+            <if test="auditorLabel != null">auditor_label = #{auditorLabel},</if>
+            <if test="receiverLabel != null">receiver_label = #{receiverLabel},</if>
+            <if test="columnConfig != null">column_config = #{columnConfig},</if>
+            <if test="isDefault != null">is_default = #{isDefault},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+    
+    <delete id="deleteSysPrintSettingById" parameterType="Long">
+        delete from sys_print_setting where id = #{id}
+    </delete>
+    
+    <delete id="deleteSysPrintSettingByIds" parameterType="String">
+        delete from sys_print_setting where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <update id="cancelOtherDefault" parameterType="SysPrintSetting">
+        update sys_print_setting
+        set is_default = 0
+        where is_default = 1
+        <if test="billType != null">
+            AND bill_type = #{billType}
+        </if>
+        <if test="billType == null">
+            AND bill_type IS NULL
+        </if>
+        <if test="id != null">
+            AND id != #{id}
+        </if>
+    </update>
+</mapper>

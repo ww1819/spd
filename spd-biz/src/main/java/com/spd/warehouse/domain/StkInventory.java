@@ -104,6 +104,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：耗材名称 */
     private String materialName;
 
+    /** 查询参数：预警天数（用于有效期预警查询） */
+    private Integer daysToExpiry;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -289,6 +292,14 @@ public class StkInventory extends BaseEntity
         this.materialName = materialName;
     }
 
+    public Integer getDaysToExpiry() {
+        return daysToExpiry;
+    }
+
+    public void setDaysToExpiry(Integer daysToExpiry) {
+        this.daysToExpiry = daysToExpiry;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -307,6 +318,7 @@ public class StkInventory extends BaseEntity
             .append("material", getMaterial())
             .append("warehouseName", getWarehouseName())
             .append("materialName", getMaterialName())
+            .append("daysToExpiry", getDaysToExpiry())
             .append("supplierId", getSupplierId())
             .append("supplier", getSupplier())
             .append("beginTime", getBeginTime())

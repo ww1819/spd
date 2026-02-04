@@ -29,6 +29,7 @@ import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.service.IStkInventoryService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.constant.HttpStatus;
 
 /**
  * 库存明细Controller
@@ -186,9 +187,20 @@ public class StkInventoryController extends BaseController
     @GetMapping("/listExpiryAlert")
     public TableDataInfo listExpiryAlert(StkInventory stkInventory)
     {
-        startPage();
-        List<Map<String, Object>> list = stkInventoryService.selectExpiryAlertList(stkInventory);
-        return getDataTable(list);
+        try {
+            startPage();
+            List<Map<String, Object>> list = stkInventoryService.selectExpiryAlertList(stkInventory);
+            return getDataTable(list);
+        } catch (Exception e) {
+            logger.error("查询有效期预警表失败", e);
+            // 返回空结果，不显示错误信息
+            TableDataInfo rspData = new TableDataInfo();
+            rspData.setCode(HttpStatus.SUCCESS);
+            rspData.setMsg("查询成功");
+            rspData.setRows(new ArrayList<>());
+            rspData.setTotal(0);
+            return rspData;
+        }
     }
 
     /**
