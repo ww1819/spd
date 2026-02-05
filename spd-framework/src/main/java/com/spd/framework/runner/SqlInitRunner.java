@@ -160,10 +160,12 @@ public class SqlInitRunner implements ApplicationRunner
 
     /**
      * 使用原始 JDBC 连接执行，绕过 Druid StatFilter 对存储过程等语法的解析，避免 ParserException。
+     * 分隔符「/」的另一作用：单条语句报错不影响后续语句，每条之间独立执行，出错只记日志并继续执行下一段。
      */
     private void executeStatements(List<String> statements, String scriptName, boolean failOnError) throws Exception
     {
         Connection conn = getRawConnection();
+        Exception firstError = null;
         try
         {
             try (Statement st = conn.createStatement())
@@ -182,12 +184,17 @@ public class SqlInitRunner implements ApplicationRunner
                     catch (Exception e)
                     {
                         log.warn("执行单条 SQL 失败 [{}]: {}", scriptName, sql.substring(0, Math.min(80, sql.length())) + "...", e);
-                        if (failOnError)
+                        if (firstError == null)
                         {
-                            throw e;
+                            firstError = e;
                         }
+                        // 不在此处 throw，保证下一段「/」后的语句继续执行
                     }
                 }
+            }
+            if (failOnError && firstError != null)
+            {
+                throw firstError;
             }
         }
         finally
