@@ -119,6 +119,9 @@ public class StkInventoryController extends BaseController
         Long total = Long.valueOf(summaryVoList.size());
         summaryVoList = subListPage(summaryVoList);
         TotalInfo totalInfo = stkInventoryService.selectStkInventoryListSummaryTotal(stkInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
         return getDataTable(summaryVoList,totalInfo, total);

@@ -3,3 +3,11 @@ spring:
   profiles:
     active: dev
 
+# SQL 启动脚本（按 table → column → view → trigger → procedure 顺序执行）
+spd:
+  sql:
+    init:
+      enabled: true
+      location: classpath:sql/mysql/
+      fail-on-error: false
+
