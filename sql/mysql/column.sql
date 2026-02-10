@@ -68,7 +68,7 @@ BEGIN
     -- 清空动态SQL变量，避免残留
     SET @dynamic_sql = '';
 END;
-/  -- 存储过程定义结束符
+/
 
 -- 调用示例：为bas_apply表添加del_flag字段（int类型，注释为删除标志，默认值0）
 CALL add_table_column('bas_apply', 'del_flag', 'int', '删除标志', 0);
