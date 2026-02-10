@@ -73,3 +73,6 @@ END;
 -- 调用示例：为bas_apply表添加del_flag字段（int类型，注释为删除标志，默认值0）
 CALL add_table_column('bas_apply', 'del_flag', 'int', '删除标志', 0);
 /
+
+CALL add_table_column('stk_inventory', 'batch_number', 'varchar(100)', '批号', null);
+/
