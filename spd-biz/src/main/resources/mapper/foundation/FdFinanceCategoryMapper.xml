@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="financeCategoryId"    column="finance_category_id"    />
         <result property="financeCategoryCode"    column="finance_category_code"    />
         <result property="financeCategoryName"    column="finance_category_name"    />
+        <result property="referredName"    column="referred_name"    />
         <result property="financeCategoryAddress"    column="finance_category_address"    />
         <result property="financeCategoryContact"    column="finance_category_contact"    />
         <result property="delFlag"    column="del_flag"    />
@@ -19,7 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdFinanceCategoryVo">
-        select finance_category_id, finance_category_code, finance_category_name, finance_category_address, finance_category_contact, del_flag, create_by, create_time, update_by, update_time, is_use from fd_finance_category
+        select finance_category_id, finance_category_code, finance_category_name, referred_name, finance_category_address, finance_category_contact, del_flag, create_by, create_time, update_by, update_time, is_use from fd_finance_category
     </sql>
 
     <select id="selectFdFinanceCategoryList" parameterType="FdFinanceCategory" resultMap="FdFinanceCategoryResult">
@@ -41,6 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="financeCategoryCode != null and financeCategoryCode != ''">finance_category_code,</if>
             <if test="financeCategoryName != null and financeCategoryName != ''">finance_category_name,</if>
+            <if test="referredName != null">referred_name,</if>
             <if test="financeCategoryAddress != null">finance_category_address,</if>
             <if test="financeCategoryContact != null">finance_category_contact,</if>
             <if test="delFlag != null">del_flag,</if>
@@ -53,6 +55,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="financeCategoryCode != null and financeCategoryCode != ''">#{financeCategoryCode},</if>
             <if test="financeCategoryName != null and financeCategoryName != ''">#{financeCategoryName},</if>
+            <if test="referredName != null">#{referredName},</if>
             <if test="financeCategoryAddress != null">#{financeCategoryAddress},</if>
             <if test="financeCategoryContact != null">#{financeCategoryContact},</if>
             <if test="delFlag != null">#{delFlag},</if>
@@ -69,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="financeCategoryCode != null and financeCategoryCode != ''">finance_category_code = #{financeCategoryCode},</if>
             <if test="financeCategoryName != null and financeCategoryName != ''">finance_category_name = #{financeCategoryName},</if>
+            <if test="referredName != null">referred_name = #{referredName},</if>
             <if test="financeCategoryAddress != null">finance_category_address = #{financeCategoryAddress},</if>
             <if test="financeCategoryContact != null">finance_category_contact = #{financeCategoryContact},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>

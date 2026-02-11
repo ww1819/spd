@@ -32,6 +32,10 @@ public class FdWarehouseCategory extends BaseEntity
     @Excel(name = "库房分类名称")
     private String warehouseCategoryName;
 
+    /** 拼音简码 */
+    @Excel(name = "简码")
+    private String referredName;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -62,6 +66,15 @@ public class FdWarehouseCategory extends BaseEntity
     {
         return warehouseCategoryName;
     }
+
+    public String getReferredName() {
+        return referredName;
+    }
+
+    public void setReferredName(String referredName) {
+        this.referredName = referredName;
+    }
+
     public void setDelFlag(Integer delFlag) 
     {
         this.delFlag = delFlag;
@@ -97,6 +110,7 @@ public class FdWarehouseCategory extends BaseEntity
             .append("parentId", getParentId())
             .append("warehouseCategoryCode", getWarehouseCategoryCode())
             .append("warehouseCategoryName", getWarehouseCategoryName())
+            .append("referredName", getReferredName())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())

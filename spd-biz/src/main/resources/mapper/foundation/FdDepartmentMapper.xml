@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
+        <result property="referredName"    column="referred_name"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -16,7 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, create_by, create_time, update_by, update_time from fd_department
+        select id, code, name, referred_name, create_by, create_time, update_by, update_time from fd_department
     </sql>
 
     <select id="selectFdDepartmentList" parameterType="FdDepartment" resultMap="FdDepartmentResult">
@@ -60,6 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="id != null">id,</if>
             <if test="code != null and code != ''">code,</if>
             <if test="name != null">name,</if>
+            <if test="referredName != null">referred_name,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -69,6 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="id != null">#{id},</if>
             <if test="code != null and code != ''">#{code},</if>
             <if test="name != null">#{name},</if>
+            <if test="referredName != null">#{referredName},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -81,6 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
+            <if test="referredName != null">referred_name = #{referredName},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

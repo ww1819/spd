@@ -9,6 +9,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="parentId"    column="parent_id"    />
         <result property="warehouseCategoryCode"    column="warehouse_category_code"    />
         <result property="warehouseCategoryName"    column="warehouse_category_name"    />
+        <result property="referredName"    column="referred_name"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -17,7 +18,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdWarehouseCategoryVo">
-        select warehouse_category_id, parent_id, warehouse_category_code, warehouse_category_name, del_flag, create_by, create_time, update_by, update_time from fd_warehouse_category
+        select warehouse_category_id, parent_id, warehouse_category_code, warehouse_category_name, referred_name, del_flag, create_by, create_time, update_by, update_time from fd_warehouse_category
     </sql>
 
     <select id="selectFdWarehouseCategoryList" parameterType="FdWarehouseCategory" resultMap="FdWarehouseCategoryResult">
@@ -46,6 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="parentId != null">parent_id,</if>
             <if test="warehouseCategoryCode != null">warehouse_category_code,</if>
             <if test="warehouseCategoryName != null">warehouse_category_name,</if>
+            <if test="referredName != null">referred_name,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -56,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="parentId != null">#{parentId},</if>
             <if test="warehouseCategoryCode != null">#{warehouseCategoryCode},</if>
             <if test="warehouseCategoryName != null">#{warehouseCategoryName},</if>
+            <if test="referredName != null">#{referredName},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -70,6 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="warehouseCategoryCode != null">warehouse_category_code = #{warehouseCategoryCode},</if>
             <if test="warehouseCategoryName != null">warehouse_category_name = #{warehouseCategoryName},</if>
+            <if test="referredName != null">referred_name = #{referredName},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>

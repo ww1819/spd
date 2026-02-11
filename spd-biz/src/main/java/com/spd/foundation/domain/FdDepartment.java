@@ -27,6 +27,10 @@ public class FdDepartment extends BaseEntity
     @Excel(name = "科室名称")
     private String name;
 
+    /** 拼音简码 */
+    @Excel(name = "简码")
+    private String referredName;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -58,6 +62,14 @@ public class FdDepartment extends BaseEntity
         return name;
     }
 
+    public String getReferredName() {
+        return referredName;
+    }
+
+    public void setReferredName(String referredName) {
+        this.referredName = referredName;
+    }
+
     public Integer getDelFlag() {
         return delFlag;
     }
@@ -72,6 +84,7 @@ public class FdDepartment extends BaseEntity
             .append("id", getId())
             .append("code", getCode())
             .append("name", getName())
+            .append("referredName", getReferredName())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

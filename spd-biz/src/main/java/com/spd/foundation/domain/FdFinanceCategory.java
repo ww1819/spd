@@ -26,6 +26,10 @@ public class FdFinanceCategory extends BaseEntity
     @Excel(name = "财务分类名称")
     private String financeCategoryName;
 
+    /** 拼音简码 */
+    @Excel(name = "简码")
+    private String referredName;
+
     /** 财务分类地址 */
     @Excel(name = "财务分类地址")
     private String financeCategoryAddress;
@@ -68,6 +72,15 @@ public class FdFinanceCategory extends BaseEntity
     {
         return financeCategoryName;
     }
+
+    public String getReferredName() {
+        return referredName;
+    }
+
+    public void setReferredName(String referredName) {
+        this.referredName = referredName;
+    }
+
     public void setFinanceCategoryAddress(String financeCategoryAddress) 
     {
         this.financeCategoryAddress = financeCategoryAddress;
@@ -102,6 +115,7 @@ public class FdFinanceCategory extends BaseEntity
             .append("financeCategoryId", getFinanceCategoryId())
             .append("financeCategoryCode", getFinanceCategoryCode())
             .append("financeCategoryName", getFinanceCategoryName())
+            .append("referredName", getReferredName())
             .append("financeCategoryAddress", getFinanceCategoryAddress())
             .append("financeCategoryContact", getFinanceCategoryContact())
             .append("delFlag", getDelFlag())

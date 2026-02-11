@@ -37,6 +37,10 @@ public class SysUser extends BaseEntity
     @Excel(name = "用户名称")
     private String nickName;
 
+    /** 拼音简码 */
+    @Excel(name = "简码")
+    private String referredName;
+
     /** 用户邮箱 */
     @Excel(name = "用户邮箱")
     private String email;
@@ -151,6 +155,14 @@ public class SysUser extends BaseEntity
     public void setNickName(String nickName)
     {
         this.nickName = nickName;
+    }
+
+    public String getReferredName() {
+        return referredName;
+    }
+
+    public void setReferredName(String referredName) {
+        this.referredName = referredName;
     }
 
     @Xss(message = "用户账号不能包含脚本字符")
@@ -348,6 +360,7 @@ public class SysUser extends BaseEntity
             .append("deptId", getDeptId())
             .append("userName", getUserName())
             .append("nickName", getNickName())
+            .append("referredName", getReferredName())
             .append("email", getEmail())
             .append("phonenumber", getPhonenumber())
             .append("sex", getSex())
