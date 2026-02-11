@@ -58,4 +58,11 @@ public interface IFdFactoryService
      * @return 结果
      */
     public int deleteFdFactoryByFactoryId(Long factoryId);
+
+    /**
+     * 批量更新厂家简码
+     *
+     * @param ids 厂家ID列表
+     */
+    void updateReferred(java.util.List<Long> ids);
 }

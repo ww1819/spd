@@ -64,6 +64,13 @@ public interface IFdMaterialService
      */
     public String importFdMaterial(List<FdMaterial> fdmaterialList, Boolean isUpdateSupport, String operName);
 
+    /**
+     * 批量更新耗材产品名称简码
+     *
+     * @param ids 耗材ID列表
+     */
+    void updateReferred(List<Long> ids);
+
 
 //    /**
 //     * 批量删除耗材产品

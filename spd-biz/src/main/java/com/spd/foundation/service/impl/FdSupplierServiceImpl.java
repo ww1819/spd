@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdSupplierMapper;
@@ -115,6 +116,42 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         int count = fdSupplierMapper.selectSupplierIsExist(id);
         if(count > 0){
             throw new ServiceException(String.format("已存在出入库业务的供应商不能进行删除!"));
+        }
+    }
+
+    /**
+     * 批量更新供应商名称简码（referredCode）
+     */
+    @Override
+    public void updateReferred(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        for (Long id : ids) {
+            if (id == null) {
+                continue;
+            }
+            FdSupplier supplier = fdSupplierMapper.selectFdSupplierById(id);
+            if (supplier == null) {
+                continue;
+            }
+            String name = supplier.getName();
+            if (StringUtils.isEmpty(name)) {
+                continue;
+            }
+            // 简单规则：公司名称首字符（英文转大写，其他原样）+ 后面1~3个字符
+            char first = name.charAt(0);
+            StringBuilder shortCode = new StringBuilder();
+            if (Character.isLetter(first)) {
+                shortCode.append(Character.toUpperCase(first));
+            } else {
+                shortCode.append(first);
+            }
+            if (name.length() > 1) {
+                shortCode.append(name.substring(1, Math.min(4, name.length())));
+            }
+            supplier.setReferredCode(shortCode.toString());
+            fdSupplierMapper.updateFdSupplier(supplier);
         }
     }
 }

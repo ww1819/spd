@@ -79,4 +79,11 @@ public interface IFdDepartmentService
      * @return
      */
     List<FdDepartment> selectUserDepartmenAll(Long userId);
+
+    /**
+     * 批量更新科室名称简码
+     *
+     * @param ids 科室ID列表
+     */
+    void updateReferred(java.util.List<Long> ids);
 }

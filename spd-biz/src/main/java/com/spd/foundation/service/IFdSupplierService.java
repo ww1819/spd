@@ -58,4 +58,11 @@ public interface IFdSupplierService
      * @return 结果
      */
     public int deleteFdSupplierById(Long id);
+
+    /**
+     * 批量更新供应商名称简码
+     *
+     * @param ids 供应商ID列表
+     */
+    void updateReferred(List<Long> ids);
 }

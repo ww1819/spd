@@ -79,3 +79,41 @@ CALL add_table_column('stk_inventory', 'batch_number', 'varchar(100)', '批号',
 
 CALL add_table_column('stk_dep_inventory', 'batch_number', 'varchar(100)', '批号', null);
 /
+
+-- 科室 fd_department 增加 名称简码
+CALL add_table_column(
+  'fd_department',
+  'referred_name',
+  'varchar(64)',
+  '名称简码',
+  NULL
+);
+/* 分隔符 */
+/
+/* 工作人员 sys_user 增加 名称简码（拼音简码，用于用户名称） */
+CALL add_table_column(
+  'sys_user',
+  'referred_name',
+  'varchar(64)',
+  '名称简码',
+  NULL
+);
+/
+/* 库房分类 fd_warehouse_category 增加 名称简码 */
+CALL add_table_column(
+  'fd_warehouse_category',
+  'referred_name',
+  'varchar(64)',
+  '名称简码',
+  NULL
+);
+/
+/* 财务分类 fd_finance_category 增加 名称简码 */
+CALL add_table_column(
+  'fd_finance_category',
+  'referred_name',
+  'varchar(64)',
+  '名称简码',
+  NULL
+);
+/

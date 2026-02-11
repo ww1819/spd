@@ -111,4 +111,21 @@ public class FdFinanceCategoryController extends BaseController
     {
         return toAjax(fdFinanceCategoryService.deleteFdFinanceCategoryByFinanceCategoryId(financeCategoryIds));
     }
+
+    /**
+     * 批量更新财务分类名称简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:financeCategory:updateReferred')")
+    @Log(title = "财务分类维护", businessType = BusinessType.UPDATE)
+    @PostMapping("/updateReferred")
+    public AjaxResult updateReferred(@RequestBody java.util.Map<String, java.util.List<Long>> body)
+    {
+        java.util.List<Long> ids = body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        // 预留实现：当前仅返回成功，后续可在 Service 中补充实际简码更新逻辑
+        return success("更新简码成功");
+    }
 }

@@ -111,4 +111,21 @@ public class FdSupplierController extends BaseController
     {
         return toAjax(fdSupplierService.deleteFdSupplierById(ids));
     }
+
+    /**
+     * 批量更新供应商名称简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:supplier:updateReferred')")
+    @Log(title = "供应商", businessType = BusinessType.UPDATE)
+    @PostMapping("/updateReferred")
+    public AjaxResult updateReferred(@RequestBody java.util.Map<String, java.util.List<Long>> body)
+    {
+        java.util.List<Long> ids = body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        fdSupplierService.updateReferred(ids);
+        return success("更新简码成功");
+    }
 }

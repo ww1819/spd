@@ -111,4 +111,21 @@ public class FdFactoryController extends BaseController
     {
         return toAjax(fdFactoryService.deleteFdFactoryByFactoryId(factoryIds));
     }
+
+    /**
+     * 批量更新厂家简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:factory:updateReferred')")
+    @Log(title = "厂家维护", businessType = BusinessType.UPDATE)
+    @PostMapping("/updateReferred")
+    public AjaxResult updateReferred(@RequestBody java.util.Map<String, java.util.List<Long>> body)
+    {
+        java.util.List<Long> ids = body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        fdFactoryService.updateReferred(ids);
+        return success("更新简码成功");
+    }
 }

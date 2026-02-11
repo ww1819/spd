@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdFactoryMapper;
@@ -103,5 +104,40 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         fdFactory.setUpdateTime(DateUtils.getNowDate());
         fdFactory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
         return fdFactoryMapper.updateFdFactory(fdFactory);
+    }
+
+    /**
+     * 批量更新厂家简码（factoryReferredCode）
+     */
+    @Override
+    public void updateReferred(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        for (Long id : ids) {
+            if (id == null) {
+                continue;
+            }
+            FdFactory factory = fdFactoryMapper.selectFdFactoryByFactoryId(id);
+            if (factory == null) {
+                continue;
+            }
+            String name = factory.getFactoryName();
+            if (StringUtils.isEmpty(name)) {
+                continue;
+            }
+            char first = name.charAt(0);
+            StringBuilder shortCode = new StringBuilder();
+            if (Character.isLetter(first)) {
+                shortCode.append(Character.toUpperCase(first));
+            } else {
+                shortCode.append(first);
+            }
+            if (name.length() > 1) {
+                shortCode.append(name.substring(1, Math.min(4, name.length())));
+            }
+            factory.setFactoryReferredCode(shortCode.toString());
+            fdFactoryMapper.updateFdFactory(factory);
+        }
     }
 }

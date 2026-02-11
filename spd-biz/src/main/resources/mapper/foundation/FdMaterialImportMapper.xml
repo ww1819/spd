@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdMaterialImportMapper">
+
+    <resultMap id="FdMaterialImportResult" type="com.spd.foundation.domain.FdMaterialImport">
+        <id     property="id"                    column="id"/>
+        <result property="code"                  column="code"/>
+        <result property="name"                  column="name"/>
+        <result property="supplierValue"         column="supplier_value"/>
+        <result property="factoryValue"          column="factory_value"/>
+        <result property="warehouseCategoryValue" column="warehouse_category_value"/>
+        <result property="financeCategoryValue"  column="finance_category_value"/>
+        <result property="unitValue"             column="unit_value"/>
+        <result property="locationValue"         column="location_value"/>
+        <result property="rawData"               column="raw_data"/>
+        <result property="importTime"            column="import_time"/>
+        <result property="operator"              column="operator"/>
+    </resultMap>
+
+    <insert id="insertFdMaterialImport" parameterType="com.spd.foundation.domain.FdMaterialImport">
+        INSERT INTO fd_material_import
+        (
+            id,
+            code,
+            name,
+            supplier_value,
+            factory_value,
+            warehouse_category_value,
+            finance_category_value,
+            unit_value,
+            location_value,
+            raw_data,
+            import_time,
+            operator
+        )
+        VALUES
+        (
+            #{id},
+            #{code},
+            #{name},
+            #{supplierValue},
+            #{factoryValue},
+            #{warehouseCategoryValue},
+            #{financeCategoryValue},
+            #{unitValue},
+            #{locationValue},
+            #{rawData},
+            #{importTime},
+            #{operator}
+        )
+    </insert>
+
+</mapper>
+

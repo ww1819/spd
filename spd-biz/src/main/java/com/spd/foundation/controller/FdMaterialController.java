@@ -65,6 +65,25 @@ public class FdMaterialController extends BaseController
     }
 
     /**
+     * 查询所有耗材产品列表（支持分页，避免一次返回过多数据）
+     *
+     * 说明：
+     * - 前端可通过 pageNum、pageSize 传参控制分页；
+     * - 返回结果结构与 /list 一致：{ rows: [...], total: n }。
+     * - 不改动原有 /listAll 接口，避免影响已有依赖。
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:list')")
+    @GetMapping("/listAllPage")
+    public TableDataInfo listAllPage(FdMaterial fdMaterial)
+    {
+        // 读取前端传入的 pageNum / pageSize，并开启分页
+        startPage();
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
+        // 封装为带 total 的分页对象返回
+        return getDataTable(list);
+    }
+
+    /**
      * 导出耗材产品列表
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:export')")
@@ -139,6 +158,23 @@ public class FdMaterialController extends BaseController
         // 设置文件名响应头
         FileUtils.setAttachmentResponseHeader(response, "耗材产品档案基础字典导入.xlsx");
         util.importTemplateExcel(response, "耗材数据");
+    }
+
+    /**
+     * 批量更新耗材产品名称简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:updateReferred')")
+    @Log(title = "耗材产品", businessType = BusinessType.UPDATE)
+    @PostMapping("/updateReferred")
+    public AjaxResult updateReferred(@RequestBody Map<String, List<Long>> body)
+    {
+        List<Long> ids = body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        fdMaterialService.updateReferred(ids);
+        return success("更新简码成功");
     }
 
     /**
