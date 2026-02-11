@@ -92,7 +92,8 @@ public class StkInventoryController extends BaseController
             inventoryVo.setId((Long) map.get("id"));
             inventoryVo.setMaterialCode(map.get("materialCode").toString());
             inventoryVo.setMaterialName(map.get("materialName").toString());
-            inventoryVo.setMaterialModel(map.get("materialModel").toString());
+            String materialModel = map.get("materialModel") == null ? "" : map.get("materialModel").toString();
+            inventoryVo.setMaterialModel(materialModel);
             inventoryVo.setMaterialQty((BigDecimal) map.get("materialQty"));
             inventoryVo.setMaterialSpeci(map.get("materialSpeci").toString());
             inventoryVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
