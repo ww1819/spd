@@ -323,6 +323,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
                     stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkInventory.setBatchNumber(entry.getBatchNumber());
 
                     stkInventoryMapper.insertStkInventory(stkInventory);
                     // 插仓库流水（lx=RK），反写仓库库存id到流水和入库单明细
@@ -774,6 +775,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setBeginDate(inventory.getBeginTime());
             stkDepInventory.setEndDate(inventory.getEndTime());
             stkDepInventory.setSupplierId(inventory.getSupplierId().toString());
+            stkDepInventory.setBatchNumber(entry.getBatchNumber());
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
             BigDecimal oldQty = stkDepInventory.getQty();
@@ -1443,6 +1445,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkDepInventory.setEndDate(inventory.getEndTime());
                     stkDepInventory.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
                     stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
+                    stkDepInventory.setBatchNumber(entry.getBatchNumber());
                     stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
                     Long depId = stkDepInventory.getId();
                     // 反写 kc_no：出库单明细
