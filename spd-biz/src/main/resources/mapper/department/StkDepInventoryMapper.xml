@@ -20,6 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="supplierId"    column="supplier_id"    />
         <result property="outOrderNo"    column="out_order_no"    />
         <result property="kcNo"    column="kc_no"    />
+        <result property="batchNumber"    column="batch_number"    />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -104,6 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="kcNo != null">kc_no,</if>
+            <if test="batchNumber != null">batch_number,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
@@ -117,6 +119,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="kcNo != null">#{kcNo},</if>
+            <if test="batchNumber != null">#{batchNumber},</if>
          </trim>
     </insert>
 
@@ -134,6 +137,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="kcNo != null">kc_no = #{kcNo},</if>
+            <if test="batchNumber != null">kc_no = #{batchNumber},</if>
         </trim>
         where id = #{id}
     </update>

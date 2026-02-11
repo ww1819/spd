@@ -21,6 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="endTime"    column="end_time"    />
         <result property="receiptOrderNo"    column="receipt_order_no"    />
         <result property="kcNo"    column="kc_no"    />
+        <result property="batchNumber"    column="batch_number"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -257,6 +258,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null">end_time,</if>
             <if test="receiptOrderNo != null">receipt_order_no,</if>
             <if test="kcNo != null">kc_no,</if>
+            <if test="batchNumber != null">batch_number,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -274,6 +276,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null">#{endTime},</if>
             <if test="receiptOrderNo != null">#{receiptOrderNo},</if>
             <if test="kcNo != null">#{kcNo},</if>
+            <if test="batchNumber != null">#{batchNumber},</if>
          </trim>
     </insert>
 
@@ -295,6 +298,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="receiptOrderNo != null">receipt_order_no = #{receiptOrderNo},</if>
             <if test="kcNo != null">kc_no = #{kcNo},</if>
+            <if test="batchNumber != null">batch_number = #{batchNumber},</if>
         </trim>
         where id = #{id}
     </update>

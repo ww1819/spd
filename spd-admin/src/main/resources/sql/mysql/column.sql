@@ -76,3 +76,6 @@ CALL add_table_column('bas_apply', 'del_flag', 'int', '删除标志', 0);
 
 CALL add_table_column('stk_inventory', 'batch_number', 'varchar(100)', '批号', null);
 /
+
+CALL add_table_column('stk_dep_inventory', 'batch_number', 'varchar(100)', '批号', null);
+/

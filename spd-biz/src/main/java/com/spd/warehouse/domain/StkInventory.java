@@ -107,6 +107,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
+    @Excel(name = "批号")
+    private String batchNumber;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -326,5 +329,13 @@ public class StkInventory extends BaseEntity
             .append("receiptOrderNo", getReceiptOrderNo())
             .append("delFlag", getDelFlag())
             .toString();
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
     }
 }

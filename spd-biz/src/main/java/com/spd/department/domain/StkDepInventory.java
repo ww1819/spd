@@ -97,6 +97,9 @@ public class StkDepInventory extends BaseEntity
     /** 供应商对象 */
     private FdSupplier supplier;
 
+    @Excel(name = "批号")
+    private String batchNumber;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -292,5 +295,13 @@ public class StkDepInventory extends BaseEntity
 
     public void setKcNo(Long kcNo) {
         this.kcNo = kcNo;
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
     }
 }
