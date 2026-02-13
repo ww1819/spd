@@ -17,11 +17,7 @@ import com.spd.monitoring.domain.WhFixedNumber;
 import com.spd.monitoring.domain.FixedNumberSaveRequest;
 import com.spd.monitoring.service.IFixedNumberService;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 定数监测Controller
@@ -51,6 +47,10 @@ public class FixedNumberController extends BaseController
 
         // 默认为仓库定数监测
         if (fixedNumberType == null || "".equals(fixedNumberType) || "1".equals(fixedNumberType)) {
+            // 未选择仓库时，不返回任何明细，避免一进页面就查全院定数
+            if (whQuery == null || whQuery.getWarehouseId() == null) {
+                return getDataTable(result);
+            }
             List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
             for (WhFixedNumber item : list) {
                 Map<String, Object> map = new HashMap<>();
@@ -76,6 +76,10 @@ public class FixedNumberController extends BaseController
                 result.add(map);
             }
         } else if ("2".equals(fixedNumberType)) {
+            // 未选择科室时，不返回任何明细
+            if (deptQuery == null || deptQuery.getDepartmentId() == null) {
+                return getDataTable(result);
+            }
             List<DeptFixedNumber> list = fixedNumberService.selectDeptFixedNumberList(deptQuery);
             for (DeptFixedNumber item : list) {
                 Map<String, Object> map = new HashMap<>();
@@ -115,6 +119,18 @@ public class FixedNumberController extends BaseController
     {
         fixedNumberService.saveFixedNumber(fixedNumber, getUsername());
         return AjaxResult.success("保存成功");
+    }
+
+    /**
+     * 删除单条定数监测
+     */
+    @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:remove')")
+    @Log(title = "定数监测", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{id}")
+    public AjaxResult remove(@PathVariable("id") String id)
+    {
+        int rows = fixedNumberService.deleteFixedNumberById(id);
+        return toAjax(rows);
     }
 
     /**

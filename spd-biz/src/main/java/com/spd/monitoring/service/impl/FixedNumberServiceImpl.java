@@ -109,5 +109,16 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
             }
         }
     }
+
+    @Override
+    public int deleteFixedNumberById(String id) {
+        // 先尝试删除仓库定数
+        int rows = whFixedNumberMapper.deleteWhFixedNumberById(id);
+        if (rows == 0) {
+            // 如果仓库表中没有，再尝试删除科室定数
+            rows = deptFixedNumberMapper.deleteDeptFixedNumberById(id);
+        }
+        return rows;
+    }
 }
 

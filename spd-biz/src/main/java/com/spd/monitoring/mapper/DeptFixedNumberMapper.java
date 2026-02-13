@@ -30,5 +30,10 @@ public interface DeptFixedNumberMapper {
      */
     DeptFixedNumber selectByDepartmentAndMaterial(@Param("departmentId") Long departmentId,
                                                   @Param("materialId") Long materialId);
+
+    /**
+     * 根据主键软删除科室定数监测
+     */
+    int deleteDeptFixedNumberById(String id);
 }
 

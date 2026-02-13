@@ -105,6 +105,12 @@
         where id = #{id}
     </update>
 
+    <delete id="deleteWhFixedNumberById" parameterType="String">
+        update wh_fixed_number
+        set del_flag = 1, update_time = now()
+        where id = #{id}
+    </delete>
+
     <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">
         <include refid="selectWhFixedNumberVo"/>
         and f.warehouse_id = #{warehouseId}

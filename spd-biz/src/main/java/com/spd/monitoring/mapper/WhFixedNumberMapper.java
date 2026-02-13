@@ -30,5 +30,10 @@ public interface WhFixedNumberMapper {
      */
     WhFixedNumber selectByWarehouseAndMaterial(@Param("warehouseId") Long warehouseId,
                                                @Param("materialId") Long materialId);
+
+    /**
+     * 根据主键软删除仓库定数监测
+     */
+    int deleteWhFixedNumberById(String id);
 }
 

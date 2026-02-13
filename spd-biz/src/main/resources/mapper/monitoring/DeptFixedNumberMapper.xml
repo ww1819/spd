@@ -105,6 +105,12 @@
         where id = #{id}
     </update>
 
+    <delete id="deleteDeptFixedNumberById" parameterType="String">
+        update dept_fixed_number
+        set del_flag = 1, update_time = now()
+        where id = #{id}
+    </delete>
+
     <select id="selectByDepartmentAndMaterial" parameterType="map" resultMap="DeptFixedNumberResult">
         <include refid="selectDeptFixedNumberVo"/>
         and f.department_id = #{departmentId}

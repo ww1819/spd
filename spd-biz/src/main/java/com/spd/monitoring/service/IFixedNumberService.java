@@ -26,5 +26,10 @@ public interface IFixedNumberService {
      */
     void saveFixedNumber(FixedNumberSaveRequest request, String operator);
 
+    /**
+     * 根据主键删除一条定数监测（仓库或科室，自动判定）
+     */
+    int deleteFixedNumberById(String id);
+
 }
 
