@@ -15,3 +15,45 @@ CREATE TABLE IF NOT EXISTS `fd_material_import` (
   `operator` varchar(64) NOT NULL COMMENT '导入操作人',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材产品导入中间表';
+/
+
+CREATE TABLE IF NOT EXISTS `wh_fixed_number` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `material_id` bigint NOT NULL COMMENT '耗材产品ID（关联fd_material.id）',
+  `warehouse_id` bigint NOT NULL COMMENT '仓库ID',
+  `upper_limit` int NOT NULL DEFAULT 0 COMMENT '上限数量',
+  `lower_limit` int NOT NULL DEFAULT 0 COMMENT '下限数量',
+  `expiry_reminder` int DEFAULT NULL COMMENT '有效期提醒天数',
+  `monitoring` char(1) NOT NULL DEFAULT '1' COMMENT '是否监测 1=是 2=否',
+  `location` varchar(128) DEFAULT NULL COMMENT '货位',
+  `location_id` bigint DEFAULT NULL COMMENT '货位ID',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_wh_fixed_number_material` (`warehouse_id`,`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库定数监测表';
+/
+
+CREATE TABLE IF NOT EXISTS `dept_fixed_number` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `material_id` bigint NOT NULL COMMENT '耗材产品ID（关联fd_material.id）',
+  `department_id` bigint NOT NULL COMMENT '科室ID（关联fd_department.id）',
+  `upper_limit` int NOT NULL DEFAULT 0 COMMENT '上限数量',
+  `lower_limit` int NOT NULL DEFAULT 0 COMMENT '下限数量',
+  `expiry_reminder` int DEFAULT NULL COMMENT '有效期提醒天数',
+  `monitoring` char(1) NOT NULL DEFAULT '1' COMMENT '是否监测 1=是 2=否',
+  `location` varchar(128) DEFAULT NULL COMMENT '货位',
+  `location_id` bigint DEFAULT NULL COMMENT '货位ID',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dept_fixed_number_material` (`department_id`,`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室定数监测表';

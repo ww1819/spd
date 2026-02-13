@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.monitoring.mapper.WhFixedNumberMapper">
+
+    <resultMap id="WhFixedNumberResult" type="WhFixedNumber">
+        <result property="id" column="id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="upperLimit" column="upper_limit"/>
+        <result property="lowerLimit" column="lower_limit"/>
+        <result property="expiryReminder" column="expiry_reminder"/>
+        <result property="monitoring" column="monitoring"/>
+        <result property="location" column="location"/>
+        <result property="locationId" column="location_id"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <association property="warehouse" javaType="FdWarehouse" resultMap="warehouseResult"/>
+        <association property="material" javaType="FdMaterial" resultMap="materialResult"/>
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="FdWarehouse">
+        <id property="id" column="wId"/>
+        <result property="name" column="warehouseName"/>
+    </resultMap>
+
+    <resultMap id="materialResult" type="FdMaterial">
+        <id property="id" column="mId"/>
+        <result property="code" column="materialCode"/>
+        <result property="name" column="materialName"/>
+        <result property="speci" column="specification"/>
+        <result property="model" column="model"/>
+        <result property="registerNo" column="registerNo"/>
+    </resultMap>
+
+    <sql id="selectWhFixedNumberVo">
+        select
+            f.id,
+            f.material_id,
+            f.warehouse_id,
+            f.upper_limit,
+            f.lower_limit,
+            f.expiry_reminder,
+            f.monitoring,
+            f.location,
+            f.location_id,
+            f.del_flag,
+            f.create_by,
+            f.create_time,
+            f.update_by,
+            f.update_time,
+            w.id       as wId,
+            w.name     as warehouseName,
+            m.id       as mId,
+            m.code     as materialCode,
+            m.name     as materialName,
+            m.speci    as specification,
+            m.model    as model,
+            m.register_no as registerNo
+        from wh_fixed_number f
+                 left join fd_warehouse w on f.warehouse_id = w.id
+                 left join fd_material m on f.material_id = m.id
+        where f.del_flag = 0
+    </sql>
+
+    <select id="selectWhFixedNumberList" parameterType="WhFixedNumber" resultMap="WhFixedNumberResult">
+        <include refid="selectWhFixedNumberVo"/>
+        <if test="warehouseId != null">
+            and f.warehouse_id = #{warehouseId}
+        </if>
+        <if test="materialId != null">
+            and f.material_id = #{materialId}
+        </if>
+        <if test="material != null and material.name != null and material.name != ''">
+            and m.name like concat('%', #{material.name}, '%')
+        </if>
+        <if test="material != null and material.speci != null and material.speci != ''">
+            and m.speci like concat('%', #{material.speci}, '%')
+        </if>
+        order by m.code
+    </select>
+
+    <insert id="insertWhFixedNumber" parameterType="WhFixedNumber">
+        insert into wh_fixed_number
+        (id, material_id, warehouse_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, create_by, create_time)
+        values
+        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{createBy}, now())
+    </insert>
+
+    <update id="updateWhFixedNumber" parameterType="WhFixedNumber">
+        update wh_fixed_number
+        set
+            upper_limit = #{upperLimit},
+            lower_limit = #{lowerLimit},
+            expiry_reminder = #{expiryReminder},
+            monitoring = #{monitoring},
+            location = #{location},
+            location_id = #{locationId},
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">
+        <include refid="selectWhFixedNumberVo"/>
+        and f.warehouse_id = #{warehouseId}
+        and f.material_id = #{materialId}
+    </select>
+
+</mapper>
+
