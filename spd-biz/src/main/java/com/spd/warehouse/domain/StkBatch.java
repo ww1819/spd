@@ -107,6 +107,10 @@ public class StkBatch extends BaseEntity {
     private String billNo;
     /** 单据明细ID */
     private Long entryId;
+    /** 期初单主表ID（UUID7） */
+    private String refBillId;
+    /** 期初单明细ID（UUID7） */
+    private String refEntryId;
     /** 院内码明细ID */
     private Long inCodeDetailId;
     /** 单据审核时间 */
@@ -206,6 +210,10 @@ public class StkBatch extends BaseEntity {
     public void setBillNo(String billNo) { this.billNo = billNo; }
     public Long getEntryId() { return entryId; }
     public void setEntryId(Long entryId) { this.entryId = entryId; }
+    public String getRefBillId() { return refBillId; }
+    public void setRefBillId(String refBillId) { this.refBillId = refBillId; }
+    public String getRefEntryId() { return refEntryId; }
+    public void setRefEntryId(String refEntryId) { this.refEntryId = refEntryId; }
     public Long getInCodeDetailId() { return inCodeDetailId; }
     public void setInCodeDetailId(Long inCodeDetailId) { this.inCodeDetailId = inCodeDetailId; }
     public Date getAuditTime() { return auditTime; }

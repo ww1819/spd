@@ -237,4 +237,7 @@ public class FdMaterial extends BaseEntity
 
     /** 查询参数：名称搜索（首字母） */
     private String nameSearch;
+
+    /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
+    private String hisId;
 }

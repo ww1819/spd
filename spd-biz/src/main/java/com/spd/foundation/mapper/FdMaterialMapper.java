@@ -23,6 +23,15 @@ public interface FdMaterialMapper
      */
 
     public FdMaterial selectFdMaterialByCode(String code);
+
+    /**
+     * 根据第三方系统产品档案ID（his_id）查询耗材产品
+     *
+     * @param hisId 第三方系统产品档案ID
+     * @return 耗材产品
+     */
+    public FdMaterial selectFdMaterialByHisId(String hisId);
+
     /**
      * 查询耗材产品
      *

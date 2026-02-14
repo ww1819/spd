@@ -9,6 +9,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billId != null">bill_id,</if>
             <if test="entryId != null">entry_id,</if>
+            <if test="refBillId != null">ref_bill_id,</if>
+            <if test="refEntryId != null">ref_entry_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="materialId != null">material_id,</if>
             <if test="batchNo != null">batch_no,</if>
@@ -29,6 +31,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billId != null">#{billId},</if>
             <if test="entryId != null">#{entryId},</if>
+            <if test="refBillId != null">#{refBillId},</if>
+            <if test="refEntryId != null">#{refEntryId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="materialId != null">#{materialId},</if>
             <if test="batchNo != null">#{batchNo},</if>

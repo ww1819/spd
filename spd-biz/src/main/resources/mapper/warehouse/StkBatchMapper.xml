@@ -47,6 +47,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="billId"    column="bill_id"    />
         <result property="billNo"    column="bill_no"    />
         <result property="entryId"    column="entry_id"    />
+        <result property="refBillId"    column="ref_bill_id"    />
+        <result property="refEntryId"    column="ref_entry_id"    />
         <result property="inCodeDetailId"    column="in_code_detail_id"    />
         <result property="auditTime"    column="audit_time"    />
         <result property="auditBy"    column="audit_by"    />
@@ -69,7 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             department_id, department_code, department_name,
             storeroom_id, storeroom_code, storeroom_name,
             finance_category_id, finance_category_code, finance_category_name,
-            batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
+            batch_source, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
             create_time, create_by, update_time, update_by, del_flag, del_time, del_by
         ) values (
             #{batchNo}, #{materialId}, #{materialCode}, #{materialName}, #{speci}, #{model},
@@ -80,7 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{departmentId}, #{departmentCode}, #{departmentName},
             #{storeroomId}, #{storeroomCode}, #{storeroomName},
             #{financeCategoryId}, #{financeCategoryCode}, #{financeCategoryName},
-            #{batchSource}, #{billId}, #{billNo}, #{entryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
+            #{batchSource}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
             #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}
         )
     </insert>

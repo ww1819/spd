@@ -117,3 +117,21 @@ CALL add_table_column(
   NULL
 );
 /
+/* 仓库流水表 t_hc_ck_flow 增加 期初单主表/明细表ID（UUID7 引用） */
+CALL add_table_column('t_hc_ck_flow', 'ref_bill_id', 'varchar(36)', '期初单主表ID（UUID7）', NULL);
+/
+CALL add_table_column('t_hc_ck_flow', 'ref_entry_id', 'varchar(36)', '期初单明细ID（UUID7）', NULL);
+/
+/* 批次表 stk_batch 增加 期初单主表/明细表ID（UUID7 引用） */
+CALL add_table_column('stk_batch', 'ref_bill_id', 'varchar(36)', '期初单主表ID（UUID7）', NULL);
+/
+CALL add_table_column('stk_batch', 'ref_entry_id', 'varchar(36)', '期初单明细ID（UUID7）', NULL);
+/
+/* 产品档案 fd_material 增加 第三方系统产品档案ID（用于期初导入匹配） */
+CALL add_table_column('fd_material', 'his_id', 'varchar(64)', '第三方系统产品档案ID（HIS等）', NULL);
+/
+/* 期初库存导入明细表 增加 第三方系统库存明细ID、第三方系统产品档案ID */
+CALL add_table_column('stk_initial_import_entry', 'third_party_detail_id', 'varchar(64)', '第三方系统库存明细ID', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'third_party_material_id', 'varchar(64)', '第三方系统产品档案ID', NULL);
+/

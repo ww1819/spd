@@ -55,6 +55,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isGz"    column="is_gz"    />
         <result property="isFollow"    column="is_follow"    />
         <result property="locationId"    column="location_id"    />
+        <result property="hisId"    column="his_id"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="fdWarehouseCategory"    column="storeroom_id" javaType="FdWarehouseCategory" resultMap="fdWarehouseCategoryResult" />
@@ -102,6 +103,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
             m.price, m.create_by, m.create_time, m.update_by, m.update_time,m.del_flag,
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
+            m.his_id,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
             m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.producer, m.material_level,
             m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
@@ -156,11 +158,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdMaterialVo"/>
         where m.code = #{code} and (m.del_flag = 0 or m.del_flag is null)
     </select>
+    <select id="selectFdMaterialByHisId" parameterType="String" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) limit 1
+    </select>
     <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
         insert into fd_material
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">code,</if>
             <if test="name != null">name,</if>
+            <if test="hisId != null and hisId != ''">his_id,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="speci != null">speci,</if>
             <if test="model != null">model,</if>
@@ -213,6 +220,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">#{code},</if>
             <if test="name != null">#{name},</if>
+            <if test="hisId != null and hisId != ''">#{hisId},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="speci != null">#{speci},</if>
             <if test="model != null">#{model},</if>

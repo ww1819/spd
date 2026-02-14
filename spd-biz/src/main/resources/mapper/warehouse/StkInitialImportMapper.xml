@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkInitialImportMapper">
+
+    <resultMap type="com.spd.warehouse.domain.StkInitialImport" id="StkInitialImportResult">
+        <id property="id" column="id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="importOperator" column="import_operator"/>
+        <result property="importTime" column="import_time"/>
+        <result property="stockGenTime" column="stock_gen_time"/>
+        <result property="billStatus" column="bill_status"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <association property="warehouse" column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult"/>
+    </resultMap>
+
+    <resultMap id="warehouseResult" type="com.spd.foundation.domain.FdWarehouse">
+        <id property="id" column="wId"/>
+        <result property="code" column="warehouseCode"/>
+        <result property="name" column="warehouseName"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select m.id, m.bill_no, m.warehouse_id, m.import_operator, m.import_time, m.stock_gen_time,
+               m.bill_status, m.remark, m.del_flag, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time,
+               w.id wId, w.code warehouseCode, w.name warehouseName
+        from stk_initial_import m
+        left join fd_warehouse w on m.warehouse_id = w.id
+    </sql>
+
+    <select id="selectById" resultMap="StkInitialImportResult">
+        <include refid="selectVo"/>
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null)
+    </select>
+
+    <select id="selectList" resultMap="StkInitialImportResult">
+        <include refid="selectVo"/>
+        <where>
+            (m.del_flag = 0 or m.del_flag is null)
+            <if test="billNo != null and billNo != ''">and m.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
+            <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
+            <if test="params != null and params.beginTime != null">and m.import_time &gt;= #{params.beginTime}</if>
+            <if test="params != null and params.endTime != null">and m.import_time &lt;= #{params.endTime}</if>
+        </where>
+        order by m.import_time desc, m.id desc
+    </select>
+
+    <select id="selectMaxBillNo" resultType="java.lang.String">
+        select max(bill_no) from stk_initial_import where bill_no like concat(#{datePrefix}, '%')
+    </select>
+
+    <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImport">
+        insert into stk_initial_import (id, bill_no, warehouse_id, import_operator, import_time, stock_gen_time, bill_status, remark, del_flag, create_by, create_time, audit_by, audit_time)
+        values (#{id}, #{billNo}, #{warehouseId}, #{importOperator}, #{importTime}, #{stockGenTime}, #{billStatus}, #{remark}, 0, #{createBy}, #{createTime}, #{auditBy}, #{auditTime})
+    </insert>
+
+    <update id="update" parameterType="com.spd.warehouse.domain.StkInitialImport">
+        update stk_initial_import
+        <set>
+            <if test="stockGenTime != null">stock_gen_time = #{stockGenTime},</if>
+            <if test="billStatus != null">bill_status = #{billStatus},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+</mapper>

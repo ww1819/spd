@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkInitialImportEntryMapper">
+
+    <resultMap type="com.spd.warehouse.domain.StkInitialImportEntry" id="StkInitialImportEntryResult">
+        <id property="id" column="id"/>
+        <result property="parenId" column="paren_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="qty" column="qty"/>
+        <result property="amt" column="amt"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="batchNumber" column="batch_number"/>
+        <result property="beginTime" column="begin_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="factoryId" column="factory_id"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createTime" column="create_time"/>
+        <result property="thirdPartyDetailId" column="third_party_detail_id"/>
+        <result property="thirdPartyMaterialId" column="third_party_material_id"/>
+        <association property="material" column="material_id" javaType="com.spd.foundation.domain.FdMaterial" resultMap="materialResult"/>
+    </resultMap>
+
+    <resultMap id="materialResult" type="com.spd.foundation.domain.FdMaterial">
+        <id property="id" column="mId"/>
+        <result property="code" column="materialCode"/>
+        <result property="name" column="materialName"/>
+        <result property="speci" column="m_speci"/>
+    </resultMap>
+
+    <select id="selectByParenId" resultMap="StkInitialImportEntryResult">
+        select e.id, e.paren_id, e.material_id, e.warehouse_id, e.unit_price, e.qty, e.amt,
+               e.batch_no, e.batch_number, e.begin_time, e.end_time, e.factory_id, e.supplier_id, e.del_flag, e.sort_order, e.create_time,
+               e.third_party_detail_id, e.third_party_material_id,
+               m.id mId, m.code materialCode, m.name materialName, m.speci m_speci
+        from stk_initial_import_entry e
+        left join fd_material m on e.material_id = m.id
+        where e.paren_id = #{parenId} and (e.del_flag = 0 or e.del_flag is null)
+        order by e.sort_order, e.id
+    </select>
+
+    <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImportEntry">
+        insert into stk_initial_import_entry (id, paren_id, material_id, warehouse_id, unit_price, qty, amt, batch_no, batch_number, begin_time, end_time, factory_id, supplier_id, del_flag, sort_order, third_party_detail_id, third_party_material_id)
+        values (#{id}, #{parenId}, #{materialId}, #{warehouseId}, #{unitPrice}, #{qty}, #{amt}, #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{factoryId}, #{supplierId}, 0, #{sortOrder}, #{thirdPartyDetailId}, #{thirdPartyMaterialId})
+    </insert>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into stk_initial_import_entry (id, paren_id, material_id, warehouse_id, unit_price, qty, amt, batch_no, batch_number, begin_time, end_time, factory_id, supplier_id, del_flag, sort_order, third_party_detail_id, third_party_material_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.unitPrice}, #{item.qty}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.factoryId}, #{item.supplierId}, 0, #{item.sortOrder}, #{item.thirdPartyDetailId}, #{item.thirdPartyMaterialId})
+        </foreach>
+    </insert>
+</mapper>

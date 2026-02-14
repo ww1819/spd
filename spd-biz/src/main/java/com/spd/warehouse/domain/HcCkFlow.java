@@ -20,6 +20,10 @@ public class HcCkFlow extends BaseEntity {
     private Long billId;
     /** 出库单明细id */
     private Long entryId;
+    /** 期初单主表ID（UUID7） */
+    private String refBillId;
+    /** 期初单明细ID（UUID7） */
+    private String refEntryId;
     /** 仓库ID */
     private Long warehouseId;
     /** 耗材ID */
@@ -58,6 +62,10 @@ public class HcCkFlow extends BaseEntity {
     public void setBillId(Long billId) { this.billId = billId; }
     public Long getEntryId() { return entryId; }
     public void setEntryId(Long entryId) { this.entryId = entryId; }
+    public String getRefBillId() { return refBillId; }
+    public void setRefBillId(String refBillId) { this.refBillId = refBillId; }
+    public String getRefEntryId() { return refEntryId; }
+    public void setRefEntryId(String refEntryId) { this.refEntryId = refEntryId; }
     public Long getWarehouseId() { return warehouseId; }
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
     public Long getMaterialId() { return materialId; }
