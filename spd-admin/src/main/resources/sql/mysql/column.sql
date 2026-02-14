@@ -135,3 +135,24 @@ CALL add_table_column('stk_initial_import_entry', 'third_party_detail_id', 'varc
 /
 CALL add_table_column('stk_initial_import_entry', 'third_party_material_id', 'varchar(64)', '第三方系统产品档案ID', NULL);
 /
+/* 期初库存导入明细表 增加 耗材编码、规格、型号、注册证号、医保编码、医保名称、主条码 */
+CALL add_table_column('stk_initial_import_entry', 'material_code', 'varchar(64)', '耗材编码', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'speci', 'varchar(255)', '规格', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'model', 'varchar(255)', '型号', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'register_no', 'varchar(128)', '注册证号', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'medical_no', 'varchar(64)', '医保编码', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'medical_name', 'varchar(255)', '医保名称', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'main_barcode', 'varchar(128)', '主条码', NULL);
+/
+
+CALL add_table_column('stk_io_bill_entry', 'suppler_id', 'varchar(128)', '供应商ID，出退库单明细内的供应商id', NULL);
+/
+
+CALL add_table_column('stk_io_profit_loss_entry', 'suppler_id', 'varchar(128)', '供应商ID，出退库单明细内的供应商id', NULL);
+/

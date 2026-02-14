@@ -6,6 +6,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkInitialImport;
+import com.spd.warehouse.domain.dto.ConfirmImportRequest;
 import com.spd.warehouse.domain.dto.InitialImportExcelRow;
 import com.spd.warehouse.service.IStkInitialImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,11 +45,8 @@ public class StkInitialImportController extends BaseController {
     @PreAuthorize("@ss.hasPermi('warehouse:initialStockImport:import')")
     @Log(title = "期初库存导入", businessType = BusinessType.IMPORT)
     @PostMapping("/confirmImport")
-    public AjaxResult confirmImport(@RequestBody java.util.Map<String, Object> body) {
-        Long warehouseId = body.get("warehouseId") != null ? Long.valueOf(body.get("warehouseId").toString()) : null;
-        @SuppressWarnings("unchecked")
-        List<InitialImportExcelRow> rows = (List<InitialImportExcelRow>) body.get("rows");
-        return stkInitialImportService.confirmImport(warehouseId, rows);
+    public AjaxResult confirmImport(@RequestBody ConfirmImportRequest request) {
+        return stkInitialImportService.confirmImport(request.getWarehouseId(), request.getRows());
     }
 
     /**

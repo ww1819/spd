@@ -106,6 +106,8 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 item.put("error", "数量必须大于0");
             } else if (whId == null && (StringUtils.isEmpty(row.getWarehouseCode()))) {
                 item.put("error", "请指定仓库或提供仓库编码");
+            } else if (StringUtils.isNotEmpty(row.getSupplierName()) && !supplierExistsByName(row.getSupplierName().trim())) {
+                item.put("error", "供应商「" + row.getSupplierName().trim() + "」在系统中不存在，请先在基础数据中创建该供应商");
             } else {
                 item.put("error", null);
             }
@@ -181,11 +183,20 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             }
             Long supplierId = null;
             if (StringUtils.isNotEmpty(row.getSupplierName())) {
+                String supplierName = row.getSupplierName().trim();
                 FdSupplier sq = new FdSupplier();
-                sq.setName(row.getSupplierName());
+                sq.setName(supplierName);
                 List<FdSupplier> sl = fdSupplierMapper.selectFdSupplierList(sq);
-                if (sl != null && !sl.isEmpty()) {
-                    supplierId = sl.get(0).getId();
+                if (sl != null) {
+                    for (FdSupplier s : sl) {
+                        if (supplierName.equals(s.getName())) {
+                            supplierId = s.getId();
+                            break;
+                        }
+                    }
+                }
+                if (supplierId == null) {
+                    throw new ServiceException("第" + (sortOrder + 1) + "行：供应商「" + supplierName + "」在系统中不存在，请先在基础数据中创建该供应商后再导入");
                 }
             }
             BigDecimal unitPrice = row.getUnitPrice() != null ? row.getUnitPrice() : BigDecimal.ZERO;
@@ -209,6 +220,13 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             entry.setSortOrder(++sortOrder);
             entry.setThirdPartyDetailId(StringUtils.isNotEmpty(row.getThirdPartyDetailId()) ? row.getThirdPartyDetailId().trim() : null);
             entry.setThirdPartyMaterialId(StringUtils.isNotEmpty(row.getThirdPartyMaterialId()) ? row.getThirdPartyMaterialId().trim() : null);
+            entry.setMaterialCode(trimToNull(row.getMaterialCode()));
+            entry.setSpeci(trimToNull(row.getSpeci()));
+            entry.setModel(trimToNull(row.getModel()));
+            entry.setRegisterNo(trimToNull(row.getRegisterNo()));
+            entry.setMedicalNo(trimToNull(row.getMedicalNo()));
+            entry.setMedicalName(trimToNull(row.getMedicalName()));
+            entry.setMainBarcode(trimToNull(row.getMainBarcode()));
             entries.add(entry);
         }
         if (entries.isEmpty()) {
@@ -415,12 +433,33 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         } else {
             m.setCode(row.getMaterialCode().trim());
         }
+        m.setSpeci(trimToNull(row.getSpeci()));
+        m.setModel(trimToNull(row.getModel()));
+        m.setRegisterNo(trimToNull(row.getRegisterNo()));
+        m.setMedicalNo(trimToNull(row.getMedicalNo()));
+        m.setMedicalName(trimToNull(row.getMedicalName()));
         m.setStoreroomId(resolveWarehouseCategoryId(row.getWarehouseCategory()));
         m.setFinanceCategoryId(resolveFinanceCategoryId(row.getFinanceCategory()));
         m.setDelFlag(0);
         m.setCreateBy(SecurityUtils.getUsername());
         m.setCreateTime(new Date());
         return m;
+    }
+
+    private boolean supplierExistsByName(String name) {
+        if (StringUtils.isEmpty(name)) return true;
+        FdSupplier q = new FdSupplier();
+        q.setName(name);
+        List<FdSupplier> list = fdSupplierMapper.selectFdSupplierList(q);
+        if (list == null || list.isEmpty()) return false;
+        for (FdSupplier s : list) {
+            if (name.equals(s.getName())) return true;
+        }
+        return false;
+    }
+
+    private static String trimToNull(String s) {
+        return s != null && !s.trim().isEmpty() ? s.trim() : null;
     }
 
     /** 生成不重复的产品档案编码 */

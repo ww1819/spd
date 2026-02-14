@@ -57,6 +57,21 @@ public class StkInitialImportEntry extends BaseEntity {
     /** 第三方系统产品档案ID */
     private String thirdPartyMaterialId;
 
+    /** 耗材编码（导入快照） */
+    private String materialCode;
+    /** 规格（导入快照） */
+    private String speci;
+    /** 型号（导入快照） */
+    private String model;
+    /** 注册证号（导入快照） */
+    private String registerNo;
+    /** 医保编码（导入快照） */
+    private String medicalNo;
+    /** 医保名称（导入快照） */
+    private String medicalName;
+    /** 主条码（导入快照） */
+    private String mainBarcode;
+
     /** 耗材对象 */
     private FdMaterial material;
 }
