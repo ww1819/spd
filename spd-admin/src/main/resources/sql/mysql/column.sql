@@ -156,3 +156,6 @@ CALL add_table_column('stk_io_bill_entry', 'suppler_id', 'varchar(128)', '供应
 
 CALL add_table_column('stk_io_profit_loss_entry', 'suppler_id', 'varchar(128)', '供应商ID，出退库单明细内的供应商id', NULL);
 /
+/* 产品档案 fd_material 增加 入选原因 */
+CALL add_table_column('fd_material', 'selection_reason', 'varchar(512)', '入选原因', NULL);
+/

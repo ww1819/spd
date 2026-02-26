@@ -178,6 +178,71 @@ public class FdMaterialController extends BaseController
     }
 
     /**
+     * 产品档案停用（记录停用时间、停用人、停用原因）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @Log(title = "耗材产品停用", businessType = BusinessType.UPDATE)
+    @PutMapping("/disable")
+    public AjaxResult disable(@RequestBody Map<String, Object> params) {
+        Long id = params.get("id") != null ? Long.valueOf(params.get("id").toString()) : null;
+        String reason = params.get("reason") != null ? params.get("reason").toString() : null;
+        if (id == null) {
+            return error("产品档案ID不能为空");
+        }
+        if (reason == null || reason.trim().isEmpty()) {
+            return error("请填写停用原因");
+        }
+        fdMaterialService.disableMaterial(id, reason.trim());
+        return success();
+    }
+
+    /**
+     * 产品档案启用（记录启用时间、启用人、启用原因）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @Log(title = "耗材产品启用", businessType = BusinessType.UPDATE)
+    @PutMapping("/enable")
+    public AjaxResult enable(@RequestBody Map<String, Object> params) {
+        Long id = params.get("id") != null ? Long.valueOf(params.get("id").toString()) : null;
+        String reason = params.get("reason") != null ? params.get("reason").toString() : null;
+        if (id == null) {
+            return error("产品档案ID不能为空");
+        }
+        if (reason == null || reason.trim().isEmpty()) {
+            return error("请填写启用原因");
+        }
+        fdMaterialService.enableMaterial(id, reason.trim());
+        return success();
+    }
+
+    /**
+     * 查询产品档案启用停用记录列表
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/{id}/statusLog")
+    public AjaxResult listStatusLog(@PathVariable("id") Long id) {
+        return success(fdMaterialService.listStatusLogByMaterialId(id));
+    }
+
+    /**
+     * 查询产品档案变更记录列表
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/{id}/changeLog")
+    public AjaxResult listChangeLog(@PathVariable("id") Long id) {
+        return success(fdMaterialService.listChangeLogByMaterialId(id));
+    }
+
+    /**
+     * 查询产品档案时间轴（合并启用停用与变更记录，按时间倒序）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/{id}/timeline")
+    public AjaxResult getTimeline(@PathVariable("id") Long id) {
+        return success(fdMaterialService.getMaterialTimeline(id));
+    }
+
+    /**
      * 推送档案
      * 调用服务器interface接口推送供应商档案
      */

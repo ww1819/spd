@@ -111,3 +111,33 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import_entry` (
   KEY `idx_material_id` (`material_id`),
   KEY `idx_warehouse_id` (`warehouse_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='期初库存导入明细表';
+/
+
+-- 耗材档案启用停用记录表（产品档案启用/停用流水）；主键UUID7
+CREATE TABLE IF NOT EXISTS `fd_material_status_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `material_id` bigint(20) NOT NULL COMMENT '产品档案ID（关联fd_material.id）',
+  `action` varchar(16) NOT NULL COMMENT '操作类型：enable=启用，disable=停用',
+  `action_time` datetime NOT NULL COMMENT '启用/停用时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `reason` varchar(512) DEFAULT NULL COMMENT '启用/停用原因',
+  PRIMARY KEY (`id`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_action_time` (`action_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材档案启用停用记录表';
+/
+
+-- 产品档案变更记录表；主键UUID7
+CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `material_id` bigint(20) NOT NULL COMMENT '产品档案ID（关联fd_material.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_change_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='产品档案变更记录表';

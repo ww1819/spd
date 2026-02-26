@@ -1,7 +1,12 @@
 package com.spd.foundation.service.impl;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.alibaba.fastjson2.JSON;
 import com.spd.common.annotation.DataSource;
@@ -14,14 +19,19 @@ import com.spd.common.utils.bean.BeanValidators;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFinanceCategory;
+import com.spd.foundation.domain.FdMaterialChangeLog;
 import com.spd.foundation.domain.FdMaterialImport;
+import com.spd.foundation.domain.FdMaterialStatusLog;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.domain.FdLocation;
 import com.spd.foundation.domain.FdWarehouseCategory;
+import com.spd.foundation.vo.MaterialTimelineVo;
 import com.spd.foundation.mapper.FdFactoryMapper;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
+import com.spd.foundation.mapper.FdMaterialChangeLogMapper;
 import com.spd.foundation.mapper.FdMaterialImportMapper;
+import com.spd.foundation.mapper.FdMaterialStatusLogMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.foundation.mapper.FdUnitMapper;
@@ -76,7 +86,64 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Autowired
     private FdLocationMapper fdLocationMapper;
 
+    @Autowired
+    private FdMaterialStatusLogMapper fdMaterialStatusLogMapper;
+
+    @Autowired
+    private FdMaterialChangeLogMapper fdMaterialChangeLogMapper;
+
     private static final Logger log = LoggerFactory.getLogger(FdMaterialServiceImpl.class);
+
+    /** 产品档案字段中文名（用于变更记录） */
+    private static final Map<String, String> MATERIAL_FIELD_LABELS = new LinkedHashMap<>();
+    static {
+        MATERIAL_FIELD_LABELS.put("code", "耗材编码");
+        MATERIAL_FIELD_LABELS.put("name", "耗材名称");
+        MATERIAL_FIELD_LABELS.put("referredName", "名称简码");
+        MATERIAL_FIELD_LABELS.put("supplierId", "供应商");
+        MATERIAL_FIELD_LABELS.put("speci", "规格");
+        MATERIAL_FIELD_LABELS.put("model", "型号");
+        MATERIAL_FIELD_LABELS.put("price", "价格");
+        MATERIAL_FIELD_LABELS.put("useName", "通用名称");
+        MATERIAL_FIELD_LABELS.put("factoryId", "生产厂家");
+        MATERIAL_FIELD_LABELS.put("storeroomId", "库房分类");
+        MATERIAL_FIELD_LABELS.put("financeCategoryId", "财务分类");
+        MATERIAL_FIELD_LABELS.put("unitId", "单位");
+        MATERIAL_FIELD_LABELS.put("registerName", "注册证名称");
+        MATERIAL_FIELD_LABELS.put("registerNo", "注册证件号");
+        MATERIAL_FIELD_LABELS.put("medicalName", "医保名称");
+        MATERIAL_FIELD_LABELS.put("medicalNo", "医保编码");
+        MATERIAL_FIELD_LABELS.put("periodDate", "有效期");
+        MATERIAL_FIELD_LABELS.put("successfulType", "招标类别");
+        MATERIAL_FIELD_LABELS.put("successfulNo", "中标号");
+        MATERIAL_FIELD_LABELS.put("successfulPrice", "中标价格");
+        MATERIAL_FIELD_LABELS.put("salePrice", "销售价");
+        MATERIAL_FIELD_LABELS.put("packageSpeci", "包装规格");
+        MATERIAL_FIELD_LABELS.put("producer", "产地");
+        MATERIAL_FIELD_LABELS.put("materialLevel", "耗材级别");
+        MATERIAL_FIELD_LABELS.put("registerLevel", "注册证级别");
+        MATERIAL_FIELD_LABELS.put("riskLevel", "风险级别");
+        MATERIAL_FIELD_LABELS.put("firstaidLevel", "急救类型");
+        MATERIAL_FIELD_LABELS.put("doctorLevel", "医用级别");
+        MATERIAL_FIELD_LABELS.put("brand", "品牌");
+        MATERIAL_FIELD_LABELS.put("useto", "用途");
+        MATERIAL_FIELD_LABELS.put("quality", "材质");
+        MATERIAL_FIELD_LABELS.put("function", "功能");
+        MATERIAL_FIELD_LABELS.put("isWay", "储存方式");
+        MATERIAL_FIELD_LABELS.put("udiNo", "UDI码");
+        MATERIAL_FIELD_LABELS.put("permitNo", "许可证编号");
+        MATERIAL_FIELD_LABELS.put("countryNo", "国家编码");
+        MATERIAL_FIELD_LABELS.put("countryName", "国家医保名称");
+        MATERIAL_FIELD_LABELS.put("description", "商品说明");
+        MATERIAL_FIELD_LABELS.put("isUse", "使用状态");
+        MATERIAL_FIELD_LABELS.put("isProcure", "带量采购");
+        MATERIAL_FIELD_LABELS.put("isMonitor", "重点监测");
+        MATERIAL_FIELD_LABELS.put("isGz", "是否高值");
+        MATERIAL_FIELD_LABELS.put("isFollow", "是否跟台");
+        MATERIAL_FIELD_LABELS.put("locationId", "货位");
+        MATERIAL_FIELD_LABELS.put("hisId", "第三方系统产品档案ID");
+        MATERIAL_FIELD_LABELS.put("selectionReason", "入选原因");
+    }
 
     /**
      * 查询耗材产品
@@ -117,16 +184,236 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     }
 
     /**
-     * 修改耗材产品
+     * 修改耗材产品（含启用/停用原因写入状态记录、字段变更写入变更记录）
      *
-     * @param fdMaterial 耗材产品
+     * @param fdMaterial 耗材产品（可带 statusChangeReason 表示启用/停用原因）
      * @return 结果
      */
     @Override
     public int updateFdMaterial(FdMaterial fdMaterial)
     {
-        fdMaterial.setUpdateTime(DateUtils.getNowDate());
+        Date now = DateUtils.getNowDate();
+        fdMaterial.setUpdateTime(now);
+        String operator = SecurityUtils.getUsername();
+        if (operator == null) {
+            operator = fdMaterial.getUpdateBy() != null ? fdMaterial.getUpdateBy() : "";
+        }
+        FdMaterial oldMaterial = fdMaterialMapper.selectFdMaterialById(fdMaterial.getId());
+        if (oldMaterial != null) {
+            // 使用状态变更：记录启用/停用流水
+            if (fdMaterial.getIsUse() != null && !fdMaterial.getIsUse().equals(oldMaterial.getIsUse())
+                    && StringUtils.isNotEmpty(fdMaterial.getStatusChangeReason())) {
+                FdMaterialStatusLog statusLog = new FdMaterialStatusLog();
+                statusLog.setId(UUID7.generateUUID7());
+                statusLog.setMaterialId(fdMaterial.getId());
+                statusLog.setAction("1".equals(fdMaterial.getIsUse()) ? "enable" : "disable");
+                statusLog.setActionTime(now);
+                statusLog.setOperator(operator);
+                statusLog.setReason(fdMaterial.getStatusChangeReason());
+                fdMaterialStatusLogMapper.insert(statusLog);
+            }
+            // 字段变更记录
+            saveChangeLogs(fdMaterial.getId(), oldMaterial, fdMaterial, now, operator);
+        }
         return fdMaterialMapper.updateFdMaterial(fdMaterial);
+    }
+
+    /**
+     * 产品档案停用：更新为停用并记录停用时间、停用人、停用原因
+     */
+    @Override
+    public void disableMaterial(Long materialId, String reason) {
+        if (materialId == null) {
+            throw new ServiceException("产品档案ID不能为空");
+        }
+        FdMaterial material = fdMaterialMapper.selectFdMaterialById(materialId);
+        if (material == null) {
+            throw new ServiceException("产品档案不存在");
+        }
+        material.setIsUse("2");
+        material.setUpdateTime(DateUtils.getNowDate());
+        material.setUpdateBy(SecurityUtils.getUsername());
+        fdMaterialMapper.updateFdMaterial(material);
+        FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
+        logRecord.setId(UUID7.generateUUID7());
+        logRecord.setMaterialId(materialId);
+        logRecord.setAction("disable");
+        logRecord.setActionTime(DateUtils.getNowDate());
+        logRecord.setOperator(SecurityUtils.getUsername());
+        logRecord.setReason(reason);
+        fdMaterialStatusLogMapper.insert(logRecord);
+    }
+
+    /**
+     * 产品档案启用：更新为启用并记录启用时间、启用人、启用原因
+     */
+    @Override
+    public void enableMaterial(Long materialId, String reason) {
+        if (materialId == null) {
+            throw new ServiceException("产品档案ID不能为空");
+        }
+        FdMaterial material = fdMaterialMapper.selectFdMaterialById(materialId);
+        if (material == null) {
+            throw new ServiceException("产品档案不存在");
+        }
+        material.setIsUse("1");
+        material.setUpdateTime(DateUtils.getNowDate());
+        material.setUpdateBy(SecurityUtils.getUsername());
+        fdMaterialMapper.updateFdMaterial(material);
+        FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
+        logRecord.setId(UUID7.generateUUID7());
+        logRecord.setMaterialId(materialId);
+        logRecord.setAction("enable");
+        logRecord.setActionTime(DateUtils.getNowDate());
+        logRecord.setOperator(SecurityUtils.getUsername());
+        logRecord.setReason(reason);
+        fdMaterialStatusLogMapper.insert(logRecord);
+    }
+
+    @Override
+    public List<FdMaterialStatusLog> listStatusLogByMaterialId(Long materialId) {
+        if (materialId == null) {
+            return new ArrayList<>();
+        }
+        return fdMaterialStatusLogMapper.selectByMaterialId(materialId);
+    }
+
+    @Override
+    public List<FdMaterialChangeLog> listChangeLogByMaterialId(Long materialId) {
+        if (materialId == null) {
+            return new ArrayList<>();
+        }
+        return fdMaterialChangeLogMapper.selectByMaterialId(materialId);
+    }
+
+    @Override
+    public List<MaterialTimelineVo> getMaterialTimeline(Long materialId) {
+        if (materialId == null) {
+            return new ArrayList<>();
+        }
+        List<MaterialTimelineVo> list = new ArrayList<>();
+        for (FdMaterialStatusLog s : fdMaterialStatusLogMapper.selectByMaterialId(materialId)) {
+            MaterialTimelineVo vo = new MaterialTimelineVo();
+            vo.setEventTime(s.getActionTime());
+            vo.setType(s.getAction());
+            vo.setOperator(s.getOperator());
+            vo.setTitle("enable".equals(s.getAction()) ? "启用" : "停用");
+            vo.setDescription(StringUtils.isNotEmpty(s.getReason()) ? s.getReason() : "");
+            list.add(vo);
+        }
+        List<FdMaterialChangeLog> changeLogs = fdMaterialChangeLogMapper.selectByMaterialId(materialId);
+        Map<String, List<FdMaterialChangeLog>> byTime = changeLogs.stream()
+                .collect(Collectors.groupingBy(c -> (c.getChangeTime() != null ? c.getChangeTime().getTime() : 0) + "_" + (c.getOperator() != null ? c.getOperator() : "")));
+        for (List<FdMaterialChangeLog> group : byTime.values()) {
+            if (group.isEmpty()) continue;
+            FdMaterialChangeLog first = group.get(0);
+            MaterialTimelineVo vo = new MaterialTimelineVo();
+            vo.setEventTime(first.getChangeTime());
+            vo.setType("change");
+            vo.setOperator(first.getOperator());
+            String fields = group.stream()
+                    .map(FdMaterialChangeLog::getFieldLabel)
+                    .filter(StringUtils::isNotEmpty)
+                    .distinct()
+                    .collect(Collectors.joining("、"));
+            vo.setTitle("字段变更");
+            vo.setDescription(fields.isEmpty() ? "若干字段" : fields);
+            list.add(vo);
+        }
+        list.sort(Comparator.comparing(MaterialTimelineVo::getEventTime, Comparator.nullsLast(Comparator.reverseOrder())));
+        return list;
+    }
+
+    /**
+     * 比较新旧档案，将变更写入 fd_material_change_log
+     */
+    private void saveChangeLogs(Long materialId, FdMaterial oldM, FdMaterial newM, Date changeTime, String operator) {
+        List<FdMaterialChangeLog> logs = new ArrayList<>();
+        for (Map.Entry<String, String> entry : MATERIAL_FIELD_LABELS.entrySet()) {
+            String fieldName = entry.getKey();
+            String fieldLabel = entry.getValue();
+            String oldVal = getFieldValue(oldM, fieldName);
+            String newVal = getFieldValue(newM, fieldName);
+            if (oldVal == null && newVal == null) {
+                continue;
+            }
+            if (oldVal == null) {
+                oldVal = "";
+            }
+            if (newVal == null) {
+                newVal = "";
+            }
+            if (!oldVal.equals(newVal)) {
+                FdMaterialChangeLog changeLog = new FdMaterialChangeLog();
+                changeLog.setId(UUID7.generateUUID7());
+                changeLog.setMaterialId(materialId);
+                changeLog.setChangeTime(changeTime);
+                changeLog.setOperator(operator);
+                changeLog.setFieldName(fieldName);
+                changeLog.setFieldLabel(fieldLabel);
+                changeLog.setOldValue(oldVal.length() > 500 ? oldVal.substring(0, 500) + "..." : oldVal);
+                changeLog.setNewValue(newVal.length() > 500 ? newVal.substring(0, 500) + "..." : newVal);
+                logs.add(changeLog);
+            }
+        }
+        for (FdMaterialChangeLog logEntry : logs) {
+            fdMaterialChangeLogMapper.insert(logEntry);
+        }
+    }
+
+    private String getFieldValue(FdMaterial m, String fieldName) {
+        if (m == null) {
+            return null;
+        }
+        switch (fieldName) {
+            case "code": return m.getCode();
+            case "name": return m.getName();
+            case "referredName": return m.getReferredName();
+            case "supplierId": return m.getSupplierId() != null ? String.valueOf(m.getSupplierId()) : null;
+            case "speci": return m.getSpeci();
+            case "model": return m.getModel();
+            case "price": return m.getPrice() != null ? m.getPrice().toPlainString() : null;
+            case "useName": return m.getUseName();
+            case "factoryId": return m.getFactoryId() != null ? String.valueOf(m.getFactoryId()) : null;
+            case "storeroomId": return m.getStoreroomId() != null ? String.valueOf(m.getStoreroomId()) : null;
+            case "financeCategoryId": return m.getFinanceCategoryId() != null ? String.valueOf(m.getFinanceCategoryId()) : null;
+            case "unitId": return m.getUnitId() != null ? String.valueOf(m.getUnitId()) : null;
+            case "registerName": return m.getRegisterName();
+            case "registerNo": return m.getRegisterNo();
+            case "medicalName": return m.getMedicalName();
+            case "medicalNo": return m.getMedicalNo();
+            case "periodDate": return m.getPeriodDate() != null ? DateUtils.dateTime(m.getPeriodDate()) : null;
+            case "successfulType": return m.getSuccessfulType();
+            case "successfulNo": return m.getSuccessfulNo();
+            case "successfulPrice": return m.getSuccessfulPrice() != null ? m.getSuccessfulPrice().toPlainString() : null;
+            case "salePrice": return m.getSalePrice() != null ? m.getSalePrice().toPlainString() : null;
+            case "packageSpeci": return m.getPackageSpeci();
+            case "producer": return m.getProducer();
+            case "materialLevel": return m.getMaterialLevel();
+            case "registerLevel": return m.getRegisterLevel();
+            case "riskLevel": return m.getRiskLevel();
+            case "firstaidLevel": return m.getFirstaidLevel();
+            case "doctorLevel": return m.getDoctorLevel();
+            case "brand": return m.getBrand();
+            case "useto": return m.getUseto();
+            case "quality": return m.getQuality();
+            case "function": return m.getFunction();
+            case "isWay": return m.getIsWay();
+            case "udiNo": return m.getUdiNo();
+            case "permitNo": return m.getPermitNo();
+            case "countryNo": return m.getCountryNo();
+            case "countryName": return m.getCountryName();
+            case "description": return m.getDescription();
+            case "isUse": return m.getIsUse();
+            case "isProcure": return m.getIsProcure();
+            case "isMonitor": return m.getIsMonitor();
+            case "isGz": return m.getIsGz();
+            case "isFollow": return m.getIsFollow();
+            case "locationId": return m.getLocationId() != null ? String.valueOf(m.getLocationId()) : null;
+            case "hisId": return m.getHisId();
+            case "selectionReason": return m.getSelectionReason();
+            default: return null;
+        }
     }
 
     /**

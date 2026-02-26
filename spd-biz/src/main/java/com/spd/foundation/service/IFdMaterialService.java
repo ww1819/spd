@@ -3,6 +3,9 @@ package com.spd.foundation.service;
 import java.util.List;
 
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdMaterialChangeLog;
+import com.spd.foundation.domain.FdMaterialStatusLog;
+import com.spd.foundation.vo.MaterialTimelineVo;
 
 /**
  * 耗材产品Service接口
@@ -70,6 +73,46 @@ public interface IFdMaterialService
      * @param ids 耗材ID列表
      */
     void updateReferred(List<Long> ids);
+
+    /**
+     * 产品档案停用：更新为停用并记录停用时间、停用人、停用原因
+     *
+     * @param materialId 产品档案ID
+     * @param reason     停用原因
+     */
+    void disableMaterial(Long materialId, String reason);
+
+    /**
+     * 产品档案启用：更新为启用并记录启用时间、启用人、启用原因
+     *
+     * @param materialId 产品档案ID
+     * @param reason     启用原因
+     */
+    void enableMaterial(Long materialId, String reason);
+
+    /**
+     * 查询产品档案启用停用记录列表（按时间倒序）
+     *
+     * @param materialId 产品档案ID
+     * @return 启用停用记录列表
+     */
+    List<FdMaterialStatusLog> listStatusLogByMaterialId(Long materialId);
+
+    /**
+     * 查询产品档案变更记录列表（按时间倒序）
+     *
+     * @param materialId 产品档案ID
+     * @return 变更记录列表
+     */
+    List<FdMaterialChangeLog> listChangeLogByMaterialId(Long materialId);
+
+    /**
+     * 查询产品档案时间轴（合并启用停用记录与变更记录，按变更时间倒序）
+     *
+     * @param materialId 产品档案ID
+     * @return 时间轴列表
+     */
+    List<MaterialTimelineVo> getMaterialTimeline(Long materialId);
 
 
 //    /**
