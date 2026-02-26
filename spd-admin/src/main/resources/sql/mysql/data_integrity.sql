@@ -11,3 +11,13 @@ update fd_material fm set fm.is_follow = '2' where fm.is_follow is null;
 -- 物料表 是否计费
 update fd_material fm set fm.is_billing = '2' where fm.is_billing is null;
 /
+
+UPDATE sys_dict_data
+SET dict_label='启用' 
+WHERE dict_code=37;
+/
+
+UPDATE sys_dict_data
+SET dict_label='停用' 
+WHERE dict_code=38;
+/
