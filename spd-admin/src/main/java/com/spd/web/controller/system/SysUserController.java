@@ -279,4 +279,21 @@ public class SysUserController extends BaseController
     {
         return success(deptService.selectDeptTreeList(dept));
     }
+
+    /**
+     * 批量更新用户名称简码（根据用户名称生成拼音首字母）
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:updateReferred')")
+    @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+    @PostMapping("/updateReferred")
+    public AjaxResult updateReferred(@RequestBody java.util.Map<String, java.util.List<Long>> body)
+    {
+        java.util.List<Long> ids = body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        userService.updateReferred(ids);
+        return success("更新简码成功");
+    }
 }

@@ -14,6 +14,7 @@ import com.spd.common.enums.DataSourceType;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
 import com.spd.common.utils.uuid.UUID7;
@@ -582,18 +583,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             if (StringUtils.isEmpty(name)) {
                 continue;
             }
-            // 简单名称简码策略：取名称首字母（英文转大写，其他字符原样），再配合原名称前几个字符
-            char first = name.charAt(0);
-            StringBuilder shortCode = new StringBuilder();
-            if (Character.isLetter(first)) {
-                shortCode.append(Character.toUpperCase(first));
-            } else {
-                shortCode.append(first);
-            }
-            if (name.length() > 1) {
-                shortCode.append(name.substring(1, Math.min(4, name.length())));
-            }
-            material.setReferredName(shortCode.toString());
+            material.setReferredName(PinyinUtils.getPinyinInitials(name));
             fdMaterialMapper.updateFdMaterial(material);
         }
     }

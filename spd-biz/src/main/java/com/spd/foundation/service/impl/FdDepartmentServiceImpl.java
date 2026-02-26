@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -152,24 +153,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             if (StringUtils.isEmpty(name)) {
                 continue;
             }
-            char first = name.charAt(0);
-            StringBuilder shortCode = new StringBuilder();
-            if (Character.isLetter(first)) {
-                shortCode.append(Character.toUpperCase(first));
-            } else {
-                shortCode.append(first);
-            }
-            if (name.length() > 1) {
-                shortCode.append(name.substring(1, Math.min(4, name.length())));
-            }
-            // 直接通过扩展属性方式设置，依赖于实体和表新增 referred_name 字段
-            try {
-                java.lang.reflect.Field field = FdDepartment.class.getDeclaredField("referredName");
-                field.setAccessible(true);
-                field.set(dept, shortCode.toString());
-            } catch (Exception ignored) {
-                // 如果实体暂未增加该字段，不影响其他逻辑
-            }
+            dept.setReferredName(PinyinUtils.getPinyinInitials(name));
             fdDepartmentMapper.updateFdDepartment(dept);
         }
     }

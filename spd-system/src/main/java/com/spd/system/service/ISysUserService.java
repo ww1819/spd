@@ -211,4 +211,11 @@ public interface ISysUserService
      * @return 菜单ID列表
      */
     public List<Long> selectMenuListByUserId(Long userId);
+
+    /**
+     * 批量更新用户名称简码（根据用户名称/昵称生成拼音首字母）
+     *
+     * @param userIds 用户ID集合
+     */
+    void updateReferred(List<Long> userIds);
 }

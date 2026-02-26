@@ -5,7 +5,9 @@ import java.util.List;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
@@ -101,6 +103,31 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         fdWarehouseCategory.setUpdateTime(new Date());
         fdWarehouseCategory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
         return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
+    }
+
+    /**
+     * 批量更新库房分类名称简码（根据名称生成拼音首字母）
+     */
+    @Override
+    public void updateReferred(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        for (Long id : ids) {
+            if (id == null) {
+                continue;
+            }
+            FdWarehouseCategory category = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(id);
+            if (category == null) {
+                continue;
+            }
+            String name = category.getWarehouseCategoryName();
+            if (StringUtils.isEmpty(name)) {
+                continue;
+            }
+            category.setReferredName(PinyinUtils.getPinyinInitials(name));
+            fdWarehouseCategoryMapper.updateFdWarehouseCategory(category);
+        }
     }
 
 //    /**

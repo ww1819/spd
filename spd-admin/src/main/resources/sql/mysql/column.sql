@@ -159,3 +159,7 @@ CALL add_table_column('stk_io_profit_loss_entry', 'suppler_id', 'varchar(128)', 
 /* 产品档案 fd_material 增加 入选原因 */
 CALL add_table_column('fd_material', 'selection_reason', 'varchar(512)', '入选原因', NULL);
 /
+
+/* 产品档案 fd_material 增加 是否计费 */
+CALL add_table_column('fd_material', 'is_billing', 'char(4)', '是否计费：1=计费,2=不计费', '2');
+/
