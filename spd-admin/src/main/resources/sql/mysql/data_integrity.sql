@@ -13,11 +13,12 @@ update fd_material fm set fm.is_billing = '2' where fm.is_billing is null;
 /
 
 UPDATE sys_dict_data
-SET dict_label='启用' 
-WHERE dict_code=37;
+SET dict_label='启用'
+WHERE dict_type='is_use_status' and dict_value='1' and dict_label='停用';
 /
 
+
 UPDATE sys_dict_data
-SET dict_label='停用' 
-WHERE dict_code=38;
+SET dict_label='停用'
+WHERE dict_type='is_use_status' and dict_value='2' and dict_label='启用';
 /
