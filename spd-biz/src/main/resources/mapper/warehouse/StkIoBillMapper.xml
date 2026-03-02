@@ -499,13 +499,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
-        select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+        select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
 				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price,
                 b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.remark as sub_remark, b.kc_no as sub_kc_no,au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,
+               wh.id as wId, wh.code as warehouseCode, wh.name as warehouseName,
+               d.id as dId, d.code as departmentCode, d.name as departmentName,
+               op.user_id as userId, op.nick_name as nickName, op.user_name as userName,
+               bill_sup.id as sId, bill_sup.code as supplierCode, bill_sup.name as supplierName,
                m.id as mId, m.code as materialCode, m.name as materialName, m.speci, m.model, m.register_no, m.supplier_id, m.factory_id, m.unit_id, m.finance_category_id, m.storeroom_id,
                u.unit_id, u.unit_code as u_code, u.unit_name as u_name,
                f.factory_id, f.factory_code as f_code, f.factory_name as f_name,
@@ -513,6 +517,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                fc.finance_category_id, fc.finance_category_code as fc_code, fc.finance_category_name as fc_name,
                s.id as sid, s.code as supplier_code, s.name as supplier_name
         from stk_io_bill a
+        left join fd_warehouse wh on a.warehouse_id = wh.id
+        left join fd_department d on a.department_id = d.id
+        left join fd_supplier bill_sup on a.suppler_id = bill_sup.id
+        left join sys_user op on a.user_id = op.user_id
         left join stk_io_bill_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_material m on b.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id

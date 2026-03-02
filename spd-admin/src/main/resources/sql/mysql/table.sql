@@ -111,3 +111,34 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import_entry` (
   KEY `idx_material_id` (`material_id`),
   KEY `idx_warehouse_id` (`warehouse_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='期初库存导入明细表';
+/
+
+-- 科室申领制单模板主表（与打印设置无关，单独维护）
+CREATE TABLE IF NOT EXISTS `bas_apply_template` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `template_name` varchar(128) NOT NULL COMMENT '模板名称',
+  `warehouse_id` bigint(20) DEFAULT NULL COMMENT '仓库ID',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_template_name` (`template_name`),
+  KEY `idx_warehouse_id` (`warehouse_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申领制单模板主表';
+/
+
+-- 科室申领制单模板明细表
+CREATE TABLE IF NOT EXISTS `bas_apply_template_entry` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `paren_id` bigint(20) NOT NULL COMMENT '模板主表ID',
+  `material_id` bigint(20) NOT NULL COMMENT '耗材ID',
+  `qty` decimal(18,2) NOT NULL DEFAULT 1.00 COMMENT '数量',
+  `sort_order` int(11) DEFAULT 0 COMMENT '排序',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_paren_id` (`paren_id`),
+  KEY `idx_material_id` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申领制单模板明细表';
