@@ -122,4 +122,19 @@ public interface SysMenuMapper
      * @return 结果
      */
     public SysMenu checkMenuNameUnique(@Param("menuName") String menuName, @Param("parentId") Long parentId);
+
+  /**
+   * 查询设备前端（sb_menu）全部菜单树
+   *
+   * @return 菜单列表
+   */
+  public List<SysMenu> selectSbMenuTreeAll();
+
+  /**
+   * 根据用户ID查询设备前端（sb_menu）菜单树
+   *
+   * @param userId 用户ID
+   * @return 菜单列表
+   */
+  public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
 }

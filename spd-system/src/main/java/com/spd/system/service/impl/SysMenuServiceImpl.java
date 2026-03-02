@@ -347,6 +347,27 @@ public class SysMenuServiceImpl implements ISysMenuService
     }
 
     /**
+     * 根据用户ID查询设备前端（sb_menu）菜单树
+     *
+     * @param userId 用户ID
+     * @return 菜单列表
+     */
+    @Override
+    public List<SysMenu> selectSbMenuTreeByUserId(Long userId)
+    {
+        List<SysMenu> menus;
+        if (SecurityUtils.isAdmin(userId))
+        {
+            menus = menuMapper.selectSbMenuTreeAll();
+        }
+        else
+        {
+            menus = menuMapper.selectSbMenuTreeByUserId(userId);
+        }
+        return getChildPerms(menus, 0);
+    }
+
+    /**
      * 获取路由名称
      * 
      * @param menu 菜单信息

@@ -172,3 +172,67 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
   KEY `idx_material_id` (`material_id`),
   KEY `idx_change_time` (`change_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='产品档案变更记录表';
+/
+
+-- 设备前端独立菜单权限表：设备专用菜单
+CREATE TABLE IF NOT EXISTS `sb_menu` (
+  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
+  `menu_name` varchar(50) NOT NULL COMMENT '菜单名称',
+  `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int(4) NOT NULL DEFAULT 0 COMMENT '显示顺序',
+  `path` varchar(200) DEFAULT '' COMMENT '路由地址',
+  `component` varchar(255) DEFAULT NULL COMMENT '组件路径',
+  `is_frame` char(1) DEFAULT '1' COMMENT '是否外链（0是 1否）',
+  `is_cache` char(1) DEFAULT '0' COMMENT '是否缓存（0缓存 1不缓存）',
+  `menu_type` char(1) DEFAULT 'C' COMMENT '菜单类型（M目录 C菜单 F按钮）',
+  `visible` char(1) DEFAULT '0' COMMENT '显示状态（0显示 1隐藏）',
+  `status` char(1) DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
+  `perms` varchar(100) DEFAULT NULL COMMENT '权限标识',
+  `icon` varchar(100) DEFAULT '#' COMMENT '菜单图标',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`menu_id`),
+  KEY `idx_sb_menu_parent_id` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备前端独立菜单表';
+/
+
+-- 设备前端独立菜单权限表：设备角色
+CREATE TABLE IF NOT EXISTS `sb_role` (
+  `role_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `role_name` varchar(30) NOT NULL COMMENT '角色名称',
+  `role_key` varchar(100) NOT NULL COMMENT '角色权限字符串',
+  `role_sort` int(4) NOT NULL DEFAULT 0 COMMENT '显示顺序',
+  `data_scope` char(1) DEFAULT '1' COMMENT '数据范围（1全部数据权限）',
+  `menu_check_strictly` tinyint(1) DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
+  `dept_check_strictly` tinyint(1) DEFAULT 1 COMMENT '部门树选择项是否关联显示',
+  `status` char(1) NOT NULL DEFAULT '0' COMMENT '角色状态（0正常 1停用）',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备前端角色表';
+/
+
+-- 设备前端独立菜单权限表：用户与设备角色关联
+CREATE TABLE IF NOT EXISTS `sb_user_role` (
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID（关联sys_user.user_id）',
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID（关联sb_role.role_id）',
+  PRIMARY KEY (`user_id`,`role_id`),
+  KEY `idx_sb_user_role_role_id` (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备前端用户和角色关联表';
+/
+
+-- 设备前端独立菜单权限表：角色与设备菜单关联
+CREATE TABLE IF NOT EXISTS `sb_role_menu` (
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID（关联sb_role.role_id）',
+  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID（关联sb_menu.menu_id）',
+  PRIMARY KEY (`role_id`,`menu_id`),
+  KEY `idx_sb_role_menu_menu_id` (`menu_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备前端角色和菜单关联表';
+/

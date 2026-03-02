@@ -141,4 +141,12 @@ public interface ISysMenuService
      * @return 结果
      */
     public boolean checkMenuNameUnique(SysMenu menu);
+
+  /**
+   * 根据用户ID查询设备前端（sb_menu）菜单树信息
+   *
+   * @param userId 用户ID
+   * @return 菜单列表
+   */
+  public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
 }

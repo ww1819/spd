@@ -260,4 +260,59 @@
 	    delete from sys_menu where menu_id = #{menuId}
 	</delete>
 
+    <!-- 设备前端（sb_menu）菜单树：全部 -->
+    <select id="selectSbMenuTreeAll" resultMap="SysMenuResult">
+        select distinct m.menu_id,
+               m.parent_id,
+               m.menu_name,
+               m.path,
+               m.component,
+               null as `query`,
+               m.visible,
+               m.status,
+               ifnull(m.perms, '') as perms,
+               m.is_frame,
+               m.is_cache,
+               m.menu_type,
+               m.icon,
+               m.order_num,
+               m.create_time
+        from sb_menu m
+        where m.menu_type in ('M', 'C')
+          and m.status = '0'
+        order by m.parent_id, m.order_num
+    </select>
+
+    <!-- 设备前端（sb_menu）菜单树：按用户 -->
+    <select id="selectSbMenuTreeByUserId" parameterType="Long" resultMap="SysMenuResult">
+        select distinct m.menu_id,
+               m.parent_id,
+               m.menu_name,
+               m.path,
+               m.component,
+               null as `query`,
+               m.visible,
+               m.status,
+               ifnull(m.perms, '') as perms,
+               m.is_frame,
+               m.is_cache,
+               m.menu_type,
+               m.icon,
+               m.order_num,
+               m.create_time
+        from sb_menu m
+        where m.menu_type in ('M', 'C')
+          and m.status = '0'
+          and exists (
+              select 1
+              from sb_role_menu rm
+              inner join sb_user_role ur on rm.role_id = ur.role_id
+              inner join sb_role r on ur.role_id = r.role_id
+              where rm.menu_id = m.menu_id
+                and ur.user_id = #{userId}
+                and r.status = '0'
+          )
+        order by m.parent_id, m.order_num
+    </select>
+
 </mapper> 
