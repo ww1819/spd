@@ -58,4 +58,11 @@ public interface IFdFinanceCategoryService
      * @return 结果
      */
     public int deleteFdFinanceCategoryByFinanceCategoryId(Long financeCategoryId);
+
+    /**
+     * 批量更新财务分类名称简码（根据名称生成拼音首字母）
+     *
+     * @param ids 财务分类主键集合
+     */
+    void updateReferred(List<Long> ids);
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -139,18 +140,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             if (StringUtils.isEmpty(name)) {
                 continue;
             }
-            // 简单规则：公司名称首字符（英文转大写，其他原样）+ 后面1~3个字符
-            char first = name.charAt(0);
-            StringBuilder shortCode = new StringBuilder();
-            if (Character.isLetter(first)) {
-                shortCode.append(Character.toUpperCase(first));
-            } else {
-                shortCode.append(first);
-            }
-            if (name.length() > 1) {
-                shortCode.append(name.substring(1, Math.min(4, name.length())));
-            }
-            supplier.setReferredCode(shortCode.toString());
+            supplier.setReferredCode(PinyinUtils.getPinyinInitials(name));
             fdSupplierMapper.updateFdSupplier(supplier);
         }
     }

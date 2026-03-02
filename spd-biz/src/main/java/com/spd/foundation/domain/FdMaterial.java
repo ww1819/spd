@@ -240,4 +240,19 @@ public class FdMaterial extends BaseEntity
 
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
     private String hisId;
+
+    /** 入选原因 */
+    @Excel(name = "入选原因")
+    private String selectionReason;
+
+    /** 状态变更原因（仅用于启用/停用时传参，不持久化） */
+    private transient String statusChangeReason;
+
+    public String getStatusChangeReason() {
+        return statusChangeReason;
+    }
+
+    public void setStatusChangeReason(String statusChangeReason) {
+        this.statusChangeReason = statusChangeReason;
+    }
 }

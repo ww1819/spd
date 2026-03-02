@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -126,17 +127,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             if (StringUtils.isEmpty(name)) {
                 continue;
             }
-            char first = name.charAt(0);
-            StringBuilder shortCode = new StringBuilder();
-            if (Character.isLetter(first)) {
-                shortCode.append(Character.toUpperCase(first));
-            } else {
-                shortCode.append(first);
-            }
-            if (name.length() > 1) {
-                shortCode.append(name.substring(1, Math.min(4, name.length())));
-            }
-            factory.setFactoryReferredCode(shortCode.toString());
+            factory.setFactoryReferredCode(PinyinUtils.getPinyinInitials(name));
             fdFactoryMapper.updateFdFactory(factory);
         }
     }

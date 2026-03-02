@@ -19,6 +19,7 @@ import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysRole;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
@@ -697,5 +698,33 @@ public class SysUserServiceImpl implements ISysUserService
         List<Long> menuIds = userMenuMapper.selectMenuListByUserId(userId);
         log.info("获取用户菜单权限 - userId: {}, menuIds: {}", userId, menuIds);
         return menuIds != null ? menuIds : new ArrayList<>();
+    }
+
+    /**
+     * 批量更新用户名称简码（根据用户名称/昵称生成拼音首字母）
+     */
+    @Override
+    public void updateReferred(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return;
+        }
+        for (Long userId : userIds) {
+            if (userId == null) {
+                continue;
+            }
+            SysUser user = userMapper.selectUserById(userId);
+            if (user == null) {
+                continue;
+            }
+            String name = user.getNickName();
+            if (StringUtils.isEmpty(name)) {
+                name = user.getUserName();
+            }
+            if (StringUtils.isEmpty(name)) {
+                continue;
+            }
+            user.setReferredName(PinyinUtils.getPinyinInitials(name));
+            userMapper.updateUser(user);
+        }
     }
 }

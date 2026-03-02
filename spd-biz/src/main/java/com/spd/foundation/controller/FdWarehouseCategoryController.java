@@ -135,7 +135,7 @@ public class FdWarehouseCategoryController extends BaseController
         {
             return error("ID 列表不能为空");
         }
-        // 预留实现：当前仅返回成功，后续可在 Service 中补充实际简码更新逻辑
+        fdWarehouseCategoryService.updateReferred(ids);
         return success("更新简码成功");
     }
 }

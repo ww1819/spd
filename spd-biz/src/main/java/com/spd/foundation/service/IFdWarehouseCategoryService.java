@@ -58,6 +58,13 @@ public interface IFdWarehouseCategoryService
      */
     public int deleteFdWarehouseCategoryByWarehouseCategoryIds(Long warehouseCategoryIds);
 
+    /**
+     * 批量更新库房分类名称简码（根据名称生成拼音首字母）
+     *
+     * @param ids 库房分类主键集合
+     */
+    void updateReferred(List<Long> ids);
+
 //    /**
 //     * 删除库房分类信息
 //     *

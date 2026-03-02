@@ -4,7 +4,9 @@ import java.util.List;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
@@ -102,5 +104,30 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         fdFinanceCategory.setUpdateTime(DateUtils.getNowDate());
         fdFinanceCategory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
         return fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
+    }
+
+    /**
+     * 批量更新财务分类名称简码（根据名称生成拼音首字母）
+     */
+    @Override
+    public void updateReferred(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        for (Long id : ids) {
+            if (id == null) {
+                continue;
+            }
+            FdFinanceCategory category = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(id);
+            if (category == null) {
+                continue;
+            }
+            String name = category.getFinanceCategoryName();
+            if (StringUtils.isEmpty(name)) {
+                continue;
+            }
+            category.setReferredName(PinyinUtils.getPinyinInitials(name));
+            fdFinanceCategoryMapper.updateFdFinanceCategory(category);
+        }
     }
 }
