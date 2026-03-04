@@ -17,7 +17,7 @@ public interface SbUserRoleMapper {
   /**
    * 统计设备角色使用数量
    */
-  int countSbUserRoleByRoleId(Long roleId);
+  int countSbUserRoleByRoleId(String roleId);
 
   /**
    * 批量删除用户与设备角色关联

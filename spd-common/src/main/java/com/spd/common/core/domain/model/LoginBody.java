@@ -27,6 +27,32 @@ public class LoginBody
      */
     private String uuid;
 
+    /**
+     * 客户ID（登录时选择客户，优先用客户ID校验客户是否存在/停用/合法）
+     */
+    private String customerId;
+
+    /**
+     * 客户编码（与 customerId 二选一，无 customerId 时用编码解析客户）
+     */
+    private String customerCode;
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getCustomerCode() {
+        return customerCode;
+    }
+
+    public void setCustomerCode(String customerCode) {
+        this.customerCode = customerCode;
+    }
+
     public String getUsername()
     {
         return username;

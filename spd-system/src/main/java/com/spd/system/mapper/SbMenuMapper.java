@@ -2,6 +2,8 @@ package com.spd.system.mapper;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Param;
+
 import com.spd.system.domain.SbMenu;
 
 /**
@@ -45,12 +47,12 @@ public interface SbMenuMapper {
   /**
    * 删除设备菜单
    */
-  int deleteSbMenuById(Long menuId);
+  int deleteSbMenuById(String menuId);
 
   /**
    * 校验菜单名称是否唯一
    */
-  SbMenu checkSbMenuNameUnique(String menuName, Long parentId);
+  SbMenu checkSbMenuNameUnique(@Param("menuName") String menuName, @Param("parentId") String parentId);
 
   /**
    * 根据用户ID查询设备菜单权限标识集合

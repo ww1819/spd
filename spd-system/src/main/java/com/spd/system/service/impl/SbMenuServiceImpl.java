@@ -1,6 +1,7 @@
 package com.spd.system.service.impl;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,9 @@ import org.springframework.stereotype.Service;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbMenu;
+import com.spd.system.domain.vo.MetaVo;
 import com.spd.system.domain.vo.RouterVo;
 import com.spd.system.mapper.SbMenuMapper;
 import com.spd.system.service.ISbMenuService;
@@ -34,11 +37,17 @@ public class SbMenuServiceImpl implements ISbMenuService {
   @Override
   public List<SbMenu> selectSbMenuTreeByUserId(Long userId) {
     List<SbMenu> menus = sbMenuMapper.selectSbMenuTreeByUserId(userId);
-    return getChildPerms(menus, 0);
+    return getChildPerms(menus, "0");
   }
 
   @Override
   public int insertSbMenu(SbMenu menu) {
+    if (StringUtils.isEmpty(menu.getMenuId())) {
+      menu.setMenuId(UUID7.generateUUID7());
+    }
+    if (menu.getParentId() == null) {
+      menu.setParentId("0");
+    }
     return sbMenuMapper.insertSbMenu(menu);
   }
 
@@ -48,15 +57,15 @@ public class SbMenuServiceImpl implements ISbMenuService {
   }
 
   @Override
-  public int deleteSbMenuById(Long menuId) {
+  public int deleteSbMenuById(String menuId) {
     return sbMenuMapper.deleteSbMenuById(menuId);
   }
 
   @Override
   public boolean checkSbMenuNameUnique(SbMenu menu) {
-    Long menuId = StringUtils.isNull(menu.getMenuId()) ? -1L : menu.getMenuId();
+    String menuId = StringUtils.isNull(menu.getMenuId()) ? "" : menu.getMenuId();
     SbMenu info = sbMenuMapper.checkSbMenuNameUnique(menu.getMenuName(), menu.getParentId());
-    if (StringUtils.isNotNull(info) && info.getMenuId().longValue() != menuId.longValue()) {
+    if (StringUtils.isNotNull(info) && !info.getMenuId().equals(menuId)) {
       return UserConstants.NOT_UNIQUE;
     }
     return UserConstants.UNIQUE;
@@ -76,9 +85,9 @@ public class SbMenuServiceImpl implements ISbMenuService {
     }
     for (SbMenu m : sbMenus) {
       SysMenu s = new SysMenu();
-      s.setMenuId(m.getMenuId());
+      s.setMenuId(null);
+      s.setParentId(null);
       s.setMenuName(m.getMenuName());
-      s.setParentId(m.getParentId());
       s.setOrderNum(m.getOrderNum());
       s.setPath(m.getPath());
       s.setComponent(m.getComponent());
@@ -117,13 +126,13 @@ public class SbMenuServiceImpl implements ISbMenuService {
     return permsSet;
   }
 
-  private List<SbMenu> getChildPerms(List<SbMenu> list, int parentId) {
+  private List<SbMenu> getChildPerms(List<SbMenu> list, String parentId) {
     List<SbMenu> returnList = new ArrayList<>();
     if (list == null) {
       return returnList;
     }
     for (SbMenu t : list) {
-      if (t.getParentId() != null && t.getParentId().intValue() == parentId) {
+      if (parentId != null && parentId.equals(t.getParentId())) {
         recursionFn(list, t);
         returnList.add(t);
       }
@@ -144,11 +153,107 @@ public class SbMenuServiceImpl implements ISbMenuService {
   private List<SbMenu> getChildList(List<SbMenu> list, SbMenu t) {
     List<SbMenu> tlist = new ArrayList<>();
     for (SbMenu n : list) {
-      if (n.getParentId() != null && n.getParentId().longValue() == t.getMenuId().longValue()) {
+      if (t.getMenuId() != null && t.getMenuId().equals(n.getParentId())) {
         tlist.add(n);
       }
     }
     return tlist;
+  }
+
+  @Override
+  public List<RouterVo> buildMenusFromSb(List<SbMenu> menus) {
+    List<RouterVo> routers = new LinkedList<>();
+    if (menus == null) {
+      return routers;
+    }
+    for (SbMenu menu : menus) {
+      RouterVo router = new RouterVo();
+      router.setHidden("1".equals(menu.getVisible()));
+      router.setName(getRouteNameSb(menu));
+      router.setPath(getRouterPathSb(menu));
+      router.setComponent(getComponentSb(menu));
+      router.setQuery(null);
+      router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+      List<SbMenu> cMenus = menu.getChildren();
+      if (StringUtils.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType())) {
+        router.setAlwaysShow(true);
+        router.setRedirect("noRedirect");
+        router.setChildren(buildMenusFromSb(cMenus));
+      } else if (isMenuFrameSb(menu)) {
+        router.setMeta(null);
+        List<RouterVo> childrenList = new ArrayList<>();
+        RouterVo children = new RouterVo();
+        children.setPath(menu.getPath());
+        children.setComponent(menu.getComponent());
+        children.setName(StringUtils.capitalize(menu.getPath()));
+        children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+        children.setQuery(null);
+        childrenList.add(children);
+        router.setChildren(childrenList);
+      } else if ("0".equals(menu.getParentId()) && isInnerLinkSb(menu)) {
+        router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon()));
+        router.setPath("/");
+        List<RouterVo> childrenList = new ArrayList<>();
+        RouterVo children = new RouterVo();
+        String routerPath = menu.getPath() != null ? menu.getPath().replaceAll("http(s)?://[^/]+", "") : "";
+        children.setPath(routerPath);
+        children.setComponent(UserConstants.INNER_LINK);
+        children.setName(StringUtils.capitalize(routerPath));
+        children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath()));
+        childrenList.add(children);
+        router.setChildren(childrenList);
+      }
+      routers.add(router);
+    }
+    return routers;
+  }
+
+  private String getRouteNameSb(SbMenu menu) {
+    String routerName = StringUtils.capitalize(menu.getPath());
+    if (isMenuFrameSb(menu)) {
+      routerName = StringUtils.EMPTY;
+    }
+    return routerName;
+  }
+
+  private String getRouterPathSb(SbMenu menu) {
+    String routerPath = menu.getPath();
+    if (!"0".equals(menu.getParentId()) && isInnerLinkSb(menu)) {
+      routerPath = menu.getPath() != null ? menu.getPath().replaceAll("http(s)?://[^/]+", "") : menu.getPath();
+    }
+    if ("0".equals(menu.getParentId()) && UserConstants.TYPE_DIR.equals(menu.getMenuType())
+        && UserConstants.NO_FRAME.equals(menu.getIsFrame())) {
+      routerPath = "/" + menu.getPath();
+    } else if (isMenuFrameSb(menu)) {
+      routerPath = "/";
+    }
+    return routerPath;
+  }
+
+  private String getComponentSb(SbMenu menu) {
+    String component = UserConstants.LAYOUT;
+    if (StringUtils.isNotEmpty(menu.getComponent()) && !isMenuFrameSb(menu)) {
+      component = menu.getComponent();
+    } else if (StringUtils.isEmpty(menu.getComponent()) && !"0".equals(menu.getParentId()) && isInnerLinkSb(menu)) {
+      component = UserConstants.INNER_LINK;
+    } else if (StringUtils.isEmpty(menu.getComponent()) && isParentViewSb(menu)) {
+      component = UserConstants.PARENT_VIEW;
+    }
+    return component;
+  }
+
+  private boolean isMenuFrameSb(SbMenu menu) {
+    return "0".equals(menu.getParentId()) && UserConstants.TYPE_MENU.equals(menu.getMenuType())
+        && UserConstants.NO_FRAME.equals(menu.getIsFrame());
+  }
+
+  private boolean isInnerLinkSb(SbMenu menu) {
+    return menu.getIsFrame() != null && menu.getIsFrame().equals(UserConstants.NO_FRAME)
+        && StringUtils.ishttp(menu.getPath());
+  }
+
+  private boolean isParentViewSb(SbMenu menu) {
+    return !"0".equals(menu.getParentId()) && UserConstants.TYPE_DIR.equals(menu.getMenuType());
   }
 
   private boolean hasChild(List<SbMenu> list, SbMenu t) {

@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="SysUser" id="SysUserResult">
         <id     property="userId"       column="user_id"      />
         <result property="deptId"       column="dept_id"      />
+        <result property="customerId"   column="customer_id"  />
         <result property="userName"     column="user_name"    />
         <result property="nickName"     column="nick_name"    />
         <result property="email"        column="email"        />
@@ -48,7 +49,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 	
 	<sql id="selectUserVo">
-        select u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, 
+        select u.user_id, u.dept_id, u.customer_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, 
         d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.status as dept_status,
         r.role_id, r.role_name, r.role_key, r.role_sort, r.data_scope, r.status as role_status
         from sys_user u
@@ -58,7 +59,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
     
     <select id="selectUserList" parameterType="SysUser" resultMap="SysUserResult">
-		select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader,
+		select u.user_id, u.dept_id, u.customer_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader,
 		(select p.post_name from sys_user_post up left join sys_post p on up.post_id = p.post_id where up.user_id = u.user_id limit 1) as post_name
 		from sys_user u
 		left join sys_dept d on u.dept_id = d.dept_id
@@ -83,6 +84,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		</if>
 		<if test="deptId != null and deptId != 0">
 			AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE find_in_set(#{deptId}, ancestors) ))
+		</if>
+		<if test="customerId != null and customerId != ''">
+			AND u.customer_id = #{customerId}
 		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
@@ -127,14 +131,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	    <include refid="selectUserVo"/>
 		where u.user_name = #{userName} and u.del_flag = '0'
 	</select>
+
+	<select id="selectUserByUserNameAndCustomerId" resultMap="SysUserResult">
+	    <include refid="selectUserVo"/>
+		where u.user_name = #{userName} and u.del_flag = '0' and (u.customer_id = #{customerId} or (#{customerId} is null and u.customer_id is null))
+	</select>
+
+	<select id="selectUserByUserNameNoCustomer" parameterType="String" resultMap="SysUserResult">
+	    <include refid="selectUserVo"/>
+		where u.user_name = #{userName} and u.del_flag = '0' and (u.customer_id is null or u.customer_id = '')
+	</select>
 	
 	<select id="selectUserById" parameterType="Long" resultMap="SysUserResult">
 		<include refid="selectUserVo"/>
 		where u.user_id = #{userId}
 	</select>
 	
-	<select id="checkUserNameUnique" parameterType="String" resultMap="SysUserResult">
-		select user_id, user_name from sys_user where user_name = #{userName} and del_flag = '0' limit 1
+	<select id="checkUserNameUnique" parameterType="SysUser" resultMap="SysUserResult">
+		select user_id, user_name, customer_id from sys_user
+		where user_name = #{userName} and del_flag = '0'
+		<choose>
+			<when test="customerId != null and customerId != ''">
+				and customer_id = #{customerId}
+			</when>
+			<otherwise>
+				and (customer_id is null or customer_id = '')
+			</otherwise>
+		</choose>
+		limit 1
 	</select>
 	
 	<select id="checkPhoneUnique" parameterType="String" resultMap="SysUserResult">
@@ -149,6 +173,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		insert into sys_user(
  			<if test="userId != null and userId != 0">user_id,</if>
  			<if test="deptId != null and deptId != 0">dept_id,</if>
+ 			<if test="customerId != null and customerId != ''">customer_id,</if>
  			<if test="userName != null and userName != ''">user_name,</if>
  			<if test="nickName != null and nickName != ''">nick_name,</if>
  			<if test="email != null and email != ''">email,</if>
@@ -161,8 +186,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="remark != null and remark != ''">remark,</if>
  			create_time
  		)values(
- 			<if test="userId != null and userId != ''">#{userId},</if>
- 			<if test="deptId != null and deptId != ''">#{deptId},</if>
+ 			<if test="userId != null and userId != 0">#{userId},</if>
+ 			<if test="deptId != null and deptId != 0">#{deptId},</if>
+ 			<if test="customerId != null and customerId != ''">#{customerId},</if>
  			<if test="userName != null and userName != ''">#{userName},</if>
  			<if test="nickName != null and nickName != ''">#{nickName},</if>
  			<if test="email != null and email != ''">#{email},</if>
@@ -181,6 +207,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		update sys_user
  		<set>
  			<if test="deptId != null and deptId != 0">dept_id = #{deptId},</if>
+ 			<if test="customerId != null">customer_id = #{customerId},</if>
  			<if test="userName != null and userName != ''">user_name = #{userName},</if>
  			<if test="nickName != null and nickName != ''">nick_name = #{nickName},</if>
  			<if test="referredName != null">referred_name = #{referredName},</if>

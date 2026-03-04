@@ -34,7 +34,12 @@ public interface ISbMenuService {
   /**
    * 删除设备菜单
    */
-  int deleteSbMenuById(Long menuId);
+  int deleteSbMenuById(String menuId);
+
+  /**
+   * 根据设备菜单树构建前端路由（UUID7 主键）
+   */
+  List<RouterVo> buildMenusFromSb(List<SbMenu> menus);
 
   /**
    * 校验设备菜单名称是否唯一

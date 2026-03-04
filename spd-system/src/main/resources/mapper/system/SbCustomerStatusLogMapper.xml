@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SbCustomerStatusLogMapper">
+
+  <resultMap type="com.spd.system.domain.SbCustomerStatusLog" id="SbCustomerStatusLogResult">
+    <id     property="logId"      column="log_id"/>
+    <result property="customerId" column="customer_id"/>
+    <result property="status"     column="status"/>
+    <result property="operateTime" column="operate_time"/>
+    <result property="operateBy"  column="operate_by"/>
+    <result property="reason"     column="reason"/>
+  </resultMap>
+
+  <select id="selectByCustomerId" resultMap="SbCustomerStatusLogResult">
+    select log_id, customer_id, status, operate_time, operate_by, reason
+    from sb_customer_status_log
+    where customer_id = #{customerId}
+    order by operate_time desc
+  </select>
+
+  <insert id="insert" parameterType="com.spd.system.domain.SbCustomerStatusLog">
+    insert into sb_customer_status_log (log_id, customer_id, status, operate_time, operate_by, reason)
+    values (#{logId}, #{customerId}, #{status}, #{operateTime}, #{operateBy}, #{reason})
+  </insert>
+</mapper>

@@ -29,6 +29,9 @@ public class SysUser extends BaseEntity
     @Excel(name = "部门编号", type = Type.IMPORT)
     private Long deptId;
 
+    /** 客户ID（SaaS租户，归属客户） */
+    private String customerId;
+
     /** 用户账号 */
     @Excel(name = "登录名称")
     private String userName;
@@ -143,6 +146,16 @@ public class SysUser extends BaseEntity
     public void setDeptId(Long deptId)
     {
         this.deptId = deptId;
+    }
+
+    public String getCustomerId()
+    {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId)
+    {
+        this.customerId = customerId;
     }
 
     @Xss(message = "用户昵称不能包含脚本字符")

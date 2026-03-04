@@ -4,7 +4,7 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.system.mapper.SbMenuMapper">
 
-  <resultMap type="com.spd.common.core.domain.entity.SysMenu" id="SbMenuResult">
+  <resultMap type="com.spd.system.domain.SbMenu" id="SbMenuResult">
     <id     property="menuId"    column="menu_id"/>
     <result property="menuName"  column="menu_name"/>
     <result property="parentName" column="parent_name"/>
@@ -25,6 +25,8 @@
     <result property="updateTime" column="update_time"/>
     <result property="updateBy"  column="update_by"/>
     <result property="remark"    column="remark"/>
+    <result property="deleteBy"  column="delete_by"/>
+    <result property="deleteTime" column="delete_time"/>
   </resultMap>
 
   <sql id="selectSbMenuVo">
@@ -46,7 +48,9 @@
            update_time,
            create_by,
            update_by,
-           remark
+           remark,
+           delete_by,
+           delete_time
     from sb_menu
   </sql>
 
@@ -85,7 +89,9 @@
            m.update_time,
            m.create_by,
            m.update_by,
-           m.remark
+           m.remark,
+           m.delete_by,
+           m.delete_time
     from sb_menu m
     where m.menu_type in ('M', 'C')
       and m.status = '0'
@@ -111,7 +117,9 @@
            m.update_time,
            m.create_by,
            m.update_by,
-           m.remark
+           m.remark,
+           m.delete_by,
+           m.delete_time
     from sb_menu m
     where m.menu_type in ('M', 'C')
       and m.status = '0'
@@ -124,12 +132,20 @@
           and ur.user_id = #{userId}
           and r.status = '0'
       )
+      and (
+        exists (select 1 from sys_user u where u.user_id = #{userId} and u.customer_id is null)
+        or exists (
+          select 1 from sys_user u
+          inner join sb_customer_menu cm on cm.customer_id = u.customer_id and cm.menu_id = m.menu_id and (cm.delete_time is null)
+          where u.user_id = #{userId}
+        )
+      )
     order by m.parent_id, m.order_num
   </select>
 
   <insert id="insertSbMenu" parameterType="com.spd.system.domain.SbMenu">
     insert into sb_menu(
-      <if test="menuId != null and menuId != 0">menu_id,</if>
+      <if test="menuId != null and menuId != ''">menu_id,</if>
       <if test="parentId != null">parent_id,</if>
       <if test="menuName != null and menuName != ''">menu_name,</if>
       <if test="orderNum != null">order_num,</if>
@@ -146,7 +162,7 @@
       <if test="createBy != null and createBy != ''">create_by,</if>
       create_time
     ) values(
-      <if test="menuId != null and menuId != 0">#{menuId},</if>
+      <if test="menuId != null and menuId != ''">#{menuId},</if>
       <if test="parentId != null">#{parentId},</if>
       <if test="menuName != null and menuName != ''">#{menuName},</if>
       <if test="orderNum != null">#{orderNum},</if>
@@ -187,7 +203,7 @@
     where menu_id = #{menuId}
   </update>
 
-  <delete id="deleteSbMenuById" parameterType="Long">
+  <delete id="deleteSbMenuById" parameterType="String">
     delete from sb_menu where menu_id = #{menuId}
   </delete>
 

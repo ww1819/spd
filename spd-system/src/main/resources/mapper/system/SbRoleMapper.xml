@@ -6,6 +6,7 @@
 
   <resultMap type="com.spd.system.domain.SbRole" id="SbRoleResult">
     <id     property="roleId"            column="role_id"/>
+    <result property="customerId"        column="customer_id"/>
     <result property="roleName"          column="role_name"/>
     <result property="roleKey"           column="role_key"/>
     <result property="roleSort"          column="role_sort"/>
@@ -19,10 +20,13 @@
     <result property="updateBy"          column="update_by"/>
     <result property="updateTime"        column="update_time"/>
     <result property="remark"            column="remark"/>
+    <result property="deleteBy"          column="delete_by"/>
+    <result property="deleteTime"        column="delete_time"/>
   </resultMap>
 
   <sql id="selectSbRoleVo">
     select distinct r.role_id,
+                    r.customer_id,
                     r.role_name,
                     r.role_key,
                     r.role_sort,
@@ -32,7 +36,9 @@
                     r.status,
                     r.del_flag,
                     r.create_time,
-                    r.remark
+                    r.remark,
+                    r.delete_by,
+                    r.delete_time
     from sb_role r
       left join sb_user_role ur on ur.role_id = r.role_id
       left join sys_user u on u.user_id = ur.user_id
@@ -41,7 +47,10 @@
   <select id="selectSbRoleList" parameterType="com.spd.system.domain.SbRole" resultMap="SbRoleResult">
     <include refid="selectSbRoleVo"/>
     where r.del_flag = '0'
-    <if test="roleId != null and roleId != 0">
+    <if test="customerId != null and customerId != ''">
+      AND r.customer_id = #{customerId}
+    </if>
+    <if test="roleId != null and roleId != ''">
       AND r.role_id = #{roleId}
     </if>
     <if test="roleName != null and roleName != ''">
@@ -66,7 +75,7 @@
     where r.del_flag = '0'
   </select>
 
-  <select id="selectSbRoleListByUserId" parameterType="Long" resultType="Long">
+  <select id="selectSbRoleListByUserId" parameterType="Long" resultType="String">
     select r.role_id
     from sb_role r
       left join sb_user_role ur on ur.role_id = r.role_id
@@ -74,7 +83,7 @@
     where u.user_id = #{userId}
   </select>
 
-  <select id="selectSbRoleById" parameterType="Long" resultMap="SbRoleResult">
+  <select id="selectSbRoleById" parameterType="String" resultMap="SbRoleResult">
     <include refid="selectSbRoleVo"/>
     where r.role_id = #{roleId}
   </select>
@@ -93,9 +102,10 @@
     limit 1
   </select>
 
-  <insert id="insertSbRole" parameterType="com.spd.system.domain.SbRole" useGeneratedKeys="true" keyProperty="roleId">
+  <insert id="insertSbRole" parameterType="com.spd.system.domain.SbRole">
     insert into sb_role(
-      <if test="roleId != null and roleId != 0">role_id,</if>
+      <if test="roleId != null and roleId != ''">role_id,</if>
+      <if test="customerId != null and customerId != ''">customer_id,</if>
       <if test="roleName != null and roleName != ''">role_name,</if>
       <if test="roleKey != null and roleKey != ''">role_key,</if>
       <if test="roleSort != null">role_sort,</if>
@@ -108,7 +118,8 @@
       create_time,
       del_flag
     ) values(
-      <if test="roleId != null and roleId != 0">#{roleId},</if>
+      <if test="roleId != null and roleId != ''">#{roleId},</if>
+      <if test="customerId != null and customerId != ''">#{customerId},</if>
       <if test="roleName != null and roleName != ''">#{roleName},</if>
       <if test="roleKey != null and roleKey != ''">#{roleKey},</if>
       <if test="roleSort != null">#{roleSort},</if>
@@ -126,6 +137,7 @@
   <update id="updateSbRole" parameterType="com.spd.system.domain.SbRole">
     update sb_role
     <set>
+      <if test="customerId != null">customer_id = #{customerId},</if>
       <if test="roleName != null and roleName != ''">role_name = #{roleName},</if>
       <if test="roleKey != null and roleKey != ''">role_key = #{roleKey},</if>
       <if test="roleSort != null">role_sort = #{roleSort},</if>
@@ -140,12 +152,12 @@
     where role_id = #{roleId}
   </update>
 
-  <update id="deleteSbRoleById" parameterType="Long">
-    update sb_role set del_flag = '2' where role_id = #{roleId}
+  <update id="deleteSbRoleById">
+    update sb_role set del_flag = '2', delete_by = #{deleteBy}, delete_time = sysdate() where role_id = #{roleId}
   </update>
 
-  <update id="deleteSbRoleByIds" parameterType="Long">
-    update sb_role set del_flag = '2'
+  <update id="deleteSbRoleByIds">
+    update sb_role set del_flag = '2', delete_by = #{deleteBy}, delete_time = sysdate()
     where role_id in
     <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
       #{roleId}

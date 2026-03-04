@@ -29,12 +29,12 @@ public interface SbRoleMapper {
   /**
    * 根据用户ID查询设备角色ID列表
    */
-  List<Long> selectSbRoleListByUserId(Long userId);
+  List<String> selectSbRoleListByUserId(Long userId);
 
   /**
    * 根据角色ID查询角色
    */
-  SbRole selectSbRoleById(Long roleId);
+  SbRole selectSbRoleById(String roleId);
 
   /**
    * 校验角色名称是否唯一
@@ -57,13 +57,13 @@ public interface SbRoleMapper {
   int updateSbRole(SbRole role);
 
   /**
-   * 批量逻辑删除角色
+   * 逻辑删除角色（同时写入删除者、删除时间）
    */
-  int deleteSbRoleByIds(@Param("roleIds") Long[] roleIds);
+  int deleteSbRoleById(@Param("roleId") String roleId, @Param("deleteBy") String deleteBy);
 
   /**
-   * 逻辑删除角色
+   * 批量逻辑删除角色（同时写入删除者、删除时间）
    */
-  int deleteSbRoleById(Long roleId);
+  int deleteSbRoleByIds(@Param("roleIds") String[] roleIds, @Param("deleteBy") String deleteBy);
 }
 

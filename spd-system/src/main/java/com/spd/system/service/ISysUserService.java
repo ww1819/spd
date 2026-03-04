@@ -43,6 +43,16 @@ public interface ISysUserService
     public SysUser selectUserByUserName(String userName);
 
     /**
+     * 通过用户名与客户ID查询用户（租户登录）
+     */
+    public SysUser selectUserByUserNameAndCustomerId(String userName, String customerId);
+
+    /**
+     * 通过用户名查询用户（仅限无客户归属的平台用户）
+     */
+    public SysUser selectUserByUserNameNoCustomer(String userName);
+
+    /**
      * 通过用户ID查询用户
      * 
      * @param userId 用户ID

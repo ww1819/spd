@@ -12,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.constant.UserConstants;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbRole;
 import com.spd.system.domain.SbRoleMenu;
 import com.spd.system.domain.SbUserRole;
@@ -47,7 +49,7 @@ public class SbRoleServiceImpl implements ISbRoleService {
     List<SbRole> roles = selectSbRoleAll();
     for (SbRole role : roles) {
       for (SbRole userRole : userRoles) {
-        if (role.getRoleId().longValue() == userRole.getRoleId().longValue()) {
+        if (role.getRoleId() != null && role.getRoleId().equals(userRole.getRoleId())) {
           role.setFlag(true);
           break;
         }
@@ -74,20 +76,20 @@ public class SbRoleServiceImpl implements ISbRoleService {
   }
 
   @Override
-  public List<Long> selectSbRoleListByUserId(Long userId) {
+  public List<String> selectSbRoleListByUserId(Long userId) {
     return sbRoleMapper.selectSbRoleListByUserId(userId);
   }
 
   @Override
-  public SbRole selectSbRoleById(Long roleId) {
+  public SbRole selectSbRoleById(String roleId) {
     return sbRoleMapper.selectSbRoleById(roleId);
   }
 
   @Override
   public boolean checkSbRoleNameUnique(SbRole role) {
-    Long roleId = StringUtils.isNull(role.getRoleId()) ? -1L : role.getRoleId();
+    String roleId = StringUtils.isNull(role.getRoleId()) ? "" : role.getRoleId();
     SbRole info = sbRoleMapper.checkSbRoleNameUnique(role.getRoleName());
-    if (StringUtils.isNotNull(info) && info.getRoleId().longValue() != roleId.longValue()) {
+    if (StringUtils.isNotNull(info) && !roleId.equals(info.getRoleId())) {
       return UserConstants.NOT_UNIQUE;
     }
     return UserConstants.UNIQUE;
@@ -95,9 +97,9 @@ public class SbRoleServiceImpl implements ISbRoleService {
 
   @Override
   public boolean checkSbRoleKeyUnique(SbRole role) {
-    Long roleId = StringUtils.isNull(role.getRoleId()) ? -1L : role.getRoleId();
+    String roleId = StringUtils.isNull(role.getRoleId()) ? "" : role.getRoleId();
     SbRole info = sbRoleMapper.checkSbRoleKeyUnique(role.getRoleKey());
-    if (StringUtils.isNotNull(info) && info.getRoleId().longValue() != roleId.longValue()) {
+    if (StringUtils.isNotNull(info) && !roleId.equals(info.getRoleId())) {
       return UserConstants.NOT_UNIQUE;
     }
     return UserConstants.UNIQUE;
@@ -106,6 +108,9 @@ public class SbRoleServiceImpl implements ISbRoleService {
   @Override
   @Transactional
   public int insertSbRole(SbRole role) {
+    if (StringUtils.isEmpty(role.getRoleId())) {
+      role.setRoleId(UUID7.generateUUID7());
+    }
     sbRoleMapper.insertSbRole(role);
     return insertSbRoleMenu(role);
   }
@@ -124,27 +129,27 @@ public class SbRoleServiceImpl implements ISbRoleService {
   }
 
   @Override
-  public int deleteSbRoleById(Long roleId) {
+  public int deleteSbRoleById(String roleId) {
     if (countSbUserRoleByRoleId(roleId) > 0) {
       throw new ServiceException("该角色已分配用户，不能删除");
     }
     sbRoleMenuMapper.deleteSbRoleMenuByRoleId(roleId);
-    return sbRoleMapper.deleteSbRoleById(roleId);
+    return sbRoleMapper.deleteSbRoleById(roleId, SecurityUtils.getUsername());
   }
 
   @Override
-  public int deleteSbRoleByIds(Long[] roleIds) {
-    for (Long roleId : roleIds) {
+  public int deleteSbRoleByIds(String[] roleIds) {
+    for (String roleId : roleIds) {
       if (countSbUserRoleByRoleId(roleId) > 0) {
         throw new ServiceException("角色已分配用户，不能删除");
       }
     }
     sbRoleMenuMapper.deleteSbRoleMenu(roleIds);
-    return sbRoleMapper.deleteSbRoleByIds(roleIds);
+    return sbRoleMapper.deleteSbRoleByIds(roleIds, SecurityUtils.getUsername());
   }
 
   @Override
-  public int countSbUserRoleByRoleId(Long roleId) {
+  public int countSbUserRoleByRoleId(String roleId) {
     return sbUserRoleMapper.countSbUserRoleByRoleId(roleId);
   }
 
@@ -154,7 +159,7 @@ public class SbRoleServiceImpl implements ISbRoleService {
   }
 
   @Override
-  public int deleteSbAuthUsers(Long roleId, Long[] userIds) {
+  public int deleteSbAuthUsers(String roleId, Long[] userIds) {
     SbUserRole ur = new SbUserRole();
     ur.setRoleId(roleId);
     for (Long userId : userIds) {
@@ -165,12 +170,15 @@ public class SbRoleServiceImpl implements ISbRoleService {
   }
 
   @Override
-  public int insertSbAuthUsers(Long roleId, Long[] userIds) {
+  public int insertSbAuthUsers(String roleId, Long[] userIds) {
+    SbRole role = sbRoleMapper.selectSbRoleById(roleId);
+    String customerId = role != null ? role.getCustomerId() : null;
     List<SbUserRole> list = new ArrayList<>();
     for (Long userId : userIds) {
       SbUserRole ur = new SbUserRole();
       ur.setUserId(userId);
       ur.setRoleId(roleId);
+      ur.setCustomerId(customerId);
       list.add(ur);
     }
     if (!list.isEmpty()) {
@@ -182,12 +190,13 @@ public class SbRoleServiceImpl implements ISbRoleService {
   private int insertSbRoleMenu(SbRole role) {
     int rows = 1;
     List<SbRoleMenu> list = new ArrayList<>();
-    Long[] menuIds = role.getMenuIds();
+    String[] menuIds = role.getMenuIds();
     if (menuIds != null) {
-      for (Long menuId : menuIds) {
+      for (String menuId : menuIds) {
         SbRoleMenu rm = new SbRoleMenu();
         rm.setRoleId(role.getRoleId());
         rm.setMenuId(menuId);
+        rm.setCustomerId(role.getCustomerId());
         list.add(rm);
       }
     }

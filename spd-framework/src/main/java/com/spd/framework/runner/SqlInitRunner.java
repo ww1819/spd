@@ -59,13 +59,14 @@ public class SqlInitRunner implements ApplicationRunner
         String location = normalizeLocation(properties.getLocation());
         boolean failOnError = properties.isFailOnError();
 
+        // 材料管理
         for (String scriptName : SCRIPT_ORDER)
         {
-            String path = location + scriptName;
+            String path = location + "material/" + scriptName;
             Resource resource = resourceLoader.getResource(path);
             if (!resource.exists())
             {
-                log.debug("SQL 脚本不存在，跳过: {}", path);
+                log.debug("材料管理SQL 脚本不存在，跳过: {}", path);
                 continue;
             }
 
@@ -74,17 +75,45 @@ public class SqlInitRunner implements ApplicationRunner
                 String content = readResource(resource);
                 List<String> statements = parseStatements(content);
                 executeStatements(statements, scriptName, failOnError);
-                log.info("SQL 脚本执行完成: {}", scriptName);
+                log.info("材料管理SQL 脚本执行完成: {}", scriptName);
             }
             catch (Exception e)
             {
-                log.error("SQL 脚本执行失败: {}", scriptName, e);
+                log.error("材料管理SQL 脚本执行失败: {}", scriptName, e);
                 if (failOnError)
                 {
                     throw e;
                 }
             }
         }
+
+        // 设备管理
+        for (String scriptName : SCRIPT_ORDER)
+            {
+                String path = location + "equipment/" + scriptName;
+                Resource resource = resourceLoader.getResource(path);
+                if (!resource.exists())
+                {
+                    log.debug("设备管理SQL 脚本不存在，跳过: {}", path);
+                    continue;
+                }
+    
+                try
+                {
+                    String content = readResource(resource);
+                    List<String> statements = parseStatements(content);
+                    executeStatements(statements, scriptName, failOnError);
+                    log.info("设备管理SQL 脚本执行完成: {}", scriptName);
+                }
+                catch (Exception e)
+                {
+                    log.error("设备管理SQL 脚本执行失败: {}", scriptName, e);
+                    if (failOnError)
+                    {
+                        throw e;
+                    }
+                }
+            }
     }
 
     private static String normalizeLocation(String location)

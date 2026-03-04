@@ -34,12 +34,12 @@ public interface ISbRoleService {
   /**
    * 根据用户ID获取设备角色ID集合
    */
-  List<Long> selectSbRoleListByUserId(Long userId);
+  List<String> selectSbRoleListByUserId(Long userId);
 
   /**
    * 通过角色ID查询设备角色
    */
-  SbRole selectSbRoleById(Long roleId);
+  SbRole selectSbRoleById(String roleId);
 
   /**
    * 校验设备角色名称是否唯一
@@ -69,17 +69,17 @@ public interface ISbRoleService {
   /**
    * 删除设备角色
    */
-  int deleteSbRoleById(Long roleId);
+  int deleteSbRoleById(String roleId);
 
   /**
    * 批量删除设备角色
    */
-  int deleteSbRoleByIds(Long[] roleIds);
+  int deleteSbRoleByIds(String[] roleIds);
 
   /**
    * 通过角色ID查询设备用户数量
    */
-  int countSbUserRoleByRoleId(Long roleId);
+  int countSbUserRoleByRoleId(String roleId);
 
   /**
    * 取消授权设备用户角色
@@ -89,11 +89,11 @@ public interface ISbRoleService {
   /**
    * 批量取消授权设备用户角色
    */
-  int deleteSbAuthUsers(Long roleId, Long[] userIds);
+  int deleteSbAuthUsers(String roleId, Long[] userIds);
 
   /**
    * 批量选择授权设备用户角色
    */
-  int insertSbAuthUsers(Long roleId, Long[] userIds);
+  int insertSbAuthUsers(String roleId, Long[] userIds);
 }
 

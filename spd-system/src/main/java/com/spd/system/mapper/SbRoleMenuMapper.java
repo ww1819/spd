@@ -12,17 +12,17 @@ public interface SbRoleMenuMapper {
   /**
    * 查询菜单是否存在设备角色
    */
-  int checkSbMenuExistRole(Long menuId);
+  int checkSbMenuExistRole(String menuId);
 
   /**
    * 根据角色ID删除设备角色和菜单关联
    */
-  int deleteSbRoleMenuByRoleId(Long roleId);
+  int deleteSbRoleMenuByRoleId(String roleId);
 
   /**
    * 批量删除角色与菜单关联
    */
-  int deleteSbRoleMenu(Long[] roleIds);
+  int deleteSbRoleMenu(String[] roleIds);
 
   /**
    * 批量新增角色菜单信息

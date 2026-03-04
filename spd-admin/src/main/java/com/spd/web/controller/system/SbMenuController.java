@@ -18,7 +18,6 @@ import com.spd.common.annotation.Log;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
-import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
@@ -49,15 +48,14 @@ public class SbMenuController extends BaseController {
     }
 
   /**
-   * 根据用户获取设备菜单树
+   * 根据用户获取设备菜单树（menuId/parentId 为 UUID7 字符串）
    */
     @GetMapping("/treeselect")
     public AjaxResult treeselect(SbMenu menu)
     {
         Long userId = SecurityUtils.getUserId();
         List<SbMenu> sbMenus = sbMenuService.selectSbMenuTreeByUserId(userId);
-        List<SysMenu> menus = sbMenuService.convertToSysMenus(sbMenus);
-        return success(menus);
+        return success(sbMenus);
     }
 
   /**
@@ -108,7 +106,7 @@ public class SbMenuController extends BaseController {
     @PreAuthorize("@ss.hasPermi('sb:system:menu:remove')")
     @Log(title = "设备菜单管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{menuId}")
-    public AjaxResult remove(@PathVariable Long menuId)
+    public AjaxResult remove(@PathVariable String menuId)
     {
         return toAjax(sbMenuService.deleteSbMenuById(menuId));
     }

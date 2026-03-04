@@ -1,9 +1,12 @@
 package com.spd.system.domain;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.validation.constraints.NotBlank;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
@@ -21,8 +24,8 @@ public class SbMenu extends BaseEntity {
 
   private static final long serialVersionUID = 1L;
 
-  /** 菜单ID */
-  private Long menuId;
+  /** 菜单ID（UUID7） */
+  private String menuId;
 
   /** 菜单名称 */
   private String menuName;
@@ -30,8 +33,8 @@ public class SbMenu extends BaseEntity {
   /** 父菜单名称（仅展示用） */
   private String parentName;
 
-  /** 父菜单ID */
-  private Long parentId;
+  /** 父菜单ID（UUID7，根为0） */
+  private String parentId;
 
   /** 显示顺序 */
   private Integer orderNum;
@@ -63,14 +66,21 @@ public class SbMenu extends BaseEntity {
   /** 菜单图标 */
   private String icon;
 
+  /** 删除者 */
+  private String deleteBy;
+
+  /** 删除时间 */
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private Date deleteTime;
+
   /** 子菜单 */
   private List<SbMenu> children = new ArrayList<>();
 
-  public Long getMenuId() {
+  public String getMenuId() {
     return menuId;
   }
 
-  public void setMenuId(Long menuId) {
+  public void setMenuId(String menuId) {
     this.menuId = menuId;
   }
 
@@ -92,11 +102,11 @@ public class SbMenu extends BaseEntity {
     this.parentName = parentName;
   }
 
-  public Long getParentId() {
+  public String getParentId() {
     return parentId;
   }
 
-  public void setParentId(Long parentId) {
+  public void setParentId(String parentId) {
     this.parentId = parentId;
   }
 
@@ -185,6 +195,22 @@ public class SbMenu extends BaseEntity {
     this.icon = icon;
   }
 
+  public String getDeleteBy() {
+    return deleteBy;
+  }
+
+  public void setDeleteBy(String deleteBy) {
+    this.deleteBy = deleteBy;
+  }
+
+  public Date getDeleteTime() {
+    return deleteTime;
+  }
+
+  public void setDeleteTime(Date deleteTime) {
+    this.deleteTime = deleteTime;
+  }
+
   public List<SbMenu> getChildren() {
     return children;
   }
@@ -209,6 +235,8 @@ public class SbMenu extends BaseEntity {
         .append("status", getStatus())
         .append("perms", getPerms())
         .append("icon", getIcon())
+        .append("deleteBy", getDeleteBy())
+        .append("deleteTime", getDeleteTime())
         .append("createBy", getCreateBy())
         .append("createTime", getCreateTime())
         .append("updateBy", getUpdateBy())

@@ -118,6 +118,18 @@ public class SysUserServiceImpl implements ISysUserService
         return userMapper.selectUserByUserName(userName);
     }
 
+    @Override
+    public SysUser selectUserByUserNameAndCustomerId(String userName, String customerId)
+    {
+        return userMapper.selectUserByUserNameAndCustomerId(userName, customerId);
+    }
+
+    @Override
+    public SysUser selectUserByUserNameNoCustomer(String userName)
+    {
+        return userMapper.selectUserByUserNameNoCustomer(userName);
+    }
+
     /**
      * 通过用户ID查询用户
      *
@@ -174,8 +186,8 @@ public class SysUserServiceImpl implements ISysUserService
     public boolean checkUserNameUnique(SysUser user)
     {
         Long userId = StringUtils.isNull(user.getUserId()) ? -1L : user.getUserId();
-        SysUser info = userMapper.checkUserNameUnique(user.getUserName());
-        if (StringUtils.isNotNull(info) && info.getUserId().longValue() != userId.longValue())
+        SysUser info = userMapper.checkUserNameUnique(user);
+        if (StringUtils.isNotNull(info) && !userId.equals(info.getUserId()))
         {
             return UserConstants.NOT_UNIQUE;
         }

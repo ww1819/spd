@@ -43,6 +43,9 @@ public class SbRoleController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo list(SbRole role)
     {
+        if (role.getCustomerId() == null && SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null) {
+            role.setCustomerId(SecurityUtils.getLoginUser().getUser().getCustomerId());
+        }
         startPage();
         List<SbRole> list = sbRoleService.selectSbRoleList(role);
         return getDataTable(list);
@@ -53,7 +56,7 @@ public class SbRoleController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('sb:system:role:query')")
     @GetMapping(value = "/{roleId}")
-    public AjaxResult getInfo(@PathVariable Long roleId)
+    public AjaxResult getInfo(@PathVariable String roleId)
     {
         return AjaxResult.success(sbRoleService.selectSbRoleById(roleId));
     }
@@ -73,6 +76,9 @@ public class SbRoleController extends BaseController {
         if (!sbRoleService.checkSbRoleKeyUnique(role))
         {
             return error("新增角色'" + role.getRoleName() + "'失败，角色权限已存在");
+        }
+        if (role.getCustomerId() == null && SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null) {
+            role.setCustomerId(SecurityUtils.getLoginUser().getUser().getCustomerId());
         }
         role.setCreateBy(SecurityUtils.getUsername());
         return toAjax(sbRoleService.insertSbRole(role));
@@ -116,7 +122,7 @@ public class SbRoleController extends BaseController {
     @PreAuthorize("@ss.hasPermi('sb:system:role:remove')")
     @Log(title = "设备角色管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{roleIds}")
-    public AjaxResult remove(@PathVariable Long[] roleIds)
+    public AjaxResult remove(@PathVariable String[] roleIds)
     {
         return toAjax(sbRoleService.deleteSbRoleByIds(roleIds));
     }
@@ -138,7 +144,7 @@ public class SbRoleController extends BaseController {
     @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.GRANT)
     @PutMapping("/authUser/cancelAll")
-    public AjaxResult cancelAuthUserAll(Long roleId, Long[] userIds)
+    public AjaxResult cancelAuthUserAll(String roleId, Long[] userIds)
     {
         return toAjax(sbRoleService.deleteSbAuthUsers(roleId, userIds));
     }
@@ -149,7 +155,7 @@ public class SbRoleController extends BaseController {
     @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.GRANT)
     @PutMapping("/authUser/selectAll")
-    public AjaxResult selectAuthUserAll(Long roleId, Long[] userIds)
+    public AjaxResult selectAuthUserAll(String roleId, Long[] userIds)
     {
         return toAjax(sbRoleService.insertSbAuthUsers(roleId, userIds));
     }

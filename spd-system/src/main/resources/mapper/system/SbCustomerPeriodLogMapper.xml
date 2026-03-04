@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SbCustomerPeriodLogMapper">
+
+  <resultMap type="com.spd.system.domain.SbCustomerPeriodLog" id="SbCustomerPeriodLogResult">
+    <id     property="periodId"   column="period_id"/>
+    <result property="customerId" column="customer_id"/>
+    <result property="periodType" column="period_type"/>
+    <result property="startTime"  column="start_time"/>
+    <result property="endTime"    column="end_time"/>
+    <result property="createBy"  column="create_by"/>
+    <result property="createTime" column="create_time"/>
+  </resultMap>
+
+  <select id="selectByCustomerId" resultMap="SbCustomerPeriodLogResult">
+    select period_id, customer_id, period_type, start_time, end_time, create_by, create_time
+    from sb_customer_period_log
+    where customer_id = #{customerId}
+    order by start_time desc
+  </select>
+
+  <select id="selectLastUsageEndTime" resultType="java.util.Date">
+    select end_time from sb_customer_period_log
+    where customer_id = #{customerId} and period_type = 'usage'
+    order by end_time desc limit 1
+  </select>
+
+  <insert id="insert" parameterType="com.spd.system.domain.SbCustomerPeriodLog">
+    insert into sb_customer_period_log (period_id, customer_id, period_type, start_time, end_time, create_by, create_time)
+    values (#{periodId}, #{customerId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime})
+  </insert>
+</mapper>

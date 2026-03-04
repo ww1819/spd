@@ -44,6 +44,16 @@ public interface SysUserMapper
     public SysUser selectUserByUserName(String userName);
 
     /**
+     * 通过用户名与客户ID查询用户（租户登录）
+     */
+    public SysUser selectUserByUserNameAndCustomerId(@Param("userName") String userName, @Param("customerId") String customerId);
+
+    /**
+     * 通过用户名查询用户（仅限无客户归属的平台用户）
+     */
+    public SysUser selectUserByUserNameNoCustomer(String userName);
+
+    /**
      * 通过用户ID查询用户
      * 
      * @param userId 用户ID
@@ -102,12 +112,12 @@ public interface SysUserMapper
     public int deleteUserByIds(Long[] userIds);
 
     /**
-     * 校验用户名称是否唯一
-     * 
-     * @param userName 用户名称
-     * @return 结果
+     * 校验用户名+客户ID是否唯一（同一客户下用户名唯一，平台用户 customerId 为空）
+     *
+     * @param user 用户信息（含 userName、customerId、userId 用于排除自身）
+     * @return 已存在的用户，无则 null
      */
-    public SysUser checkUserNameUnique(String userName);
+    public SysUser checkUserNameUnique(SysUser user);
 
     /**
      * 校验手机号码是否唯一

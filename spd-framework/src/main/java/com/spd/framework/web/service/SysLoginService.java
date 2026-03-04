@@ -31,7 +31,7 @@ import com.spd.system.service.ISysUserService;
 
 /**
  * 登录校验方法
- * 
+ *
  * @author spd
  */
 @Component
@@ -45,7 +45,7 @@ public class SysLoginService
 
     @Autowired
     private RedisCache redisCache;
-    
+
     @Autowired
     private ISysUserService userService;
 
@@ -54,19 +54,20 @@ public class SysLoginService
 
     /**
      * 登录验证
-     * 
+     *
      * @param username 用户名
      * @param password 密码
      * @param code 验证码
      * @param uuid 唯一标识
+     * @param customerId 客户ID
      * @return 结果
      */
-    public String login(String username, String password, String code, String uuid)
+    public String login(String username, String password, String code, String uuid, String customerId)
     {
         // 验证码校验
         validateCaptcha(username, code, uuid);
         // 登录前置校验
-        loginPreCheck(username, password);
+        loginPreCheck(username, password, customerId);
         // 用户验证
         Authentication authentication = null;
         try
@@ -102,7 +103,7 @@ public class SysLoginService
 
     /**
      * 校验验证码
-     * 
+     *
      * @param username 用户名
      * @param code 验证码
      * @param uuid 唯一标识
@@ -133,8 +134,9 @@ public class SysLoginService
      * 登录前置校验
      * @param username 用户名
      * @param password 用户密码
+     * @param customerId 客户ID
      */
-    public void loginPreCheck(String username, String password)
+    public void loginPreCheck(String username, String password, String customerId)
     {
         // 用户名或密码为空 错误
         if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password))
