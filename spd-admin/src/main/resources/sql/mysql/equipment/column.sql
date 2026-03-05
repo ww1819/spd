@@ -83,3 +83,21 @@ CALL add_table_column('sys_user', 'customer_id', 'char(36)', '客户ID(UUID7)，
 -- 为sb_customer表添加planned_disable_time字段
 CALL add_table_column('sb_customer', 'planned_disable_time', 'datetime', '计划停用时间，到达后租户无法使用', NULL);
 /
+
+-- 客户启停用时间段：end_time 允许 NULL，表示当前未结束的时段
+CALL add_table_column('sb_customer_period_log', 'end_time', 'datetime', '结束时间，NULL表示当前未结束', NULL);
+/
+
+-- 客户菜单功能管理：sb_customer_menu 增加 status（0正常 1暂停）、is_enabled（0关闭 1开启）
+CALL add_table_column('sb_customer_menu', 'status', 'char(1)', '暂停状态（0正常 1暂停，仅客户菜单功能管理操作）', '0');
+/
+CALL add_table_column('sb_customer_menu', 'is_enabled', 'char(1)', '是否开启（0关闭 1开启），客户管理取消功能时改为0', '1');
+/
+
+-- 设备菜单表：是否仅平台管理功能（1则客户分配/工作组/用户权限中不展示）
+CALL add_table_column('sb_menu', 'is_platform_only', 'char(1)', '是否仅平台管理功能（1是，客户分配/工作组/用户权限中不展示）', '0');
+/
+
+-- 设备角色与菜单关联表：客户ID（归属租户，平台角色可为空）
+CALL add_table_column('sb_role_menu', 'customer_id', 'char(36)', '客户ID(UUID7)，归属客户/租户', NULL);
+/

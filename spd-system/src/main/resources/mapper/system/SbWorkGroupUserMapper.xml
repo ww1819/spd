@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SbWorkGroupUserMapper">
+
+  <insert id="insertSbWorkGroupUser" parameterType="com.spd.system.domain.SbWorkGroupUser">
+    insert into sb_work_group_user (group_id, user_id, customer_id, create_by, create_time)
+    values (#{groupId}, #{userId}, #{customerId}, #{createBy}, sysdate())
+  </insert>
+
+  <select id="selectUserIdsByGroupId" resultType="long">
+    select user_id from sb_work_group_user where group_id = #{groupId} and delete_time is null
+  </select>
+
+  <select id="selectGroupIdsByUserId" resultType="string">
+    select group_id from sb_work_group_user where user_id = #{userId} and (customer_id = #{customerId} or #{customerId} is null) and delete_time is null
+  </select>
+
+  <update id="deleteByGroupIdAndUserId">
+    update sb_work_group_user set delete_by = #{deleteBy}, delete_time = sysdate() where group_id = #{groupId} and user_id = #{userId} and delete_time is null
+  </update>
+
+  <select id="countByGroupIdAndUserId" resultType="int">
+    select count(1) from sb_work_group_user where group_id = #{groupId} and user_id = #{userId} and delete_time is null
+  </select>
+
+</mapper>

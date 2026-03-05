@@ -58,5 +58,21 @@ public interface SbMenuMapper {
    * 根据用户ID查询设备菜单权限标识集合
    */
   List<String> selectSbMenuPermsByUserId(Long userId);
+
+  /**
+   * 根据用户ID及客户ID查询设备菜单权限（租户时仅返回该客户已启用菜单的权限）
+   * @param customerId 为空时不过滤客户菜单状态
+   */
+  List<String> selectSbMenuPermsByUserIdAndCustomer(@Param("userId") Long userId, @Param("customerId") String customerId);
+
+  /**
+   * 某客户已开启的菜单树（用于工作组/用户权限分配，仅展示 is_enabled=1 且非平台专属）
+   */
+  List<SbMenu> selectSbMenuTreeByCustomerIdEnabling(String customerId);
+
+  /**
+   * 查询「系统设置」目录下且非平台管理的菜单ID（新租户/super组默认开通：用户管理、工作组等，不含客户管理/客户菜单功能管理等平台功能）
+   */
+  List<String> selectMenuIdsSystemSettingsNonPlatform();
 }
 

@@ -38,6 +38,7 @@ public class SbPermissionService {
 
   /**
    * 获取设备菜单数据权限（基于 sb_menu.perms）
+   * 租户时仅返回该客户已开启且未暂停的菜单权限（sb_customer_menu.is_enabled=1 且 status=0）
    */
   public Set<String> getMenuPermission(SysUser user) {
     Set<String> perms = new HashSet<>();
@@ -46,7 +47,8 @@ public class SbPermissionService {
       perms.add("*:*:*");
       return perms;
     }
-    return sbMenuService.selectSbMenuPermsByUserId(user.getUserId());
+    String customerId = user.getCustomerId();
+    return sbMenuService.selectSbMenuPermsByUserIdAndCustomer(user.getUserId(), customerId);
   }
 }
 

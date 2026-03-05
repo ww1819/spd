@@ -16,9 +16,13 @@ import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISysUserService;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 用户验证处理
+ * <p>设备系统允许不同租户内用户使用相同用户名，因此登录时通过「客户ID + 用户名」唯一定位用户，
+ * 再交由 Spring Security 比对密码是否正确。</p>
  *
  * @author spd
  */
@@ -38,6 +42,9 @@ public class UserDetailsServiceImpl implements UserDetailsService
 
     @Autowired
     private SysPermissionService permissionService;
+
+    @Autowired
+    private SbPermissionService sbPermissionService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
@@ -76,6 +83,7 @@ public class UserDetailsServiceImpl implements UserDetailsService
             validateCustomerForLogin(customer, customerId);
         }
 
+        // 通过「客户ID + 用户名」唯一定位用户（不同租户可同名），定位后再由上层比对密码
         SysUser user = StringUtils.isNotEmpty(customerId)
             ? userService.selectUserByUserNameAndCustomerId(userName, customerId)
             : userService.selectUserByUserNameNoCustomer(userName);
@@ -125,6 +133,8 @@ public class UserDetailsServiceImpl implements UserDetailsService
 
     public UserDetails createLoginUser(SysUser user)
     {
-        return new LoginUser(user.getUserId(), user.getDeptId(), user, permissionService.getMenuPermission(user));
+        Set<String> perms = new HashSet<>(permissionService.getMenuPermission(user));
+        perms.addAll(sbPermissionService.getMenuPermission(user));
+        return new LoginUser(user.getUserId(), user.getDeptId(), user, perms);
     }
 }

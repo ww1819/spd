@@ -25,6 +25,17 @@
     order by end_time desc limit 1
   </select>
 
+  <select id="selectLastWithNullEnd" resultMap="SbCustomerPeriodLogResult">
+    select period_id, customer_id, period_type, start_time, end_time, create_by, create_time
+    from sb_customer_period_log
+    where customer_id = #{customerId} and period_type = #{periodType} and end_time is null
+    order by start_time desc limit 1
+  </select>
+
+  <update id="updateEndTime">
+    update sb_customer_period_log set end_time = #{endTime} where period_id = #{periodId}
+  </update>
+
   <insert id="insert" parameterType="com.spd.system.domain.SbCustomerPeriodLog">
     insert into sb_customer_period_log (period_id, customer_id, period_type, start_time, end_time, create_by, create_time)
     values (#{periodId}, #{customerId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime})

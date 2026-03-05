@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SbWorkGroupMapper">
+
+  <resultMap type="com.spd.system.domain.SbWorkGroup" id="SbWorkGroupResult">
+    <id property="groupId" column="group_id"/>
+    <result property="customerId" column="customer_id"/>
+    <result property="groupName" column="group_name"/>
+    <result property="groupKey" column="group_key"/>
+    <result property="orderNum" column="order_num"/>
+    <result property="createBy" column="create_by"/>
+    <result property="createTime" column="create_time"/>
+    <result property="updateBy" column="update_by"/>
+    <result property="updateTime" column="update_time"/>
+    <result property="remark" column="remark"/>
+    <result property="deleteBy" column="delete_by"/>
+    <result property="deleteTime" column="delete_time"/>
+  </resultMap>
+
+  <insert id="insertSbWorkGroup" parameterType="com.spd.system.domain.SbWorkGroup">
+    insert into sb_work_group (group_id, customer_id, group_name, group_key, order_num, create_by, create_time, remark)
+    values (#{groupId}, #{customerId}, #{groupName}, #{groupKey}, #{orderNum,jdbcType=INTEGER}, #{createBy}, sysdate(), #{remark})
+  </insert>
+
+  <select id="selectListByCustomerId" resultMap="SbWorkGroupResult">
+    select group_id, customer_id, group_name, group_key, order_num, create_by, create_time, update_by, update_time, remark, delete_by, delete_time
+    from sb_work_group where customer_id = #{customerId} and delete_time is null order by order_num, create_time
+  </select>
+
+  <select id="selectByGroupId" resultMap="SbWorkGroupResult">
+    select group_id, customer_id, group_name, group_key, order_num, create_by, create_time, update_by, update_time, remark, delete_by, delete_time
+    from sb_work_group where group_id = #{groupId} and delete_time is null
+  </select>
+
+  <update id="updateSbWorkGroup" parameterType="com.spd.system.domain.SbWorkGroup">
+    update sb_work_group
+    <set>
+      <if test="groupName != null and groupName != ''">group_name = #{groupName},</if>
+      <if test="groupKey != null and groupKey != ''">group_key = #{groupKey},</if>
+      <if test="orderNum != null">order_num = #{orderNum},</if>
+      <if test="remark != null">remark = #{remark},</if>
+      <if test="updateBy != null">update_by = #{updateBy},</if>
+      update_time = sysdate()
+    </set>
+    where group_id = #{groupId}
+  </update>
+
+  <update id="deleteByGroupId">
+    update sb_work_group set delete_by = #{deleteBy}, delete_time = sysdate() where group_id = #{groupId}
+  </update>
+
+</mapper>

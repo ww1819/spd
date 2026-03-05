@@ -23,7 +23,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_role WHERE role_id = '01900000-0000-7000-8000
 
 -- 设备前端菜单：根目录「设备管理」
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001388',
@@ -39,6 +39,7 @@ SELECT
   '0',
   NULL,
   'equipment',
+  '0',
   'admin',
   NOW(),
   '设备管理根菜单'
@@ -48,7 +49,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备前端菜单：根目录「基础资料」
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013ec',
@@ -64,6 +65,7 @@ SELECT
   '0',
   NULL,
   'component',
+  '0',
   'admin',
   NOW(),
   '设备前端基础资料根菜单'
@@ -73,7 +75,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备管理子菜单：设备信息
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001389',
@@ -89,6 +91,7 @@ SELECT
   '0',
   'equipment:equipmentInfo:list',
   'list',
+  '0',
   'admin',
   NOW(),
   '设备信息维护'
@@ -98,7 +101,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备管理子菜单：设备巡检
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000138a',
@@ -114,6 +117,7 @@ SELECT
   '0',
   'equipment:equipmentInspect:list',
   'eye',
+  '0',
   'admin',
   NOW(),
   '设备巡检管理'
@@ -123,7 +127,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备管理子菜单：设备维修
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000138b',
@@ -139,6 +143,7 @@ SELECT
   '0',
   'equipment:equipmentRepair:list',
   'tool',
+  '0',
   'admin',
   NOW(),
   '设备维修管理'
@@ -148,7 +153,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备管理子菜单：设备保养
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000138c',
@@ -164,6 +169,7 @@ SELECT
   '0',
   'equipment:equipmentMaintain:list',
   'maintain',
+  '0',
   'admin',
   NOW(),
   '设备保养管理'
@@ -173,7 +179,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备管理子菜单：设备入库
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000138d',
@@ -189,6 +195,7 @@ SELECT
   '0',
   'equipment:equipmentStorage:list',
   'storage',
+  '0',
   'admin',
   NOW(),
   '设备入库管理'
@@ -198,7 +205,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备管理子菜单：设备出库（领用/归还等可以再细分，这里只保留主要菜单）
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000138e',
@@ -214,6 +221,7 @@ SELECT
   '0',
   'equipment:equipmentReturn:list',
   'return',
+  '0',
   'admin',
   NOW(),
   '设备归还管理'
@@ -223,7 +231,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 基础资料子菜单：设备字典维护
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013ed',
@@ -239,6 +247,7 @@ SELECT
   '0',
   'foundation:equipmentDict:list',
   'dict',
+  '0',
   'admin',
   NOW(),
   '设备字典维护'
@@ -248,7 +257,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 设备字典维护 按钮：新增/修改/删除/导出/导入
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c743',
@@ -264,6 +273,7 @@ SELECT
   '0',
   'foundation:equipmentDict:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '设备字典新增按钮'
@@ -272,7 +282,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c744',
@@ -288,6 +298,7 @@ SELECT
   '0',
   'foundation:equipmentDict:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '设备字典修改按钮'
@@ -296,7 +307,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c745',
@@ -312,6 +323,7 @@ SELECT
   '0',
   'foundation:equipmentDict:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '设备字典删除按钮'
@@ -320,7 +332,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c746',
@@ -336,6 +348,7 @@ SELECT
   '0',
   'foundation:equipmentDict:export',
   '#',
+  '0',
   'admin',
   NOW(),
   '设备字典导出按钮'
@@ -344,7 +357,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c747',
@@ -360,6 +373,7 @@ SELECT
   '0',
   'foundation:equipmentDict:import',
   '#',
+  '0',
   'admin',
   NOW(),
   '设备字典导入按钮'
@@ -369,7 +383,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 基础资料子菜单：检验平台设置
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013ee',
@@ -385,6 +399,7 @@ SELECT
   '0',
   'foundation:testplat:list',
   'component',
+  '0',
   'admin',
   NOW(),
   '检验平台设置'
@@ -394,7 +409,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 基础资料子菜单：厂家维护
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013ef',
@@ -410,6 +425,7 @@ SELECT
   '0',
   'foundation:factory:list',
   'factory',
+  '0',
   'admin',
   NOW(),
   '厂家维护'
@@ -419,7 +435,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 厂家维护 按钮：新增/修改/删除/导出
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c757',
@@ -435,6 +451,7 @@ SELECT
   '0',
   'foundation:factory:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '厂家新增按钮'
@@ -443,7 +460,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c758',
@@ -459,6 +476,7 @@ SELECT
   '0',
   'foundation:factory:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '厂家修改按钮'
@@ -467,7 +485,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c759',
@@ -483,6 +501,7 @@ SELECT
   '0',
   'foundation:factory:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '厂家删除按钮'
@@ -491,7 +510,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c75a',
@@ -507,6 +526,7 @@ SELECT
   '0',
   'foundation:factory:export',
   '#',
+  '0',
   'admin',
   NOW(),
   '厂家导出按钮'
@@ -516,7 +536,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 基础资料子菜单：仓库维护
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013f0',
@@ -532,6 +552,7 @@ SELECT
   '0',
   'foundation:warehouse:list',
   'warehouse',
+  '0',
   'admin',
   NOW(),
   '仓库维护'
@@ -541,7 +562,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 仓库维护 按钮：新增/修改/删除/导出
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c761',
@@ -557,6 +578,7 @@ SELECT
   '0',
   'foundation:warehouse:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '仓库新增按钮'
@@ -565,7 +587,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c762',
@@ -581,6 +603,7 @@ SELECT
   '0',
   'foundation:warehouse:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '仓库修改按钮'
@@ -589,7 +612,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c763',
@@ -605,6 +628,7 @@ SELECT
   '0',
   'foundation:warehouse:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '仓库删除按钮'
@@ -613,7 +637,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c764',
@@ -629,6 +653,7 @@ SELECT
   '0',
   'foundation:warehouse:export',
   '#',
+  '0',
   'admin',
   NOW(),
   '仓库导出按钮'
@@ -638,7 +663,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 基础资料子菜单：科室维护
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013f1',
@@ -654,6 +679,7 @@ SELECT
   '0',
   'foundation:depart:list',
   'tree',
+  '0',
   'admin',
   NOW(),
   '科室维护'
@@ -663,7 +689,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 科室维护 按钮：新增/修改/删除/导出
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c76b',
@@ -679,6 +705,7 @@ SELECT
   '0',
   'foundation:depart:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '科室新增按钮'
@@ -687,7 +714,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c76c',
@@ -703,6 +730,7 @@ SELECT
   '0',
   'foundation:depart:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '科室修改按钮'
@@ -711,7 +739,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c76d',
@@ -727,6 +755,7 @@ SELECT
   '0',
   'foundation:depart:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '科室删除按钮'
@@ -735,7 +764,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c76e',
@@ -751,6 +780,7 @@ SELECT
   '0',
   'foundation:depart:export',
   '#',
+  '0',
   'admin',
   NOW(),
   '科室导出按钮'
@@ -760,7 +790,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 基础资料子菜单：供应商维护
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000013f2',
@@ -776,6 +806,7 @@ SELECT
   '0',
   'foundation:supplier:list',
   'peoples',
+  '0',
   'admin',
   NOW(),
   '供应商维护'
@@ -785,7 +816,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 供应商维护 按钮：新增/修改/删除/导出
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c775',
@@ -801,6 +832,7 @@ SELECT
   '0',
   'foundation:supplier:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '供应商新增按钮'
@@ -809,7 +841,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c776',
@@ -825,6 +857,7 @@ SELECT
   '0',
   'foundation:supplier:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '供应商修改按钮'
@@ -833,7 +866,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c777',
@@ -849,6 +882,7 @@ SELECT
   '0',
   'foundation:supplier:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '供应商删除按钮'
@@ -857,7 +891,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000c778',
@@ -873,6 +907,7 @@ SELECT
   '0',
   'foundation:supplier:export',
   '#',
+  '0',
   'admin',
   NOW(),
   '供应商导出按钮'
@@ -893,7 +928,7 @@ WHERE m.menu_id >= '01900000-0000-7000-8000-000000001388' AND m.menu_id <= '0190
 
 -- 系统设置根目录
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001450',
@@ -909,6 +944,7 @@ SELECT
   '0',
   NULL,
   'system',
+  '0',
   'admin',
   NOW(),
   '系统管理根菜单'
@@ -918,7 +954,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：用户管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001451',
@@ -934,6 +970,7 @@ SELECT
   '0',
   'system:user:list',
   'user',
+  '0',
   'admin',
   NOW(),
   '用户管理'
@@ -943,7 +980,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：角色管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001452',
@@ -959,6 +996,7 @@ SELECT
   '0',
   'system:role:list',
   'peoples',
+  '0',
   'admin',
   NOW(),
   '角色管理'
@@ -968,7 +1006,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置-角色管理 按钮：新增/修改/删除/导出
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb35',
@@ -984,6 +1022,7 @@ SELECT
   '0',
   'system:role:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '角色新增按钮'
@@ -992,7 +1031,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb36',
@@ -1008,6 +1047,7 @@ SELECT
   '0',
   'system:role:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '角色修改按钮'
@@ -1016,7 +1056,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb37',
@@ -1032,6 +1072,7 @@ SELECT
   '0',
   'system:role:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '角色删除按钮'
@@ -1040,7 +1081,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb38',
@@ -1056,6 +1097,7 @@ SELECT
   '0',
   'system:role:export',
   '#',
+  '0',
   'admin',
   NOW(),
   '角色导出按钮'
@@ -1065,7 +1107,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：菜单管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001453',
@@ -1081,6 +1123,7 @@ SELECT
   '0',
   'system:menu:list',
   'tree-table',
+  '0',
   'admin',
   NOW(),
   '菜单管理'
@@ -1090,7 +1133,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置-菜单管理 按钮：新增/修改/删除
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb3f',
@@ -1106,6 +1149,7 @@ SELECT
   '0',
   'system:menu:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '菜单新增按钮'
@@ -1114,7 +1158,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb40',
@@ -1130,6 +1174,7 @@ SELECT
   '0',
   'system:menu:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '菜单修改按钮'
@@ -1138,7 +1183,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb41',
@@ -1154,6 +1199,7 @@ SELECT
   '0',
   'system:menu:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '菜单删除按钮'
@@ -1163,7 +1209,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：部门管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001454',
@@ -1179,6 +1225,7 @@ SELECT
   '0',
   'system:dept:list',
   'tree',
+  '0',
   'admin',
   NOW(),
   '部门管理'
@@ -1188,7 +1235,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：岗位管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001455',
@@ -1204,6 +1251,7 @@ SELECT
   '0',
   'system:post:list',
   'post',
+  '0',
   'admin',
   NOW(),
   '岗位管理'
@@ -1213,7 +1261,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：客户管理（SaaS租户）
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001456',
@@ -1229,6 +1277,7 @@ SELECT
   '0',
   'sb:system:customer:list',
   'peoples',
+  '0',
   'admin',
   NOW(),
   '设备系统客户（租户）管理'
@@ -1236,9 +1285,111 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001456');
 /
 
+-- 系统设置子菜单：客户菜单功能管理（对客户已具备功能做启用/停用，仅平台可见）
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+)
+SELECT
+  '01900000-0000-7000-8000-000000001457',
+  '客户菜单功能管理',
+  '01900000-0000-7000-8000-000000001450',
+  7,
+  'customerMenuManage',
+  'system/customerMenuManage/index',
+  '1',
+  '0',
+  'C',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:list',
+  'switch',
+  '0',
+  'admin',
+  NOW(),
+  '客户名下已具备功能的启用停用，租户不可见'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001457');
+/
+
+-- 系统设置-客户菜单功能管理 按钮
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb5e',
+  '功能管理列表',
+  '01900000-0000-7000-8000-000000001457',
+  1,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:list',
+  '#',
+  '0',
+  'admin',
+  NOW(),
+  '客户菜单功能管理列表'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb5e');
+/
+
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb5f',
+  '功能管理查询',
+  '01900000-0000-7000-8000-000000001457',
+  2,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:query',
+  '#',
+  '0',
+  'admin',
+  NOW(),
+  '启停用记录与时间段查询'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb5f');
+/
+
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb60',
+  '功能管理启停用',
+  '01900000-0000-7000-8000-000000001457',
+  3,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:edit',
+  '#',
+  '0',
+  'admin',
+  NOW(),
+  '客户菜单功能启用停用'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb60');
+/
+
 -- 系统设置-客户管理 按钮：查询/新增/修改/删除
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb5a',
@@ -1254,6 +1405,7 @@ SELECT
   '0',
   'sb:system:customer:query',
   '#',
+  '0',
   'admin',
   NOW(),
   '客户查询按钮'
@@ -1262,7 +1414,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb5b',
@@ -1278,6 +1430,7 @@ SELECT
   '0',
   'sb:system:customer:add',
   '#',
+  '0',
   'admin',
   NOW(),
   '客户新增按钮'
@@ -1286,7 +1439,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb5c',
@@ -1302,6 +1455,7 @@ SELECT
   '0',
   'sb:system:customer:edit',
   '#',
+  '0',
   'admin',
   NOW(),
   '客户修改及菜单权限按钮'
@@ -1310,7 +1464,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 /
 
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000cb5d',
@@ -1326,6 +1480,7 @@ SELECT
   '0',
   'sb:system:customer:remove',
   '#',
+  '0',
   'admin',
   NOW(),
   '客户删除按钮'
@@ -1335,7 +1490,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：字典管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001456',
@@ -1351,6 +1506,7 @@ SELECT
   '0',
   'system:dict:list',
   'dict',
+  '0',
   'admin',
   NOW(),
   '字典管理'
@@ -1360,7 +1516,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：参数设置
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001457',
@@ -1376,6 +1532,7 @@ SELECT
   '0',
   'system:config:list',
   'edit',
+  '0',
   'admin',
   NOW(),
   '参数设置'
@@ -1385,7 +1542,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：通知公告
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001458',
@@ -1401,6 +1558,7 @@ SELECT
   '0',
   'system:notice:list',
   'message',
+  '0',
   'admin',
   NOW(),
   '通知公告'
@@ -1410,7 +1568,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：部门角色管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001459',
@@ -1426,6 +1584,7 @@ SELECT
   '0',
   NULL,
   'tree',
+  '0',
   'admin',
   NOW(),
   '部门角色管理'
@@ -1435,7 +1594,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统设置子菜单：库房角色管理
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000145a',
@@ -1451,6 +1610,7 @@ SELECT
   '0',
   NULL,
   'warehouse',
+  '0',
   'admin',
   NOW(),
   '库房角色管理'
@@ -1460,7 +1620,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控根目录
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014b4',
@@ -1476,6 +1636,7 @@ SELECT
   '0',
   NULL,
   'monitor',
+  '0',
   'admin',
   NOW(),
   '系统监控根菜单'
@@ -1485,7 +1646,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：在线用户
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014b5',
@@ -1501,6 +1662,7 @@ SELECT
   '0',
   'monitor:online:list',
   'online',
+  '0',
   'admin',
   NOW(),
   '在线用户'
@@ -1510,7 +1672,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：定时任务
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014b6',
@@ -1526,6 +1688,7 @@ SELECT
   '0',
   'monitor:job:list',
   'job',
+  '0',
   'admin',
   NOW(),
   '定时任务'
@@ -1535,7 +1698,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：调度日志入口（列表页）
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014b7',
@@ -1551,6 +1714,7 @@ SELECT
   '0',
   'monitor:job:list',
   'log',
+  '0',
   'admin',
   NOW(),
   '调度日志'
@@ -1560,7 +1724,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：操作日志
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014b8',
@@ -1576,6 +1740,7 @@ SELECT
   '0',
   'monitor:operlog:list',
   'form',
+  '0',
   'admin',
   NOW(),
   '操作日志'
@@ -1585,7 +1750,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：登录日志
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014b9',
@@ -1601,6 +1766,7 @@ SELECT
   '0',
   'monitor:logininfor:list',
   'logininfor',
+  '0',
   'admin',
   NOW(),
   '登录日志'
@@ -1610,7 +1776,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：服务监控
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014ba',
@@ -1626,6 +1792,7 @@ SELECT
   '0',
   'monitor:server:list',
   'server',
+  '0',
   'admin',
   NOW(),
   '服务监控'
@@ -1635,7 +1802,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：缓存监控
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014bb',
@@ -1651,6 +1818,7 @@ SELECT
   '0',
   'monitor:cache:list',
   'redis',
+  '0',
   'admin',
   NOW(),
   '缓存监控'
@@ -1660,7 +1828,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：缓存列表
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014bc',
@@ -1676,6 +1844,7 @@ SELECT
   '0',
   'monitor:cache:list',
   'list',
+  '0',
   'admin',
   NOW(),
   '缓存列表'
@@ -1685,7 +1854,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统监控子菜单：数据监控（druid）
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-0000000014bd',
@@ -1701,6 +1870,7 @@ SELECT
   '0',
   NULL,
   'druid',
+  '0',
   'admin',
   NOW(),
   '数据监控'
@@ -1710,7 +1880,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统工具根目录
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001518',
@@ -1726,6 +1896,7 @@ SELECT
   '0',
   NULL,
   'tool',
+  '0',
   'admin',
   NOW(),
   '系统工具根菜单'
@@ -1735,7 +1906,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统工具子菜单：代码生成
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-000000001519',
@@ -1751,6 +1922,7 @@ SELECT
   '0',
   'tool:gen:list',
   'code',
+  '0',
   'admin',
   NOW(),
   '代码生成'
@@ -1760,7 +1932,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统工具子菜单：表单构建
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000151a',
@@ -1776,6 +1948,7 @@ SELECT
   '0',
   NULL,
   'build',
+  '0',
   'admin',
   NOW(),
   '表单构建'
@@ -1785,7 +1958,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000
 
 -- 系统工具子菜单：系统接口（Swagger）
 INSERT INTO sb_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
 )
 SELECT
   '01900000-0000-7000-8000-00000000151b',
@@ -1801,6 +1974,7 @@ SELECT
   '0',
   NULL,
   'swagger',
+  '0',
   'admin',
   NOW(),
   '系统接口'
@@ -1824,4 +1998,107 @@ INSERT INTO sb_user_role (user_id, role_id)
 SELECT 1, '01900000-0000-7000-8000-000000000001'
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sb_user_role WHERE user_id = 1 AND role_id = '01900000-0000-7000-8000-000000000001');
+/
+
+-- 1. 客户菜单功能管理（菜单）
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+) VALUES (
+  '01900000-0000-7000-8000-000000001457',
+  '客户菜单功能管理',
+  '01900000-0000-7000-8000-000000001450',
+  7,
+  'customerMenuManage',
+  'system/customerMenuManage/index',
+  '1',
+  '0',
+  'C',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:list',
+  'switch',
+  '0',
+  'admin',
+  NOW(),
+  '客户名下已具备功能的启用停用，租户不可见'
+) ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), path = VALUES(path), component = VALUES(component), remark = VALUES(remark);
+/
+
+-- 2. 按钮：功能管理列表
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+) VALUES (
+  '01900000-0000-7000-8000-00000000cb5e',
+  '功能管理列表',
+  '01900000-0000-7000-8000-000000001457',
+  1,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:list',
+  '#',
+  '0',
+  'admin',
+  NOW(),
+  '客户菜单功能管理列表'
+) ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), remark = VALUES(remark);
+/
+-- 3. 按钮：功能管理查询
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+) VALUES (
+  '01900000-0000-7000-8000-00000000cb5f',
+  '功能管理查询',
+  '01900000-0000-7000-8000-000000001457',
+  2,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:query',
+  '#',
+  '0',
+  'admin',
+  NOW(),
+  '启停用记录与时间段查询'
+) ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), remark = VALUES(remark);
+/
+-- 4. 按钮：功能管理启停用
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, create_by, create_time, remark
+) VALUES (
+  '01900000-0000-7000-8000-00000000cb60',
+  '功能管理启停用',
+  '01900000-0000-7000-8000-000000001457',
+  3,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customerMenuManage:edit',
+  '#',
+  '0',
+  'admin',
+  NOW(),
+  '客户菜单功能启用停用'
+) ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), remark = VALUES(remark);
+/
+
+-- 将客户管理、客户菜单功能管理及其按钮设为仅平台管理（客户分配/工作组/用户权限中不展示）
+UPDATE sb_menu SET is_platform_only = '1' WHERE menu_id IN (
+  '01900000-0000-7000-8000-000000001456',
+  '01900000-0000-7000-8000-00000000cb5a','01900000-0000-7000-8000-00000000cb5b','01900000-0000-7000-8000-00000000cb5c','01900000-0000-7000-8000-00000000cb5d',
+  '01900000-0000-7000-8000-000000001457',
+  '01900000-0000-7000-8000-00000000cb5e','01900000-0000-7000-8000-00000000cb5f','01900000-0000-7000-8000-00000000cb60'
+);
 /

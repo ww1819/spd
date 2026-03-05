@@ -26,6 +26,11 @@ public interface ISbCustomerService {
 
   int deleteSbCustomerById(String customerId);
 
+  /**
+   * 客户启停用（必须填写原因，会写入启停用记录与时间段）
+   */
+  int changeStatus(String customerId, String status, String statusChangeReason);
+
   List<SbCustomerStatusLog> selectStatusLogList(String customerId);
 
   List<SbCustomerPeriodLog> selectPeriodLogList(String customerId);

@@ -20,6 +20,8 @@
     <result property="status"    column="status"/>
     <result property="perms"     column="perms"/>
     <result property="icon"      column="icon"/>
+    <result property="isPlatformOnly" column="is_platform_only"/>
+    <result property="customerMenuStatus" column="customer_menu_status"/>
     <result property="createBy"  column="create_by"/>
     <result property="createTime" column="create_time"/>
     <result property="updateTime" column="update_time"/>
@@ -70,6 +72,36 @@
     order by parent_id, order_num
   </select>
 
+  <select id="selectSbMenuTreeByCustomerIdEnabling" resultMap="SbMenuResult">
+    select distinct m.menu_id,
+           m.parent_id,
+           m.menu_name,
+           m.path,
+           m.component,
+           null as `query`,
+           m.visible,
+           m.status,
+           ifnull(m.perms, '') as perms,
+           m.is_frame,
+           m.is_cache,
+           m.menu_type,
+           m.icon,
+           m.order_num,
+           ifnull(m.is_platform_only,'0') as is_platform_only,
+           null as customer_menu_status,
+           m.create_time,
+           m.update_time,
+           m.create_by,
+           m.update_by,
+           m.remark,
+           m.delete_by,
+           m.delete_time
+    from sb_menu m
+    inner join sb_customer_menu cm on cm.menu_id = m.menu_id and cm.customer_id = #{customerId} and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1'
+    where m.menu_type in ('M', 'C') and m.status = '0' and ifnull(m.is_platform_only,'0') = '0'
+    order by m.parent_id, m.order_num
+  </select>
+
   <select id="selectSbMenuTreeAll" resultMap="SbMenuResult">
     select distinct m.menu_id,
            m.parent_id,
@@ -85,6 +117,8 @@
            m.menu_type,
            m.icon,
            m.order_num,
+           ifnull(m.is_platform_only,'0') as is_platform_only,
+           null as customer_menu_status,
            m.create_time,
            m.update_time,
            m.create_by,
@@ -113,6 +147,10 @@
            m.menu_type,
            m.icon,
            m.order_num,
+           ifnull(m.is_platform_only,'0') as is_platform_only,
+           (select ifnull(cm2.status,'0') from sys_user u2
+            inner join sb_customer_menu cm2 on cm2.customer_id = u2.customer_id and cm2.menu_id = m.menu_id and cm2.delete_time is null and ifnull(cm2.is_enabled,'1') = '1'
+            where u2.user_id = #{userId} and u2.customer_id is not null limit 1) as customer_menu_status,
            m.create_time,
            m.update_time,
            m.create_by,
@@ -123,20 +161,12 @@
     from sb_menu m
     where m.menu_type in ('M', 'C')
       and m.status = '0'
-      and exists (
-        select 1
-        from sb_role_menu rm
-        inner join sb_user_role ur on rm.role_id = ur.role_id
-        inner join sb_role r on ur.role_id = r.role_id
-        where rm.menu_id = m.menu_id
-          and ur.user_id = #{userId}
-          and r.status = '0'
-      )
+      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
       and (
         exists (select 1 from sys_user u where u.user_id = #{userId} and u.customer_id is null)
         or exists (
           select 1 from sys_user u
-          inner join sb_customer_menu cm on cm.customer_id = u.customer_id and cm.menu_id = m.menu_id and (cm.delete_time is null)
+          inner join sb_customer_menu cm on cm.customer_id = u.customer_id and cm.menu_id = m.menu_id and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1'
           where u.user_id = #{userId}
         )
       )
@@ -216,15 +246,36 @@
     select distinct m.perms
     from sb_menu m
     where m.status = '0' and m.perms is not null and m.perms != ''
-      and exists (
-        select 1
-        from sb_role_menu rm
-          inner join sb_user_role ur on rm.role_id = ur.role_id
-          inner join sb_role r on ur.role_id = r.role_id
-        where rm.menu_id = m.menu_id
-          and ur.user_id = #{userId}
-          and r.status = '0'
+      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+  </select>
+
+  <select id="selectSbMenuPermsByUserIdAndCustomer" resultType="String">
+    select distinct m.perms
+    from sb_menu m
+    where m.status = '0' and m.perms is not null and m.perms != ''
+      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+      and (
+        (#{customerId} is null or #{customerId} = '')
+        or exists (
+          select 1 from sb_customer_menu cm
+          where cm.menu_id = m.menu_id and cm.customer_id = #{customerId}
+            and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1' and ifnull(cm.status,'0') = '0'
+        )
       )
+  </select>
+
+  <!-- 系统设置目录下且非平台管理的菜单ID（新租户/super组默认：用户管理、工作组等，不含平台管理功能） -->
+  <select id="selectMenuIdsSystemSettingsNonPlatform" resultType="string">
+    WITH RECURSIVE tree AS (
+      SELECT menu_id FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001450'
+      UNION ALL
+      SELECT m.menu_id FROM sb_menu m INNER JOIN tree t ON m.parent_id = t.menu_id
+    )
+    SELECT t.menu_id FROM tree t
+    INNER JOIN sb_menu m ON m.menu_id = t.menu_id
+    WHERE (m.is_platform_only = '0' OR m.is_platform_only IS NULL)
+      AND m.status = '0'
+      AND (m.delete_time IS NULL)
   </select>
 </mapper>
 

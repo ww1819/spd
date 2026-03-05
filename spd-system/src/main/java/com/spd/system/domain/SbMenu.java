@@ -66,6 +66,9 @@ public class SbMenu extends BaseEntity {
   /** 菜单图标 */
   private String icon;
 
+  /** 是否仅平台管理功能（1是，客户分配/工作组/用户权限中不展示） */
+  private String isPlatformOnly;
+
   /** 删除者 */
   private String deleteBy;
 
@@ -73,8 +76,27 @@ public class SbMenu extends BaseEntity {
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date deleteTime;
 
+  /** 客户菜单暂停状态（仅租户菜单树返回：0正常 1暂停） */
+  private String customerMenuStatus;
+
   /** 子菜单 */
   private List<SbMenu> children = new ArrayList<>();
+
+  public String getIsPlatformOnly() {
+    return isPlatformOnly;
+  }
+
+  public void setIsPlatformOnly(String isPlatformOnly) {
+    this.isPlatformOnly = isPlatformOnly;
+  }
+
+  public String getCustomerMenuStatus() {
+    return customerMenuStatus;
+  }
+
+  public void setCustomerMenuStatus(String customerMenuStatus) {
+    this.customerMenuStatus = customerMenuStatus;
+  }
 
   public String getMenuId() {
     return menuId;

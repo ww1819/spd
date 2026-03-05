@@ -59,6 +59,17 @@ public class SbMenuController extends BaseController {
     }
 
   /**
+   * 客户菜单权限分配用菜单树（仅平台用户可调，且树中不包含客户管理，租户不可被分配客户管理）
+   */
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('sb:system:customer:query')")
+    @GetMapping("/treeselectForCustomerAssign")
+    public AjaxResult treeselectForCustomerAssign()
+    {
+        List<SbMenu> sbMenus = sbMenuService.selectSbMenuTreeForCustomerAssign();
+        return success(sbMenus);
+    }
+
+  /**
    * 新增设备菜单
    */
     @PreAuthorize("@ss.hasPermi('sb:system:menu:add')")

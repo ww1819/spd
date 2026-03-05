@@ -5,6 +5,8 @@
   <resultMap type="com.spd.system.domain.SbCustomerMenu" id="SbCustomerMenuResult">
     <result property="customerId" column="customer_id"/>
     <result property="menuId"     column="menu_id"/>
+    <result property="status"     column="status"/>
+    <result property="isEnabled"  column="is_enabled"/>
     <result property="createBy"   column="create_by"/>
     <result property="createTime" column="create_time"/>
     <result property="deleteBy"   column="delete_by"/>
@@ -12,26 +14,47 @@
   </resultMap>
 
   <select id="selectSbCustomerMenuListByCustomerId" parameterType="String" resultMap="SbCustomerMenuResult">
-    select customer_id, menu_id, create_by, create_time, delete_by, delete_time
+    select customer_id, menu_id, ifnull(status,'0') as status, ifnull(is_enabled,'1') as is_enabled, create_by, create_time, delete_by, delete_time
     from sb_customer_menu
     where customer_id = #{customerId} and delete_time is null
   </select>
 
   <select id="selectMenuIdsByCustomerId" parameterType="String" resultType="String">
-    select menu_id from sb_customer_menu where customer_id = #{customerId} and delete_time is null
+    select menu_id from sb_customer_menu where customer_id = #{customerId} and delete_time is null and ifnull(is_enabled,'1') = '1'
+  </select>
+
+  <select id="selectListWithMenuNameByCustomerId" resultType="com.spd.system.domain.vo.SbCustomerMenuManageVo">
+    select cm.customer_id as customerId, cm.menu_id as menuId, m.menu_name as menuName, ifnull(cm.status,'0') as status
+    from sb_customer_menu cm
+    inner join sb_menu m on m.menu_id = cm.menu_id and m.menu_type in ('M','C')
+    where cm.customer_id = #{customerId} and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1'
+    order by m.parent_id, m.order_num
   </select>
 
   <delete id="deleteSbCustomerMenuByCustomerId" parameterType="String">
     delete from sb_customer_menu where customer_id = #{customerId}
   </delete>
 
+  <update id="updateIsEnabled">
+    update sb_customer_menu set is_enabled = #{isEnabled} where customer_id = #{customerId} and menu_id = #{menuId} and delete_time is null
+  </update>
+
+  <insert id="insertSbCustomerMenu" parameterType="com.spd.system.domain.SbCustomerMenu">
+    insert into sb_customer_menu (customer_id, menu_id, status, is_enabled, create_by, create_time)
+    values (#{customerId}, #{menuId}, ifnull(#{status},'0'), ifnull(#{isEnabled},'1'), #{createBy}, sysdate())
+  </insert>
+
   <insert id="batchSbCustomerMenu">
-    insert into sb_customer_menu (customer_id, menu_id, create_by, create_time)
+    insert into sb_customer_menu (customer_id, menu_id, status, is_enabled, create_by, create_time)
     values
     <foreach item="item" collection="list" separator=",">
-      (#{item.customerId}, #{item.menuId}, #{item.createBy}, sysdate())
+      (#{item.customerId}, #{item.menuId}, ifnull(#{item.status},'0'), ifnull(#{item.isEnabled},'1'), #{item.createBy}, sysdate())
     </foreach>
   </insert>
+
+  <update id="updateStatus">
+    update sb_customer_menu set status = #{status} where customer_id = #{customerId} and menu_id = #{menuId} and delete_time is null
+  </update>
 
   <select id="countByCustomerIdAndMenuId" resultType="int">
     select count(1) from sb_customer_menu

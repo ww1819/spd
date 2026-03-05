@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SbUserPermissionDeptMapper">
+
+  <select id="selectDeptIdsByUserId" resultType="long">
+    select dept_id from sb_user_permission_dept where user_id = #{userId} and delete_time is null
+    <if test="customerId != null and customerId != ''">and customer_id = #{customerId}</if>
+  </select>
+
+  <update id="deleteByUserId">
+    update sb_user_permission_dept set delete_by = #{deleteBy}, delete_time = sysdate() where user_id = #{userId}
+  </update>
+
+  <insert id="insert" parameterType="com.spd.system.domain.SbUserPermissionDept">
+    insert into sb_user_permission_dept (id, user_id, customer_id, dept_id, create_by, create_time)
+    values (#{id}, #{userId}, #{customerId}, #{deptId}, #{createBy}, sysdate())
+  </insert>
+
+  <insert id="batchInsert">
+    insert into sb_user_permission_dept (id, user_id, customer_id, dept_id, create_by, create_time)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.id}, #{item.userId}, #{item.customerId}, #{item.deptId}, #{item.createBy}, sysdate())
+    </foreach>
+    on duplicate key update delete_by = null, delete_time = null
+  </insert>
+
+</mapper>

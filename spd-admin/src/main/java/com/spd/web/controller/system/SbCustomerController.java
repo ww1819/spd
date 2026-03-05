@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.spd.common.annotation.Log;
@@ -27,10 +28,12 @@ import com.spd.system.service.ISbCustomerService;
 
 /**
  * 设备系统客户（SaaS租户）管理
+ * 仅对无客户ID的平台用户开放，租户用户不可访问且不显示该菜单。
  * 路由前缀：/equipment/system/customer
  */
 @RestController
 @RequestMapping("/equipment/system/customer")
+@org.springframework.security.access.prepost.PreAuthorize("@ss.isPlatformUser()")
 public class SbCustomerController extends BaseController {
 
   @Autowired
@@ -83,6 +86,24 @@ public class SbCustomerController extends BaseController {
   }
 
   /**
+   * 客户启停用（必须填写原因）
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:edit')")
+  @Log(title = "客户启停用", businessType = BusinessType.UPDATE)
+  @PutMapping("/changeStatus")
+  public AjaxResult changeStatus(@RequestBody SbCustomer customer) {
+    if (customer == null || com.spd.common.utils.StringUtils.isEmpty(customer.getCustomerId())
+        || com.spd.common.utils.StringUtils.isEmpty(customer.getStatus())) {
+      return error("参数不完整");
+    }
+    if (com.spd.common.utils.StringUtils.isEmpty(customer.getStatusChangeReason())) {
+      return error("启停用原因不能为空");
+    }
+    return toAjax(sbCustomerService.changeStatus(
+        customer.getCustomerId(), customer.getStatus(), customer.getStatusChangeReason()));
+  }
+
+  /**
    * 获取客户已分配的设备菜单ID列表
    */
   @PreAuthorize("@ss.hasPermi('sb:system:customer:query')")
@@ -94,12 +115,37 @@ public class SbCustomerController extends BaseController {
 
   /**
    * 保存客户设备菜单权限
+   * 支持两种方式：1）body 传 { menuIds: [] }；2）query 传 menuIds（数组或单字符串逗号分隔）
    */
   @PreAuthorize("@ss.hasPermi('sb:system:customer:edit')")
   @Log(title = "客户菜单权限", businessType = BusinessType.UPDATE)
   @PutMapping("/menu")
-  public AjaxResult saveCustomerMenus(String customerId, String[] menuIds) {
-    return toAjax(sbCustomerMenuService.saveCustomerMenus(customerId, menuIds));
+  public AjaxResult saveCustomerMenus(
+      @RequestParam String customerId,
+      @RequestBody(required = false) java.util.Map<String, Object> body,
+      @RequestParam(required = false) String[] menuIds) {
+    String[] resolved = resolveMenuIds(body, menuIds);
+    return toAjax(sbCustomerMenuService.saveCustomerMenus(customerId, resolved));
+  }
+
+  private String[] resolveMenuIds(java.util.Map<String, Object> body, String[] menuIdsParam) {
+    if (body != null) {
+      Object menuIdsObj = body.get("menuIds");
+      if (menuIdsObj instanceof java.util.List) {
+        java.util.List<?> list = (java.util.List<?>) menuIdsObj;
+        return list.stream().map(String::valueOf).toArray(String[]::new);
+      }
+      if (menuIdsObj != null && menuIdsObj.toString().trim().length() > 0) {
+        return menuIdsObj.toString().split("\\s*,\\s*");
+      }
+    }
+    if (menuIdsParam != null && menuIdsParam.length > 0) {
+      if (menuIdsParam.length == 1 && menuIdsParam[0] != null && menuIdsParam[0].contains(",")) {
+        return menuIdsParam[0].split("\\s*,\\s*");
+      }
+      return menuIdsParam;
+    }
+    return new String[0];
   }
 
   /** 客户启停用记录列表 */

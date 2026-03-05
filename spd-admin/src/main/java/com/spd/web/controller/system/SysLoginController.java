@@ -15,6 +15,7 @@ import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.core.domain.model.LoginBody;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.framework.web.service.SbPermissionService;
 import com.spd.framework.web.service.SysLoginService;
 import com.spd.framework.web.service.SysPermissionService;
@@ -106,11 +107,13 @@ public class SysLoginController
         ajax.put("user", user);
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
+        putTenantIfPresent(ajax, user.getCustomerId());
         return ajax;
     }
 
     /**
      * 获取设备前端用户信息（基于 sb_*）
+     * 含租户信息 tenant（首页可展示租户名称；customerId、customerCode 供前端请求使用，界面可隐藏不展示）
      *
      * @return 用户信息
      */
@@ -126,7 +129,27 @@ public class SysLoginController
         ajax.put("user", user);
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
+        putTenantIfPresent(ajax, user.getCustomerId());
         return ajax;
+    }
+
+    /**
+     * 若为租户用户则放入租户信息（customerName 用于首页展示；customerId、customerCode 供前端请求携带，界面可隐藏）
+     */
+    private void putTenantIfPresent(AjaxResult ajax, String customerId)
+    {
+        if (StringUtils.isEmpty(customerId)) {
+            return;
+        }
+        SbCustomer customer = sbCustomerService.selectSbCustomerById(customerId);
+        if (customer == null) {
+            return;
+        }
+        java.util.Map<String, Object> tenant = new java.util.HashMap<>();
+        tenant.put("customerName", customer.getCustomerName());
+        tenant.put("customerId", customer.getCustomerId());
+        tenant.put("customerCode", customer.getCustomerCode());
+        ajax.put("tenant", tenant);
     }
 
     /**

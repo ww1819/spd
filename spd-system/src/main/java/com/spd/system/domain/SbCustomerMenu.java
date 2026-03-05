@@ -19,6 +19,12 @@ public class SbCustomerMenu {
   /** 菜单ID（UUID7） */
   private String menuId;
 
+  /** 暂停状态（0正常 1暂停，仅客户菜单功能管理操作） */
+  private String status;
+
+  /** 是否开启（0关闭 1开启），客户管理取消功能时改为0 */
+  private String isEnabled;
+
   /** 创建者 */
   private String createBy;
 
@@ -47,6 +53,22 @@ public class SbCustomerMenu {
 
   public void setMenuId(String menuId) {
     this.menuId = menuId;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public String getIsEnabled() {
+    return isEnabled;
+  }
+
+  public void setIsEnabled(String isEnabled) {
+    this.isEnabled = isEnabled;
   }
 
   public String getCreateBy() {

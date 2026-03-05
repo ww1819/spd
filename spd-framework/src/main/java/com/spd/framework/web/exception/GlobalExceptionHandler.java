@@ -16,6 +16,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.exception.DemoModeException;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
 
 /**
  * 全局异常处理器
@@ -29,13 +30,23 @@ public class GlobalExceptionHandler
 
     /**
      * 权限校验异常
+     * 租户访问设备端被拒时提示：该功能已被限制使用
      */
     @ExceptionHandler(AccessDeniedException.class)
     public AjaxResult handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request)
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',权限校验失败'{}'", requestURI, e.getMessage());
-        return AjaxResult.error(HttpStatus.FORBIDDEN, "没有权限，请联系管理员授权");
+        String msg = "没有权限，请联系管理员授权";
+        try {
+            if (requestURI != null && requestURI.contains("/equipment/")) {
+                com.spd.common.core.domain.model.LoginUser user = SecurityUtils.getLoginUser();
+                if (user != null && user.getUser() != null && StringUtils.isNotEmpty(user.getUser().getCustomerId())) {
+                    msg = "该功能被暂停使用";
+                }
+            }
+        } catch (Exception ignored) { }
+        return AjaxResult.error(HttpStatus.FORBIDDEN, msg);
     }
 
     /**

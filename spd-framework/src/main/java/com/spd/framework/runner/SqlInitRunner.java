@@ -191,34 +191,33 @@ public class SqlInitRunner implements ApplicationRunner
      * 使用原始 JDBC 连接执行，绕过 Druid StatFilter 对存储过程等语法的解析，避免 ParserException。
      * 分隔符「/」的另一作用：单条语句报错不影响后续语句，每条之间独立执行，出错只记日志并继续执行下一段。
      */
+    /**
+     * 每条 SQL 使用独立 Statement 执行，避免 CALL 存储过程返回结果集后复用同一 Statement 导致
+     * "No operations allowed after statement closed"；同时消费掉可能的结果集与更新计数。
+     */
     private void executeStatements(List<String> statements, String scriptName, boolean failOnError) throws Exception
     {
         Connection conn = getRawConnection();
         Exception firstError = null;
         try
         {
-            try (Statement st = conn.createStatement())
+            for (String sql : statements)
             {
-                for (String sql : statements)
+                sql = sql.trim();
+                if (sql.isEmpty() || isCommentOrBlankOnly(sql))
                 {
-                    sql = sql.trim();
-                    if (sql.isEmpty() || isCommentOrBlankOnly(sql))
-                    {
-                        continue;
-                    }
-                    try
-                    {
-                        st.execute(sql);
-                    }
-                    catch (Exception e)
-                    {
-                        log.warn("执行单条 SQL 失败 [{}]: {}", scriptName, sql.substring(0, Math.min(80, sql.length())) + "...", e);
-                        if (firstError == null)
-                        {
-                            firstError = e;
-                        }
-                        // 不在此处 throw，保证下一段「/」后的语句继续执行
-                    }
+                    continue;
+                }
+                Exception err = executeOne(conn, sql, scriptName);
+                if (err != null && isConnectionClosedOrTimeout(err))
+                {
+                    try { conn.close(); } catch (Exception ignored) { }
+                    conn = getRawConnection();
+                    err = executeOne(conn, sql, scriptName);
+                }
+                if (err != null && firstError == null)
+                {
+                    firstError = err;
                 }
             }
             if (failOnError && firstError != null)
@@ -230,21 +229,77 @@ public class SqlInitRunner implements ApplicationRunner
         {
             if (conn != null)
             {
-                conn.close();
+                try { conn.close(); } catch (Exception ignored) { }
             }
         }
     }
+
+    /** 执行单条 SQL，成功返回 null，失败记日志并返回异常 */
+    private Exception executeOne(Connection conn, String sql, String scriptName)
+    {
+        try (Statement st = conn.createStatement())
+        {
+            st.execute(sql);
+            consumeAllResults(st);
+            return null;
+        }
+        catch (Exception e)
+        {
+            log.warn("执行单条 SQL 失败 [{}]: {}", scriptName, sql.substring(0, Math.min(80, sql.length())) + "...", e);
+            return e;
+        }
+    }
+
+    private static boolean isConnectionClosedOrTimeout(Exception e)
+    {
+        if (e == null) return false;
+        String msg = e.getMessage();
+        if (msg != null && (msg.contains("connection closed") || msg.contains("Connection closed")
+                || msg.contains("No operations allowed after connection closed")
+                || msg.contains("Communications link failure") || msg.contains("Read timed out")))
+        {
+            return true;
+        }
+        Throwable cause = e.getCause();
+        return cause != null && cause != e && isConnectionClosedOrTimeout(cause instanceof Exception ? (Exception) cause : new Exception(cause));
+    }
+
+    /** 消费 Statement 的所有结果集与更新计数，避免影响后续执行 */
+    private static void consumeAllResults(Statement st) throws java.sql.SQLException
+    {
+        while (true)
+        {
+            if (st.getMoreResults(Statement.CLOSE_CURRENT_RESULT))
+            {
+                continue;
+            }
+            if (st.getUpdateCount() == -1)
+            {
+                break;
+            }
+        }
+    }
+
+    /** SQL 初始化执行时 socket 读超时（毫秒），避免大表/存储过程执行时 Read timed out 导致连接关闭 */
+    private static final int SOCKET_TIMEOUT_MS = 300_000;
 
     private Connection getRawConnection() throws Exception
     {
         if (masterDataSource instanceof DruidDataSource)
         {
             DruidDataSource druid = (DruidDataSource) masterDataSource;
-            return DriverManager.getConnection(
-                    druid.getUrl(),
-                    druid.getUsername(),
-                    druid.getPassword());
+            String url = druid.getUrl();
+            url = appendSocketTimeout(url, SOCKET_TIMEOUT_MS);
+            return DriverManager.getConnection(url, druid.getUsername(), druid.getPassword());
         }
         return masterDataSource.getConnection();
+    }
+
+    private static String appendSocketTimeout(String url, int timeoutMs)
+    {
+        if (url == null) return url;
+        String param = "socketTimeout=" + timeoutMs;
+        if (url.contains("socketTimeout=")) return url;
+        return url + (url.contains("?") ? "&" : "?") + param;
     }
 }

@@ -8,6 +8,8 @@ server:
     tomcat:
         # tomcat的URI编码
         uri-encoding: UTF-8
+        # 允许查询参数中出现方括号[]（如 menuIds[]=xxx），否则会报 Invalid character in request target
+        relaxed-query-chars: ['[', ']']
         # 连接数满后的排队数，默认为100
         accept-count: 1000
         # POST请求最大大小（默认为2MB，设置为20MB以支持文件上传）
@@ -90,15 +92,15 @@ spring:
         druid:
             # 主库数据源
             master:
-                # url: jdbc:mysql://localhost:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                # username: root
-                # password: root
+                url: jdbc:mysql://localhost:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                username: root
+                password: root
                 # url: jdbc:mysql://192.168.3.75:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 # username: root
                 # password: hssy_2018
-                url: jdbc:mysql://rm-bp1tov1b3948fc5inbo.mysql.rds.aliyuncs.com:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                username: spd
-                password: Spd@456ww
+                # url: jdbc:mysql://rm-bp1tov1b3948fc5inbo.mysql.rds.aliyuncs.com:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                # username: spd
+                # password: Spd@456ww
                 driver-class-name: com.mysql.cj.jdbc.Driver
             # 从库数据源
             slave:

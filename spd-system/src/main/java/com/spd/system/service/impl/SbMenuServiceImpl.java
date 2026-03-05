@@ -12,9 +12,13 @@ import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbMenu;
+import com.spd.system.domain.SbRoleMenu;
+import com.spd.system.domain.SbUserPermissionMenu;
 import com.spd.system.domain.vo.MetaVo;
 import com.spd.system.domain.vo.RouterVo;
 import com.spd.system.mapper.SbMenuMapper;
+import com.spd.system.mapper.SbRoleMenuMapper;
+import com.spd.system.mapper.SbUserPermissionMenuMapper;
 import com.spd.system.service.ISbMenuService;
 
 /**
@@ -23,8 +27,17 @@ import com.spd.system.service.ISbMenuService;
 @Service
 public class SbMenuServiceImpl implements ISbMenuService {
 
+  /** 平台设备管理员角色ID（新增菜单时自动赋权） */
+  private static final String PLATFORM_ADMIN_ROLE_ID = "01900000-0000-7000-8000-000000000001";
+  /** 平台 admin 用户ID（假定为 1，新增菜单时自动赋权） */
+  private static final Long PLATFORM_ADMIN_USER_ID = 1L;
+
   @Autowired
   private SbMenuMapper sbMenuMapper;
+  @Autowired
+  private SbRoleMenuMapper sbRoleMenuMapper;
+  @Autowired
+  private SbUserPermissionMenuMapper sbUserPermissionMenuMapper;
 
   @Autowired
   private SysMenuServiceImpl sysMenuService; // 复用构建路由的逻辑
@@ -41,6 +54,27 @@ public class SbMenuServiceImpl implements ISbMenuService {
   }
 
   @Override
+  public List<SbMenu> selectSbMenuTreeForCustomerAssign() {
+    List<SbMenu> all = sbMenuMapper.selectSbMenuTreeAll();
+    if (all == null) return new ArrayList<>();
+    List<SbMenu> filtered = new ArrayList<>();
+    for (SbMenu m : all) {
+      if ("1".equals(m.getIsPlatformOnly())) {
+        continue;
+      }
+      filtered.add(m);
+    }
+    return getChildPerms(filtered, "0");
+  }
+
+  @Override
+  public List<SbMenu> selectSbMenuTreeByCustomerIdEnabling(String customerId) {
+    if (StringUtils.isEmpty(customerId)) return new ArrayList<>();
+    List<SbMenu> list = sbMenuMapper.selectSbMenuTreeByCustomerIdEnabling(customerId);
+    return list == null ? new ArrayList<>() : getChildPerms(list, "0");
+  }
+
+  @Override
   public int insertSbMenu(SbMenu menu) {
     if (StringUtils.isEmpty(menu.getMenuId())) {
       menu.setMenuId(UUID7.generateUUID7());
@@ -48,7 +82,31 @@ public class SbMenuServiceImpl implements ISbMenuService {
     if (menu.getParentId() == null) {
       menu.setParentId("0");
     }
-    return sbMenuMapper.insertSbMenu(menu);
+    int rows = sbMenuMapper.insertSbMenu(menu);
+    if (rows > 0) {
+      grantNewMenuToPlatformAdmin(menu.getMenuId(), menu.getCreateBy());
+    }
+    return rows;
+  }
+
+  /**
+   * 新增菜单后自动赋给平台 admin 角色与 admin 用户（用户权限表作为菜单数据源）
+   */
+  private void grantNewMenuToPlatformAdmin(String menuId, String createBy) {
+    if (StringUtils.isEmpty(menuId)) return;
+    String by = StringUtils.isNotEmpty(createBy) ? createBy : "admin";
+    SbRoleMenu rm = new SbRoleMenu();
+    rm.setRoleId(PLATFORM_ADMIN_ROLE_ID);
+    rm.setMenuId(menuId);
+    rm.setCustomerId(null);
+    sbRoleMenuMapper.batchSbRoleMenu(java.util.Collections.singletonList(rm));
+    SbUserPermissionMenu upm = new SbUserPermissionMenu();
+    upm.setId(UUID7.generateUUID7());
+    upm.setUserId(PLATFORM_ADMIN_USER_ID);
+    upm.setCustomerId("");
+    upm.setMenuId(menuId);
+    upm.setCreateBy(by);
+    sbUserPermissionMenuMapper.batchInsert(java.util.Collections.singletonList(upm));
   }
 
   @Override
@@ -112,7 +170,12 @@ public class SbMenuServiceImpl implements ISbMenuService {
 
   @Override
   public java.util.Set<String> selectSbMenuPermsByUserId(Long userId) {
-    java.util.List<String> perms = sbMenuMapper.selectSbMenuPermsByUserId(userId);
+    return selectSbMenuPermsByUserIdAndCustomer(userId, null);
+  }
+
+  @Override
+  public java.util.Set<String> selectSbMenuPermsByUserIdAndCustomer(Long userId, String customerId) {
+    java.util.List<String> perms = sbMenuMapper.selectSbMenuPermsByUserIdAndCustomer(userId, customerId);
     java.util.Set<String> permsSet = new java.util.HashSet<>();
     for (String perm : perms) {
       if (StringUtils.isNotEmpty(perm)) {

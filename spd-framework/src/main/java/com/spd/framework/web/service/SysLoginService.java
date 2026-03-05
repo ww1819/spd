@@ -68,11 +68,15 @@ public class SysLoginService
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password, customerId);
+        // 设备系统：有客户ID时拼成「id:customerId|username」，供 loadUserByUsername 按客户+用户名唯一定位
+        String effectiveUsername = StringUtils.isNotEmpty(customerId)
+            ? "id:" + customerId.trim() + "|" + username
+            : username;
         // 用户验证
         Authentication authentication = null;
         try
         {
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(effectiveUsername, password);
             AuthenticationContextHolder.setContext(authenticationToken);
             // 该方法会去调用UserDetailsServiceImpl.loadUserByUsername
             authentication = authenticationManager.authenticate(authenticationToken);

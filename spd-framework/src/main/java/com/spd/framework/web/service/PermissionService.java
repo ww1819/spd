@@ -49,6 +49,24 @@ public class PermissionService
     }
 
     /**
+     * 是否为平台用户（无客户ID或超级管理员，可访问客户管理等仅平台功能）
+     */
+    public boolean isPlatformUser()
+    {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null)
+        {
+            return false;
+        }
+        if (loginUser.getUser().isAdmin())
+        {
+            return true;
+        }
+        String customerId = loginUser.getUser().getCustomerId();
+        return customerId == null || customerId.trim().isEmpty();
+    }
+
+    /**
      * 验证用户是否不具备某权限，与 hasPermi逻辑相反
      *
      * @param permission 权限字符串

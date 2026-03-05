@@ -60,5 +60,18 @@ public interface ISbMenuService {
    * 根据用户ID查询设备菜单权限标识集合
    */
   java.util.Set<String> selectSbMenuPermsByUserId(Long userId);
+
+  /** 租户时仅返回该客户已启用菜单的权限 */
+  java.util.Set<String> selectSbMenuPermsByUserIdAndCustomer(Long userId, String customerId);
+
+  /**
+   * 用于「客户菜单权限」分配的菜单树（排除客户管理及其按钮，租户不可被分配客户管理）
+   */
+  List<SbMenu> selectSbMenuTreeForCustomerAssign();
+
+  /**
+   * 某客户已开启的菜单树（用于工作组/用户权限分配）
+   */
+  List<SbMenu> selectSbMenuTreeByCustomerIdEnabling(String customerId);
 }
 
