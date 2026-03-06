@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.filter.CorsFilter;
 import com.spd.framework.config.properties.PermitAllUrlProperties;
 import com.spd.framework.security.filter.JwtAuthenticationTokenFilter;
+import com.spd.framework.security.filter.TenantContextFilter;
 import com.spd.framework.security.handle.AuthenticationEntryPointImpl;
 import com.spd.framework.security.handle.LogoutSuccessHandlerImpl;
 
@@ -51,6 +52,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
      */
     @Autowired
     private JwtAuthenticationTokenFilter authenticationTokenFilter;
+
+    /**
+     * SaaS 租户上下文与请求头校验
+     */
+    @Autowired
+    private TenantContextFilter tenantContextFilter;
     
     /**
      * 跨域过滤器
@@ -123,6 +130,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
         httpSecurity.logout().logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler);
         // 添加JWT filter
         httpSecurity.addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
+        // SaaS 租户上下文（须在 JWT 之后，以便使用 LoginUser）
+        httpSecurity.addFilterAfter(tenantContextFilter, JwtAuthenticationTokenFilter.class);
         // 添加CORS filter
         httpSecurity.addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class);
         httpSecurity.addFilterBefore(corsFilter, LogoutFilter.class);

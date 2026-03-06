@@ -30,6 +30,22 @@ public class SecurityUtils
     }
 
     /**
+     * 获取当前登录用户的租户 ID（SaaS 多租户，平台管理员可为 null）
+     **/
+    public static String getCustomerId()
+    {
+        try
+        {
+            LoginUser loginUser = getLoginUser();
+            return loginUser.getUser() != null ? loginUser.getUser().getCustomerId() : null;
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    /**
      * 获取部门ID
      **/
     public static Long getDeptId()
