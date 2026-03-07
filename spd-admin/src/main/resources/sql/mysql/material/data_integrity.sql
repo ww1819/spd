@@ -1,3 +1,5 @@
+-- ========== 耗材模块 数据完整性 ==========
+-- 建议在 table.sql、column.sql、menu.sql 之后执行；按「/」分段执行
 -- 数据完整性检查，为有默认值的字段赋值
 -- 物料表 是否启用
 update fd_material fm set fm.is_use = '2' where fm.is_use is null;
@@ -21,4 +23,32 @@ WHERE dict_type='is_use_status' and dict_value='1' and dict_label='停用';
 UPDATE sys_dict_data
 SET dict_label='停用'
 WHERE dict_type='is_use_status' and dict_value='2' and dict_label='启用';
+/
+
+-- 将客户管理、客户菜单功能管理挂到「系统管理」下（修复 parent_id，派生表避免同表 UPDATE 报错）
+/
+UPDATE sys_menu
+SET parent_id = COALESCE((SELECT t.menu_id FROM (SELECT menu_id FROM sys_menu WHERE menu_name = '系统管理' AND menu_type = 'M' LIMIT 1) t), 1)
+WHERE menu_id IN (2100, 2101);
+/
+
+-- 确保 admin 用户（user_id=1）拥有管理员角色（role_id=1）
+/
+INSERT INTO sys_user_role (user_id, role_id)
+SELECT 1, 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_user_role WHERE user_id = 1 AND role_id = 1);
+/
+-- 为 admin 角色（role_id=1）授予客户管理、客户菜单功能管理菜单（2100/2101/2102/2103/2104/2105）
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2100 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2100);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2102 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2102);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2101 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2101);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2103 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2103);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2104 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2104);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2105 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2105);
 /

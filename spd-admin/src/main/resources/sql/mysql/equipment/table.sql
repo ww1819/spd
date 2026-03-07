@@ -13,10 +13,12 @@ CREATE TABLE IF NOT EXISTS `sb_customer` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
-  `planned_disable_time` datetime DEFAULT NULL COMMENT '计划停用时间，到达后租户无法使用',
+  `planned_disable_time` datetime DEFAULT NULL COMMENT '计划停用时间（设备侧），到达后租户无法使用设备系统',
+  `hc_status` char(1) NOT NULL DEFAULT '0' COMMENT '耗材侧状态（0正常 1停用），与设备侧 status 分开',
+  `hc_planned_disable_time` datetime DEFAULT NULL COMMENT '计划停用时间（耗材侧），到达后租户无法使用耗材系统',
   PRIMARY KEY (`customer_id`),
   UNIQUE KEY `uk_sb_customer_code` (`customer_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备系统客户表(SaaS租户)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备/耗材共用客户表(SaaS租户)；设备用 status/planned_disable_time，耗材用 hc_status/hc_planned_disable_time';
 /
 
 -- 客户启停用记录表（时间、操作人、启停用原因）

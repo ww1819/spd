@@ -84,6 +84,10 @@ CALL add_table_column('sys_user', 'customer_id', 'char(36)', '客户ID(UUID7)，
 CALL add_table_column('sb_customer', 'planned_disable_time', 'datetime', '计划停用时间，到达后租户无法使用', NULL);
 /
 
+-- sb_customer 租户枚举键，与代码内 TenantEnum 关联，用于条件分支
+CALL add_table_column('sb_customer', 'tenant_key', 'varchar(64)', '租户枚举键(TenantEnum.name)，与代码内租户列表关联', NULL);
+/
+
 -- 客户启停用时间段：end_time 允许 NULL，表示当前未结束的时段
 CALL add_table_column('sb_customer_period_log', 'end_time', 'datetime', '结束时间，NULL表示当前未结束', NULL);
 /

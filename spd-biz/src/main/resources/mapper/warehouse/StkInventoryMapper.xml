@@ -22,6 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="receiptOrderNo"    column="receipt_order_no"    />
         <result property="kcNo"    column="kc_no"    />
         <result property="batchNumber"    column="batch_number"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -72,7 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectStkInventoryVo">
         select stk.id, stk.qty, stk.material_id, stk.warehouse_id, stk.unit_price,stk.amt,
 				stk.batch_no, stk.batch_id, stk.material_no, stk.material_date, stk.warehouse_date,
-				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,
+				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,stk.tenant_id,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
 				s.id sId,s.code supplierCode,s.name supplierName
@@ -136,6 +137,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier ms on m.supplier_id = ms.id
         where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         order by stk.material_id, stk.batch_no, stk.id
     </select>
 
@@ -154,6 +156,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -172,6 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -199,6 +203,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         GROUP BY stk.id, m.code,m.name,m.speci,
         m.model,u.unit_name,stk.material_id,stk.unit_price,
         w.name,f.factory_name,s.name
@@ -226,12 +231,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
     </select>
 
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">
         <include refid="selectStkInventoryMaterialVo"/>
         <where>
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+            <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         </where>
     </select>
 
@@ -259,6 +266,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="receiptOrderNo != null">receipt_order_no,</if>
             <if test="kcNo != null">kc_no,</if>
             <if test="batchNumber != null">batch_number,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -277,6 +285,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="receiptOrderNo != null">#{receiptOrderNo},</if>
             <if test="kcNo != null">#{kcNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -299,6 +308,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="receiptOrderNo != null">receipt_order_no = #{receiptOrderNo},</if>
             <if test="kcNo != null">kc_no = #{kcNo},</if>
             <if test="batchNumber != null">batch_number = #{batchNumber},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>

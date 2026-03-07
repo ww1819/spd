@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysPostMenu;
@@ -51,6 +52,9 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public List<SysPost> selectPostList(SysPost post)
     {
+        if (post != null && StringUtils.isEmpty(post.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            post.setTenantId(SecurityUtils.getCustomerId());
+        }
         return postMapper.selectPostList(post);
     }
 
@@ -62,6 +66,11 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public List<SysPost> selectPostAll()
     {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            SysPost q = new SysPost();
+            q.setTenantId(SecurityUtils.getCustomerId());
+            return postMapper.selectPostList(q);
+        }
         return postMapper.selectPostAll();
     }
 
@@ -177,6 +186,9 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public int insertPost(SysPost post)
     {
+        if (StringUtils.isEmpty(post.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            post.setTenantId(SecurityUtils.getCustomerId());
+        }
         return postMapper.insertPost(post);
     }
 
@@ -226,6 +238,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostMenu pm = new SysPostMenu();
                         pm.setPostId(postId);
                         pm.setMenuId(menuId);
+                        if (StringUtils.isNotEmpty(post.getTenantId())) {
+                            pm.setTenantId(post.getTenantId());
+                        }
                         list.add(pm);
                     }
                 }
@@ -259,6 +274,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostDepartment pd = new SysPostDepartment();
                         pd.setPostId(postId);
                         pd.setDepartmentId(departmentId);
+                        if (StringUtils.isNotEmpty(post.getTenantId())) {
+                            pd.setTenantId(post.getTenantId());
+                        }
                         list.add(pd);
                     }
                 }
@@ -292,6 +310,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostWarehouse pw = new SysPostWarehouse();
                         pw.setPostId(postId);
                         pw.setWarehouseId(warehouseId);
+                        if (StringUtils.isNotEmpty(post.getTenantId())) {
+                            pw.setTenantId(post.getTenantId());
+                        }
                         list.add(pw);
                     }
                 }

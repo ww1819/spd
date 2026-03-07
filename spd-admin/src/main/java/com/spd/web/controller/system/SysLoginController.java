@@ -1,5 +1,6 @@
 package com.spd.web.controller.system;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,6 +22,7 @@ import com.spd.framework.web.service.SysLoginService;
 import com.spd.framework.web.service.SysPermissionService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.domain.SbMenu;
+import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbMenuService;
 import com.spd.system.service.ISysMenuService;
@@ -51,6 +53,9 @@ public class SysLoginController
     @Autowired
     private ISbCustomerService sbCustomerService;
 
+    @Autowired
+    private HcCustomerMenuMapper hcCustomerMenuMapper;
+
     /**
      * 登录方法
      *
@@ -63,7 +68,8 @@ public class SysLoginController
         AjaxResult ajax = AjaxResult.success();
         String username = loginBody.getUsername();
         String customerId = loginBody.getCustomerId();
-        String token = loginService.login(username, loginBody.getPassword(), loginBody.getCode(), loginBody.getUuid(), customerId);
+        String systemType = loginBody.getSystemType();
+        String token = loginService.login(username, loginBody.getPassword(), loginBody.getCode(), loginBody.getUuid(), customerId, systemType);
         ajax.put(Constants.TOKEN, token);
         return ajax;
     }
@@ -162,7 +168,15 @@ public class SysLoginController
     {
         Long userId = SecurityUtils.getUserId();
         List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
-        return AjaxResult.success(menuService.buildMenus(menus));
+        Set<Long> pausedMenuIds = null;
+        SysUser user = SecurityUtils.getLoginUser() != null ? SecurityUtils.getLoginUser().getUser() : null;
+        if (user != null && StringUtils.isNotEmpty(user.getCustomerId())) {
+            List<Long> list = hcCustomerMenuMapper.selectPausedMenuIdsByTenantId(user.getCustomerId());
+            if (list != null && !list.isEmpty()) {
+                pausedMenuIds = new HashSet<>(list);
+            }
+        }
+        return AjaxResult.success(menuService.buildMenus(menus, pausedMenuIds));
     }
 
     /**

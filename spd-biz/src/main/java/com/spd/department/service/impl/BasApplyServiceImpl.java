@@ -60,6 +60,9 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public List<BasApply> selectBasApplyList(BasApply basApply)
     {
+        if (basApply != null && StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            basApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         return basApplyMapper.selectBasApplyList(basApply);
     }
 
@@ -73,6 +76,9 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int insertBasApply(BasApply basApply)
     {
+        if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            basApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         basApply.setCreateTime(DateUtils.getNowDate());
         basApply.setApplyBillNo(getNumber(basApply.getBillType()));
         int rows = basApplyMapper.insertBasApply(basApply);

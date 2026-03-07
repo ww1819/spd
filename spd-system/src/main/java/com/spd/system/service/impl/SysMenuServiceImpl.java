@@ -164,22 +164,34 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public List<RouterVo> buildMenus(List<SysMenu> menus)
     {
+        return buildMenus(menus, null);
+    }
+
+    @Override
+    public List<RouterVo> buildMenus(List<SysMenu> menus, java.util.Set<Long> pausedMenuIds)
+    {
+        boolean markPaused = pausedMenuIds != null && !pausedMenuIds.isEmpty();
         List<RouterVo> routers = new LinkedList<RouterVo>();
         for (SysMenu menu : menus)
         {
+            boolean paused = markPaused && pausedMenuIds.contains(menu.getMenuId());
             RouterVo router = new RouterVo();
             router.setHidden("1".equals(menu.getVisible()));
             router.setName(getRouteName(menu));
             router.setPath(getRouterPath(menu));
             router.setComponent(getComponent(menu));
             router.setQuery(menu.getQuery());
-            router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+            MetaVo meta = new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath());
+            if (markPaused) {
+                meta.setPaused(paused);
+            }
+            router.setMeta(meta);
             List<SysMenu> cMenus = menu.getChildren();
             if (StringUtils.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType()))
             {
                 router.setAlwaysShow(true);
                 router.setRedirect("noRedirect");
-                router.setChildren(buildMenus(cMenus));
+                router.setChildren(buildMenus(cMenus, markPaused ? pausedMenuIds : null));
             }
             else if (isMenuFrame(menu))
             {
@@ -189,14 +201,22 @@ public class SysMenuServiceImpl implements ISysMenuService
                 children.setPath(menu.getPath());
                 children.setComponent(menu.getComponent());
                 children.setName(StringUtils.capitalize(menu.getPath()));
-                children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+                MetaVo childMeta = new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath());
+                if (markPaused) {
+                    childMeta.setPaused(paused);
+                }
+                children.setMeta(childMeta);
                 children.setQuery(menu.getQuery());
                 childrenList.add(children);
                 router.setChildren(childrenList);
             }
             else if (menu.getParentId().intValue() == 0 && isInnerLink(menu))
             {
-                router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon()));
+                MetaVo innerMeta = new MetaVo(menu.getMenuName(), menu.getIcon());
+                if (markPaused) {
+                    innerMeta.setPaused(paused);
+                }
+                router.setMeta(innerMeta);
                 router.setPath("/");
                 List<RouterVo> childrenList = new ArrayList<RouterVo>();
                 RouterVo children = new RouterVo();
@@ -204,7 +224,11 @@ public class SysMenuServiceImpl implements ISysMenuService
                 children.setPath(routerPath);
                 children.setComponent(UserConstants.INNER_LINK);
                 children.setName(StringUtils.capitalize(routerPath));
-                children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath()));
+                MetaVo innerChildMeta = new MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath());
+                if (markPaused) {
+                    innerChildMeta.setPaused(paused);
+                }
+                children.setMeta(innerChildMeta);
                 childrenList.add(children);
                 router.setChildren(childrenList);
             }
@@ -365,6 +389,13 @@ public class SysMenuServiceImpl implements ISysMenuService
             menus = menuMapper.selectSbMenuTreeByUserId(userId);
         }
         return getChildPerms(menus, 0);
+    }
+
+    @Override
+    public List<TreeSelect> selectMenuTreeForHcCustomerAssign()
+    {
+        List<SysMenu> menus = menuMapper.selectMenuTreeForHcCustomerAssign();
+        return buildMenuTreeSelect(menus);
     }
 
     /**

@@ -29,6 +29,11 @@ public class MetaVo
      */
     private String link;
 
+    /**
+     * 耗材租户下该菜单是否已被暂停（仅租户登录时由后端设置，前端点击进入时提示并拦截）
+     */
+    private Boolean paused;
+
     public MetaVo()
     {
     }
@@ -102,5 +107,15 @@ public class MetaVo
     public void setLink(String link)
     {
         this.link = link;
+    }
+
+    public Boolean getPaused()
+    {
+        return paused;
+    }
+
+    public void setPaused(Boolean paused)
+    {
+        this.paused = paused;
     }
 }

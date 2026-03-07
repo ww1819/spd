@@ -19,6 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseType"    column="warehouse_type"    />
         <result property="settlementType"    column="settlement_type"    />
         <result property="remark"    column="remark"    />
+        <result property="tenantId"    column="tenant_id"    />
     </resultMap>
 
     <resultMap type="FdWarehouse" id="FdUserWarehouseResult">
@@ -29,7 +30,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdWarehouseVo">
         select id, code, name, create_by, create_time, update_by, update_time,warehouse_person,warehouse_phone,warehouse_status,
-        COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark from fd_warehouse
+        COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark,tenant_id from fd_warehouse
     </sql>
 
     <select id="selectFdWarehouseList" parameterType="FdWarehouse" resultMap="FdWarehouseResult">
@@ -37,15 +38,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where del_flag != 1
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
     </select>
 
-    <select id="selectUserWarehouseAll" parameterType="Long" resultMap="FdUserWarehouseResult">
+    <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">
         select w.id,w.code,w.name
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
         left join sys_user u on u.user_id = uw.user_id
         where w.del_flag != 1
-        <if test="userId != null  and userId != ''"> and u.user_id = #{userId}</if>
+        <if test="userId != null"> and u.user_id = #{userId}</if>
+        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
     </select>
 
     <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">
@@ -83,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type,</if>
             <if test="settlementType != null and settlementType != ''">settlement_type,</if>
             <if test="remark != null">remark,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -98,6 +102,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">#{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -117,6 +122,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type = #{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>

@@ -58,6 +58,13 @@ public interface SysMenuMapper
     public List<SysMenu> selectMenuTreeAll();
 
     /**
+     * 耗材客户权限分配用菜单树（排除客户管理、客户菜单功能管理及其按钮）
+     *
+     * @return 菜单列表
+     */
+    public List<SysMenu> selectMenuTreeForHcCustomerAssign();
+
+    /**
      * 根据用户ID查询菜单
      *
      * @param userId 用户ID
@@ -137,4 +144,11 @@ public interface SysMenuMapper
    * @return 菜单列表
    */
   public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
+
+  /**
+   * 耗材系统：查询「系统设置」下除「客户管理」「客户菜单功能管理」外的菜单ID（用于新租户默认授权 super 组和 super_01）
+   *
+   * @return 菜单ID列表
+   */
+  public List<Long> selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
 }

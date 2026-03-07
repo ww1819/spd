@@ -89,6 +89,9 @@ public class StkInventory extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
@@ -279,6 +282,14 @@ public class StkInventory extends BaseEntity
         this.supplier = supplier;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public String getWarehouseName() {
         return warehouseName;
     }
@@ -328,6 +339,7 @@ public class StkInventory extends BaseEntity
             .append("endTime", getEndTime())
             .append("receiptOrderNo", getReceiptOrderNo())
             .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
             .toString();
     }
 

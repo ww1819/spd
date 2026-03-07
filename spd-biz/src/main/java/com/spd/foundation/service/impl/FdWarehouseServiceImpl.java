@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdWarehouseMapper;
@@ -44,6 +45,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public List<FdWarehouse> selectFdWarehouseList(FdWarehouse fdWarehouse)
     {
+        if (fdWarehouse != null && StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdWarehouseMapper.selectFdWarehouseList(fdWarehouse);
     }
 
@@ -62,6 +66,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     public int insertFdWarehouse(FdWarehouse fdWarehouse)
     {
         fdWarehouse.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdWarehouseMapper.insertFdWarehouse(fdWarehouse);
     }
 
@@ -112,12 +119,18 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 
     @Override
     public List<FdWarehouse> selectwarehouseAll() {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            FdWarehouse q = new FdWarehouse();
+            q.setTenantId(SecurityUtils.getCustomerId());
+            return fdWarehouseMapper.selectFdWarehouseList(q);
+        }
         return fdWarehouseMapper.selectwarehouseAll();
     }
 
     @Override
     public List<FdWarehouse> selectUserWarehouseAll(Long userId) {
-        return fdWarehouseMapper.selectUserWarehouseAll(userId);
+        String tenantId = SecurityUtils.getCustomerId();
+        return fdWarehouseMapper.selectUserWarehouseAll(userId, tenantId);
     }
 
 //    /**

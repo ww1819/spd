@@ -50,6 +50,9 @@ public class FdWarehouse extends BaseEntity
     @Excel(name = "结算类型")
     private String settlementType;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -126,6 +129,14 @@ public class FdWarehouse extends BaseEntity
         this.settlementType = settlementType;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -142,6 +153,7 @@ public class FdWarehouse extends BaseEntity
             .append("warehouseStatus", getWarehouseStatus())
             .append("warehouseType", getWarehouseType())
             .append("settlementType", getSettlementType())
+            .append("tenantId", getTenantId())
             .toString();
     }
 }

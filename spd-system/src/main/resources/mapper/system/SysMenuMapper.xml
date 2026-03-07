@@ -53,6 +53,15 @@
 		from sys_menu m where m.menu_type in ('M', 'C') and m.status = 0
 		order by m.parent_id, m.order_num
 	</select>
+
+	<!-- 耗材客户权限分配用菜单树：排除客户管理、客户菜单功能管理及其按钮(2100~2105) -->
+	<select id="selectMenuTreeForHcCustomerAssign" resultMap="SysMenuResult">
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
+		from sys_menu m
+		where m.menu_type in ('M', 'C') and m.status = 0
+		and m.menu_id not in (2100, 2101, 2102, 2103, 2104, 2105)
+		order by m.parent_id, m.order_num
+	</select>
 	
 	<select id="selectMenuListByUserId" parameterType="SysMenu" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
@@ -313,6 +322,22 @@
                 and r.status = '0'
           )
         order by m.parent_id, m.order_num
+    </select>
+
+    <!-- 耗材系统：系统设置下除客户管理、客户菜单功能管理外的菜单ID（新租户默认授权） -->
+    <select id="selectMaterialSystemSettingMenuIdsExcludeCustomerManage" resultType="Long">
+        select menu_id from sys_menu where menu_name = '系统设置'
+        union
+        select menu_id from sys_menu
+        where parent_id = (select menu_id from sys_menu where menu_name = '系统设置' limit 1)
+          and menu_name not in ('客户管理', '客户菜单功能管理')
+        union
+        select m.menu_id from sys_menu m
+        where m.parent_id in (
+            select menu_id from sys_menu
+            where parent_id = (select menu_id from sys_menu where menu_name = '系统设置' limit 1)
+              and menu_name not in ('客户管理', '客户菜单功能管理')
+        )
     </select>
 
 </mapper> 

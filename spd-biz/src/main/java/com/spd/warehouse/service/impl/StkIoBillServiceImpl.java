@@ -44,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,6 +141,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public List<StkIoBill> selectStkIoBillList(StkIoBill stkIoBill)
     {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectStkIoBillList(stkIoBill);
     }
 
@@ -153,6 +157,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int insertStkIoBill(StkIoBill stkIoBill)
     {
+        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
             stkIoBill.setBillDate(DateUtils.getNowDate());
@@ -324,7 +331,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkInventory.setCreateTime(new Date());
                     stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
                     stkInventory.setBatchNumber(entry.getBatchNumber());
-
+                    if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+                        stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
                     stkInventoryMapper.insertStkInventory(stkInventory);
                     // 插仓库流水（lx=RK），反写仓库库存id到流水和入库单明细
                     HcCkFlow rkFlow = new HcCkFlow();
@@ -409,6 +418,35 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ckFlow.setCreateTime(new Date());
                     ckFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
                     hcCkFlowMapper.insertHcCkFlow(ckFlow);
+                    // 出库审核即插入科室库存（未确认），记录单据主表id、明细id、单据号、单据类型，便于收货确认时精确定位
+                    StkDepInventory stkDepInventory = new StkDepInventory();
+                    stkDepInventory.setMaterialId(entry.getMaterialId());
+                    stkDepInventory.setMaterialNo(inventory.getMaterialNo());
+                    stkDepInventory.setDepartmentId(stkIoBill.getDepartmentId());
+                    stkDepInventory.setQty(entry.getQty());
+                    stkDepInventory.setUnitPrice(entry.getUnitPrice());
+                    stkDepInventory.setAmt(entry.getAmt());
+                    stkDepInventory.setBatchNo(entry.getBatchNo());
+                    stkDepInventory.setMaterialDate(inventory.getMaterialDate());
+                    stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
+                    stkDepInventory.setBeginDate(inventory.getBeginTime());
+                    stkDepInventory.setEndDate(inventory.getEndTime());
+                    stkDepInventory.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
+                    stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
+                    stkDepInventory.setBatchNumber(entry.getBatchNumber());
+                    stkDepInventory.setReceiptConfirmStatus(0);
+                    stkDepInventory.setBillId(stkIoBill.getId());
+                    stkDepInventory.setBillEntryId(entry.getId());
+                    stkDepInventory.setBillNo(stkIoBill.getBillNo());
+                    stkDepInventory.setBillType(201);
+                    stkDepInventory.setRemark("本库存由科室出库业务生成");
+                    if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
+                        stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
+                    if (entry.getId() != null) {
+                        stkIoBillMapper.updateStkIoBillEntryKcNo(entry.getId(), stkDepInventory.getId());
+                    }
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -457,15 +495,16 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     thFlow.setCreateTime(new Date());
                     thFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
                     hcCkFlowMapper.insertHcCkFlow(thFlow);
-                }else if(billType == 401){//退库
+                }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库）
                     String batchNo = entry.getBatchNo();//退库批次号
                     BigDecimal qty = entry.getQty();//退库数量
 
-                    //更新科室库存数量
                     StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo);
-
                     if(stkDepInventory == null){
-                        throw new ServiceException(String.format("退库-批次号：%s，不存在!", batchNo));
+                        throw new ServiceException(String.format("退库-批次号：%s，未收货确认或不存在，不能退库!", batchNo));
+                    }
+                    if(stkDepInventory.getReceiptConfirmStatus() == null || stkDepInventory.getReceiptConfirmStatus() != 1){
+                        throw new ServiceException(String.format("退库-批次号：%s，科室库存未收货确认，不能退库!", batchNo));
                     }
 
                     BigDecimal stkDepInventoryQty = stkDepInventory.getQty();//科室库存实际数量
@@ -606,6 +645,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                         inInventory.setCreateTime(new Date());
                         inInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        if (StringUtils.isEmpty(inInventory.getTenantId())) {
+                            inInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                        }
                         stkInventoryMapper.insertStkInventory(inInventory);
 
                         HcCkFlow zrFlow = new HcCkFlow();
@@ -776,6 +818,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setEndDate(inventory.getEndTime());
             stkDepInventory.setSupplierId(inventory.getSupplierId().toString());
             stkDepInventory.setBatchNumber(entry.getBatchNumber());
+            if (StringUtils.isEmpty(stkDepInventory.getTenantId()) && stkIoBill != null) {
+                stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+            }
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
             BigDecimal oldQty = stkDepInventory.getQty();
@@ -856,6 +901,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int insertOutStkIoBill(StkIoBill stkIoBill)
     {
+        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         stkIoBill.setBillNo(getBillNumber("CK"));
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -893,6 +941,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int insertTkStkIoBill(StkIoBill stkIoBill) {
+        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         stkIoBill.setBillNo(getTKNumber("TK"));
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -933,6 +984,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int insertTHStkIoBill(StkIoBill stkIoBill) {
+        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         // 如果退货日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
             stkIoBill.setBillDate(DateUtils.getNowDate());
@@ -964,6 +1018,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Override
     public List<Map<String, Object>> selectCTKStkIoBillList(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectCTKStkIoBillList(stkIoBill);
     }
     @Override
@@ -977,16 +1034,25 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Override
     public List<Map<String, Object>> selectCTKStkIoBillListSummary(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectCTKStkIoBillListSummary(stkIoBill);
     }
 
     @Override
     public TotalInfo selectCTKStkIoBillListTotal(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectCTKStkIoBillListTotal(stkIoBill);
     }
 
     @Override
     public TotalInfo selectCTKStkIoBillListSummaryTotal(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectCTKStkIoBillListSummaryTotal(stkIoBill);
     }
 
@@ -1414,48 +1480,91 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 continue;
             }
             
-            // 收货确认：每条出库明细插科室库存 + 插科室流水，并反写 kc_no 到出库单明细、仓库流水、科室流水、科室库存
+            // 收货确认：科室库存在出库审核时已插入(未确认)，此处仅将对应科室库存更新为已确认并插科室流水；按单据主表id+明细id校验避免改错记录
             List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
             if (stkIoBillEntryList != null && !stkIoBillEntryList.isEmpty()) {
                 for (StkIoBillEntry entry : stkIoBillEntryList) {
+                    Long depId;
+                    StkDepInventory stkDepInventory = null;
+                    if (entry.getKcNo() != null) {
+                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryById(entry.getKcNo());
+                        if (stkDepInventory != null) {
+                            // 校验科室库存记录是否确属当前出库单及当前明细，避免收货确认改错明细
+                            if (!stkIoBill.getId().equals(stkDepInventory.getBillId()) || !entry.getId().equals(stkDepInventory.getBillEntryId())) {
+                                throw new ServiceException(String.format("收货确认数据异常：科室库存id=%s 与出库单id=%s、明细id=%s 不一致（bill_id=%s, bill_entry_id=%s），请勿继续操作。",
+                                        stkDepInventory.getId(), stkIoBill.getId(), entry.getId(),
+                                        stkDepInventory.getBillId(), stkDepInventory.getBillEntryId()));
+                            }
+                            if (!Objects.equals(entry.getMaterialId(), stkDepInventory.getMaterialId())
+                                    || (entry.getQty() != null && stkDepInventory.getQty() != null && entry.getQty().compareTo(stkDepInventory.getQty()) != 0)
+                                    || (entry.getQty() == null ^ (stkDepInventory.getQty() == null))
+                                    || !Objects.equals(entry.getBatchNo(), stkDepInventory.getBatchNo())) {
+                                throw new ServiceException(String.format("收货确认数据异常：科室库存id=%s 与出库单明细耗材/数量/批次号不一致，请勿继续操作。", stkDepInventory.getId()));
+                            }
+                            if (stkDepInventory.getReceiptConfirmStatus() != null && stkDepInventory.getReceiptConfirmStatus() == 1) {
+                                depId = stkDepInventory.getId();
+                            } else {
+                                stkDepInventory.setReceiptConfirmStatus(1);
+                                stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
+                                depId = stkDepInventory.getId();
+                            }
+                        } else {
+                            throw new ServiceException(String.format("收货确认失败：出库单明细id=%s 对应的科室库存id=%s 不存在。", entry.getId(), entry.getKcNo()));
+                        }
+                    } else {
+                        String batchNo = entry.getBatchNo();
+                        Long warehouseId = stkIoBill.getWarehouseId();
+                        StkInventory inventory = null;
+                        if (warehouseId != null) {
+                            inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, warehouseId);
+                        }
+                        if (inventory == null) {
+                            inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                        }
+                        if (inventory == null) {
+                            continue;
+                        }
+                        stkDepInventory = new StkDepInventory();
+                        stkDepInventory.setMaterialId(entry.getMaterialId());
+                        stkDepInventory.setMaterialNo(inventory.getMaterialNo());
+                        stkDepInventory.setDepartmentId(stkIoBill.getDepartmentId());
+                        stkDepInventory.setQty(entry.getQty());
+                        stkDepInventory.setUnitPrice(entry.getUnitPrice());
+                        stkDepInventory.setAmt(entry.getAmt());
+                        stkDepInventory.setBatchNo(entry.getBatchNo());
+                        stkDepInventory.setMaterialDate(inventory.getMaterialDate());
+                        stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
+                        stkDepInventory.setBeginDate(inventory.getBeginTime());
+                        stkDepInventory.setEndDate(inventory.getEndTime());
+                        stkDepInventory.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
+                        stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
+                        stkDepInventory.setBatchNumber(entry.getBatchNumber());
+                        stkDepInventory.setReceiptConfirmStatus(1);
+                        stkDepInventory.setBillId(stkIoBill.getId());
+                        stkDepInventory.setBillEntryId(entry.getId());
+                        stkDepInventory.setBillNo(stkIoBill.getBillNo());
+                        stkDepInventory.setBillType(201);
+                        stkDepInventory.setRemark("本库存由科室出库业务生成");
+                        if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
+                            stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                        }
+                        stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
+                        depId = stkDepInventory.getId();
+                        if (entry.getId() != null) {
+                            stkIoBillMapper.updateStkIoBillEntryKcNo(entry.getId(), depId);
+                        }
+                        stkDepInventory.setKcNo(depId);
+                        stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
+                    }
+                    StkInventory inventory = null;
                     String batchNo = entry.getBatchNo();
                     Long warehouseId = stkIoBill.getWarehouseId();
-                    StkInventory inventory = null;
-                    if(warehouseId != null){
+                    if (warehouseId != null) {
                         inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, warehouseId);
                     }
-                    if(inventory == null){
+                    if (inventory == null) {
                         inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
                     }
-                    if(inventory == null){
-                        continue;
-                    }
-                    // 新增科室库存（每条明细一条）
-                    StkDepInventory stkDepInventory = new StkDepInventory();
-                    stkDepInventory.setMaterialId(entry.getMaterialId());
-                    stkDepInventory.setMaterialNo(inventory.getMaterialNo());
-                    stkDepInventory.setDepartmentId(stkIoBill.getDepartmentId());
-                    stkDepInventory.setQty(entry.getQty());
-                    stkDepInventory.setUnitPrice(entry.getUnitPrice());
-                    stkDepInventory.setAmt(entry.getAmt());
-                    stkDepInventory.setBatchNo(entry.getBatchNo());
-                    stkDepInventory.setMaterialDate(inventory.getMaterialDate());
-                    stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
-                    stkDepInventory.setBeginDate(inventory.getBeginTime());
-                    stkDepInventory.setEndDate(inventory.getEndTime());
-                    stkDepInventory.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
-                    stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
-                    stkDepInventory.setBatchNumber(entry.getBatchNumber());
-                    stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
-                    Long depId = stkDepInventory.getId();
-                    // 反写 kc_no：出库单明细
-                    if (entry.getId() != null) {
-                        stkIoBillMapper.updateStkIoBillEntryKcNo(entry.getId(), depId);
-                    }
-                    // 反写 kc_no：科室库存明细（收货确认反写科室库存id到 kc_no；仓库流水 kc_no 保持出库审核时写入的仓库库存id，不再覆盖）
-                    stkDepInventory.setKcNo(depId);
-                    stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
-                    // 插科室流水（lx=CK，kc_no=科室库存id）
                     HcKsFlow ksFlow = new HcKsFlow();
                     ksFlow.setBillId(stkIoBill.getId());
                     ksFlow.setEntryId(entry.getId());
@@ -1468,7 +1577,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksFlow.setAmt(entry.getAmt());
                     ksFlow.setBeginTime(entry.getBeginTime());
                     ksFlow.setEndTime(entry.getEndTime());
-                    ksFlow.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
+                    ksFlow.setSupplierId(inventory != null && inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
                     ksFlow.setKcNo(depId);
                     ksFlow.setLx("CK");
                     ksFlow.setFlowTime(new Date());

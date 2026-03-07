@@ -2,6 +2,8 @@ package com.spd.department.service.impl;
 
 import java.util.List;
 
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,9 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public List<StkDepInventory> selectStkDepInventoryList(StkDepInventory stkDepInventory)
     {
+        if (stkDepInventory != null && StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
         List<StkDepInventory> list = stkDepInventoryMapper.selectStkDepInventoryList(stkDepInventory);
         for (StkDepInventory depInventory : list) {
             FdMaterial fdMaterial = this.fdMaterialMapper.selectFdMaterialById(depInventory.getMaterialId());
@@ -64,6 +69,9 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int insertStkDepInventory(StkDepInventory stkDepInventory)
     {
+        if (StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
     }
 

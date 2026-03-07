@@ -2,6 +2,7 @@ package com.spd.system.service;
 
 import java.util.List;
 import java.util.Set;
+
 import com.spd.common.core.domain.TreeSelect;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.system.domain.vo.RouterVo;
@@ -64,11 +65,16 @@ public interface ISysMenuService
 
     /**
      * 构建前端路由所需要的菜单
-     * 
+     *
      * @param menus 菜单列表
      * @return 路由列表
      */
     public List<RouterVo> buildMenus(List<SysMenu> menus);
+
+    /**
+     * 构建前端路由；pausedMenuIds 非空时为对应菜单设置 meta.paused（耗材租户下该菜单已被暂停）
+     */
+    public List<RouterVo> buildMenus(List<SysMenu> menus, java.util.Set<Long> pausedMenuIds);
 
     /**
      * 构建前端所需要树结构
@@ -149,4 +155,11 @@ public interface ISysMenuService
    * @return 菜单列表
    */
   public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
+
+  /**
+   * 耗材客户权限分配用菜单树（排除客户管理、客户菜单功能管理及其子节点）
+   *
+   * @return 下拉树结构列表
+   */
+  public List<TreeSelect> selectMenuTreeForHcCustomerAssign();
 }

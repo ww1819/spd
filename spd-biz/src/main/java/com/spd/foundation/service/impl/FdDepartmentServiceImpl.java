@@ -46,6 +46,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     @Override
     public List<FdDepartment> selectFdDepartmentList(FdDepartment fdDepartment)
     {
+        if (fdDepartment != null && StringUtils.isEmpty(fdDepartment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdDepartment.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdDepartmentMapper.selectFdDepartmentList(fdDepartment);
     }
 
@@ -59,6 +62,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     public int insertFdDepartment(FdDepartment fdDepartment)
     {
         fdDepartment.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdDepartment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdDepartment.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdDepartmentMapper.insertFdDepartment(fdDepartment);
     }
 

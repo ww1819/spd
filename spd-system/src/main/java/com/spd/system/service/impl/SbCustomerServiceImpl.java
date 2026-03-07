@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysUser;
+import com.spd.common.enums.TenantEnum;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -33,6 +34,19 @@ import com.spd.system.mapper.SbWorkGroupMapper;
 import com.spd.system.mapper.SbUserPermissionMenuMapper;
 import com.spd.system.mapper.SbWorkGroupMenuMapper;
 import com.spd.system.mapper.SbWorkGroupUserMapper;
+import com.spd.system.mapper.SysMenuMapper;
+import com.spd.system.mapper.SysPostMapper;
+import com.spd.system.mapper.SysUserPostMapper;
+import com.spd.system.mapper.SysPostMenuMapper;
+import com.spd.system.mapper.HcUserPermissionMenuMapper;
+import com.spd.system.mapper.HcCustomerStatusLogMapper;
+import com.spd.system.mapper.HcCustomerPeriodLogMapper;
+import com.spd.system.domain.hc.HcCustomerStatusLog;
+import com.spd.system.domain.hc.HcCustomerPeriodLog;
+import com.spd.system.domain.SysPost;
+import com.spd.system.domain.SysUserPost;
+import com.spd.system.domain.SysPostMenu;
+import com.spd.system.domain.hc.HcUserPermissionMenu;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbRoleService;
 import com.spd.system.service.ISysConfigService;
@@ -73,6 +87,20 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   private SbUserRoleMapper sbUserRoleMapper;
   @Autowired
   private ISysConfigService configService;
+  @Autowired
+  private SysMenuMapper sysMenuMapper;
+  @Autowired
+  private SysPostMapper sysPostMapper;
+  @Autowired
+  private SysUserPostMapper sysUserPostMapper;
+  @Autowired
+  private SysPostMenuMapper sysPostMenuMapper;
+  @Autowired
+  private HcUserPermissionMenuMapper hcUserPermissionMenuMapper;
+  @Autowired
+  private HcCustomerStatusLogMapper hcCustomerStatusLogMapper;
+  @Autowired
+  private HcCustomerPeriodLogMapper hcCustomerPeriodLogMapper;
 
   /** 新增客户时默认管理员组标识 */
   private static final String DEFAULT_GROUP_KEY = "super";
@@ -97,6 +125,11 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   }
 
   @Override
+  public SbCustomer selectSbCustomerByTenantKey(String tenantKey) {
+    return sbCustomerMapper.selectSbCustomerByTenantKey(tenantKey);
+  }
+
+  @Override
   public boolean checkSbCustomerCodeUnique(SbCustomer customer) {
     String customerId = StringUtils.isNull(customer.getCustomerId()) ? "" : customer.getCustomerId();
     SbCustomer info = sbCustomerMapper.checkSbCustomerCodeUnique(customer.getCustomerCode());
@@ -109,8 +142,23 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int insertSbCustomer(SbCustomer customer) {
-    if (StringUtils.isEmpty(customer.getCustomerId())) {
-      customer.setCustomerId(UUID7.generateUUID7());
+    String tenantKey = customer.getTenantKey();
+    if (StringUtils.isNotEmpty(tenantKey)) {
+      TenantEnum tenantEnum = TenantEnum.fromTenantKey(tenantKey);
+      if (tenantEnum == null) {
+        throw new IllegalArgumentException("租户类型不合法，请从代码内租户列表选择：" + tenantKey);
+      }
+      if (StringUtils.isNotNull(sbCustomerMapper.selectSbCustomerByTenantKey(tenantKey))) {
+        throw new IllegalArgumentException("该租户类型已存在客户记录，每个租户类型只能创建一条客户：" + tenantKey);
+      }
+      customer.setCustomerId(tenantEnum.getCustomerId());
+      if (StringUtils.isEmpty(customer.getCustomerCode())) {
+        customer.setCustomerCode(tenantEnum.getCustomerCode());
+      }
+    } else {
+      if (StringUtils.isEmpty(customer.getCustomerId())) {
+        customer.setCustomerId(UUID7.generateUUID7());
+      }
     }
     customer.setCreateBy(SecurityUtils.getUsername());
     int rows = sbCustomerMapper.insertSbCustomer(customer);
@@ -219,6 +267,52 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       }
       sbUserPermissionMenuMapper.batchInsert(userMenus);
     }
+
+    // 耗材系统：使用 sys_post 作为工作组，创建默认岗位「管理员组」，将 super_01 加入该岗位，并授予系统设置下除客户管理、客户菜单功能管理外的菜单
+    SysPost post = new SysPost();
+    post.setPostCode(DEFAULT_GROUP_KEY);
+    post.setPostName("管理员组");
+    post.setPostSort(0);
+    post.setStatus("0");
+    post.setTenantId(customerId);
+    post.setCreateBy(createBy);
+    sysPostMapper.insertPost(post);
+
+    SysUserPost userPost = new SysUserPost();
+    userPost.setUserId(user.getUserId());
+    userPost.setPostId(post.getPostId());
+    List<SysUserPost> userPostList = new ArrayList<>();
+    userPostList.add(userPost);
+    sysUserPostMapper.batchUserPost(userPostList);
+
+    List<Long> materialMenuIds = sysMenuMapper.selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
+    if (materialMenuIds != null && !materialMenuIds.isEmpty()) {
+      List<SysPostMenu> postMenus = new ArrayList<>();
+      for (Long menuId : materialMenuIds) {
+        if (menuId != null && menuId > 0) {
+          SysPostMenu pm = new SysPostMenu();
+          pm.setPostId(post.getPostId());
+          pm.setMenuId(menuId);
+          pm.setTenantId(customerId);
+          postMenus.add(pm);
+        }
+      }
+      if (!postMenus.isEmpty()) {
+        sysPostMenuMapper.batchPostMenu(postMenus);
+      }
+
+      List<HcUserPermissionMenu> hcUserMenus = new ArrayList<>();
+      for (Long menuId : materialMenuIds) {
+        HcUserPermissionMenu upm = new HcUserPermissionMenu();
+        upm.setId(UUID7.generateUUID7());
+        upm.setUserId(user.getUserId());
+        upm.setTenantId(customerId);
+        upm.setMenuId(menuId);
+        upm.setCreateBy(createBy);
+        hcUserMenus.add(upm);
+      }
+      hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
+    }
   }
 
   @Override
@@ -309,5 +403,75 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   @Override
   public List<SbCustomerPeriodLog> selectPeriodLogList(String customerId) {
     return sbCustomerPeriodLogMapper.selectByCustomerId(customerId);
+  }
+
+  @Override
+  @Transactional
+  public int changeHcStatus(String customerId, String status, String statusChangeReason) {
+    if (StringUtils.isEmpty(customerId) || StringUtils.isEmpty(status)) {
+      return 0;
+    }
+    if (StringUtils.isEmpty(statusChangeReason) || statusChangeReason.trim().isEmpty()) {
+      throw new IllegalArgumentException("启停用原因不能为空，请通过启停用操作并填写原因");
+    }
+    SbCustomer customer = sbCustomerMapper.selectSbCustomerById(customerId);
+    if (customer == null) {
+      return 0;
+    }
+    String operateBy = SecurityUtils.getUsername();
+    Date now = new Date();
+
+    HcCustomerStatusLog statusLog = new HcCustomerStatusLog();
+    statusLog.setLogId(UUID7.generateUUID7());
+    statusLog.setTenantId(customerId);
+    statusLog.setStatus(status);
+    statusLog.setOperateTime(now);
+    statusLog.setOperateBy(operateBy);
+    statusLog.setReason(statusChangeReason.trim());
+    hcCustomerStatusLogMapper.insert(statusLog);
+
+    if ("0".equals(status)) {
+      HcCustomerPeriodLog lastSuspend = hcCustomerPeriodLogMapper.selectLastWithNullEnd(customerId, HcCustomerPeriodLog.PERIOD_TYPE_SUSPEND);
+      if (lastSuspend != null) {
+        hcCustomerPeriodLogMapper.updateEndTime(lastSuspend.getPeriodId(), now);
+      }
+      HcCustomerPeriodLog usagePeriod = new HcCustomerPeriodLog();
+      usagePeriod.setPeriodId(UUID7.generateUUID7());
+      usagePeriod.setTenantId(customerId);
+      usagePeriod.setPeriodType(HcCustomerPeriodLog.PERIOD_TYPE_USAGE);
+      usagePeriod.setStartTime(now);
+      usagePeriod.setEndTime(null);
+      usagePeriod.setCreateBy(operateBy);
+      usagePeriod.setCreateTime(now);
+      hcCustomerPeriodLogMapper.insert(usagePeriod);
+    } else {
+      HcCustomerPeriodLog lastUsage = hcCustomerPeriodLogMapper.selectLastWithNullEnd(customerId, HcCustomerPeriodLog.PERIOD_TYPE_USAGE);
+      if (lastUsage != null) {
+        hcCustomerPeriodLogMapper.updateEndTime(lastUsage.getPeriodId(), now);
+      }
+      HcCustomerPeriodLog suspendPeriod = new HcCustomerPeriodLog();
+      suspendPeriod.setPeriodId(UUID7.generateUUID7());
+      suspendPeriod.setTenantId(customerId);
+      suspendPeriod.setPeriodType(HcCustomerPeriodLog.PERIOD_TYPE_SUSPEND);
+      suspendPeriod.setStartTime(now);
+      suspendPeriod.setEndTime(null);
+      suspendPeriod.setCreateBy(operateBy);
+      suspendPeriod.setCreateTime(now);
+      hcCustomerPeriodLogMapper.insert(suspendPeriod);
+    }
+
+    customer.setHcStatus(status);
+    customer.setUpdateBy(operateBy);
+    return sbCustomerMapper.updateSbCustomer(customer);
+  }
+
+  @Override
+  public List<HcCustomerStatusLog> selectHcStatusLogList(String tenantId) {
+    return hcCustomerStatusLogMapper.selectByTenantId(tenantId);
+  }
+
+  @Override
+  public List<HcCustomerPeriodLog> selectHcPeriodLogList(String tenantId) {
+    return hcCustomerPeriodLogMapper.selectByTenantId(tenantId);
   }
 }

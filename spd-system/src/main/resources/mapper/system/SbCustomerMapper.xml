@@ -6,8 +6,11 @@
     <id     property="customerId"       column="customer_id"/>
     <result property="customerName"     column="customer_name"/>
     <result property="customerCode"     column="customer_code"/>
+    <result property="tenantKey"        column="tenant_key"/>
     <result property="status"           column="status"/>
     <result property="plannedDisableTime" column="planned_disable_time"/>
+    <result property="hcStatus"         column="hc_status"/>
+    <result property="hcPlannedDisableTime" column="hc_planned_disable_time"/>
     <result property="createBy"         column="create_by"/>
     <result property="createTime"       column="create_time"/>
     <result property="updateBy"         column="update_by"/>
@@ -18,7 +21,8 @@
   </resultMap>
 
   <sql id="selectSbCustomerVo">
-    select customer_id, customer_name, customer_code, status, planned_disable_time,
+    select customer_id, customer_name, customer_code, tenant_key, status, planned_disable_time,
+           hc_status, hc_planned_disable_time,
            create_by, create_time, update_by, update_time, remark, delete_by, delete_time
     from sb_customer
   </sql>
@@ -29,7 +33,9 @@
       delete_time is null
       <if test="customerName != null and customerName != ''">AND customer_name like concat('%', #{customerName}, '%')</if>
       <if test="customerCode != null and customerCode != ''">AND customer_code = #{customerCode}</if>
+      <if test="tenantKey != null and tenantKey != ''">AND tenant_key = #{tenantKey}</if>
       <if test="status != null and status != ''">AND status = #{status}</if>
+      <if test="hcStatus != null and hcStatus != ''">AND hc_status = #{hcStatus}</if>
     </where>
     order by create_time desc
   </select>
@@ -49,9 +55,14 @@
     where customer_code = #{customerCode} and delete_time is null limit 1
   </select>
 
+  <select id="selectSbCustomerByTenantKey" parameterType="String" resultMap="SbCustomerResult">
+    <include refid="selectSbCustomerVo"/>
+    where tenant_key = #{tenantKey} and delete_time is null limit 1
+  </select>
+
   <insert id="insertSbCustomer" parameterType="com.spd.system.domain.SbCustomer">
-    insert into sb_customer (customer_id, customer_name, customer_code, status, planned_disable_time, remark, create_by, create_time)
-    values (#{customerId}, #{customerName}, #{customerCode}, #{status}, #{plannedDisableTime}, #{remark}, #{createBy}, sysdate())
+    insert into sb_customer (customer_id, customer_name, customer_code, tenant_key, status, planned_disable_time, hc_status, hc_planned_disable_time, remark, create_by, create_time)
+    values (#{customerId}, #{customerName}, #{customerCode}, #{tenantKey}, #{status}, #{plannedDisableTime}, ifnull(#{hcStatus}, '0'), #{hcPlannedDisableTime}, #{remark}, #{createBy}, sysdate())
   </insert>
 
   <update id="updateSbCustomer" parameterType="com.spd.system.domain.SbCustomer">
@@ -59,8 +70,11 @@
     <set>
       <if test="customerName != null and customerName != ''">customer_name = #{customerName},</if>
       <if test="customerCode != null">customer_code = #{customerCode},</if>
+      <if test="tenantKey != null">tenant_key = #{tenantKey},</if>
       <if test="status != null">status = #{status},</if>
       <if test="plannedDisableTime != null">planned_disable_time = #{plannedDisableTime},</if>
+      <if test="hcStatus != null">hc_status = #{hcStatus},</if>
+      <if test="hcPlannedDisableTime != null">hc_planned_disable_time = #{hcPlannedDisableTime},</if>
       <if test="remark != null">remark = #{remark},</if>
       <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
       update_time = sysdate()

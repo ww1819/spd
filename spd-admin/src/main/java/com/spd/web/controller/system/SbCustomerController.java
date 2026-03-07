@@ -22,6 +22,8 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
+import com.spd.common.enums.TenantEnum;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerMenuService;
 import com.spd.system.service.ISbCustomerService;
@@ -56,10 +58,22 @@ public class SbCustomerController extends BaseController {
     return success(sbCustomerService.selectSbCustomerById(customerId));
   }
 
+  /**
+   * 代码内租户列表（TenantEnum），新增客户时从此列表选择以关联租户表与枚举
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:list')")
+  @GetMapping("/tenantEnumList")
+  public AjaxResult tenantEnumList() {
+    return success(TenantEnum.toVoList());
+  }
+
   @PreAuthorize("@ss.hasPermi('sb:system:customer:add')")
   @Log(title = "设备客户", businessType = BusinessType.INSERT)
   @PostMapping
   public AjaxResult add(@Validated @RequestBody SbCustomer customer) {
+    if (StringUtils.isEmpty(customer.getTenantKey())) {
+      return error("请从代码内租户列表选择租户类型（tenantKey）");
+    }
     if (UserConstants.NOT_UNIQUE == (sbCustomerService.checkSbCustomerCodeUnique(customer))) {
       return error("新增客户'" + customer.getCustomerName() + "'失败，客户编码已存在");
     }

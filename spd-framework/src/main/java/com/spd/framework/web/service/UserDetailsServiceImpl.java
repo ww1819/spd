@@ -51,6 +51,7 @@ public class UserDetailsServiceImpl implements UserDetailsService
     {
         String userName = username;
         String customerId = null;
+        boolean forHc = false;
 
         if (username != null && username.contains("|")) {
             String[] parts = username.split("\\|", 2);
@@ -59,6 +60,10 @@ public class UserDetailsServiceImpl implements UserDetailsService
             if (StringUtils.isEmpty(userName)) {
                 log.info("登录：用户名为空.");
                 throw new ServiceException(MessageUtils.message("user.not.exists"));
+            }
+            if (first.startsWith("hc:")) {
+                forHc = true;
+                first = first.length() > 3 ? "id:" + first.substring(3) : first;
             }
             SbCustomer customer;
             if (first.startsWith("id:")) {
@@ -79,8 +84,8 @@ public class UserDetailsServiceImpl implements UserDetailsService
                 }
             }
 
-            // 先校验客户：存在、未停用、合法，通过后再校验用户名密码
-            validateCustomerForLogin(customer, customerId);
+            // 先校验客户：存在、未停用、合法（耗材登录校验 hc_status/hc_planned_disable_time，设备校验 status/planned_disable_time）
+            validateCustomerForLogin(customer, customerId, forHc);
         }
 
         // 通过「客户ID + 用户名」唯一定位用户（不同租户可同名），定位后再由上层比对密码
@@ -111,22 +116,37 @@ public class UserDetailsServiceImpl implements UserDetailsService
 
     /**
      * 登录前校验客户：是否存在、是否已停用、是否合法（未到计划停用时间等）
-     * 仅在租户登录时调用，校验不通过直接抛异常，不继续校验用户名密码
+     * 仅在租户登录时调用，校验不通过直接抛异常，不继续校验用户名密码。
+     * @param forHc true=耗材系统登录，校验 hc_status、hc_planned_disable_time，停用提示「耗材系统已经被停用」；false=设备系统，校验 status、planned_disable_time
      */
-    private void validateCustomerForLogin(SbCustomer customer, String customerId) {
+    private void validateCustomerForLogin(SbCustomer customer, String customerId, boolean forHc) {
         if (customer == null) {
             log.info("登录：客户不存在，customerId={}", customerId);
             throw new ServiceException("客户不存在或已删除");
         }
-        if ("1".equals(customer.getStatus())) {
-            log.info("登录：客户已停用，customerId={}", customer.getCustomerId());
-            throw new ServiceException("客户已被停用，无法使用功能");
-        }
-        if (customer.getPlannedDisableTime() != null) {
-            long now = java.util.Calendar.getInstance().getTime().getTime();
-            if (now >= customer.getPlannedDisableTime().getTime()) {
-                log.info("登录：客户已到计划停用时间，customerId={}", customer.getCustomerId());
+        if (forHc) {
+            if ("1".equals(customer.getHcStatus())) {
+                log.info("登录：耗材系统已停用，customerId={}", customer.getCustomerId());
+                throw new ServiceException("耗材系统已经被停用");
+            }
+            if (customer.getHcPlannedDisableTime() != null) {
+                long now = java.util.Calendar.getInstance().getTime().getTime();
+                if (now >= customer.getHcPlannedDisableTime().getTime()) {
+                    log.info("登录：耗材系统已到计划停用时间，customerId={}", customer.getCustomerId());
+                    throw new ServiceException("耗材系统已经被停用");
+                }
+            }
+        } else {
+            if ("1".equals(customer.getStatus())) {
+                log.info("登录：客户已停用，customerId={}", customer.getCustomerId());
                 throw new ServiceException("客户已被停用，无法使用功能");
+            }
+            if (customer.getPlannedDisableTime() != null) {
+                long now = java.util.Calendar.getInstance().getTime().getTime();
+                if (now >= customer.getPlannedDisableTime().getTime()) {
+                    log.info("登录：客户已到计划停用时间，customerId={}", customer.getCustomerId());
+                    throw new ServiceException("客户已被停用，无法使用功能");
+                }
             }
         }
     }
