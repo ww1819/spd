@@ -145,6 +145,12 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         main.setBillStatus(0);
         main.setCreateBy(username);
         main.setCreateTime(now);
+        if (StringUtils.isEmpty(main.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            main.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (StringUtils.isEmpty(main.getTenantId()) && wh.getTenantId() != null) {
+            main.setTenantId(wh.getTenantId());
+        }
         stkInitialImportMapper.insert(main);
 
         List<StkInitialImportEntry> entries = new ArrayList<>();
@@ -238,6 +244,9 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
 
     @Override
     public List<StkInitialImport> list(StkInitialImport query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkInitialImportMapper.selectList(query);
     }
 

@@ -72,6 +72,9 @@ public class DeptBatchConsume extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 科室批量消耗明细信息 */
     private List<DeptBatchConsumeEntry> deptBatchConsumeEntryList;
 
@@ -359,6 +362,9 @@ public class DeptBatchConsume extends BaseEntity
     public void setPatientId(String patientId) {
         this.patientId = patientId;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

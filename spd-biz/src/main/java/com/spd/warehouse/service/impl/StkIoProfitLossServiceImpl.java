@@ -90,6 +90,9 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
 
     @Override
     public List<StkIoProfitLoss> selectStkIoProfitLossList(StkIoProfitLoss stkIoProfitLoss) {
+        if (stkIoProfitLoss != null && StringUtils.isEmpty(stkIoProfitLoss.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoProfitLoss.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoProfitLossMapper.selectStkIoProfitLossList(stkIoProfitLoss);
     }
 
@@ -154,6 +157,9 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         stkIoProfitLoss.setDelFlag(0);
         stkIoProfitLoss.setCreateTime(DateUtils.getNowDate());
         stkIoProfitLoss.setCreateBy(SecurityUtils.getUsername());
+        if (StringUtils.isEmpty(stkIoProfitLoss.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoProfitLoss.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = stkIoProfitLossMapper.insertStkIoProfitLoss(stkIoProfitLoss);
         insertEntries(stkIoProfitLoss);
         return rows;

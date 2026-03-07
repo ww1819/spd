@@ -72,6 +72,9 @@ public class StkIoStocktaking extends BaseEntity
     /** 是否月结 */
     private Integer isMonthInit;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 盈亏金额（用于列表显示，从明细汇总） */
     private java.math.BigDecimal profitAmount;
 
@@ -283,6 +286,9 @@ public class StkIoStocktaking extends BaseEntity
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

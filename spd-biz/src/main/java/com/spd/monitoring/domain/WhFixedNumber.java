@@ -43,6 +43,9 @@ public class WhFixedNumber extends BaseEntity {
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
 
+    /** 租户ID（同sb_customer.customer_id） */
+    private String tenantId;
+
     /** 关联：仓库 */
     private FdWarehouse warehouse;
 
@@ -136,6 +139,14 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setDelFlag(Integer delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public FdWarehouse getWarehouse() {

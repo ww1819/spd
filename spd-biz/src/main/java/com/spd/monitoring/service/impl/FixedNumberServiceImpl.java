@@ -1,5 +1,7 @@
 package com.spd.monitoring.service.impl;
 
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.monitoring.domain.DeptFixedNumber;
 import com.spd.monitoring.domain.FixedNumberSaveRequest;
@@ -23,11 +25,17 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
 
     @Override
     public List<WhFixedNumber> selectWhFixedNumberList(WhFixedNumber query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return whFixedNumberMapper.selectWhFixedNumberList(query);
     }
 
     @Override
     public List<DeptFixedNumber> selectDeptFixedNumberList(DeptFixedNumber query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return deptFixedNumberMapper.selectDeptFixedNumberList(query);
     }
 
@@ -59,6 +67,9 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
                     entity.setDelFlag(0);
+                    if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                        entity.setTenantId(SecurityUtils.getCustomerId());
+                    }
                     entity.setCreateBy(operator);
                     whFixedNumberMapper.insertWhFixedNumber(entity);
                 } else {
@@ -94,6 +105,9 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
                     entity.setDelFlag(0);
+                    if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                        entity.setTenantId(SecurityUtils.getCustomerId());
+                    }
                     entity.setCreateBy(operator);
                     deptFixedNumberMapper.insertDeptFixedNumber(entity);
                 } else {

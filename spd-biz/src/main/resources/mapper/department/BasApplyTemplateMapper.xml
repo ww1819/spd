@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="id" column="id"/>
         <result property="templateName" column="template_name"/>
         <result property="warehouseId" column="warehouse_id"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
         <result property="createBy" column="create_by"/>
@@ -43,24 +44,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTemplateVo">
-        select id, template_name, warehouse_id, remark, del_flag, create_by, create_time, update_by, update_time
+        select id, template_name, warehouse_id, tenant_id, remark, del_flag, create_by, create_time, update_by, update_time
         from bas_apply_template
     </sql>
 
     <select id="selectBasApplyTemplateList" resultMap="BasApplyTemplateResult">
-        select t.id, t.template_name, t.warehouse_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
+        select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
         <where>
             and (t.del_flag = 0 or t.del_flag is null)
+            <if test="tenantId != null and tenantId != ''">and (t.tenant_id = #{tenantId} or t.tenant_id is null)</if>
             <if test="templateName != null and templateName != ''">and t.template_name like concat('%', #{templateName}, '%')</if>
         </where>
         order by t.create_time desc
     </select>
 
     <select id="selectBasApplyTemplateById" resultMap="BasApplyTemplateWithEntryResult">
-        select t.id, t.template_name, t.warehouse_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
+        select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName,
                e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
                m.code as material_code, m.name as material_name, m.speci as material_speci
@@ -76,6 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -86,6 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">#{templateName},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -100,6 +104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

@@ -43,6 +43,9 @@ public class DeptFixedNumber extends BaseEntity {
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
 
+    /** 租户ID（同sb_customer.customer_id） */
+    private String tenantId;
+
     /** 关联：科室 */
     private FdDepartment department;
 
@@ -136,6 +139,14 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setDelFlag(Integer delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public FdDepartment getDepartment() {

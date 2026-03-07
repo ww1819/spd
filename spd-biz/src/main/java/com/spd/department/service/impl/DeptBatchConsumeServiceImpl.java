@@ -12,6 +12,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.department.domain.DeptBatchConsumeEntry;
@@ -62,6 +63,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public List<DeptBatchConsume> selectDeptBatchConsumeList(DeptBatchConsume deptBatchConsume)
     {
+        if (deptBatchConsume != null && StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
+        }
         return deptBatchConsumeMapper.selectDeptBatchConsumeList(deptBatchConsume);
     }
 
@@ -79,6 +83,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         deptBatchConsume.setConsumeBillNo(getNumber());
         deptBatchConsume.setConsumeBillStatus(1); // 待审核状态
         deptBatchConsume.setDelFlag(0);
+        if (StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = deptBatchConsumeMapper.insertDeptBatchConsume(deptBatchConsume);
         insertDeptBatchConsumeEntry(deptBatchConsume);
         return rows;

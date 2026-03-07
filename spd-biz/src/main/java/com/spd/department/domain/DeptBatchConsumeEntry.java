@@ -68,6 +68,13 @@ public class DeptBatchConsumeEntry extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
+
     /** 耗材对象 */
     private FdMaterial material;
 
@@ -198,6 +205,11 @@ public class DeptBatchConsumeEntry extends BaseEntity
     public void setMaterial(FdMaterial material) {
         this.material = material;
     }
+
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
 
     @Override
     public String toString() {

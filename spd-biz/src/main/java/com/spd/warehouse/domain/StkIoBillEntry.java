@@ -84,6 +84,16 @@ public class StkIoBillEntry extends BaseEntity
     /** 科室库存明细id（反写） */
     private Long kcNo;
 
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
+    /** 供应商ID（出退库单明细内的供应商id） */
+    @Excel(name = "供应商ID")
+    private String supplerId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -229,6 +239,13 @@ public class StkIoBillEntry extends BaseEntity
     public void setKcNo(Long kcNo) {
         this.kcNo = kcNo;
     }
+
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+    public String getSupplerId() { return supplerId; }
+    public void setSupplerId(String supplerId) { this.supplerId = supplerId; }
 
     @Override
     public String toString() {

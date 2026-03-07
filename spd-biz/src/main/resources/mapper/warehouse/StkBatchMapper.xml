@@ -59,6 +59,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="delTime"    column="del_time"    />
         <result property="delBy"    column="del_by"    />
+        <result property="tenantId"    column="tenant_id"    />
     </resultMap>
 
     <insert id="insertStkBatch" parameterType="com.spd.warehouse.domain.StkBatch" useGeneratedKeys="true" keyProperty="id">
@@ -72,7 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             storeroom_id, storeroom_code, storeroom_name,
             finance_category_id, finance_category_code, finance_category_name,
             batch_source, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
-            create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+            create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         ) values (
             #{batchNo}, #{materialId}, #{materialCode}, #{materialName}, #{speci}, #{model},
             #{unitId}, #{unitName}, #{unitPrice}, #{batchNumber}, #{endTime}, #{beginTime},
@@ -83,7 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{storeroomId}, #{storeroomCode}, #{storeroomName},
             #{financeCategoryId}, #{financeCategoryCode}, #{financeCategoryName},
             #{batchSource}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
-            #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}
+            #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}, #{tenantId}
         )
     </insert>
 
@@ -97,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                storeroom_id, storeroom_code, storeroom_name,
                finance_category_id, finance_category_code, finance_category_name,
                batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
-               create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         from stk_batch
         where batch_no = #{batchNo} and (del_flag = 0 or del_flag is null)
         limit 1
@@ -113,7 +114,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                storeroom_id, storeroom_code, storeroom_name,
                finance_category_id, finance_category_code, finance_category_name,
                batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
-               create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         from stk_batch
         where id = #{id}
     </select>

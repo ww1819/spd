@@ -151,6 +151,8 @@ CALL add_table_column('stk_initial_import_entry', 'medical_name', 'varchar(255)'
 /
 CALL add_table_column('stk_initial_import_entry', 'main_barcode', 'varchar(128)', '主条码', NULL);
 /
+CALL add_table_column('stk_initial_import_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
 
 CALL add_table_column('stk_io_bill_entry', 'suppler_id', 'varchar(128)', '供应商ID，出退库单明细内的供应商id', NULL);
 /
@@ -207,4 +209,67 @@ CALL add_table_column('sys_post_warehouse', 'tenant_id', 'varchar(36)', '租户I
 CALL add_table_column('sb_customer', 'hc_status', 'char(1)', '耗材侧状态（0正常 1停用）', '0');
 /
 CALL add_table_column('sb_customer', 'hc_planned_disable_time', 'datetime', '计划停用时间（耗材侧）', NULL);
+/
+/* ========== 高值耗材主条码、辅条码（便于追溯与数据核对） ========== */
+CALL add_table_column('stk_io_bill_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('stk_inventory', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('stk_inventory', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('t_hc_ck_flow', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('t_hc_ck_flow', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+/* 科室批量消耗明细：高值耗材主条码、辅条码 */
+CALL add_table_column('t_hc_ks_xh_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+/* 批次表：租户隔离与历史追溯 */
+CALL add_table_column('stk_batch', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+/* ========== 耗材业务表与客户(租户)关联（便于多租户隔离与列表过滤） ========== */
+CALL add_table_column('stk_initial_import', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('bas_apply_template', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('t_hc_ks_xh', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('stk_io_stocktaking', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('stk_io_profit_loss', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_material_import', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+/* 流水与档案日志表：冗余租户ID 便于按客户查流水/日志 */
+CALL add_table_column('t_hc_ck_flow', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_material_status_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_material_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /

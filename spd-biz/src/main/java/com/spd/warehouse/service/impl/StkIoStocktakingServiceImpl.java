@@ -50,6 +50,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public List<StkIoStocktaking> selectStkIoStocktakingList(StkIoStocktaking stkIoStocktaking)
     {
+        if (stkIoStocktaking != null && StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoStocktakingMapper.selectStkIoStocktakingList(stkIoStocktaking);
     }
 
@@ -65,6 +68,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     {
         stkIoStocktaking.setStockNo(getNumber());
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = stkIoStocktakingMapper.insertStkIoStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
         return rows;

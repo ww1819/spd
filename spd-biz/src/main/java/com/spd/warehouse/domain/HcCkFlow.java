@@ -55,6 +55,12 @@ public class HcCkFlow extends BaseEntity {
     private Date flowTime;
     /** 删除标志 */
     private Integer delFlag;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+    /** 高值耗材主条码 */
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    private String subBarcode;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -94,4 +100,10 @@ public class HcCkFlow extends BaseEntity {
     public void setFlowTime(Date flowTime) { this.flowTime = flowTime; }
     public Integer getDelFlag() { return delFlag; }
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 }

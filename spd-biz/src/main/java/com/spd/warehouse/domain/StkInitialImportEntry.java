@@ -71,6 +71,8 @@ public class StkInitialImportEntry extends BaseEntity {
     private String medicalName;
     /** 主条码（导入快照） */
     private String mainBarcode;
+    /** 高值耗材辅条码（导入快照） */
+    private String subBarcode;
 
     /** 耗材对象 */
     private FdMaterial material;

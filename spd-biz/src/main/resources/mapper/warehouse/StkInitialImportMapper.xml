@@ -18,6 +18,7 @@
         <result property="updateTime" column="update_time"/>
         <result property="auditBy" column="audit_by"/>
         <result property="auditTime" column="audit_time"/>
+        <result property="tenantId" column="tenant_id"/>
         <association property="warehouse" column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult"/>
     </resultMap>
 
@@ -29,7 +30,7 @@
 
     <sql id="selectVo">
         select m.id, m.bill_no, m.warehouse_id, m.import_operator, m.import_time, m.stock_gen_time,
-               m.bill_status, m.remark, m.del_flag, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time,
+               m.bill_status, m.remark, m.del_flag, m.tenant_id, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time,
                w.id wId, w.code warehouseCode, w.name warehouseName
         from stk_initial_import m
         left join fd_warehouse w on m.warehouse_id = w.id
@@ -47,6 +48,7 @@
             <if test="billNo != null and billNo != ''">and m.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
             <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
+            <if test="tenantId != null and tenantId != ''">and (m.tenant_id = #{tenantId} or m.tenant_id is null)</if>
             <if test="params != null and params.beginTime != null">and m.import_time &gt;= #{params.beginTime}</if>
             <if test="params != null and params.endTime != null">and m.import_time &lt;= #{params.endTime}</if>
         </where>
@@ -58,8 +60,8 @@
     </select>
 
     <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImport">
-        insert into stk_initial_import (id, bill_no, warehouse_id, import_operator, import_time, stock_gen_time, bill_status, remark, del_flag, create_by, create_time, audit_by, audit_time)
-        values (#{id}, #{billNo}, #{warehouseId}, #{importOperator}, #{importTime}, #{stockGenTime}, #{billStatus}, #{remark}, 0, #{createBy}, #{createTime}, #{auditBy}, #{auditTime})
+        insert into stk_initial_import (id, bill_no, warehouse_id, import_operator, import_time, stock_gen_time, bill_status, remark, del_flag, tenant_id, create_by, create_time, audit_by, audit_time)
+        values (#{id}, #{billNo}, #{warehouseId}, #{importOperator}, #{importTime}, #{stockGenTime}, #{billStatus}, #{remark}, 0, #{tenantId}, #{createBy}, #{createTime}, #{auditBy}, #{auditTime})
     </insert>
 
     <update id="update" parameterType="com.spd.warehouse.domain.StkInitialImport">

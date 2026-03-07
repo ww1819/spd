@@ -27,6 +27,10 @@ public class BasApplyTemplate extends BaseEntity {
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    @Excel(name = "租户ID")
+    private String tenantId;
+
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
 
@@ -83,6 +87,9 @@ public class BasApplyTemplate extends BaseEntity {
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

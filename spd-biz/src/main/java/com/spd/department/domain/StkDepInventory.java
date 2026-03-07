@@ -114,6 +114,13 @@ public class StkDepInventory extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -359,4 +366,9 @@ public class StkDepInventory extends BaseEntity
     public void setBillNo(String billNo) {
         this.billNo = billNo;
     }
+
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
 }

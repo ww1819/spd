@@ -15,6 +15,7 @@
         <result property="location" column="location"/>
         <result property="locationId" column="location_id"/>
         <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -69,6 +70,7 @@
 
     <select id="selectWhFixedNumberList" parameterType="WhFixedNumber" resultMap="WhFixedNumberResult">
         <include refid="selectWhFixedNumberVo"/>
+        <if test="tenantId != null and tenantId != ''"> and (f.tenant_id = #{tenantId} or f.tenant_id is null)</if>
         <if test="warehouseId != null">
             and f.warehouse_id = #{warehouseId}
         </if>
@@ -86,9 +88,9 @@
 
     <insert id="insertWhFixedNumber" parameterType="WhFixedNumber">
         insert into wh_fixed_number
-        (id, material_id, warehouse_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, create_by, create_time)
+        (id, material_id, warehouse_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, tenant_id, create_by, create_time)
         values
-        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{createBy}, now())
+        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{tenantId}, #{createBy}, now())
     </insert>
 
     <update id="updateWhFixedNumber" parameterType="WhFixedNumber">
@@ -100,6 +102,7 @@
             monitoring = #{monitoring},
             location = #{location},
             location_id = #{locationId},
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             update_by = #{updateBy},
             update_time = now()
         where id = #{id}

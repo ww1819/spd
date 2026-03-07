@@ -51,6 +51,12 @@ public class StkIoProfitLossEntry extends BaseEntity {
     private Integer delFlag;
     /** 耗材对象 */
     private FdMaterial material;
+    /** 高值耗材主条码 */
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    private String subBarcode;
+    /** 供应商ID（出退库单明细内的供应商id） */
+    private String supplerId;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -84,4 +90,10 @@ public class StkIoProfitLossEntry extends BaseEntity {
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
     public FdMaterial getMaterial() { return material; }
     public void setMaterial(FdMaterial material) { this.material = material; }
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+    public String getSupplerId() { return supplerId; }
+    public void setSupplerId(String supplerId) { this.supplerId = supplerId; }
 }

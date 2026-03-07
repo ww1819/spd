@@ -52,3 +52,72 @@ INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2104 FROM DUAL WHERE NOT 
 /
 INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2105 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2105);
 /
+
+-- ========== 批次表 tenant_id 回填（便于多租户隔离与历史追溯） ==========
+-- 从关联的入库单主表回填 stk_batch.tenant_id
+UPDATE stk_batch b
+INNER JOIN stk_io_bill bill ON bill.id = b.bill_id AND bill.tenant_id IS NOT NULL
+SET b.tenant_id = bill.tenant_id
+WHERE b.tenant_id IS NULL;
+/
+
+-- ========== 新增租户字段表 tenant_id 回填（从仓库/科室关联取数） ==========
+-- 期初导入主表：从仓库取 tenant_id
+UPDATE stk_initial_import m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 申领模板主表：从仓库取 tenant_id
+UPDATE bas_apply_template m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 科室批量消耗主表：优先从仓库取，无则从科室取
+UPDATE t_hc_ks_xh m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+UPDATE t_hc_ks_xh m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 盘点主表：从仓库取 tenant_id
+UPDATE stk_io_stocktaking m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 盈亏主表：从仓库取 tenant_id
+UPDATE stk_io_profit_loss m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 仓库定数：从仓库取 tenant_id
+UPDATE wh_fixed_number m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 科室定数：从科室取 tenant_id（表结构为 warehouse_id 则用仓库；若为 department_id 则用科室）
+UPDATE dept_fixed_number m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 仓库流水：从仓库取 tenant_id
+UPDATE t_hc_ck_flow f
+INNER JOIN fd_warehouse w ON w.id = f.warehouse_id AND w.tenant_id IS NOT NULL
+SET f.tenant_id = w.tenant_id
+WHERE f.tenant_id IS NULL;
+/
+-- 科室流水：从科室取 tenant_id（表有 department_id）
+UPDATE t_hc_ks_flow f
+INNER JOIN fd_department d ON d.id = f.department_id AND d.tenant_id IS NOT NULL
+SET f.tenant_id = d.tenant_id
+WHERE f.tenant_id IS NULL;
+/

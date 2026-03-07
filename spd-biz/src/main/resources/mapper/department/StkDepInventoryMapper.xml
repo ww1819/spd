@@ -28,6 +28,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
         <result property="remark"    column="remark"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="mainBarcode"    column="main_barcode"    />
+        <result property="subBarcode"    column="sub_barcode"    />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -55,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
 			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
 			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id,
+			stk.main_barcode, stk.sub_barcode,
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
                s.id sId,s.code supplierCode,s.name supplierName,
@@ -116,6 +119,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplierId != null">supplier_id,</if>
             <if test="kcNo != null">kc_no,</if>
             <if test="batchNumber != null">batch_number,</if>
+            <if test="mainBarcode != null">main_barcode,</if>
+            <if test="subBarcode != null">sub_barcode,</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status,</if>
             <if test="billId != null">bill_id,</if>
             <if test="billEntryId != null">bill_entry_id,</if>
@@ -137,6 +142,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplierId != null">#{supplierId},</if>
             <if test="kcNo != null">#{kcNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="mainBarcode != null">#{mainBarcode},</if>
+            <if test="subBarcode != null">#{subBarcode},</if>
             <if test="receiptConfirmStatus != null">#{receiptConfirmStatus},</if>
             <if test="billId != null">#{billId},</if>
             <if test="billEntryId != null">#{billEntryId},</if>
@@ -162,6 +169,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="kcNo != null">kc_no = #{kcNo},</if>
             <if test="batchNumber != null">batch_number = #{batchNumber},</if>
+            <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>
+            <if test="subBarcode != null">sub_barcode = #{subBarcode},</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status = #{receiptConfirmStatus},</if>
             <if test="billId != null">bill_id = #{billId},</if>
             <if test="billEntryId != null">bill_entry_id = #{billEntryId},</if>

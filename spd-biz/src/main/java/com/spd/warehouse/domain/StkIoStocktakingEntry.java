@@ -92,6 +92,12 @@ public class StkIoStocktakingEntry extends BaseEntity
 
     /** 耗材对象 */
     private FdMaterial material;
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
 
     public void setId(Long id)
     {
@@ -252,6 +258,11 @@ public class StkIoStocktakingEntry extends BaseEntity
     public void setMaterial(FdMaterial material) {
         this.material = material;
     }
+
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
 
     @Override
     public String toString() {

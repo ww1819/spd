@@ -37,6 +37,8 @@ public class StkInitialImport extends BaseEntity {
     private Integer billStatus;
     /** 删除标志 */
     private Integer delFlag;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
     /** 审核人 */
     private String auditBy;
     /** 审核时间 */
