@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseDate"    column="warehouse_date"    />
         <result property="supplierId"    column="supplier_id"    />
         <result property="inHospitalCode"    column="in_hospital_code"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="endTime"    column="end_time"    />
         <result property="orderNo"    column="orderNo"    />
         <result property="masterBarcode"    column="master_barcode"    />
@@ -97,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectGzDepotInventoryVo">
         select gz.id, gz.qty, gz.material_id, gz.warehouse_id, gz.unit_price,gz.amt,
 				gz.batch_no, gz.material_no, gz.material_date, gz.warehouse_date,gz.supplier_id,
-				gz.in_hospital_code, gz.master_barcode, gz.secondary_barcode,
+				gz.in_hospital_code, gz.tenant_id, gz.master_barcode, gz.secondary_barcode,
 				goe.end_time,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
@@ -141,6 +142,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where gz.qty &gt; 0
         <!-- 只查询高值仓库的库存 -->
         and w.warehouse_type = '高值'
+        <if test="tenantId != null and tenantId != ''"> and gz.tenant_id = #{tenantId}</if>
         <if test="qty != null "> and gz.qty = #{qty}</if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and gz.warehouse_id = #{warehouseId}</if>
@@ -152,6 +154,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="orderNo != null and orderNo != ''"> and go.order_no like concat('%', #{orderNo}, '%')</if>
         <if test="inHospitalCode != null and inHospitalCode != ''"> and gz.in_hospital_code like concat('%', #{inHospitalCode}, '%')</if>
+        <if test="masterBarcode != null and masterBarcode != ''"> and gz.master_barcode like concat('%', #{masterBarcode}, '%')</if>
+        <if test="secondaryBarcode != null and secondaryBarcode != ''"> and gz.secondary_barcode like concat('%', #{secondaryBarcode}, '%')</if>
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.warehouse_date >= #{beginDate}]]></if>
         <if test="endDate != null and endDate != ''"><![CDATA[ and gz.warehouse_date <= #{endDate}]]></if>
         order by gz.id desc, gz.warehouse_date desc
@@ -176,6 +180,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="inHospitalCode != null">in_hospital_code,</if>
+            <if test="tenantId != null">tenant_id,</if>
+            <if test="masterBarcode != null">master_barcode,</if>
+            <if test="secondaryBarcode != null">secondary_barcode,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -189,6 +196,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
+            <if test="tenantId != null">#{tenantId},</if>
+            <if test="masterBarcode != null">#{masterBarcode},</if>
+            <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
          </trim>
     </insert>
 
@@ -205,6 +215,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="inHospitalCode != null">in_hospital_code = #{inHospitalCode},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="masterBarcode != null">master_barcode = #{masterBarcode},</if>
+            <if test="secondaryBarcode != null">secondary_barcode = #{secondaryBarcode},</if>
         </trim>
         where id = #{id}
     </update>

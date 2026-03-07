@@ -121,3 +121,16 @@ INNER JOIN fd_department d ON d.id = f.department_id AND d.tenant_id IS NOT NULL
 SET f.tenant_id = d.tenant_id
 WHERE f.tenant_id IS NULL;
 /
+-- ========== 高值耗材表 tenant_id 回填 ==========
+-- gz_order：从仓库取 tenant_id
+UPDATE gz_order m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- gz_depot_inventory：从仓库取 tenant_id
+UPDATE gz_depot_inventory m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/

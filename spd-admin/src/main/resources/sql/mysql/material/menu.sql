@@ -98,3 +98,70 @@ SELECT 2105, '功能管理启停用', 2101, 3, '#', '', 1, 0, 'F', '0', '0',
   'hc:system:customerMenuManage:edit', '#', 'admin', NOW(), '客户菜单功能启用停用'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2105);
 /
+
+-- ========== 财务管理、发票管理（挂到一级菜单下，与仓库等同级） ==========
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2200, '财务管理', 0, 22, 'finance', NULL, 1, 0, 'M', '0', '0',
+  '', 'money', 'admin', NOW(), '财务管理'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2200);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2201, '发票管理', 2200, 1, 'invoice', 'finance/invoice/index', 1, 0, 'C', '0', '0',
+  'finance:invoice:list', 'form', 'admin', NOW(), '发票管理'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2201);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2202, '发票查询', 2201, 1, '#', '', 1, 0, 'F', '0', '0',
+  'finance:invoice:query', '#', 'admin', NOW(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2202);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2203, '发票新增', 2201, 2, '#', '', 1, 0, 'F', '0', '0',
+  'finance:invoice:add', '#', 'admin', NOW(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2203);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2204, '发票修改', 2201, 3, '#', '', 1, 0, 'F', '0', '0',
+  'finance:invoice:edit', '#', 'admin', NOW(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2204);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2205, '发票删除', 2201, 4, '#', '', 1, 0, 'F', '0', '0',
+  'finance:invoice:remove', '#', 'admin', NOW(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2205);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 2206, '发票审核', 2201, 5, '#', '', 1, 0, 'F', '0', '0',
+  'finance:invoice:audit', '#', 'admin', NOW(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2206);
+/
+-- 为管理员角色(role_id=1)授予财务管理、发票管理及按钮权限
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2200 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2200);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2201 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2201);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2202 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2202);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2203 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2203);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2204 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2204);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2205 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2205);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2206 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2206);
+/
+-- 补齐 sys_post_menu：为岗位 post_id=1（admin 用户常用岗位）添加发票管理菜单权限
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2200, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2200);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2201, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2201);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2202, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2202);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2203, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2203);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2204, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2204);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2205, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2205);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id) SELECT 1, 2206, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_post_menu WHERE post_id = 1 AND menu_id = 2206);
+/

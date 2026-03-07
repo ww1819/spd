@@ -273,3 +273,15 @@ CALL add_table_column('fd_material_status_log', 'tenant_id', 'varchar(36)', '租
 /
 CALL add_table_column('fd_material_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
+/* ========== 高值耗材相关表：租户关联 + 主条码/辅条码 ========== */
+CALL add_table_column('gz_order', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '主条码', NULL);
+/
+CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '辅条码', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+/* 发票表增加供应商ID */
+CALL add_table_column('fin_invoice', 'supplier_id', 'bigint(20)', '供应商ID', NULL);
+/

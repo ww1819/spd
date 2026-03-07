@@ -40,6 +40,9 @@ public class GzDepotInventoryServiceImpl implements IGzDepotInventoryService
     @Override
     public List<GzDepotInventory> selectGzDepotInventoryList(GzDepotInventory gzDepotInventory)
     {
+        if (gzDepotInventory != null && com.spd.common.utils.StringUtils.isEmpty(gzDepotInventory.getTenantId()) && com.spd.common.utils.StringUtils.isNotEmpty(com.spd.common.utils.SecurityUtils.getCustomerId())) {
+            gzDepotInventory.setTenantId(com.spd.common.utils.SecurityUtils.getCustomerId());
+        }
         return gzDepotInventoryMapper.selectGzDepotInventoryList(gzDepotInventory);
     }
 

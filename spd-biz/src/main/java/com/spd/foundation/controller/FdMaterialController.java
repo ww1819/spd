@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -94,6 +95,15 @@ public class FdMaterialController extends BaseController
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
         util.exportExcel(response, list, "耗材产品数据");
+    }
+
+    /**
+     * 根据主条码(udi_no)或耗材编码查询产品档案（用于入库单扫码带出产品）
+     */
+    @GetMapping("/getByMainBarcode")
+    public AjaxResult getByMainBarcode(@RequestParam String mainBarcode)
+    {
+        return success(fdMaterialService.getByMainBarcode(mainBarcode));
     }
 
     /**

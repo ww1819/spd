@@ -79,6 +79,9 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public List<GzOrder> selectGzOrderList(GzOrder gzOrder)
     {
+        if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         return gzOrderMapper.selectGzOrderList(gzOrder);
     }
 
@@ -92,6 +95,9 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public int insertGzOrder(GzOrder gzOrder)
     {
+        if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
         int rows = gzOrderMapper.insertGzOrder(gzOrder);
@@ -209,6 +215,11 @@ public class GzOrderServiceImpl implements IGzOrderService
                     gzDepotInventory.setSupplierId(gzOrder.getSupplerId());
                     gzDepotInventory.setInHospitalCode(inHospitalCode);
                     gzDepotInventory.setEndTime(orderEntry.getEndTime()); // 保存有效期
+                    if (StringUtils.isEmpty(gzDepotInventory.getTenantId())) {
+                        gzDepotInventory.setTenantId(StringUtils.isNotEmpty(gzOrder.getTenantId()) ? gzOrder.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    gzDepotInventory.setMasterBarcode(orderEntry.getMasterBarcode());
+                    gzDepotInventory.setSecondaryBarcode(orderEntry.getSecondaryBarcode());
 
                     gzDepotInventoryMapper.insertGzDepotInventory(gzDepotInventory);
                 }

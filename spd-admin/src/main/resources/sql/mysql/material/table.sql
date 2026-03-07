@@ -267,3 +267,37 @@ CREATE TABLE IF NOT EXISTS `hc_customer_period_log` (
   KEY `idx_hc_cpl_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材客户实际使用/停用时间段表';
 /
+
+-- ========== 发票管理（主键UUID7，租户、删除者/删除时间、审核状态/审核人/审核时间） ==========
+CREATE TABLE IF NOT EXISTS `fin_invoice` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `invoice_no` varchar(64) DEFAULT NULL COMMENT '发票号码',
+  `invoice_code` varchar(64) DEFAULT NULL COMMENT '发票代码',
+  `invoice_date` date DEFAULT NULL COMMENT '开票日期',
+  `amount` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `tax_amount` decimal(18,2) DEFAULT NULL COMMENT '税额',
+  `total_amount` decimal(18,2) DEFAULT NULL COMMENT '价税合计',
+  `buyer_name` varchar(255) DEFAULT NULL COMMENT '购方名称',
+  `buyer_tax_no` varchar(64) DEFAULT NULL COMMENT '购方税号',
+  `seller_name` varchar(255) DEFAULT NULL COMMENT '销方名称',
+  `seller_tax_no` varchar(64) DEFAULT NULL COMMENT '销方税号',
+  `supplier_id` bigint(20) DEFAULT NULL COMMENT '供应商ID',
+  `audit_status` int(1) NOT NULL DEFAULT 0 COMMENT '审核状态 0=待审核 1=已审核',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_fin_invoice_tenant` (`tenant_id`),
+  KEY `idx_fin_invoice_supplier` (`supplier_id`),
+  KEY `idx_fin_invoice_audit` (`audit_status`),
+  KEY `idx_fin_invoice_date` (`invoice_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发票管理表';
+/

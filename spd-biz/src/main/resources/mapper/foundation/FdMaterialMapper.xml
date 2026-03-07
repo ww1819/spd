@@ -163,6 +163,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdMaterialVo"/>
         where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) limit 1
     </select>
+    <!-- 根据主条码(udi_no)或耗材编码查询产品档案，用于入库扫码带出产品 -->
+    <select id="selectFdMaterialByMainBarcode" parameterType="String" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where (m.udi_no = #{mainBarcode} or m.code = #{mainBarcode}) and (m.del_flag = 0 or m.del_flag is null) limit 1
+    </select>
     <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
         insert into fd_material
         <trim prefix="(" suffix=")" suffixOverrides=",">

@@ -70,6 +70,9 @@ public class GzDepotInventory extends BaseEntity
     @Excel(name = "院内码")
     private String inHospitalCode;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 有效期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -219,6 +222,9 @@ public class GzDepotInventory extends BaseEntity
     {
         return inHospitalCode;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public void setEndTime(Date endTime)
     {

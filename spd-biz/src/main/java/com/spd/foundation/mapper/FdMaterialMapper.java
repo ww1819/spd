@@ -33,12 +33,20 @@ public interface FdMaterialMapper
     public FdMaterial selectFdMaterialByHisId(String hisId);
 
     /**
+     * 根据主条码或耗材编码查询耗材产品（用于扫码匹配产品档案）
+     *
+     * @param mainBarcode 主条码或耗材编码
+     * @return 耗材产品
+     */
+    public FdMaterial selectFdMaterialByMainBarcode(String mainBarcode);
+
+    /**
      * 查询耗材产品
      *
      * @param id 耗材产品主键
      * @return 耗材产品
      */
-    public FdMaterial selectFdMaterialById(Long id);
+    public FdMaterial selectFdMaterialById(String id);
 
     /**
      * 查询耗材产品列表

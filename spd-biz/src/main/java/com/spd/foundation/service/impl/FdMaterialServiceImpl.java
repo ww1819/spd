@@ -158,6 +158,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return fdMaterialMapper.selectFdMaterialById(id);
     }
 
+    @Override
+    public FdMaterial getByMainBarcode(String mainBarcode) {
+        if (StringUtils.isEmpty(mainBarcode)) {
+            return null;
+        }
+        return fdMaterialMapper.selectFdMaterialByMainBarcode(mainBarcode.trim());
+    }
+
     /**
      * 查询耗材产品列表
      *
