@@ -92,6 +92,9 @@ public class StkInventory extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 结算方式（来自入库单：1入库结算 2出库结算 3消耗结算） */
+    private String settlementType;
+
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
@@ -295,6 +298,14 @@ public class StkInventory extends BaseEntity
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
     }
 
     public String getWarehouseName() {

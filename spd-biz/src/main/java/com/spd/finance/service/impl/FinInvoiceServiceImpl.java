@@ -34,7 +34,13 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
 
     @Override
     public FinInvoice getById(String id) {
-        return finInvoiceMapper.selectById(id);
+        FinInvoice row = finInvoiceMapper.selectById(id);
+        if (row == null) return null;
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && StringUtils.isNotEmpty(row.getTenantId()) && !customerId.equals(row.getTenantId())) {
+            return null;
+        }
+        return row;
     }
 
     @Override
@@ -63,6 +69,10 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         if (existing == null) {
             throw new ServiceException("发票不存在");
         }
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && StringUtils.isNotEmpty(existing.getTenantId()) && !customerId.equals(existing.getTenantId())) {
+            throw new ServiceException("无权操作其他租户数据");
+        }
         if (existing.getAuditStatus() != null && existing.getAuditStatus() == 1) {
             throw new ServiceException("已审核的发票不可变更发票信息");
         }
@@ -76,21 +86,27 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
     @Override
     public int remove(String id) {
         if (StringUtils.isEmpty(id)) return 0;
-        String deleteBy = SecurityUtils.getUsername();
-        return finInvoiceMapper.deleteById(id, deleteBy);
+        FinInvoice inv = finInvoiceMapper.selectById(id);
+        if (inv == null) return 0;
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()) && StringUtils.isNotEmpty(inv.getTenantId()) && !SecurityUtils.getCustomerId().equals(inv.getTenantId())) {
+            throw new ServiceException("无权操作其他租户数据");
+        }
+        return finInvoiceMapper.deleteById(id, SecurityUtils.getUsername());
     }
 
     @Override
     public int audit(String id) {
         if (StringUtils.isEmpty(id)) return 0;
-        FinInvoice existing = finInvoiceMapper.selectById(id);
-        if (existing == null) {
+        FinInvoice invoice = finInvoiceMapper.selectById(id);
+        if (invoice == null) {
             throw new ServiceException("发票不存在");
         }
-        if (existing.getAuditStatus() != null && existing.getAuditStatus() == 1) {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()) && StringUtils.isNotEmpty(invoice.getTenantId()) && !SecurityUtils.getCustomerId().equals(invoice.getTenantId())) {
+            throw new ServiceException("无权操作其他租户数据");
+        }
+        if (invoice.getAuditStatus() != null && invoice.getAuditStatus() == 1) {
             throw new ServiceException("该发票已审核");
         }
-        String auditBy = SecurityUtils.getUsername();
-        return finInvoiceMapper.updateAuditStatus(id, auditBy);
+        return finInvoiceMapper.updateAuditStatus(id, SecurityUtils.getUsername());
     }
 }

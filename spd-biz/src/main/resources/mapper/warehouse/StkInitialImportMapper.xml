@@ -18,6 +18,8 @@
         <result property="updateTime" column="update_time"/>
         <result property="auditBy" column="audit_by"/>
         <result property="auditTime" column="audit_time"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
         <result property="tenantId" column="tenant_id"/>
         <association property="warehouse" column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult"/>
     </resultMap>
@@ -30,7 +32,7 @@
 
     <sql id="selectVo">
         select m.id, m.bill_no, m.warehouse_id, m.import_operator, m.import_time, m.stock_gen_time,
-               m.bill_status, m.remark, m.del_flag, m.tenant_id, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time,
+               m.bill_status, m.remark, m.del_flag, m.tenant_id, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time, m.delete_by, m.delete_time,
                w.id wId, w.code warehouseCode, w.name warehouseName
         from stk_initial_import m
         left join fd_warehouse w on m.warehouse_id = w.id
@@ -75,5 +77,10 @@
             update_time = now()
         </set>
         where id = #{id}
+    </update>
+
+    <!-- 逻辑删除：设置 del_flag=1, delete_by, delete_time -->
+    <update id="logicalDeleteById">
+        update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </update>
 </mapper>

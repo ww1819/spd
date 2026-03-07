@@ -17,6 +17,8 @@
         <result property="factoryId" column="factory_id"/>
         <result property="supplierId" column="supplier_id"/>
         <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
         <result property="sortOrder" column="sort_order"/>
         <result property="createTime" column="create_time"/>
         <result property="thirdPartyDetailId" column="third_party_detail_id"/>
@@ -41,7 +43,7 @@
 
     <select id="selectByParenId" resultMap="StkInitialImportEntryResult">
         select e.id, e.paren_id, e.material_id, e.warehouse_id, e.unit_price, e.qty, e.amt,
-               e.batch_no, e.batch_number, e.begin_time, e.end_time, e.factory_id, e.supplier_id, e.del_flag, e.sort_order, e.create_time,
+               e.batch_no, e.batch_number, e.begin_time, e.end_time, e.factory_id, e.supplier_id, e.del_flag, e.delete_by, e.delete_time, e.sort_order, e.create_time,
                e.third_party_detail_id, e.third_party_material_id, e.material_code entry_material_code, e.speci, e.model, e.register_no, e.medical_no, e.medical_name, e.main_barcode, e.sub_barcode,
                m.id mId, m.code materialCode, m.name materialName, m.speci m_speci
         from stk_initial_import_entry e

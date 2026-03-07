@@ -134,3 +134,35 @@ INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
 /
+
+-- ========== 财务/结算表 tenant_id 回填（历史数据与多租户隔离） ==========
+-- 仓库结算单主表：从仓库取 tenant_id
+UPDATE wh_settlement_bill m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 仓库结算单明细：从主表取 tenant_id
+UPDATE wh_settlement_bill_entry e
+INNER JOIN wh_settlement_bill b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+-- 供应商结算单主表：从来源仓库结算单取 tenant_id
+UPDATE supp_settlement_bill m
+INNER JOIN wh_settlement_bill w ON w.id = m.wh_settlement_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 供应商结算单明细：从主表取 tenant_id
+UPDATE supp_settlement_bill_entry e
+INNER JOIN supp_settlement_bill b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+-- 供应商结算单与发票关联表：从供应商结算单主表取 tenant_id
+UPDATE supp_settlement_invoice si
+INNER JOIN supp_settlement_bill b ON b.id = si.supp_settlement_id AND b.tenant_id IS NOT NULL
+SET si.tenant_id = b.tenant_id
+WHERE si.tenant_id IS NULL;
+/

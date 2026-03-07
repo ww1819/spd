@@ -65,6 +65,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public int insertFdWarehouse(FdWarehouse fdWarehouse)
     {
+        if (StringUtils.isEmpty(fdWarehouse.getSettlementType())) {
+            throw new ServiceException("仓库创建时必须选择结算方式（入库结算/出库结算/消耗结算）");
+        }
         fdWarehouse.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
@@ -73,7 +76,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     }
 
     /**
-     * 修改仓库
+     * 修改仓库（结算方式创建后不可修改）
      *
      * @param fdWarehouse 仓库
      * @return 结果
@@ -81,6 +84,10 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public int updateFdWarehouse(FdWarehouse fdWarehouse)
     {
+        FdWarehouse existing = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(fdWarehouse.getId()));
+        if (existing != null && StringUtils.isNotEmpty(existing.getSettlementType())) {
+            fdWarehouse.setSettlementType(existing.getSettlementType());
+        }
         fdWarehouse.setUpdateTime(DateUtils.getNowDate());
         return fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
     }

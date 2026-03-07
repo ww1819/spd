@@ -52,7 +52,8 @@ public interface BasApplyTemplateMapper {
      * @param id 主键
      * @return 结果
      */
-    int deleteBasApplyTemplateById(Long id);
+    /** 逻辑删除：设置 del_flag=1, delete_by, delete_time */
+    int deleteBasApplyTemplateById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 删除制单模板明细

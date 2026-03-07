@@ -282,6 +282,46 @@ CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '�
 /
 CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
+/* ========== 耗材仓库结算方式：入库/出库/消耗；入库单、明细、仓库库存、科室库存写入结算方式 ========== */
+CALL add_table_column('stk_io_bill', 'settlement_type', 'varchar(16)', '结算方式 1入库结算 2出库结算 3消耗结算（来自仓库）', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'settlement_type', 'varchar(16)', '结算方式（与主表一致）', NULL);
+/
+CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自入库单）', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自出库单）', NULL);
+/
 /* 发票表增加供应商ID */
 CALL add_table_column('fin_invoice', 'supplier_id', 'bigint(20)', '供应商ID', NULL);
+/
+/* ========== 供应商结算单：主表去掉 invoice_id；明细增加仓库结算单主表id/单号；新增发票关联表 ========== */
+CALL add_table_column('supp_settlement_bill_entry', 'wh_settlement_id', 'varchar(36)', '仓库结算单主表ID（UUID7）', NULL);
+/
+CALL add_table_column('supp_settlement_bill_entry', 'wh_settlement_bill_no', 'varchar(64)', '仓库结算单单号', NULL);
+/
+/* 供应商结算单与发票关联表：删除者、删除时间（逻辑删除）；结算单审核后不得删除、修改关联 */
+CALL add_table_column('supp_settlement_invoice', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('supp_settlement_invoice', 'delete_time', 'datetime', '删除时间', NULL);
+/
+/* ========== 耗材相关表：补充删除者、删除时间（与 del_flag 逻辑删除配套） ========== */
+CALL add_table_column('stk_initial_import', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_initial_import', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('bas_apply_template', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('bas_apply_template', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('wh_settlement_bill_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('wh_settlement_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('supp_settlement_bill_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('supp_settlement_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /

@@ -160,6 +160,19 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
         }
+        // 从仓库带出结算方式到单据及明细（入库/出库/消耗）
+        if (stkIoBill.getWarehouseId() != null) {
+            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
+            if (wh != null && StringUtils.isNotEmpty(wh.getSettlementType())) {
+                stkIoBill.setSettlementType(wh.getSettlementType());
+                List<StkIoBillEntry> entries = stkIoBill.getStkIoBillEntryList();
+                if (entries != null) {
+                    for (StkIoBillEntry e : entries) {
+                        e.setSettlementType(wh.getSettlementType());
+                    }
+                }
+            }
+        }
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
             stkIoBill.setBillDate(DateUtils.getNowDate());
@@ -334,6 +347,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (StringUtils.isEmpty(stkInventory.getTenantId())) {
                         stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    if (StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
+                        stkInventory.setSettlementType(stkIoBill.getSettlementType());
+                    }
                     stkInventoryMapper.insertStkInventory(stkInventory);
                     // 插仓库流水（lx=RK），反写仓库库存id到流水和入库单明细
                     HcCkFlow rkFlow = new HcCkFlow();
@@ -444,6 +460,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkDepInventory.setRemark("本库存由科室出库业务生成");
                     if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
                         stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    if (StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
+                        stkDepInventory.setSettlementType(stkIoBill.getSettlementType());
                     }
                     stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
                     if (entry.getId() != null) {
@@ -827,6 +846,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setBatchNumber(entry.getBatchNumber());
             if (StringUtils.isEmpty(stkDepInventory.getTenantId()) && stkIoBill != null) {
                 stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+            }
+            if (stkIoBill != null && StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
+                stkDepInventory.setSettlementType(stkIoBill.getSettlementType());
             }
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
@@ -1554,6 +1576,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         stkDepInventory.setRemark("本库存由科室出库业务生成");
                         if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
                             stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                        }
+                        if (StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
+                            stkDepInventory.setSettlementType(stkIoBill.getSettlementType());
                         }
                         stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
                         depId = stkDepInventory.getId();

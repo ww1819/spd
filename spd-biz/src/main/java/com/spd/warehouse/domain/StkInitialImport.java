@@ -44,6 +44,11 @@ public class StkInitialImport extends BaseEntity {
     /** 审核时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date deleteTime;
 
     /** 仓库对象 */
     private FdWarehouse warehouse;

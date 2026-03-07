@@ -28,6 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
         <result property="remark"    column="remark"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="settlementType"    column="settlement_type"    />
         <result property="mainBarcode"    column="main_barcode"    />
         <result property="subBarcode"    column="sub_barcode"    />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -56,7 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectStkDepInventoryVo">
         select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
 			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
-			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id,
+			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
 			stk.main_barcode, stk.sub_barcode,
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
@@ -128,6 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">bill_type,</if>
             <if test="remark != null">remark,</if>
             <if test="tenantId != null">tenant_id,</if>
+            <if test="settlementType != null">settlement_type,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
@@ -151,6 +153,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">#{billType},</if>
             <if test="remark != null">#{remark},</if>
             <if test="tenantId != null">#{tenantId},</if>
+            <if test="settlementType != null">#{settlementType},</if>
          </trim>
     </insert>
 

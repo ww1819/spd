@@ -49,6 +49,11 @@ public class StkInitialImportEntry extends BaseEntity {
     private Long supplierId;
     /** 删除标志 */
     private Integer delFlag;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date deleteTime;
     /** 排序 */
     private Integer sortOrder;
 

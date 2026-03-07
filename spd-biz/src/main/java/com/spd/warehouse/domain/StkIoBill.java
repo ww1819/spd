@@ -73,6 +73,9 @@ public class StkIoBill extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 结算方式（来自仓库：1入库结算 2出库结算 3消耗结算） */
+    private String settlementType;
+
     /** 出入库明细信息 */
     private List<StkIoBillEntry> stkIoBillEntryList;
 
@@ -315,6 +318,14 @@ public class StkIoBill extends BaseEntity
         this.tenantId = tenantId;
     }
 
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
+    }
+
     public List<StkIoBillEntry> getStkIoBillEntryList()
     {
         return stkIoBillEntryList;
@@ -540,6 +551,7 @@ public class StkIoBill extends BaseEntity
             .append("billType", getBillType())
             .append("delFlag", getDelFlag())
             .append("tenantId", getTenantId())
+            .append("settlementType", getSettlementType())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())

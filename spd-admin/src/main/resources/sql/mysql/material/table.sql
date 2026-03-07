@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
   `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_initial_import_bill_no` (`bill_no`),
   KEY `idx_warehouse_id` (`warehouse_id`),
@@ -116,6 +118,8 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import_entry` (
   `medical_name` varchar(255) DEFAULT NULL COMMENT '医保名称',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '主条码',
   `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
@@ -136,6 +140,8 @@ CREATE TABLE IF NOT EXISTS `bas_apply_template` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
   KEY `idx_template_name` (`template_name`),
   KEY `idx_warehouse_id` (`warehouse_id`)
@@ -301,3 +307,157 @@ CREATE TABLE IF NOT EXISTS `fin_invoice` (
   KEY `idx_fin_invoice_date` (`invoice_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发票管理表';
 /
+
+-- ========== 仓库结算单（主键UUID7，含客户id；审核后生成供应商结算单） ==========
+CREATE TABLE IF NOT EXISTS `wh_settlement_bill` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '客户/租户ID(同sb_customer.customer_id)',
+  `bill_no` varchar(64) NOT NULL COMMENT '仓库结算单号',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
+  `warehouse_code` varchar(64) DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(200) DEFAULT NULL COMMENT '仓库名称',
+  `settlement_method` varchar(16) NOT NULL COMMENT '结算方式 1入库结算 2出库结算 3消耗结算',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '制单人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '制单时间',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `audit_status` int(1) NOT NULL DEFAULT 0 COMMENT '审核状态 0待审核 1已审核',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_wh_settlement_bill_no` (`bill_no`),
+  KEY `idx_wh_settlement_warehouse` (`warehouse_id`),
+  KEY `idx_wh_settlement_tenant` (`tenant_id`),
+  KEY `idx_wh_settlement_audit` (`audit_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库结算单主表';
+/
+
+CREATE TABLE IF NOT EXISTS `wh_settlement_bill_entry` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '客户/租户ID',
+  `paren_id` varchar(36) NOT NULL COMMENT '主表ID',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT '仓库结算单号',
+  `material_id` bigint(20) NOT NULL COMMENT '产品档案ID',
+  `material_name` varchar(255) DEFAULT NULL COMMENT '产品名称',
+  `speci` varchar(255) DEFAULT NULL COMMENT '规格',
+  `model` varchar(255) DEFAULT NULL COMMENT '型号',
+  `unit` varchar(64) DEFAULT NULL COMMENT '单位',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `qty` decimal(18,2) NOT NULL DEFAULT 0.00 COMMENT '数量',
+  `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  `end_time` date DEFAULT NULL COMMENT '效期',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次',
+  `factory_id` bigint(20) DEFAULT NULL COMMENT '生产厂家ID',
+  `factory_code` varchar(64) DEFAULT NULL COMMENT '生产厂家编码',
+  `factory_name` varchar(200) DEFAULT NULL COMMENT '生产厂家名称',
+  `source_bill_type` int(11) DEFAULT NULL COMMENT '数据来源单据类型 101入库 201出库等',
+  `source_bill_id` bigint(20) DEFAULT NULL COMMENT '单据主表ID',
+  `source_bill_no` varchar(64) DEFAULT NULL COMMENT '单据号',
+  `source_entry_id` bigint(20) DEFAULT NULL COMMENT '单据明细ID',
+  `supplier_id` bigint(20) DEFAULT NULL COMMENT '供应商ID',
+  `supplier_name` varchar(200) DEFAULT NULL COMMENT '供应商名称',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `sort_order` int(11) DEFAULT 0 COMMENT '排序',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_wh_settlement_entry_paren` (`paren_id`),
+  KEY `idx_wh_settlement_entry_tenant` (`tenant_id`),
+  KEY `idx_wh_settlement_entry_source` (`source_bill_type`,`source_bill_id`,`source_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库结算单明细表';
+/
+
+-- ========== 供应商结算单（主键UUID7，含客户id；发票通过关联表多对多） ==========
+CREATE TABLE IF NOT EXISTS `supp_settlement_bill` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '客户/租户ID(同sb_customer.customer_id)',
+  `bill_no` varchar(64) NOT NULL COMMENT '供应商结算单号',
+  `supplier_id` bigint(20) NOT NULL COMMENT '供应商ID',
+  `supplier_name` varchar(200) DEFAULT NULL COMMENT '供应商名称',
+  `wh_settlement_id` varchar(36) DEFAULT NULL COMMENT '来源仓库结算单主表ID（UUID7）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '制单人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '制单时间',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `audit_status` int(1) NOT NULL DEFAULT 0 COMMENT '审核状态 0待审核 1已审核',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_supp_settlement_bill_no` (`bill_no`),
+  KEY `idx_supp_settlement_supplier` (`supplier_id`),
+  KEY `idx_supp_settlement_tenant` (`tenant_id`),
+  KEY `idx_supp_settlement_wh` (`wh_settlement_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商结算单主表';
+/
+
+-- 供应商结算单与发票关联表（一张供应商结算单可关联多张发票；结算单审核后不得删除、修改关联）
+CREATE TABLE IF NOT EXISTS `supp_settlement_invoice` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '客户/租户ID',
+  `supp_settlement_id` varchar(36) NOT NULL COMMENT '供应商结算单主表ID',
+  `invoice_id` varchar(36) NOT NULL COMMENT '发票ID（fin_invoice.id）',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_supp_settlement_invoice` (`supp_settlement_id`,`invoice_id`),
+  KEY `idx_supp_settlement_invoice_supp` (`supp_settlement_id`),
+  KEY `idx_supp_settlement_invoice_inv` (`invoice_id`),
+  KEY `idx_supp_settlement_invoice_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商结算单与发票关联表';
+/
+
+CREATE TABLE IF NOT EXISTS `supp_settlement_bill_entry` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '客户/租户ID',
+  `paren_id` varchar(36) NOT NULL COMMENT '主表ID',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT '供应商结算单号',
+  `wh_settlement_id` varchar(36) DEFAULT NULL COMMENT '仓库结算单主表ID（UUID7）',
+  `wh_settlement_bill_no` varchar(64) DEFAULT NULL COMMENT '仓库结算单单号',
+  `wh_settlement_entry_id` varchar(36) DEFAULT NULL COMMENT '仓库结算单明细ID（UUID7，追溯库房业务单据明细）',
+  `material_id` bigint(20) NOT NULL COMMENT '产品档案ID',
+  `material_name` varchar(255) DEFAULT NULL COMMENT '产品名称',
+  `speci` varchar(255) DEFAULT NULL COMMENT '规格',
+  `model` varchar(255) DEFAULT NULL COMMENT '型号',
+  `unit` varchar(64) DEFAULT NULL COMMENT '单位',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `qty` decimal(18,2) NOT NULL DEFAULT 0.00 COMMENT '数量',
+  `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  `end_time` date DEFAULT NULL COMMENT '效期',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次',
+  `factory_id` bigint(20) DEFAULT NULL COMMENT '生产厂家ID',
+  `factory_code` varchar(64) DEFAULT NULL COMMENT '生产厂家编码',
+  `factory_name` varchar(200) DEFAULT NULL COMMENT '生产厂家名称',
+  `source_bill_type` int(11) DEFAULT NULL COMMENT '数据来源单据类型',
+  `source_bill_id` bigint(20) DEFAULT NULL COMMENT '单据主表ID',
+  `source_bill_no` varchar(64) DEFAULT NULL COMMENT '单据号',
+  `source_entry_id` bigint(20) DEFAULT NULL COMMENT '单据明细ID',
+  `supplier_id` bigint(20) DEFAULT NULL COMMENT '供应商ID',
+  `supplier_name` varchar(200) DEFAULT NULL COMMENT '供应商名称',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `sort_order` int(11) DEFAULT 0 COMMENT '排序',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_supp_settlement_entry_paren` (`paren_id`),
+  KEY `idx_supp_settlement_entry_tenant` (`tenant_id`),
+  KEY `idx_supp_settlement_entry_wh` (`wh_settlement_id`),
+  KEY `idx_supp_settlement_entry_wh_entry` (`wh_settlement_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商结算单明细表';
+/
+/* 若曾建过 supp_settlement_bill 且含 invoice_id，可手动执行：ALTER TABLE supp_settlement_bill DROP COLUMN invoice_id; */
+/* 供应商结算单与发票关联表（一张单可关联多张发票） */
+/
+/* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */
