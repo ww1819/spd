@@ -56,6 +56,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Override
     public List<GzTraceability> selectGzTraceabilityList(GzTraceability gzTraceability)
     {
+        if (gzTraceability != null && StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzTraceability.setTenantId(SecurityUtils.getCustomerId());
+        }
         return gzTraceabilityMapper.selectGzTraceabilityList(gzTraceability);
     }
 
@@ -69,6 +72,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Override
     public int insertGzTraceability(GzTraceability gzTraceability)
     {
+        if (gzTraceability != null && StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzTraceability.setTenantId(SecurityUtils.getCustomerId());
+        }
         // 生成追溯单号
         if (StringUtils.isEmpty(gzTraceability.getTraceNo())) {
             gzTraceability.setTraceNo(generateTraceNo());
@@ -99,6 +105,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         // 先恢复旧的明细占用的库存
         restoreDepartmentInventory(gzTraceability.getId());
         
+        if (StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzTraceability.setTenantId(SecurityUtils.getCustomerId());
+        }
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
         gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
         gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(gzTraceability.getId());
@@ -189,10 +198,17 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         Long id = gzTraceability.getId();
         if (StringUtils.isNotNull(traceabilityEntryList))
         {
+            String tenantId = gzTraceability.getTenantId();
+            if (StringUtils.isEmpty(tenantId) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                tenantId = SecurityUtils.getCustomerId();
+            }
             List<GzTraceabilityEntry> list = new ArrayList<GzTraceabilityEntry>();
             for (GzTraceabilityEntry entry : traceabilityEntryList)
             {
                 entry.setParentId(id);
+                if (StringUtils.isNotEmpty(tenantId)) {
+                    entry.setTenantId(tenantId);
+                }
                 entry.setDelFlag("0");
                 entry.setCreateTime(DateUtils.getNowDate());
                 entry.setCreateBy(SecurityUtils.getUserIdStr());

@@ -86,11 +86,35 @@ INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
 /
+-- 期初导入明细：从主表取 tenant_id
+UPDATE stk_initial_import_entry e
+INNER JOIN stk_initial_import b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
 -- 申领模板主表：从仓库取 tenant_id
 UPDATE bas_apply_template m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
+/
+-- 科室申领主表：从仓库取 tenant_id
+UPDATE bas_apply m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 科室申领明细：从主表取 tenant_id
+UPDATE bas_apply_entry e
+INNER JOIN bas_apply b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+-- 申领模板明细：从主表取 tenant_id
+UPDATE bas_apply_template_entry e
+INNER JOIN bas_apply_template b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
 /
 -- 科室批量消耗主表：优先从仓库取，无则从科室取
 UPDATE t_hc_ks_xh m
@@ -109,11 +133,23 @@ INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
 /
+-- 盘点明细：从主表取 tenant_id
+UPDATE stk_io_stocktaking_entry e
+INNER JOIN stk_io_stocktaking b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
 -- 盈亏主表：从仓库取 tenant_id
 UPDATE stk_io_profit_loss m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
+/
+-- 盈亏明细：从主表取 tenant_id
+UPDATE stk_io_profit_loss_entry e
+INNER JOIN stk_io_profit_loss b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
 /
 -- 仓库定数：从仓库取 tenant_id
 UPDATE wh_fixed_number m
@@ -151,6 +187,12 @@ UPDATE gz_depot_inventory m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
+/
+-- 高值订单明细：从主表取 tenant_id
+UPDATE gz_order_entry e
+INNER JOIN gz_order b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
 /
 
 -- ========== 财务/结算表 tenant_id 回填（历史数据与多租户隔离） ==========
@@ -192,11 +234,23 @@ INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
 /
+-- 采购计划明细：从主表取 tenant_id
+UPDATE purchase_plan_entry e
+INNER JOIN purchase_plan b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
 -- 采购订单：从仓库取 tenant_id
 UPDATE purchase_order m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
+/
+-- 采购订单明细：从主表取 tenant_id
+UPDATE purchase_order_entry e
+INNER JOIN purchase_order b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
 /
 -- 高值科室申领：从仓库取 tenant_id
 UPDATE gz_dep_apply m
@@ -204,11 +258,23 @@ INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
 /
+-- 高值科室申领明细：从主表取 tenant_id
+UPDATE gz_dep_apply_entry e
+INNER JOIN gz_dep_apply b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
 -- 科室采购申请：从仓库取 tenant_id
 UPDATE dep_purchase_apply m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
 WHERE m.tenant_id IS NULL;
+/
+-- 科室采购申请明细：从主表取 tenant_id
+UPDATE dep_purchase_apply_entry e
+INNER JOIN dep_purchase_apply b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
 /
 -- 科室库存预警：从科室取 tenant_id
 UPDATE dep_inventory_warning m
@@ -221,4 +287,97 @@ UPDATE new_product_apply m
 INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
 SET m.tenant_id = d.tenant_id
 WHERE m.tenant_id IS NULL;
+/
+-- 新产品申请明细/条目：从主表取 tenant_id
+UPDATE new_product_apply_entry e
+INNER JOIN new_product_apply b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+UPDATE new_product_apply_detail e
+INNER JOIN new_product_apply b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+
+-- ========== 高值退货/出库/追溯等 tenant_id 回填 ==========
+-- 高值退货主表：优先从仓库取，无则从科室取
+UPDATE gz_refund_goods m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+UPDATE gz_refund_goods m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 高值退货明细：从主表取 tenant_id
+UPDATE gz_refund_goods_entry e
+INNER JOIN gz_refund_goods b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+-- 高值出库主表：优先从仓库取，无则从科室取
+UPDATE gz_shipment m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+UPDATE gz_shipment m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 高值出库明细：从主表取 tenant_id
+UPDATE gz_shipment_entry e
+INNER JOIN gz_shipment b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+-- 高值追溯主表：优先从申请科室取，无则从执行科室取
+UPDATE gz_traceability m
+INNER JOIN fd_department d ON d.id = m.apply_dept_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+UPDATE gz_traceability m
+INNER JOIN fd_department d ON d.id = m.exec_dept_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 高值追溯明细：从主表取 tenant_id
+UPDATE gz_traceability_entry e
+INNER JOIN gz_traceability b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+-- 发票表：从供应商结算单关联取 tenant_id
+UPDATE fin_invoice inv
+INNER JOIN supp_settlement_invoice si ON si.invoice_id = inv.id
+INNER JOIN supp_settlement_bill b ON b.id = si.supp_settlement_id AND b.tenant_id IS NOT NULL
+SET inv.tenant_id = b.tenant_id
+WHERE inv.tenant_id IS NULL;
+/
+-- 患者信息：从申请科室取，无则从执行科室取
+UPDATE gz_patient_info m
+INNER JOIN fd_department d ON d.id = m.apply_dept_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+UPDATE gz_patient_info m
+INNER JOIN fd_department d ON d.id = m.exec_dept_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 耗材档案状态/变更日志：从产品档案取 tenant_id
+UPDATE fd_material_status_log e
+INNER JOIN fd_material b ON b.id = e.material_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
+UPDATE fd_material_change_log e
+INNER JOIN fd_material b ON b.id = e.material_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
 /

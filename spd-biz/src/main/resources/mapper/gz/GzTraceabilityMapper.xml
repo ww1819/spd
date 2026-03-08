@@ -186,6 +186,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="traceNo != null and traceNo != ''">#{traceNo},</if>
@@ -216,6 +217,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -247,6 +249,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -263,9 +266,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzTraceabilityEntry">
-        insert into gz_traceability_entry(parent_id, material_id, inventory_id, material_name, specification, model, unit, quantity, charge_price, batch_no, expiry_date, in_hospital_code, manufacturer, supplier, certificate_no, billing_follow, del_flag, create_by, create_time) values
+        insert into gz_traceability_entry(parent_id, material_id, inventory_id, material_name, specification, model, unit, quantity, charge_price, batch_no, expiry_date, in_hospital_code, manufacturer, supplier, certificate_no, billing_follow, del_flag, create_by, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.inventoryId}, #{item.materialName}, #{item.specification}, #{item.model}, #{item.unit}, #{item.quantity}, #{item.chargePrice}, #{item.batchNo}, #{item.expiryDate}, #{item.inHospitalCode}, #{item.manufacturer}, #{item.supplier}, #{item.certificateNo}, #{item.billingFollow}, #{item.delFlag}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.materialId}, #{item.inventoryId}, #{item.materialName}, #{item.specification}, #{item.model}, #{item.unit}, #{item.quantity}, #{item.chargePrice}, #{item.batchNo}, #{item.expiryDate}, #{item.inHospitalCode}, #{item.manufacturer}, #{item.supplier}, #{item.certificateNo}, #{item.billingFollow}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.tenantId})
         </foreach>
     </insert>
 

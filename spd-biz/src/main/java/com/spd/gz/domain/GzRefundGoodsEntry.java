@@ -66,6 +66,9 @@ public class GzRefundGoodsEntry extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID */
+    private String tenantId;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -174,6 +177,8 @@ public class GzRefundGoodsEntry extends BaseEntity
     {
         return delFlag;
     }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {
