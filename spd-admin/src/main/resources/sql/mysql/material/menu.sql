@@ -62,40 +62,40 @@ WHERE EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '期初库存导入' AND 
   AND NOT EXISTS (SELECT 1 FROM sys_menu m2 WHERE m2.parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1) AND m2.perms = 'warehouse:initialStockImport:audit');
 /
 
--- 客户管理、客户菜单功能管理（挂在「系统管理」下，RuoYi 默认系统管理 menu_id=1）
+-- 客户管理、客户菜单功能管理（挂在「系统管理」下；设为仅平台管理 is_platform=1，租户不展示、新租户默认授权不包含）
 /
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
 SELECT 2100, '客户管理',
   COALESCE((SELECT menu_id FROM sys_menu WHERE menu_name = '系统管理' AND menu_type = 'M' LIMIT 1), 1),
   20, 'customer', 'material/system/customer/index', 1, 0, 'C', '0', '0',
-  'hc:system:customer:list', 'peoples', 'admin', NOW(), '耗材系统客户（租户）管理'
+  'hc:system:customer:list', 'peoples', '1', 'admin', NOW(), '耗材系统客户（租户）管理'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2100);
 /
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
 SELECT 2102, '客户查询', 2100, 1, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customer:query', '#', 'admin', NOW(), '客户查询、启停记录与时间段'
+  'hc:system:customer:query', '#', '1', 'admin', NOW(), '客户查询、启停记录与时间段'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2102);
 /
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
 SELECT 2101, '客户菜单功能管理',
   COALESCE((SELECT menu_id FROM sys_menu WHERE menu_name = '系统管理' AND menu_type = 'M' LIMIT 1), 1),
   21, 'customerMenuManage', 'material/system/customerMenuManage/index', 1, 0, 'C', '0', '0',
-  'hc:system:customerMenuManage:list', 'switch', 'admin', NOW(), '客户名下已具备功能的启用停用，租户不可见'
+  'hc:system:customerMenuManage:list', 'switch', '1', 'admin', NOW(), '客户名下已具备功能的启用停用，租户不可见'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2101);
 /
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
 SELECT 2103, '功能管理列表', 2101, 1, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customerMenuManage:list', '#', 'admin', NOW(), '客户菜单功能管理列表'
+  'hc:system:customerMenuManage:list', '#', '1', 'admin', NOW(), '客户菜单功能管理列表'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2103);
 /
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
 SELECT 2104, '功能管理查询', 2101, 2, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customerMenuManage:query', '#', 'admin', NOW(), '启停用记录与时间段查询'
+  'hc:system:customerMenuManage:query', '#', '1', 'admin', NOW(), '启停用记录与时间段查询'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2104);
 /
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
 SELECT 2105, '功能管理启停用', 2101, 3, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customerMenuManage:edit', '#', 'admin', NOW(), '客户菜单功能启用停用'
+  'hc:system:customerMenuManage:edit', '#', '1', 'admin', NOW(), '客户菜单功能启用停用'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2105);
 /
 

@@ -189,6 +189,26 @@ public class HcCustomerController extends BaseController {
     public void setMenuIds(List<Object> menuIds) { this.menuIds = menuIds; }
   }
 
+  /**
+   * 设备功能重置：若 super 组和 super_01 不存在则创建；重置客户菜单权限、super 工作组菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customerMenuManage:edit')")
+  @PutMapping("/resetEquipment/{customerId}")
+  public AjaxResult resetEquipment(@PathVariable String customerId) {
+    sbCustomerService.resetEquipmentFunctions(customerId);
+    return success();
+  }
+
+  /**
+   * 耗材功能重置：若 super 组（岗位）和 super_01 不存在则创建；重置耗材客户菜单权限、super 岗位菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customerMenuManage:edit')")
+  @PutMapping("/resetMaterial/{customerId}")
+  public AjaxResult resetMaterial(@PathVariable String customerId) {
+    sbCustomerService.resetMaterialFunctions(customerId);
+    return success();
+  }
+
   public static class ChangeHcStatusBody {
     private String customerId;
     private String status;

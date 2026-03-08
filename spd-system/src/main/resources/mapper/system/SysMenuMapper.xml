@@ -291,20 +291,14 @@
         order by m.parent_id, m.order_num
     </select>
 
-    <!-- 耗材系统：系统设置下除客户管理、客户菜单功能管理外的菜单ID（新租户默认授权） -->
+    <!-- 耗材系统：系统设置下非平台管理功能的菜单ID（is_platform!=1，用于新租户默认授权管理员组与 super_01；客户管理、客户菜单功能管理已设为平台管理 is_platform=1） -->
     <select id="selectMaterialSystemSettingMenuIdsExcludeCustomerManage" resultType="Long">
-        select menu_id from sys_menu where menu_name = '系统设置'
-        union
-        select menu_id from sys_menu
-        where parent_id = (select menu_id from sys_menu where menu_name = '系统设置' limit 1)
-          and menu_name not in ('客户管理', '客户菜单功能管理')
-        union
-        select m.menu_id from sys_menu m
-        where m.parent_id in (
-            select menu_id from sys_menu
-            where parent_id = (select menu_id from sys_menu where menu_name = '系统设置' limit 1)
-              and menu_name not in ('客户管理', '客户菜单功能管理')
+        WITH RECURSIVE tree AS (
+            SELECT menu_id, IFNULL(is_platform,'0') AS ip, IFNULL(status,'0') AS st FROM sys_menu WHERE menu_name = '系统设置'
+            UNION ALL
+            SELECT m.menu_id, IFNULL(m.is_platform,'0'), IFNULL(m.status,'0') FROM sys_menu m INNER JOIN tree t ON m.parent_id = t.menu_id
         )
+        SELECT menu_id FROM tree WHERE (ip IS NULL OR ip != '1') AND st = '0'
     </select>
 
 </mapper> 

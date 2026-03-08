@@ -39,8 +39,10 @@ import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
 import com.spd.system.mapper.SysPostMenuMapper;
 import com.spd.system.mapper.HcUserPermissionMenuMapper;
+import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.HcCustomerStatusLogMapper;
 import com.spd.system.mapper.HcCustomerPeriodLogMapper;
+import com.spd.system.domain.hc.HcCustomerMenu;
 import com.spd.system.domain.hc.HcCustomerStatusLog;
 import com.spd.system.domain.hc.HcCustomerPeriodLog;
 import com.spd.system.domain.SysPost;
@@ -101,6 +103,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   private HcCustomerStatusLogMapper hcCustomerStatusLogMapper;
   @Autowired
   private HcCustomerPeriodLogMapper hcCustomerPeriodLogMapper;
+  @Autowired
+  private HcCustomerMenuMapper hcCustomerMenuMapper;
 
   /** 新增客户时默认管理员组标识 */
   private static final String DEFAULT_GROUP_KEY = "super";
@@ -171,8 +175,9 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   }
 
   /**
-   * 新增客户后自动创建：管理员组(super)、租户管理员角色、管理员账号(super_01)并加入该组；
-   * 新租户和 super 组默认包含系统设置下的所有权限，不包含平台管理功能。
+   * 新增客户后自动创建：
+   * 1）设备侧：管理员组(super)、租户管理员角色、管理员账号(super_01)并加入该组；新租户与 super 组默认包含系统设置下非平台管理功能。
+   * 2）耗材侧：耗材系统工作组管理员组(super)（sys_post 岗位）、super_01 加入该岗位，并为管理员组与 super_01 授予系统设置下非平台管理功能的权限（客户管理、客户菜单功能管理已设为平台管理功能，不授予租户）。
    */
   private void createDefaultTenantAdmin(String customerId, String customerName, String createBy) {
     String groupId = UUID7.generateUUID7();
@@ -268,7 +273,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       sbUserPermissionMenuMapper.batchInsert(userMenus);
     }
 
-    // 耗材系统：使用 sys_post 作为工作组，创建默认岗位「管理员组」，将 super_01 加入该岗位，并授予系统设置下除客户管理、客户菜单功能管理外的菜单
+    // 耗材系统工作组：创建默认岗位「管理员组」(super)，将 super_01 加入该岗位，并授予系统设置下非平台管理功能（is_platform!=1；客户管理、客户菜单功能管理为平台管理不授予）
     SysPost post = new SysPost();
     post.setPostCode(DEFAULT_GROUP_KEY);
     post.setPostName("管理员组");
@@ -312,6 +317,23 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
         hcUserMenus.add(upm);
       }
       hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
+
+      // 耗材客户菜单权限：新增客户时增加系统设置下非平台管理功能的权限
+      List<HcCustomerMenu> hcCustomerMenus = new ArrayList<>();
+      for (Long menuId : materialMenuIds) {
+        if (menuId != null && menuId > 0) {
+          HcCustomerMenu cm = new HcCustomerMenu();
+          cm.setTenantId(customerId);
+          cm.setMenuId(menuId);
+          cm.setStatus("0");
+          cm.setIsEnabled("1");
+          cm.setCreateBy(createBy);
+          hcCustomerMenus.add(cm);
+        }
+      }
+      if (!hcCustomerMenus.isEmpty()) {
+        hcCustomerMenuMapper.batchInsert(hcCustomerMenus);
+      }
     }
   }
 
@@ -473,5 +495,305 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   @Override
   public List<HcCustomerPeriodLog> selectHcPeriodLogList(String tenantId) {
     return hcCustomerPeriodLogMapper.selectByTenantId(tenantId);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void resetEquipmentFunctions(String customerId) {
+    if (StringUtils.isEmpty(customerId)) {
+      throw new IllegalArgumentException("客户ID不能为空");
+    }
+    SbCustomer customer = sbCustomerMapper.selectSbCustomerById(customerId);
+    if (customer == null) {
+      throw new IllegalArgumentException("客户不存在");
+    }
+    String createBy = SecurityUtils.getUserIdStr();
+
+    List<SbWorkGroup> groups = sbWorkGroupMapper.selectListByCustomerId(customerId);
+    SbWorkGroup superGroup = groups == null ? null : groups.stream().filter(g -> DEFAULT_GROUP_KEY.equals(g.getGroupKey())).findFirst().orElse(null);
+    SysUser super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
+
+    if (superGroup == null && super01 == null) {
+      createDefaultTenantAdmin(customerId, customer.getCustomerName() != null ? customer.getCustomerName() : "客户", createBy);
+      return;
+    }
+    ensureEquipmentSuperAndUser(customerId, customer.getCustomerName(), createBy, superGroup, super01);
+    superGroup = sbWorkGroupMapper.selectListByCustomerId(customerId).stream().filter(g -> DEFAULT_GROUP_KEY.equals(g.getGroupKey())).findFirst().orElse(null);
+    super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
+    if (superGroup == null || super01 == null) {
+      return;
+    }
+
+    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
+    if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
+      return;
+    }
+
+    sbCustomerMenuMapper.deleteSbCustomerMenuByCustomerId(customerId);
+    List<SbCustomerMenu> customerMenus = new ArrayList<>();
+    for (String menuId : defaultMenuIds) {
+      SbCustomerMenu cm = new SbCustomerMenu();
+      cm.setCustomerId(customerId);
+      cm.setMenuId(menuId);
+      cm.setStatus("0");
+      cm.setIsEnabled("1");
+      cm.setCreateBy(createBy);
+      customerMenus.add(cm);
+    }
+    sbCustomerMenuMapper.batchSbCustomerMenu(customerMenus);
+
+    sbWorkGroupMenuMapper.deleteByGroupId(superGroup.getGroupId(), createBy);
+    List<SbWorkGroupMenu> groupMenus = new ArrayList<>();
+    for (String menuId : defaultMenuIds) {
+      SbWorkGroupMenu wgm = new SbWorkGroupMenu();
+      wgm.setId(UUID7.generateUUID7());
+      wgm.setGroupId(superGroup.getGroupId());
+      wgm.setMenuId(menuId);
+      wgm.setCustomerId(customerId);
+      wgm.setCreateBy(createBy);
+      groupMenus.add(wgm);
+    }
+    sbWorkGroupMenuMapper.batchInsert(groupMenus);
+
+    sbUserPermissionMenuMapper.deleteByUserIdAndCustomerId(super01.getUserId(), customerId, createBy);
+    List<SbUserPermissionMenu> userMenus = new ArrayList<>();
+    for (String menuId : defaultMenuIds) {
+      SbUserPermissionMenu upm = new SbUserPermissionMenu();
+      upm.setId(UUID7.generateUUID7());
+      upm.setUserId(super01.getUserId());
+      upm.setCustomerId(customerId);
+      upm.setMenuId(menuId);
+      upm.setCreateBy(createBy);
+      userMenus.add(upm);
+    }
+    sbUserPermissionMenuMapper.batchInsert(userMenus);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void resetMaterialFunctions(String customerId) {
+    if (StringUtils.isEmpty(customerId)) {
+      throw new IllegalArgumentException("客户ID不能为空");
+    }
+    SbCustomer customer = sbCustomerMapper.selectSbCustomerById(customerId);
+    if (customer == null) {
+      throw new IllegalArgumentException("客户不存在");
+    }
+    String createBy = SecurityUtils.getUserIdStr();
+
+    SysPost q = new SysPost();
+    q.setTenantId(customerId);
+    q.setPostCode(DEFAULT_GROUP_KEY);
+    List<SysPost> posts = sysPostMapper.selectPostList(q);
+    SysPost superPost = (posts != null && !posts.isEmpty()) ? posts.get(0) : null;
+    SysUser super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
+
+    if (superPost == null && super01 == null) {
+      createDefaultTenantAdmin(customerId, customer.getCustomerName() != null ? customer.getCustomerName() : "客户", createBy);
+      return;
+    }
+    ensureMaterialSuperAndUser(customerId, customer.getCustomerName(), createBy, superPost, super01);
+    q = new SysPost();
+    q.setTenantId(customerId);
+    q.setPostCode(DEFAULT_GROUP_KEY);
+    posts = sysPostMapper.selectPostList(q);
+    superPost = (posts != null && !posts.isEmpty()) ? posts.get(0) : null;
+    super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
+    if (superPost == null || super01 == null) {
+      return;
+    }
+
+    List<Long> materialMenuIds = sysMenuMapper.selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
+    if (materialMenuIds == null || materialMenuIds.isEmpty()) {
+      return;
+    }
+
+    hcCustomerMenuMapper.deleteByTenantId(customerId);
+    List<HcCustomerMenu> hcCustomerMenus = new ArrayList<>();
+    for (Long menuId : materialMenuIds) {
+      if (menuId != null && menuId > 0) {
+        HcCustomerMenu cm = new HcCustomerMenu();
+        cm.setTenantId(customerId);
+        cm.setMenuId(menuId);
+        cm.setStatus("0");
+        cm.setIsEnabled("1");
+        cm.setCreateBy(createBy);
+        hcCustomerMenus.add(cm);
+      }
+    }
+    if (!hcCustomerMenus.isEmpty()) {
+      hcCustomerMenuMapper.batchInsert(hcCustomerMenus);
+    }
+
+    sysPostMenuMapper.deletePostMenuByPostId(superPost.getPostId());
+    List<SysPostMenu> postMenus = new ArrayList<>();
+    for (Long menuId : materialMenuIds) {
+      if (menuId != null && menuId > 0) {
+        SysPostMenu pm = new SysPostMenu();
+        pm.setPostId(superPost.getPostId());
+        pm.setMenuId(menuId);
+        pm.setTenantId(customerId);
+        postMenus.add(pm);
+      }
+    }
+    if (!postMenus.isEmpty()) {
+      sysPostMenuMapper.batchPostMenu(postMenus);
+    }
+
+    hcUserPermissionMenuMapper.deleteByUserIdAndTenantId(super01.getUserId(), customerId);
+    List<HcUserPermissionMenu> hcUserMenus = new ArrayList<>();
+    for (Long menuId : materialMenuIds) {
+      if (menuId != null && menuId > 0) {
+        HcUserPermissionMenu upm = new HcUserPermissionMenu();
+        upm.setId(UUID7.generateUUID7());
+        upm.setUserId(super01.getUserId());
+        upm.setTenantId(customerId);
+        upm.setMenuId(menuId);
+        upm.setCreateBy(createBy);
+        hcUserMenus.add(upm);
+      }
+    }
+    if (!hcUserMenus.isEmpty()) {
+      hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
+    }
+  }
+
+  /** 设备侧：若 super 组或 super_01 缺失则补齐（不创建菜单） */
+  private void ensureEquipmentSuperAndUser(String customerId, String customerName, String createBy, SbWorkGroup existingGroup, SysUser existingUser) {
+    if (existingUser != null && existingGroup != null) {
+      return;
+    }
+    String initPassword = configService.selectConfigByKey("sys.user.initPassword");
+    if (StringUtils.isEmpty(initPassword)) initPassword = "admin123";
+    else initPassword = initPassword.trim();
+
+    if (existingUser == null) {
+      String roleId = UUID7.generateUUID7();
+      String groupId = existingGroup != null ? existingGroup.getGroupId() : UUID7.generateUUID7();
+
+      SbRole role = new SbRole();
+      role.setRoleId(roleId);
+      role.setCustomerId(customerId);
+      role.setRoleName("租户管理员");
+      role.setRoleKey(DEFAULT_ROLE_KEY);
+      role.setRoleSort(0);
+      role.setStatus("0");
+      role.setCreateBy(createBy);
+      sbRoleService.insertSbRole(role);
+
+      if (existingGroup == null) {
+        SbWorkGroup group = new SbWorkGroup();
+        group.setGroupId(groupId);
+        group.setCustomerId(customerId);
+        group.setGroupName("管理员组");
+        group.setGroupKey(DEFAULT_GROUP_KEY);
+        group.setOrderNum(0);
+        group.setCreateBy(createBy);
+        sbWorkGroupMapper.insertSbWorkGroup(group);
+      }
+
+      SysUser user = new SysUser();
+      user.setCustomerId(customerId);
+      user.setUserName(DEFAULT_ADMIN_USERNAME);
+      user.setNickName("租户管理员");
+      user.setPassword(SecurityUtils.encryptPassword(initPassword));
+      user.setStatus("0");
+      user.setCreateBy(createBy);
+      sysUserService.insertUser(user);
+
+      List<SbUserRole> urList = new ArrayList<>();
+      SbUserRole ur = new SbUserRole();
+      ur.setUserId(user.getUserId());
+      ur.setRoleId(roleId);
+      ur.setCustomerId(customerId);
+      urList.add(ur);
+      sbUserRoleMapper.batchSbUserRole(urList);
+
+      SbWorkGroupUser wgu = new SbWorkGroupUser();
+      wgu.setGroupId(groupId);
+      wgu.setUserId(user.getUserId());
+      wgu.setCustomerId(customerId);
+      wgu.setCreateBy(createBy);
+      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
+      return;
+    }
+
+    if (existingGroup == null) {
+      String groupId = UUID7.generateUUID7();
+      SbWorkGroup group = new SbWorkGroup();
+      group.setGroupId(groupId);
+      group.setCustomerId(customerId);
+      group.setGroupName("管理员组");
+      group.setGroupKey(DEFAULT_GROUP_KEY);
+      group.setOrderNum(0);
+      group.setCreateBy(createBy);
+      sbWorkGroupMapper.insertSbWorkGroup(group);
+
+      SbWorkGroupUser wgu = new SbWorkGroupUser();
+      wgu.setGroupId(groupId);
+      wgu.setUserId(existingUser.getUserId());
+      wgu.setCustomerId(customerId);
+      wgu.setCreateBy(createBy);
+      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
+    }
+  }
+
+  /** 耗材侧：若 super 岗位或 super_01 缺失则补齐（不创建菜单） */
+  private void ensureMaterialSuperAndUser(String customerId, String customerName, String createBy, SysPost existingPost, SysUser existingUser) {
+    if (existingUser != null && existingPost != null) {
+      return;
+    }
+    String initPassword = configService.selectConfigByKey("sys.user.initPassword");
+    if (StringUtils.isEmpty(initPassword)) initPassword = "admin123";
+    else initPassword = initPassword.trim();
+
+    if (existingUser == null) {
+      SysPost post = existingPost;
+      if (post == null) {
+        post = new SysPost();
+        post.setPostCode(DEFAULT_GROUP_KEY);
+        post.setPostName("管理员组");
+        post.setPostSort(0);
+        post.setStatus("0");
+        post.setTenantId(customerId);
+        post.setCreateBy(createBy);
+        sysPostMapper.insertPost(post);
+      }
+
+      SysUser user = new SysUser();
+      user.setCustomerId(customerId);
+      user.setUserName(DEFAULT_ADMIN_USERNAME);
+      user.setNickName("租户管理员");
+      user.setPassword(SecurityUtils.encryptPassword(initPassword));
+      user.setStatus("0");
+      user.setCreateBy(createBy);
+      sysUserService.insertUser(user);
+
+      SysUserPost userPost = new SysUserPost();
+      userPost.setUserId(user.getUserId());
+      userPost.setPostId(post.getPostId());
+      List<SysUserPost> userPostList = new ArrayList<>();
+      userPostList.add(userPost);
+      sysUserPostMapper.batchUserPost(userPostList);
+      return;
+    }
+
+    if (existingPost == null) {
+      SysPost post = new SysPost();
+      post.setPostCode(DEFAULT_GROUP_KEY);
+      post.setPostName("管理员组");
+      post.setPostSort(0);
+      post.setStatus("0");
+      post.setTenantId(customerId);
+      post.setCreateBy(createBy);
+      sysPostMapper.insertPost(post);
+
+      SysUserPost userPost = new SysUserPost();
+      userPost.setUserId(existingUser.getUserId());
+      userPost.setPostId(post.getPostId());
+      List<SysUserPost> userPostList = new ArrayList<>();
+      userPostList.add(userPost);
+      sysUserPostMapper.batchUserPost(userPostList);
+    }
   }
 }

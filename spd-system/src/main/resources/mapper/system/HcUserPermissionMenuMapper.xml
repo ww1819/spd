@@ -10,4 +10,8 @@
     </foreach>
   </insert>
 
+  <delete id="deleteByUserIdAndTenantId">
+    delete from hc_user_permission_menu where user_id = #{userId} and tenant_id = #{tenantId}
+  </delete>
+
 </mapper>
