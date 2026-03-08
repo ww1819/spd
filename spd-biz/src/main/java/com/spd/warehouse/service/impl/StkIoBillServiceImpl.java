@@ -120,6 +120,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill == null) {
             return null;
         }
+        SecurityUtils.ensureTenantAccess(stkIoBill.getTenantId());
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
         List<FdMaterial> materialList = new ArrayList<FdMaterial>();
         for(StkIoBillEntry entry : stkIoBillEntryList){
@@ -259,9 +260,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if(stkIoBill == null){
             throw new ServiceException(String.format("业务：%s，不存在!", id));
         }
-
+        SecurityUtils.ensureTenantAccess(stkIoBill.getTenantId());
         stkIoBill.setDelFlag(1);
-        stkIoBill.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoBill.setUpdateTime(new Date());
 
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
@@ -338,11 +339,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkInventory.setMaterialDate(new Date());
                     stkInventory.setWarehouseDate(new Date());
                     stkInventory.setSupplierId(supplerId);
+                    stkInventory.setMainBarcode(entry.getMainBarcode());
+                    stkInventory.setSubBarcode(entry.getSubBarcode());
                     stkInventory.setBeginTime(entry.getBeginTime());
                     stkInventory.setEndTime(entry.getEndTime());
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
-                    stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
                     stkInventory.setBatchNumber(entry.getBatchNumber());
                     if (StringUtils.isEmpty(stkInventory.getTenantId())) {
                         stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
@@ -364,13 +367,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     rkFlow.setAmt(entry.getAmt());
                     rkFlow.setBeginTime(entry.getBeginTime());
                     rkFlow.setEndTime(entry.getEndTime());
+                    rkFlow.setMainBarcode(entry.getMainBarcode());
+                    rkFlow.setSubBarcode(entry.getSubBarcode());
                     rkFlow.setSupplierId(supplerId);
                     rkFlow.setLx("RK");
                     rkFlow.setKcNo(stkInventory.getId());
                     rkFlow.setFlowTime(new Date());
                     rkFlow.setDelFlag(0);
                     rkFlow.setCreateTime(new Date());
-                    rkFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    rkFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(rkFlow.getTenantId())) rkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(rkFlow);
                     if (entry.getId() != null) {
@@ -411,7 +416,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inventory.setAmt(BigDecimal.ZERO);
                     }
                     inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(inventory);
 
                     // 插仓库流水（lx=CK，kc_no=仓库库存id）
@@ -427,13 +432,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ckFlow.setAmt(entry.getAmt());
                     ckFlow.setBeginTime(entry.getBeginTime());
                     ckFlow.setEndTime(entry.getEndTime());
+                    ckFlow.setMainBarcode(inventory.getMainBarcode());
+                    ckFlow.setSubBarcode(inventory.getSubBarcode());
                     ckFlow.setSupplierId(inventory.getSupplierId());
                     ckFlow.setLx("CK");
                     ckFlow.setKcNo(inventory.getId());
                     ckFlow.setFlowTime(new Date());
                     ckFlow.setDelFlag(0);
                     ckFlow.setCreateTime(new Date());
-                    ckFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    ckFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(ckFlow.getTenantId())) ckFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(ckFlow);
                     // 出库审核即插入科室库存（未确认），记录单据主表id、明细id、单据号、单据类型，便于收货确认时精确定位
@@ -450,6 +457,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkDepInventory.setBeginDate(inventory.getBeginTime());
                     stkDepInventory.setEndDate(inventory.getEndTime());
                     stkDepInventory.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId().toString() : null);
+                    stkDepInventory.setMainBarcode(inventory.getMainBarcode());
+                    stkDepInventory.setSubBarcode(inventory.getSubBarcode());
                     stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
                     stkDepInventory.setBatchNumber(entry.getBatchNumber());
                     stkDepInventory.setReceiptConfirmStatus(0);
@@ -491,7 +500,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         BigDecimal amt = subQty.multiply(unitPrice);
                         inventory.setAmt(amt);
                         inventory.setUpdateTime(new Date());
-                        inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                        inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                         //更新库存明细表
                         stkInventoryMapper.updateStkInventory(inventory);
                     }
@@ -514,7 +523,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     thFlow.setFlowTime(new Date());
                     thFlow.setDelFlag(0);
                     thFlow.setCreateTime(new Date());
-                    thFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    thFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(thFlow.getTenantId())) thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(thFlow);
                 }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库）
@@ -535,7 +544,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     }
                     stkDepInventory.setQty(stkDepInventoryQty.subtract(qty));
                     stkDepInventory.setUpdateTime(new Date());
-                    stkDepInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
 
                     //更新库存数量
@@ -550,7 +559,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     inventory.setQty(inventoryQty);
                     inventory.setAmt(inventoryQty.multiply(inventory.getUnitPrice()));
                     inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(inventory);
                     // 插仓库流水（lx=TK，kc_no=仓库库存id）
                     HcCkFlow tkFlow = new HcCkFlow();
@@ -571,7 +580,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setFlowTime(new Date());
                     tkFlow.setDelFlag(0);
                     tkFlow.setCreateTime(new Date());
-                    tkFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    tkFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(tkFlow.getTenantId())) tkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(tkFlow);
                 } else if (billType == 501) {// 调拨：转出仓库扣减+流水ZC，转入仓库增加+流水ZR
@@ -613,7 +622,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     outInventory.setQty(outSubQty);
                     outInventory.setAmt(unitPrice != null && outSubQty != null ? outSubQty.multiply(unitPrice) : BigDecimal.ZERO);
                     outInventory.setUpdateTime(new Date());
-                    outInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    outInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(outInventory);
 
                     HcCkFlow zcFlow = new HcCkFlow();
@@ -634,7 +643,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     zcFlow.setFlowTime(new Date());
                     zcFlow.setDelFlag(0);
                     zcFlow.setCreateTime(new Date());
-                    zcFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    zcFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(zcFlow.getTenantId())) zcFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(zcFlow);
 
@@ -668,7 +677,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inInventory.setEndTime(entry.getEndTime());
                         inInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                         inInventory.setCreateTime(new Date());
-                        inInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        inInventory.setCreateBy(SecurityUtils.getUserIdStr());
                         if (StringUtils.isEmpty(inInventory.getTenantId())) {
                             inInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                         }
@@ -692,7 +701,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setFlowTime(new Date());
                         zrFlow.setDelFlag(0);
                         zrFlow.setCreateTime(new Date());
-                        zrFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        zrFlow.setCreateBy(SecurityUtils.getUserIdStr());
                         if (StringUtils.isEmpty(zrFlow.getTenantId())) zrFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                         hcCkFlowMapper.insertHcCkFlow(zrFlow);
                     } else {
@@ -701,7 +710,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         BigDecimal inUp = inInventory.getUnitPrice();
                         inInventory.setAmt(inUp != null && inQty != null ? inQty.multiply(inUp) : BigDecimal.ZERO);
                         inInventory.setUpdateTime(new Date());
-                        inInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                        inInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                         stkInventoryMapper.updateStkInventory(inInventory);
 
                         HcCkFlow zrFlow = new HcCkFlow();
@@ -722,7 +731,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setFlowTime(new Date());
                         zrFlow.setDelFlag(0);
                         zrFlow.setCreateTime(new Date());
-                        zrFlow.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                        zrFlow.setCreateBy(SecurityUtils.getUserIdStr());
                         if (StringUtils.isEmpty(zrFlow.getTenantId())) zrFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                         hcCkFlowMapper.insertHcCkFlow(zrFlow);
                     }
@@ -739,6 +748,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         b.setBatchNo(entry.getBatchNo());
         b.setMaterialId(entry.getMaterialId());
         b.setBatchNumber(entry.getBatchNumber());
+        b.setMainBarcode(entry.getMainBarcode());
+        b.setSubBarcode(entry.getSubBarcode());
         b.setBeginTime(entry.getBeginTime());
         b.setEndTime(entry.getEndTime());
         BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
@@ -748,7 +759,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         b.setEntryId(entry.getId());
         b.setBatchSource("1"); // 采购入库
         Date now = new Date();
-        String username = SecurityUtils.getLoginUser().getUsername();
+        String username = SecurityUtils.getUserIdStr();
         b.setAuditTime(now);
         b.setAuditBy(username);
         b.setCreateTime(now);

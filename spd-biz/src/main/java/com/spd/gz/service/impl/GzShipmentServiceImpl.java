@@ -152,7 +152,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         }
 
         gzShipment.setDelFlag(1);
-        gzShipment.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(new Date());
 
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
@@ -182,7 +182,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
         gzShipment.setShipmentStatus(2);
         gzShipment.setAuditDate(new Date());
-        gzShipment.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(new Date());
         int res = gzShipmentMapper.updateGzShipment(gzShipment);
         System.out.println("审核出库单 - id: " + id + ", shipmentStatus: " + gzShipment.getShipmentStatus() + ", 更新结果: " + res);
@@ -211,7 +211,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) == 0 && remainingQty > 0){
                         // 删除数量为1的记录
-                        gzDepotInventoryMapper.deleteGzDepotInventoryById(inventory.getId());
+                        gzDepotInventoryMapper.deleteGzDepotInventoryById(inventory.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
                         remainingQty--;
                     }
                 }
@@ -225,7 +225,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         BigDecimal reduceQty = BigDecimal.valueOf(Math.min(remainingQty, inventory.getQty().intValue()));
                         inventory.setQty(inventory.getQty().subtract(reduceQty));
                         if(inventory.getQty().compareTo(BigDecimal.ZERO) <= 0){
-                            gzDepotInventoryMapper.deleteGzDepotInventoryById(inventory.getId());
+                            gzDepotInventoryMapper.deleteGzDepotInventoryById(inventory.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
                         } else {
                             gzDepotInventoryMapper.updateGzDepotInventory(inventory);
                         }

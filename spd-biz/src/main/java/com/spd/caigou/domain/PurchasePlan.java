@@ -76,6 +76,9 @@ public class PurchasePlan extends BaseEntity
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 开始日期（查询用） */
     private String beginDate;
 
@@ -233,6 +236,9 @@ public class PurchasePlan extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public void setBeginDate(String beginDate) 
     {

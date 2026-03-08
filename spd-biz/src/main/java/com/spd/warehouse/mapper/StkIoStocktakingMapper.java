@@ -61,13 +61,8 @@ public interface StkIoStocktakingMapper
      */
     public int deleteStkIoStocktakingByIds(Long[] ids);
 
-    /**
-     * 批量删除盘点明细
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteStkIoStocktakingEntryByParenIds(Long[] ids);
+    /** 批量逻辑删除盘点明细（设置 delete_by、delete_time） */
+    public int deleteStkIoStocktakingEntryByParenIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量新增盘点明细
@@ -78,13 +73,8 @@ public interface StkIoStocktakingMapper
     public int batchStkIoStocktakingEntry(List<StkIoStocktakingEntry> stkIoStocktakingEntryList);
 
 
-    /**
-     * 通过盘点主键删除盘点明细信息
-     *
-     * @param id 盘点ID
-     * @return 结果
-     */
-    public int deleteStkIoStocktakingEntryByParenId(Long id);
+    /** 逻辑删除盘点明细 */
+    public int deleteStkIoStocktakingEntryByParenId(@Param("parenId") Long parenId, @Param("deleteBy") String deleteBy);
 
     /**
      * 修改盘点明细（按主键）

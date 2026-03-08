@@ -325,3 +325,607 @@ CALL add_table_column('supp_settlement_bill_entry', 'delete_by', 'varchar(64)', 
 /
 CALL add_table_column('supp_settlement_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
+
+-- ============================================================
+-- 为指定表补充：创建时间、创建者、更新时间、更新者、删除时间、删除者、租户ID/客户ID
+-- 使用 add_table_column 存储过程，已存在的字段会跳过
+-- 执行前请确保已执行过 material/column.sql 中的 add_table_column 定义
+-- 按「/」分段执行
+-- ============================================================
+
+-- ========== 通用字段类型 ==========
+-- create_by varchar(64), create_time datetime, update_by varchar(64), update_time datetime
+-- delete_by varchar(64), delete_time datetime
+-- tenant_id varchar(36) 或 customer_id char(36)（仅 sys_user 等用 customer_id）
+
+-- bas_apply_entry
+CALL add_table_column('bas_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+
+-- bas_apply_template（表已有 create_by 等；补 delete/tenant 若缺）
+CALL add_table_column('bas_apply_template', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('bas_apply_template', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('bas_apply_template', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- bas_apply_template_entry
+CALL add_table_column('bas_apply_template_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('bas_apply_template_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('bas_apply_template_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('bas_apply_template_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('bas_apply_template_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('bas_apply_template_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('bas_apply_template_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- dep_inventory_warning
+CALL add_table_column('dep_inventory_warning', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('dep_inventory_warning', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('dep_inventory_warning', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('dep_inventory_warning', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('dep_inventory_warning', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('dep_inventory_warning', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('dep_inventory_warning', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- dep_purchase_apply
+CALL add_table_column('dep_purchase_apply', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- dep_purchase_apply_entry
+CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- fd_material
+CALL add_table_column('fd_material', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_material', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_material', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- fd_material_category
+CALL add_table_column('fd_material_category', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_material_category', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_material_category', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- fd_supplier
+CALL add_table_column('fd_supplier', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_supplier', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_supplier', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- fd_warehouse_category
+CALL add_table_column('fd_warehouse_category', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_dep_apply
+CALL add_table_column('gz_dep_apply', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_dep_apply', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_dep_apply', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_dep_apply', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_dep_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_dep_apply', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_dep_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_dep_apply_entry
+CALL add_table_column('gz_dep_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_depot_inventory（已有 tenant_id 时跳过）
+CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- gz_order_entry
+CALL add_table_column('gz_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('gz_order_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_order_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_order_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_order_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_order_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_order_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- gz_order_entry_inhospitalcode_list
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_patient_info
+CALL add_table_column('gz_patient_info', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_patient_info', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_patient_info', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_patient_info', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_patient_info', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_patient_info', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_patient_info', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_refund_goods
+CALL add_table_column('gz_refund_goods', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_refund_goods', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_refund_goods', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_refund_goods', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_refund_goods', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_refund_goods', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_refund_goods', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_refund_goods_entry
+CALL add_table_column('gz_refund_goods_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_refund_stock
+CALL add_table_column('gz_refund_stock', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_refund_stock_entry
+CALL add_table_column('gz_refund_stock_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_shipment
+CALL add_table_column('gz_shipment', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_shipment', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_shipment', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_shipment', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_shipment', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_shipment', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_shipment', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_shipment_entry
+CALL add_table_column('gz_shipment_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_traceability
+CALL add_table_column('gz_traceability', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_traceability', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_traceability', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_traceability', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_traceability', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_traceability', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_traceability', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- gz_traceability_entry
+CALL add_table_column('gz_traceability_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- his_hc_info
+CALL add_table_column('his_hc_info', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('his_hc_info', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('his_hc_info', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('his_hc_info', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('his_hc_info', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('his_hc_info', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('his_hc_info', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- new_product_apply
+CALL add_table_column('new_product_apply', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('new_product_apply', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('new_product_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('new_product_apply', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('new_product_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- new_product_apply_detail
+CALL add_table_column('new_product_apply_detail', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- new_product_apply_entry
+CALL add_table_column('new_product_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- purchase_order
+CALL add_table_column('purchase_order', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('purchase_order', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('purchase_order', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- purchase_order_entry
+CALL add_table_column('purchase_order_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- purchase_plan
+CALL add_table_column('purchase_plan', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('purchase_plan', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('purchase_plan', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- purchase_plan_entry
+CALL add_table_column('purchase_plan_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- sb_work_group（设备侧用 customer_id，若表已有则跳过）
+CALL add_table_column('sb_work_group', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sb_work_group', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('sb_work_group', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('sb_work_group', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('sb_work_group', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('sb_work_group', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- stk_initial_import_entry（补 tenant_id）
+CALL add_table_column('stk_initial_import_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- stk_io_profit_loss_entry（补 tenant_id）
+CALL add_table_column('stk_io_profit_loss_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- stk_io_stocktaking_entry（补 tenant_id）
+CALL add_table_column('stk_io_stocktaking_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id', 'bigint', '明细对应供应商ID（盘盈时必填）', NULL);
+/
+
+-- sys_dept（若需按租户隔离部门则加 tenant_id）
+CALL add_table_column('sys_dept', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_dept', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('sys_dept', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- sys_logininfor
+CALL add_table_column('sys_logininfor', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- sys_notice
+CALL add_table_column('sys_notice', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_notice', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sys_notice', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('sys_notice', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('sys_notice', 'update_time', 'datetime', '更新时间', NULL);
+/
+
+-- sys_oper_log
+CALL add_table_column('sys_oper_log', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- sys_post（已有 tenant_id 时跳过）
+CALL add_table_column('sys_post', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_post', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('sys_post', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- sys_sheet_id
+CALL add_table_column('sys_sheet_id', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- sys_user_department
+CALL add_table_column('sys_user_department', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_user_department', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sys_user_department', 'create_time', 'datetime', '创建时间', NULL);
+/
+
+-- sys_menu：是否仅平台管理（1=是，仅平台显示，不对客户显示）
+CALL add_table_column('sys_menu', 'is_platform', 'char(1)', '是否仅平台管理（0否 1是）', '0');
+/
+
+-- sys_user_menu
+CALL add_table_column('sys_user_menu', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_user_menu', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sys_user_menu', 'create_time', 'datetime', '创建时间', NULL);
+/
+
+-- sys_user_post（已有 create_* 等时跳过）
+CALL add_table_column('sys_user_post', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- sys_user_role（设备侧部分用 customer_id，此处补 tenant_id 供耗材侧或统一用 tenant_id 时使用）
+CALL add_table_column('sys_user_role', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_user_role', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sys_user_role', 'create_time', 'datetime', '创建时间', NULL);
+/
+
+-- sys_user_warehouse
+CALL add_table_column('sys_user_warehouse', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('sys_user_warehouse', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('sys_user_warehouse', 'create_time', 'datetime', '创建时间', NULL);
+/

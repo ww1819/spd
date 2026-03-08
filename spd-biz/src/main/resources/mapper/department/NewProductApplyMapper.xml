@@ -23,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="centralizedProcurement"    column="centralized_procurement"    />
         <result property="procurementForm"    column="procurement_form"    />
         <result property="platformPrice"    column="platform_price"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="department" javaType="FdDepartment">
             <result property="id" column="d_id"/>
             <result property="name" column="d_name"/>
@@ -112,6 +113,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             npa.update_by, 
             npa.update_time, 
             npa.remark,
+            npa.tenant_id,
             <!-- 以下字段需要先执行SQL添加字段后才能使用 -->
             <!-- 执行 spd/sql/add_new_product_apply_fields_final.sql 后取消注释 -->
             npa.reason_and_benefit,
@@ -132,6 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectNewProductApplyList" parameterType="NewProductApply" resultMap="NewProductApplyResult">
         <include refid="selectNewProductApplyVo"/>
         <where>  
+            <if test="tenantId != null and tenantId != ''"> and (npa.tenant_id = #{tenantId} or npa.tenant_id is null)</if>
             <if test="applyNo != null  and applyNo != ''"> and npa.apply_no like concat('%', #{applyNo}, '%')</if>
             <if test="applyDate != null "> and npa.apply_date = #{applyDate}</if>
             <if test="departmentId != null "> and npa.department_id = #{departmentId}</if>
@@ -247,6 +250,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="centralizedProcurement != null and centralizedProcurement != ''">centralized_procurement,</if>
             <if test="procurementForm != null and procurementForm != ''">procurement_form,</if>
             <if test="platformPrice != null">platform_price,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="applyNo != null and applyNo != ''">#{applyNo},</if>
@@ -266,6 +270,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="centralizedProcurement != null and centralizedProcurement != ''">#{centralizedProcurement},</if>
             <if test="procurementForm != null and procurementForm != ''">#{procurementForm},</if>
             <if test="platformPrice != null">#{platformPrice},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -293,24 +298,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteNewProductApplyById" parameterType="Long">
-        update new_product_apply set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteNewProductApplyById">
+        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteNewProductApplyByIds" parameterType="String">
-        update new_product_apply set del_flag = 1, update_time = now() where id in 
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deleteNewProductApplyByIds">
+        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
-    <delete id="deleteNewProductApplyEntryByParentId" parameterType="Long">
-        update new_product_apply_entry set del_flag = 1, update_time = now() where parent_id = #{parentId}
+    <delete id="deleteNewProductApplyEntryByParentId">
+        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
     </delete>
 
-    <delete id="deleteNewProductApplyEntryByParentIds" parameterType="String">
-        update new_product_apply_entry set del_flag = 1, update_time = now() where parent_id in 
-        <foreach item="parentId" collection="array" open="(" separator="," close=")">
+    <delete id="deleteNewProductApplyEntryByParentIds">
+        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id in
+        <foreach item="parentId" collection="ids" open="(" separator="," close=")">
             #{parentId}
         </foreach>
     </delete>
@@ -329,8 +334,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </insert>
 
-    <delete id="deleteNewProductApplyDetailByParentId" parameterType="Long">
-        update new_product_apply_detail set del_flag = 1, update_time = now() where parent_id = #{parentId}
+    <delete id="deleteNewProductApplyDetailByParentId">
+        update new_product_apply_detail set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
     </delete>
 
 </mapper>

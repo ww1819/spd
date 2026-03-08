@@ -48,7 +48,7 @@ public class HcCustomerMenuManageServiceImpl implements IHcCustomerMenuManageSer
     if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, menuId) == 0) {
       return 0;
     }
-    String operateBy = SecurityUtils.getUsername();
+    String operateBy = SecurityUtils.getUserIdStr();
     Date now = new Date();
 
     HcCustomerMenuStatusLog statusLog = new HcCustomerMenuStatusLog();

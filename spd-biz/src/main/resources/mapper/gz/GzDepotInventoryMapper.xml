@@ -223,12 +223,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteGzDepotInventoryById" parameterType="Long">
-        update gz_depot_inventory set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteGzDepotInventoryById">
+        update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteGzDepotInventoryByIds" parameterType="String">
-        update gz_depot_inventory set del_flag = 1, update_time = now() where id in
+    <delete id="deleteGzDepotInventoryByIds">
+        update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

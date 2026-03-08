@@ -30,6 +30,14 @@ public class SecurityUtils
     }
 
     /**
+     * 当前用户ID字符串（用于 createBy/updateBy/deleteBy 等字段，存 sys_user.user_id）
+     **/
+    public static String getUserIdStr()
+    {
+        return String.valueOf(getUserId());
+    }
+
+    /**
      * 获取当前登录用户的租户 ID（SaaS 多租户，平台管理员可为 null）
      **/
     public static String getCustomerId()
@@ -132,5 +140,25 @@ public class SecurityUtils
     public static boolean isAdmin(Long userId)
     {
         return userId != null && 1L == userId;
+    }
+
+    /**
+     * 校验当前用户是否可访问指定租户的数据，防止跨客户查询/修改/删除。
+     * 若当前用户有客户ID且数据所属租户非空且不一致则抛异常。
+     *
+     * @param entityTenantId 数据所属租户ID（实体 getTenantId()），可为 null
+     */
+    public static void ensureTenantAccess(String entityTenantId)
+    {
+        String customerId = getCustomerId();
+        if (org.apache.commons.lang3.StringUtils.isEmpty(customerId)) {
+            return;
+        }
+        if (org.apache.commons.lang3.StringUtils.isEmpty(entityTenantId)) {
+            return;
+        }
+        if (!customerId.equals(entityTenantId)) {
+            throw new ServiceException("无权访问该数据或数据不存在");
+        }
     }
 }

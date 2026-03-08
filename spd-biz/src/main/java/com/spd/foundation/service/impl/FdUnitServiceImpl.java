@@ -126,7 +126,7 @@ public class FdUnitServiceImpl implements IFdUnitService
             throw new ServiceException(String.format("单位明细：%s，不存在!", unitIds));
         }
         fdUnit.setDelFlag(1);
-        fdUnit.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdUnit.setUpdateBy(SecurityUtils.getUserIdStr());
         fdUnit.setUpdateTime(new Date());
         return fdUnitMapper.updateFdUnit(fdUnit);
     }

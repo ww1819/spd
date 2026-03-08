@@ -53,6 +53,24 @@ INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2104 FROM DUAL WHERE NOT 
 INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2105 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2105);
 /
 
+-- 客户管理、客户菜单功能管理设为仅平台管理（不对客户显示）；需先执行 column.sql 增加 is_platform 字段
+/
+UPDATE sys_menu SET is_platform = '1' WHERE menu_id IN (2100, 2101, 2102, 2103, 2104, 2105);
+/
+
+-- 将耗材菜单全部加到 admin 用户名下（用户权限表 sys_user_menu，耗材登录后仅读此表）
+-- admin 假定为 user_id=1；插入 sys_menu 中 status='0' 的全部菜单，已存在则跳过
+/
+INSERT INTO sys_user_menu (user_id, menu_id)
+SELECT 1, m.menu_id
+FROM sys_menu m
+WHERE m.status = '0'
+  AND NOT EXISTS (SELECT 1 FROM sys_user_menu um WHERE um.user_id = 1 AND um.menu_id = m.menu_id);
+/
+-- 若表已通过 column.sql 增加 create_by、create_time，可执行以下更新（可选）
+-- UPDATE sys_user_menu SET create_by = 'admin', create_time = NOW() WHERE user_id = 1 AND create_by IS NULL;
+/
+
 -- ========== 批次表 tenant_id 回填（便于多租户隔离与历史追溯） ==========
 -- 从关联的入库单主表回填 stk_batch.tenant_id
 UPDATE stk_batch b
@@ -165,4 +183,42 @@ UPDATE supp_settlement_invoice si
 INNER JOIN supp_settlement_bill b ON b.id = si.supp_settlement_id AND b.tenant_id IS NOT NULL
 SET si.tenant_id = b.tenant_id
 WHERE si.tenant_id IS NULL;
+/
+
+-- ========== 采购/科室申请 tenant_id 回填（多租户隔离） ==========
+-- 采购计划：从仓库取 tenant_id
+UPDATE purchase_plan m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 采购订单：从仓库取 tenant_id
+UPDATE purchase_order m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 高值科室申领：从仓库取 tenant_id
+UPDATE gz_dep_apply m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 科室采购申请：从仓库取 tenant_id
+UPDATE dep_purchase_apply m
+INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
+SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 科室库存预警：从科室取 tenant_id
+UPDATE dep_inventory_warning m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- 新产品申请：从科室取 tenant_id
+UPDATE new_product_apply m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
+WHERE m.tenant_id IS NULL;
 /

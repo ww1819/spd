@@ -57,7 +57,7 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         }
         row.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getCreateBy())) {
-            row.setCreateBy(SecurityUtils.getUsername());
+            row.setCreateBy(SecurityUtils.getUserIdStr());
         }
         return finInvoiceMapper.insert(row);
     }
@@ -78,7 +78,7 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         }
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) {
-            row.setUpdateBy(SecurityUtils.getUsername());
+            row.setUpdateBy(SecurityUtils.getUserIdStr());
         }
         return finInvoiceMapper.update(row);
     }
@@ -91,7 +91,7 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()) && StringUtils.isNotEmpty(inv.getTenantId()) && !SecurityUtils.getCustomerId().equals(inv.getTenantId())) {
             throw new ServiceException("无权操作其他租户数据");
         }
-        return finInvoiceMapper.deleteById(id, SecurityUtils.getUsername());
+        return finInvoiceMapper.deleteById(id, SecurityUtils.getUserIdStr());
     }
 
     @Override
@@ -107,6 +107,6 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         if (invoice.getAuditStatus() != null && invoice.getAuditStatus() == 1) {
             throw new ServiceException("该发票已审核");
         }
-        return finInvoiceMapper.updateAuditStatus(id, SecurityUtils.getUsername());
+        return finInvoiceMapper.updateAuditStatus(id, SecurityUtils.getUserIdStr());
     }
 }

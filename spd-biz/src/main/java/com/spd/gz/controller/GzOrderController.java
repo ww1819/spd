@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
@@ -173,7 +174,7 @@ public class GzOrderController extends BaseController
     @PreAuthorize("@ss.hasPermi('gzOrder:apply:remove')")
     @Log(title = "高值入库", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long ids, Integer orderType)
+    public AjaxResult remove(@PathVariable Long ids, @RequestParam(value = "orderType", required = false) Integer orderType)
     {
         // 如果指定了 orderType 是 102（出库），删除出库表
         if (orderType != null && orderType == 102) {

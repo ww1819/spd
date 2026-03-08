@@ -70,7 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.code as material_code, m.name as material_name, m.speci as material_speci
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
-        left join bas_apply_template_entry e on e.paren_id = t.id
+        left join bas_apply_template_entry e on e.paren_id = t.id and (e.delete_time is null)
         left join fd_material m on e.material_id = m.id
         where t.id = #{id}
     </select>
@@ -119,9 +119,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </update>
 
-    <delete id="deleteEntryByParenId">
-        delete from bas_apply_template_entry where paren_id = #{parenId}
-    </delete>
+    <!-- 逻辑删除：表有 delete_by、delete_time，使用更新代替物理删除 -->
+    <update id="deleteEntryByParenId">
+        update bas_apply_template_entry set delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and (delete_time is null)
+    </update>
 
     <insert id="batchInsertEntry">
         insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order) values

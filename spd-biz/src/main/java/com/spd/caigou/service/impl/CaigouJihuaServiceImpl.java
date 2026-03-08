@@ -163,7 +163,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         }
 
         stkIoBill.setDelFlag(1);
-        stkIoBill.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoBill.setUpdateTime(new Date());
 
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
@@ -226,7 +226,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     stkInventory.setEndTime(entry.getEndTime());
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
-                    stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(stkInventory.getTenantId())) {
                         stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
@@ -253,7 +253,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setQty(subQty);
                     inventory.setAmt(subQty.multiply(unitPrice));
                     inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     //更新库存明细表
                     stkInventoryMapper.updateStkInventory(inventory);
 
@@ -278,7 +278,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         inventory.setQty(subQty);
                         inventory.setAmt(subQty.multiply(unitPrice));
                         inventory.setUpdateTime(new Date());
-                        inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                        inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                         //更新库存明细表
                         stkInventoryMapper.updateStkInventory(inventory);
                     }
@@ -301,7 +301,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     }
                     stkDepInventory.setQty(stkDepInventoryQty.subtract(qty));
                     stkDepInventory.setUpdateTime(new Date());
-                    stkDepInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
 
                     //更新库存数量
@@ -316,7 +316,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setQty(inventoryQty);
                     inventory.setAmt(inventoryQty.multiply(inventory.getUnitPrice()));
                     inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(inventory);
                 }
             }

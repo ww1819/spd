@@ -141,7 +141,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
 
         gzRefundGoods.setDelFlag(1);
-        gzRefundGoods.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(new Date());
 
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
@@ -168,7 +168,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
         gzRefundGoods.setGoodsStatus(2);
         gzRefundGoods.setAuditDate(new Date());
-        gzRefundGoods.setAuditBy(SecurityUtils.getLoginUser().getUsername());
+        gzRefundGoods.setAuditBy(SecurityUtils.getUserIdStr());
         int res = gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
         return res;
     }
@@ -200,7 +200,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             // 减少备货库存（仓库退货给供应商）
             gzDepotInventory.setQty(depotInventoryQty.subtract(qty));
             gzDepotInventory.setUpdateTime(new Date());
-            gzDepotInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+            gzDepotInventory.setUpdateBy(SecurityUtils.getUserIdStr());
             gzDepotInventoryMapper.updateGzDepotInventory(gzDepotInventory);
         }
     }

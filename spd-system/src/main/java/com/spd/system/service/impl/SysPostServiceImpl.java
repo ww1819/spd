@@ -13,6 +13,9 @@ import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysPostMenu;
 import com.spd.system.domain.SysPostDepartment;
 import com.spd.system.domain.SysPostWarehouse;
+import com.spd.common.core.domain.entity.SysMenu;
+import com.spd.system.mapper.HcCustomerMenuMapper;
+import com.spd.system.mapper.SysMenuMapper;
 import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
 import com.spd.system.mapper.SysPostMenuMapper;
@@ -42,6 +45,12 @@ public class SysPostServiceImpl implements ISysPostService
 
     @Autowired
     private SysPostWarehouseMapper postWarehouseMapper;
+
+    @Autowired
+    private HcCustomerMenuMapper hcCustomerMenuMapper;
+
+    @Autowired
+    private SysMenuMapper sysMenuMapper;
 
     /**
      * 查询岗位信息集合
@@ -217,12 +226,29 @@ public class SysPostServiceImpl implements ISysPostService
     }
 
     /**
-     * 新增工作组菜单权限
+     * 新增工作组菜单权限（仅允许客户菜单权限表 hc_customer_menu 内该客户已有的菜单）
      */
     public void insertPostMenu(SysPost post)
     {
         Long postId = post.getPostId();
         Long[] menuIds = post.getMenuIds();
+        String tenantId = post.getTenantId();
+        if (StringUtils.isNotNull(menuIds) && menuIds.length > 0 && StringUtils.isNotEmpty(tenantId))
+        {
+            for (Long menuId : menuIds)
+            {
+                if (menuId == null || menuId <= 0) continue;
+                if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, menuId) <= 0)
+                {
+                    throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+                }
+                SysMenu menu = sysMenuMapper.selectMenuById(menuId);
+                if (menu != null && "1".equals(menu.getIsPlatform()))
+                {
+                    throw new ServiceException("不能将平台管理菜单分配给工作组，请从可分配菜单中选择");
+                }
+            }
+        }
         if (StringUtils.isNotNull(menuIds))
         {
             // 删除原有权限
@@ -238,8 +264,8 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostMenu pm = new SysPostMenu();
                         pm.setPostId(postId);
                         pm.setMenuId(menuId);
-                        if (StringUtils.isNotEmpty(post.getTenantId())) {
-                            pm.setTenantId(post.getTenantId());
+                        if (StringUtils.isNotEmpty(tenantId)) {
+                            pm.setTenantId(tenantId);
                         }
                         list.add(pm);
                     }

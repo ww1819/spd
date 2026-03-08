@@ -37,7 +37,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public StkInventory selectStkInventoryById(Long id)
     {
-        return stkInventoryMapper.selectStkInventoryById(id);
+        StkInventory inv = stkInventoryMapper.selectStkInventoryById(id);
+        if (inv != null) {
+            SecurityUtils.ensureTenantAccess(inv.getTenantId());
+        }
+        return inv;
     }
 
     /**
@@ -83,6 +87,9 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         if (StringUtils.isEmpty(stkInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkInventory.setTenantId(SecurityUtils.getCustomerId());
         }
+        if (StringUtils.isEmpty(stkInventory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
         return stkInventoryMapper.insertStkInventory(stkInventory);
     }
 
@@ -95,6 +102,9 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int updateStkInventory(StkInventory stkInventory)
     {
+        if (StringUtils.isEmpty(stkInventory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return stkInventoryMapper.updateStkInventory(stkInventory);
     }
 
@@ -107,6 +117,12 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int deleteStkInventoryByIds(Long[] ids)
     {
+        for (Long id : ids) {
+            StkInventory existing = stkInventoryMapper.selectStkInventoryById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
         return stkInventoryMapper.deleteStkInventoryByIds(ids);
     }
 
@@ -119,6 +135,10 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int deleteStkInventoryById(Long id)
     {
+        StkInventory existing = stkInventoryMapper.selectStkInventoryById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
         return stkInventoryMapper.deleteStkInventoryById(id);
     }
 

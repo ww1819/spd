@@ -55,6 +55,9 @@ public class FdMaterial extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 名称简码 */
     @Excel(name = "名称简码")
     private String referredName;
@@ -247,6 +250,14 @@ public class FdMaterial extends BaseEntity
 
     /** 状态变更原因（仅用于启用/停用时传参，不持久化） */
     private transient String statusChangeReason;
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
 
     public String getStatusChangeReason() {
         return statusChangeReason;

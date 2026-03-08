@@ -77,6 +77,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="profitQty"    column="e_profit_qty"    />
         <result property="stockAmount"    column="e_stock_amount"    />
         <result property="profitAmount"    column="e_profit_amount"    />
+        <result property="supplierId"    column="e_supplier_id"    />
+        <result property="mainBarcode"    column="e_main_barcode"    />
+        <result property="subBarcode"    column="e_sub_barcode"    />
         <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult2" />
     </resultMap>
 
@@ -102,7 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                e.material_id as sub_material_id, e.batch_no as sub_batch_no, e.batch_number as sub_batch_number,
                e.book_qty as sub_book_qty, e.stock_qty as sub_stock_qty, e.profit_qty as sub_profit_qty, e.unit_price as sub_unit_price,
                e.profit_amount as sub_profit_amount, e.begin_time as sub_begin_time, e.end_time as sub_end_time,
-               e.del_flag as sub_del_flag, e.main_barcode as sub_main_barcode, e.sub_barcode as sub_sub_barcode,
+               e.del_flag as sub_del_flag, e.main_barcode as sub_main_barcode, e.sub_barcode as sub_sub_barcode, e.suppler_id as sub_suppler_id,
                m.id as mId, m.code as materialCode, m.name as materialName
         from stk_io_profit_loss p
         left join fd_warehouse w on p.warehouse_id = w.id
@@ -181,8 +184,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id}
     </update>
 
-    <update id="deleteStkIoProfitLossEntryByParenId" parameterType="Long">
-        update stk_io_profit_loss_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    <update id="deleteStkIoProfitLossEntryByParenId">
+        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId}
     </update>
 
     <insert id="batchStkIoProfitLossEntry">
@@ -199,6 +202,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                e.qty as e_qty, e.batch_no as e_batch_no, e.batch_number as e_batch_number,
                e.begin_time as e_begin_time, e.end_time as e_end_time,
                e.stock_qty as e_stock_qty, e.profit_qty as e_profit_qty, e.stock_amount as e_stock_amount, e.profit_amount as e_profit_amount,
+               e.supplier_id as e_supplier_id, e.main_barcode as e_main_barcode, e.sub_barcode as e_sub_barcode,
                m.id as em_id, m.code as em_code, m.name as em_name
         from stk_io_stocktaking_entry e
         left join fd_material m on e.material_id = m.id
@@ -216,6 +220,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select count(1) from stk_io_profit_loss
         where stocktaking_id = #{stocktakingId} and (del_flag is null or del_flag != 1)
     </select>
+
+    <update id="updateStkIoProfitLossEntryBatchNo">
+        update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id}
+    </update>
 
     <!-- 查询盈亏明细列表（用于报表） -->
     <select id="selectProfitLossEntryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">

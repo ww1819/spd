@@ -46,6 +46,9 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     @Override
     public List<FdWarehouseCategory> selectFdWarehouseCategoryList(FdWarehouseCategory fdWarehouseCategory)
     {
+        if (fdWarehouseCategory != null && StringUtils.isEmpty(fdWarehouseCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdWarehouseCategory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdWarehouseCategoryMapper.selectFdWarehouseCategoryList(fdWarehouseCategory);
     }
 
@@ -70,6 +73,12 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     public int insertFdWarehouseCategory(FdWarehouseCategory fdWarehouseCategory)
     {
         fdWarehouseCategory.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdWarehouseCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdWarehouseCategory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(fdWarehouseCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdWarehouseCategory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdWarehouseCategoryMapper.insertFdWarehouseCategory(fdWarehouseCategory);
     }
 
@@ -83,6 +92,9 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     public int updateFdWarehouseCategory(FdWarehouseCategory fdWarehouseCategory)
     {
         fdWarehouseCategory.setUpdateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdWarehouseCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
     }
 
@@ -101,7 +113,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         }
         fdWarehouseCategory.setDelFlag(1);
         fdWarehouseCategory.setUpdateTime(new Date());
-        fdWarehouseCategory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
     }
 

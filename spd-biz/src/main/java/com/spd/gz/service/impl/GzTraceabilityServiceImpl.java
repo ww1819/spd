@@ -77,7 +77,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         gzTraceability.setOrderStatus(1); // 默认未审核状态
         gzTraceability.setDelFlag("0");
         gzTraceability.setCreateTime(DateUtils.getNowDate());
-        gzTraceability.setCreateBy(SecurityUtils.getUsername());
+        gzTraceability.setCreateBy(SecurityUtils.getUserIdStr());
         
         int rows = gzTraceabilityMapper.insertGzTraceability(gzTraceability);
         insertGzTraceabilityEntry(gzTraceability);
@@ -100,7 +100,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         restoreDepartmentInventory(gzTraceability.getId());
         
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
-        gzTraceability.setUpdateBy(SecurityUtils.getUsername());
+        gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
         gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(gzTraceability.getId());
         insertGzTraceabilityEntry(gzTraceability);
         
@@ -155,9 +155,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         gzTraceability.setId(id);
         gzTraceability.setOrderStatus(2); // 已审核
         gzTraceability.setAuditDate(DateUtils.getNowDate());
-        gzTraceability.setAuditBy(SecurityUtils.getUsername());
+        gzTraceability.setAuditBy(SecurityUtils.getUserIdStr());
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
-        gzTraceability.setUpdateBy(SecurityUtils.getUsername());
+        gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
         return gzTraceabilityMapper.updateGzTraceability(gzTraceability);
     }
 
@@ -174,7 +174,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         gzTraceability.setId(id);
         gzTraceability.setOrderStatus(1); // 未审核
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
-        gzTraceability.setUpdateBy(SecurityUtils.getUsername());
+        gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
         return gzTraceabilityMapper.updateGzTraceability(gzTraceability);
     }
 
@@ -195,7 +195,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 entry.setParentId(id);
                 entry.setDelFlag("0");
                 entry.setCreateTime(DateUtils.getNowDate());
-                entry.setCreateBy(SecurityUtils.getUsername());
+                entry.setCreateBy(SecurityUtils.getUserIdStr());
                 list.add(entry);
             }
             if (list.size() > 0)

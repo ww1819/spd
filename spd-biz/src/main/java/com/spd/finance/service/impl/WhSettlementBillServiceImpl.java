@@ -81,7 +81,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
         }
         row.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getCreateBy())) {
-            row.setCreateBy(SecurityUtils.getUsername());
+            row.setCreateBy(SecurityUtils.getUserIdStr());
         }
         row.setAuditStatus(0);
         row.setDelFlag(0);
@@ -121,7 +121,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
         if (existing.getAuditStatus() != null && existing.getAuditStatus() == 1) {
             throw new ServiceException("已审核的仓库结算单不可删除");
         }
-        return whSettlementBillMapper.deleteById(id, SecurityUtils.getUsername());
+        return whSettlementBillMapper.deleteById(id, SecurityUtils.getUserIdStr());
     }
 
     @Override
@@ -163,7 +163,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
         if (bill.getAuditStatus() != null && bill.getAuditStatus() == 1) {
             throw new ServiceException("审核之后不得删除、增加单据明细");
         }
-        whSettlementBillMapper.deleteEntriesByParenId(billId, SecurityUtils.getUsername());
+        whSettlementBillMapper.deleteEntriesByParenId(billId, SecurityUtils.getUserIdStr());
         if (entries == null) entries = new ArrayList<>();
         String billNo = bill.getBillNo();
         String tenantId = bill.getTenantId();
@@ -194,7 +194,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
         if (bill.getAuditStatus() != null && bill.getAuditStatus() == 1) {
             throw new ServiceException("审核之后不得删除、增加单据明细");
         }
-        return whSettlementBillMapper.deleteEntriesByIds(billId, entryIds, SecurityUtils.getUsername());
+        return whSettlementBillMapper.deleteEntriesByIds(billId, entryIds, SecurityUtils.getUserIdStr());
     }
 
     @Override
@@ -217,7 +217,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
             throw new ServiceException("无明细不能审核");
         }
         Date auditTime = DateUtils.getNowDate();
-        String auditBy = SecurityUtils.getUsername();
+        String auditBy = SecurityUtils.getUserIdStr();
         whSettlementBillMapper.updateAuditStatus(id, auditBy, auditTime);
 
         // 按供应商分组生成供应商结算单

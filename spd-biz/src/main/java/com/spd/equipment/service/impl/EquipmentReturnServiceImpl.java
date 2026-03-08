@@ -84,7 +84,7 @@ public class EquipmentReturnServiceImpl implements IEquipmentReturnService
     public int insertEquipmentReturn(EquipmentReturn equipmentReturn)
     {
         equipmentReturn.setCreateTime(DateUtils.getNowDate());
-        equipmentReturn.setCreateBy(SecurityUtils.getUsername());
+        equipmentReturn.setCreateBy(SecurityUtils.getUserIdStr());
         int result = equipmentReturnMapper.insertEquipmentReturn(equipmentReturn);
         
         // 保存明细列表
@@ -109,7 +109,7 @@ public class EquipmentReturnServiceImpl implements IEquipmentReturnService
     public int updateEquipmentReturn(EquipmentReturn equipmentReturn)
     {
         equipmentReturn.setUpdateTime(DateUtils.getNowDate());
-        equipmentReturn.setUpdateBy(SecurityUtils.getUsername());
+        equipmentReturn.setUpdateBy(SecurityUtils.getUserIdStr());
         
         // 先删除原有明细
         equipmentReturnDetailMapper.deleteEquipmentReturnDetailByReturnId(equipmentReturn.getReturnId());
@@ -228,7 +228,7 @@ public class EquipmentReturnServiceImpl implements IEquipmentReturnService
         equipmentReturn.setReturnStatus("2"); // 已审核状态
         equipmentReturn.setAuditorId(SecurityUtils.getUserId()); // 审核人ID
         equipmentReturn.setAuditDate(DateUtils.getNowDate()); // 审核日期
-        equipmentReturn.setUpdateBy(SecurityUtils.getUsername());
+        equipmentReturn.setUpdateBy(SecurityUtils.getUserIdStr());
         equipmentReturn.setUpdateTime(DateUtils.getNowDate());
         
         return equipmentReturnMapper.auditEquipmentReturn(equipmentReturn);

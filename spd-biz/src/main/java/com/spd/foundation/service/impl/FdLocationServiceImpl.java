@@ -105,7 +105,7 @@ public class FdLocationServiceImpl implements IFdLocationService
         }
         fdLocation.setDelFlag(1);
         fdLocation.setUpdateTime(new Date());
-        fdLocation.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdLocation.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdLocationMapper.updateFdLocation(fdLocation);
     }
 }

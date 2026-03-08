@@ -223,12 +223,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteGzOrderById" parameterType="Long">
-        update gz_order set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteGzOrderById">
+        update gz_order set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteGzOrderEntryByParenId" parameterType="Long">
-        update gz_order_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    <delete id="deleteGzOrderEntryByParenId">
+        update gz_order_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{parenId}
     </delete>
 
     <insert id="batchGzOrderEntry">

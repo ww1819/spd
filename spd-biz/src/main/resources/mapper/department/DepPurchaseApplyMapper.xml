@@ -23,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="warehouse" javaType="FdWarehouse">
             <result property="id" column="w_id"/>
             <result property="name" column="w_name"/>
@@ -106,6 +107,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.update_by, 
             dpa.update_time, 
             dpa.remark,
+            dpa.tenant_id,
             w.id as w_id,
             w.name as w_name,
             u.user_id as u_user_id,
@@ -122,6 +124,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDepPurchaseApplyList" parameterType="DepPurchaseApply" resultMap="DepPurchaseApplyResult">
         <include refid="selectDepPurchaseApplyVo"/>
         <where>  
+            <if test="tenantId != null and tenantId != ''"> and (dpa.tenant_id = #{tenantId} or dpa.tenant_id is null)</if>
             <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
             <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
@@ -225,6 +228,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="purchaseBillNo != null and purchaseBillNo != ''">#{purchaseBillNo},</if>
@@ -244,6 +248,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -271,26 +276,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteDepPurchaseApplyById" parameterType="Long">
-        update dep_purchase_apply set del_flag = 1 where id = #{id}
+    <delete id="deleteDepPurchaseApplyById">
+        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteDepPurchaseApplyByIds" parameterType="String">
-        update dep_purchase_apply set del_flag = 1 where id in 
-        <foreach item="id" collection="array" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </delete>
-    
-    <delete id="deleteDepPurchaseApplyEntryByParentIds" parameterType="String">
-        update dep_purchase_apply_entry set del_flag = 1, update_time = now() where parent_id in 
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deleteDepPurchaseApplyByIds">
+        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
-    <delete id="deleteDepPurchaseApplyEntryByParentId" parameterType="Long">
-        update dep_purchase_apply_entry set del_flag = 1, update_time = now() where parent_id = #{id}
+    <delete id="deleteDepPurchaseApplyEntryByParentIds">
+        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteDepPurchaseApplyEntryByParentId">
+        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{id}
     </delete>
 
     <!-- 批量新增申购明细，主键ID使用自增，不再从代码端传入，避免重复主键错误 -->

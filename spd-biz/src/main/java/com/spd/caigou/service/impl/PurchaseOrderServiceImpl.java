@@ -55,6 +55,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         if (purchaseOrder == null) {
             return null;
         }
+        SecurityUtils.ensureTenantAccess(purchaseOrder.getTenantId());
         List<PurchaseOrderEntry> purchaseOrderEntryList = purchaseOrderMapper.selectPurchaseOrderEntryByParentId(id);
         List<FdMaterial> materialList = new ArrayList<FdMaterial>();
         for(PurchaseOrderEntry entry : purchaseOrderEntryList){
@@ -75,6 +76,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public List<PurchaseOrder> selectPurchaseOrderList(PurchaseOrder purchaseOrder)
     {
+        if (purchaseOrder != null && StringUtils.isEmpty(purchaseOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         return purchaseOrderMapper.selectPurchaseOrderList(purchaseOrder);
     }
 
@@ -110,6 +114,12 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         if (StringUtils.isEmpty(purchaseOrder.getDelFlag())) {
             purchaseOrder.setDelFlag("0");
         }
+        if (StringUtils.isEmpty(purchaseOrder.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(purchaseOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         
         // 计算总金额
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
@@ -143,6 +153,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int updatePurchaseOrder(PurchaseOrder purchaseOrder)
     {
+        if (StringUtils.isEmpty(purchaseOrder.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            purchaseOrder.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         // 计算总金额
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
             BigDecimal totalAmount = BigDecimal.ZERO;
@@ -158,8 +171,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setUnpaidAmount(totalAmount.subtract(purchaseOrder.getPaidAmount()));
         }
         
-        // 删除原有明细
-        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(purchaseOrder.getId());
+        // 删除原有明细（逻辑删除，写 delete_by/delete_time）
+        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(purchaseOrder.getId(), SecurityUtils.getUserIdStr());
         
         // 插入新明细
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
@@ -180,9 +193,16 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     public int deletePurchaseOrderByIds(Long[] ids)
     {
         for (Long id : ids) {
-            purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id);
+            PurchaseOrder existing = purchaseOrderMapper.selectPurchaseOrderById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
         }
-        return purchaseOrderMapper.deletePurchaseOrderByIds(ids);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        for (Long id : ids) {
+            purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id, deleteBy);
+        }
+        return purchaseOrderMapper.deletePurchaseOrderByIds(ids, deleteBy);
     }
 
     /**
@@ -194,8 +214,13 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int deletePurchaseOrderById(Long id)
     {
-        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id);
-        return purchaseOrderMapper.deletePurchaseOrderById(id);
+        PurchaseOrder existing = purchaseOrderMapper.selectPurchaseOrderById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id, deleteBy);
+        return purchaseOrderMapper.deletePurchaseOrderById(id, deleteBy);
     }
 
     /**
@@ -328,8 +353,11 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setOrderType("1"); // 采购订单
             purchaseOrder.setUrgencyLevel("2"); // 中等紧急程度
             purchaseOrder.setDelFlag("0");
-            purchaseOrder.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+            purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
             purchaseOrder.setCreateTime(new Date());
+            if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+            }
             purchaseOrder.setRemark("从采购计划" + purchasePlan.getPlanNo() + "生成");
 
             // 创建订单明细
@@ -351,7 +379,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderEntry.setQualityStatus("0"); // 待检验
                 orderEntry.setReceivedQty(BigDecimal.ZERO);
                 orderEntry.setDelFlag("0");
-                orderEntry.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                orderEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 orderEntry.setCreateTime(new Date());
                 
                 orderEntryList.add(orderEntry);
@@ -375,7 +403,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
 
         // 更新计划状态为已执行
         purchasePlan.setPlanStatus("3"); // 已执行
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         purchasePlan.setUpdateTime(new Date());
         purchasePlanMapper.updatePurchasePlan(purchasePlan);
 

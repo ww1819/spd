@@ -111,6 +111,9 @@ public class UserDetailsServiceImpl implements UserDetailsService
 
         passwordService.validate(user);
 
+        if (StringUtils.isNotEmpty(customerId)) {
+            user.setCustomerId(customerId);
+        }
         return createLoginUser(user);
     }
 

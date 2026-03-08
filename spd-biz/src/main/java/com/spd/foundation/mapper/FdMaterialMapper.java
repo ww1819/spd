@@ -3,6 +3,7 @@ package com.spd.foundation.mapper;
 import java.util.List;
 import com.spd.foundation.domain.FdMaterial;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -72,19 +73,9 @@ public interface FdMaterialMapper
      */
     public int updateFdMaterial(FdMaterial fdMaterial);
 
-    /**
-     * 删除耗材产品
-     *
-     * @param id 耗材产品主键
-     * @return 结果
-     */
-    public int deleteFdMaterialById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteFdMaterialById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除耗材产品
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteFdMaterialByIds(Long[] ids);
+    /** 批量逻辑删除 */
+    public int deleteFdMaterialByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 }

@@ -27,6 +27,8 @@ import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.HcCustomerPeriodLogMapper;
 import com.spd.system.mapper.HcCustomerStatusLogMapper;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.common.core.domain.entity.SysMenu;
+import com.spd.common.exception.ServiceException;
 import com.spd.system.service.ISysMenuService;
 
 /**
@@ -83,7 +85,7 @@ public class HcCustomerController extends BaseController {
     existing.setRemark(body.getRemark());
     existing.setHcStatus(body.getHcStatus());
     existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
-    existing.setUpdateBy(SecurityUtils.getUsername());
+    existing.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(existing));
   }
 
@@ -157,7 +159,13 @@ public class HcCustomerController extends BaseController {
         }
       }
     }
-    String username = SecurityUtils.getUsername();
+    for (Long menuId : menuIds) {
+      SysMenu menu = sysMenuService.selectMenuById(menuId);
+      if (menu != null && "1".equals(menu.getIsPlatform())) {
+        throw new ServiceException("不能将平台管理菜单分配给客户，请从可分配菜单中选择");
+      }
+    }
+    String username = SecurityUtils.getUserIdStr();
     hcCustomerMenuMapper.deleteByTenantId(customerId);
     if (!menuIds.isEmpty()) {
       List<HcCustomerMenu> list = new ArrayList<>();

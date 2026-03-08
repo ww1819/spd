@@ -33,11 +33,12 @@ public interface ISysMenuService
 
     /**
      * 根据用户ID查询权限
-     * 
+     *
      * @param userId 用户ID
+     * @param forTenant 是否租户视角（true 时排除平台管理菜单），可为 null
      * @return 权限列表
      */
-    public Set<String> selectMenuPermsByUserId(Long userId);
+    public Set<String> selectMenuPermsByUserId(Long userId, Boolean forTenant);
 
     /**
      * 根据角色ID查询权限
@@ -49,11 +50,12 @@ public interface ISysMenuService
 
     /**
      * 根据用户ID查询菜单树信息
-     * 
+     *
      * @param userId 用户ID
+     * @param forTenant 是否租户视角（true 时排除平台管理菜单），可为 null
      * @return 菜单列表
      */
-    public List<SysMenu> selectMenuTreeByUserId(Long userId);
+    public List<SysMenu> selectMenuTreeByUserId(Long userId, Boolean forTenant);
 
     /**
      * 根据角色ID查询菜单树信息
@@ -162,4 +164,12 @@ public interface ISysMenuService
    * @return 下拉树结构列表
    */
   public List<TreeSelect> selectMenuTreeForHcCustomerAssign();
+
+  /**
+   * 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表 hc_customer_menu 内该客户已有的菜单
+   *
+   * @param tenantId 租户ID（客户ID），为空则返回空列表
+   * @return 下拉树结构列表
+   */
+  List<TreeSelect> selectMenuTreeForPostAssign(String tenantId);
 }

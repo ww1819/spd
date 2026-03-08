@@ -16,6 +16,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="referredName"    column="referred_name"    />
         <result property="useName"    column="use_name"    />
@@ -102,7 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdMaterialVo">
         select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
-            m.price, m.create_by, m.create_time, m.update_by, m.update_time,m.del_flag,
+            m.price, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
             m.his_id,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
@@ -147,6 +150,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryId != null "> and m.finance_category_id = #{financeCategoryId}</if>
         <if test="locationId != null "> and m.location_id = #{locationId}</if>
         <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
+        <if test="tenantId != null and tenantId != ''"> and (m.tenant_id = #{tenantId} or m.tenant_id is null)</if>
         <if test="beginDate != null "> and m.create_time &gt;= #{beginDate}</if>
         <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
     </select>
@@ -217,6 +221,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="isGz != null">is_gz,</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">is_follow,</if>
@@ -271,6 +276,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="isGz != null">#{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">#{isFollow},</if>
@@ -328,6 +334,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="isGz != null">is_gz = #{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
@@ -339,12 +348,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteFdMaterialById" parameterType="Long">
-        update fd_material set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteFdMaterialById">
+        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteFdMaterialByIds" parameterType="String">
-        update fd_material set del_flag = 1, update_time = now() where id in
+    <delete id="deleteFdMaterialByIds">
+        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

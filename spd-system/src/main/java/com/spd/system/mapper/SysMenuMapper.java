@@ -48,7 +48,7 @@ public interface SysMenuMapper
      * @param userId 用户ID
      * @return 权限列表
      */
-    public List<String> selectMenuPermsByUserId(Long userId);
+    List<String> selectMenuPermsByUserId(@Param("userId") Long userId, @Param("forTenant") Boolean forTenant);
 
     /**
      * 根据用户ID查询菜单
@@ -65,12 +65,21 @@ public interface SysMenuMapper
     public List<SysMenu> selectMenuTreeForHcCustomerAssign();
 
     /**
+     * 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表 hc_customer_menu 内该客户已有的菜单
+     *
+     * @param tenantId 租户ID（客户ID）
+     * @return 菜单列表
+     */
+    List<SysMenu> selectMenuTreeForPostAssign(@Param("tenantId") String tenantId);
+
+    /**
      * 根据用户ID查询菜单
      *
      * @param userId 用户ID
+     * @param forTenant 是否租户视角（true 时排除平台管理菜单 is_platform=1）
      * @return 菜单列表
      */
-    public List<SysMenu> selectMenuTreeByUserId(Long userId);
+    List<SysMenu> selectMenuTreeByUserId(@Param("userId") Long userId, @Param("forTenant") Boolean forTenant);
 
     /**
      * 根据角色ID查询菜单树信息

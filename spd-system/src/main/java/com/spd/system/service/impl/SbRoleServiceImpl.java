@@ -134,7 +134,7 @@ public class SbRoleServiceImpl implements ISbRoleService {
       throw new ServiceException("该角色已分配用户，不能删除");
     }
     sbRoleMenuMapper.deleteSbRoleMenuByRoleId(roleId);
-    return sbRoleMapper.deleteSbRoleById(roleId, SecurityUtils.getUsername());
+    return sbRoleMapper.deleteSbRoleById(roleId, SecurityUtils.getUserIdStr());
   }
 
   @Override
@@ -145,7 +145,7 @@ public class SbRoleServiceImpl implements ISbRoleService {
       }
     }
     sbRoleMenuMapper.deleteSbRoleMenu(roleIds);
-    return sbRoleMapper.deleteSbRoleByIds(roleIds, SecurityUtils.getUsername());
+    return sbRoleMapper.deleteSbRoleByIds(roleIds, SecurityUtils.getUserIdStr());
   }
 
   @Override

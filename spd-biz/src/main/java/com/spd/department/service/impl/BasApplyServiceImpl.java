@@ -43,6 +43,10 @@ public class BasApplyServiceImpl implements IBasApplyService
     public BasApply selectBasApplyById(Long id)
     {
         BasApply basApply = basApplyMapper.selectBasApplyById(id);
+        if (basApply == null) {
+            return null;
+        }
+        SecurityUtils.ensureTenantAccess(basApply.getTenantId());
         List<BasApplyEntry> basApplyEntryList = basApply.getBasApplyEntryList();
         for (BasApplyEntry basApplyEntry : basApplyEntryList) {
             FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(basApplyEntry.getMaterialId());
@@ -80,6 +84,9 @@ public class BasApplyServiceImpl implements IBasApplyService
             basApply.setTenantId(SecurityUtils.getCustomerId());
         }
         basApply.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(basApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            basApply.setCreateBy(SecurityUtils.getUserIdStr());
+        }
         basApply.setApplyBillNo(getNumber(basApply.getBillType()));
         int rows = basApplyMapper.insertBasApply(basApply);
         insertBasApplyEntry(basApply);
@@ -115,6 +122,9 @@ public class BasApplyServiceImpl implements IBasApplyService
     public int updateBasApply(BasApply basApply)
     {
         basApply.setUpdateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            basApply.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         basApplyMapper.deleteBasApplyEntryByParenId(basApply.getId());
         insertBasApplyEntry(basApply);
         return basApplyMapper.updateBasApply(basApply);
@@ -130,6 +140,12 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int deleteBasApplyByIds(Long[] ids)
     {
+        for (Long id : ids) {
+            BasApply existing = basApplyMapper.selectBasApplyById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
         basApplyMapper.deleteBasApplyEntryByParenIds(ids);
         return basApplyMapper.deleteBasApplyByIds(ids);
     }
@@ -144,6 +160,10 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int deleteBasApplyById(Long id)
     {
+        BasApply existing = basApplyMapper.selectBasApplyById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
         basApplyMapper.deleteBasApplyEntryByParenId(id);
         return basApplyMapper.deleteBasApplyById(id);
     }
@@ -181,7 +201,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         }
         // 驳回时状态保持为1（待审核），但记录驳回原因
         basApply.setRejectReason(rejectReason);
-        basApply.setUpdateBy(SecurityUtils.getUsername());
+        basApply.setUpdateBy(SecurityUtils.getUserIdStr());
         basApply.setUpdateTime(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
         return res;

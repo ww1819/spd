@@ -118,7 +118,7 @@ public class DeptBatchConsumeController extends BaseController
     @PutMapping("/audit")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = deptBatchConsumeService.auditConsume(json.getString("id"), json.getString("auditBy"));
+        int result = deptBatchConsumeService.auditConsume(json.getString("id"), getUserIdStr());
         return toAjax(result);
     }
 

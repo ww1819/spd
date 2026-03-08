@@ -83,6 +83,6 @@ public class SuppSettlementBillServiceImpl implements ISuppSettlementBillService
         if (bill.getAuditStatus() != null && bill.getAuditStatus() == 1) {
             throw new ServiceException("结算单已审核，不得新增或删除发票关联");
         }
-        return suppSettlementInvoiceMapper.logicalDeleteBySuppSettlementAndInvoice(suppSettlementId, invoiceId, SecurityUtils.getUsername());
+        return suppSettlementInvoiceMapper.logicalDeleteBySuppSettlementAndInvoice(suppSettlementId, invoiceId, SecurityUtils.getUserIdStr());
     }
 }

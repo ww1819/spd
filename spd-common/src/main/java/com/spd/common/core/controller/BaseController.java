@@ -211,6 +211,14 @@ public class BaseController
         return getLoginUser().getUsername();
     }
 
+    /**
+     * 当前用户ID字符串（用于 createBy/updateBy/deleteBy 等字段，存 sys_user.user_id）
+     */
+    public String getUserIdStr()
+    {
+        return String.valueOf(getUserId());
+    }
+
 
     /**
      * 处理非MyBatis查询数据分页问题

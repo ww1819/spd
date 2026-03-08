@@ -160,7 +160,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
         customer.setCustomerId(UUID7.generateUUID7());
       }
     }
-    customer.setCreateBy(SecurityUtils.getUsername());
+    customer.setCreateBy(SecurityUtils.getUserIdStr());
     int rows = sbCustomerMapper.insertSbCustomer(customer);
     if (rows > 0) {
       createDefaultTenantAdmin(customer.getCustomerId(),
@@ -322,7 +322,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (old == null) {
       return 0;
     }
-    String operateBy = SecurityUtils.getUsername();
+    String operateBy = SecurityUtils.getUserIdStr();
     Date now = new Date();
 
     if (StringUtils.isNotEmpty(customer.getStatus()) && !customer.getStatus().equals(old.getStatus())) {
@@ -378,7 +378,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
 
   @Override
   public int deleteSbCustomerById(String customerId) {
-    return sbCustomerMapper.deleteSbCustomerById(customerId, SecurityUtils.getUsername());
+    return sbCustomerMapper.deleteSbCustomerById(customerId, SecurityUtils.getUserIdStr());
   }
 
   @Override
@@ -418,7 +418,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (customer == null) {
       return 0;
     }
-    String operateBy = SecurityUtils.getUsername();
+    String operateBy = SecurityUtils.getUserIdStr();
     Date now = new Date();
 
     HcCustomerStatusLog statusLog = new HcCustomerStatusLog();

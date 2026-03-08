@@ -96,7 +96,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         }
         fdDepartment.setDelFlag(1);
         fdDepartment.setUpdateTime(DateUtils.getNowDate());
-        fdDepartment.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdDepartment.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdDepartmentMapper.updateFdDepartment(fdDepartment);
     }
 

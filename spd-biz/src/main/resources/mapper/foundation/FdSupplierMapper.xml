@@ -33,19 +33,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="remark"    column="remark"    />
     </resultMap>
 
     <sql id="selectFdSupplierVo">
         select id, code, name, del_flag, tax_number, referred_code, reg_money, valid_time, contacts, contacts_phone,
                 website, legal_person, zip_code, email, address, company_person, phone, cert_number, fax, bank_account,
-                company_referred, supplier_range, supplier_status, supplier_type, create_by, create_time, update_by, update_time, remark
+                company_referred, supplier_range, supplier_status, supplier_type, create_by, create_time, update_by, update_time, delete_by, delete_time, tenant_id, remark
         from fd_supplier
     </sql>
 
     <select id="selectFdSupplierList" parameterType="FdSupplier" resultMap="FdSupplierResult">
         <include refid="selectFdSupplierVo"/>
         where del_flag != 1
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
     </select>
@@ -85,6 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="remark != null">remark,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -115,6 +120,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="remark != null">#{remark},</if>
         </trim>
     </insert>
@@ -149,17 +155,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
         where id = #{id}
     </update>
 
-    <delete id="deleteFdSupplierById" parameterType="Long">
-        update fd_supplier set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteFdSupplierById">
+        update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteFdSupplierByIds" parameterType="String">
-        update fd_supplier set del_flag = 1, update_time = now() where id in
+    <delete id="deleteFdSupplierByIds">
+        update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

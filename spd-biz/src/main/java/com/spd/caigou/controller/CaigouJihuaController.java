@@ -95,7 +95,7 @@ public class CaigouJihuaController extends BaseController
     public AjaxResult audit(@RequestBody JSONObject json)
     {
         Long id = json.getLong("id");
-        String auditBy = json.getString("auditBy");
+        String auditBy = getUserIdStr();
         String auditOpinion = json.getString("auditOpinion");
         int result = purchasePlanService.auditPurchasePlan(id, auditBy, auditOpinion);
         return toAjax(result);

@@ -103,7 +103,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         }
         fdFactory.setDelFlag(1);
         fdFactory.setUpdateTime(DateUtils.getNowDate());
-        fdFactory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdFactory.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdFactoryMapper.updateFdFactory(fdFactory);
     }
 

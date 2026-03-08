@@ -118,7 +118,7 @@ public class BasApplyController extends BaseController
     @PutMapping("/auditApply")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = basApplyService.auditApply(json.getString("id"), json.getString("auditBy"));
+        int result = basApplyService.auditApply(json.getString("id"), getUserIdStr());
         return toAjax(result);
     }
 

@@ -99,6 +99,10 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "高值耗材辅条码")
     private String subBarcode;
 
+    /** 明细对应供应商ID（盘盈时必填） */
+    @Excel(name = "供应商ID")
+    private Long supplierId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -263,6 +267,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
     public String getSubBarcode() { return subBarcode; }
     public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
 
     @Override
     public String toString() {
@@ -286,6 +292,7 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("profitQty", getProfitQty())
             .append("stockAmount", getStockAmount())
             .append("profitAmount", getProfitAmount())
+            .append("supplierId", getSupplierId())
             .toString();
     }
 }

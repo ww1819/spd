@@ -24,6 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditBy"    column="audit_by"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditOpinion"    column="audit_opinion"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -83,7 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectPurchasePlanVo">
         select pp.id, pp.plan_no, pp.supplier_id, pp.warehouse_id, pp.department_id, pp.plan_date, pp.plan_status,
-               pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.create_by, pp.create_time,
+               pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.tenant_id, pp.create_by, pp.create_time,
                pp.update_by, pp.update_time, pp.audit_by, pp.audit_date, pp.audit_opinion,
                s.id sId, s.code supplierCode, s.name supplierName,
                w.id wId, w.code warehouseCode, w.name warehouseName,
@@ -109,6 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectPurchasePlanVo"/>
         <where>  
             pp.del_flag = '0'
+            <if test="tenantId != null and tenantId != ''"> and (pp.tenant_id = #{tenantId} or pp.tenant_id is null)</if>
             <if test="planNo != null  and planNo != ''"> and pp.plan_no like concat('%', #{planNo}, '%')</if>
             <if test="supplierId != null "> and pp.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and pp.warehouse_id = #{warehouseId}</if>
@@ -157,6 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">audit_by,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">#{planNo},</if>
@@ -177,6 +180,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -280,24 +284,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deletePurchasePlanById" parameterType="Long">
-        update purchase_plan set del_flag = '1' where id = #{id}
+    <delete id="deletePurchasePlanById">
+        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deletePurchasePlanByIds" parameterType="String">
-        update purchase_plan set del_flag = '1' where id in 
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deletePurchasePlanByIds">
+        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
-    <delete id="deletePurchasePlanEntryByParentId" parameterType="Long">
-        update purchase_plan_entry set del_flag = '1' where parent_id = #{parentId}
+    <delete id="deletePurchasePlanEntryByParentId">
+        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
     </delete>
 
-    <delete id="deletePurchasePlanEntryByParentIds" parameterType="String">
-        update purchase_plan_entry set del_flag = '1' where parent_id in 
-        <foreach item="parentId" collection="array" open="(" separator="," close=")">
+    <delete id="deletePurchasePlanEntryByParentIds">
+        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id in
+        <foreach item="parentId" collection="parentIds" open="(" separator="," close=")">
             #{parentId}
         </foreach>
     </delete>

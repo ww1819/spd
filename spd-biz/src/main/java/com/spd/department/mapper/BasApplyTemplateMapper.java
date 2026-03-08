@@ -56,12 +56,13 @@ public interface BasApplyTemplateMapper {
     int deleteBasApplyTemplateById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
-     * 删除制单模板明细
+     * 逻辑删除制单模板明细（设置 delete_by、delete_time）
      *
      * @param parenId 模板主表ID
+     * @param deleteBy 删除人
      * @return 结果
      */
-    int deleteEntryByParenId(@Param("parenId") Long parenId);
+    int deleteEntryByParenId(@Param("parenId") Long parenId, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量新增制单模板明细

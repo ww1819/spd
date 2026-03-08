@@ -51,6 +51,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if (purchasePlan == null) {
             return null;
         }
+        SecurityUtils.ensureTenantAccess(purchasePlan.getTenantId());
         List<PurchasePlanEntry> purchasePlanEntryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
         List<FdMaterial> materialList = new ArrayList<FdMaterial>();
         for(PurchasePlanEntry entry : purchasePlanEntryList){
@@ -71,6 +72,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public List<PurchasePlan> selectPurchasePlanList(PurchasePlan purchasePlan)
     {
+        if (purchasePlan != null && StringUtils.isEmpty(purchasePlan.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchasePlan.setTenantId(SecurityUtils.getCustomerId());
+        }
         return purchasePlanMapper.selectPurchasePlanList(purchasePlan);
     }
 
@@ -90,7 +94,12 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             purchasePlan.setPlanStatus("0"); // 未提交状态
         }
         purchasePlan.setCreateTime(DateUtils.getNowDate());
-        purchasePlan.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+        if (StringUtils.isEmpty(purchasePlan.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            purchasePlan.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(purchasePlan.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchasePlan.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = purchasePlanMapper.insertPurchasePlan(purchasePlan);
         insertPurchasePlanEntry(purchasePlan);
         return rows;
@@ -107,8 +116,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     public int updatePurchasePlan(PurchasePlan purchasePlan)
     {
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        purchasePlanMapper.deletePurchasePlanEntryByParentId(purchasePlan.getId());
+        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
+        purchasePlanMapper.deletePurchasePlanEntryByParentId(purchasePlan.getId(), SecurityUtils.getUserIdStr());
         insertPurchasePlanEntry(purchasePlan);
         return purchasePlanMapper.updatePurchasePlan(purchasePlan);
     }
@@ -123,8 +132,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int deletePurchasePlanByIds(Long[] ids)
     {
-        purchasePlanMapper.deletePurchasePlanEntryByParentIds(ids);
-        return purchasePlanMapper.deletePurchasePlanByIds(ids);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchasePlanMapper.deletePurchasePlanEntryByParentIds(ids, deleteBy);
+        return purchasePlanMapper.deletePurchasePlanByIds(ids, deleteBy);
     }
 
     /**
@@ -141,19 +151,10 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if(purchasePlan == null){
             throw new ServiceException(String.format("采购计划ID：%s，不存在!", id));
         }
-
-        purchasePlan.setDelFlag("1");
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        purchasePlan.setUpdateTime(new Date());
-
-        List<PurchasePlanEntry> purchasePlanEntryList = purchasePlan.getPurchasePlanEntryList();
-        for(PurchasePlanEntry entry : purchasePlanEntryList){
-            entry.setDelFlag("1");
-            entry.setParentId(id);
-            purchasePlanMapper.updatePurchasePlanEntry(entry);
-        }
-
-        return purchasePlanMapper.updatePurchasePlan(purchasePlan);
+        SecurityUtils.ensureTenantAccess(purchasePlan.getTenantId());
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchasePlanMapper.deletePurchasePlanEntryByParentId(id, deleteBy);
+        return purchasePlanMapper.deletePurchasePlanById(id, deleteBy);
     }
 
     /**
@@ -182,7 +183,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         purchasePlan.setAuditBy(auditBy);
         purchasePlan.setAuditDate(new Date());
         purchasePlan.setAuditOpinion(auditOpinion != null ? auditOpinion : "");
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         purchasePlan.setUpdateTime(new Date());
 
         int result = purchasePlanMapper.auditPurchasePlan(purchasePlan);
@@ -231,7 +232,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             {
                 purchasePlanEntry.setParentId(id);
                 purchasePlanEntry.setDelFlag("0");
-                purchasePlanEntry.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                purchasePlanEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 purchasePlanEntry.setCreateTime(new Date());
                 list.add(purchasePlanEntry);
             }

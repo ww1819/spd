@@ -2,6 +2,7 @@ package com.spd.department.mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import com.spd.department.domain.NewProductApply;
 import com.spd.department.domain.NewProductApplyEntry;
@@ -49,29 +50,14 @@ public interface NewProductApplyMapper
      */
     public int updateNewProductApply(NewProductApply newProductApply);
 
-    /**
-     * 删除新品申购申请
-     * 
-     * @param id 新品申购申请主键
-     * @return 结果
-     */
-    public int deleteNewProductApplyById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteNewProductApplyById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除新品申购申请
-     * 
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteNewProductApplyByIds(Long[] ids);
+    /** 批量逻辑删除 */
+    public int deleteNewProductApplyByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除新品申购申请明细
-     * 
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteNewProductApplyEntryByParentIds(Long[] ids);
+    /** 批量逻辑删除新品申购申请明细 */
+    public int deleteNewProductApplyEntryByParentIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
     
     /**
      * 批量新增新品申购申请明细
@@ -83,14 +69,6 @@ public interface NewProductApplyMapper
     
 
     /**
-     * 通过新品申购申请主键删除新品申购申请明细信息
-     * 
-     * @param id 新品申购申请ID
-     * @return 结果
-     */
-    public int deleteNewProductApplyEntryByParentId(Long id);
-
-    /**
      * 批量新增院内同类产品信息
      * 
      * @param newProductApplyDetailList 院内同类产品信息列表
@@ -98,12 +76,10 @@ public interface NewProductApplyMapper
      */
     public int batchNewProductApplyDetail(List<NewProductApplyDetail> newProductApplyDetailList);
     
-    /**
-     * 通过新品申购申请主键删除院内同类产品信息
-     * 
-     * @param id 新品申购申请ID
-     * @return 结果
-     */
-    public int deleteNewProductApplyDetailByParentId(Long id);
+    /** 逻辑删除院内同类产品信息 */
+    public int deleteNewProductApplyDetailByParentId(@Param("parentId") Long parentId, @Param("deleteBy") String deleteBy);
+
+    /** 逻辑删除新品申购申请明细 */
+    public int deleteNewProductApplyEntryByParentId(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 }
 

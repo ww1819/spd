@@ -99,7 +99,7 @@ public class FdCategory68ServiceImpl implements IFdCategory68Service
         }
         fdCategory68.setDelFlag(1);
         fdCategory68.setUpdateTime(new Date());
-        fdCategory68.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdCategory68.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdCategory68Mapper.updateFdCategory68(fdCategory68);
     }
 }

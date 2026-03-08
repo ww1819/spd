@@ -87,7 +87,7 @@ public class StkIoBillOutController extends BaseController {
     @PutMapping("/auditOutWarehouse")
     public AjaxResult auditOutWarehouse(@RequestBody JSONObject json)
     {
-        int result = stkIoBillService.auditStkIoBill(json.getString("id"), json.getString("auditBy"));
+        int result = stkIoBillService.auditStkIoBill(json.getString("id"), getUserIdStr());
         return toAjax(result);
     }
 

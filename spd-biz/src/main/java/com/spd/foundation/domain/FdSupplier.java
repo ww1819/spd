@@ -31,6 +31,9 @@ public class FdSupplier extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 税号 */
     @Excel(name = "税号")
     private String taxNumber;
@@ -75,6 +78,9 @@ public class FdSupplier extends BaseEntity
     /** 地址 */
     @Excel(name = "地址")
     private String address;
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     /** 公司负责人 */
     @Excel(name = "公司负责人")

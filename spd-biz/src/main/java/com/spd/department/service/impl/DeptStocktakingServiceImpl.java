@@ -197,7 +197,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
         stkIoStocktaking.setStockStatus(3); // 驳回状态
         stkIoStocktaking.setRejectReason(rejectReason);
-        stkIoStocktaking.setUpdateBy(SecurityUtils.getUsername());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoStocktaking.setUpdateTime(new Date());
 
         int res = deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
@@ -231,7 +231,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     stkDepInventory.setBeginDate(entry.getBeginTime());
                     stkDepInventory.setEndDate(entry.getEndTime());
                     stkDepInventory.setCreateTime(new Date());
-                    stkDepInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
 
                     stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
                 }else if(stockType == 502){//盘点
@@ -272,7 +272,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     depInventory.setUnitPrice(unitPrice);
                     depInventory.setWarehouseDate(new Date());
                     depInventory.setUpdateTime(new Date());
-                    depInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
                     stkDepInventoryMapper.updateStkDepInventory(depInventory);
                 }

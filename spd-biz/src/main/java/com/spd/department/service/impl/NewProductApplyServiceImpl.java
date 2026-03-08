@@ -35,7 +35,11 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     @Override
     public NewProductApply selectNewProductApplyById(Long id)
     {
-        return newProductApplyMapper.selectNewProductApplyById(id);
+        NewProductApply a = newProductApplyMapper.selectNewProductApplyById(id);
+        if (a != null) {
+            SecurityUtils.ensureTenantAccess(a.getTenantId());
+        }
+        return a;
     }
 
     /**
@@ -47,6 +51,9 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     @Override
     public List<NewProductApply> selectNewProductApplyList(NewProductApply newProductApply)
     {
+        if (newProductApply != null && StringUtils.isEmpty(newProductApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            newProductApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         return newProductApplyMapper.selectNewProductApplyList(newProductApply);
     }
 
@@ -66,8 +73,12 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
         }
         
         newProductApply.setCreateTime(DateUtils.getNowDate());
-        newProductApply.setCreateBy(SecurityUtils.getUsername());
-        
+        if (StringUtils.isEmpty(newProductApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            newProductApply.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(newProductApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            newProductApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = newProductApplyMapper.insertNewProductApply(newProductApply);
         insertNewProductApplyEntry(newProductApply);
         insertNewProductApplyDetail(newProductApply);
@@ -85,10 +96,11 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     public int updateNewProductApply(NewProductApply newProductApply)
     {
         newProductApply.setUpdateTime(DateUtils.getNowDate());
-        newProductApply.setUpdateBy(SecurityUtils.getUsername());
+        newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
         
-        newProductApplyMapper.deleteNewProductApplyEntryByParentId(newProductApply.getId());
-        newProductApplyMapper.deleteNewProductApplyDetailByParentId(newProductApply.getId());
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        newProductApplyMapper.deleteNewProductApplyEntryByParentId(newProductApply.getId(), deleteBy);
+        newProductApplyMapper.deleteNewProductApplyDetailByParentId(newProductApply.getId(), deleteBy);
         insertNewProductApplyEntry(newProductApply);
         insertNewProductApplyDetail(newProductApply);
         return newProductApplyMapper.updateNewProductApply(newProductApply);
@@ -104,8 +116,15 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     @Override
     public int deleteNewProductApplyByIds(Long[] ids)
     {
-        newProductApplyMapper.deleteNewProductApplyEntryByParentIds(ids);
-        return newProductApplyMapper.deleteNewProductApplyByIds(ids);
+        for (Long id : ids) {
+            NewProductApply existing = newProductApplyMapper.selectNewProductApplyById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        newProductApplyMapper.deleteNewProductApplyEntryByParentIds(ids, deleteBy);
+        return newProductApplyMapper.deleteNewProductApplyByIds(ids, deleteBy);
     }
 
     /**
@@ -118,9 +137,14 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     @Override
     public int deleteNewProductApplyById(Long id)
     {
-        newProductApplyMapper.deleteNewProductApplyEntryByParentId(id);
-        newProductApplyMapper.deleteNewProductApplyDetailByParentId(id);
-        return newProductApplyMapper.deleteNewProductApplyById(id);
+        NewProductApply existing = newProductApplyMapper.selectNewProductApplyById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        newProductApplyMapper.deleteNewProductApplyEntryByParentId(id, deleteBy);
+        newProductApplyMapper.deleteNewProductApplyDetailByParentId(id, deleteBy);
+        return newProductApplyMapper.deleteNewProductApplyById(id, deleteBy);
     }
 
     /**
@@ -139,7 +163,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
             {
                 newProductApplyEntry.setParentId(id);
                 newProductApplyEntry.setCreateTime(DateUtils.getNowDate());
-                newProductApplyEntry.setCreateBy(SecurityUtils.getUsername());
+                newProductApplyEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 list.add(newProductApplyEntry);
             }
             if (list.size() > 0)
@@ -170,7 +194,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
                 {
                     newProductApplyDetail.setParentId(id);
                     newProductApplyDetail.setCreateTime(DateUtils.getNowDate());
-                    newProductApplyDetail.setCreateBy(SecurityUtils.getUsername());
+                    newProductApplyDetail.setCreateBy(SecurityUtils.getUserIdStr());
                     list.add(newProductApplyDetail);
                 }
             }

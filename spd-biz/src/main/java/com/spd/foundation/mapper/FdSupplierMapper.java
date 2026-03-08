@@ -2,6 +2,7 @@ package com.spd.foundation.mapper;
 
 import java.util.List;
 import com.spd.foundation.domain.FdSupplier;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 供应商Mapper接口
@@ -43,21 +44,11 @@ public interface FdSupplierMapper
      */
     public int updateFdSupplier(FdSupplier fdSupplier);
 
-    /**
-     * 删除供应商
-     *
-     * @param id 供应商主键
-     * @return 结果
-     */
-    public int deleteFdSupplierById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteFdSupplierById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除供应商
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteFdSupplierByIds(Long[] ids);
+    /** 批量逻辑删除 */
+    public int deleteFdSupplierByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 校验供应商是否已存在出入库业务

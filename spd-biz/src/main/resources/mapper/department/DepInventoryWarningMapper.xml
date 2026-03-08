@@ -16,6 +16,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="material_id" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
@@ -68,7 +69,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectDepInventoryWarningVo">
         select w.id, w.department_id, w.material_id, w.min_qty_warning, w.max_qty_warning, w.del_flag,
-            w.create_by, w.create_time, w.update_by, w.update_time, w.remark,
+            w.tenant_id, w.create_by, w.create_time, w.update_by, w.update_time, w.remark,
             d.id dId, d.code departmentCode, d.name departmentName,
             m.id mId, m.code materialCode, m.name materialName, m.speci specification, m.model,
             m.price unitPrice, m.register_no registerNo,
@@ -90,6 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDepInventoryWarningList" parameterType="DepInventoryWarning" resultMap="DepInventoryWarningResult">
         <include refid="selectDepInventoryWarningVo"/>
         where w.del_flag = 0
+        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
         <if test="departmentId != null "> and w.department_id = #{departmentId}</if>
         <if test="materialId != null "> and w.material_id = #{materialId}</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
@@ -115,6 +117,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="departmentId != null">#{departmentId},</if>
@@ -127,6 +130,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -147,13 +151,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteDepInventoryWarningById" parameterType="Long">
-        update dep_inventory_warning set del_flag = 1 where id = #{id}
+    <delete id="deleteDepInventoryWarningById">
+        update dep_inventory_warning set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteDepInventoryWarningByIds" parameterType="String">
-        update dep_inventory_warning set del_flag = 1 where id in
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deleteDepInventoryWarningByIds">
+        update dep_inventory_warning set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>

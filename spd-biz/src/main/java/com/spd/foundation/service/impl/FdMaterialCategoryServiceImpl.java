@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdMaterialCategoryMapper;
@@ -44,6 +45,9 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
     @Override
     public List<FdMaterialCategory> selectFdMaterialCategoryList(FdMaterialCategory fdMaterialCategory)
     {
+        if (fdMaterialCategory != null && StringUtils.isEmpty(fdMaterialCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdMaterialCategory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdMaterialCategoryMapper.selectFdMaterialCategoryList(fdMaterialCategory);
     }
 
@@ -57,6 +61,12 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
     public int insertFdMaterialCategory(FdMaterialCategory fdMaterialCategory)
     {
         fdMaterialCategory.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdMaterialCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdMaterialCategory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(fdMaterialCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdMaterialCategory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdMaterialCategoryMapper.insertFdMaterialCategory(fdMaterialCategory);
     }
 
@@ -70,6 +80,9 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
     public int updateFdMaterialCategory(FdMaterialCategory fdMaterialCategory)
     {
         fdMaterialCategory.setUpdateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdMaterialCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdMaterialCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return fdMaterialCategoryMapper.updateFdMaterialCategory(fdMaterialCategory);
     }
 
@@ -101,7 +114,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
         }
         fdMaterialCategory.setDelFlag(1);
         fdMaterialCategory.setUpdateTime(DateUtils.getNowDate());
-        fdMaterialCategory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdMaterialCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdMaterialCategoryMapper.updateFdMaterialCategory(fdMaterialCategory);
     }
 }

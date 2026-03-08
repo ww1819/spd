@@ -108,7 +108,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
         }
         fdWarehouse.setDelFlag(1);
         fdWarehouse.setUpdateTime(DateUtils.getNowDate());
-        fdWarehouse.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdWarehouse.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
     }
 

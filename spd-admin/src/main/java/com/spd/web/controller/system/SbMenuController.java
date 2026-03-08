@@ -86,7 +86,7 @@ public class SbMenuController extends BaseController {
         {
             return error("新增菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setCreateBy(SecurityUtils.getUsername());
+        menu.setCreateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbMenuService.insertSbMenu(menu));
     }
 
@@ -107,7 +107,7 @@ public class SbMenuController extends BaseController {
         {
             return error("修改菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setUpdateBy(SecurityUtils.getUsername());
+        menu.setUpdateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbMenuService.updateSbMenu(menu));
     }
 

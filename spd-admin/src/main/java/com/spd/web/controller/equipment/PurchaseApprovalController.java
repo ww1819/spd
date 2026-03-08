@@ -87,7 +87,7 @@ public class PurchaseApprovalController extends BaseController
         
         // 设置审批信息
         application.setStatus("1"); // 审核通过
-        application.setReviewer(SecurityUtils.getUsername());
+        application.setReviewer(SecurityUtils.getUserIdStr());
         application.setReviewDate(new Date());
         application.setReviewOpinion(equipmentPurchaseApplication.getReviewOpinion());
         
@@ -112,7 +112,7 @@ public class PurchaseApprovalController extends BaseController
         
         // 设置拒绝信息
         application.setStatus("2"); // 审核拒绝
-        application.setReviewer(SecurityUtils.getUsername());
+        application.setReviewer(SecurityUtils.getUserIdStr());
         application.setReviewDate(new Date());
         application.setReviewOpinion(equipmentPurchaseApplication.getReviewOpinion());
         

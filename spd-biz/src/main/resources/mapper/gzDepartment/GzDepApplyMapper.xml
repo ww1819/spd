@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
     </resultMap>
@@ -52,7 +53,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectGzDepApplyVo">
         select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.user_id,
-				a.apply_bill_status, a.del_flag, a.create_by, a.create_time, a.update_by,
+				a.apply_bill_status, a.del_flag, a.tenant_id, a.create_by, a.create_time, a.update_by,
 				a.update_time, a.remark,w.id wId,w.code warehouseCode,w.name warehouseName,
 				u.user_id userId,u.nick_name nickName,u.user_name userName
         from gz_dep_apply a
@@ -63,6 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzDepApplyList" parameterType="GzDepApply" resultMap="GzDepApplyResult">
         <include refid="selectGzDepApplyVo"/>
         <where>
+            <if test="tenantId != null and tenantId != ''"> and (a.tenant_id = #{tenantId} or a.tenant_id is null)</if>
             <if test="applyBillNo != null  and applyBillNo != ''"> and a.apply_bill_no = #{applyBillNo}</if>
             <if test="applyBillDate != null "> and a.apply_bill_date = #{applyBillDate}</if>
             <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>
@@ -96,6 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="applyBillNo != null">#{applyBillNo},</if>
@@ -109,6 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -130,26 +134,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteGzDepApplyById" parameterType="Long">
-        update gz_dep_apply set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteGzDepApplyById">
+        update gz_dep_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deleteGzDepApplyByIds" parameterType="String">
-        update gz_dep_apply set del_flag = 1, update_time = now() where id in
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deleteGzDepApplyByIds">
+        update gz_dep_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
-    <delete id="deleteGzDepApplyEntryByParenIds" parameterType="String">
-        update gz_dep_apply_entry set del_flag = 1, update_time = now() where paren_id in
-        <foreach item="parenId" collection="array" open="(" separator="," close=")">
+    <delete id="deleteGzDepApplyEntryByParenIds">
+        update gz_dep_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id in
+        <foreach item="parenId" collection="ids" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
-    <delete id="deleteGzDepApplyEntryByParenId" parameterType="Long">
-        update gz_dep_apply_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    <delete id="deleteGzDepApplyEntryByParenId">
+        update gz_dep_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{parenId}
     </delete>
 
     <insert id="batchGzDepApplyEntry">

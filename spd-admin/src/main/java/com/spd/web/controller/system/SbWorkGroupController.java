@@ -63,7 +63,7 @@ public class SbWorkGroupController extends BaseController {
   @Log(title = "设备工作组", businessType = BusinessType.INSERT)
   @PostMapping
   public AjaxResult add(@Validated @RequestBody SbWorkGroup group) {
-    group.setCreateBy(SecurityUtils.getUsername());
+    group.setCreateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbWorkGroupService.insertSbWorkGroup(group));
   }
 
@@ -71,7 +71,7 @@ public class SbWorkGroupController extends BaseController {
   @Log(title = "设备工作组", businessType = BusinessType.UPDATE)
   @PutMapping
   public AjaxResult edit(@Validated @RequestBody SbWorkGroup group) {
-    group.setUpdateBy(SecurityUtils.getUsername());
+    group.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbWorkGroupService.updateSbWorkGroup(group));
   }
 

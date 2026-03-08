@@ -83,7 +83,7 @@ public class MonthInitController extends BaseController
                 StkIoBill stkIoBill = stkIoBillService.selectStkIoBillById(data.getId());
 
                 stkIoBill.setIsMonthInit(1);//设为已月结
-                stkIoBill.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
                 stkIoBill.setUpdateTime(new Date());
                 stkIoBillService.updateStkIoBill(stkIoBill);
             }
@@ -91,7 +91,7 @@ public class MonthInitController extends BaseController
             for(StkIoStocktaking data : stockDataList){
                 StkIoStocktaking stkIoStocktaking = stkIoStocktakingService.selectStkIoStocktakingById(data.getId());
                 stkIoStocktaking.setIsMonthInit(1);
-                stkIoStocktaking.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
                 stkIoStocktaking.setUpdateTime(new Date());
                 stkIoStocktakingService.updateStkIoStocktaking(stkIoStocktaking);
             }
@@ -127,7 +127,7 @@ public class MonthInitController extends BaseController
                 StkIoBill stkIoBill = stkIoBillService.selectStkIoBillById(data.getId());
 
                 stkIoBill.setIsMonthInit(0);//清除
-                stkIoBill.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
                 stkIoBill.setUpdateTime(new Date());
                 stkIoBillService.updateStkIoBill(stkIoBill);
             }
@@ -135,7 +135,7 @@ public class MonthInitController extends BaseController
             for(StkIoStocktaking data : stockDataList){
                 StkIoStocktaking stkIoStocktaking = stkIoStocktakingService.selectStkIoStocktakingById(data.getId());
                 stkIoStocktaking.setIsMonthInit(0);
-                stkIoStocktaking.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
                 stkIoStocktaking.setUpdateTime(new Date());
                 stkIoStocktakingService.updateStkIoStocktaking(stkIoStocktaking);
             }

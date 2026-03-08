@@ -77,7 +77,7 @@ public class SbCustomerController extends BaseController {
     if (UserConstants.NOT_UNIQUE == (sbCustomerService.checkSbCustomerCodeUnique(customer))) {
       return error("新增客户'" + customer.getCustomerName() + "'失败，客户编码已存在");
     }
-    customer.setCreateBy(SecurityUtils.getUsername());
+    customer.setCreateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.insertSbCustomer(customer));
   }
 
@@ -88,7 +88,7 @@ public class SbCustomerController extends BaseController {
     if (UserConstants.NOT_UNIQUE == (sbCustomerService.checkSbCustomerCodeUnique(customer))) {
       return error("修改客户'" + customer.getCustomerName() + "'失败，客户编码已存在");
     }
-    customer.setUpdateBy(SecurityUtils.getUsername());
+    customer.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(customer));
   }
 

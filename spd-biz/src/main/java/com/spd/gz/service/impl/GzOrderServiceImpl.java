@@ -55,6 +55,9 @@ public class GzOrderServiceImpl implements IGzOrderService
     public GzOrder selectGzOrderById(Long id)
     {
         GzOrder gzOrder = gzOrderMapper.selectGzOrderById(id);
+        if (gzOrder != null) {
+            SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        }
         if(gzOrder == null){
             return null;
         }
@@ -138,7 +141,7 @@ public class GzOrderServiceImpl implements IGzOrderService
     public int updateGzOrder(GzOrder gzOrder)
     {
         gzOrder.setUpdateTime(DateUtils.getNowDate());
-        gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId());
+        gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId(), SecurityUtils.getUserIdStr());
         insertGzOrderEntry(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);
     }
@@ -157,19 +160,10 @@ public class GzOrderServiceImpl implements IGzOrderService
         if(gzOrder == null){
             throw new ServiceException(String.format("高值入库业务：%s，不存在!", id));
         }
-
-        gzOrder.setDelFlag(1);
-        gzOrder.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        gzOrder.setUpdateTime(new Date());
-
-        List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
-        for(GzOrderEntry entry : gzOrderEntryList){
-            entry.setDelFlag(1);
-            entry.setParenId(id);
-            gzOrderMapper.updateGzOrderEntry(entry);
-        }
-
-        return gzOrderMapper.updateGzOrder(gzOrder);
+        SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        String deleteBy = SecurityUtils.getUserIdStr();
+        gzOrderMapper.deleteGzOrderEntryByParenId(id, deleteBy);
+        return gzOrderMapper.deleteGzOrderById(id, deleteBy);
     }
 
     @Override

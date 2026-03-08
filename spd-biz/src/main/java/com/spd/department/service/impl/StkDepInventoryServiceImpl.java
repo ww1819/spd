@@ -37,7 +37,11 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public StkDepInventory selectStkDepInventoryById(Long id)
     {
-        return stkDepInventoryMapper.selectStkDepInventoryById(id);
+        StkDepInventory inv = stkDepInventoryMapper.selectStkDepInventoryById(id);
+        if (inv != null) {
+            SecurityUtils.ensureTenantAccess(inv.getTenantId());
+        }
+        return inv;
     }
 
     /**
@@ -72,6 +76,9 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
         if (StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
         }
+        if (StringUtils.isEmpty(stkDepInventory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
         return stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
     }
 
@@ -84,6 +91,9 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int updateStkDepInventory(StkDepInventory stkDepInventory)
     {
+        if (StringUtils.isEmpty(stkDepInventory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
     }
 
@@ -96,6 +106,12 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int deleteStkDepInventoryByIds(Long[] ids)
     {
+        for (Long id : ids) {
+            StkDepInventory existing = stkDepInventoryMapper.selectStkDepInventoryById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
         return stkDepInventoryMapper.deleteStkDepInventoryByIds(ids);
     }
 
@@ -108,6 +124,10 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int deleteStkDepInventoryById(Long id)
     {
+        StkDepInventory existing = stkDepInventoryMapper.selectStkDepInventoryById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
         return stkDepInventoryMapper.deleteStkDepInventoryById(id);
     }
 

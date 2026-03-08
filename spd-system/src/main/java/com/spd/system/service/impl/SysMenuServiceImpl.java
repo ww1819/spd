@@ -86,9 +86,9 @@ public class SysMenuServiceImpl implements ISysMenuService
      * @return 权限列表
      */
     @Override
-    public Set<String> selectMenuPermsByUserId(Long userId)
+    public Set<String> selectMenuPermsByUserId(Long userId, Boolean forTenant)
     {
-        List<String> perms = menuMapper.selectMenuPermsByUserId(userId);
+        List<String> perms = menuMapper.selectMenuPermsByUserId(userId, forTenant);
         Set<String> permsSet = new HashSet<>();
         for (String perm : perms)
         {
@@ -128,7 +128,7 @@ public class SysMenuServiceImpl implements ISysMenuService
      * @return 菜单列表
      */
     @Override
-    public List<SysMenu> selectMenuTreeByUserId(Long userId)
+    public List<SysMenu> selectMenuTreeByUserId(Long userId, Boolean forTenant)
     {
         List<SysMenu> menus = null;
         if (SecurityUtils.isAdmin(userId))
@@ -137,7 +137,7 @@ public class SysMenuServiceImpl implements ISysMenuService
         }
         else
         {
-            menus = menuMapper.selectMenuTreeByUserId(userId);
+            menus = menuMapper.selectMenuTreeByUserId(userId, forTenant);
         }
         return getChildPerms(menus, 0);
     }
@@ -395,6 +395,16 @@ public class SysMenuServiceImpl implements ISysMenuService
     public List<TreeSelect> selectMenuTreeForHcCustomerAssign()
     {
         List<SysMenu> menus = menuMapper.selectMenuTreeForHcCustomerAssign();
+        return buildMenuTreeSelect(menus);
+    }
+
+    @Override
+    public List<TreeSelect> selectMenuTreeForPostAssign(String tenantId)
+    {
+        if (StringUtils.isEmpty(tenantId)) {
+            return new ArrayList<>();
+        }
+        List<SysMenu> menus = menuMapper.selectMenuTreeForPostAssign(tenantId);
         return buildMenuTreeSelect(menus);
     }
 
