@@ -123,7 +123,7 @@ public class StkInventoryServiceImpl implements IStkInventoryService
                 SecurityUtils.ensureTenantAccess(existing.getTenantId());
             }
         }
-        return stkInventoryMapper.deleteStkInventoryByIds(ids);
+        return stkInventoryMapper.deleteStkInventoryByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -139,7 +139,7 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
         }
-        return stkInventoryMapper.deleteStkInventoryById(id);
+        return stkInventoryMapper.deleteStkInventoryById(id, SecurityUtils.getUserIdStr());
     }
 
     /**

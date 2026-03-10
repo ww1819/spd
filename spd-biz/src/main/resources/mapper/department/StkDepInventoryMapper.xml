@@ -86,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
         <include refid="selectStkDepInventoryVo"/>
         where stk.qty &gt; 0
+        and (stk.del_flag = 0 or stk.del_flag is null)
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
@@ -103,6 +104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkDepInventoryById" parameterType="Long" resultMap="StkDepInventoryResult">
         <include refid="selectStkDepInventoryVo"/>
         where stk.id = #{id}
+          and (stk.del_flag = 0 or stk.del_flag is null)
     </select>
 
     <insert id="insertStkDepInventory" parameterType="StkDepInventory" useGeneratedKeys="true" keyProperty="id">
@@ -185,26 +187,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteStkDepInventoryById" parameterType="Long">
-        update stk_dep_inventory set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteStkDepInventoryById" parameterType="map">
+        update stk_dep_inventory
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now()
+        where id = #{id}
     </delete>
 
-    <delete id="deleteStkDepInventoryByIds" parameterType="String">
-        update stk_dep_inventory set del_flag = 1, update_time = now() where id in
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deleteStkDepInventoryByIds" parameterType="map">
+        update stk_dep_inventory
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now()
+        where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <!-- 退库用：只查已收货确认的科室库存 -->
     <select id="selectStkDepInventoryOne" parameterType="java.lang.String" resultMap="StkDepInventoryResult">
-        select * from stk_dep_inventory where batch_no = #{batchNo} and (receipt_confirm_status = 1 or receipt_confirm_status is null) and (del_flag = 0 or del_flag is null) order by id desc limit 1
+        select * from stk_dep_inventory
+        where batch_no = #{batchNo}
+          and (receipt_confirm_status = 1 or receipt_confirm_status is null)
+          and (del_flag = 0 or del_flag is null)
+        order by id desc
+        limit 1
     </select>
 
     <!-- 退库校验可用数量：只统计已收货确认的科室库存 -->
     <select id="selectTKStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
         select SUM(IFNULL(qty, 0)) from stk_dep_inventory
-        where batch_no = #{batchNo} and (receipt_confirm_status = 1 or receipt_confirm_status is null) and (del_flag = 0 or del_flag is null)
+        where batch_no = #{batchNo}
+          and (receipt_confirm_status = 1 or receipt_confirm_status is null)
+          and (del_flag = 0 or del_flag is null)
     </select>
 
     <!-- 库存汇总查询 -->
@@ -225,6 +242,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join fd_material m on stk.material_id = m.id
         where stk.qty &gt; 0
+          and (stk.del_flag = 0 or stk.del_flag is null)
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
@@ -258,6 +276,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on entry.material_id = m.id
         left join fd_warehouse w on bill.warehouse_id = w.id
         where bill.del_flag = 0
+          and (entry.del_flag = 0 or entry.del_flag is null)
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
         <if test="warehouseId != null"> and bill.warehouse_id = #{warehouseId}</if>

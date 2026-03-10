@@ -63,20 +63,22 @@ public interface StkInventoryMapper
     public int updateStkInventory(StkInventory stkInventory);
 
     /**
-     * 删除库存明细
+     * 删除库存明细（逻辑删除）
      *
      * @param id 库存明细主键
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteStkInventoryById(Long id);
+    public int deleteStkInventoryById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除库存明细
+     * 批量删除库存明细（逻辑删除）
      *
      * @param ids 需要删除的数据主键集合
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteStkInventoryByIds(Long[] ids);
+    public int deleteStkInventoryByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 按仓库筛选实时库存耗材
