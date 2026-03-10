@@ -929,3 +929,11 @@ CALL add_table_column('sys_user_warehouse', 'create_by', 'varchar(64)', '创建�
 /
 CALL add_table_column('sys_user_warehouse', 'create_time', 'datetime', '创建时间', NULL);
 /
+
+
+CALL add_table_column('stk_dep_inventory', 'del_flag', 'int', '删除标识', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'del_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'del_time', 'datetime', '删除时间', NULL);
+/

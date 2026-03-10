@@ -47,7 +47,7 @@ public interface FdMaterialMapper
      * @param id 耗材产品主键
      * @return 耗材产品
      */
-    public FdMaterial selectFdMaterialById(String id);
+    public FdMaterial selectFdMaterialById(Long id);
 
     /**
      * 查询耗材产品列表
