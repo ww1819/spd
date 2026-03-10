@@ -68,18 +68,18 @@ public class StkIoRThBillController extends BaseController
                     stkRTHVo.setMaterialName(StringUtils.nvl(map.get("materialName"),"").toString());
                     stkRTHVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"),"").toString());
                     stkRTHVo.setMaterialQty((BigDecimal) map.get("materialQty"));
-                    stkRTHVo.setMaterialSpeci(map.get("materialSpeci").toString());
+                    stkRTHVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"),"").toString());
                     stkRTHVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
-                    stkRTHVo.setUnitName(map.get("unitName").toString());
+                    stkRTHVo.setUnitName(StringUtils.nvl(map.get("unitName"),"").toString());
                     stkRTHVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
-                    stkRTHVo.setWarehouseName(map.get("warehouseName").toString());
-                    stkRTHVo.setFactoryName(map.get("factoryName").toString());
-                    stkRTHVo.setSupplierName(map.get("supplierName").toString());
-                    stkRTHVo.setBatchNo(map.get("batchNo").toString());
+                    stkRTHVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"),"").toString());
+                    stkRTHVo.setFactoryName(StringUtils.nvl(map.get("factoryName"),"").toString());
+                    stkRTHVo.setSupplierName(StringUtils.nvl(map.get("supplierName"),"").toString());
+                    stkRTHVo.setBatchNo(StringUtils.nvl(map.get("batchNo"),"").toString());
                     if (map.get("batchNumber") != null){
                         stkRTHVo.setBatchNumber(map.get("batchNumber").toString());
                     }
-                    stkRTHVo.setBillNo(map.get("billNo").toString());
+                    stkRTHVo.setBillNo(StringUtils.nvl(map.get("billNo"),"").toString());
                     stkRTHVo.setBillType((Integer) map.get("billType"));
                     if(map.get("billDate") != null){
                         Date billDate = formatter.parse(map.get("billDate").toString());
@@ -93,7 +93,7 @@ public class StkIoRThBillController extends BaseController
                         Date endTime = formatter.parse(map.get("endTime").toString());
                         stkRTHVo.setEndDate(endTime);
                     }
-                    stkRTHVo.setFinanceCategoryName(map.get("financeCategoryName").toString());
+                    stkRTHVo.setFinanceCategoryName(StringUtils.nvl(map.get("financeCategoryName"),"").toString());
                     stkRTHVoList.add(stkRTHVo);
                     loopCount++;
                 } catch (Exception e) {
@@ -147,17 +147,17 @@ public class StkIoRThBillController extends BaseController
                 stkRTHVo.setMaterial(fdMaterial);
             }
             stkRTHVo.setId((Long) map.get("id"));
-            stkRTHVo.setMaterialCode(map.get("materialCode").toString());
-            stkRTHVo.setMaterialName(map.get("materialName").toString());
-            stkRTHVo.setMaterialModel(map.get("materialModel").toString());
+            stkRTHVo.setMaterialCode(map.get("materialCode") != null ? map.get("materialCode").toString() : null);
+            stkRTHVo.setMaterialName(map.get("materialName") != null ? map.get("materialName").toString() : null);
+            stkRTHVo.setMaterialModel(map.get("materialModel") != null ? map.get("materialModel").toString() : null);
             stkRTHVo.setMaterialQty((BigDecimal) map.get("materialQty"));
-            stkRTHVo.setMaterialSpeci(map.get("materialSpeci").toString());
+            stkRTHVo.setMaterialSpeci(map.get("materialSpeci") != null ? map.get("materialSpeci").toString() : null);
             stkRTHVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
-            stkRTHVo.setUnitName(map.get("unitName").toString());
+            stkRTHVo.setUnitName(map.get("unitName") != null ? map.get("unitName").toString() : null);
             stkRTHVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
-            stkRTHVo.setWarehouseName(map.get("warehouseName").toString());
-            stkRTHVo.setSupplierName(map.get("supplierName").toString());
-            stkRTHVo.setFactoryName(map.get("factoryName").toString());
+            stkRTHVo.setWarehouseName(map.get("warehouseName") != null ? map.get("warehouseName").toString() : null);
+            stkRTHVo.setSupplierName(map.get("supplierName") != null ? map.get("supplierName").toString() : null);
+            stkRTHVo.setFactoryName(map.get("factoryName") != null ? map.get("factoryName").toString() : null);
             stkRTHVo.setBillType((Integer) map.get("billType"));
             stkRTHVoList.add(stkRTHVo);
         }
