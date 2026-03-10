@@ -7,7 +7,9 @@ import com.spd.common.core.page.TotalInfo;
 import com.spd.common.core.page.TableSupport;
 import com.spd.common.utils.StringUtils;
 import com.github.pagehelper.PageInfo;
+import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdWarehouseCategory;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -165,6 +167,27 @@ public class StkIoRThBillController extends BaseController
         return stkRTHVoList;
     }
 
+    /** 根据明细/汇总查询结果中的产品档案字段组装 FdMaterial，供前端 material.registerNo、material.packageSpeci 等使用，避免循环查库 */
+    private FdMaterial buildMaterialFromMap(Map<String, Object> map) {
+        if (map == null) return null;
+        FdMaterial m = new FdMaterial();
+        if (map.get("materialId") != null) m.setId(((Number) map.get("materialId")).longValue());
+        if (map.get("materialRegisterNo") != null) m.setRegisterNo(map.get("materialRegisterNo").toString());
+        if (map.get("materialPackageSpeci") != null) m.setPackageSpeci(map.get("materialPackageSpeci").toString());
+        if (map.get("materialIsWay") != null) m.setIsWay(map.get("materialIsWay").toString());
+        if (map.get("materialWarehouseCategoryName") != null) {
+            FdWarehouseCategory wc = new FdWarehouseCategory();
+            wc.setWarehouseCategoryName(map.get("materialWarehouseCategoryName").toString());
+            m.setFdWarehouseCategory(wc);
+        }
+        if (map.get("financeCategoryName") != null) {
+            FdFinanceCategory fc = new FdFinanceCategory();
+            fc.setFinanceCategoryName(map.get("financeCategoryName").toString());
+            m.setFdFinanceCategory(fc);
+        }
+        return m;
+    }
+
     /**
      * 查询出退库列表
      */
@@ -186,11 +209,7 @@ public class StkIoRThBillController extends BaseController
             for(Map<String, Object> map : mapList){
                 try {
                     StkCTKVo stkCTKVo = new StkCTKVo();
-                    Long materialId = (Long) map.get("materialId");
-                    if (materialId != null){
-                        FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
-                        stkCTKVo.setMaterial(fdMaterial);
-                    }
+                    stkCTKVo.setMaterial(buildMaterialFromMap(map));
                     stkCTKVo.setId((Long) map.get("id"));
                     stkCTKVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"), "").toString());
                     stkCTKVo.setMaterialName(StringUtils.nvl(map.get("materialName"), "").toString());
@@ -301,11 +320,7 @@ public class StkIoRThBillController extends BaseController
         for(Map<String, Object> map : mapList){
             try {
                 StkCTKVo stkCTKVo = new StkCTKVo();
-                Long materialId = (Long) map.get("materialId");
-                if (materialId != null){
-                    FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
-                    stkCTKVo.setMaterial(fdMaterial);
-                }
+                stkCTKVo.setMaterial(buildMaterialFromMap(map));
                 stkCTKVo.setId((Long) map.get("id"));
                 stkCTKVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"), "").toString());
                 stkCTKVo.setMaterialName(StringUtils.nvl(map.get("materialName"), "").toString());

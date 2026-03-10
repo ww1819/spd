@@ -323,8 +323,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, m.code materialCode, m.name materialName, stk.bill_type billType,
                sum(b.qty) materialQty, b.unit_price unitPrice, ROUND(sum(b.qty) * b.unit_price, 2) materialAmt,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
-               f.factory_name factoryName, s.name supplierName,
+               f.factory_name factoryName, s.name supplierName, fc.finance_category_name financeCategoryName,
                d.name departmentName, w.name warehouseName, b.material_id materialId,
+               m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay,
+               wc.warehouse_category_name materialWarehouseCategoryName,
                stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
                stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
         from stk_io_bill stk
@@ -333,8 +335,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         left join sys_user cu on stk.create_by = cu.user_id
         left join sys_user au on stk.audit_by = au.user_id
         where (stk.del_flag = 0 or stk.del_flag is null)
@@ -347,7 +351,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         GROUP BY stk.id, m.code, m.name, stk.bill_type, b.unit_price, m.speci, m.model, u.unit_name,
-                 f.factory_name, s.name, d.name, w.name, b.material_id,
+                 f.factory_name, s.name, fc.finance_category_name, d.name, w.name, b.material_id,
+                 m.register_no, m.package_speci, m.is_way, wc.warehouse_category_name,
                  stk.create_time, cu.nick_name, cu.user_name, stk.audit_date, au.nick_name, au.user_name
     </select>
 
@@ -361,6 +366,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                f.factory_name factoryName, fc.finance_category_name financeCategoryName,
                s.name supplierName,
                d.name departmentName, w.name warehouseName, b.material_id materialId,
+               m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay,
+               wc.warehouse_category_name materialWarehouseCategoryName,
                stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
                stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
         from stk_io_bill stk
@@ -369,6 +376,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
