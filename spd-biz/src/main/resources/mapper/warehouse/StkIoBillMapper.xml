@@ -349,6 +349,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         GROUP BY stk.id, m.code, m.name, stk.bill_type, b.unit_price, m.speci, m.model, u.unit_name,
                  f.factory_name, s.name, fc.finance_category_name, d.name, w.name, b.material_id,
@@ -388,6 +391,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <choose>
             <when test="billStatus != null"> and stk.bill_status = #{billStatus}</when>
             <otherwise> and stk.bill_status = 2</otherwise>
@@ -412,6 +418,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <choose>
             <when test="billStatus != null">
                 and stk.bill_status = #{billStatus}
@@ -442,6 +451,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
     </select>
 

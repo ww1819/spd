@@ -159,7 +159,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
+        <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         order by stk.warehouse_date desc
@@ -179,7 +181,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
+        <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
         order by stk.warehouse_date desc

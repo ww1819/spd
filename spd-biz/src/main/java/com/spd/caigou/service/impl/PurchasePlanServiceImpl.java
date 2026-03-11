@@ -84,10 +84,21 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      * @param purchasePlan 采购计划
      * @return 结果
      */
+    /** 校验计划明细：有耗材的明细必须指定供应商 */
+    private void validateEntriesHaveSupplier(List<PurchasePlanEntry> list) {
+        if (list == null) return;
+        for (PurchasePlanEntry e : list) {
+            if (e.getMaterialId() != null && (e.getSupplierId() == null)) {
+                throw new ServiceException("请为每条计划明细指定供应商后再保存。存在未选择供应商的明细。");
+            }
+        }
+    }
+
     @Transactional
     @Override
     public int insertPurchasePlan(PurchasePlan purchasePlan)
     {
+        validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setPlanNo(getPlanNumber());
         // 如果前端没有传入状态，则默认为"未提交"（0），否则使用前端传入的状态
         if (purchasePlan.getPlanStatus() == null || purchasePlan.getPlanStatus().isEmpty()) {
@@ -115,6 +126,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int updatePurchasePlan(PurchasePlan purchasePlan)
     {
+        validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
         purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         purchasePlanMapper.deletePurchasePlanEntryByParentId(purchasePlan.getId(), SecurityUtils.getUserIdStr());
@@ -178,6 +190,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if(!"1".equals(purchasePlan.getPlanStatus())){
             throw new ServiceException(String.format("采购计划ID：%s，状态不正确，只能审核未提交状态的计划!", id));
         }
+        List<PurchasePlanEntry> entryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
+        validateEntriesHaveSupplier(entryList);
 
         purchasePlan.setPlanStatus("2"); // 已审核状态
         purchasePlan.setAuditBy(auditBy);

@@ -50,6 +50,9 @@ public class PurchasePlanEntry extends BaseEntity
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
 
+    /** 供应商ID（取自产品档案，用户可选择并保存，审核后按此拆分订单） */
+    private Long supplierId;
+
     /** 耗材信息 */
     private FdMaterial material;
 
@@ -141,6 +144,14 @@ public class PurchasePlanEntry extends BaseEntity
     public String getDelFlag() 
     {
         return delFlag;
+    }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
     }
 
     public FdMaterial getMaterial() 

@@ -35,6 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="entry_id"    />
         <result property="parentId"    column="parent_id"    />
         <result property="materialId"    column="material_id"    />
+        <result property="supplierId"    column="supplier_id"    />
         <result property="qty"    column="qty"    />
         <result property="price"    column="price"    />
         <result property="amt"    column="amt"    />
@@ -96,7 +97,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <sql id="selectPurchasePlanEntryVo">
-        select ppe.id entry_id, ppe.parent_id, ppe.material_id, ppe.qty, ppe.price, ppe.amt, ppe.speci, ppe.model,
+        select ppe.id entry_id, ppe.parent_id, ppe.material_id, ppe.supplier_id, ppe.qty, ppe.price, ppe.amt, ppe.speci, ppe.model,
                ppe.remark entry_remark, ppe.del_flag entry_del_flag, ppe.create_by entry_create_by, ppe.create_time entry_create_time,
                ppe.update_by entry_update_by, ppe.update_time entry_update_time,
                m.id mId, m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel,
@@ -189,6 +190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
             <if test="materialId != null">material_id,</if>
+            <if test="supplierId != null">supplier_id,</if>
             <if test="qty != null">qty,</if>
             <if test="price != null">price,</if>
             <if test="amt != null">amt,</if>
@@ -204,6 +206,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="parentId != null">#{parentId},</if>
             <if test="materialId != null">#{materialId},</if>
+            <if test="supplierId != null">#{supplierId},</if>
             <if test="qty != null">#{qty},</if>
             <if test="price != null">#{price},</if>
             <if test="amt != null">#{amt},</if>
@@ -219,10 +222,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="batchPurchasePlanEntry" parameterType="java.util.List">
-        insert into purchase_plan_entry(parent_id, material_id, qty, price, amt, speci, model, remark, del_flag, create_by, create_time)
+        insert into purchase_plan_entry(parent_id, material_id, supplier_id, qty, price, amt, speci, model, remark, del_flag, create_by, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.materialId}, #{item.supplierId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.createBy}, #{item.createTime})
         </foreach>
     </insert>
 
@@ -256,6 +259,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="qty != null">qty = #{qty},</if>
             <if test="price != null">price = #{price},</if>
             <if test="amt != null">amt = #{amt},</if>

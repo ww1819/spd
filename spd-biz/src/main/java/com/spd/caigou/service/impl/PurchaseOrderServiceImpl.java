@@ -319,16 +319,17 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             throw new ServiceException(String.format("采购计划ID：%s，没有明细数据!", planId));
         }
 
-        // 按供应商分组
+        // 按单据明细的供应商分组（优先使用明细上的供应商，未填时取产品档案供应商）
         Map<Long, List<PurchasePlanEntry>> supplierGroupMap = new HashMap<>();
         for (PurchasePlanEntry entry : planEntryList) {
-            // 获取耗材信息
             FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (material == null || material.getSupplierId() == null) {
-                throw new ServiceException(String.format("耗材ID：%s，不存在或没有关联供应商!", entry.getMaterialId()));
+            if (material == null) {
+                throw new ServiceException(String.format("耗材ID：%s，不存在!", entry.getMaterialId()));
             }
-            
-            Long supplierId = material.getSupplierId();
+            Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : material.getSupplierId();
+            if (supplierId == null) {
+                throw new ServiceException(String.format("耗材ID：%s，明细未指定供应商且产品档案无供应商!", entry.getMaterialId()));
+            }
             if (!supplierGroupMap.containsKey(supplierId)) {
                 supplierGroupMap.put(supplierId, new ArrayList<>());
             }

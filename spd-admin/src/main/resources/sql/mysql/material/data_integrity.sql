@@ -381,3 +381,5 @@ INNER JOIN fd_material b ON b.id = e.material_id AND b.tenant_id IS NOT NULL
 SET e.tenant_id = b.tenant_id
 WHERE e.tenant_id IS NULL;
 /
+update fd_material fm set is_gz = '2' where fm.is_gz is null or fm.is_gz = '';
+/

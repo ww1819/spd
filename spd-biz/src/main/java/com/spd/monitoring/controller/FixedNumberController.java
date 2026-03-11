@@ -154,6 +154,52 @@ public class FixedNumberController extends BaseController
     }
 
     /**
+     * 科室申购新增明细专用：查询指定仓库的定数检测数据（不依赖 monitoring:fixedNumber:list 权限）
+     */
+    @PreAuthorize("@ss.hasPermi('department:purchase:add')")
+    @GetMapping("/listForPurchase")
+    public TableDataInfo listForPurchase(WhFixedNumber whQuery)
+    {
+        if (whQuery == null || whQuery.getWarehouseId() == null) {
+            return getDataTable(new ArrayList<>());
+        }
+        whQuery.setIsGz("2");
+        startPage();
+        List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
+        long total = new PageInfo<>(list).getTotal();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (WhFixedNumber item : list) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", item.getMaterialId());
+            map.put("materialId", item.getMaterialId());
+            map.put("code", item.getMaterial() != null ? item.getMaterial().getCode() : null);
+            map.put("name", item.getMaterial() != null ? item.getMaterial().getName() : null);
+            map.put("speci", item.getMaterial() != null ? item.getMaterial().getSpeci() : null);
+            map.put("specification", item.getMaterial() != null ? item.getMaterial().getSpeci() : null);
+            map.put("model", item.getMaterial() != null ? item.getMaterial().getModel() : null);
+            map.put("registerNo", item.getRegisterNo());
+            map.put("unitName", item.getUnitName());
+            map.put("price", item.getPrice());
+            map.put("supplierName", item.getSupplierName());
+            map.put("factoryName", item.getFactoryName());
+            map.put("warehouseCategoryName", item.getWarehouseCategoryName());
+            if (item.getUnitName() != null) {
+                map.put("fdUnit", java.util.Collections.singletonMap("unitName", item.getUnitName()));
+            }
+            if (item.getSupplierName() != null) {
+                map.put("supplier", java.util.Collections.singletonMap("name", item.getSupplierName()));
+            }
+            if (item.getFactoryName() != null) {
+                map.put("fdFactory", java.util.Collections.singletonMap("factoryName", item.getFactoryName()));
+            }
+            result.add(map);
+        }
+        TableDataInfo data = getDataTable(result);
+        data.setTotal(total);
+        return data;
+    }
+
+    /**
      * 新增定数监测
      */
     @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:add')")

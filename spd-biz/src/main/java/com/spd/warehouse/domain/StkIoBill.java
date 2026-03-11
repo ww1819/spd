@@ -64,6 +64,13 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "产品档案ID")
     private String materialId;
 
+    /** 产品名称/编码/拼音简码 模糊查询（出退库查询） */
+    private String materialNameLike;
+    /** 规格 模糊查询（出退库查询） */
+    private String materialSpeciLike;
+    /** 型号 模糊查询（出退库查询） */
+    private String materialModelLike;
+
     @Excel(name = "库房分类ID")
     private String warehouseCategoryId;
 
@@ -267,6 +274,30 @@ public class StkIoBill extends BaseEntity
 
     public void setMaterialId(String materialId) {
         this.materialId = materialId;
+    }
+
+    public String getMaterialNameLike() {
+        return materialNameLike;
+    }
+
+    public void setMaterialNameLike(String materialNameLike) {
+        this.materialNameLike = materialNameLike;
+    }
+
+    public String getMaterialSpeciLike() {
+        return materialSpeciLike;
+    }
+
+    public void setMaterialSpeciLike(String materialSpeciLike) {
+        this.materialSpeciLike = materialSpeciLike;
+    }
+
+    public String getMaterialModelLike() {
+        return materialModelLike;
+    }
+
+    public void setMaterialModelLike(String materialModelLike) {
+        this.materialModelLike = materialModelLike;
     }
 
     public Long getDepartmentId()

@@ -80,6 +80,9 @@ public class WhFixedNumber extends BaseEntity {
     /** 查询参数：库房分类ID（用于列表筛选） */
     private Long storeroomId;
 
+    /** 查询参数：是否高值（1=高值 2=非高值，科室申购只查非高值） */
+    private String isGz;
+
     public String getId() {
         return id;
     }
@@ -262,6 +265,14 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setStoreroomId(Long storeroomId) {
         this.storeroomId = storeroomId;
+    }
+
+    public String getIsGz() {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz) {
+        this.isGz = isGz;
     }
 
     @Override

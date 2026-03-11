@@ -108,6 +108,9 @@
         <if test="storeroomId != null">
             and m.storeroom_id = #{storeroomId}
         </if>
+        <if test="isGz != null and isGz != ''">
+            and m.is_gz = #{isGz}
+        </if>
         <if test="material != null and material.speci != null and material.speci != ''">
             and m.speci like concat('%', #{material.speci}, '%')
         </if>
