@@ -61,6 +61,15 @@ public class WhFixedNumber extends BaseEntity {
     /** 查询字段：注册证号 */
     private String registerNo;
 
+    /** 查询字段：单位名称 */
+    private String unitName;
+
+    /** 查询字段：单价 */
+    private java.math.BigDecimal price;
+
+    /** 查询字段：库房分类名称 */
+    private String warehouseCategoryName;
+
     public String getId() {
         return id;
     }
@@ -187,6 +196,30 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setRegisterNo(String registerNo) {
         this.registerNo = registerNo;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
+    }
+
+    public java.math.BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(java.math.BigDecimal price) {
+        this.price = price;
+    }
+
+    public String getWarehouseCategoryName() {
+        return warehouseCategoryName;
+    }
+
+    public void setWarehouseCategoryName(String warehouseCategoryName) {
+        this.warehouseCategoryName = warehouseCategoryName;
     }
 
     @Override

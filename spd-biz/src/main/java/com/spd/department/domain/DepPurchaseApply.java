@@ -14,7 +14,7 @@ import com.spd.common.core.domain.BaseEntity;
 
 /**
  * 科室申购对象 dep_purchase_apply
- * 
+ *
  * @author spd
  * @date 2025-01-01
  */
@@ -84,132 +84,135 @@ public class DepPurchaseApply extends BaseEntity
     /** 科室对象 */
     private FdDepartment department;
 
-    public void setId(Long id) 
+    /** 租户id，客户id */
+    private String tenantId;
+
+    public void setId(Long id)
     {
         this.id = id;
     }
 
-    public Long getId() 
+    public Long getId()
     {
         return id;
     }
 
-    public void setPurchaseBillNo(String purchaseBillNo) 
+    public void setPurchaseBillNo(String purchaseBillNo)
     {
         this.purchaseBillNo = purchaseBillNo;
     }
 
-    public String getPurchaseBillNo() 
+    public String getPurchaseBillNo()
     {
         return purchaseBillNo;
     }
 
-    public void setPurchaseBillDate(Date purchaseBillDate) 
+    public void setPurchaseBillDate(Date purchaseBillDate)
     {
         this.purchaseBillDate = purchaseBillDate;
     }
 
-    public Date getPurchaseBillDate() 
+    public Date getPurchaseBillDate()
     {
         return purchaseBillDate;
     }
 
-    public void setWarehouseId(Long warehouseId) 
+    public void setWarehouseId(Long warehouseId)
     {
         this.warehouseId = warehouseId;
     }
 
-    public Long getWarehouseId() 
+    public Long getWarehouseId()
     {
         return warehouseId;
     }
 
-    public void setDepartmentId(Long departmentId) 
+    public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
     }
 
-    public Long getDepartmentId() 
+    public Long getDepartmentId()
     {
         return departmentId;
     }
 
-    public void setUserId(Long userId) 
+    public void setUserId(Long userId)
     {
         this.userId = userId;
     }
 
-    public Long getUserId() 
+    public Long getUserId()
     {
         return userId;
     }
 
-    public void setPurchaseBillStatus(Integer purchaseBillStatus) 
+    public void setPurchaseBillStatus(Integer purchaseBillStatus)
     {
         this.purchaseBillStatus = purchaseBillStatus;
     }
 
-    public Integer getPurchaseBillStatus() 
+    public Integer getPurchaseBillStatus()
     {
         return purchaseBillStatus;
     }
 
-    public void setTotalAmount(BigDecimal totalAmount) 
+    public void setTotalAmount(BigDecimal totalAmount)
     {
         this.totalAmount = totalAmount;
     }
 
-    public BigDecimal getTotalAmount() 
+    public BigDecimal getTotalAmount()
     {
         return totalAmount;
     }
 
-    public void setUrgencyLevel(Integer urgencyLevel) 
+    public void setUrgencyLevel(Integer urgencyLevel)
     {
         this.urgencyLevel = urgencyLevel;
     }
 
-    public Integer getUrgencyLevel() 
+    public Integer getUrgencyLevel()
     {
         return urgencyLevel;
     }
 
-    public void setExpectedDeliveryDate(Date expectedDeliveryDate) 
+    public void setExpectedDeliveryDate(Date expectedDeliveryDate)
     {
         this.expectedDeliveryDate = expectedDeliveryDate;
     }
 
-    public Date getExpectedDeliveryDate() 
+    public Date getExpectedDeliveryDate()
     {
         return expectedDeliveryDate;
     }
 
-    public void setDelFlag(Integer delFlag) 
+    public void setDelFlag(Integer delFlag)
     {
         this.delFlag = delFlag;
     }
 
-    public Integer getDelFlag() 
+    public Integer getDelFlag()
     {
         return delFlag;
     }
 
-    public void setPlanStatus(Integer planStatus) 
+    public void setPlanStatus(Integer planStatus)
     {
         this.planStatus = planStatus;
     }
 
-    public Integer getPlanStatus() 
+    public Integer getPlanStatus()
     {
         return planStatus;
     }
 
-    public void setRejectReason(String rejectReason) 
+    public void setRejectReason(String rejectReason)
     {
         this.rejectReason = rejectReason;
     }
 
-    public String getRejectReason() 
+    public String getRejectReason()
     {
         return rejectReason;
     }
@@ -271,6 +274,15 @@ public class DepPurchaseApply extends BaseEntity
             .append("warehouse", getWarehouse())
             .append("user", getUser())
             .append("department", getDepartment())
+                .append("tenantId", getTenantId())
             .toString();
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

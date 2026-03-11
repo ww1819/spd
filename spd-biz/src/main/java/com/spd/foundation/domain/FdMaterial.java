@@ -1,7 +1,10 @@
 package com.spd.foundation.domain;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -241,6 +244,9 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：名称搜索（首字母） */
     private String nameSearch;
 
+    /** 查询参数：排除的物料ID，逗号分隔（用于定数监测新增明细：排除已有+未保存的） */
+    private String excludeMaterialIds;
+
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
     private String hisId;
 
@@ -265,5 +271,23 @@ public class FdMaterial extends BaseEntity
 
     public void setStatusChangeReason(String statusChangeReason) {
         this.statusChangeReason = statusChangeReason;
+    }
+
+    /**
+     * 解析 excludeMaterialIds 为 List，供 MyBatis 使用（排除指定 ID 后再分页）
+     */
+    public List<Long> getExcludeMaterialIdList() {
+        if (excludeMaterialIds == null || excludeMaterialIds.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(excludeMaterialIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
