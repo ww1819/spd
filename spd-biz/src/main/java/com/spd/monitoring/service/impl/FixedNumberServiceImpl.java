@@ -60,8 +60,8 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setId(UUID7.generateUUID7());
                     entity.setWarehouseId(warehouseId);
                     entity.setMaterialId(d.getMaterialId());
-                    entity.setUpperLimit(d.getUpperLimit());
-                    entity.setLowerLimit(d.getLowerLimit());
+                    entity.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    entity.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     entity.setExpiryReminder(d.getExpiryReminder());
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
@@ -73,8 +73,8 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setCreateBy(operator);
                     whFixedNumberMapper.insertWhFixedNumber(entity);
                 } else {
-                    existing.setUpperLimit(d.getUpperLimit());
-                    existing.setLowerLimit(d.getLowerLimit());
+                    existing.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    existing.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     existing.setExpiryReminder(d.getExpiryReminder());
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());
@@ -98,8 +98,8 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setId(UUID7.generateUUID7());
                     entity.setDepartmentId(departmentId);
                     entity.setMaterialId(d.getMaterialId());
-                    entity.setUpperLimit(d.getUpperLimit());
-                    entity.setLowerLimit(d.getLowerLimit());
+                    entity.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    entity.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     entity.setExpiryReminder(d.getExpiryReminder());
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
@@ -111,8 +111,8 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setCreateBy(operator);
                     deptFixedNumberMapper.insertDeptFixedNumber(entity);
                 } else {
-                    existing.setUpperLimit(d.getUpperLimit());
-                    existing.setLowerLimit(d.getLowerLimit());
+                    existing.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    existing.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     existing.setExpiryReminder(d.getExpiryReminder());
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());

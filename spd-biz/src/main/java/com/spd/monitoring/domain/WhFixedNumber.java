@@ -70,6 +70,16 @@ public class WhFixedNumber extends BaseEntity {
     /** 查询字段：库房分类名称 */
     private String warehouseCategoryName;
 
+    /** 查询参数：耗材名称/编码关键词（用于列表筛选） */
+    private String materialName;
+
+    /** 查询参数：供应商ID（用于列表筛选） */
+    private Long supplierId;
+    /** 查询参数：生产厂家ID（用于列表筛选） */
+    private Long factoryId;
+    /** 查询参数：库房分类ID（用于列表筛选） */
+    private Long storeroomId;
+
     public String getId() {
         return id;
     }
@@ -220,6 +230,38 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setWarehouseCategoryName(String warehouseCategoryName) {
         this.warehouseCategoryName = warehouseCategoryName;
+    }
+
+    public String getMaterialName() {
+        return materialName;
+    }
+
+    public void setMaterialName(String materialName) {
+        this.materialName = materialName;
+    }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
+    }
+
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
+    }
+
+    public Long getStoreroomId() {
+        return storeroomId;
+    }
+
+    public void setStoreroomId(Long storeroomId) {
+        this.storeroomId = storeroomId;
     }
 
     @Override

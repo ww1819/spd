@@ -247,6 +247,9 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：排除的物料ID，逗号分隔（用于定数监测新增明细：排除已有+未保存的） */
     private String excludeMaterialIds;
 
+    /** 查询参数：仅包含的物料ID，逗号分隔（用于入库新增明细：只查该仓库定数产品档案） */
+    private String includeMaterialIds;
+
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
     private String hisId;
 
@@ -282,6 +285,32 @@ public class FdMaterial extends BaseEntity
         }
         try {
             return Arrays.stream(excludeMaterialIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public String getIncludeMaterialIds() {
+        return includeMaterialIds;
+    }
+
+    public void setIncludeMaterialIds(String includeMaterialIds) {
+        this.includeMaterialIds = includeMaterialIds;
+    }
+
+    /**
+     * 解析 includeMaterialIds 为 List，供 MyBatis 使用（只查指定 ID）
+     */
+    public List<Long> getIncludeMaterialIdList() {
+        if (includeMaterialIds == null || includeMaterialIds.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(includeMaterialIds.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .map(Long::parseLong)

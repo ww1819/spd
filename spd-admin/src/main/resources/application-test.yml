@@ -9,6 +9,8 @@ server:
         # tomcat的URI编码
         uri-encoding: UTF-8
         relaxed-query-chars: ['[', ']']
+        # 请求行+请求头最大字节数（默认约8KB），避免定数监测等大批量保存时出现 Request header is too large（512KB）
+        max-http-header-size: 524288
         # 连接数满后的排队数，默认为100
         accept-count: 1000
         threads:
