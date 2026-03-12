@@ -29,6 +29,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditOpinion"    column="audit_opinion"    />
         <result property="remark"    column="remark"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
+        <result property="planId"    column="plan_id"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -57,6 +60,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="qualityStatus"    column="quality_status"    />
         <result property="remark"    column="remark"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
+        <result property="planId"    column="plan_id"    />
+        <result property="planNo"    column="plan_no"    />
+        <result property="planEntryId"    column="plan_entry_id"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -91,11 +100,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectPurchaseOrderVo">
-        select po.id, po.order_no, po.plan_no, po.order_date, po.supplier_id, po.warehouse_id, po.department_id, 
+        select po.id, po.order_no, po.plan_no, po.plan_id, po.order_date, po.supplier_id, po.warehouse_id, po.department_id, 
                po.order_status, po.order_type, po.urgency_level, po.total_amount, po.paid_amount, 
                po.unpaid_amount, po.expected_delivery_date, po.actual_delivery_date, po.payment_terms, 
                po.delivery_address, po.contact_person, po.contact_phone, po.audit_by, po.audit_date, 
-               po.audit_opinion, po.remark, po.del_flag, po.tenant_id, po.create_by, po.create_time, po.update_by, po.update_time,
+               po.audit_opinion, po.remark, po.del_flag, po.delete_by, po.delete_time, po.tenant_id, po.create_by, po.create_time, po.update_by, po.update_time,
         s.name as supplier_name, s.code as supplier_code,
         w.name as warehouse_name, w.code as warehouse_code,
         d.name as dept_name, d.code as dept_code
@@ -108,7 +117,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectPurchaseOrderList" parameterType="PurchaseOrder" resultMap="PurchaseOrderResult">
         <include refid="selectPurchaseOrderVo"/>
         <where>  
-            po.del_flag = '0'
+            (po.del_flag = '0' or po.del_flag is null)
             <if test="tenantId != null and tenantId != ''"> and (po.tenant_id = #{tenantId} or po.tenant_id is null)</if>
             <if test="orderNo != null  and orderNo != ''"> and po.order_no like concat('%', #{orderNo}, '%')</if>
             <if test="supplierId != null "> and po.supplier_id = #{supplierId}</if>
@@ -129,18 +138,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     
     <select id="selectPurchaseOrderById" parameterType="Long" resultMap="PurchaseOrderResult">
         <include refid="selectPurchaseOrderVo"/>
-        where po.id = #{id}
+        where po.id = #{id} and (po.del_flag = '0' or po.del_flag is null)
     </select>
 
     <select id="selectPurchaseOrderEntryByParentId" parameterType="Long" resultMap="PurchaseOrderEntryResult">
         select poe.id, poe.parent_id, poe.material_id, poe.material_code, poe.material_name, 
                poe.material_spec, poe.material_unit, poe.order_qty, poe.received_qty, poe.unit_price, 
                poe.total_amount, poe.expected_delivery_date, poe.actual_delivery_date, poe.quality_status, 
-               poe.remark, poe.del_flag, poe.create_by, poe.create_time, poe.update_by, poe.update_time,
+               poe.remark, poe.del_flag, poe.delete_by, poe.delete_time, poe.plan_id, poe.plan_no, poe.plan_entry_id,
+               poe.tenant_id, poe.create_by, poe.create_time, poe.update_by, poe.update_time,
                m.name as material_name, m.code as material_code, m.speci as material_spec, m.model as material_unit
         from purchase_order_entry poe
         left join fd_material m on poe.material_id = m.id
-        where poe.parent_id = #{parentId} and poe.del_flag = '0'
+        where poe.parent_id = #{parentId} and (poe.del_flag = '0' or poe.del_flag is null)
         order by poe.id
     </select>
         
@@ -149,6 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">order_no,</if>
             <if test="planNo != null and planNo != ''">plan_no,</if>
+            <if test="planId != null">plan_id,</if>
             <if test="orderDate != null">order_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
@@ -179,6 +190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">#{orderNo},</if>
             <if test="planNo != null and planNo != ''">#{planNo},</if>
+            <if test="planId != null">#{planId},</if>
             <if test="orderDate != null">#{orderDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
@@ -226,6 +238,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qualityStatus != null">quality_status,</if>
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="planId != null">plan_id,</if>
+            <if test="planNo != null">plan_no,</if>
+            <if test="planEntryId != null">plan_entry_id,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -247,6 +263,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qualityStatus != null">#{qualityStatus},</if>
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="planId != null">#{planId},</if>
+            <if test="planNo != null">#{planNo},</if>
+            <if test="planEntryId != null">#{planEntryId},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -257,7 +277,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="batchPurchaseOrderEntry" parameterType="java.util.List">
         insert into purchase_order_entry(parent_id, material_id, material_code, material_name, material_spec, material_unit, 
                                        order_qty, received_qty, unit_price, total_amount, expected_delivery_date, 
-                                       actual_delivery_date, quality_status, remark, del_flag, create_by, create_time)
+                                       actual_delivery_date, quality_status, remark, del_flag, plan_id, plan_no, plan_entry_id, tenant_id, create_by, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
             (#{item.parentId}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
@@ -267,7 +287,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
              <![CDATA[#{item.unitPrice}]]>, 
              <![CDATA[#{item.totalAmount}]]>, 
              #{item.expectedDeliveryDate}, #{item.actualDeliveryDate}, #{item.qualityStatus}, #{item.remark}, 
-             #{item.delFlag}, #{item.createBy}, #{item.createTime})
+             #{item.delFlag}, #{item.planId}, #{item.planNo}, #{item.planEntryId}, #{item.tenantId}, #{item.createBy}, #{item.createTime})
         </foreach>
     </insert>
 
@@ -276,6 +296,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
             <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
+            <if test="planId != null">plan_id = #{planId},</if>
             <if test="orderDate != null">order_date = #{orderDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>

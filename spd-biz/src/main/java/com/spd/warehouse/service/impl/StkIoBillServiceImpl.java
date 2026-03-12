@@ -223,10 +223,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        // 仅当请求中带了明细列表且非空时，才删除旧明细并重新插入；否则保留原明细，只更新主表
+        // 仅当请求中带了明细列表且非空时，才逻辑删除旧明细并重新插入；否则保留原明细，只更新主表
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
         if (entryList != null && !entryList.isEmpty()) {
-            stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
+            stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
             updateStkIoBillEntry(stkIoBill);
         }
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
@@ -264,12 +264,17 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setDelFlag(1);
         stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoBill.setUpdateTime(new Date());
+        stkIoBill.setDeleteBy(SecurityUtils.getUserIdStr());
+        stkIoBill.setDeleteTime(new Date());
 
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
+        String deleteBy = SecurityUtils.getUserIdStr();
+        Date deleteTime = new Date();
         for(StkIoBillEntry entry : stkIoBillEntryList){
             entry.setDelFlag(1);
             entry.setParenId(id);
-            
+            entry.setDeleteBy(deleteBy);
+            entry.setDeleteTime(deleteTime);
             stkIoBillMapper.updatestkIobillEntry(entry);
         }
 
@@ -889,12 +894,14 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
+            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBatchNo(getBatchNumber());
                 stkIoBillEntry.setDelFlag(0);
+                if (StringUtils.isNotEmpty(tenantId)) stkIoBillEntry.setTenantId(tenantId);
                 list.add(stkIoBillEntry);
             }
             if (list.size() > 0)
@@ -915,6 +922,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
+            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
@@ -922,6 +930,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 if(StringUtils.isEmpty(stkIoBillEntry.getBatchNo())){
                     stkIoBillEntry.setBatchNo(getBatchNumber());
                 }
+                if (StringUtils.isNotEmpty(tenantId)) stkIoBillEntry.setTenantId(tenantId);
                 list.add(stkIoBillEntry);
             }
             if (list.size() > 0)
@@ -973,7 +982,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
+        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
         insertOutStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
     }
@@ -1046,7 +1055,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
+        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
         insertTKStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
     }

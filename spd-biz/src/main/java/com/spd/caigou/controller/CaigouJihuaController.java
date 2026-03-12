@@ -2,6 +2,7 @@ package com.spd.caigou.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.caigou.domain.PurchasePlan;
+import com.spd.caigou.service.IPurchasePlanEntryApplyService;
 import com.spd.caigou.service.IPurchasePlanService;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -28,6 +29,8 @@ public class CaigouJihuaController extends BaseController
 {
     @Autowired
     private IPurchasePlanService purchasePlanService;
+    @Autowired
+    private IPurchasePlanEntryApplyService purchasePlanEntryApplyService;
 
     /**
      * 查询采购计划列表
@@ -112,5 +115,23 @@ public class CaigouJihuaController extends BaseController
         return toAjax(purchasePlanService.deletePurchasePlanById(ids));
     }
 
+    /**
+     * 根据采购计划明细ID查询关联的申购明细（科室申购单单号、申购科室、申购数量、制单人、制单时间、审核人、审核时间）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/applyDetails")
+    public AjaxResult applyDetails(@RequestParam Long entryId)
+    {
+        return success(purchasePlanEntryApplyService.listApplyDetailsByEntryId(entryId));
+    }
 
+    /**
+     * 根据采购计划ID查询关联的申购单号列表（表头「引用申购单号」弹窗用）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/applyBillNoList")
+    public AjaxResult applyBillNoList(@RequestParam Long planId)
+    {
+        return success(purchasePlanEntryApplyService.listApplyBillNosByPlanId(planId));
+    }
 }

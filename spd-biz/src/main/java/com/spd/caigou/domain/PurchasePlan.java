@@ -76,8 +76,16 @@ public class PurchasePlan extends BaseEntity
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
 
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
+
+    /** 计划明细生成方式：1=按产品档案汇总 2=按申购单明细拆分 */
+    private String planEntryMode;
 
     /** 开始日期（查询用） */
     private String beginDate;
@@ -237,8 +245,15 @@ public class PurchasePlan extends BaseEntity
         return delFlag;
     }
 
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getPlanEntryMode() { return planEntryMode; }
+    public void setPlanEntryMode(String planEntryMode) { this.planEntryMode = planEntryMode; }
 
     public void setBeginDate(String beginDate) 
     {

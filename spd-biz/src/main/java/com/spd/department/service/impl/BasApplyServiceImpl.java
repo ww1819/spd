@@ -1,5 +1,6 @@
 package com.spd.department.service.impl;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -48,9 +49,13 @@ public class BasApplyServiceImpl implements IBasApplyService
         }
         SecurityUtils.ensureTenantAccess(basApply.getTenantId());
         List<BasApplyEntry> basApplyEntryList = basApply.getBasApplyEntryList();
-        for (BasApplyEntry basApplyEntry : basApplyEntryList) {
-            FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(basApplyEntry.getMaterialId());
-            basApplyEntry.setMaterial(material);
+        if (basApplyEntryList != null) {
+            for (BasApplyEntry basApplyEntry : basApplyEntryList) {
+                if (basApplyEntry.getMaterialId() != null) {
+                    FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(basApplyEntry.getMaterialId());
+                    basApplyEntry.setMaterial(material);
+                }
+            }
         }
         return basApply;
     }
@@ -70,6 +75,16 @@ public class BasApplyServiceImpl implements IBasApplyService
         return basApplyMapper.selectBasApplyList(basApply);
     }
 
+    /** 校验明细数量：有耗材的明细数量不能为空且必须大于0 */
+    private void validateEntryQty(List<BasApplyEntry> list) {
+        if (list == null) return;
+        for (BasApplyEntry e : list) {
+            if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
+                throw new ServiceException("科室申领单明细中数量不能为空且必须大于0，请检查后保存。");
+            }
+        }
+    }
+
     /**
      * 新增科室申领
      *
@@ -80,6 +95,7 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int insertBasApply(BasApply basApply)
     {
+        validateEntryQty(basApply.getBasApplyEntryList());
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -121,11 +137,13 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int updateBasApply(BasApply basApply)
     {
+        validateEntryQty(basApply.getBasApplyEntryList());
         basApply.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             basApply.setUpdateBy(SecurityUtils.getUserIdStr());
         }
-        basApplyMapper.deleteBasApplyEntryByParenId(basApply.getId());
+        String deleteBy = SecurityUtils.getUserIdStr();
+        basApplyMapper.deleteBasApplyEntryByParenId(basApply.getId(), deleteBy);
         insertBasApplyEntry(basApply);
         return basApplyMapper.updateBasApply(basApply);
     }
@@ -146,8 +164,9 @@ public class BasApplyServiceImpl implements IBasApplyService
                 SecurityUtils.ensureTenantAccess(existing.getTenantId());
             }
         }
-        basApplyMapper.deleteBasApplyEntryByParenIds(ids);
-        return basApplyMapper.deleteBasApplyByIds(ids);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        basApplyMapper.deleteBasApplyEntryByParenIds(ids, deleteBy);
+        return basApplyMapper.deleteBasApplyByIds(ids, deleteBy);
     }
 
     /**
@@ -164,8 +183,9 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
         }
-        basApplyMapper.deleteBasApplyEntryByParenId(id);
-        return basApplyMapper.deleteBasApplyById(id);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        basApplyMapper.deleteBasApplyEntryByParenId(id, deleteBy);
+        return basApplyMapper.deleteBasApplyById(id, deleteBy);
     }
 
     /**
@@ -176,9 +196,13 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int auditApply(String id, String auditBy) {
         BasApply basApply = basApplyMapper.selectBasApplyById(Long.parseLong(id));
-        if(basApply == null){
+        if (basApply == null) {
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
         }
+        if (basApply.getApplyBillStatus() == null || basApply.getApplyBillStatus() != 1) {
+            throw new ServiceException("只有待审核状态(1)的科室申领可审核，当前状态：" + basApply.getApplyBillStatus());
+        }
+        validateEntryQty(basApply.getBasApplyEntryList());
         basApply.setApplyBillStatus(2);//已审核状态
         basApply.setAuditBy(auditBy);
         basApply.setAuditDate(new Date());
@@ -196,10 +220,12 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int rejectApply(String id, String rejectReason) {
         BasApply basApply = basApplyMapper.selectBasApplyById(Long.parseLong(id));
-        if(basApply == null){
+        if (basApply == null) {
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
         }
-        // 驳回时状态保持为1（待审核），但记录驳回原因
+        if (basApply.getApplyBillStatus() == null || basApply.getApplyBillStatus() != 1) {
+            throw new ServiceException("只有待审核状态(1)的科室申领可驳回，当前状态：" + basApply.getApplyBillStatus());
+        }
         basApply.setRejectReason(rejectReason);
         basApply.setUpdateBy(SecurityUtils.getUserIdStr());
         basApply.setUpdateTime(new Date());
@@ -216,15 +242,24 @@ public class BasApplyServiceImpl implements IBasApplyService
     {
         List<BasApplyEntry> basApplyEntryList = basApply.getBasApplyEntryList();
         Long id = basApply.getId();
-        if (StringUtils.isNotNull(basApplyEntryList))
+        if (id == null) {
+            return;
+        }
+        if (StringUtils.isNotNull(basApplyEntryList) && !basApplyEntryList.isEmpty())
         {
             List<BasApplyEntry> list = new ArrayList<BasApplyEntry>();
             for (BasApplyEntry basApplyEntry : basApplyEntryList)
             {
+                if (basApplyEntry.getMaterialId() == null) {
+                    continue;
+                }
                 basApplyEntry.setParenId(id);
+                if (StringUtils.isEmpty(basApplyEntry.getTenantId()) && StringUtils.isNotEmpty(basApply.getTenantId())) {
+                    basApplyEntry.setTenantId(basApply.getTenantId());
+                }
                 list.add(basApplyEntry);
             }
-            if (list.size() > 0)
+            if (!list.isEmpty())
             {
                 basApplyMapper.batchBasApplyEntry(list);
             }

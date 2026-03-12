@@ -37,6 +37,9 @@ public class FdFactory extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 厂家简码 */
     @Excel(name = "厂家简码")
     private String factoryReferredCode;
@@ -99,6 +102,8 @@ public class FdFactory extends BaseEntity
     {
         return delFlag;
     }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public String getFactoryReferredCode() {
         return factoryReferredCode;

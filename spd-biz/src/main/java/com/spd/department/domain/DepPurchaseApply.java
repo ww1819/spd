@@ -66,6 +66,11 @@ public class DepPurchaseApply extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+
     /** 计划状态：0-未生成，1-已生成，2-驳回 */
     private Integer planStatus;
 
@@ -86,6 +91,9 @@ public class DepPurchaseApply extends BaseEntity
 
     /** 租户id，客户id */
     private String tenantId;
+
+    /** 查询时是否排除已被采购计划引用的申购单（仅查询用，非表字段） */
+    private Boolean excludeReferenced;
 
     public void setId(Long id)
     {
@@ -197,6 +205,22 @@ public class DepPurchaseApply extends BaseEntity
         return delFlag;
     }
 
+    public String getDeleteBy() {
+        return deleteBy;
+    }
+
+    public void setDeleteBy(String deleteBy) {
+        this.deleteBy = deleteBy;
+    }
+
+    public Date getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(Date deleteTime) {
+        this.deleteTime = deleteTime;
+    }
+
     public void setPlanStatus(Integer planStatus)
     {
         this.planStatus = planStatus;
@@ -285,4 +309,7 @@ public class DepPurchaseApply extends BaseEntity
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
     }
+
+    public Boolean getExcludeReferenced() { return excludeReferenced; }
+    public void setExcludeReferenced(Boolean excludeReferenced) { this.excludeReferenced = excludeReferenced; }
 }

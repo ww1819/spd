@@ -80,6 +80,11 @@ public class StkIoBill extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    private Date deleteTime;
+
     /** 结算方式（来自仓库：1入库结算 2出库结算 3消耗结算） */
     private String settlementType;
 
@@ -348,6 +353,10 @@ public class StkIoBill extends BaseEntity
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
     }
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
 
     public String getSettlementType() {
         return settlementType;

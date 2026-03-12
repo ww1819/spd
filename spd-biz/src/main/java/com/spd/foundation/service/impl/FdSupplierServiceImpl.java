@@ -118,10 +118,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             throw new ServiceException(String.format("供应商：%s，不存在!", id));
         }
         SecurityUtils.ensureTenantAccess(fdSupplier.getTenantId());
-        fdSupplier.setDelFlag(1);
-        fdSupplier.setUpdateTime(DateUtils.getNowDate());
-        fdSupplier.setUpdateBy(SecurityUtils.getUserIdStr());
-        return fdSupplierMapper.updateFdSupplier(fdSupplier);
+        return fdSupplierMapper.deleteFdSupplierById(id, SecurityUtils.getUserIdStr());
     }
 
 

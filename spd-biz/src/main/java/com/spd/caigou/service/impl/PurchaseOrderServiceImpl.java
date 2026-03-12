@@ -283,6 +283,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 }
                 
                 purchaseOrderEntry.setParentId(id);
+                if (StringUtils.isEmpty(purchaseOrderEntry.getTenantId()) && StringUtils.isNotEmpty(purchaseOrder.getTenantId())) {
+                    purchaseOrderEntry.setTenantId(purchaseOrder.getTenantId());
+                }
                 list.add(purchaseOrderEntry);
             }
             if (list.size() > 0)
@@ -344,6 +347,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
 
             // 创建订单
             PurchaseOrder purchaseOrder = new PurchaseOrder();
+            purchaseOrder.setPlanId(planId);
             purchaseOrder.setPlanNo(purchasePlan.getPlanNo()); // 关联计划单号
             purchaseOrder.setOrderNo(generateOrderNo()); // 生成订单单号
             purchaseOrder.setOrderDate(new Date());
@@ -366,6 +370,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             BigDecimal totalAmount = BigDecimal.ZERO;
             
             for (PurchasePlanEntry planEntry : supplierEntries) {
+                if (planEntry.getQty() == null || planEntry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(planEntry.getMaterialId());
                 
                 PurchaseOrderEntry orderEntry = new PurchaseOrderEntry();
@@ -375,18 +382,28 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderEntry.setMaterialSpec(material != null ? material.getSpeci() : planEntry.getSpeci());
                 orderEntry.setMaterialUnit(material != null && material.getFdUnit() != null ? material.getFdUnit().getUnitName() : "");
                 orderEntry.setOrderQty(planEntry.getQty());
-                orderEntry.setUnitPrice(planEntry.getPrice());
-                orderEntry.setTotalAmount(planEntry.getAmt());
-                orderEntry.setQualityStatus("0"); // 待检验
+                orderEntry.setUnitPrice(planEntry.getPrice() != null ? planEntry.getPrice() : BigDecimal.ZERO);
+                orderEntry.setTotalAmount(planEntry.getAmt() != null ? planEntry.getAmt() : planEntry.getQty().multiply(orderEntry.getUnitPrice()));
+                orderEntry.setQualityStatus("0");
                 orderEntry.setReceivedQty(BigDecimal.ZERO);
                 orderEntry.setDelFlag("0");
+                orderEntry.setPlanId(planId);
+                orderEntry.setPlanNo(purchasePlan.getPlanNo());
+                orderEntry.setPlanEntryId(planEntry.getId());
+                if (StringUtils.isNotEmpty(purchaseOrder.getTenantId())) {
+                    orderEntry.setTenantId(purchaseOrder.getTenantId());
+                }
                 orderEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 orderEntry.setCreateTime(new Date());
                 
                 orderEntryList.add(orderEntry);
-                if (planEntry.getAmt() != null) {
-                    totalAmount = totalAmount.add(planEntry.getAmt());
+                if (orderEntry.getTotalAmount() != null) {
+                    totalAmount = totalAmount.add(orderEntry.getTotalAmount());
                 }
+            }
+
+            if (orderEntryList.isEmpty()) {
+                continue;
             }
 
             purchaseOrder.setTotalAmount(totalAmount);
@@ -400,6 +417,10 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 insertPurchaseOrderEntry(purchaseOrder);
                 orderCount++;
             }
+        }
+
+        if (orderCount <= 0) {
+            throw new ServiceException("计划明细中采购数量未填写或均不大于0，无法生成订单。请检查计划明细的采购数量后再审核。");
         }
 
         // 更新计划状态为已执行

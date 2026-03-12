@@ -453,10 +453,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             throw new ServiceException(String.format("耗材：%s，不存在!", id));
         }
         SecurityUtils.ensureTenantAccess(fdMaterial.getTenantId());
-        fdMaterial.setUpdateTime(DateUtils.getNowDate());
-        fdMaterial.setDelFlag(1);//1:已删除
-        fdMaterial.setUpdateBy(SecurityUtils.getUserIdStr());
-        return fdMaterialMapper.updateFdMaterial(fdMaterial);
+        return fdMaterialMapper.deleteFdMaterialById(id, SecurityUtils.getUserIdStr());
     }
 
     /**

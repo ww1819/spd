@@ -16,6 +16,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="urgencyLevel"    column="urgency_level"    />
         <result property="expectedDeliveryDate"    column="expected_delivery_date"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="planStatus"    column="plan_status"    />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="createBy"    column="create_by"    />
@@ -61,6 +63,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="sub_create_time"    />
         <result property="updateBy"    column="sub_update_by"    />
         <result property="updateTime"    column="sub_update_time"    />
+        <result property="deleteBy"    column="sub_delete_by"    />
+        <result property="deleteTime"    column="sub_delete_time"    />
+        <result property="tenantId"    column="sub_tenant_id"    />
         <result property="remark"    column="sub_remark"    />
         <association property="material" javaType="FdMaterial">
             <result property="id" column="m_id"/>
@@ -133,7 +138,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
             <if test="urgencyLevel != null "> and dpa.urgency_level = #{urgencyLevel}</if>
             <if test="expectedDeliveryDate != null "> and dpa.expected_delivery_date = #{expectedDeliveryDate}</if>
-            and dpa.del_flag = 0
+            <if test="excludeReferenced != null and excludeReferenced == true"> and not exists (
+                select 1 from purchase_plan_entry_dep_apply r
+                inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and (r.del_flag = '0' or r.del_flag is null)
+                where e.parent_id = dpa.id and (e.del_flag is null or e.del_flag != 1)
+            )</if>
+            and (dpa.del_flag = 0 or dpa.del_flag is null)
         </where>
         order by dpa.create_time desc
     </select>
@@ -150,7 +160,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.total_amount, 
             dpa.urgency_level, 
             dpa.expected_delivery_date, 
-            dpa.del_flag, 
+            dpa.del_flag,
+            dpa.delete_by,
+            dpa.delete_time,
+            dpa.tenant_id,
             dpa.plan_status, 
             dpa.reject_reason, 
             dpa.create_by, 
@@ -181,6 +194,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpae.create_time as sub_create_time,
             dpae.update_by as sub_update_by,
             dpae.update_time as sub_update_time,
+            dpae.delete_by as sub_delete_by,
+            dpae.delete_time as sub_delete_time,
+            dpae.tenant_id as sub_tenant_id,
             dpae.remark as sub_remark,
             m.id as m_id,
             m.code as m_code,
@@ -199,7 +215,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on dpa.warehouse_id = w.id
         left join sys_user u on dpa.user_id = u.user_id
         left join fd_department d on dpa.department_id = d.id
-        left join dep_purchase_apply_entry dpae on dpae.parent_id = dpa.id
+        left join dep_purchase_apply_entry dpae on dpae.parent_id = dpa.id and (dpae.del_flag is null or dpae.del_flag != 1)
         left join fd_material m on dpae.material_id = m.id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_unit mu on m.unit_id = mu.unit_id
@@ -313,6 +329,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             supplier_name,
             brand,
             model,
+            tenant_id,
             create_by,
             create_time,
             update_by,
@@ -334,6 +351,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 #{item.supplierName},
                 #{item.brand},
                 #{item.model},
+                #{item.tenantId},
                 #{item.createBy},
                 #{item.createTime},
                 #{item.updateBy},

@@ -190,6 +190,10 @@ CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同s
 /
 CALL add_table_column('stk_io_bill', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
+CALL add_table_column('stk_io_bill', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delete_time', 'datetime', '删除时间', NULL);
+/
 CALL add_table_column('stk_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
 CALL add_table_column('stk_dep_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
@@ -214,6 +218,12 @@ CALL add_table_column('sb_customer', 'hc_planned_disable_time', 'datetime', '计
 CALL add_table_column('stk_io_bill_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
 /
 CALL add_table_column('stk_io_bill_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('stk_inventory', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
 /
@@ -448,6 +458,14 @@ CALL add_table_column('fd_supplier', 'delete_by', 'varchar(64)', '删除者', NU
 CALL add_table_column('fd_supplier', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('fd_supplier', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+
+-- fd_factory 生产厂家
+CALL add_table_column('fd_factory', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('fd_factory', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_factory', 'delete_time', 'datetime', '删除时间', NULL);
 /
 
 -- fd_warehouse_category
@@ -745,6 +763,8 @@ CALL add_table_column('purchase_order', 'delete_by', 'varchar(64)', '删除者',
 /
 CALL add_table_column('purchase_order', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('purchase_order', 'plan_id', 'bigint(20)', '计划单主表ID', NULL);
+/
 
 -- purchase_order_entry
 CALL add_table_column('purchase_order_entry', 'create_by', 'varchar(64)', '创建者', NULL);
@@ -761,6 +781,12 @@ CALL add_table_column('purchase_order_entry', 'delete_time', 'datetime', '删除
 /
 CALL add_table_column('purchase_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('purchase_order_entry', 'plan_id', 'bigint(20)', '计划单主表ID', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'plan_no', 'varchar(64)', '计划单号', NULL);
+/
+CALL add_table_column('purchase_order_entry', 'plan_entry_id', 'bigint(20)', '计划单明细ID', NULL);
+/
 
 -- purchase_plan
 CALL add_table_column('purchase_plan', 'tenant_id', 'varchar(36)', '租户ID', NULL);
@@ -768,6 +794,8 @@ CALL add_table_column('purchase_plan', 'tenant_id', 'varchar(36)', '租户ID', N
 CALL add_table_column('purchase_plan', 'delete_by', 'varchar(64)', '删除者', NULL);
 /
 CALL add_table_column('purchase_plan', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('purchase_plan', 'plan_entry_mode', 'varchar(20)', '计划明细生成方式：1=按产品档案汇总 2=按申购单明细拆分', '1');
 /
 
 -- purchase_plan_entry
@@ -786,6 +814,16 @@ CALL add_table_column('purchase_plan_entry', 'delete_time', 'datetime', '删除�
 CALL add_table_column('purchase_plan_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
 CALL add_table_column('purchase_plan_entry', 'supplier_id', 'bigint(20)', '供应商ID（指定明细供应商，审核后按此拆单）', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'apply_qty', 'decimal(20,4)', '申购数量（引用科室申购单汇总数量）', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'apply_department_id', 'bigint(20)', '申请科室ID（按申购单明细拆分时写入）', NULL);
+/
+
+-- purchase_plan_entry_dep_apply
+CALL add_table_column('purchase_plan_entry_dep_apply', 'dep_purchase_apply_id', 'bigint(20)', '申购单主表ID', NULL);
+/
+CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_bill_no', 'varchar(64)', '申购单号', NULL);
 /
 
 -- sb_work_group（设备侧用 customer_id，若表已有则跳过）

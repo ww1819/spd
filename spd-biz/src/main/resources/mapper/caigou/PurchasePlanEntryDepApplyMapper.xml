@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.PurchasePlanEntryDepApplyMapper">
+
+    <insert id="batchInsert">
+        insert into purchase_plan_entry_dep_apply (purchase_plan_entry_id, dep_purchase_apply_entry_id, dep_purchase_apply_id, purchase_bill_no, del_flag, tenant_id, create_by, create_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.purchasePlanEntryId}, #{item.depPurchaseApplyEntryId}, #{item.depPurchaseApplyId}, #{item.purchaseBillNo}, '0', #{item.tenantId}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <!-- 根据关联的明细从主表回填申购单主表id和申购单号（插入时若未传则用此方法补填） -->
+    <update id="updateFillApplyInfo">
+        update purchase_plan_entry_dep_apply r
+        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id
+        inner join dep_purchase_apply a on e.parent_id = a.id
+        set r.dep_purchase_apply_id = a.id, r.purchase_bill_no = a.purchase_bill_no
+        where r.purchase_plan_entry_id = #{purchasePlanEntryId} and (r.del_flag = '0' or r.del_flag is null)
+    </update>
+
+    <update id="logicDeleteByPlanId">
+        update purchase_plan_entry_dep_apply r
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
+        set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
+        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null)
+    </update>
+
+    <select id="selectApplyDetailsByEntryId" resultType="com.spd.caigou.domain.vo.ApplyDetailVO">
+        select dpa.purchase_bill_no as applyBillNo,
+               d.name as departmentName,
+               e.qty as qty,
+               coalesce(cu.nick_name, cu.user_name) as createByName,
+               dpa.create_time as createTime,
+               coalesce(au.nick_name, au.user_name) as auditByName,
+               dpa.update_time as auditTime
+        from purchase_plan_entry_dep_apply r
+        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and (e.del_flag is null or e.del_flag != 1)
+        inner join dep_purchase_apply dpa on e.parent_id = dpa.id and (dpa.del_flag = 0 or dpa.del_flag is null)
+        left join fd_department d on dpa.department_id = d.id
+        left join sys_user cu on dpa.create_by = cu.user_id
+        left join sys_user au on dpa.update_by = au.user_id
+        where r.purchase_plan_entry_id = #{entryId} and (r.del_flag = '0' or r.del_flag is null)
+        order by dpa.purchase_bill_no, e.id
+    </select>
+
+    <select id="selectBillNoListByPlanId" resultType="java.lang.String">
+        select distinct r.purchase_bill_no
+        from purchase_plan_entry_dep_apply r
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
+        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null) and r.purchase_bill_no is not null and r.purchase_bill_no != ''
+        order by r.purchase_bill_no
+    </select>
+
+    <select id="selectEntryBillNosByPlanId" resultType="com.spd.caigou.domain.vo.EntryBillNoVO">
+        select r.purchase_plan_entry_id as entryId, r.purchase_bill_no as purchaseBillNo
+        from purchase_plan_entry_dep_apply r
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
+        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null) and r.purchase_bill_no is not null
+        order by r.purchase_plan_entry_id, r.purchase_bill_no
+    </select>
+</mapper>

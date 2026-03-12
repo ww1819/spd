@@ -74,6 +74,18 @@ public class PurchaseOrderEntry extends BaseEntity
 
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
+    /** 删除者（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+    /** 计划单主表ID */
+    private Long planId;
+    /** 计划单号 */
+    private String planNo;
+    /** 计划单明细ID */
+    private Long planEntryId;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
 
     /** 耗材信息 */
     private FdMaterial material;
@@ -227,6 +239,18 @@ public class PurchaseOrderEntry extends BaseEntity
     {
         return delFlag;
     }
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+    public Long getPlanId() { return planId; }
+    public void setPlanId(Long planId) { this.planId = planId; }
+    public String getPlanNo() { return planNo; }
+    public void setPlanNo(String planNo) { this.planNo = planNo; }
+    public Long getPlanEntryId() { return planEntryId; }
+    public void setPlanEntryId(Long planEntryId) { this.planEntryId = planEntryId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public FdMaterial getMaterial() 
     {

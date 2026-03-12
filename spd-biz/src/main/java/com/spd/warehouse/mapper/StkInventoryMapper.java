@@ -153,4 +153,9 @@ public interface StkInventoryMapper
      */
     List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory);
 
+    /**
+     * 按耗材和仓库汇总库存数量（采购计划明细展示当前仓库库存用）
+     */
+    BigDecimal selectSumQtyByMaterialAndWarehouse(@Param("materialId") Long materialId, @Param("warehouseId") Long warehouseId);
+
 }

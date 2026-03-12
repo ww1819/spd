@@ -460,4 +460,46 @@ CREATE TABLE IF NOT EXISTS `supp_settlement_bill_entry` (
 /* 若曾建过 supp_settlement_bill 且含 invoice_id，可手动执行：ALTER TABLE supp_settlement_bill DROP COLUMN invoice_id; */
 /* 供应商结算单与发票关联表（一张单可关联多张发票） */
 /
+/* 采购计划明细与科室申购单明细关联表（逻辑删除：del_flag、delete_by、delete_time、tenant_id） */
+/
+CREATE TABLE IF NOT EXISTS `purchase_plan_entry_apply` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `purchase_plan_entry_id` bigint(20) NOT NULL COMMENT '采购计划明细ID',
+  `bas_apply_entry_id` bigint(20) NOT NULL COMMENT '科室申购单明细ID',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_plan_entry_apply` (`purchase_plan_entry_id`,`bas_apply_entry_id`),
+  KEY `idx_ppea_entry_id` (`purchase_plan_entry_id`),
+  KEY `idx_ppea_apply_entry_id` (`bas_apply_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购计划明细关联科室申购单明细表(bas_apply)';
+/
+/* 采购计划明细与科室申购单明细(dep_purchase_apply)关联表，逻辑删除 */
+/
+CREATE TABLE IF NOT EXISTS `purchase_plan_entry_dep_apply` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `purchase_plan_entry_id` bigint(20) NOT NULL COMMENT '采购计划明细ID',
+  `dep_purchase_apply_entry_id` bigint(20) NOT NULL COMMENT '科室申购单明细ID(dep_purchase_apply_entry)',
+  `dep_purchase_apply_id` bigint(20) DEFAULT NULL COMMENT '申购单主表ID',
+  `purchase_bill_no` varchar(64) DEFAULT NULL COMMENT '申购单号',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_plan_entry_dep_apply` (`purchase_plan_entry_id`,`dep_purchase_apply_entry_id`),
+  KEY `idx_ppeda_entry_id` (`purchase_plan_entry_id`),
+  KEY `idx_ppeda_dep_entry_id` (`dep_purchase_apply_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购计划明细关联科室申购单明细表(dep)';
+/
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

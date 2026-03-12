@@ -94,6 +94,13 @@ public class StkIoBillEntry extends BaseEntity
     @Excel(name = "供应商ID")
     private String supplerId;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    private Date deleteTime;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -246,6 +253,12 @@ public class StkIoBillEntry extends BaseEntity
     public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
     public String getSupplerId() { return supplerId; }
     public void setSupplerId(String supplerId) { this.supplerId = supplerId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
 
     @Override
     public String toString() {

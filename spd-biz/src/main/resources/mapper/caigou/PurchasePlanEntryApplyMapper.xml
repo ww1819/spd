@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.PurchasePlanEntryApplyMapper">
+
+    <resultMap type="com.spd.caigou.domain.PurchasePlanEntryApply" id="PurchasePlanEntryApplyResult">
+        <id     property="id" column="id" />
+        <result property="purchasePlanEntryId" column="purchase_plan_entry_id" />
+        <result property="basApplyEntryId" column="bas_apply_entry_id" />
+        <result property="delFlag" column="del_flag" />
+        <result property="deleteBy" column="delete_by" />
+        <result property="deleteTime" column="delete_time" />
+        <result property="tenantId" column="tenant_id" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <insert id="insert" parameterType="com.spd.caigou.domain.PurchasePlanEntryApply" useGeneratedKeys="true" keyProperty="id">
+        insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_time)
+        values (#{purchasePlanEntryId}, #{basApplyEntryId}, '0', #{tenantId}, #{createBy}, #{createTime})
+    </insert>
+
+    <insert id="batchInsert">
+        insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.purchasePlanEntryId}, #{item.basApplyEntryId}, '0', #{item.tenantId}, #{item.createBy}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <update id="logicDeleteByPurchasePlanEntryId">
+        update purchase_plan_entry_apply
+        set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where purchase_plan_entry_id = #{purchasePlanEntryId} and (del_flag = '0' or del_flag is null)
+    </update>
+
+    <update id="logicDeleteByPlanId">
+        update purchase_plan_entry_apply r
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
+        set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
+        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null)
+    </update>
+
+    <select id="selectApplyDetailsByEntryId" resultType="com.spd.caigou.domain.vo.ApplyDetailVO">
+        select a.apply_bill_no as applyBillNo,
+               d.name as departmentName,
+               e.qty as qty,
+               coalesce(cu.nick_name, cu.user_name) as createByName,
+               a.create_time as createTime,
+               coalesce(au.nick_name, au.user_name) as auditByName,
+               a.audit_date as auditTime
+        from purchase_plan_entry_apply r
+        inner join bas_apply_entry e on r.bas_apply_entry_id = e.id and (e.del_flag is null or e.del_flag != 1)
+        inner join bas_apply a on e.paren_id = a.id and (a.del_flag = 0 or a.del_flag is null)
+        left join fd_department d on a.department_id = d.id
+        left join sys_user cu on a.create_by = cu.user_id
+        left join sys_user au on a.audit_by = au.user_id
+        where r.purchase_plan_entry_id = #{entryId} and (r.del_flag = '0' or r.del_flag is null)
+        order by a.apply_bill_no, e.id
+    </select>
+</mapper>
