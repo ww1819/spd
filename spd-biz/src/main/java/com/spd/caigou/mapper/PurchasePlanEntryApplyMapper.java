@@ -25,4 +25,7 @@ public interface PurchasePlanEntryApplyMapper {
 
     /** 根据采购计划明细ID查询关联的申购明细列表（科室申购单单号、申购科室、申购数量、制单人、制单时间、审核人、审核时间） */
     List<ApplyDetailVO> selectApplyDetailsByEntryId(@Param("entryId") Long entryId);
+
+    /** 根据采购计划ID查询关联的申购单号列表（科室申请单 bas_apply） */
+    List<String> selectBillNoListByPlanId(@Param("planId") Long planId);
 }

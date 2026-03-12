@@ -1,6 +1,7 @@
 package com.spd.caigou.service;
 
 import com.spd.caigou.domain.PurchasePlan;
+import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 
 import java.util.List;
 
@@ -69,4 +70,21 @@ public interface IPurchasePlanService
      * @return 结果
      */
     public int auditPurchasePlan(Long id, String auditBy, String auditOpinion);
+
+    /**
+     * 查询已审核计划在指定日期范围内的采购记录（按物资+供货单位汇总数量，用于导出「年份月份耗材采购记录」）
+     *
+     * @param beginDate 开始日期 yyyy-MM-dd
+     * @param endDate   结束日期 yyyy-MM-dd
+     * @return 导出行列表：物资名称、物资规格、数量、单位、供货单位、收货人(空)、收货日期(空)
+     */
+    List<PurchaseRecordExportVO> listPurchaseRecordForExport(String beginDate, String endDate);
+
+    /**
+     * 根据选中的计划单ID列表汇总采购记录（按物资+供货单位汇总数量，用于导出）
+     *
+     * @param planIds 计划主键数组
+     * @return 导出行列表
+     */
+    List<PurchaseRecordExportVO> listPurchaseRecordForExportByIds(Long[] planIds);
 }

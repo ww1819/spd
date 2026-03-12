@@ -14,8 +14,11 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +29,9 @@ import com.spd.caigou.domain.vo.EntryBillNoVO;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -55,6 +60,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     private PurchasePlanEntryApplyMapper purchasePlanEntryApplyMapper;
     @Autowired
     private PurchasePlanEntryDepApplyMapper purchasePlanEntryDepApplyMapper;
+    @Autowired
+    private FdSupplierMapper fdSupplierMapper;
 
     /**
      * 查询采购计划
@@ -91,6 +98,15 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                 for (PurchasePlanEntry entry : purchasePlanEntryList) {
                     if (entry.getId() != null && byEntry.containsKey(entry.getId())) {
                         entry.setApplyBillNos(byEntry.get(entry.getId()).stream().distinct().collect(Collectors.joining(",")));
+                    }
+                }
+            }
+            // 回填每条计划明细关联的科室申购单明细ID列表，便于编辑保存时重新写入关联表
+            for (PurchasePlanEntry entry : purchasePlanEntryList) {
+                if (entry.getId() != null) {
+                    List<Long> depIds = purchasePlanEntryDepApplyMapper.selectDepApplyEntryIdsByEntryId(entry.getId());
+                    if (depIds != null && !depIds.isEmpty()) {
+                        entry.setDepApplyEntryIds(depIds);
                     }
                 }
             }
@@ -346,6 +362,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                                     PurchasePlanEntryDepApply ref = new PurchasePlanEntryDepApply();
                                     ref.setPurchasePlanEntryId(e.getId());
                                     ref.setDepPurchaseApplyEntryId(depEntryId);
+                                    ref.setPurchasePlanId(purchasePlan.getId());
+                                    ref.setPlanNo(purchasePlan.getPlanNo());
                                     ref.setTenantId(tenantId);
                                     ref.setCreateBy(createBy);
                                     ref.setCreateTime(now);
@@ -360,5 +378,122 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                 purchasePlanMapper.batchPurchasePlanEntry(list);
             }
         }
+    }
+
+    @Override
+    public List<PurchaseRecordExportVO> listPurchaseRecordForExport(String beginDate, String endDate) {
+        PurchasePlan query = new PurchasePlan();
+        query.setPlanStatus("2"); // 已审核
+        query.setBeginDate(beginDate);
+        query.setEndDate(endDate);
+        List<PurchasePlan> plans = purchasePlanMapper.selectPurchasePlanList(query);
+        if (plans == null || plans.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // key: materialName|materialSpec|unit|supplierName -> sum(qty)
+        Map<String, BigDecimal> agg = new LinkedHashMap<>();
+        for (PurchasePlan plan : plans) {
+            PurchasePlan full = selectPurchasePlanById(plan.getId());
+            if (full == null || full.getPurchasePlanEntryList() == null) continue;
+            for (PurchasePlanEntry entry : full.getPurchasePlanEntryList()) {
+                if (entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) <= 0) continue;
+                String materialName = "";
+                String materialSpec = "";
+                String unit = "";
+                if (entry.getMaterial() != null) {
+                    materialName = entry.getMaterial().getName() != null ? entry.getMaterial().getName() : "";
+                    materialSpec = entry.getMaterial().getSpeci() != null ? entry.getMaterial().getSpeci() : "";
+                    if (entry.getMaterial().getFdUnit() != null && entry.getMaterial().getFdUnit().getUnitName() != null) {
+                        unit = entry.getMaterial().getFdUnit().getUnitName();
+                    }
+                }
+                if (materialName.isEmpty() && entry.getMaterialId() != null) {
+                    FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                    if (m != null) {
+                        materialName = m.getName() != null ? m.getName() : "";
+                        materialSpec = m.getSpeci() != null ? m.getSpeci() : "";
+                        if (m.getFdUnit() != null && m.getFdUnit().getUnitName() != null) unit = m.getFdUnit().getUnitName();
+                    }
+                }
+                Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : full.getSupplierId();
+                String supplierName = "";
+                if (supplierId != null) {
+                    FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplierId);
+                    if (sup != null && sup.getName() != null) supplierName = sup.getName();
+                }
+                String key = materialName + "|" + materialSpec + "|" + unit + "|" + supplierName;
+                agg.merge(key, entry.getQty(), BigDecimal::add);
+            }
+        }
+        List<PurchaseRecordExportVO> list = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> e : agg.entrySet()) {
+            String[] parts = e.getKey().split("\\|", -1);
+            PurchaseRecordExportVO vo = new PurchaseRecordExportVO();
+            vo.setMaterialName(parts.length > 0 ? parts[0] : "");
+            vo.setMaterialSpec(parts.length > 1 ? parts[1] : "");
+            vo.setQty(e.getValue());
+            vo.setUnit(parts.length > 2 ? parts[2] : "");
+            vo.setSupplierName(parts.length > 3 ? parts[3] : "");
+            vo.setReceiver("");
+            vo.setReceiveDate("");
+            list.add(vo);
+        }
+        return list;
+    }
+
+    @Override
+    public List<PurchaseRecordExportVO> listPurchaseRecordForExportByIds(Long[] planIds) {
+        if (planIds == null || planIds.length == 0) {
+            return new ArrayList<>();
+        }
+        Map<String, BigDecimal> agg = new LinkedHashMap<>();
+        for (Long planId : planIds) {
+            if (planId == null) continue;
+            PurchasePlan full = selectPurchasePlanById(planId);
+            if (full == null || full.getPurchasePlanEntryList() == null) continue;
+            for (PurchasePlanEntry entry : full.getPurchasePlanEntryList()) {
+                if (entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) <= 0) continue;
+                String materialName = "";
+                String materialSpec = "";
+                String unit = "";
+                if (entry.getMaterial() != null) {
+                    materialName = entry.getMaterial().getName() != null ? entry.getMaterial().getName() : "";
+                    materialSpec = entry.getMaterial().getSpeci() != null ? entry.getMaterial().getSpeci() : "";
+                    if (entry.getMaterial().getFdUnit() != null && entry.getMaterial().getFdUnit().getUnitName() != null) {
+                        unit = entry.getMaterial().getFdUnit().getUnitName();
+                    }
+                }
+                if (materialName.isEmpty() && entry.getMaterialId() != null) {
+                    FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                    if (m != null) {
+                        materialName = m.getName() != null ? m.getName() : "";
+                        materialSpec = m.getSpeci() != null ? m.getSpeci() : "";
+                        if (m.getFdUnit() != null && m.getFdUnit().getUnitName() != null) unit = m.getFdUnit().getUnitName();
+                    }
+                }
+                Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : full.getSupplierId();
+                String supplierName = "";
+                if (supplierId != null) {
+                    FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplierId);
+                    if (sup != null && sup.getName() != null) supplierName = sup.getName();
+                }
+                String key = materialName + "|" + materialSpec + "|" + unit + "|" + supplierName;
+                agg.merge(key, entry.getQty(), BigDecimal::add);
+            }
+        }
+        List<PurchaseRecordExportVO> list = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> e : agg.entrySet()) {
+            String[] parts = e.getKey().split("\\|", -1);
+            PurchaseRecordExportVO vo = new PurchaseRecordExportVO();
+            vo.setMaterialName(parts.length > 0 ? parts[0] : "");
+            vo.setMaterialSpec(parts.length > 1 ? parts[1] : "");
+            vo.setQty(e.getValue());
+            vo.setUnit(parts.length > 2 ? parts[2] : "");
+            vo.setSupplierName(parts.length > 3 ? parts[3] : "");
+            vo.setReceiver("");
+            vo.setReceiveDate("");
+            list.add(vo);
+        }
+        return list;
     }
 }

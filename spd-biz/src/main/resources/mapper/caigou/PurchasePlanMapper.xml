@@ -28,6 +28,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditOpinion"    column="audit_opinion"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="planEntryMode"    column="plan_entry_mode"    />
+        <result property="createByName"    column="create_by_name"    />
+        <result property="updateByName"    column="update_by_name"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -103,11 +106,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                pp.update_by, pp.update_time, pp.audit_by, pp.audit_date, pp.audit_opinion,
                s.id sId, s.code supplierCode, s.name supplierName,
                w.id wId, w.code warehouseCode, w.name warehouseName,
-               d.id dId, d.code departmentCode, d.name departmentName
+               d.id dId, d.code departmentCode, d.name departmentName,
+               coalesce(cu.nick_name, cu.user_name) as create_by_name,
+               coalesce(uu.nick_name, uu.user_name) as update_by_name,
+               coalesce(au.nick_name, au.user_name) as audit_by_name
         from purchase_plan pp
         left join fd_supplier s on pp.supplier_id = s.id
         left join fd_warehouse w on pp.warehouse_id = w.id
         left join fd_department d on pp.department_id = d.id
+        left join sys_user cu on pp.create_by = cu.user_id
+        left join sys_user uu on pp.update_by = uu.user_id
+        left join sys_user au on pp.audit_by = au.user_id
     </sql>
 
     <sql id="selectPurchasePlanEntryVo">

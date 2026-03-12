@@ -14,6 +14,7 @@ import com.spd.common.utils.rule.FillRuleUtil;
 import java.math.BigDecimal;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Autowired
     private PurchasePlanMapper purchasePlanMapper;
 
+    @Autowired
+    private StkInventoryMapper stkInventoryMapper;
+
     /**
      * 查询采购订单
      *
@@ -57,11 +61,16 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         }
         SecurityUtils.ensureTenantAccess(purchaseOrder.getTenantId());
         List<PurchaseOrderEntry> purchaseOrderEntryList = purchaseOrderMapper.selectPurchaseOrderEntryByParentId(id);
-        List<FdMaterial> materialList = new ArrayList<FdMaterial>();
-        for(PurchaseOrderEntry entry : purchaseOrderEntryList){
-            Long materialId = entry.getMaterialId();
-            FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-            materialList.add(fdMaterial);
+        Long warehouseId = purchaseOrder.getWarehouseId();
+        for (PurchaseOrderEntry entry : purchaseOrderEntryList) {
+            if (entry.getMaterialId() != null) {
+                FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                entry.setMaterial(fdMaterial);
+                if (warehouseId != null) {
+                    BigDecimal stock = stkInventoryMapper.selectSumQtyByMaterialAndWarehouse(entry.getMaterialId(), warehouseId);
+                    entry.setStockQty(stock != null ? stock : BigDecimal.ZERO);
+                }
+            }
         }
         purchaseOrder.setPurchaseOrderEntryList(purchaseOrderEntryList);
         return purchaseOrder;

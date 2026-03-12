@@ -16,6 +16,10 @@ public class PurchasePlanEntryDepApply extends BaseEntity {
     private Long id;
     private Long purchasePlanEntryId;
     private Long depPurchaseApplyEntryId;
+    /** 采购计划主表ID */
+    private Long purchasePlanId;
+    /** 采购计划单号 */
+    private String planNo;
     /** 申购单主表ID */
     private Long depPurchaseApplyId;
     /** 申购单号 */
@@ -31,6 +35,10 @@ public class PurchasePlanEntryDepApply extends BaseEntity {
     public void setPurchasePlanEntryId(Long purchasePlanEntryId) { this.purchasePlanEntryId = purchasePlanEntryId; }
     public Long getDepPurchaseApplyEntryId() { return depPurchaseApplyEntryId; }
     public void setDepPurchaseApplyEntryId(Long depPurchaseApplyEntryId) { this.depPurchaseApplyEntryId = depPurchaseApplyEntryId; }
+    public Long getPurchasePlanId() { return purchasePlanId; }
+    public void setPurchasePlanId(Long purchasePlanId) { this.purchasePlanId = purchasePlanId; }
+    public String getPlanNo() { return planNo; }
+    public void setPlanNo(String planNo) { this.planNo = planNo; }
     public Long getDepPurchaseApplyId() { return depPurchaseApplyId; }
     public void setDepPurchaseApplyId(Long depPurchaseApplyId) { this.depPurchaseApplyId = depPurchaseApplyId; }
     public String getPurchaseBillNo() { return purchaseBillNo; }

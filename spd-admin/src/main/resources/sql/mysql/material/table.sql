@@ -488,6 +488,8 @@ CREATE TABLE IF NOT EXISTS `purchase_plan_entry_dep_apply` (
   `dep_purchase_apply_entry_id` bigint(20) NOT NULL COMMENT '科室申购单明细ID(dep_purchase_apply_entry)',
   `dep_purchase_apply_id` bigint(20) DEFAULT NULL COMMENT '申购单主表ID',
   `purchase_bill_no` varchar(64) DEFAULT NULL COMMENT '申购单号',
+  `purchase_plan_id` bigint(20) DEFAULT NULL COMMENT '采购计划主表ID',
+  `plan_no` varchar(64) DEFAULT NULL COMMENT '采购计划单号',
   `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',

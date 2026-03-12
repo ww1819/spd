@@ -2,6 +2,7 @@ package com.spd.caigou.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.caigou.domain.PurchasePlan;
+import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 import com.spd.caigou.service.IPurchasePlanEntryApplyService;
 import com.spd.caigou.service.IPurchasePlanService;
 import com.spd.common.annotation.Log;
@@ -15,6 +16,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -133,5 +138,55 @@ public class CaigouJihuaController extends BaseController
     public AjaxResult applyBillNoList(@RequestParam Long planId)
     {
         return success(purchasePlanEntryApplyService.listApplyBillNosByPlanId(planId));
+    }
+
+    /**
+     * 根据采购计划ID查询关联的申购单表头列表（科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/applyBillHeaderList")
+    public AjaxResult applyBillHeaderList(@RequestParam Long planId)
+    {
+        return success(purchasePlanEntryApplyService.listApplyBillHeaderListByPlanId(planId));
+    }
+
+    /**
+     * 导出采购记录：按选中的计划单汇总，生成「年份月份耗材采购记录」Excel，首行为标题
+     * 列：物资名称，物资规格，数量，单位，供货单位，收货人，收货日期（收货人、收货日期为空）；数量为明细汇总
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:export')")
+    @Log(title = "采购计划", businessType = BusinessType.EXPORT)
+    @PostMapping("/exportPurchaseRecord")
+    public void exportPurchaseRecord(HttpServletResponse response,
+                                     @RequestParam(name = "ids", required = false) String idsStr)
+    {
+        Long[] ids = parseIds(idsStr);
+        if (ids == null || ids.length == 0) {
+            throw new IllegalArgumentException("请先选择要导出的采购计划");
+        }
+        List<PurchaseRecordExportVO> list = purchasePlanService.listPurchaseRecordForExportByIds(ids);
+        LocalDate now = LocalDate.now();
+        String yearMonth = now.getYear() + "年" + now.getMonthValue() + "月";
+        String sheetName = yearMonth + "耗材采购记录";
+        String title = sheetName;
+        ExcelUtil<PurchaseRecordExportVO> util = new ExcelUtil<>(PurchaseRecordExportVO.class);
+        util.exportExcel(response, list, sheetName, title);
+    }
+
+    /** 解析逗号分隔的 id 字符串为 Long 数组，用于 form 表单提交的 ids */
+    private static Long[] parseIds(String idsStr) {
+        if (!StringUtils.hasText(idsStr)) {
+            return new Long[0];
+        }
+        String[] parts = idsStr.split(",");
+        List<Long> list = new ArrayList<>();
+        for (String s : parts) {
+            String t = s != null ? s.trim() : "";
+            if (t.isEmpty()) continue;
+            try {
+                list.add(Long.valueOf(t));
+            } catch (NumberFormatException ignored) { }
+        }
+        return list.toArray(new Long[0]);
     }
 }

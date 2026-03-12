@@ -1,5 +1,6 @@
 package com.spd.caigou.service;
 
+import com.spd.caigou.domain.vo.ApplyBillHeaderVO;
 import com.spd.caigou.domain.vo.ApplyDetailVO;
 
 import java.util.List;
@@ -26,4 +27,12 @@ public interface IPurchasePlanEntryApplyService {
      * @return 申购单号列表
      */
     List<String> listApplyBillNosByPlanId(Long planId);
+
+    /**
+     * 根据采购计划ID查询关联的申购单表头列表（科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间）
+     *
+     * @param planId 采购计划ID
+     * @return 申购单表头列表
+     */
+    List<ApplyBillHeaderVO> listApplyBillHeaderListByPlanId(Long planId);
 }

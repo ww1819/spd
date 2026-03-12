@@ -87,6 +87,9 @@ public class PurchaseOrderEntry extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 库存数量（展示用，按订单仓库+耗材汇总） */
+    private BigDecimal stockQty;
+
     /** 耗材信息 */
     private FdMaterial material;
 
@@ -251,6 +254,9 @@ public class PurchaseOrderEntry extends BaseEntity
     public void setPlanEntryId(Long planEntryId) { this.planEntryId = planEntryId; }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public BigDecimal getStockQty() { return stockQty; }
+    public void setStockQty(BigDecimal stockQty) { this.stockQty = stockQty; }
 
     public FdMaterial getMaterial() 
     {

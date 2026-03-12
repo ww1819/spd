@@ -825,6 +825,10 @@ CALL add_table_column('purchase_plan_entry_dep_apply', 'dep_purchase_apply_id', 
 /
 CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_bill_no', 'varchar(64)', '申购单号', NULL);
 /
+CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_plan_id', 'bigint(20)', '采购计划主表ID', NULL);
+/
+CALL add_table_column('purchase_plan_entry_dep_apply', 'plan_no', 'varchar(64)', '采购计划单号', NULL);
+/
 
 -- sb_work_group（设备侧用 customer_id，若表已有则跳过）
 CALL add_table_column('sb_work_group', 'create_by', 'varchar(64)', '创建者', NULL);
@@ -985,3 +989,5 @@ CALL add_table_column('stk_inventory', 'delete_by', 'varchar(64)', '删除者', 
 /
 CALL add_table_column('stk_inventory', 'delete_time', 'datetime', '删除时间', NULL);
 /
+
+ALTER TABLE purchase_plan MODIFY COLUMN plan_status char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '1' NOT NULL COMMENT '计划状态（0未提交1待审核 2已审核 3已执行 4已取消）';

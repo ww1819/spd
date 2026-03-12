@@ -1,6 +1,7 @@
 package com.spd.caigou.mapper;
 
 import com.spd.caigou.domain.PurchasePlanEntryDepApply;
+import com.spd.caigou.domain.vo.ApplyBillHeaderVO;
 import com.spd.caigou.domain.vo.ApplyDetailVO;
 import org.apache.ibatis.annotations.Param;
 
@@ -26,6 +27,12 @@ public interface PurchasePlanEntryDepApplyMapper {
     /** 根据采购计划ID查询关联的申购单号列表（去重，用于表头弹窗） */
     List<String> selectBillNoListByPlanId(@Param("planId") Long planId);
 
+    /** 根据采购计划ID查询关联的申购单表头列表（科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间） */
+    List<ApplyBillHeaderVO> selectApplyBillHeaderListByPlanId(@Param("planId") Long planId);
+
     /** 根据采购计划ID查询各明细关联的申购单号（每行一条 entry_id + purchase_bill_no，可能多行同一 entry） */
     List<com.spd.caigou.domain.vo.EntryBillNoVO> selectEntryBillNosByPlanId(@Param("planId") Long planId);
+
+    /** 根据采购计划明细ID查询关联的科室申购单明细ID列表（未逻辑删除，用于回填 entry.depApplyEntryIds） */
+    List<Long> selectDepApplyEntryIdsByEntryId(@Param("entryId") Long entryId);
 }
