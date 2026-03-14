@@ -23,12 +23,6 @@
             <artifactId>spd-common</artifactId>
         </dependency>
 
-        <!-- 业务模块（客户68分类初始化/同步等）-->
-        <dependency>
-            <groupId>com.spd</groupId>
-            <artifactId>spd-biz</artifactId>
-        </dependency>
-
     </dependencies>
 
 </project>

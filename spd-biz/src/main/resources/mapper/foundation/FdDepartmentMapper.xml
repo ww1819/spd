@@ -26,7 +26,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where del_flag != 1
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="referredName != null and referredName != ''"> and referred_name like concat('%', #{referredName}, '%')</if>
+        <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
     </select>
 
     <select id="selectFdDepartmentById" parameterType="String" resultMap="FdDepartmentResult">
@@ -37,6 +38,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectdepartmenAll" resultMap="FdDepartmentResult">
         <include refid="selectFdDepartmentVo"/>
         where del_flag != 1
+    </select>
+
+    <select id="selectdepartmenAllByTenantId" resultMap="FdDepartmentResult">
+        <include refid="selectFdDepartmentVo"/>
+        where del_flag != 1 and tenant_id = #{tenantId}
     </select>
 
     <select id="selectDepartmenListByUserId" parameterType="Long" resultType="Long">

@@ -50,6 +50,13 @@ public interface FdDepartmentMapper
     List<FdDepartment> selectdepartmenAll();
 
     /**
+     * 按租户ID查询科室列表（仅本客户）
+     * @param tenantId 租户/客户ID
+     * @return
+     */
+    List<FdDepartment> selectdepartmenAllByTenantId(String tenantId);
+
+    /**
      * 根据用户ID获取科室ID列表
      * @param userId
      * @return

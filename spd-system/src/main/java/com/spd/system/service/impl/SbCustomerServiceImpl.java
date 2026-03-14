@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysUser;
+import com.spd.common.exception.ServiceException;
 import com.spd.common.enums.TenantEnum;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
@@ -49,7 +50,7 @@ import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysUserPost;
 import com.spd.system.domain.SysPostMenu;
 import com.spd.system.domain.hc.HcUserPermissionMenu;
-import com.spd.foundation.service.ISbCustomerCategory68Service;
+import com.spd.system.service.ISbCustomerCategory68Service;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbRoleService;
 import com.spd.system.service.ISysConfigService;
@@ -236,8 +237,11 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     wgu.setCreateBy(createBy);
     sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
 
-    // 新租户与 super 组默认包含系统设置下的所有权限，不包含平台管理功能
-    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
+    // 新租户与 super 组默认包含「默认对客户开放」的菜单，若无则退化为系统设置下非平台管理功能
+    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsDefaultForCustomer();
+    if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
+      defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
+    }
     if (defaultMenuIds != null && !defaultMenuIds.isEmpty()) {
       List<SbCustomerMenu> customerMenus = new ArrayList<>();
       for (String menuId : defaultMenuIds) {
@@ -342,6 +346,9 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     }
   }
 
+  /** 启用被拒绝时的启停用记录原因（当前客户已到计划停用时间） */
+  private static final String ENABLE_REJECT_REASON = "尝试启用被拒绝：已到达计划停用时间，请延长计划停用时间后再启用";
+
   @Override
   @Transactional
   public int updateSbCustomer(SbCustomer customer) {
@@ -355,6 +362,20 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (StringUtils.isNotEmpty(customer.getStatus()) && !customer.getStatus().equals(old.getStatus())) {
       if (StringUtils.isEmpty(customer.getStatusChangeReason())) {
         throw new IllegalArgumentException("启停用原因不能为空，请通过启停用操作并填写原因");
+      }
+      // 再次启用（1→0）时：若当前时间已超过计划停用时间，拒绝启用并写一条启停用记录后抛异常
+      if ("0".equals(customer.getStatus()) && "1".equals(old.getStatus())) {
+        if (old.getPlannedDisableTime() != null && now.getTime() >= old.getPlannedDisableTime().getTime()) {
+          SbCustomerStatusLog rejectLog = new SbCustomerStatusLog();
+          rejectLog.setLogId(UUID7.generateUUID7());
+          rejectLog.setCustomerId(customer.getCustomerId());
+          rejectLog.setStatus("1");
+          rejectLog.setOperateTime(now);
+          rejectLog.setOperateBy(operateBy);
+          rejectLog.setReason(ENABLE_REJECT_REASON);
+          sbCustomerStatusLogMapper.insert(rejectLog);
+          throw new ServiceException("当前客户已到达计划停用时间，请延长计划停用时间后再启用");
+        }
       }
       SbCustomerStatusLog statusLog = new SbCustomerStatusLog();
       statusLog.setLogId(UUID7.generateUUID7());
@@ -430,6 +451,61 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   @Override
   public List<SbCustomerPeriodLog> selectPeriodLogList(String customerId) {
     return sbCustomerPeriodLogMapper.selectByCustomerId(customerId);
+  }
+
+  private static final String AUTO_DISABLE_OPERATE_BY = "system";
+  private static final String AUTO_DISABLE_REASON = "已到达计划停用时间";
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void autoDisableByPlannedTime(String customerId) {
+    if (StringUtils.isEmpty(customerId)) {
+      return;
+    }
+    SbCustomer customer = sbCustomerMapper.selectSbCustomerById(customerId);
+    if (customer == null) {
+      return;
+    }
+    if ("1".equals(customer.getStatus())) {
+      return;
+    }
+    Date planned = customer.getPlannedDisableTime();
+    if (planned == null) {
+      return;
+    }
+    Date now = new Date();
+    if (now.getTime() < planned.getTime()) {
+      return;
+    }
+    String cid = customer.getCustomerId();
+    SbCustomerStatusLog statusLog = new SbCustomerStatusLog();
+    statusLog.setLogId(UUID7.generateUUID7());
+    statusLog.setCustomerId(cid);
+    statusLog.setStatus("1");
+    statusLog.setOperateTime(now);
+    statusLog.setOperateBy(AUTO_DISABLE_OPERATE_BY);
+    statusLog.setReason(AUTO_DISABLE_REASON);
+    sbCustomerStatusLogMapper.insert(statusLog);
+
+    SbCustomerPeriodLog lastUsage = sbCustomerPeriodLogMapper.selectLastWithNullEnd(cid, SbCustomerPeriodLog.PERIOD_TYPE_USAGE);
+    if (lastUsage != null) {
+      sbCustomerPeriodLogMapper.updateEndTime(lastUsage.getPeriodId(), now);
+    }
+    SbCustomerPeriodLog suspendPeriod = new SbCustomerPeriodLog();
+    suspendPeriod.setPeriodId(UUID7.generateUUID7());
+    suspendPeriod.setCustomerId(cid);
+    suspendPeriod.setPeriodType(SbCustomerPeriodLog.PERIOD_TYPE_SUSPEND);
+    suspendPeriod.setStartTime(now);
+    suspendPeriod.setEndTime(null);
+    suspendPeriod.setCreateBy(AUTO_DISABLE_OPERATE_BY);
+    suspendPeriod.setCreateTime(now);
+    sbCustomerPeriodLogMapper.insert(suspendPeriod);
+
+    SbCustomer update = new SbCustomer();
+    update.setCustomerId(cid);
+    update.setStatus("1");
+    update.setUpdateBy(AUTO_DISABLE_OPERATE_BY);
+    sbCustomerMapper.updateSbCustomer(update);
   }
 
   @Override
@@ -529,7 +605,10 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       return;
     }
 
-    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
+    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsDefaultForCustomer();
+    if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
+      defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
+    }
     if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
       return;
     }

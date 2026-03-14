@@ -127,6 +127,10 @@ public class UserDetailsServiceImpl implements UserDetailsService
             log.info("登录：客户不存在，customerId={}", customerId);
             throw new ServiceException("客户不存在或已删除");
         }
+        // 设备侧登录时打出客户状态与计划停用时间，便于排查“客户已被停用”误报
+        if (!forHc) {
+            log.debug("登录：客户校验 customerId={}, status={}, plannedDisableTime={}", customer.getCustomerId(), customer.getStatus(), customer.getPlannedDisableTime());
+        }
         if (forHc) {
             if ("1".equals(customer.getHcStatus())) {
                 log.info("登录：耗材系统已停用，customerId={}", customer.getCustomerId());
@@ -141,14 +145,15 @@ public class UserDetailsServiceImpl implements UserDetailsService
             }
         } else {
             if ("1".equals(customer.getStatus())) {
-                log.info("登录：客户已停用，customerId={}", customer.getCustomerId());
+                log.info("登录：客户已停用(status=1)，customerId={}, status={}", customer.getCustomerId(), customer.getStatus());
                 throw new ServiceException("客户已被停用，无法使用功能");
             }
             if (customer.getPlannedDisableTime() != null) {
                 long now = java.util.Calendar.getInstance().getTime().getTime();
                 if (now >= customer.getPlannedDisableTime().getTime()) {
-                    log.info("登录：客户已到计划停用时间，customerId={}", customer.getCustomerId());
-                    throw new ServiceException("客户已被停用，无法使用功能");
+                    log.info("登录：客户已到计划停用时间，执行自动停用并写启停用记录，customerId={}, plannedDisableTime={}", customer.getCustomerId(), customer.getPlannedDisableTime());
+                    sbCustomerService.autoDisableByPlannedTime(customer.getCustomerId());
+                    throw new ServiceException("客户已到计划停用时间，无法使用功能");
                 }
             }
         }

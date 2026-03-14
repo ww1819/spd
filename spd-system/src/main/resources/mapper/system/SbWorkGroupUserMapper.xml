@@ -5,24 +5,24 @@
 <mapper namespace="com.spd.system.mapper.SbWorkGroupUserMapper">
 
   <insert id="insertSbWorkGroupUser" parameterType="com.spd.system.domain.SbWorkGroupUser">
-    insert into sb_work_group_user (group_id, user_id, customer_id, create_by, create_time)
-    values (#{groupId}, #{userId}, #{customerId}, #{createBy}, sysdate())
+    insert into sb_work_group_user (group_id, user_id, customer_id, create_by, create_time, del_flag)
+    values (#{groupId}, #{userId}, #{customerId}, #{createBy}, sysdate(), ifnull(#{delFlag}, '0'))
   </insert>
 
   <select id="selectUserIdsByGroupId" resultType="long">
-    select user_id from sb_work_group_user where group_id = #{groupId} and delete_time is null
+    select user_id from sb_work_group_user where group_id = #{groupId} and ifnull(del_flag, '0') = '0'
   </select>
 
   <select id="selectGroupIdsByUserId" resultType="string">
-    select group_id from sb_work_group_user where user_id = #{userId} and (customer_id = #{customerId} or #{customerId} is null) and delete_time is null
+    select group_id from sb_work_group_user where user_id = #{userId} and (customer_id = #{customerId} or #{customerId} is null) and ifnull(del_flag, '0') = '0'
   </select>
 
   <update id="deleteByGroupIdAndUserId">
-    update sb_work_group_user set delete_by = #{deleteBy}, delete_time = sysdate() where group_id = #{groupId} and user_id = #{userId} and delete_time is null
+    update sb_work_group_user set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1' where group_id = #{groupId} and user_id = #{userId} and ifnull(del_flag, '0') = '0'
   </update>
 
   <select id="countByGroupIdAndUserId" resultType="int">
-    select count(1) from sb_work_group_user where group_id = #{groupId} and user_id = #{userId} and delete_time is null
+    select count(1) from sb_work_group_user where group_id = #{groupId} and user_id = #{userId} and ifnull(del_flag, '0') = '0'
   </select>
 
 </mapper>

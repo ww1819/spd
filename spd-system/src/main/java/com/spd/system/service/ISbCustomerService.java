@@ -50,6 +50,12 @@ public interface ISbCustomerService {
   List<HcCustomerPeriodLog> selectHcPeriodLogList(String tenantId);
 
   /**
+   * 到达计划停用时间时自动将客户设为已停用，并生成启停用记录与启停用时间段记录，停用原因为「已到达计划停用时间」。
+   * 若客户已停用或未到计划停用时间则不做任何操作。通常在登录校验发现已到期时调用。
+   */
+  void autoDisableByPlannedTime(String customerId);
+
+  /**
    * 设备功能重置：若 super 组和 super_01 不存在则创建；重置客户菜单权限、super 工作组菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
    */
   void resetEquipmentFunctions(String customerId);

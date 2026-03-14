@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `sb_customer` (
   `planned_disable_time` datetime DEFAULT NULL COMMENT '计划停用时间（设备侧），到达后租户无法使用设备系统',
   `hc_status` char(1) NOT NULL DEFAULT '0' COMMENT '耗材侧状态（0正常 1停用），与设备侧 status 分开',
   `hc_planned_disable_time` datetime DEFAULT NULL COMMENT '计划停用时间（耗材侧），到达后租户无法使用耗材系统',
+  `tenant_key` varchar(64) DEFAULT NULL COMMENT '租户枚举键（TenantEnum.name），与代码内租户列表一致',
   PRIMARY KEY (`customer_id`),
   UNIQUE KEY `uk_sb_customer_code` (`customer_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备/耗材共用客户表(SaaS租户)；设备用 status/planned_disable_time，耗材用 hc_status/hc_planned_disable_time';
@@ -303,6 +304,7 @@ CREATE TABLE IF NOT EXISTS `sb_menu` (
   `perms` varchar(100) DEFAULT NULL COMMENT '权限标识',
   `icon` varchar(100) DEFAULT '#' COMMENT '菜单图标',
   `is_platform_only` char(1) DEFAULT '0' COMMENT '是否仅平台管理功能（1是，客户分配/工作组/用户权限中不展示）',
+  `default_open_to_customer` char(1) DEFAULT '0' COMMENT '是否默认对客户开放（1是，设备功能重置时授权给客户、管理员组、管理员用户）',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -310,6 +312,7 @@ CREATE TABLE IF NOT EXISTS `sb_menu` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0正常 1删除）',
   PRIMARY KEY (`menu_id`),
   KEY `idx_sb_menu_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备前端独立菜单表';
@@ -392,6 +395,7 @@ CREATE TABLE IF NOT EXISTS `sb_work_group_user` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0正常 1删除）',
   PRIMARY KEY (`group_id`, `user_id`),
   KEY `idx_wgu_user` (`user_id`),
   KEY `idx_wgu_customer` (`customer_id`)
@@ -406,6 +410,7 @@ CREATE TABLE IF NOT EXISTS `sb_work_group_menu` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0正常 1删除）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_wgm_group_menu` (`group_id`, `menu_id`),
   KEY `idx_wgm_customer` (`customer_id`)

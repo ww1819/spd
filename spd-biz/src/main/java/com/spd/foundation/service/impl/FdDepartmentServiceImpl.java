@@ -1,6 +1,8 @@
 package com.spd.foundation.service.impl;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
@@ -77,6 +79,13 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     @Override
     public int updateFdDepartment(FdDepartment fdDepartment)
     {
+        String custId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(custId) && fdDepartment.getId() != null) {
+            FdDepartment existing = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(fdDepartment.getId()));
+            if (existing != null && !custId.equals(existing.getTenantId())) {
+                throw new ServiceException("只能修改本客户下的科室");
+            }
+        }
         fdDepartment.setUpdateTime(DateUtils.getNowDate());
         return fdDepartmentMapper.updateFdDepartment(fdDepartment);
     }
@@ -91,8 +100,12 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     public int deleteFdDepartmentById(String id)
     {
         FdDepartment fdDepartment = fdDepartmentMapper.selectFdDepartmentById(id);
-        if(fdDepartment == null){
+        if (fdDepartment == null) {
             throw new ServiceException(String.format("科室：%s，不存在!", id));
+        }
+        String custId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(custId) && !custId.equals(fdDepartment.getTenantId())) {
+            throw new ServiceException("只能删除本客户下的科室");
         }
         fdDepartment.setDelFlag(1);
         fdDepartment.setUpdateTime(DateUtils.getNowDate());
@@ -102,6 +115,10 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
 
     @Override
     public List<FdDepartment> selectdepartmenAll() {
+        String custId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(custId)) {
+            return fdDepartmentMapper.selectdepartmenAllByTenantId(custId);
+        }
         return fdDepartmentMapper.selectdepartmenAll();
     }
 
@@ -112,7 +129,12 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
 
     @Override
     public List<FdDepartment> selectUserDepartmenAll(Long userId) {
-        return fdDepartmentMapper.selectUserDepartmenAll(userId);
+        List<FdDepartment> list = fdDepartmentMapper.selectUserDepartmenAll(userId);
+        String custId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(custId) && list != null) {
+            list = list.stream().filter(d -> custId.equals(d.getTenantId())).collect(Collectors.toList());
+        }
+        return list != null ? list : Collections.emptyList();
     }
 
 //    /**

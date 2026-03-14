@@ -20,6 +20,8 @@ import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.enums.BusinessType;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.service.IFdDepartmentService;
+import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
@@ -78,13 +80,21 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
-     * 获取科室详细信息
+     * 获取科室详细信息（仅本客户可查）
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") String id)
     {
-        return success(fdDepartmentService.selectFdDepartmentById(id));
+        FdDepartment dept = fdDepartmentService.selectFdDepartmentById(id);
+        if (dept == null) {
+            return error("科室不存在");
+        }
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
+            return error("无权查看非本客户的科室");
+        }
+        return success(dept);
     }
 
     /**
@@ -110,14 +120,25 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
-     * 删除科室
+     * 删除科室（支持单个或逗号分隔多个 id）
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:remove')")
     @Log(title = "科室", businessType = BusinessType.DELETE)
-	@DeleteMapping("/{ids}")
+    @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable String ids)
     {
-        return toAjax(fdDepartmentService.deleteFdDepartmentById(ids));
+        if (StringUtils.isEmpty(ids)) {
+            return error("科室 id 不能为空");
+        }
+        String[] idArr = ids.split(",");
+        int n = 0;
+        for (String id : idArr) {
+            if (StringUtils.isEmpty(id)) {
+                continue;
+            }
+            n += fdDepartmentService.deleteFdDepartmentById(id.trim());
+        }
+        return toAjax(n);
     }
 
     /**
@@ -133,7 +154,7 @@ public class FdDepartmentController extends BaseController
     /**
      * 批量更新科室名称简码
      */
-    @PreAuthorize("@ss.hasPermi('foundation:depart:updateReferred')")
+    @PreAuthorize("@ss.hasPermi('foundation:depart:edit')")
     @Log(title = "科室", businessType = BusinessType.UPDATE)
     @PostMapping("/updateReferred")
     public AjaxResult updateReferred(@RequestBody java.util.Map<String, java.util.List<Long>> body)

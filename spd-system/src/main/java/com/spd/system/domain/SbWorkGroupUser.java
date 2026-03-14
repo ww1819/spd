@@ -28,6 +28,8 @@ public class SbWorkGroupUser {
   /** 删除时间 */
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date deleteTime;
+  /** 删除标志（0正常 1删除） */
+  private String delFlag;
 
   public String getGroupId() {
     return groupId;
@@ -83,6 +85,14 @@ public class SbWorkGroupUser {
 
   public void setDeleteTime(Date deleteTime) {
     this.deleteTime = deleteTime;
+  }
+
+  public String getDelFlag() {
+    return delFlag;
+  }
+
+  public void setDelFlag(String delFlag) {
+    this.delFlag = delFlag;
   }
 
   @Override

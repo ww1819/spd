@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
@@ -67,12 +68,15 @@ public class SysUserController extends BaseController
     private IFdDepartmentService fdDepartmentService;
 
     /**
-     * 获取用户列表
+     * 获取用户列表（支持 workgroupPostId 按设备工作组筛选，对应 sb_work_group_user.group_id）
      */
     @PreAuthorize("@ss.hasPermi('system:user:list')")
     @GetMapping("/list")
-    public TableDataInfo list(SysUser user)
+    public TableDataInfo list(SysUser user, @RequestParam(value = "workgroupPostId", required = false) String workgroupPostId)
     {
+        if (StringUtils.isNotEmpty(workgroupPostId)) {
+            user.setWorkgroupPostId(workgroupPostId);
+        }
         startPage();
         List<SysUser> list = userService.selectUserList(user);
         return getDataTable(list);

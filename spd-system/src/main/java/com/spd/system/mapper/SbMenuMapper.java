@@ -20,6 +20,14 @@ public interface SbMenuMapper {
   List<SbMenu> selectSbMenuList(SbMenu menu);
 
   /**
+   * 根据菜单ID查询设备菜单
+   *
+   * @param menuId 菜单ID（UUID7）
+   * @return 菜单
+   */
+  SbMenu selectSbMenuById(@Param("menuId") String menuId);
+
+  /**
    * 查询设备菜单树（全部）
    *
    * @return 菜单列表
@@ -45,9 +53,14 @@ public interface SbMenuMapper {
   int updateSbMenu(SbMenu menu);
 
   /**
-   * 删除设备菜单
+   * 逻辑删除设备菜单（设置 del_flag=1, delete_by, delete_time）
    */
-  int deleteSbMenuById(String menuId);
+  int deleteSbMenuById(@Param("menuId") String menuId, @Param("deleteBy") String deleteBy);
+
+  /**
+   * 默认对客户开放的菜单ID（设备功能重置时授权给客户、管理员组、管理员用户）
+   */
+  List<String> selectMenuIdsDefaultForCustomer();
 
   /**
    * 校验菜单名称是否唯一

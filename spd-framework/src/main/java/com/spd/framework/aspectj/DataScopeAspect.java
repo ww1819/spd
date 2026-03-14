@@ -90,6 +90,11 @@ public class DataScopeAspect
      */
     public static void dataScopeFilter(JoinPoint joinPoint, SysUser user, String deptAlias, String userAlias, String permission)
     {
+        Object arg0 = joinPoint.getArgs().length > 0 ? joinPoint.getArgs()[0] : null;
+        if (arg0 instanceof SysUser && StringUtils.isNotEmpty(((SysUser) arg0).getWorkgroupPostId()))
+        {
+            return;
+        }
         StringBuilder sqlString = new StringBuilder();
         List<String> conditions = new ArrayList<String>();
 
