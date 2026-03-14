@@ -105,3 +105,10 @@ CALL add_table_column('sb_menu', 'is_platform_only', 'char(1)', '是否仅平台
 -- 设备角色与菜单关联表：客户ID（归属租户，平台角色可为空）
 CALL add_table_column('sb_role_menu', 'customer_id', 'char(36)', '客户ID(UUID7)，归属客户/租户', NULL);
 /
+
+-- 客户68分类表 parent_id 改为本表主键id（仅当表中 parent_id 当前为 bigint 时执行以下一段）
+-- 若表是按新 table.sql 建的（parent_id 已是 char(36)），请跳过下面三条语句
+-- ALTER TABLE sb_customer_category68 ADD COLUMN parent_id_new CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键)';
+-- UPDATE sb_customer_category68 c1 INNER JOIN sb_customer_category68 c2 ON c2.customer_id = c1.customer_id AND c2.ref_category68_id = c1.parent_id SET c1.parent_id_new = c2.id WHERE c1.parent_id IS NOT NULL AND c1.parent_id != 0;
+-- ALTER TABLE sb_customer_category68 DROP COLUMN parent_id, CHANGE parent_id_new parent_id CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键id，对应父记录)';
+/

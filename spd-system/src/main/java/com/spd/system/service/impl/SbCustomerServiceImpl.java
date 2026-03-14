@@ -49,6 +49,7 @@ import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysUserPost;
 import com.spd.system.domain.SysPostMenu;
 import com.spd.system.domain.hc.HcUserPermissionMenu;
+import com.spd.foundation.service.ISbCustomerCategory68Service;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbRoleService;
 import com.spd.system.service.ISysConfigService;
@@ -105,6 +106,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   private HcCustomerPeriodLogMapper hcCustomerPeriodLogMapper;
   @Autowired
   private HcCustomerMenuMapper hcCustomerMenuMapper;
+  @Autowired
+  private ISbCustomerCategory68Service sbCustomerCategory68Service;
 
   /** 新增客户时默认管理员组标识 */
   private static final String DEFAULT_GROUP_KEY = "super";
@@ -170,6 +173,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       createDefaultTenantAdmin(customer.getCustomerId(),
           customer.getCustomerName() != null ? customer.getCustomerName() : "客户",
           customer.getCreateBy());
+      sbCustomerCategory68Service.initForCustomer(customer.getCustomerId());
     }
     return rows;
   }
@@ -248,7 +252,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       sbCustomerMenuMapper.batchSbCustomerMenu(customerMenus);
 
       List<SbWorkGroupMenu> groupMenus = new ArrayList<>();
-      for (String menuId : defaultMenuIds) {
+      java.util.Set<String> menuIdSet = new java.util.LinkedHashSet<>(defaultMenuIds);
+      for (String menuId : menuIdSet) {
         SbWorkGroupMenu wgm = new SbWorkGroupMenu();
         wgm.setId(UUID7.generateUUID7());
         wgm.setGroupId(groupId);
@@ -544,7 +549,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
 
     sbWorkGroupMenuMapper.deleteByGroupId(superGroup.getGroupId(), createBy);
     List<SbWorkGroupMenu> groupMenus = new ArrayList<>();
-    for (String menuId : defaultMenuIds) {
+    java.util.Set<String> menuIdSet = new java.util.LinkedHashSet<>(defaultMenuIds);
+    for (String menuId : menuIdSet) {
       SbWorkGroupMenu wgm = new SbWorkGroupMenu();
       wgm.setId(UUID7.generateUUID7());
       wgm.setGroupId(superGroup.getGroupId());
@@ -567,6 +573,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       userMenus.add(upm);
     }
     sbUserPermissionMenuMapper.batchInsert(userMenus);
+
+    sbCustomerCategory68Service.syncFromStandard(customerId);
   }
 
   @Override

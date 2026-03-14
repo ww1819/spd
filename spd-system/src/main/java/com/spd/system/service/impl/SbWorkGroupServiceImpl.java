@@ -129,8 +129,10 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     sbWorkGroupMenuMapper.deleteByGroupId(groupId, createBy);
     if (menuIds == null || menuIds.length == 0) return 0;
     List<SbWorkGroupMenu> list = new ArrayList<>();
+    java.util.Set<String> seen = new java.util.LinkedHashSet<>();
     for (String menuId : menuIds) {
       if (StringUtils.isEmpty(menuId)) continue;
+      if (!seen.add(menuId)) continue;
       SbWorkGroupMenu m = new SbWorkGroupMenu();
       m.setId(UUID7.generateUUID7());
       m.setGroupId(groupId);
