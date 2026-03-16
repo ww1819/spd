@@ -41,6 +41,9 @@ public class DepInventoryWarning extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 科室对象 */
     private FdDepartment department;
 
@@ -169,5 +172,8 @@ public class DepInventoryWarning extends BaseEntity
             .append("remark", getRemark())
             .toString();
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 }
 

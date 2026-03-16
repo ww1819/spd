@@ -86,6 +86,9 @@ public class GzTraceabilityEntry extends BaseEntity
     /** 删除标识 */
     private String delFlag;
 
+    /** 租户ID */
+    private String tenantId;
+
     /** 追溯单状态（1=未审核，2=已审核） */
     private Integer parentOrderStatus;
 
@@ -308,6 +311,9 @@ public class GzTraceabilityEntry extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public void setParentOrderStatus(Integer parentOrderStatus)
     {

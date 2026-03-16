@@ -79,6 +79,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public List<StkIoBill> selectStkIoBillList(StkIoBill stkIoBill)
     {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectStkIoBillList(stkIoBill);
     }
 
@@ -92,7 +95,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public int insertStkIoBill(StkIoBill stkIoBill)
     {
-
+        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         stkIoBill.setBillNo(getNumber());
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -123,7 +128,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     public int updateStkIoBill(StkIoBill stkIoBill)
     {
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
+        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
         updateStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
     }
@@ -158,7 +163,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         }
 
         stkIoBill.setDelFlag(1);
-        stkIoBill.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoBill.setUpdateTime(new Date());
 
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
@@ -221,8 +226,10 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     stkInventory.setEndTime(entry.getEndTime());
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
-                    stkInventory.setCreateBy(SecurityUtils.getLoginUser().getUsername());
-
+                    stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
+                    if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+                        stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
                     stkInventoryMapper.insertStkInventory(stkInventory);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
@@ -246,7 +253,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setQty(subQty);
                     inventory.setAmt(subQty.multiply(unitPrice));
                     inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     //更新库存明细表
                     stkInventoryMapper.updateStkInventory(inventory);
 
@@ -271,20 +278,21 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         inventory.setQty(subQty);
                         inventory.setAmt(subQty.multiply(unitPrice));
                         inventory.setUpdateTime(new Date());
-                        inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                        inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                         //更新库存明细表
                         stkInventoryMapper.updateStkInventory(inventory);
                     }
 
-                }else if(billType == 401){//退库
+                }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库）
                     String batchNo = entry.getBatchNo();//退库批次号
                     BigDecimal qty = entry.getQty();//退库数量
 
-                    //更新科室库存数量
                     StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo);
-
                     if(stkDepInventory == null){
-                        throw new ServiceException(String.format("退库-批次号：%s，不存在!", batchNo));
+                        throw new ServiceException(String.format("退库-批次号：%s，未收货确认或不存在，不能退库!", batchNo));
+                    }
+                    if(stkDepInventory.getReceiptConfirmStatus() == null || stkDepInventory.getReceiptConfirmStatus() != 1){
+                        throw new ServiceException(String.format("退库-批次号：%s，科室库存未收货确认，不能退库!", batchNo));
                     }
 
                     BigDecimal stkDepInventoryQty = stkDepInventory.getQty();//科室库存实际数量
@@ -293,7 +301,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     }
                     stkDepInventory.setQty(stkDepInventoryQty.subtract(qty));
                     stkDepInventory.setUpdateTime(new Date());
-                    stkDepInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
 
                     //更新库存数量
@@ -308,7 +316,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setQty(inventoryQty);
                     inventory.setAmt(inventoryQty.multiply(inventory.getUnitPrice()));
                     inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(inventory);
                 }
             }
@@ -339,6 +347,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             stkDepInventory.setMaterialNo(inventory.getMaterialNo());
             stkDepInventory.setMaterialDate(inventory.getMaterialDate());
             stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
+            if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
+                stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+            }
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
             BigDecimal oldQty = stkDepInventory.getQty();
@@ -440,7 +451,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public int updateOutStkIoBill(StkIoBill stkIoBill) {
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
+        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
         insertOutStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
     }
@@ -483,7 +494,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public int updateTKStkIoBill(StkIoBill stkIoBill) {
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId());
+        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
         insertTKStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
     }

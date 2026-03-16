@@ -15,6 +15,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialId != null">material_id,</if>
             <if test="batchNo != null">batch_no,</if>
             <if test="batchNumber != null">batch_number,</if>
+            <if test="mainBarcode != null">main_barcode,</if>
+            <if test="subBarcode != null">sub_barcode,</if>
             <if test="qty != null">qty,</if>
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
@@ -25,6 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="lx != null">lx,</if>
             <if test="flowTime != null">flow_time,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
         </trim>
@@ -37,6 +40,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialId != null">#{materialId},</if>
             <if test="batchNo != null">#{batchNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="mainBarcode != null">#{mainBarcode},</if>
+            <if test="subBarcode != null">#{subBarcode},</if>
             <if test="qty != null">#{qty},</if>
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
@@ -47,6 +52,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="lx != null">#{lx},</if>
             <if test="flowTime != null">#{flowTime},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
         </trim>

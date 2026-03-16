@@ -38,6 +38,13 @@ public class BaseEntity implements Serializable
     /** 备注 */
     private String remark;
 
+    /** 删除者 */
+    private String deleteBy;
+
+    /** 删除时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date deleteTime;
+
     /** 审核人 */
     private String auditBy;
 
@@ -107,6 +114,26 @@ public class BaseEntity implements Serializable
     public void setRemark(String remark)
     {
         this.remark = remark;
+    }
+
+    public String getDeleteBy()
+    {
+        return deleteBy;
+    }
+
+    public void setDeleteBy(String deleteBy)
+    {
+        this.deleteBy = deleteBy;
+    }
+
+    public Date getDeleteTime()
+    {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(Date deleteTime)
+    {
+        this.deleteTime = deleteTime;
     }
 
     public Map<String, Object> getParams()

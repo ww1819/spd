@@ -2,6 +2,7 @@ package com.spd.system.service;
 
 import java.util.List;
 import java.util.Set;
+
 import com.spd.common.core.domain.TreeSelect;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.system.domain.vo.RouterVo;
@@ -32,11 +33,12 @@ public interface ISysMenuService
 
     /**
      * 根据用户ID查询权限
-     * 
+     *
      * @param userId 用户ID
+     * @param forTenant 是否租户视角（true 时排除平台管理菜单），可为 null
      * @return 权限列表
      */
-    public Set<String> selectMenuPermsByUserId(Long userId);
+    public Set<String> selectMenuPermsByUserId(Long userId, Boolean forTenant);
 
     /**
      * 根据角色ID查询权限
@@ -48,11 +50,12 @@ public interface ISysMenuService
 
     /**
      * 根据用户ID查询菜单树信息
-     * 
+     *
      * @param userId 用户ID
+     * @param forTenant 是否租户视角（true 时排除平台管理菜单），可为 null
      * @return 菜单列表
      */
-    public List<SysMenu> selectMenuTreeByUserId(Long userId);
+    public List<SysMenu> selectMenuTreeByUserId(Long userId, Boolean forTenant);
 
     /**
      * 根据角色ID查询菜单树信息
@@ -64,11 +67,16 @@ public interface ISysMenuService
 
     /**
      * 构建前端路由所需要的菜单
-     * 
+     *
      * @param menus 菜单列表
      * @return 路由列表
      */
     public List<RouterVo> buildMenus(List<SysMenu> menus);
+
+    /**
+     * 构建前端路由；pausedMenuIds 非空时为对应菜单设置 meta.paused（耗材租户下该菜单已被暂停）
+     */
+    public List<RouterVo> buildMenus(List<SysMenu> menus, java.util.Set<Long> pausedMenuIds);
 
     /**
      * 构建前端所需要树结构
@@ -149,4 +157,19 @@ public interface ISysMenuService
    * @return 菜单列表
    */
   public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
+
+  /**
+   * 耗材客户权限分配用菜单树（排除客户管理、客户菜单功能管理及其子节点）
+   *
+   * @return 下拉树结构列表
+   */
+  public List<TreeSelect> selectMenuTreeForHcCustomerAssign();
+
+  /**
+   * 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表 hc_customer_menu 内该客户已有的菜单
+   *
+   * @param tenantId 租户ID（客户ID），为空则返回空列表
+   * @return 下拉树结构列表
+   */
+  List<TreeSelect> selectMenuTreeForPostAssign(String tenantId);
 }

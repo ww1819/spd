@@ -4,11 +4,12 @@ import java.util.List;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
-import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.gz.domain.GzDepApplyEntry;
 import com.spd.gz.mapper.GzDepApplyMapper;
@@ -36,7 +37,11 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     @Override
     public GzDepApply selectGzDepApplyById(Long id)
     {
-        return gzDepApplyMapper.selectGzDepApplyById(id);
+        GzDepApply a = gzDepApplyMapper.selectGzDepApplyById(id);
+        if (a != null) {
+            SecurityUtils.ensureTenantAccess(a.getTenantId());
+        }
+        return a;
     }
 
     /**
@@ -48,6 +53,9 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     @Override
     public List<GzDepApply> selectGzDepApplyList(GzDepApply gzDepApply)
     {
+        if (gzDepApply != null && StringUtils.isEmpty(gzDepApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzDepApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         return gzDepApplyMapper.selectGzDepApplyList(gzDepApply);
     }
 
@@ -63,6 +71,12 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     {
         gzDepApply.setApplyBillNo(getNumber());
         gzDepApply.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(gzDepApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(gzDepApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzDepApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = gzDepApplyMapper.insertGzDepApply(gzDepApply);
         insertGzDepApplyEntry(gzDepApply);
         return rows;
@@ -88,7 +102,10 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     public int updateGzDepApply(GzDepApply gzDepApply)
     {
         gzDepApply.setUpdateTime(DateUtils.getNowDate());
-        gzDepApplyMapper.deleteGzDepApplyEntryByParenId(gzDepApply.getId());
+        if (StringUtils.isEmpty(gzDepApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
+        gzDepApplyMapper.deleteGzDepApplyEntryByParenId(gzDepApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertGzDepApplyEntry(gzDepApply);
         return gzDepApplyMapper.updateGzDepApply(gzDepApply);
     }
@@ -103,8 +120,15 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     @Override
     public int deleteGzDepApplyByIds(Long[] ids)
     {
-        gzDepApplyMapper.deleteGzDepApplyEntryByParenIds(ids);
-        return gzDepApplyMapper.deleteGzDepApplyByIds(ids);
+        for (Long id : ids) {
+            GzDepApply existing = gzDepApplyMapper.selectGzDepApplyById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        gzDepApplyMapper.deleteGzDepApplyEntryByParenIds(ids, deleteBy);
+        return gzDepApplyMapper.deleteGzDepApplyByIds(ids, deleteBy);
     }
 
     /**
@@ -117,8 +141,13 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     @Override
     public int deleteGzDepApplyById(Long id)
     {
-        gzDepApplyMapper.deleteGzDepApplyEntryByParenId(id);
-        return gzDepApplyMapper.deleteGzDepApplyById(id);
+        GzDepApply existing = gzDepApplyMapper.selectGzDepApplyById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        gzDepApplyMapper.deleteGzDepApplyEntryByParenId(id, deleteBy);
+        return gzDepApplyMapper.deleteGzDepApplyById(id, deleteBy);
     }
 
     @Override

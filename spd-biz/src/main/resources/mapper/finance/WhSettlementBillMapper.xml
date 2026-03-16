@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.finance.mapper.WhSettlementBillMapper">
+
+    <resultMap type="com.spd.finance.domain.WhSettlementBill" id="WhSettlementBillResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseCode" column="warehouse_code"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="settlementMethod" column="settlement_method"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <resultMap type="com.spd.finance.domain.WhSettlementBillEntry" id="WhSettlementBillEntryResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="parenId" column="paren_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialName" column="material_name"/>
+        <result property="speci" column="speci"/>
+        <result property="model" column="model"/>
+        <result property="unit" column="unit"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="qty" column="qty"/>
+        <result property="amt" column="amt"/>
+        <result property="batchNumber" column="batch_number"/>
+        <result property="endTime" column="end_time"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="factoryId" column="factory_id"/>
+        <result property="factoryCode" column="factory_code"/>
+        <result property="factoryName" column="factory_name"/>
+        <result property="sourceBillType" column="source_bill_type"/>
+        <result property="sourceBillId" column="source_bill_id"/>
+        <result property="sourceBillNo" column="source_bill_no"/>
+        <result property="sourceEntryId" column="source_entry_id"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <sql id="selectWhSettlementBillVo">
+        select w.id, w.tenant_id, w.bill_no, w.warehouse_id, w.warehouse_code, w.warehouse_name, w.settlement_method,
+               w.create_by, w.create_time, w.audit_by, w.audit_time, w.audit_status, w.del_flag, w.delete_by, w.delete_time, w.remark
+        from wh_settlement_bill w
+    </sql>
+
+    <select id="selectById" resultMap="WhSettlementBillResult">
+        <include refid="selectWhSettlementBillVo"/>
+        where w.id = #{id} and (w.del_flag = 0 or w.del_flag is null)
+    </select>
+
+    <select id="selectList" resultMap="WhSettlementBillResult">
+        <include refid="selectWhSettlementBillVo"/>
+        <where>
+            (w.del_flag = 0 or w.del_flag is null)
+            <if test="tenantId != null and tenantId != ''">and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
+            <if test="billNo != null and billNo != ''">and w.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="warehouseId != null">and w.warehouse_id = #{warehouseId}</if>
+            <if test="settlementMethod != null and settlementMethod != ''">and w.settlement_method = #{settlementMethod}</if>
+            <if test="auditStatus != null">and w.audit_status = #{auditStatus}</if>
+            <if test="beginTime != null">and w.create_time &gt;= #{beginTime}</if>
+            <if test="endTime != null">and w.create_time &lt;= #{endTime}</if>
+        </where>
+        order by w.create_time desc, w.id desc
+    </select>
+
+    <insert id="insert" parameterType="com.spd.finance.domain.WhSettlementBill">
+        insert into wh_settlement_bill (id, tenant_id, bill_no, warehouse_id, warehouse_code, warehouse_name, settlement_method,
+            create_by, create_time, audit_by, audit_time, audit_status, del_flag, delete_by, delete_time, remark, update_by, update_time)
+        values (#{id}, #{tenantId}, #{billNo}, #{warehouseId}, #{warehouseCode}, #{warehouseName}, #{settlementMethod},
+            #{createBy}, #{createTime}, #{auditBy}, #{auditTime}, 0, 0, #{deleteBy}, #{deleteTime}, #{remark}, #{updateBy}, #{updateTime})
+    </insert>
+
+    <update id="update" parameterType="com.spd.finance.domain.WhSettlementBill">
+        update wh_settlement_bill
+        <set>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insertEntry" parameterType="com.spd.finance.domain.WhSettlementBillEntry">
+        insert into wh_settlement_bill_entry (id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
+            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_time)
+        values (#{id}, #{tenantId}, #{parenId}, #{billNo}, #{materialId}, #{materialName}, #{speci}, #{model}, #{unit}, #{unitPrice}, #{qty}, #{amt},
+            #{batchNumber}, #{endTime}, #{batchNo}, #{factoryId}, #{factoryCode}, #{factoryName}, #{sourceBillType}, #{sourceBillId}, #{sourceBillNo}, #{sourceEntryId}, #{supplierId}, #{supplierName}, 0, #{sortOrder}, now())
+    </insert>
+
+    <insert id="insertEntryBatch">
+        insert into wh_settlement_bill_entry (id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
+            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_time)
+        values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.parenId}, #{e.billNo}, #{e.materialId}, #{e.materialName}, #{e.speci}, #{e.model}, #{e.unit}, #{e.unitPrice}, #{e.qty}, #{e.amt},
+             #{e.batchNumber}, #{e.endTime}, #{e.batchNo}, #{e.factoryId}, #{e.factoryCode}, #{e.factoryName}, #{e.sourceBillType}, #{e.sourceBillId}, #{e.sourceBillNo}, #{e.sourceEntryId}, #{e.supplierId}, #{e.supplierName}, 0, #{e.sortOrder}, now())
+        </foreach>
+    </insert>
+
+    <select id="selectEntriesByParenId" resultMap="WhSettlementBillEntryResult">
+        select id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
+               batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_time, sort_order
+        from wh_settlement_bill_entry where paren_id = #{parenId} and (del_flag = 0 or del_flag is null) order by sort_order, id
+    </select>
+
+    <update id="deleteEntriesByParenId">
+        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId}
+    </update>
+
+    <update id="deleteEntriesByIds">
+        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="updateAuditStatus">
+        update wh_settlement_bill set audit_status = 1, audit_by = #{auditBy}, audit_time = #{auditTime}, update_time = now()
+        where id = #{id} and (audit_status = 0 or audit_status is null)
+    </update>
+
+    <update id="deleteById">
+        update wh_settlement_bill set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+    </update>
+
+    <select id="selectMaxBillNo" resultType="string">
+        select max(bill_no) from wh_settlement_bill where bill_no like concat(#{prefix}, '%')
+    </select>
+
+    <!-- 未结算的入库单明细：bill_type=101，已审核，且未出现在 wh_settlement_bill_entry 中 -->
+    <select id="selectUnsettledInboundEntries" resultMap="WhSettlementBillEntryResult">
+        select e.id as source_entry_id, b.id as source_bill_id, b.bill_no as source_bill_no,
+               e.material_id, m.name as material_name, m.speci, m.model, u.unit_name as unit,
+               e.unit_price, e.qty, e.amt, e.batch_number, e.end_time, e.batch_no,
+               f.factory_id, f.factory_code, f.factory_name,
+               101 as source_bill_type,
+               b.suppler_id as supplier_id, s.name as supplier_name
+        from stk_io_bill b
+        inner join stk_io_bill_entry e on e.paren_id = b.id and (e.del_flag = 0 or e.del_flag is null)
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on b.suppler_id = s.id
+        where b.warehouse_id = #{warehouseId} and b.bill_type = 101 and b.bill_status = 2 and (b.del_flag = 0 or b.del_flag is null)
+          and (b.bill_date &gt;= #{beginTime} and b.bill_date &lt;= #{endTime})
+          <if test="tenantId != null and tenantId != ''">and (b.tenant_id = #{tenantId} or b.tenant_id is null)</if>
+          and not exists (select 1 from wh_settlement_bill_entry w where w.source_bill_type = 101 and w.source_bill_id = b.id and w.source_entry_id = e.id and (w.del_flag = 0 or w.del_flag is null))
+        order by b.bill_date, b.id, e.id
+    </select>
+
+    <!-- 未结算的出库单明细：bill_type=201 -->
+    <select id="selectUnsettledOutboundEntries" resultMap="WhSettlementBillEntryResult">
+        select e.id as source_entry_id, b.id as source_bill_id, b.bill_no as source_bill_no,
+               e.material_id, m.name as material_name, m.speci, m.model, u.unit_name as unit,
+               e.unit_price, e.qty, e.amt, e.batch_number, e.end_time, e.batch_no,
+               f.factory_id, f.factory_code, f.factory_name,
+               201 as source_bill_type,
+               (case when b.suppler_id is not null then b.suppler_id when e.suppler_id is not null then e.suppler_id else null end) as supplier_id,
+               s.name as supplier_name
+        from stk_io_bill b
+        inner join stk_io_bill_entry e on e.paren_id = b.id and (e.del_flag = 0 or e.del_flag is null)
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on b.suppler_id = s.id
+        where b.warehouse_id = #{warehouseId} and b.bill_type = 201 and b.bill_status = 2 and (b.del_flag = 0 or b.del_flag is null)
+          and (b.audit_date &gt;= #{beginTime} and b.audit_date &lt;= #{endTime})
+          <if test="tenantId != null and tenantId != ''">and (b.tenant_id = #{tenantId} or b.tenant_id is null)</if>
+          and not exists (select 1 from wh_settlement_bill_entry w where w.source_bill_type = 201 and w.source_bill_id = b.id and w.source_entry_id = e.id and (w.del_flag = 0 or w.del_flag is null))
+        order by b.audit_date, b.id, e.id
+    </select>
+</mapper>

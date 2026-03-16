@@ -2,6 +2,8 @@ package com.spd.department.service.impl;
 
 import java.util.List;
 
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +37,11 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public StkDepInventory selectStkDepInventoryById(Long id)
     {
-        return stkDepInventoryMapper.selectStkDepInventoryById(id);
+        StkDepInventory inv = stkDepInventoryMapper.selectStkDepInventoryById(id);
+        if (inv != null) {
+            SecurityUtils.ensureTenantAccess(inv.getTenantId());
+        }
+        return inv;
     }
 
     /**
@@ -47,6 +53,9 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public List<StkDepInventory> selectStkDepInventoryList(StkDepInventory stkDepInventory)
     {
+        if (stkDepInventory != null && StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
         List<StkDepInventory> list = stkDepInventoryMapper.selectStkDepInventoryList(stkDepInventory);
         for (StkDepInventory depInventory : list) {
             FdMaterial fdMaterial = this.fdMaterialMapper.selectFdMaterialById(depInventory.getMaterialId());
@@ -64,6 +73,12 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int insertStkDepInventory(StkDepInventory stkDepInventory)
     {
+        if (StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (StringUtils.isEmpty(stkDepInventory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
         return stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
     }
 
@@ -76,6 +91,9 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int updateStkDepInventory(StkDepInventory stkDepInventory)
     {
+        if (StringUtils.isEmpty(stkDepInventory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
     }
 
@@ -88,7 +106,13 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int deleteStkDepInventoryByIds(Long[] ids)
     {
-        return stkDepInventoryMapper.deleteStkDepInventoryByIds(ids);
+        for (Long id : ids) {
+            StkDepInventory existing = stkDepInventoryMapper.selectStkDepInventoryById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        return stkDepInventoryMapper.deleteStkDepInventoryByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -100,7 +124,11 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int deleteStkDepInventoryById(Long id)
     {
-        return stkDepInventoryMapper.deleteStkDepInventoryById(id);
+        StkDepInventory existing = stkDepInventoryMapper.selectStkDepInventoryById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        return stkDepInventoryMapper.deleteStkDepInventoryById(id, SecurityUtils.getUserIdStr());
     }
 
     /**

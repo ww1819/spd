@@ -69,12 +69,18 @@ public class SbMenu extends BaseEntity {
   /** 是否仅平台管理功能（1是，客户分配/工作组/用户权限中不展示） */
   private String isPlatformOnly;
 
+  /** 是否默认对客户开放（1是，设备功能重置时授权给客户、管理员组、管理员用户） */
+  private String defaultOpenToCustomer;
+
   /** 删除者 */
   private String deleteBy;
 
   /** 删除时间 */
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date deleteTime;
+
+  /** 删除标志（0正常 1删除） */
+  private String delFlag;
 
   /** 客户菜单暂停状态（仅租户菜单树返回：0正常 1暂停） */
   private String customerMenuStatus;
@@ -88,6 +94,14 @@ public class SbMenu extends BaseEntity {
 
   public void setIsPlatformOnly(String isPlatformOnly) {
     this.isPlatformOnly = isPlatformOnly;
+  }
+
+  public String getDefaultOpenToCustomer() {
+    return defaultOpenToCustomer;
+  }
+
+  public void setDefaultOpenToCustomer(String defaultOpenToCustomer) {
+    this.defaultOpenToCustomer = defaultOpenToCustomer;
   }
 
   public String getCustomerMenuStatus() {
@@ -231,6 +245,14 @@ public class SbMenu extends BaseEntity {
 
   public void setDeleteTime(Date deleteTime) {
     this.deleteTime = deleteTime;
+  }
+
+  public String getDelFlag() {
+    return delFlag;
+  }
+
+  public void setDelFlag(String delFlag) {
+    this.delFlag = delFlag;
   }
 
   public List<SbMenu> getChildren() {

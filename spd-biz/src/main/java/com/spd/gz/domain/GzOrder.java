@@ -57,6 +57,9 @@ public class GzOrder extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 审核日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -172,6 +175,10 @@ public class GzOrder extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
     public void setAuditDate(Date auditDate)
     {
         this.auditDate = auditDate;

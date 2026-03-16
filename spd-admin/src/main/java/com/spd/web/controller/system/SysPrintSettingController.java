@@ -71,7 +71,7 @@ public class SysPrintSettingController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody SysPrintSetting sysPrintSetting)
     {
-        sysPrintSetting.setCreateBy(getUsername());
+        sysPrintSetting.setCreateBy(getUserIdStr());
         return toAjax(sysPrintSettingService.insertSysPrintSetting(sysPrintSetting));
     }
 
@@ -83,7 +83,7 @@ public class SysPrintSettingController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody SysPrintSetting sysPrintSetting)
     {
-        sysPrintSetting.setUpdateBy(getUsername());
+        sysPrintSetting.setUpdateBy(getUserIdStr());
         return toAjax(sysPrintSettingService.updateSysPrintSetting(sysPrintSetting));
     }
 
@@ -106,7 +106,7 @@ public class SysPrintSettingController extends BaseController
     @PutMapping("/setDefault")
     public AjaxResult setDefault(@RequestBody SysPrintSetting sysPrintSetting)
     {
-        sysPrintSetting.setUpdateBy(getUsername());
+        sysPrintSetting.setUpdateBy(getUserIdStr());
         return toAjax(sysPrintSettingService.setDefaultTemplate(sysPrintSetting));
     }
 }

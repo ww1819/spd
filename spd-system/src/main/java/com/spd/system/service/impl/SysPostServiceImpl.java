@@ -7,11 +7,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysPostMenu;
 import com.spd.system.domain.SysPostDepartment;
 import com.spd.system.domain.SysPostWarehouse;
+import com.spd.common.core.domain.entity.SysMenu;
+import com.spd.system.mapper.HcCustomerMenuMapper;
+import com.spd.system.mapper.SysMenuMapper;
 import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
 import com.spd.system.mapper.SysPostMenuMapper;
@@ -42,6 +46,12 @@ public class SysPostServiceImpl implements ISysPostService
     @Autowired
     private SysPostWarehouseMapper postWarehouseMapper;
 
+    @Autowired
+    private HcCustomerMenuMapper hcCustomerMenuMapper;
+
+    @Autowired
+    private SysMenuMapper sysMenuMapper;
+
     /**
      * 查询岗位信息集合
      * 
@@ -51,6 +61,9 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public List<SysPost> selectPostList(SysPost post)
     {
+        if (post != null && StringUtils.isEmpty(post.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            post.setTenantId(SecurityUtils.getCustomerId());
+        }
         return postMapper.selectPostList(post);
     }
 
@@ -62,6 +75,11 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public List<SysPost> selectPostAll()
     {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            SysPost q = new SysPost();
+            q.setTenantId(SecurityUtils.getCustomerId());
+            return postMapper.selectPostList(q);
+        }
         return postMapper.selectPostAll();
     }
 
@@ -177,6 +195,9 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public int insertPost(SysPost post)
     {
+        if (StringUtils.isEmpty(post.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            post.setTenantId(SecurityUtils.getCustomerId());
+        }
         return postMapper.insertPost(post);
     }
 
@@ -205,12 +226,29 @@ public class SysPostServiceImpl implements ISysPostService
     }
 
     /**
-     * 新增工作组菜单权限
+     * 新增工作组菜单权限（仅允许客户菜单权限表 hc_customer_menu 内该客户已有的菜单）
      */
     public void insertPostMenu(SysPost post)
     {
         Long postId = post.getPostId();
         Long[] menuIds = post.getMenuIds();
+        String tenantId = post.getTenantId();
+        if (StringUtils.isNotNull(menuIds) && menuIds.length > 0 && StringUtils.isNotEmpty(tenantId))
+        {
+            for (Long menuId : menuIds)
+            {
+                if (menuId == null || menuId <= 0) continue;
+                if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, menuId) <= 0)
+                {
+                    throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+                }
+                SysMenu menu = sysMenuMapper.selectMenuById(menuId);
+                if (menu != null && "1".equals(menu.getIsPlatform()))
+                {
+                    throw new ServiceException("不能将平台管理菜单分配给工作组，请从可分配菜单中选择");
+                }
+            }
+        }
         if (StringUtils.isNotNull(menuIds))
         {
             // 删除原有权限
@@ -226,6 +264,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostMenu pm = new SysPostMenu();
                         pm.setPostId(postId);
                         pm.setMenuId(menuId);
+                        if (StringUtils.isNotEmpty(tenantId)) {
+                            pm.setTenantId(tenantId);
+                        }
                         list.add(pm);
                     }
                 }
@@ -259,6 +300,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostDepartment pd = new SysPostDepartment();
                         pd.setPostId(postId);
                         pd.setDepartmentId(departmentId);
+                        if (StringUtils.isNotEmpty(post.getTenantId())) {
+                            pd.setTenantId(post.getTenantId());
+                        }
                         list.add(pd);
                     }
                 }
@@ -292,6 +336,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostWarehouse pw = new SysPostWarehouse();
                         pw.setPostId(postId);
                         pw.setWarehouseId(warehouseId);
+                        if (StringUtils.isNotEmpty(post.getTenantId())) {
+                            pw.setTenantId(post.getTenantId());
+                        }
                         list.add(pw);
                     }
                 }

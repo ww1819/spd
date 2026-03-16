@@ -24,6 +24,14 @@ public interface IFdMaterialService
     public FdMaterial selectFdMaterialById(Long id);
 
     /**
+     * 根据主条码(udi_no)或耗材编码查询产品档案（用于入库扫码带出产品）
+     *
+     * @param mainBarcode 主条码(udi_no)或耗材编码
+     * @return 耗材产品，未匹配返回 null
+     */
+    FdMaterial getByMainBarcode(String mainBarcode);
+
+    /**
      * 查询耗材产品列表
      *
      * @param fdMaterial 耗材产品

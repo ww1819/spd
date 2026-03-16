@@ -4,6 +4,7 @@ import java.util.List;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -49,28 +50,21 @@ public interface BasApplyMapper
     public int updateBasApply(BasApply basApply);
 
     /**
-     * 删除科室申领
-     * 
+     * 逻辑删除科室申领（设置 del_flag、del_by、del_time）
      * @param id 科室申领主键
-     * @return 结果
+     * @param deleteBy 删除人
      */
-    public int deleteBasApplyById(Long id);
+    public int deleteBasApplyById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除科室申领
-     * 
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
+     * 批量逻辑删除科室申领
      */
-    public int deleteBasApplyByIds(Long[] ids);
+    public int deleteBasApplyByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除科室申领明细
-     * 
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
+     * 批量逻辑删除科室申领明细（设置 del_flag、delete_by、delete_time）
      */
-    public int deleteBasApplyEntryByParenIds(Long[] ids);
+    public int deleteBasApplyEntryByParenIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
     
     /**
      * 批量新增科室申领明细
@@ -82,12 +76,9 @@ public interface BasApplyMapper
     
 
     /**
-     * 通过科室申领主键删除科室申领明细信息
-     * 
-     * @param id 科室申领ID
-     * @return 结果
+     * 通过科室申领主键逻辑删除科室申领明细（设置 del_flag、delete_by、delete_time）
      */
-    public int deleteBasApplyEntryByParenId(Long id);
+    public int deleteBasApplyEntryByParenId(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     String selectMaxBillNo(String date);
 }

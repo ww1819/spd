@@ -46,6 +46,9 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     @Override
     public List<FdFactory> selectFdFactoryList(FdFactory fdFactory)
     {
+        if (fdFactory != null && StringUtils.isEmpty(fdFactory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdFactory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdFactoryMapper.selectFdFactoryList(fdFactory);
     }
 
@@ -58,6 +61,9 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     @Override
     public int insertFdFactory(FdFactory fdFactory)
     {
+        if (StringUtils.isEmpty(fdFactory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdFactory.setTenantId(SecurityUtils.getCustomerId());
+        }
         fdFactory.setCreateTime(DateUtils.getNowDate());
         return fdFactoryMapper.insertFdFactory(fdFactory);
     }
@@ -101,10 +107,8 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         if(fdFactory == null){
             throw new ServiceException(String.format("厂家：%s，不存在!", factoryId));
         }
-        fdFactory.setDelFlag(1);
-        fdFactory.setUpdateTime(DateUtils.getNowDate());
-        fdFactory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        return fdFactoryMapper.updateFdFactory(fdFactory);
+        SecurityUtils.ensureTenantAccess(fdFactory.getTenantId());
+        return fdFactoryMapper.deleteFdFactoryByFactoryId(factoryId, SecurityUtils.getUserIdStr());
     }
 
     /**

@@ -17,6 +17,9 @@ public interface SbCustomerMapper {
 
   SbCustomer selectSbCustomerByCode(String customerCode);
 
+  /** 按 tenant_key（枚举 name）查询，用于唯一性校验 */
+  SbCustomer selectSbCustomerByTenantKey(String tenantKey);
+
   SbCustomer checkSbCustomerCodeUnique(String customerCode);
 
   int insertSbCustomer(SbCustomer customer);

@@ -80,6 +80,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Override
     public List<GzRefundGoods> selectGzRefundGoodsList(GzRefundGoods gzRefundGoods)
     {
+        if (gzRefundGoods != null && StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
+        }
         return gzRefundGoodsMapper.selectGzRefundGoodsList(gzRefundGoods);
     }
 
@@ -93,6 +96,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Override
     public int insertGzRefundGoods(GzRefundGoods gzRefundGoods)
     {
+        if (gzRefundGoods != null && StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
+        }
         gzRefundGoods.setGoodsNo(getOrderNo());
         gzRefundGoods.setCreateTime(DateUtils.getNowDate());
         int rows = gzRefundGoodsMapper.insertGzRefundGoods(gzRefundGoods);
@@ -119,6 +125,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Override
     public int updateGzRefundGoods(GzRefundGoods gzRefundGoods)
     {
+        if (StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
+        }
         gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
         gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(gzRefundGoods.getId());
         insertGzRefundGoodsEntry(gzRefundGoods);
@@ -141,7 +150,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
 
         gzRefundGoods.setDelFlag(1);
-        gzRefundGoods.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(new Date());
 
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
@@ -168,7 +177,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
         gzRefundGoods.setGoodsStatus(2);
         gzRefundGoods.setAuditDate(new Date());
-        gzRefundGoods.setAuditBy(SecurityUtils.getLoginUser().getUsername());
+        gzRefundGoods.setAuditBy(SecurityUtils.getUserIdStr());
         int res = gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
         return res;
     }
@@ -200,7 +209,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             // 减少备货库存（仓库退货给供应商）
             gzDepotInventory.setQty(depotInventoryQty.subtract(qty));
             gzDepotInventory.setUpdateTime(new Date());
-            gzDepotInventory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+            gzDepotInventory.setUpdateBy(SecurityUtils.getUserIdStr());
             gzDepotInventoryMapper.updateGzDepotInventory(gzDepotInventory);
         }
     }
@@ -217,11 +226,18 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if (StringUtils.isNotNull(gzRefundGoodsEntryList))
         {
             List<GzRefundGoodsEntry> list = new ArrayList<GzRefundGoodsEntry>();
+            String tenantId = gzRefundGoods.getTenantId();
+            if (StringUtils.isEmpty(tenantId) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                tenantId = SecurityUtils.getCustomerId();
+            }
             for (GzRefundGoodsEntry gzRefundGoodsEntry : gzRefundGoodsEntryList)
             {
                 validateGzDepotInventory(gzRefundGoodsEntry.getBatchNo(),gzRefundGoodsEntryList);
                 gzRefundGoodsEntry.setParenId(id);
                 gzRefundGoodsEntry.setDelFlag(0);
+                if (StringUtils.isNotEmpty(tenantId)) {
+                    gzRefundGoodsEntry.setTenantId(tenantId);
+                }
                 list.add(gzRefundGoodsEntry);
             }
             if (list.size() > 0)

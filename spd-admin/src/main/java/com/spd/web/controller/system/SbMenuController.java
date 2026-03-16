@@ -47,6 +47,16 @@ public class SbMenuController extends BaseController {
         return success(list);
     }
 
+    /**
+     * 根据菜单ID获取设备菜单详情（修改时回显）
+     */
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit')")
+    @GetMapping("/{menuId}")
+    public AjaxResult getInfo(@PathVariable String menuId)
+    {
+        return success(sbMenuService.selectSbMenuById(menuId));
+    }
+
   /**
    * 根据用户获取设备菜单树（menuId/parentId 为 UUID7 字符串）
    */
@@ -86,7 +96,7 @@ public class SbMenuController extends BaseController {
         {
             return error("新增菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setCreateBy(SecurityUtils.getUsername());
+        menu.setCreateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbMenuService.insertSbMenu(menu));
     }
 
@@ -107,7 +117,7 @@ public class SbMenuController extends BaseController {
         {
             return error("修改菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setUpdateBy(SecurityUtils.getUsername());
+        menu.setUpdateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbMenuService.updateSbMenu(menu));
     }
 

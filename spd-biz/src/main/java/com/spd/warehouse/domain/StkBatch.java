@@ -125,6 +125,8 @@ public class StkBatch extends BaseEntity {
     private Date delTime;
     /** 删除人 */
     private String delBy;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -226,4 +228,6 @@ public class StkBatch extends BaseEntity {
     public void setDelTime(Date delTime) { this.delTime = delTime; }
     public String getDelBy() { return delBy; }
     public void setDelBy(String delBy) { this.delBy = delBy; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 }

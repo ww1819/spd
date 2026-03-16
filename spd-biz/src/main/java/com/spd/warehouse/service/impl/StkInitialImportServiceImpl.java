@@ -132,7 +132,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         if (wh == null) {
             throw new ServiceException("仓库不存在");
         }
-        String username = SecurityUtils.getUsername();
+        String username = SecurityUtils.getUserIdStr();
         Date now = new Date();
 
         StkInitialImport main = new StkInitialImport();
@@ -145,6 +145,12 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         main.setBillStatus(0);
         main.setCreateBy(username);
         main.setCreateTime(now);
+        if (StringUtils.isEmpty(main.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            main.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (StringUtils.isEmpty(main.getTenantId()) && wh.getTenantId() != null) {
+            main.setTenantId(wh.getTenantId());
+        }
         stkInitialImportMapper.insert(main);
 
         List<StkInitialImportEntry> entries = new ArrayList<>();
@@ -238,6 +244,9 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
 
     @Override
     public List<StkInitialImport> list(StkInitialImport query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkInitialImportMapper.selectList(query);
     }
 
@@ -264,7 +273,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         if (entries == null || entries.isEmpty()) {
             throw new ServiceException("期初单没有明细，无法审核");
         }
-        String username = SecurityUtils.getUsername();
+        String username = SecurityUtils.getUserIdStr();
         Date auditTime = new Date();
 
         for (StkInitialImportEntry entry : entries) {
@@ -353,7 +362,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         b.setRefEntryId(entry.getId());
         b.setBatchSource(BATCH_SOURCE_QC);
         Date now = new Date();
-        String username = SecurityUtils.getUsername();
+        String username = SecurityUtils.getUserIdStr();
         b.setAuditTime(now);
         b.setAuditBy(username);
         b.setCreateTime(now);
@@ -441,7 +450,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         m.setStoreroomId(resolveWarehouseCategoryId(row.getWarehouseCategory()));
         m.setFinanceCategoryId(resolveFinanceCategoryId(row.getFinanceCategory()));
         m.setDelFlag(0);
-        m.setCreateBy(SecurityUtils.getUsername());
+        m.setCreateBy(SecurityUtils.getUserIdStr());
         m.setCreateTime(new Date());
         return m;
     }

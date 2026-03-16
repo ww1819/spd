@@ -14,6 +14,7 @@ import com.spd.common.utils.rule.FillRuleUtil;
 import java.math.BigDecimal;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Autowired
     private PurchasePlanMapper purchasePlanMapper;
 
+    @Autowired
+    private StkInventoryMapper stkInventoryMapper;
+
     /**
      * 查询采购订单
      *
@@ -55,12 +59,18 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         if (purchaseOrder == null) {
             return null;
         }
+        SecurityUtils.ensureTenantAccess(purchaseOrder.getTenantId());
         List<PurchaseOrderEntry> purchaseOrderEntryList = purchaseOrderMapper.selectPurchaseOrderEntryByParentId(id);
-        List<FdMaterial> materialList = new ArrayList<FdMaterial>();
-        for(PurchaseOrderEntry entry : purchaseOrderEntryList){
-            Long materialId = entry.getMaterialId();
-            FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-            materialList.add(fdMaterial);
+        Long warehouseId = purchaseOrder.getWarehouseId();
+        for (PurchaseOrderEntry entry : purchaseOrderEntryList) {
+            if (entry.getMaterialId() != null) {
+                FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                entry.setMaterial(fdMaterial);
+                if (warehouseId != null) {
+                    BigDecimal stock = stkInventoryMapper.selectSumQtyByMaterialAndWarehouse(entry.getMaterialId(), warehouseId);
+                    entry.setStockQty(stock != null ? stock : BigDecimal.ZERO);
+                }
+            }
         }
         purchaseOrder.setPurchaseOrderEntryList(purchaseOrderEntryList);
         return purchaseOrder;
@@ -75,6 +85,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public List<PurchaseOrder> selectPurchaseOrderList(PurchaseOrder purchaseOrder)
     {
+        if (purchaseOrder != null && StringUtils.isEmpty(purchaseOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         return purchaseOrderMapper.selectPurchaseOrderList(purchaseOrder);
     }
 
@@ -110,6 +123,12 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         if (StringUtils.isEmpty(purchaseOrder.getDelFlag())) {
             purchaseOrder.setDelFlag("0");
         }
+        if (StringUtils.isEmpty(purchaseOrder.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(purchaseOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         
         // 计算总金额
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
@@ -143,6 +162,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int updatePurchaseOrder(PurchaseOrder purchaseOrder)
     {
+        if (StringUtils.isEmpty(purchaseOrder.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            purchaseOrder.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         // 计算总金额
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
             BigDecimal totalAmount = BigDecimal.ZERO;
@@ -158,8 +180,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setUnpaidAmount(totalAmount.subtract(purchaseOrder.getPaidAmount()));
         }
         
-        // 删除原有明细
-        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(purchaseOrder.getId());
+        // 删除原有明细（逻辑删除，写 delete_by/delete_time）
+        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(purchaseOrder.getId(), SecurityUtils.getUserIdStr());
         
         // 插入新明细
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
@@ -180,9 +202,16 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     public int deletePurchaseOrderByIds(Long[] ids)
     {
         for (Long id : ids) {
-            purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id);
+            PurchaseOrder existing = purchaseOrderMapper.selectPurchaseOrderById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
         }
-        return purchaseOrderMapper.deletePurchaseOrderByIds(ids);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        for (Long id : ids) {
+            purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id, deleteBy);
+        }
+        return purchaseOrderMapper.deletePurchaseOrderByIds(ids, deleteBy);
     }
 
     /**
@@ -194,8 +223,13 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int deletePurchaseOrderById(Long id)
     {
-        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id);
-        return purchaseOrderMapper.deletePurchaseOrderById(id);
+        PurchaseOrder existing = purchaseOrderMapper.selectPurchaseOrderById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchaseOrderMapper.deletePurchaseOrderEntryByParentId(id, deleteBy);
+        return purchaseOrderMapper.deletePurchaseOrderById(id, deleteBy);
     }
 
     /**
@@ -258,6 +292,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 }
                 
                 purchaseOrderEntry.setParentId(id);
+                if (StringUtils.isEmpty(purchaseOrderEntry.getTenantId()) && StringUtils.isNotEmpty(purchaseOrder.getTenantId())) {
+                    purchaseOrderEntry.setTenantId(purchaseOrder.getTenantId());
+                }
                 list.add(purchaseOrderEntry);
             }
             if (list.size() > 0)
@@ -294,16 +331,17 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             throw new ServiceException(String.format("采购计划ID：%s，没有明细数据!", planId));
         }
 
-        // 按供应商分组
+        // 按单据明细的供应商分组（优先使用明细上的供应商，未填时取产品档案供应商）
         Map<Long, List<PurchasePlanEntry>> supplierGroupMap = new HashMap<>();
         for (PurchasePlanEntry entry : planEntryList) {
-            // 获取耗材信息
             FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (material == null || material.getSupplierId() == null) {
-                throw new ServiceException(String.format("耗材ID：%s，不存在或没有关联供应商!", entry.getMaterialId()));
+            if (material == null) {
+                throw new ServiceException(String.format("耗材ID：%s，不存在!", entry.getMaterialId()));
             }
-            
-            Long supplierId = material.getSupplierId();
+            Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : material.getSupplierId();
+            if (supplierId == null) {
+                throw new ServiceException(String.format("耗材ID：%s，明细未指定供应商且产品档案无供应商!", entry.getMaterialId()));
+            }
             if (!supplierGroupMap.containsKey(supplierId)) {
                 supplierGroupMap.put(supplierId, new ArrayList<>());
             }
@@ -318,6 +356,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
 
             // 创建订单
             PurchaseOrder purchaseOrder = new PurchaseOrder();
+            purchaseOrder.setPlanId(planId);
             purchaseOrder.setPlanNo(purchasePlan.getPlanNo()); // 关联计划单号
             purchaseOrder.setOrderNo(generateOrderNo()); // 生成订单单号
             purchaseOrder.setOrderDate(new Date());
@@ -328,8 +367,11 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setOrderType("1"); // 采购订单
             purchaseOrder.setUrgencyLevel("2"); // 中等紧急程度
             purchaseOrder.setDelFlag("0");
-            purchaseOrder.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+            purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
             purchaseOrder.setCreateTime(new Date());
+            if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+            }
             purchaseOrder.setRemark("从采购计划" + purchasePlan.getPlanNo() + "生成");
 
             // 创建订单明细
@@ -337,6 +379,9 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             BigDecimal totalAmount = BigDecimal.ZERO;
             
             for (PurchasePlanEntry planEntry : supplierEntries) {
+                if (planEntry.getQty() == null || planEntry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(planEntry.getMaterialId());
                 
                 PurchaseOrderEntry orderEntry = new PurchaseOrderEntry();
@@ -346,18 +391,28 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderEntry.setMaterialSpec(material != null ? material.getSpeci() : planEntry.getSpeci());
                 orderEntry.setMaterialUnit(material != null && material.getFdUnit() != null ? material.getFdUnit().getUnitName() : "");
                 orderEntry.setOrderQty(planEntry.getQty());
-                orderEntry.setUnitPrice(planEntry.getPrice());
-                orderEntry.setTotalAmount(planEntry.getAmt());
-                orderEntry.setQualityStatus("0"); // 待检验
+                orderEntry.setUnitPrice(planEntry.getPrice() != null ? planEntry.getPrice() : BigDecimal.ZERO);
+                orderEntry.setTotalAmount(planEntry.getAmt() != null ? planEntry.getAmt() : planEntry.getQty().multiply(orderEntry.getUnitPrice()));
+                orderEntry.setQualityStatus("0");
                 orderEntry.setReceivedQty(BigDecimal.ZERO);
                 orderEntry.setDelFlag("0");
-                orderEntry.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                orderEntry.setPlanId(planId);
+                orderEntry.setPlanNo(purchasePlan.getPlanNo());
+                orderEntry.setPlanEntryId(planEntry.getId());
+                if (StringUtils.isNotEmpty(purchaseOrder.getTenantId())) {
+                    orderEntry.setTenantId(purchaseOrder.getTenantId());
+                }
+                orderEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 orderEntry.setCreateTime(new Date());
                 
                 orderEntryList.add(orderEntry);
-                if (planEntry.getAmt() != null) {
-                    totalAmount = totalAmount.add(planEntry.getAmt());
+                if (orderEntry.getTotalAmount() != null) {
+                    totalAmount = totalAmount.add(orderEntry.getTotalAmount());
                 }
+            }
+
+            if (orderEntryList.isEmpty()) {
+                continue;
             }
 
             purchaseOrder.setTotalAmount(totalAmount);
@@ -373,9 +428,13 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             }
         }
 
+        if (orderCount <= 0) {
+            throw new ServiceException("计划明细中采购数量未填写或均不大于0，无法生成订单。请检查计划明细的采购数量后再审核。");
+        }
+
         // 更新计划状态为已执行
         purchasePlan.setPlanStatus("3"); // 已执行
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         purchasePlan.setUpdateTime(new Date());
         purchasePlanMapper.updatePurchasePlan(purchasePlan);
 

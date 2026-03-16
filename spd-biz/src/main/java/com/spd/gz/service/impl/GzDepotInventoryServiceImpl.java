@@ -28,7 +28,11 @@ public class GzDepotInventoryServiceImpl implements IGzDepotInventoryService
     @Override
     public GzDepotInventory selectGzDepotInventoryById(Long id)
     {
-        return gzDepotInventoryMapper.selectGzDepotInventoryById(id);
+        GzDepotInventory inv = gzDepotInventoryMapper.selectGzDepotInventoryById(id);
+        if (inv != null) {
+            com.spd.common.utils.SecurityUtils.ensureTenantAccess(inv.getTenantId());
+        }
+        return inv;
     }
 
     /**
@@ -40,6 +44,9 @@ public class GzDepotInventoryServiceImpl implements IGzDepotInventoryService
     @Override
     public List<GzDepotInventory> selectGzDepotInventoryList(GzDepotInventory gzDepotInventory)
     {
+        if (gzDepotInventory != null && com.spd.common.utils.StringUtils.isEmpty(gzDepotInventory.getTenantId()) && com.spd.common.utils.StringUtils.isNotEmpty(com.spd.common.utils.SecurityUtils.getCustomerId())) {
+            gzDepotInventory.setTenantId(com.spd.common.utils.SecurityUtils.getCustomerId());
+        }
         return gzDepotInventoryMapper.selectGzDepotInventoryList(gzDepotInventory);
     }
 
@@ -76,7 +83,13 @@ public class GzDepotInventoryServiceImpl implements IGzDepotInventoryService
     @Override
     public int deleteGzDepotInventoryByIds(Long[] ids)
     {
-        return gzDepotInventoryMapper.deleteGzDepotInventoryByIds(ids);
+        for (Long id : ids) {
+            GzDepotInventory existing = gzDepotInventoryMapper.selectGzDepotInventoryById(id);
+            if (existing != null) {
+                com.spd.common.utils.SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        return gzDepotInventoryMapper.deleteGzDepotInventoryByIds(ids, com.spd.common.utils.SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -88,6 +101,10 @@ public class GzDepotInventoryServiceImpl implements IGzDepotInventoryService
     @Override
     public int deleteGzDepotInventoryById(Long id)
     {
-        return gzDepotInventoryMapper.deleteGzDepotInventoryById(id);
+        GzDepotInventory existing = gzDepotInventoryMapper.selectGzDepotInventoryById(id);
+        if (existing != null) {
+            com.spd.common.utils.SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        return gzDepotInventoryMapper.deleteGzDepotInventoryById(id, com.spd.common.utils.SecurityUtils.getUserIdStr());
     }
 }

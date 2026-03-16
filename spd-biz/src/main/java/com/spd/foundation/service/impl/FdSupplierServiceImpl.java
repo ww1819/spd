@@ -34,7 +34,11 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     @Override
     public FdSupplier selectFdSupplierById(Long id)
     {
-        return fdSupplierMapper.selectFdSupplierById(id);
+        FdSupplier s = fdSupplierMapper.selectFdSupplierById(id);
+        if (s != null) {
+            SecurityUtils.ensureTenantAccess(s.getTenantId());
+        }
+        return s;
     }
 
     /**
@@ -46,6 +50,9 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     @Override
     public List<FdSupplier> selectFdSupplierList(FdSupplier fdSupplier)
     {
+        if (fdSupplier != null && StringUtils.isEmpty(fdSupplier.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdSupplier.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdSupplierMapper.selectFdSupplierList(fdSupplier);
     }
 
@@ -59,6 +66,12 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     public int insertFdSupplier(FdSupplier fdSupplier)
     {
         fdSupplier.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdSupplier.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdSupplier.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(fdSupplier.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdSupplier.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdSupplierMapper.insertFdSupplier(fdSupplier);
     }
 
@@ -72,6 +85,9 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     public int updateFdSupplier(FdSupplier fdSupplier)
     {
         fdSupplier.setUpdateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdSupplier.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdSupplier.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return fdSupplierMapper.updateFdSupplier(fdSupplier);
     }
 
@@ -101,10 +117,8 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         if(fdSupplier == null){
             throw new ServiceException(String.format("供应商：%s，不存在!", id));
         }
-        fdSupplier.setDelFlag(1);
-        fdSupplier.setUpdateTime(DateUtils.getNowDate());
-        fdSupplier.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        return fdSupplierMapper.updateFdSupplier(fdSupplier);
+        SecurityUtils.ensureTenantAccess(fdSupplier.getTenantId());
+        return fdSupplierMapper.deleteFdSupplierById(id, SecurityUtils.getUserIdStr());
     }
 
 

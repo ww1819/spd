@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.finance.mapper.SuppSettlementBillMapper">
+
+    <resultMap type="com.spd.finance.domain.SuppSettlementBill" id="SuppSettlementBillResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="whSettlementId" column="wh_settlement_id"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <resultMap type="com.spd.finance.domain.SuppSettlementBillEntry" id="SuppSettlementBillEntryResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="parenId" column="paren_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="whSettlementId" column="wh_settlement_id"/>
+        <result property="whSettlementBillNo" column="wh_settlement_bill_no"/>
+        <result property="whSettlementEntryId" column="wh_settlement_entry_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialName" column="material_name"/>
+        <result property="speci" column="speci"/>
+        <result property="model" column="model"/>
+        <result property="unit" column="unit"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="qty" column="qty"/>
+        <result property="amt" column="amt"/>
+        <result property="batchNumber" column="batch_number"/>
+        <result property="endTime" column="end_time"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="factoryId" column="factory_id"/>
+        <result property="factoryCode" column="factory_code"/>
+        <result property="factoryName" column="factory_name"/>
+        <result property="sourceBillType" column="source_bill_type"/>
+        <result property="sourceBillId" column="source_bill_id"/>
+        <result property="sourceBillNo" column="source_bill_no"/>
+        <result property="sourceEntryId" column="source_entry_id"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <sql id="selectSuppSettlementBillVo">
+        select s.id, s.tenant_id, s.bill_no, s.supplier_id, s.supplier_name, s.wh_settlement_id,
+               s.create_by, s.create_time, s.audit_by, s.audit_time, s.audit_status, s.del_flag, s.delete_by, s.delete_time, s.remark
+        from supp_settlement_bill s
+    </sql>
+
+    <select id="selectById" resultMap="SuppSettlementBillResult">
+        <include refid="selectSuppSettlementBillVo"/>
+        where s.id = #{id} and (s.del_flag = 0 or s.del_flag is null)
+    </select>
+
+    <select id="selectList" resultMap="SuppSettlementBillResult">
+        <include refid="selectSuppSettlementBillVo"/>
+        <where>
+            (s.del_flag = 0 or s.del_flag is null)
+            <if test="tenantId != null and tenantId != ''">and (s.tenant_id = #{tenantId} or s.tenant_id is null)</if>
+            <if test="billNo != null and billNo != ''">and s.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="supplierId != null">and s.supplier_id = #{supplierId}</if>
+            <if test="whSettlementId != null and whSettlementId != ''">and s.wh_settlement_id = #{whSettlementId}</if>
+            <if test="auditStatus != null">and s.audit_status = #{auditStatus}</if>
+        </where>
+        order by s.create_time desc, s.id desc
+    </select>
+
+    <insert id="insert" parameterType="com.spd.finance.domain.SuppSettlementBill">
+        insert into supp_settlement_bill (id, tenant_id, bill_no, supplier_id, supplier_name, wh_settlement_id,
+            create_by, create_time, audit_by, audit_time, audit_status, del_flag, delete_by, delete_time, remark, update_by, update_time)
+        values (#{id}, #{tenantId}, #{billNo}, #{supplierId}, #{supplierName}, #{whSettlementId},
+            #{createBy}, #{createTime}, #{auditBy}, #{auditTime}, 0, 0, #{deleteBy}, #{deleteTime}, #{remark}, #{updateBy}, #{updateTime})
+    </insert>
+
+    <update id="update" parameterType="com.spd.finance.domain.SuppSettlementBill">
+        update supp_settlement_bill
+        <set>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insertEntry" parameterType="com.spd.finance.domain.SuppSettlementBillEntry">
+        insert into supp_settlement_bill_entry (id, tenant_id, paren_id, bill_no, wh_settlement_id, wh_settlement_bill_no, wh_settlement_entry_id, material_id, material_name, speci, model, unit, unit_price, qty, amt,
+            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_time)
+        values (#{id}, #{tenantId}, #{parenId}, #{billNo}, #{whSettlementId}, #{whSettlementBillNo}, #{whSettlementEntryId}, #{materialId}, #{materialName}, #{speci}, #{model}, #{unit}, #{unitPrice}, #{qty}, #{amt},
+            #{batchNumber}, #{endTime}, #{batchNo}, #{factoryId}, #{factoryCode}, #{factoryName}, #{sourceBillType}, #{sourceBillId}, #{sourceBillNo}, #{sourceEntryId}, #{supplierId}, #{supplierName}, 0, #{sortOrder}, now())
+    </insert>
+
+    <insert id="insertEntryBatch">
+        insert into supp_settlement_bill_entry (id, tenant_id, paren_id, bill_no, wh_settlement_id, wh_settlement_bill_no, wh_settlement_entry_id, material_id, material_name, speci, model, unit, unit_price, qty, amt,
+            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_time)
+        values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.parenId}, #{e.billNo}, #{e.whSettlementId}, #{e.whSettlementBillNo}, #{e.whSettlementEntryId}, #{e.materialId}, #{e.materialName}, #{e.speci}, #{e.model}, #{e.unit}, #{e.unitPrice}, #{e.qty}, #{e.amt},
+             #{e.batchNumber}, #{e.endTime}, #{e.batchNo}, #{e.factoryId}, #{e.factoryCode}, #{e.factoryName}, #{e.sourceBillType}, #{e.sourceBillId}, #{e.sourceBillNo}, #{e.sourceEntryId}, #{e.supplierId}, #{e.supplierName}, 0, #{e.sortOrder}, now())
+        </foreach>
+    </insert>
+
+    <select id="selectEntriesByParenId" resultMap="SuppSettlementBillEntryResult">
+        select id, tenant_id, paren_id, bill_no, wh_settlement_id, wh_settlement_bill_no, wh_settlement_entry_id, material_id, material_name, speci, model, unit, unit_price, qty, amt,
+               batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_time, sort_order
+        from supp_settlement_bill_entry where paren_id = #{parenId} and (del_flag = 0 or del_flag is null) order by sort_order, id
+    </select>
+
+    <update id="updateAuditStatus">
+        update supp_settlement_bill set audit_status = 1, audit_by = #{auditBy}, audit_time = #{auditTime}, update_time = now()
+        where id = #{id} and (audit_status = 0 or audit_status is null)
+    </update>
+
+    <select id="selectMaxBillNo" resultType="string">
+        select max(bill_no) from supp_settlement_bill where bill_no like concat(#{prefix}, '%')
+    </select>
+</mapper>

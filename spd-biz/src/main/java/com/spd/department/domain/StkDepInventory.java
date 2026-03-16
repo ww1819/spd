@@ -85,6 +85,13 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "出库单号")
     private String outOrderNo;
 
+    /** 单据主表id（出库单id） */
+    private Long billId;
+    /** 单据明细id（出库单明细id） */
+    private Long billEntryId;
+    /** 单据号 */
+    private String billNo;
+
     /** 科室库存明细id（反写） */
     private Long kcNo;
 
@@ -99,6 +106,23 @@ public class StkDepInventory extends BaseEntity
 
     @Excel(name = "批号")
     private String batchNumber;
+
+    /** 收货确认状态 0未确认 1已确认 */
+    @Excel(name = "收货确认状态", readConverterExp = "0=未确认,1=已确认")
+    private Integer receiptConfirmStatus;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
+    /** 结算方式（来自出库单：1入库结算 2出库结算 3消耗结算） */
+    private String settlementType;
+
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
 
     public void setId(Long id)
     {
@@ -262,6 +286,7 @@ public class StkDepInventory extends BaseEntity
             .append("warehouseDate", getWarehouseDate())
             .append("material", getMaterial())
             .append("department", getDepartment())
+            .append("tenantId", getTenantId())
             .toString();
     }
 
@@ -304,4 +329,57 @@ public class StkDepInventory extends BaseEntity
     public void setBatchNumber(String batchNumber) {
         this.batchNumber = batchNumber;
     }
+
+    public Integer getReceiptConfirmStatus() {
+        return receiptConfirmStatus;
+    }
+
+    public void setReceiptConfirmStatus(Integer receiptConfirmStatus) {
+        this.receiptConfirmStatus = receiptConfirmStatus;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
+    }
+
+    public Long getBillId() {
+        return billId;
+    }
+
+    public void setBillId(Long billId) {
+        this.billId = billId;
+    }
+
+    public Long getBillEntryId() {
+        return billEntryId;
+    }
+
+    public void setBillEntryId(Long billEntryId) {
+        this.billEntryId = billEntryId;
+    }
+
+    public String getBillNo() {
+        return billNo;
+    }
+
+    public void setBillNo(String billNo) {
+        this.billNo = billNo;
+    }
+
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
 }

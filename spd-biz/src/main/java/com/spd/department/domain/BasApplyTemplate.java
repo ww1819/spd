@@ -27,8 +27,16 @@ public class BasApplyTemplate extends BaseEntity {
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    @Excel(name = "租户ID")
+    private String tenantId;
+
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    private java.util.Date deleteTime;
 
     /** 模板明细列表 */
     private List<BasApplyTemplateEntry> entryList;
@@ -68,6 +76,11 @@ public class BasApplyTemplate extends BaseEntity {
         return delFlag;
     }
 
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public java.util.Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(java.util.Date deleteTime) { this.deleteTime = deleteTime; }
+
     public List<BasApplyTemplateEntry> getEntryList() {
         return entryList;
     }
@@ -83,6 +96,9 @@ public class BasApplyTemplate extends BaseEntity {
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

@@ -37,6 +37,11 @@ public class LoginBody
      */
     private String customerCode;
 
+    /**
+     * 登录入口系统：hc=耗材系统，不传或其它=设备系统。耗材登录时校验 hc_status、hc_planned_disable_time，停用提示「耗材系统已经被停用」
+     */
+    private String systemType;
+
     public String getCustomerId() {
         return customerId;
     }
@@ -91,5 +96,13 @@ public class LoginBody
     public void setUuid(String uuid)
     {
         this.uuid = uuid;
+    }
+
+    public String getSystemType() {
+        return systemType;
+    }
+
+    public void setSystemType(String systemType) {
+        this.systemType = systemType;
     }
 }

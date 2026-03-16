@@ -1,6 +1,7 @@
 package com.spd.department.domain;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -67,6 +68,13 @@ public class DepPurchaseApplyEntry extends BaseEntity
     /** 型号 */
     @Excel(name = "型号")
     private String model;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
 
     /** 耗材对象 */
     private FdMaterial material;
@@ -199,6 +207,25 @@ public class DepPurchaseApplyEntry extends BaseEntity
     public String getModel() 
     {
         return model;
+    }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getDeleteBy() {
+        return deleteBy;
+    }
+
+    public void setDeleteBy(String deleteBy) {
+        this.deleteBy = deleteBy;
+    }
+
+    public Date getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(Date deleteTime) {
+        this.deleteTime = deleteTime;
     }
 
     public void setMaterial(FdMaterial material) 

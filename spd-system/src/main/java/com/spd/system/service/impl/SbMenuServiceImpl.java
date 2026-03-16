@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysMenu;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbMenu;
@@ -45,6 +46,11 @@ public class SbMenuServiceImpl implements ISbMenuService {
   @Override
   public List<SbMenu> selectSbMenuList(SbMenu menu) {
     return sbMenuMapper.selectSbMenuList(menu);
+  }
+
+  @Override
+  public SbMenu selectSbMenuById(String menuId) {
+    return sbMenuMapper.selectSbMenuById(menuId);
   }
 
   @Override
@@ -116,7 +122,7 @@ public class SbMenuServiceImpl implements ISbMenuService {
 
   @Override
   public int deleteSbMenuById(String menuId) {
-    return sbMenuMapper.deleteSbMenuById(menuId);
+    return sbMenuMapper.deleteSbMenuById(menuId, SecurityUtils.getUserIdStr());
   }
 
   @Override

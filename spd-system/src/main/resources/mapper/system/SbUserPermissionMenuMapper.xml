@@ -11,6 +11,11 @@
     update sb_user_permission_menu set delete_by = #{deleteBy}, delete_time = sysdate() where user_id = #{userId}
   </update>
 
+  <update id="deleteByUserIdAndCustomerId">
+    update sb_user_permission_menu set delete_by = #{deleteBy}, delete_time = sysdate()
+    where user_id = #{userId} and customer_id = #{customerId}
+  </update>
+
   <insert id="insert" parameterType="com.spd.system.domain.SbUserPermissionMenu">
     insert into sb_user_permission_menu (id, user_id, customer_id, menu_id, create_by, create_time)
     values (#{id}, #{userId}, #{customerId}, #{menuId}, #{createBy}, sysdate())

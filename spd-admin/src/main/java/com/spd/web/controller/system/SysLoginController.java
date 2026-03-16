@@ -1,5 +1,6 @@
 package com.spd.web.controller.system;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,6 +22,7 @@ import com.spd.framework.web.service.SysLoginService;
 import com.spd.framework.web.service.SysPermissionService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.domain.SbMenu;
+import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbMenuService;
 import com.spd.system.service.ISysMenuService;
@@ -51,6 +53,9 @@ public class SysLoginController
     @Autowired
     private ISbCustomerService sbCustomerService;
 
+    @Autowired
+    private HcCustomerMenuMapper hcCustomerMenuMapper;
+
     /**
      * 登录方法
      *
@@ -63,20 +68,31 @@ public class SysLoginController
         AjaxResult ajax = AjaxResult.success();
         String username = loginBody.getUsername();
         String customerId = loginBody.getCustomerId();
-        String token = loginService.login(username, loginBody.getPassword(), loginBody.getCode(), loginBody.getUuid(), customerId);
+        String systemType = loginBody.getSystemType();
+        String token = loginService.login(username, loginBody.getPassword(), loginBody.getCode(), loginBody.getUuid(), customerId, systemType);
         ajax.put(Constants.TOKEN, token);
+        if (StringUtils.isNotEmpty(customerId)) {
+            putTenantIfPresent(ajax, customerId);
+        }
         return ajax;
     }
 
     /**
-     * 登录页客户下拉选项（未登录可访问，需在安全配置中放行）
+     * 登录页租户下拉选项（未登录可访问，需在安全配置中放行）
+     * 仿照设备系统：耗材登录传 systemType=hc 仅返回耗材启用租户（hc_status=0），设备登录不传或传其他仅返回设备启用租户（status=0）
+     *
+     * @param systemType 可选，hc=耗材系统（只返回 hc_status=0 的租户），不传或其它=设备系统（只返回 status=0 的租户）
      */
     @GetMapping("/getCustomerOptions")
-    public AjaxResult getCustomerOptions()
+    public AjaxResult getCustomerOptions(String systemType)
     {
-        SbCustomer query = new SbCustomer();
-        query.setStatus("0");
-        List<SbCustomer> list = sbCustomerService.selectSbCustomerList(query);
+        SbCustomer q = new SbCustomer();
+        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
+            q.setHcStatus("0");
+        } else {
+            q.setStatus("0");
+        }
+        List<SbCustomer> list = sbCustomerService.selectSbCustomerList(q);
         List<java.util.Map<String, String>> options = new java.util.ArrayList<>();
         for (SbCustomer c : list) {
             if (c.getDeleteTime() == null && c.getCustomerId() != null) {
@@ -161,8 +177,17 @@ public class SysLoginController
     public AjaxResult getRouters()
     {
         Long userId = SecurityUtils.getUserId();
-        List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
-        return AjaxResult.success(menuService.buildMenus(menus));
+        SysUser user = SecurityUtils.getLoginUser() != null ? SecurityUtils.getLoginUser().getUser() : null;
+        boolean forTenant = user != null && StringUtils.isNotEmpty(user.getCustomerId());
+        List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId, forTenant);
+        Set<Long> pausedMenuIds = null;
+        if (user != null && StringUtils.isNotEmpty(user.getCustomerId())) {
+            List<Long> list = hcCustomerMenuMapper.selectPausedMenuIdsByTenantId(user.getCustomerId());
+            if (list != null && !list.isEmpty()) {
+                pausedMenuIds = new HashSet<>(list);
+            }
+        }
+        return AjaxResult.success(menuService.buildMenus(menus, pausedMenuIds));
     }
 
     /**

@@ -84,6 +84,10 @@ CALL add_table_column('sys_user', 'customer_id', 'char(36)', '客户ID(UUID7)，
 CALL add_table_column('sb_customer', 'planned_disable_time', 'datetime', '计划停用时间，到达后租户无法使用', NULL);
 /
 
+-- sb_customer 租户枚举键，与代码内 TenantEnum 关联，用于条件分支
+CALL add_table_column('sb_customer', 'tenant_key', 'varchar(64)', '租户枚举键(TenantEnum.name)，与代码内租户列表关联', NULL);
+/
+
 -- 客户启停用时间段：end_time 允许 NULL，表示当前未结束的时段
 CALL add_table_column('sb_customer_period_log', 'end_time', 'datetime', '结束时间，NULL表示当前未结束', NULL);
 /
@@ -97,7 +101,43 @@ CALL add_table_column('sb_customer_menu', 'is_enabled', 'char(1)', '是否开启
 -- 设备菜单表：是否仅平台管理功能（1则客户分配/工作组/用户权限中不展示）
 CALL add_table_column('sb_menu', 'is_platform_only', 'char(1)', '是否仅平台管理功能（1是，客户分配/工作组/用户权限中不展示）', '0');
 /
+-- 设备菜单表：是否默认对客户开放、逻辑删除标志
+CALL add_table_column('sb_menu', 'default_open_to_customer', 'char(1)', '是否默认对客户开放（1是，设备功能重置时授权给客户、管理员组、管理员用户）', '0');
+/
+CALL add_table_column('sb_menu', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
 
 -- 设备角色与菜单关联表：客户ID（归属租户，平台角色可为空）
 CALL add_table_column('sb_role_menu', 'customer_id', 'char(36)', '客户ID(UUID7)，归属客户/租户', NULL);
+/
+
+-- sb_work_group_menu 逻辑删除标志（已有表若缺列可执行）
+CALL add_table_column('sb_work_group_menu', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('sb_work_group_menu', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('sb_work_group_menu', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+
+-- sb_work_group_user 逻辑删除标志
+CALL add_table_column('sb_work_group_user', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+-- 已有数据：将曾通过 delete_time 标记删除的记录同步为 del_flag='1'
+UPDATE sb_work_group_user SET del_flag = '1' WHERE delete_time IS NOT NULL AND (del_flag IS NULL OR del_flag = '0');
+/
+
+-- 数据：将客户 hengsui-third-001 名下在 sb_customer_menu 中的菜单全部设为「默认对客户开放」
+UPDATE sb_menu SET default_open_to_customer = '1'
+WHERE menu_id IN (
+  SELECT menu_id FROM sb_customer_menu
+  WHERE customer_id = (SELECT customer_id FROM sb_customer WHERE customer_code = 'hengsui-third-001' AND delete_time IS NULL LIMIT 1)
+    AND delete_time IS NULL
+);
+/
+
+-- 客户68分类表 parent_id 改为本表主键id（仅当表中 parent_id 当前为 bigint 时执行以下一段）
+-- 若表是按新 table.sql 建的（parent_id 已是 char(36)），请跳过下面三条语句
+-- ALTER TABLE sb_customer_category68 ADD COLUMN parent_id_new CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键)';
+-- UPDATE sb_customer_category68 c1 INNER JOIN sb_customer_category68 c2 ON c2.customer_id = c1.customer_id AND c2.ref_category68_id = c1.parent_id SET c1.parent_id_new = c2.id WHERE c1.parent_id IS NOT NULL AND c1.parent_id != 0;
+-- ALTER TABLE sb_customer_category68 DROP COLUMN parent_id, CHANGE parent_id_new parent_id CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键id，对应父记录)';
 /

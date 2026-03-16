@@ -116,7 +116,7 @@ public class DepPurchaseApplyController extends BaseController
     @PutMapping("/auditApply")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = depPurchaseApplyService.auditPurchaseApply(json.getString("id"), json.getString("auditBy"));
+        int result = depPurchaseApplyService.auditPurchaseApply(json.getString("id"), getUserIdStr());
         return toAjax(result);
     }
 

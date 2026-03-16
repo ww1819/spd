@@ -17,6 +17,11 @@ public interface ISbMenuService {
   List<SbMenu> selectSbMenuList(SbMenu menu);
 
   /**
+   * 根据菜单ID查询设备菜单详情
+   */
+  SbMenu selectSbMenuById(String menuId);
+
+  /**
    * 根据用户ID查询设备菜单树
    */
   List<SbMenu> selectSbMenuTreeByUserId(Long userId);
@@ -32,7 +37,7 @@ public interface ISbMenuService {
   int updateSbMenu(SbMenu menu);
 
   /**
-   * 删除设备菜单
+   * 逻辑删除设备菜单
    */
   int deleteSbMenuById(String menuId);
 

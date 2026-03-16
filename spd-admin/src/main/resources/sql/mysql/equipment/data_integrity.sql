@@ -37,8 +37,14 @@ INSERT INTO sb_user_permission_menu (id, user_id, customer_id, menu_id, create_b
 SELECT UUID(), u.user_id, wgm.customer_id, wgm.menu_id, 'admin', NOW()
 FROM sb_work_group_user wgu
 INNER JOIN sb_work_group g ON g.group_id = wgu.group_id AND g.group_key = 'super' AND (g.delete_time IS NULL)
-INNER JOIN sb_work_group_menu wgm ON wgm.group_id = wgu.group_id AND (wgm.delete_time IS NULL)
+INNER JOIN sb_work_group_menu wgm ON wgm.group_id = wgu.group_id AND IFNULL(wgm.del_flag,'0') = '0'
 INNER JOIN sys_user u ON u.user_id = wgu.user_id AND u.user_name = 'super_01' AND IFNULL(u.del_flag,'0') = '0'
-WHERE (wgu.delete_time IS NULL)
+WHERE IFNULL(wgu.del_flag, '0') = '0'
+ON DUPLICATE KEY UPDATE delete_by = NULL, delete_time = NULL;
+/
+
+-- 9. 为 user_id=917 授予「科室新增」按钮权限（foundation:depart:add），解决科室维护页看不到新增按钮
+INSERT INTO sb_user_permission_menu (id, user_id, customer_id, menu_id, create_by, create_time)
+SELECT UUID(), 917, '', '01900000-0000-7000-8000-00000000c76b', 'admin', NOW() FROM DUAL
 ON DUPLICATE KEY UPDATE delete_by = NULL, delete_time = NULL;
 /

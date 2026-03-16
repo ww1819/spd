@@ -39,7 +39,7 @@ public class SbUserPermissionServiceImpl implements ISbUserPermissionService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int saveUserMenus(Long userId, String customerId, String[] menuIds) {
-    String deleteBy = SecurityUtils.getUsername();
+    String deleteBy = SecurityUtils.getUserIdStr();
     sbUserPermissionMenuMapper.deleteByUserId(userId, deleteBy);
     if (menuIds == null || menuIds.length == 0) return 0;
     List<SbUserPermissionMenu> list = new ArrayList<>();
@@ -66,7 +66,7 @@ public class SbUserPermissionServiceImpl implements ISbUserPermissionService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int saveUserWarehouses(Long userId, String customerId, Long[] warehouseIds) {
-    String deleteBy = SecurityUtils.getUsername();
+    String deleteBy = SecurityUtils.getUserIdStr();
     sbUserPermissionWarehouseMapper.deleteByUserId(userId, deleteBy);
     if (warehouseIds == null || warehouseIds.length == 0) return 0;
     List<SbUserPermissionWarehouse> list = new ArrayList<>();
@@ -93,7 +93,7 @@ public class SbUserPermissionServiceImpl implements ISbUserPermissionService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int saveUserDepts(Long userId, String customerId, Long[] deptIds) {
-    String deleteBy = SecurityUtils.getUsername();
+    String deleteBy = SecurityUtils.getUserIdStr();
     sbUserPermissionDeptMapper.deleteByUserId(userId, deleteBy);
     if (deptIds == null || deptIds.length == 0) return 0;
     List<SbUserPermissionDept> list = new ArrayList<>();

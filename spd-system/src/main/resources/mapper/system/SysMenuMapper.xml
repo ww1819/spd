@@ -20,6 +20,7 @@
 		<result property="status"         column="status"         />
 		<result property="perms"          column="perms"          />
 		<result property="icon"           column="icon"           />
+		<result property="isPlatform"     column="is_platform"    />
 		<result property="createBy"       column="create_by"      />
 		<result property="createTime"     column="create_time"    />
 		<result property="updateTime"     column="update_time"    />
@@ -28,7 +29,7 @@
 	</resultMap>
 
 	<sql id="selectMenuVo">
-        select menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, ifnull(perms,'') as perms, icon, create_time 
+        select menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, ifnull(perms,'') as perms, icon, ifnull(is_platform,'0') as is_platform, create_time 
 		from sys_menu
     </sql>
     
@@ -49,37 +50,39 @@
 	</select>
 	
 	<select id="selectMenuTreeAll" resultMap="SysMenuResult">
-		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
 		from sys_menu m where m.menu_type in ('M', 'C') and m.status = 0
 		order by m.parent_id, m.order_num
 	</select>
-	
-	<select id="selectMenuListByUserId" parameterType="SysMenu" resultMap="SysMenuResult">
-		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
+
+	<!-- 耗材客户权限分配用菜单树：排除平台管理菜单（is_platform=1）及原客户管理/客户菜单功能管理(2100~2105) -->
+	<select id="selectMenuTreeForHcCustomerAssign" resultMap="SysMenuResult">
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
 		from sys_menu m
-		where (
-			-- 通过角色关联的菜单
-			exists (
-				select 1 from sys_role_menu rm
-				inner join sys_user_role ur on rm.role_id = ur.role_id
-				inner join sys_role ro on ur.role_id = ro.role_id
-				where rm.menu_id = m.menu_id
-				and ur.user_id = #{params.userId}
-				and ro.status = 0
-			)
-			-- 或者通过用户直接关联的菜单
-			or exists (
-				select 1 from sys_user_menu um
-				where um.menu_id = m.menu_id
-				and um.user_id = #{params.userId}
-			)
-			-- 或者通过工作组关联的菜单
-			or exists (
-				select 1 from sys_post_menu pm
-				inner join sys_user_post up on pm.post_id = up.post_id
-				where pm.menu_id = m.menu_id
-				and up.user_id = #{params.userId}
-			)
+		where m.menu_type in ('M', 'C') and m.status = 0
+		and (m.is_platform is null or m.is_platform != '1')
+		and m.menu_id not in (2100, 2101, 2102, 2103, 2104, 2105)
+		order by m.parent_id, m.order_num
+	</select>
+
+	<!-- 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表内该客户已有的菜单，且排除平台管理菜单 -->
+	<select id="selectMenuTreeForPostAssign" resultMap="SysMenuResult">
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
+		from sys_menu m
+		inner join hc_customer_menu hcm on hcm.menu_id = m.menu_id and hcm.tenant_id = #{tenantId}
+		where m.menu_type in ('M', 'C') and m.status = 0
+		and (m.is_platform is null or m.is_platform != '1')
+		order by m.parent_id, m.order_num
+	</select>
+	
+	<!-- 耗材：仅从用户权限表 sys_user_menu 读取 -->
+	<select id="selectMenuListByUserId" parameterType="SysMenu" resultMap="SysMenuResult">
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
+		from sys_menu m
+		where exists (
+			select 1 from sys_user_menu um
+			where um.menu_id = m.menu_id
+			and um.user_id = #{params.userId}
 		)
 		<if test="menuName != null and menuName != ''">
             AND m.menu_name like concat('%', #{menuName}, '%')
@@ -93,34 +96,19 @@
 		order by m.parent_id, m.order_num
 	</select>
     
-    <select id="selectMenuTreeByUserId" parameterType="Long" resultMap="SysMenuResult">
-		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, m.create_time
+	<!-- 耗材：仅从用户权限表 sys_user_menu 读取；forTenant=true 时排除平台管理菜单 -->
+    <select id="selectMenuTreeByUserId" resultMap="SysMenuResult">
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
 		from sys_menu m
 		where m.menu_type in ('M', 'C') and m.status = 0
-		and (
-			-- 通过角色关联的菜单
-			exists (
-				select 1 from sys_role_menu rm
-				inner join sys_user_role ur on rm.role_id = ur.role_id
-				inner join sys_role ro on ur.role_id = ro.role_id
-				where rm.menu_id = m.menu_id
-				and ur.user_id = #{userId}
-				and ro.status = 0
-			)
-			-- 或者通过用户直接关联的菜单
-			or exists (
-				select 1 from sys_user_menu um
-				where um.menu_id = m.menu_id
-				and um.user_id = #{userId}
-			)
-			-- 或者通过工作组关联的菜单
-			or exists (
-				select 1 from sys_post_menu pm
-				inner join sys_user_post up on pm.post_id = up.post_id
-				where pm.menu_id = m.menu_id
-				and up.user_id = #{userId}
-			)
+		and exists (
+			select 1 from sys_user_menu um
+			where um.menu_id = m.menu_id
+			and um.user_id = #{userId}
 		)
+		<if test="forTenant == true">
+		and (m.is_platform is null or m.is_platform != '1')
+		</if>
 		order by m.parent_id, m.order_num
 	</select>
 	
@@ -142,34 +130,19 @@
 			 left join sys_user_role ur on rm.role_id = ur.role_id
 	</select>
 
-	<select id="selectMenuPermsByUserId" parameterType="Long" resultType="String">
+	<!-- 耗材：仅从用户权限表 sys_user_menu 读取；forTenant=true 时排除平台管理菜单 -->
+	<select id="selectMenuPermsByUserId" resultType="String">
 		select distinct m.perms
 		from sys_menu m
 		where m.status = '0' and m.perms is not null and m.perms != ''
-		and (
-			-- 通过角色关联的菜单权限
-			exists (
-				select 1 from sys_role_menu rm
-				inner join sys_user_role ur on rm.role_id = ur.role_id
-				inner join sys_role r on ur.role_id = r.role_id
-				where rm.menu_id = m.menu_id
-				and ur.user_id = #{userId}
-				and r.status = '0'
-			)
-			-- 或者通过用户直接关联的菜单权限
-			or exists (
-				select 1 from sys_user_menu um
-				where um.menu_id = m.menu_id
-				and um.user_id = #{userId}
-			)
-			-- 或者通过工作组关联的菜单权限
-			or exists (
-				select 1 from sys_post_menu pm
-				inner join sys_user_post up on pm.post_id = up.post_id
-				where pm.menu_id = m.menu_id
-				and up.user_id = #{userId}
-			)
+		and exists (
+			select 1 from sys_user_menu um
+			where um.menu_id = m.menu_id
+			and um.user_id = #{userId}
 		)
+		<if test="forTenant == true">
+		and (m.is_platform is null or m.is_platform != '1')
+		</if>
 	</select>
 	
 	<select id="selectMenuPermsByRoleId" parameterType="Long" resultType="String">
@@ -209,6 +182,7 @@
 			<if test="status != null">status = #{status},</if>
 			<if test="perms !=null">perms = #{perms},</if>
 			<if test="icon !=null and icon != ''">icon = #{icon},</if>
+			<if test="isPlatform != null">is_platform = #{isPlatform},</if>
 			<if test="remark != null and remark != ''">remark = #{remark},</if>
 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
 			update_time = sysdate()
@@ -232,10 +206,11 @@
 		<if test="status != null">status,</if>
 		<if test="perms !=null and perms != ''">perms,</if>
 		<if test="icon != null and icon != ''">icon,</if>
+		<if test="isPlatform != null">is_platform,</if>
 		<if test="remark != null and remark != ''">remark,</if>
 		<if test="createBy != null and createBy != ''">create_by,</if>
 		create_time
-		)values(
+	)values(
 		<if test="menuId != null and menuId != 0">#{menuId},</if>
 		<if test="parentId != null and parentId != 0">#{parentId},</if>
 		<if test="menuName != null and menuName != ''">#{menuName},</if>
@@ -250,6 +225,7 @@
 		<if test="status != null">#{status},</if>
 		<if test="perms !=null and perms != ''">#{perms},</if>
 		<if test="icon != null and icon != ''">#{icon},</if>
+		<if test="isPlatform != null">#{isPlatform},</if>
 		<if test="remark != null and remark != ''">#{remark},</if>
 		<if test="createBy != null and createBy != ''">#{createBy},</if>
 		sysdate()
@@ -313,6 +289,16 @@
                 and r.status = '0'
           )
         order by m.parent_id, m.order_num
+    </select>
+
+    <!-- 耗材系统：系统设置下非平台管理功能的菜单ID（is_platform!=1，用于新租户默认授权管理员组与 super_01；客户管理、客户菜单功能管理已设为平台管理 is_platform=1） -->
+    <select id="selectMaterialSystemSettingMenuIdsExcludeCustomerManage" resultType="Long">
+        WITH RECURSIVE tree AS (
+            SELECT menu_id, IFNULL(is_platform,'0') AS ip, IFNULL(status,'0') AS st FROM sys_menu WHERE menu_name = '系统设置'
+            UNION ALL
+            SELECT m.menu_id, IFNULL(m.is_platform,'0'), IFNULL(m.status,'0') FROM sys_menu m INNER JOIN tree t ON m.parent_id = t.menu_id
+        )
+        SELECT menu_id FROM tree WHERE (ip IS NULL OR ip != '1') AND st = '0'
     </select>
 
 </mapper> 

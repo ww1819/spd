@@ -43,6 +43,9 @@ public class WhFixedNumber extends BaseEntity {
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
 
+    /** 租户ID（同sb_customer.customer_id） */
+    private String tenantId;
+
     /** 关联：仓库 */
     private FdWarehouse warehouse;
 
@@ -57,6 +60,28 @@ public class WhFixedNumber extends BaseEntity {
 
     /** 查询字段：注册证号 */
     private String registerNo;
+
+    /** 查询字段：单位名称 */
+    private String unitName;
+
+    /** 查询字段：单价 */
+    private java.math.BigDecimal price;
+
+    /** 查询字段：库房分类名称 */
+    private String warehouseCategoryName;
+
+    /** 查询参数：耗材名称/编码关键词（用于列表筛选） */
+    private String materialName;
+
+    /** 查询参数：供应商ID（用于列表筛选） */
+    private Long supplierId;
+    /** 查询参数：生产厂家ID（用于列表筛选） */
+    private Long factoryId;
+    /** 查询参数：库房分类ID（用于列表筛选） */
+    private Long storeroomId;
+
+    /** 查询参数：是否高值（1=高值 2=非高值，科室申购只查非高值） */
+    private String isGz;
 
     public String getId() {
         return id;
@@ -138,6 +163,14 @@ public class WhFixedNumber extends BaseEntity {
         this.delFlag = delFlag;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public FdWarehouse getWarehouse() {
         return warehouse;
     }
@@ -176,6 +209,70 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setRegisterNo(String registerNo) {
         this.registerNo = registerNo;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
+    }
+
+    public java.math.BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(java.math.BigDecimal price) {
+        this.price = price;
+    }
+
+    public String getWarehouseCategoryName() {
+        return warehouseCategoryName;
+    }
+
+    public void setWarehouseCategoryName(String warehouseCategoryName) {
+        this.warehouseCategoryName = warehouseCategoryName;
+    }
+
+    public String getMaterialName() {
+        return materialName;
+    }
+
+    public void setMaterialName(String materialName) {
+        this.materialName = materialName;
+    }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
+    }
+
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
+    }
+
+    public Long getStoreroomId() {
+        return storeroomId;
+    }
+
+    public void setStoreroomId(Long storeroomId) {
+        this.storeroomId = storeroomId;
+    }
+
+    public String getIsGz() {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz) {
+        this.isGz = isGz;
     }
 
     @Override

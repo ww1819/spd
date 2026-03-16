@@ -14,10 +14,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, referred_name, create_by, create_time, update_by, update_time from fd_department
+        select id, code, name, referred_name, create_by, create_time, update_by, update_time, tenant_id from fd_department
     </sql>
 
     <select id="selectFdDepartmentList" parameterType="FdDepartment" resultMap="FdDepartmentResult">
@@ -25,6 +26,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where del_flag != 1
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+        <if test="referredName != null and referredName != ''"> and referred_name like concat('%', #{referredName}, '%')</if>
+        <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
     </select>
 
     <select id="selectFdDepartmentById" parameterType="String" resultMap="FdDepartmentResult">
@@ -35,6 +38,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectdepartmenAll" resultMap="FdDepartmentResult">
         <include refid="selectFdDepartmentVo"/>
         where del_flag != 1
+    </select>
+
+    <select id="selectdepartmenAllByTenantId" resultMap="FdDepartmentResult">
+        <include refid="selectFdDepartmentVo"/>
+        where del_flag != 1 and tenant_id = #{tenantId}
     </select>
 
     <select id="selectDepartmenListByUserId" parameterType="Long" resultType="Long">
@@ -66,6 +74,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -76,6 +85,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -90,6 +100,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>

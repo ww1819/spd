@@ -34,9 +34,9 @@ public class PurchaseOrder extends BaseEntity
     @Excel(name = "关联采购计划单号")
     private String planNo;
 
-    /** 订单日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "订单日期", width = 30, dateFormat = "yyyy-MM-dd")
+    /** 订单时间（显示年月日时分秒） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Excel(name = "订单时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date orderDate;
 
     /** 供应商ID */
@@ -113,6 +113,14 @@ public class PurchaseOrder extends BaseEntity
 
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
+    /** 删除者（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+    /** 计划单主表ID */
+    private Long planId;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
 
     /** 供应商信息 */
     private FdSupplier supplier;
@@ -361,6 +369,15 @@ public class PurchaseOrder extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+    public Long getPlanId() { return planId; }
+    public void setPlanId(Long planId) { this.planId = planId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public FdSupplier getSupplier() 
     {

@@ -155,7 +155,19 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public FdMaterial selectFdMaterialById(Long id)
     {
-        return fdMaterialMapper.selectFdMaterialById(id);
+        FdMaterial m = fdMaterialMapper.selectFdMaterialById(id);
+        if (m != null) {
+            SecurityUtils.ensureTenantAccess(m.getTenantId());
+        }
+        return m;
+    }
+
+    @Override
+    public FdMaterial getByMainBarcode(String mainBarcode) {
+        if (StringUtils.isEmpty(mainBarcode)) {
+            return null;
+        }
+        return fdMaterialMapper.selectFdMaterialByMainBarcode(mainBarcode.trim());
     }
 
     /**
@@ -168,6 +180,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @DataSource(DataSourceType.MASTER)
     public List<FdMaterial> selectFdMaterialList(FdMaterial fdMaterial)
     {
+        if (fdMaterial != null && StringUtils.isEmpty(fdMaterial.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdMaterial.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdMaterialMapper.selectFdMaterialList(fdMaterial);
     }
 
@@ -181,6 +196,12 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     public int insertFdMaterial(FdMaterial fdMaterial)
     {
         fdMaterial.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(fdMaterial.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdMaterial.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdMaterialMapper.insertFdMaterial(fdMaterial);
     }
 
@@ -195,7 +216,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     {
         Date now = DateUtils.getNowDate();
         fdMaterial.setUpdateTime(now);
-        String operator = SecurityUtils.getUsername();
+        String operator = SecurityUtils.getUserIdStr();
         if (operator == null) {
             operator = fdMaterial.getUpdateBy() != null ? fdMaterial.getUpdateBy() : "";
         }
@@ -233,14 +254,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         material.setIsUse("2");
         material.setUpdateTime(DateUtils.getNowDate());
-        material.setUpdateBy(SecurityUtils.getUsername());
+        material.setUpdateBy(SecurityUtils.getUserIdStr());
         fdMaterialMapper.updateFdMaterial(material);
         FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
         logRecord.setId(UUID7.generateUUID7());
         logRecord.setMaterialId(materialId);
         logRecord.setAction("disable");
         logRecord.setActionTime(DateUtils.getNowDate());
-        logRecord.setOperator(SecurityUtils.getUsername());
+        logRecord.setOperator(SecurityUtils.getUserIdStr());
         logRecord.setReason(reason);
         fdMaterialStatusLogMapper.insert(logRecord);
     }
@@ -259,14 +280,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         material.setIsUse("1");
         material.setUpdateTime(DateUtils.getNowDate());
-        material.setUpdateBy(SecurityUtils.getUsername());
+        material.setUpdateBy(SecurityUtils.getUserIdStr());
         fdMaterialMapper.updateFdMaterial(material);
         FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
         logRecord.setId(UUID7.generateUUID7());
         logRecord.setMaterialId(materialId);
         logRecord.setAction("enable");
         logRecord.setActionTime(DateUtils.getNowDate());
-        logRecord.setOperator(SecurityUtils.getUsername());
+        logRecord.setOperator(SecurityUtils.getUserIdStr());
         logRecord.setReason(reason);
         fdMaterialStatusLogMapper.insert(logRecord);
     }
@@ -431,10 +452,8 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         if(fdMaterial == null){
             throw new ServiceException(String.format("耗材：%s，不存在!", id));
         }
-        fdMaterial.setUpdateTime(DateUtils.getNowDate());
-        fdMaterial.setDelFlag(1);//1:已删除
-        fdMaterial.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        return fdMaterialMapper.updateFdMaterial(fdMaterial);
+        SecurityUtils.ensureTenantAccess(fdMaterial.getTenantId());
+        return fdMaterialMapper.deleteFdMaterialById(id, SecurityUtils.getUserIdStr());
     }
 
     /**

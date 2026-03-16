@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
@@ -67,12 +68,15 @@ public class SysUserController extends BaseController
     private IFdDepartmentService fdDepartmentService;
 
     /**
-     * 获取用户列表
+     * 获取用户列表（支持 workgroupPostId 按设备工作组筛选，对应 sb_work_group_user.group_id）
      */
     @PreAuthorize("@ss.hasPermi('system:user:list')")
     @GetMapping("/list")
-    public TableDataInfo list(SysUser user)
+    public TableDataInfo list(SysUser user, @RequestParam(value = "workgroupPostId", required = false) String workgroupPostId)
     {
+        if (StringUtils.isNotEmpty(workgroupPostId)) {
+            user.setWorkgroupPostId(workgroupPostId);
+        }
         startPage();
         List<SysUser> list = userService.selectUserList(user);
         return getDataTable(list);
@@ -105,7 +109,7 @@ public class SysUserController extends BaseController
     {
         ExcelUtil<SysUser> util = new ExcelUtil<SysUser>(SysUser.class);
         List<SysUser> userList = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = userService.importUser(userList, updateSupport, operName);
         return success(message);
     }
@@ -165,7 +169,7 @@ public class SysUserController extends BaseController
         {
             return error("新增用户'" + user.getUserName() + "'失败，邮箱账号已存在");
         }
-        user.setCreateBy(getUsername());
+        user.setCreateBy(getUserIdStr());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         return toAjax(userService.insertUser(user));
     }
@@ -194,7 +198,7 @@ public class SysUserController extends BaseController
         {
             return error("修改用户'" + user.getUserName() + "'失败，邮箱账号已存在");
         }
-        user.setUpdateBy(getUsername());
+        user.setUpdateBy(getUserIdStr());
         return toAjax(userService.updateUser(user));
     }
 
@@ -224,7 +228,7 @@ public class SysUserController extends BaseController
         userService.checkUserAllowed(user);
         userService.checkUserDataScope(user.getUserId());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
-        user.setUpdateBy(getUsername());
+        user.setUpdateBy(getUserIdStr());
         return toAjax(userService.resetPwd(user));
     }
 
@@ -238,7 +242,7 @@ public class SysUserController extends BaseController
     {
         userService.checkUserAllowed(user);
         userService.checkUserDataScope(user.getUserId());
-        user.setUpdateBy(getUsername());
+        user.setUpdateBy(getUserIdStr());
         return toAjax(userService.updateUserStatus(user));
     }
 

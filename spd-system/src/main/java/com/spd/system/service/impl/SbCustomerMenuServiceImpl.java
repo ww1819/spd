@@ -41,7 +41,7 @@ public class SbCustomerMenuServiceImpl implements ISbCustomerMenuService {
         }
       }
     }
-    String createBy = SecurityUtils.getUsername();
+    String createBy = SecurityUtils.getUserIdStr();
     for (SbCustomerMenu row : existing) {
       String en = selected.contains(row.getMenuId()) ? "1" : "0";
       sbCustomerMenuMapper.updateIsEnabled(customerId, row.getMenuId(), en);

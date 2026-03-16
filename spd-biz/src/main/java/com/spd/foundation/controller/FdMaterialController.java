@@ -11,12 +11,15 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
+import com.github.pagehelper.PageHelper;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdMaterialListRequest;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -43,7 +46,7 @@ public class FdMaterialController extends BaseController
     private String interfaceUrl;
 
     /**
-     * 查询耗材产品列表
+     * 查询耗材产品列表（GET）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:list')")
     @GetMapping("/list")
@@ -51,6 +54,21 @@ public class FdMaterialController extends BaseController
     {
         startPage();
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
+        return getDataTable(list);
+    }
+
+    /**
+     * 查询耗材产品列表（POST，请求体传参，避免 excludeMaterialIds 等过长导致 400/414）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:list')")
+    @PostMapping("/list")
+    public TableDataInfo listPost(@RequestBody FdMaterialListRequest request)
+    {
+        Integer pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
+        Integer pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
+        FdMaterial query = request.getQuery() != null ? request.getQuery() : new FdMaterial();
+        PageHelper.startPage(pageNum, pageSize);
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         return getDataTable(list);
     }
 
@@ -94,6 +112,15 @@ public class FdMaterialController extends BaseController
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
         util.exportExcel(response, list, "耗材产品数据");
+    }
+
+    /**
+     * 根据主条码(udi_no)或耗材编码查询产品档案（用于入库单扫码带出产品）
+     */
+    @GetMapping("/getByMainBarcode")
+    public AjaxResult getByMainBarcode(@RequestParam String mainBarcode)
+    {
+        return success(fdMaterialService.getByMainBarcode(mainBarcode));
     }
 
     /**

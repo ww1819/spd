@@ -21,6 +21,11 @@
             <groupId>com.spd</groupId>
             <artifactId>spd-common</artifactId>
         </dependency>
+        <!-- 系统模块（客户68分类接口等）-->
+        <dependency>
+            <groupId>com.spd</groupId>
+            <artifactId>spd-system</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

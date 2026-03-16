@@ -124,6 +124,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="shipmentNo != null">#{shipmentNo},</if>
@@ -139,6 +140,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -158,6 +160,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -171,9 +174,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzShipmentEntry">
-        insert into gz_shipment_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, master_barcode, secondary_barcode, in_hospital_code, remark) values
+        insert into gz_shipment_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, master_barcode, secondary_barcode, in_hospital_code, remark, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.remark})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.remark}, #{item.tenantId})
         </foreach>
     </insert>
 

@@ -46,10 +46,8 @@ public interface StkIoProfitLossMapper {
      */
     int deleteStkIoProfitLossById(Long id);
 
-    /**
-     * 根据盈亏单ID删除明细（逻辑删除）
-     */
-    int deleteStkIoProfitLossEntryByParenId(Long parenId);
+    /** 根据盈亏单ID逻辑删除明细（设置 delete_by、delete_time） */
+    int deleteStkIoProfitLossEntryByParenId(@Param("parenId") Long parenId, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量新增盈亏单明细
@@ -70,6 +68,11 @@ public interface StkIoProfitLossMapper {
      * 根据盘点单ID查询是否已存在盈亏单（一对一约束）
      */
     Integer countByStocktakingId(@Param("stocktakingId") Long stocktakingId);
+
+    /**
+     * 审核后回写盈亏明细的批次号（盘盈时系统生成）
+     */
+    int updateStkIoProfitLossEntryBatchNo(@Param("id") Long id, @Param("batchNo") String batchNo);
 
     /**
      * 查询盈亏明细列表（用于报表）

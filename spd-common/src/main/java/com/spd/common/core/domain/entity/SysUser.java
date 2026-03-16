@@ -108,6 +108,9 @@ public class SysUser extends BaseEntity
     /** 岗位名称（用于列表显示） */
     private String postName;
 
+    /** 工作组ID（设备系统，列表筛选：仅显示该工作组下的用户，对应 sb_work_group_user.group_id） */
+    private String workgroupPostId;
+
     public SysUser()
     {
 
@@ -364,6 +367,14 @@ public class SysUser extends BaseEntity
 
     public void setPostName(String postName) {
         this.postName = postName;
+    }
+
+    public String getWorkgroupPostId() {
+        return workgroupPostId;
+    }
+
+    public void setWorkgroupPostId(String workgroupPostId) {
+        this.workgroupPostId = workgroupPostId;
     }
 
     @Override

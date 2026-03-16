@@ -65,6 +65,13 @@ public class BasApplyEntry extends BaseEntity
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date endTime;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+
     /** 耗材对象 */
     private FdMaterial material;
 
@@ -148,6 +155,25 @@ public class BasApplyEntry extends BaseEntity
     public String getBatchNumer() 
     {
         return batchNumer;
+    }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getDeleteBy() {
+        return deleteBy;
+    }
+
+    public void setDeleteBy(String deleteBy) {
+        this.deleteBy = deleteBy;
+    }
+
+    public Date getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(Date deleteTime) {
+        this.deleteTime = deleteTime;
     }
 
     @Override

@@ -137,6 +137,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="goodsNo != null">#{goodsNo},</if>
@@ -154,6 +155,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -175,6 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -195,9 +198,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">
-        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code, begin_time, end_time, del_flag, remark) values
+        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code, begin_time, end_time, del_flag, remark, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.tenantId})
         </foreach>
     </insert>
 

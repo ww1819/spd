@@ -118,6 +118,9 @@ public class GzTraceability extends BaseEntity
     /** 删除标识 */
     private String delFlag;
 
+    /** 租户ID */
+    private String tenantId;
+
     /** 申请科室对象 */
     private FdDepartment applyDept;
 
@@ -376,6 +379,9 @@ public class GzTraceability extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public FdDepartment getApplyDept() {
         return applyDept;

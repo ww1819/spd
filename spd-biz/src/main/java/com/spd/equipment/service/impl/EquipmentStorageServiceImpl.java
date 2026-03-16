@@ -86,7 +86,7 @@ public class EquipmentStorageServiceImpl implements IEquipmentStorageService
     public int insertEquipmentStorage(EquipmentStorage equipmentStorage)
     {
         equipmentStorage.setCreateTime(DateUtils.getNowDate());
-        equipmentStorage.setCreateBy(SecurityUtils.getUsername());
+        equipmentStorage.setCreateBy(SecurityUtils.getUserIdStr());
         int result = equipmentStorageMapper.insertEquipmentStorage(equipmentStorage);
         
         // 保存明细列表
@@ -111,7 +111,7 @@ public class EquipmentStorageServiceImpl implements IEquipmentStorageService
     public int updateEquipmentStorage(EquipmentStorage equipmentStorage)
     {
         equipmentStorage.setUpdateTime(DateUtils.getNowDate());
-        equipmentStorage.setUpdateBy(SecurityUtils.getUsername());
+        equipmentStorage.setUpdateBy(SecurityUtils.getUserIdStr());
         
         // 先删除原有明细
         equipmentStorageDetailMapper.deleteEquipmentStorageDetailByStorageId(equipmentStorage.getStorageId());
@@ -245,7 +245,7 @@ public class EquipmentStorageServiceImpl implements IEquipmentStorageService
                         equipmentInfo.setArchiveCode(assetCode); // 档案编号
                         equipmentInfo.setAssetStatus("1"); // 资产状态：启用
                         equipmentInfo.setDelFlag("0"); // 删除标志：未删除
-                        equipmentInfo.setCreateBy(SecurityUtils.getUsername());
+                        equipmentInfo.setCreateBy(SecurityUtils.getUserIdStr());
                         equipmentInfo.setCreateTime(DateUtils.getNowDate());
                         
                         equipmentInfoService.insertEquipmentInfo(equipmentInfo);
@@ -255,7 +255,7 @@ public class EquipmentStorageServiceImpl implements IEquipmentStorageService
                         if (StringUtils.isEmpty(existInfo.getHospitalCode()) || 
                             !warehouseName.equals(existInfo.getHospitalCode())) {
                             existInfo.setHospitalCode(warehouseName);
-                            existInfo.setUpdateBy(SecurityUtils.getUsername());
+                            existInfo.setUpdateBy(SecurityUtils.getUserIdStr());
                             existInfo.setUpdateTime(DateUtils.getNowDate());
                             equipmentInfoService.updateEquipmentInfo(existInfo);
                             log.info("审核入库单时更新设备信息记录的仓库，档案编码：{}", assetCode);
@@ -268,7 +268,7 @@ public class EquipmentStorageServiceImpl implements IEquipmentStorageService
         equipmentStorage.setStorageStatus("2"); // 已审核状态
         equipmentStorage.setAuditorId(SecurityUtils.getUserId()); // 审核人ID
         equipmentStorage.setAuditDate(DateUtils.getNowDate()); // 审核日期
-        equipmentStorage.setUpdateBy(SecurityUtils.getUsername());
+        equipmentStorage.setUpdateBy(SecurityUtils.getUserIdStr());
         equipmentStorage.setUpdateTime(DateUtils.getNowDate());
         
         return equipmentStorageMapper.auditEquipmentStorage(equipmentStorage);

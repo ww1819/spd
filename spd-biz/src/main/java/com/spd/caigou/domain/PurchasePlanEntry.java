@@ -2,11 +2,14 @@ package com.spd.caigou.domain;
 
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
+import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 采购计划明细对象 purchase_plan_entry
@@ -50,8 +53,49 @@ public class PurchasePlanEntry extends BaseEntity
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
 
+    /** 申购数量（引用科室申购单时的汇总数量，仅展示） */
+    private BigDecimal applyQty;
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
+    /** 供应商ID（取自产品档案，用户可选择并保存，审核后按此拆分订单） */
+    private Long supplierId;
+    /** 申请科室ID（按申购单明细拆分时写入） */
+    private Long applyDepartmentId;
+    /** 申请科室（查询时填充，不持久化） */
+    private FdDepartment applyDepartment;
+
     /** 耗材信息 */
     private FdMaterial material;
+    /** 当前仓库库存数量（查询时填充，不持久化） */
+    private BigDecimal stockQty;
+    /** 该计划明细关联的申购单号（从关联表聚合，逗号分隔，仅展示） */
+    private String applyBillNos;
+    /** 关联的科室申购单明细ID列表（bas_apply_entry，保存时写入关联表，不持久化） */
+    private List<Long> basApplyEntryIds;
+    /** 关联的科室申购单明细ID列表（dep_purchase_apply_entry，保存时写入 purchase_plan_entry_dep_apply） */
+    private List<Long> depApplyEntryIds;
+
+    public List<Long> getBasApplyEntryIds() { return basApplyEntryIds; }
+    public void setBasApplyEntryIds(List<Long> basApplyEntryIds) { this.basApplyEntryIds = basApplyEntryIds; }
+    public List<Long> getDepApplyEntryIds() { return depApplyEntryIds; }
+    public void setDepApplyEntryIds(List<Long> depApplyEntryIds) { this.depApplyEntryIds = depApplyEntryIds; }
+    public BigDecimal getApplyQty() { return applyQty; }
+    public void setApplyQty(BigDecimal applyQty) { this.applyQty = applyQty; }
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public BigDecimal getStockQty() { return stockQty; }
+    public void setStockQty(BigDecimal stockQty) { this.stockQty = stockQty; }
+    public String getApplyBillNos() { return applyBillNos; }
+    public void setApplyBillNos(String applyBillNos) { this.applyBillNos = applyBillNos; }
 
     public void setId(Long id) 
     {
@@ -142,6 +186,19 @@ public class PurchasePlanEntry extends BaseEntity
     {
         return delFlag;
     }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
+    }
+
+    public Long getApplyDepartmentId() { return applyDepartmentId; }
+    public void setApplyDepartmentId(Long applyDepartmentId) { this.applyDepartmentId = applyDepartmentId; }
+    public FdDepartment getApplyDepartment() { return applyDepartment; }
+    public void setApplyDepartment(FdDepartment applyDepartment) { this.applyDepartment = applyDepartment; }
 
     public FdMaterial getMaterial() 
     {

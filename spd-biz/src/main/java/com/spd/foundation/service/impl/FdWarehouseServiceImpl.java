@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdWarehouseMapper;
@@ -44,6 +45,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public List<FdWarehouse> selectFdWarehouseList(FdWarehouse fdWarehouse)
     {
+        if (fdWarehouse != null && StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdWarehouseMapper.selectFdWarehouseList(fdWarehouse);
     }
 
@@ -61,12 +65,18 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public int insertFdWarehouse(FdWarehouse fdWarehouse)
     {
+        if (StringUtils.isEmpty(fdWarehouse.getSettlementType())) {
+            throw new ServiceException("仓库创建时必须选择结算方式（入库结算/出库结算/消耗结算）");
+        }
         fdWarehouse.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdWarehouseMapper.insertFdWarehouse(fdWarehouse);
     }
 
     /**
-     * 修改仓库
+     * 修改仓库（结算方式创建后不可修改）
      *
      * @param fdWarehouse 仓库
      * @return 结果
@@ -74,6 +84,10 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public int updateFdWarehouse(FdWarehouse fdWarehouse)
     {
+        FdWarehouse existing = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(fdWarehouse.getId()));
+        if (existing != null && StringUtils.isNotEmpty(existing.getSettlementType())) {
+            fdWarehouse.setSettlementType(existing.getSettlementType());
+        }
         fdWarehouse.setUpdateTime(DateUtils.getNowDate());
         return fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
     }
@@ -94,7 +108,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
         }
         fdWarehouse.setDelFlag(1);
         fdWarehouse.setUpdateTime(DateUtils.getNowDate());
-        fdWarehouse.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdWarehouse.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
     }
 
@@ -112,12 +126,18 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 
     @Override
     public List<FdWarehouse> selectwarehouseAll() {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            FdWarehouse q = new FdWarehouse();
+            q.setTenantId(SecurityUtils.getCustomerId());
+            return fdWarehouseMapper.selectFdWarehouseList(q);
+        }
         return fdWarehouseMapper.selectwarehouseAll();
     }
 
     @Override
     public List<FdWarehouse> selectUserWarehouseAll(Long userId) {
-        return fdWarehouseMapper.selectUserWarehouseAll(userId);
+        String tenantId = SecurityUtils.getCustomerId();
+        return fdWarehouseMapper.selectUserWarehouseAll(userId, tenantId);
     }
 
 //    /**

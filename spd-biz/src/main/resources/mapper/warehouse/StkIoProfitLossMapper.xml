@@ -18,6 +18,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
         <association property="warehouse" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult" />
     </resultMap>
 
@@ -47,6 +48,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
         <result property="delFlag"    column="sub_del_flag"    />
+        <result property="mainBarcode"    column="sub_main_barcode"    />
+        <result property="subBarcode"    column="sub_sub_barcode"    />
+        <result property="supplerId"    column="sub_suppler_id"    />
         <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult" />
     </resultMap>
 
@@ -73,6 +77,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="profitQty"    column="e_profit_qty"    />
         <result property="stockAmount"    column="e_stock_amount"    />
         <result property="profitAmount"    column="e_profit_amount"    />
+        <result property="supplierId"    column="e_supplier_id"    />
+        <result property="mainBarcode"    column="e_main_barcode"    />
+        <result property="subBarcode"    column="e_sub_barcode"    />
         <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult2" />
     </resultMap>
 
@@ -84,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectStkIoProfitLossVo">
         select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
-               p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag,
+               p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag, p.tenant_id,
                w.id as wId, w.code as warehouseCode, w.name as warehouseName
         from stk_io_profit_loss p
         left join fd_warehouse w on p.warehouse_id = w.id
@@ -92,13 +99,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectStkIoProfitLossById" resultMap="StkIoProfitLossWithEntryResult">
         select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
-               p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag,
+               p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag, p.tenant_id,
                w.id as wId, w.code as warehouseCode, w.name as warehouseName,
                e.id as sub_id, e.paren_id as sub_paren_id, e.stocktaking_entry_id as sub_stocktaking_entry_id, e.kc_no as sub_kc_no,
                e.material_id as sub_material_id, e.batch_no as sub_batch_no, e.batch_number as sub_batch_number,
                e.book_qty as sub_book_qty, e.stock_qty as sub_stock_qty, e.profit_qty as sub_profit_qty, e.unit_price as sub_unit_price,
                e.profit_amount as sub_profit_amount, e.begin_time as sub_begin_time, e.end_time as sub_end_time,
-               e.del_flag as sub_del_flag,
+               e.del_flag as sub_del_flag, e.main_barcode as sub_main_barcode, e.sub_barcode as sub_sub_barcode, e.suppler_id as sub_suppler_id,
                m.id as mId, m.code as materialCode, m.name as materialName
         from stk_io_profit_loss p
         left join fd_warehouse w on p.warehouse_id = w.id
@@ -111,6 +118,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkIoProfitLossVo"/>
         <where>
             (p.del_flag is null or p.del_flag != 1)
+            <if test="tenantId != null and tenantId != ''"> and (p.tenant_id = #{tenantId} or p.tenant_id is null)</if>
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingId != null"> and p.stocktaking_id = #{stocktakingId}</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
@@ -135,6 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="tenantId != null">tenant_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billNo != null">#{billNo},</if>
@@ -149,6 +158,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="tenantId != null">#{tenantId},</if>
         </trim>
     </insert>
 
@@ -165,6 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -173,15 +184,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id}
     </update>
 
-    <update id="deleteStkIoProfitLossEntryByParenId" parameterType="Long">
-        update stk_io_profit_loss_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    <update id="deleteStkIoProfitLossEntryByParenId">
+        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId}
     </update>
 
     <insert id="batchStkIoProfitLossEntry">
-        insert into stk_io_profit_loss_entry (paren_id, stocktaking_entry_id, kc_no, material_id, batch_no, batch_number, book_qty, stock_qty, profit_qty, unit_price, profit_amount, begin_time, end_time, del_flag, create_by, create_time, update_by, update_time)
+        insert into stk_io_profit_loss_entry (paren_id, stocktaking_entry_id, kc_no, material_id, batch_no, batch_number, book_qty, stock_qty, profit_qty, unit_price, profit_amount, begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id, create_by, create_time, update_by, update_time)
         values
         <foreach item="item" collection="list" separator=",">
-            ( #{item.parenId}, #{item.stocktakingEntryId}, #{item.kcNo}, #{item.materialId}, #{item.batchNo}, #{item.batchNumber}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime} )
+            ( #{item.parenId}, #{item.stocktakingEntryId}, #{item.kcNo}, #{item.materialId}, #{item.batchNo}, #{item.batchNumber}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime} )
         </foreach>
     </insert>
 
@@ -191,6 +202,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                e.qty as e_qty, e.batch_no as e_batch_no, e.batch_number as e_batch_number,
                e.begin_time as e_begin_time, e.end_time as e_end_time,
                e.stock_qty as e_stock_qty, e.profit_qty as e_profit_qty, e.stock_amount as e_stock_amount, e.profit_amount as e_profit_amount,
+               e.supplier_id as e_supplier_id, e.main_barcode as e_main_barcode, e.sub_barcode as e_sub_barcode,
                m.id as em_id, m.code as em_code, m.name as em_name
         from stk_io_stocktaking_entry e
         left join fd_material m on e.material_id = m.id
@@ -208,6 +220,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select count(1) from stk_io_profit_loss
         where stocktaking_id = #{stocktakingId} and (del_flag is null or del_flag != 1)
     </select>
+
+    <update id="updateStkIoProfitLossEntryBatchNo">
+        update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id}
+    </update>
 
     <!-- 查询盈亏明细列表（用于报表） -->
     <select id="selectProfitLossEntryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">

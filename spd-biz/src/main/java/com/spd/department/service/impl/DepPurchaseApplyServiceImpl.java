@@ -1,5 +1,6 @@
 package com.spd.department.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Date;
 import com.spd.common.utils.DateUtils;
@@ -36,7 +37,11 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public DepPurchaseApply selectDepPurchaseApplyById(Long id)
     {
-        return depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
+        DepPurchaseApply a = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
+        if (a != null) {
+            SecurityUtils.ensureTenantAccess(a.getTenantId());
+        }
+        return a;
     }
 
     /**
@@ -48,6 +53,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public List<DepPurchaseApply> selectDepPurchaseApplyList(DepPurchaseApply depPurchaseApply)
     {
+        if (depPurchaseApply != null && StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         return depPurchaseApplyMapper.selectDepPurchaseApplyList(depPurchaseApply);
     }
 
@@ -57,18 +65,33 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
      * @param depPurchaseApply 科室申购
      * @return 结果
      */
+    /** 校验明细数量：有耗材的明细数量不能为空且必须大于0 */
+    private void validateEntryQty(List<DepPurchaseApplyEntry> list) {
+        if (list == null) return;
+        for (DepPurchaseApplyEntry e : list) {
+            if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
+                throw new ServiceException("科室申购单明细中数量不能为空且必须大于0，请检查后保存。");
+            }
+        }
+    }
+
     @Transactional
     @Override
     public int insertDepPurchaseApply(DepPurchaseApply depPurchaseApply)
     {
+        validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         // 生成申购单号
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo())) {
             depPurchaseApply.setPurchaseBillNo(generatePurchaseBillNo());
         }
         
         depPurchaseApply.setCreateTime(DateUtils.getNowDate());
-        depPurchaseApply.setCreateBy(SecurityUtils.getUsername());
-        
+        if (StringUtils.isEmpty(depPurchaseApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            depPurchaseApply.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = depPurchaseApplyMapper.insertDepPurchaseApply(depPurchaseApply);
         insertDepPurchaseApplyEntry(depPurchaseApply);
         return rows;
@@ -84,10 +107,11 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int updateDepPurchaseApply(DepPurchaseApply depPurchaseApply)
     {
+        validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
-        depPurchaseApply.setUpdateBy(SecurityUtils.getUsername());
+        depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         
-        depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(depPurchaseApply.getId());
+        depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(depPurchaseApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertDepPurchaseApplyEntry(depPurchaseApply);
         return depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
     }
@@ -102,8 +126,15 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int deleteDepPurchaseApplyByIds(Long[] ids)
     {
-        depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentIds(ids);
-        return depPurchaseApplyMapper.deleteDepPurchaseApplyByIds(ids);
+        for (Long id : ids) {
+            DepPurchaseApply existing = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentIds(ids, deleteBy);
+        return depPurchaseApplyMapper.deleteDepPurchaseApplyByIds(ids, deleteBy);
     }
 
     /**
@@ -116,8 +147,13 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int deleteDepPurchaseApplyById(Long id)
     {
-        depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(id);
-        return depPurchaseApplyMapper.deleteDepPurchaseApplyById(id);
+        DepPurchaseApply existing = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(id, deleteBy);
+        return depPurchaseApplyMapper.deleteDepPurchaseApplyById(id, deleteBy);
     }
 
     /**
@@ -129,17 +165,26 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     {
         List<DepPurchaseApplyEntry> depPurchaseApplyEntryList = depPurchaseApply.getDepPurchaseApplyEntryList();
         Long id = depPurchaseApply.getId();
-        if (StringUtils.isNotNull(depPurchaseApplyEntryList))
+        if (id == null) {
+            return;
+        }
+        if (StringUtils.isNotNull(depPurchaseApplyEntryList) && !depPurchaseApplyEntryList.isEmpty())
         {
             List<DepPurchaseApplyEntry> list = new ArrayList<DepPurchaseApplyEntry>();
             for (DepPurchaseApplyEntry depPurchaseApplyEntry : depPurchaseApplyEntryList)
             {
+                if (depPurchaseApplyEntry.getMaterialId() == null) {
+                    continue;
+                }
                 depPurchaseApplyEntry.setParentId(id);
+                if (StringUtils.isEmpty(depPurchaseApplyEntry.getTenantId()) && StringUtils.isNotEmpty(depPurchaseApply.getTenantId())) {
+                    depPurchaseApplyEntry.setTenantId(depPurchaseApply.getTenantId());
+                }
                 depPurchaseApplyEntry.setCreateTime(DateUtils.getNowDate());
-                depPurchaseApplyEntry.setCreateBy(SecurityUtils.getUsername());
+                depPurchaseApplyEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 list.add(depPurchaseApplyEntry);
             }
-            if (list.size() > 0)
+            if (!list.isEmpty())
             {
                 depPurchaseApplyMapper.batchDepPurchaseApplyEntry(list);
             }
@@ -170,9 +215,13 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int auditPurchaseApply(String id, String auditBy) {
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
-        if(depPurchaseApply == null){
+        if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
         }
+        if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
+            throw new ServiceException("只有待审核状态(1)的科室申购可审核，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
+        }
+        validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setPurchaseBillStatus(2);//已审核状态
         depPurchaseApply.setUpdateBy(auditBy);
         depPurchaseApply.setUpdateTime(new Date());
@@ -190,12 +239,15 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int rejectPurchaseApply(String id, String rejectReason) {
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
-        if(depPurchaseApply == null){
+        if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
+        }
+        if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
+            throw new ServiceException("只有待审核状态(1)的科室申购可驳回，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
         }
         depPurchaseApply.setPlanStatus(2); // 驳回状态
         depPurchaseApply.setRejectReason(rejectReason);
-        depPurchaseApply.setUpdateBy(SecurityUtils.getUsername());
+        depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         depPurchaseApply.setUpdateTime(new Date());
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
         return res;
@@ -244,7 +296,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         // 使用planStatus字段标识收货状态：2=驳回收货
         depPurchaseApply.setPlanStatus(2);
         depPurchaseApply.setRejectReason(rejectReason);
-        depPurchaseApply.setUpdateBy(SecurityUtils.getUsername());
+        depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         depPurchaseApply.setUpdateTime(new Date());
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
         return res;

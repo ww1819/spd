@@ -34,6 +34,12 @@ public class FdDepartment extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id)，耗材与租户关联 */
+    private String tenantId;
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
     public void setId(Long id)
     {
         this.id = id;

@@ -1,5 +1,7 @@
 package com.spd.monitoring.service.impl;
 
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.monitoring.domain.DeptFixedNumber;
 import com.spd.monitoring.domain.FixedNumberSaveRequest;
@@ -23,11 +25,17 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
 
     @Override
     public List<WhFixedNumber> selectWhFixedNumberList(WhFixedNumber query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return whFixedNumberMapper.selectWhFixedNumberList(query);
     }
 
     @Override
     public List<DeptFixedNumber> selectDeptFixedNumberList(DeptFixedNumber query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return deptFixedNumberMapper.selectDeptFixedNumberList(query);
     }
 
@@ -52,18 +60,21 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setId(UUID7.generateUUID7());
                     entity.setWarehouseId(warehouseId);
                     entity.setMaterialId(d.getMaterialId());
-                    entity.setUpperLimit(d.getUpperLimit());
-                    entity.setLowerLimit(d.getLowerLimit());
+                    entity.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    entity.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     entity.setExpiryReminder(d.getExpiryReminder());
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
                     entity.setDelFlag(0);
+                    if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                        entity.setTenantId(SecurityUtils.getCustomerId());
+                    }
                     entity.setCreateBy(operator);
                     whFixedNumberMapper.insertWhFixedNumber(entity);
                 } else {
-                    existing.setUpperLimit(d.getUpperLimit());
-                    existing.setLowerLimit(d.getLowerLimit());
+                    existing.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    existing.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     existing.setExpiryReminder(d.getExpiryReminder());
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());
@@ -87,18 +98,21 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setId(UUID7.generateUUID7());
                     entity.setDepartmentId(departmentId);
                     entity.setMaterialId(d.getMaterialId());
-                    entity.setUpperLimit(d.getUpperLimit());
-                    entity.setLowerLimit(d.getLowerLimit());
+                    entity.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    entity.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     entity.setExpiryReminder(d.getExpiryReminder());
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
                     entity.setDelFlag(0);
+                    if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                        entity.setTenantId(SecurityUtils.getCustomerId());
+                    }
                     entity.setCreateBy(operator);
                     deptFixedNumberMapper.insertDeptFixedNumber(entity);
                 } else {
-                    existing.setUpperLimit(d.getUpperLimit());
-                    existing.setLowerLimit(d.getLowerLimit());
+                    existing.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    existing.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     existing.setExpiryReminder(d.getExpiryReminder());
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());

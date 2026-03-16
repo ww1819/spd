@@ -21,6 +21,7 @@
     <result property="perms"     column="perms"/>
     <result property="icon"      column="icon"/>
     <result property="isPlatformOnly" column="is_platform_only"/>
+    <result property="defaultOpenToCustomer" column="default_open_to_customer"/>
     <result property="customerMenuStatus" column="customer_menu_status"/>
     <result property="createBy"  column="create_by"/>
     <result property="createTime" column="create_time"/>
@@ -29,6 +30,7 @@
     <result property="remark"    column="remark"/>
     <result property="deleteBy"  column="delete_by"/>
     <result property="deleteTime" column="delete_time"/>
+    <result property="delFlag"   column="del_flag"/>
   </resultMap>
 
   <sql id="selectSbMenuVo">
@@ -46,19 +48,23 @@
            status,
            ifnull(perms, '') as perms,
            icon,
+           is_platform_only,
+           ifnull(default_open_to_customer,'0') as default_open_to_customer,
            create_time,
            update_time,
            create_by,
            update_by,
            remark,
            delete_by,
-           delete_time
+           delete_time,
+           ifnull(del_flag,'0') as del_flag
     from sb_menu
   </sql>
 
   <select id="selectSbMenuList" parameterType="com.spd.system.domain.SbMenu" resultMap="SbMenuResult">
     <include refid="selectSbMenuVo"/>
     <where>
+      and ifnull(del_flag,'0') = '0'
       <if test="menuName != null and menuName != ''">
         AND menu_name like concat('%', #{menuName}, '%')
       </if>
@@ -70,6 +76,11 @@
       </if>
     </where>
     order by parent_id, order_num
+  </select>
+
+  <select id="selectSbMenuById" resultMap="SbMenuResult">
+    <include refid="selectSbMenuVo"/>
+    where menu_id = #{menuId} and ifnull(del_flag,'0') = '0'
   </select>
 
   <select id="selectSbMenuTreeByCustomerIdEnabling" resultMap="SbMenuResult">
@@ -98,7 +109,7 @@
            m.delete_time
     from sb_menu m
     inner join sb_customer_menu cm on cm.menu_id = m.menu_id and cm.customer_id = #{customerId} and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1'
-    where m.menu_type in ('M', 'C') and m.status = '0' and ifnull(m.is_platform_only,'0') = '0'
+    where m.menu_type in ('M', 'C') and m.status = '0' and ifnull(m.is_platform_only,'0') = '0' and ifnull(m.del_flag,'0') = '0'
     order by m.parent_id, m.order_num
   </select>
 
@@ -128,7 +139,7 @@
            m.delete_time
     from sb_menu m
     where m.menu_type in ('M', 'C')
-      and m.status = '0'
+      and m.status = '0' and ifnull(m.del_flag,'0') = '0'
     order by m.parent_id, m.order_num
   </select>
 
@@ -160,13 +171,13 @@
            m.delete_time
     from sb_menu m
     where m.menu_type in ('M', 'C')
-      and m.status = '0'
+      and m.status = '0' and ifnull(m.del_flag,'0') = '0'
       and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
       and (
         exists (select 1 from sys_user u where u.user_id = #{userId} and u.customer_id is null)
         or exists (
           select 1 from sys_user u
-          inner join sb_customer_menu cm on cm.customer_id = u.customer_id and cm.menu_id = m.menu_id and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1'
+          inner join sb_customer_menu cm on cm.customer_id = u.customer_id and cm.menu_id = m.menu_id and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1' and ifnull(cm.status,'0') = '0'
           where u.user_id = #{userId}
         )
       )
@@ -190,6 +201,7 @@
       <if test="icon != null and icon != ''">icon,</if>
       <if test="remark != null and remark != ''">remark,</if>
       <if test="createBy != null and createBy != ''">create_by,</if>
+      del_flag, default_open_to_customer,
       create_time
     ) values(
       <if test="menuId != null and menuId != ''">#{menuId},</if>
@@ -207,6 +219,7 @@
       <if test="icon != null and icon != ''">#{icon},</if>
       <if test="remark != null and remark != ''">#{remark},</if>
       <if test="createBy != null and createBy != ''">#{createBy},</if>
+      ifnull(#{delFlag},'0'), ifnull(#{defaultOpenToCustomer},'0'),
       sysdate()
     )
   </insert>
@@ -227,33 +240,48 @@
       <if test="perms != null">perms = #{perms},</if>
       <if test="icon != null and icon != ''">icon = #{icon},</if>
       <if test="remark != null and remark != ''">remark = #{remark},</if>
+      <if test="defaultOpenToCustomer != null">default_open_to_customer = #{defaultOpenToCustomer},</if>
       <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
       update_time = sysdate()
     </set>
     where menu_id = #{menuId}
   </update>
 
-  <delete id="deleteSbMenuById" parameterType="String">
-    delete from sb_menu where menu_id = #{menuId}
-  </delete>
-
   <select id="checkSbMenuNameUnique" parameterType="com.spd.system.domain.SbMenu" resultMap="SbMenuResult">
     <include refid="selectSbMenuVo"/>
-    where menu_name = #{menuName} and parent_id = #{parentId} limit 1
+    where ifnull(del_flag,'0') = '0' and menu_name = #{menuName} and parent_id = #{parentId} limit 1
   </select>
 
+  <!-- 设备端菜单及按钮权限(perms)：均读取 sb_user_permission_menu（用户直接授权）或 sb_role_menu（角色菜单），满足其一即返回 -->
   <select id="selectSbMenuPermsByUserId" parameterType="Long" resultType="String">
     select distinct m.perms
     from sb_menu m
-    where m.status = '0' and m.perms is not null and m.perms != ''
-      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+    where m.status = '0' and ifnull(m.del_flag,'0') = '0' and m.perms is not null and m.perms != ''
+      and (
+        exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+        or exists (
+          select 1 from sb_role_menu rm
+          inner join sb_user_role ur on rm.role_id = ur.role_id and ur.user_id = #{userId} and (ur.delete_time is null)
+          inner join sb_role r on r.role_id = ur.role_id and ifnull(r.del_flag,'0') = '0' and ifnull(r.status,'0') = '0'
+          where rm.menu_id = m.menu_id and (rm.delete_time is null)
+        )
+      )
   </select>
 
+  <!-- 设备端菜单及按钮权限（按客户过滤）：读取 sb_user_permission_menu 或 sb_role_menu，且菜单在该客户下已开启 -->
   <select id="selectSbMenuPermsByUserIdAndCustomer" resultType="String">
     select distinct m.perms
     from sb_menu m
-    where m.status = '0' and m.perms is not null and m.perms != ''
-      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+    where m.status = '0' and ifnull(m.del_flag,'0') = '0' and m.perms is not null and m.perms != ''
+      and (
+        exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+        or exists (
+          select 1 from sb_role_menu rm
+          inner join sb_user_role ur on rm.role_id = ur.role_id and ur.user_id = #{userId} and (ur.delete_time is null)
+          inner join sb_role r on r.role_id = ur.role_id and ifnull(r.del_flag,'0') = '0' and ifnull(r.status,'0') = '0'
+          where rm.menu_id = m.menu_id and (rm.delete_time is null)
+        )
+      )
       and (
         (#{customerId} is null or #{customerId} = '')
         or exists (
@@ -267,15 +295,28 @@
   <!-- 系统设置目录下且非平台管理的菜单ID（新租户/super组默认：用户管理、工作组等，不含平台管理功能） -->
   <select id="selectMenuIdsSystemSettingsNonPlatform" resultType="string">
     WITH RECURSIVE tree AS (
-      SELECT menu_id FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001450'
+      SELECT menu_id FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001450' AND ifnull(del_flag,'0') = '0'
       UNION ALL
-      SELECT m.menu_id FROM sb_menu m INNER JOIN tree t ON m.parent_id = t.menu_id
+      SELECT m.menu_id FROM sb_menu m INNER JOIN tree t ON m.parent_id = t.menu_id WHERE ifnull(m.del_flag,'0') = '0'
     )
     SELECT t.menu_id FROM tree t
     INNER JOIN sb_menu m ON m.menu_id = t.menu_id
     WHERE (m.is_platform_only = '0' OR m.is_platform_only IS NULL)
       AND m.status = '0'
-      AND (m.delete_time IS NULL)
+      AND ifnull(m.del_flag,'0') = '0'
   </select>
+
+  <!-- 默认对客户开放的菜单ID（设备功能重置时授权给客户、管理员组、管理员用户） -->
+  <select id="selectMenuIdsDefaultForCustomer" resultType="string">
+    SELECT menu_id FROM sb_menu
+    WHERE ifnull(del_flag,'0') = '0'
+      AND status = '0'
+      AND ifnull(default_open_to_customer,'0') = '1'
+      AND (is_platform_only = '0' OR is_platform_only IS NULL)
+  </select>
+
+  <update id="deleteSbMenuById">
+    update sb_menu set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1' where menu_id = #{menuId}
+  </update>
 </mapper>
 

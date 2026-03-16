@@ -66,6 +66,9 @@ public class GzRefundGoods extends BaseEntity
     @Excel(name = "审核人")
     private String auditBy;
 
+    /** 租户ID */
+    private String tenantId;
+
     /** 高值退货明细信息 */
     private List<GzRefundGoodsEntry> gzRefundGoodsEntryList;
 
@@ -183,6 +186,9 @@ public class GzRefundGoods extends BaseEntity
     {
         return auditBy;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public List<GzRefundGoodsEntry> getGzRefundGoodsEntryList()
     {

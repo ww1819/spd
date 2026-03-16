@@ -3,6 +3,7 @@ package com.spd.caigou.mapper;
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -50,12 +51,9 @@ public interface PurchaseOrderMapper
     public int updatePurchaseOrder(PurchaseOrder purchaseOrder);
 
     /**
-     * 删除采购订单
-     *
-     * @param id 采购订单主键
-     * @return 结果
+     * 逻辑删除采购订单（设置 del_flag、delete_by、delete_time）
      */
-    public int deletePurchaseOrderById(Long id);
+    public int deletePurchaseOrderById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 审核采购订单
@@ -66,12 +64,9 @@ public interface PurchaseOrderMapper
     public int auditPurchaseOrder(PurchaseOrder purchaseOrder);
 
     /**
-     * 批量删除采购订单
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
+     * 批量逻辑删除采购订单
      */
-    public int deletePurchaseOrderByIds(Long[] ids);
+    public int deletePurchaseOrderByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询采购订单明细
@@ -98,12 +93,9 @@ public interface PurchaseOrderMapper
     public int batchPurchaseOrderEntry(List<PurchaseOrderEntry> purchaseOrderEntryList);
 
     /**
-     * 删除采购订单明细
-     *
-     * @param parentId 主表ID
-     * @return 结果
+     * 逻辑删除采购订单明细
      */
-    public int deletePurchaseOrderEntryByParentId(Long parentId);
+    public int deletePurchaseOrderEntryByParentId(@Param("parentId") Long parentId, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询最大订单单号

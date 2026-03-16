@@ -49,6 +49,11 @@ public class StkInitialImportEntry extends BaseEntity {
     private Long supplierId;
     /** 删除标志 */
     private Integer delFlag;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date deleteTime;
     /** 排序 */
     private Integer sortOrder;
 
@@ -71,6 +76,8 @@ public class StkInitialImportEntry extends BaseEntity {
     private String medicalName;
     /** 主条码（导入快照） */
     private String mainBarcode;
+    /** 高值耗材辅条码（导入快照） */
+    private String subBarcode;
 
     /** 耗材对象 */
     private FdMaterial material;

@@ -17,6 +17,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="telephone"    column="telephone"    />
         <result property="remark"    column="remark"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"   column="delete_by"   />
+        <result property="deleteTime" column="delete_time" />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -24,6 +26,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditBy"    column="audit_by"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditOpinion"    column="audit_opinion"    />
+        <result property="tenantId"    column="tenant_id"    />
+        <result property="planEntryMode"    column="plan_entry_mode"    />
+        <result property="createByName"    column="create_by_name"    />
+        <result property="updateByName"    column="update_by_name"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -34,18 +41,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="entry_id"    />
         <result property="parentId"    column="parent_id"    />
         <result property="materialId"    column="material_id"    />
+        <result property="supplierId"    column="supplier_id"    />
         <result property="qty"    column="qty"    />
+        <result property="applyQty"    column="apply_qty"    />
         <result property="price"    column="price"    />
         <result property="amt"    column="amt"    />
         <result property="speci"    column="speci"    />
         <result property="model"    column="model"    />
         <result property="remark"    column="entry_remark"    />
         <result property="delFlag"    column="entry_del_flag"    />
+        <result property="deleteBy"    column="entry_delete_by"    />
+        <result property="deleteTime"    column="entry_delete_time"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="createBy"    column="entry_create_by"    />
         <result property="createTime"    column="entry_create_time"    />
         <result property="updateBy"    column="entry_update_by"    />
         <result property="updateTime"    column="entry_update_time"    />
+        <result property="applyDepartmentId"    column="apply_department_id"    />
         <association property="material"    column="material_id" javaType="FdMaterial" resultMap="materialResult" />
+        <association property="applyDepartment" column="entry_id" javaType="FdDepartment" resultMap="applyDepartmentResult" />
+    </resultMap>
+
+    <resultMap id="applyDepartmentResult" type="FdDepartment">
+        <id     property="id"    column="ad_id"     />
+        <result property="name"  column="ad_name"   />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -83,32 +102,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectPurchasePlanVo">
         select pp.id, pp.plan_no, pp.supplier_id, pp.warehouse_id, pp.department_id, pp.plan_date, pp.plan_status,
-               pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.create_by, pp.create_time,
+               pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.delete_by, pp.delete_time, pp.tenant_id, pp.plan_entry_mode, pp.create_by, pp.create_time,
                pp.update_by, pp.update_time, pp.audit_by, pp.audit_date, pp.audit_opinion,
                s.id sId, s.code supplierCode, s.name supplierName,
                w.id wId, w.code warehouseCode, w.name warehouseName,
-               d.id dId, d.code departmentCode, d.name departmentName
+               d.id dId, d.code departmentCode, d.name departmentName,
+               coalesce(cu.nick_name, cu.user_name) as create_by_name,
+               coalesce(uu.nick_name, uu.user_name) as update_by_name,
+               coalesce(au.nick_name, au.user_name) as audit_by_name
         from purchase_plan pp
         left join fd_supplier s on pp.supplier_id = s.id
         left join fd_warehouse w on pp.warehouse_id = w.id
         left join fd_department d on pp.department_id = d.id
+        left join sys_user cu on pp.create_by = cu.user_id
+        left join sys_user uu on pp.update_by = uu.user_id
+        left join sys_user au on pp.audit_by = au.user_id
     </sql>
 
     <sql id="selectPurchasePlanEntryVo">
-        select ppe.id entry_id, ppe.parent_id, ppe.material_id, ppe.qty, ppe.price, ppe.amt, ppe.speci, ppe.model,
-               ppe.remark entry_remark, ppe.del_flag entry_del_flag, ppe.create_by entry_create_by, ppe.create_time entry_create_time,
-               ppe.update_by entry_update_by, ppe.update_time entry_update_time,
+        select ppe.id entry_id, ppe.parent_id, ppe.material_id, ppe.supplier_id, ppe.qty, ppe.apply_qty, ppe.price, ppe.amt, ppe.speci, ppe.model,
+               ppe.remark entry_remark, ppe.del_flag entry_del_flag, ppe.delete_by entry_delete_by, ppe.delete_time entry_delete_time,
+               ppe.tenant_id, ppe.create_by entry_create_by, ppe.create_time entry_create_time, ppe.update_by entry_update_by, ppe.update_time entry_update_time,
+               ppe.apply_department_id,
                m.id mId, m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel,
-               u.unit_id uid, u.unit_code u_code, u.unit_name u_name
+               u.unit_id uid, u.unit_code u_code, u.unit_name u_name,
+               ad.id ad_id, ad.name ad_name
         from purchase_plan_entry ppe
         left join fd_material m on ppe.material_id = m.id
         left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_department ad on ppe.apply_department_id = ad.id
     </sql>
 
     <select id="selectPurchasePlanList" parameterType="PurchasePlan" resultMap="PurchasePlanResult">
         <include refid="selectPurchasePlanVo"/>
-        <where>  
-            pp.del_flag = '0'
+        <where>
+            and (pp.del_flag = '0' or pp.del_flag is null)
+            <if test="tenantId != null and tenantId != ''"> and (pp.tenant_id = #{tenantId} or pp.tenant_id is null)</if>
             <if test="planNo != null  and planNo != ''"> and pp.plan_no like concat('%', #{planNo}, '%')</if>
             <if test="supplierId != null "> and pp.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and pp.warehouse_id = #{warehouseId}</if>
@@ -128,12 +157,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     
     <select id="selectPurchasePlanById" parameterType="Long" resultMap="PurchasePlanResult">
         <include refid="selectPurchasePlanVo"/>
-        where pp.id = #{id} and pp.del_flag = '0'
+        where pp.id = #{id} and (pp.del_flag = '0' or pp.del_flag is null)
     </select>
 
     <select id="selectPurchasePlanEntryByParentId" parameterType="Long" resultMap="PurchasePlanEntryResult">
         <include refid="selectPurchasePlanEntryVo"/>
-        where ppe.parent_id = #{parentId} and ppe.del_flag = '0'
+        where ppe.parent_id = #{parentId} and (ppe.del_flag = '0' or ppe.del_flag is null)
     </select>
         
     <insert id="insertPurchasePlan" parameterType="PurchasePlan" useGeneratedKeys="true" keyProperty="id">
@@ -157,6 +186,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">audit_by,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="tenantId != null">tenant_id,</if>
+            <if test="planEntryMode != null">plan_entry_mode,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">#{planNo},</if>
@@ -177,6 +208,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="tenantId != null">#{tenantId},</if>
+            <if test="planEntryMode != null">#{planEntryMode},</if>
          </trim>
     </insert>
 
@@ -185,13 +218,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
             <if test="materialId != null">material_id,</if>
+            <if test="supplierId != null">supplier_id,</if>
             <if test="qty != null">qty,</if>
+            <if test="applyQty != null">apply_qty,</if>
             <if test="price != null">price,</if>
             <if test="amt != null">amt,</if>
             <if test="speci != null">speci,</if>
             <if test="model != null">model,</if>
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="applyDepartmentId != null">apply_department_id,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -200,13 +237,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="parentId != null">#{parentId},</if>
             <if test="materialId != null">#{materialId},</if>
+            <if test="supplierId != null">#{supplierId},</if>
             <if test="qty != null">#{qty},</if>
+            <if test="applyQty != null">#{applyQty},</if>
             <if test="price != null">#{price},</if>
             <if test="amt != null">#{amt},</if>
             <if test="speci != null">#{speci},</if>
             <if test="model != null">#{model},</if>
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="applyDepartmentId != null">#{applyDepartmentId},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -215,10 +256,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="batchPurchasePlanEntry" parameterType="java.util.List">
-        insert into purchase_plan_entry(parent_id, material_id, qty, price, amt, speci, model, remark, del_flag, create_by, create_time)
+        insert into purchase_plan_entry(parent_id, material_id, supplier_id, qty, apply_qty, price, amt, speci, model, remark, del_flag, apply_department_id, tenant_id, create_by, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.materialId}, #{item.supplierId}, #{item.qty}, #{item.applyQty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.applyDepartmentId}, #{item.tenantId}, #{item.createBy}, #{item.createTime})
         </foreach>
     </insert>
 
@@ -243,6 +284,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="planEntryMode != null">plan_entry_mode = #{planEntryMode},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -252,13 +295,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="qty != null">qty = #{qty},</if>
+            <if test="applyQty != null">apply_qty = #{applyQty},</if>
             <if test="price != null">price = #{price},</if>
             <if test="amt != null">amt = #{amt},</if>
             <if test="speci != null">speci = #{speci},</if>
             <if test="model != null">model = #{model},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="applyDepartmentId != null">apply_department_id = #{applyDepartmentId},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -280,24 +327,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deletePurchasePlanById" parameterType="Long">
-        update purchase_plan set del_flag = '1' where id = #{id}
+    <delete id="deletePurchasePlanById">
+        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
     </delete>
 
-    <delete id="deletePurchasePlanByIds" parameterType="String">
-        update purchase_plan set del_flag = '1' where id in 
-        <foreach item="id" collection="array" open="(" separator="," close=")">
+    <delete id="deletePurchasePlanByIds">
+        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
-    <delete id="deletePurchasePlanEntryByParentId" parameterType="Long">
-        update purchase_plan_entry set del_flag = '1' where parent_id = #{parentId}
+    <delete id="deletePurchasePlanEntryByParentId">
+        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
     </delete>
 
-    <delete id="deletePurchasePlanEntryByParentIds" parameterType="String">
-        update purchase_plan_entry set del_flag = '1' where parent_id in 
-        <foreach item="parentId" collection="array" open="(" separator="," close=")">
+    <delete id="deletePurchasePlanEntryByParentIds">
+        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id in
+        <foreach item="parentId" collection="parentIds" open="(" separator="," close=")">
             #{parentId}
         </foreach>
     </delete>

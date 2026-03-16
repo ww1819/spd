@@ -88,6 +88,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="customerId != null and customerId != ''">
 			AND u.customer_id = #{customerId}
 		</if>
+		<if test="workgroupPostId != null and workgroupPostId != ''">
+			AND EXISTS (SELECT 1 FROM sb_work_group_user wgu WHERE wgu.user_id = u.user_id AND wgu.group_id = #{workgroupPostId} AND IFNULL(wgu.del_flag, '0') = '0')
+		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
 	</select>

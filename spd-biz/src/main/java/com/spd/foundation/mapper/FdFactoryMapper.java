@@ -1,6 +1,7 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.foundation.domain.FdFactory;
 
 /**
@@ -44,20 +45,22 @@ public interface FdFactoryMapper
     public int updateFdFactory(FdFactory fdFactory);
 
     /**
-     * 删除厂家维护
+     * 逻辑删除厂家维护（设置 del_flag=1, delete_by, delete_time）
      *
      * @param factoryId 厂家维护主键
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteFdFactoryByFactoryId(Long factoryId);
+    public int deleteFdFactoryByFactoryId(@Param("factoryId") Long factoryId, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除厂家维护
+     * 批量逻辑删除厂家维护
      *
      * @param factoryIds 需要删除的数据主键集合
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteFdFactoryByFactoryIds(Long[] factoryIds);
+    public int deleteFdFactoryByFactoryIds(@Param("factoryIds") Long[] factoryIds, @Param("deleteBy") String deleteBy);
 
     /**
      * 校验厂家是否已存在出入库业务

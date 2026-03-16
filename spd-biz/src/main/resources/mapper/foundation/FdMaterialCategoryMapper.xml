@@ -15,15 +15,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
+        <result property="tenantId"    column="tenant_id"    />
     </resultMap>
 
     <sql id="selectFdMaterialCategoryVo">
-        select material_category_id, material_category_code, material_category_name, material_category_address, material_category_contact, del_flag, create_by, create_time, update_by, update_time from fd_material_category
+        select material_category_id, material_category_code, material_category_name, material_category_address, material_category_contact, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time, tenant_id from fd_material_category
     </sql>
 
     <select id="selectFdMaterialCategoryList" parameterType="FdMaterialCategory" resultMap="FdMaterialCategoryResult">
         <include refid="selectFdMaterialCategoryVo"/>
         where del_flag != 1
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
         <if test="materialCategoryCode != null  and materialCategoryCode != ''"> and material_category_code = #{materialCategoryCode}</if>
         <if test="materialCategoryName != null  and materialCategoryName != ''"> and material_category_name like concat('%', #{materialCategoryName}, '%')</if>
         <if test="materialCategoryAddress != null  and materialCategoryAddress != ''"> and material_category_address = #{materialCategoryAddress}</if>
@@ -47,6 +51,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialCategoryCode != null and materialCategoryCode != ''">#{materialCategoryCode},</if>
@@ -58,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
@@ -73,17 +79,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where material_category_id = #{materialCategoryId}
     </update>
 
-    <delete id="deleteFdMaterialCategoryByMaterialCategoryId" parameterType="Long">
-        update fd_material_category set del_flag = 1, update_time = now() where material_category_id = #{materialCategoryId}
+    <delete id="deleteFdMaterialCategoryByMaterialCategoryId">
+        update fd_material_category set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where material_category_id = #{materialCategoryId}
     </delete>
 
-    <delete id="deleteFdMaterialCategoryByMaterialCategoryIds" parameterType="String">
-        update fd_material_category set del_flag = 1, update_time = now() where material_category_id in
-        <foreach item="materialCategoryId" collection="array" open="(" separator="," close=")">
+    <delete id="deleteFdMaterialCategoryByMaterialCategoryIds">
+        update fd_material_category set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where material_category_id in
+        <foreach item="materialCategoryId" collection="materialCategoryIds" open="(" separator="," close=")">
             #{materialCategoryId}
         </foreach>
     </delete>

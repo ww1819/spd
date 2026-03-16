@@ -80,7 +80,7 @@ public class SbRoleController extends BaseController {
         if (role.getCustomerId() == null && SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null) {
             role.setCustomerId(SecurityUtils.getLoginUser().getUser().getCustomerId());
         }
-        role.setCreateBy(SecurityUtils.getUsername());
+        role.setCreateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbRoleService.insertSbRole(role));
     }
 
@@ -100,7 +100,7 @@ public class SbRoleController extends BaseController {
         {
             return error("修改角色'" + role.getRoleName() + "'失败，角色权限已存在");
         }
-        role.setUpdateBy(SecurityUtils.getUsername());
+        role.setUpdateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbRoleService.updateSbRole(role));
     }
 
@@ -112,7 +112,7 @@ public class SbRoleController extends BaseController {
     @PutMapping("/changeStatus")
     public AjaxResult changeStatus(@RequestBody SbRole role)
     {
-        role.setUpdateBy(SecurityUtils.getUsername());
+        role.setUpdateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbRoleService.updateSbRoleStatus(role));
     }
 

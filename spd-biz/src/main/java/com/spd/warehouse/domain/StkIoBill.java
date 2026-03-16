@@ -64,11 +64,29 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "产品档案ID")
     private String materialId;
 
+    /** 产品名称/编码/拼音简码 模糊查询（出退库查询） */
+    private String materialNameLike;
+    /** 规格 模糊查询（出退库查询） */
+    private String materialSpeciLike;
+    /** 型号 模糊查询（出退库查询） */
+    private String materialModelLike;
+
     @Excel(name = "库房分类ID")
     private String warehouseCategoryId;
 
     /** 删除标识 */
     private Integer delFlag;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    private Date deleteTime;
+
+    /** 结算方式（来自仓库：1入库结算 2出库结算 3消耗结算） */
+    private String settlementType;
 
     /** 出入库明细信息 */
     private List<StkIoBillEntry> stkIoBillEntryList;
@@ -263,6 +281,30 @@ public class StkIoBill extends BaseEntity
         this.materialId = materialId;
     }
 
+    public String getMaterialNameLike() {
+        return materialNameLike;
+    }
+
+    public void setMaterialNameLike(String materialNameLike) {
+        this.materialNameLike = materialNameLike;
+    }
+
+    public String getMaterialSpeciLike() {
+        return materialSpeciLike;
+    }
+
+    public void setMaterialSpeciLike(String materialSpeciLike) {
+        this.materialSpeciLike = materialSpeciLike;
+    }
+
+    public String getMaterialModelLike() {
+        return materialModelLike;
+    }
+
+    public void setMaterialModelLike(String materialModelLike) {
+        this.materialModelLike = materialModelLike;
+    }
+
     public Long getDepartmentId()
     {
         return departmentId;
@@ -302,6 +344,26 @@ public class StkIoBill extends BaseEntity
     public Integer getDelFlag()
     {
         return delFlag;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
     }
 
     public List<StkIoBillEntry> getStkIoBillEntryList()
@@ -528,6 +590,8 @@ public class StkIoBill extends BaseEntity
             .append("userId", getUserId())
             .append("billType", getBillType())
             .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
+            .append("settlementType", getSettlementType())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())

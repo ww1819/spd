@@ -1,6 +1,7 @@
 package com.spd.framework.web.service;
 
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import com.spd.common.core.domain.entity.SysRole;
@@ -8,6 +9,8 @@ import com.spd.common.core.domain.model.LoginUser;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.framework.security.context.PermissionContextHolder;
+import com.spd.system.domain.SbWorkGroup;
+import com.spd.system.service.ISbWorkGroupService;
 
 /**
  * 自定义权限实现，ss取自SpringSecurity首字母
@@ -17,6 +20,9 @@ import com.spd.framework.security.context.PermissionContextHolder;
 @Service("ss")
 public class PermissionService
 {
+    @Autowired
+    private ISbWorkGroupService sbWorkGroupService;
+
     /** 所有权限标识 */
     private static final String ALL_PERMISSION = "*:*:*";
 
@@ -64,6 +70,56 @@ public class PermissionService
         }
         String customerId = loginUser.getUser().getCustomerId();
         return customerId == null || customerId.trim().isEmpty();
+    }
+
+    /**
+     * 是否为租户用户且请求的客户即本人所属客户（用于允许访问“本人客户”下的数据，如工作组列表）。
+     * 当 requestCustomerId 为空时视为访问本人客户。
+     */
+    public boolean isTenantUserWithCustomer(String requestCustomerId)
+    {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null)
+        {
+            return false;
+        }
+        String myCustomerId = loginUser.getUser().getCustomerId();
+        if (StringUtils.isEmpty(myCustomerId))
+        {
+            return false;
+        }
+        if (StringUtils.isEmpty(requestCustomerId))
+        {
+            return true;
+        }
+        return myCustomerId.trim().equals(requestCustomerId.trim());
+    }
+
+    /**
+     * 是否为租户用户且该工作组属于本人所属客户（用于允许访问本人客户下的工作组的菜单/仓库/科室等接口）。
+     */
+    public boolean isTenantUserWithGroup(String groupId)
+    {
+        if (StringUtils.isEmpty(groupId))
+        {
+            return false;
+        }
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null)
+        {
+            return false;
+        }
+        String myCustomerId = loginUser.getUser().getCustomerId();
+        if (StringUtils.isEmpty(myCustomerId))
+        {
+            return false;
+        }
+        SbWorkGroup group = sbWorkGroupService.selectByGroupId(groupId);
+        if (group == null || group.getCustomerId() == null)
+        {
+            return false;
+        }
+        return myCustomerId.trim().equals(group.getCustomerId().trim());
     }
 
     /**

@@ -102,7 +102,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         }
         fdFinanceCategory.setDelFlag(1);
         fdFinanceCategory.setUpdateTime(DateUtils.getNowDate());
-        fdFinanceCategory.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdFinanceCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
     }
 

@@ -2,6 +2,10 @@ package com.spd.caigou.service.impl;
 
 import com.spd.caigou.domain.PurchasePlan;
 import com.spd.caigou.domain.PurchasePlanEntry;
+import com.spd.caigou.domain.PurchasePlanEntryApply;
+import com.spd.caigou.domain.PurchasePlanEntryDepApply;
+import com.spd.caigou.mapper.PurchasePlanEntryApplyMapper;
+import com.spd.caigou.mapper.PurchasePlanEntryDepApplyMapper;
 import com.spd.caigou.mapper.PurchasePlanMapper;
 import com.spd.caigou.service.IPurchasePlanService;
 import com.spd.caigou.service.IPurchaseOrderService;
@@ -10,15 +14,26 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.spd.caigou.domain.vo.EntryBillNoVO;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 /**
  * 采购计划Service业务层处理
@@ -36,7 +51,17 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     private FdMaterialMapper fdMaterialMapper;
 
     @Autowired
+    private StkInventoryMapper stkInventoryMapper;
+
+    @Autowired
     private IPurchaseOrderService purchaseOrderService;
+
+    @Autowired
+    private PurchasePlanEntryApplyMapper purchasePlanEntryApplyMapper;
+    @Autowired
+    private PurchasePlanEntryDepApplyMapper purchasePlanEntryDepApplyMapper;
+    @Autowired
+    private FdSupplierMapper fdSupplierMapper;
 
     /**
      * 查询采购计划
@@ -51,12 +76,40 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if (purchasePlan == null) {
             return null;
         }
+        SecurityUtils.ensureTenantAccess(purchasePlan.getTenantId());
         List<PurchasePlanEntry> purchasePlanEntryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
-        List<FdMaterial> materialList = new ArrayList<FdMaterial>();
-        for(PurchasePlanEntry entry : purchasePlanEntryList){
-            Long materialId = entry.getMaterialId();
-            FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-            materialList.add(fdMaterial);
+        if (purchasePlanEntryList != null) {
+            Long warehouseId = purchasePlan.getWarehouseId();
+            for (PurchasePlanEntry entry : purchasePlanEntryList) {
+                if (entry.getMaterialId() != null) {
+                    FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                    entry.setMaterial(fdMaterial);
+                    if (warehouseId != null) {
+                        BigDecimal stock = stkInventoryMapper.selectSumQtyByMaterialAndWarehouse(entry.getMaterialId(), warehouseId);
+                        entry.setStockQty(stock != null ? stock : BigDecimal.ZERO);
+                    }
+                }
+            }
+            List<EntryBillNoVO> entryBillNos = purchasePlanEntryDepApplyMapper.selectEntryBillNosByPlanId(id);
+            if (entryBillNos != null && !entryBillNos.isEmpty()) {
+                java.util.Map<Long, List<String>> byEntry = entryBillNos.stream()
+                    .filter(v -> v.getEntryId() != null && v.getPurchaseBillNo() != null)
+                    .collect(Collectors.groupingBy(EntryBillNoVO::getEntryId, Collectors.mapping(EntryBillNoVO::getPurchaseBillNo, Collectors.toList())));
+                for (PurchasePlanEntry entry : purchasePlanEntryList) {
+                    if (entry.getId() != null && byEntry.containsKey(entry.getId())) {
+                        entry.setApplyBillNos(byEntry.get(entry.getId()).stream().distinct().collect(Collectors.joining(",")));
+                    }
+                }
+            }
+            // 回填每条计划明细关联的科室申购单明细ID列表，便于编辑保存时重新写入关联表
+            for (PurchasePlanEntry entry : purchasePlanEntryList) {
+                if (entry.getId() != null) {
+                    List<Long> depIds = purchasePlanEntryDepApplyMapper.selectDepApplyEntryIdsByEntryId(entry.getId());
+                    if (depIds != null && !depIds.isEmpty()) {
+                        entry.setDepApplyEntryIds(depIds);
+                    }
+                }
+            }
         }
         purchasePlan.setPurchasePlanEntryList(purchasePlanEntryList);
         return purchasePlan;
@@ -71,6 +124,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public List<PurchasePlan> selectPurchasePlanList(PurchasePlan purchasePlan)
     {
+        if (purchasePlan != null && StringUtils.isEmpty(purchasePlan.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchasePlan.setTenantId(SecurityUtils.getCustomerId());
+        }
         return purchasePlanMapper.selectPurchasePlanList(purchasePlan);
     }
 
@@ -80,17 +136,47 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      * @param purchasePlan 采购计划
      * @return 结果
      */
+    /** 校验计划明细：有耗材的明细必须指定供应商 */
+    private void validateEntriesHaveSupplier(List<PurchasePlanEntry> list) {
+        if (list == null) return;
+        for (PurchasePlanEntry e : list) {
+            if (e.getMaterialId() != null && (e.getSupplierId() == null)) {
+                throw new ServiceException("请为每条计划明细指定供应商后再保存。存在未选择供应商的明细。");
+            }
+        }
+    }
+
+    /** 校验计划明细：有耗材的明细采购数量不能为空且必须大于0（审核时调用） */
+    private void validateEntriesHaveQty(List<PurchasePlanEntry> list) {
+        if (list == null) return;
+        for (PurchasePlanEntry e : list) {
+            if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
+                throw new ServiceException("采购计划明细中采购数量不能为空且必须大于0，请检查后重新审核。");
+            }
+        }
+    }
+
     @Transactional
     @Override
     public int insertPurchasePlan(PurchasePlan purchasePlan)
     {
+        validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
+        validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setPlanNo(getPlanNumber());
         // 如果前端没有传入状态，则默认为"未提交"（0），否则使用前端传入的状态
         if (purchasePlan.getPlanStatus() == null || purchasePlan.getPlanStatus().isEmpty()) {
             purchasePlan.setPlanStatus("0"); // 未提交状态
         }
+        if (StringUtils.isEmpty(purchasePlan.getPlanEntryMode())) {
+            purchasePlan.setPlanEntryMode("1"); // 默认按产品档案汇总
+        }
         purchasePlan.setCreateTime(DateUtils.getNowDate());
-        purchasePlan.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+        if (StringUtils.isEmpty(purchasePlan.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            purchasePlan.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(purchasePlan.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            purchasePlan.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = purchasePlanMapper.insertPurchasePlan(purchasePlan);
         insertPurchasePlanEntry(purchasePlan);
         return rows;
@@ -106,9 +192,14 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int updatePurchasePlan(PurchasePlan purchasePlan)
     {
+        validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
+        validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        purchasePlanMapper.deletePurchasePlanEntryByParentId(purchasePlan.getId());
+        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchasePlanEntryApplyMapper.logicDeleteByPlanId(purchasePlan.getId(), deleteBy);
+        purchasePlanEntryDepApplyMapper.logicDeleteByPlanId(purchasePlan.getId(), deleteBy);
+        purchasePlanMapper.deletePurchasePlanEntryByParentId(purchasePlan.getId(), deleteBy);
         insertPurchasePlanEntry(purchasePlan);
         return purchasePlanMapper.updatePurchasePlan(purchasePlan);
     }
@@ -123,8 +214,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int deletePurchasePlanByIds(Long[] ids)
     {
-        purchasePlanMapper.deletePurchasePlanEntryByParentIds(ids);
-        return purchasePlanMapper.deletePurchasePlanByIds(ids);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchasePlanMapper.deletePurchasePlanEntryByParentIds(ids, deleteBy);
+        return purchasePlanMapper.deletePurchasePlanByIds(ids, deleteBy);
     }
 
     /**
@@ -141,19 +233,10 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if(purchasePlan == null){
             throw new ServiceException(String.format("采购计划ID：%s，不存在!", id));
         }
-
-        purchasePlan.setDelFlag("1");
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        purchasePlan.setUpdateTime(new Date());
-
-        List<PurchasePlanEntry> purchasePlanEntryList = purchasePlan.getPurchasePlanEntryList();
-        for(PurchasePlanEntry entry : purchasePlanEntryList){
-            entry.setDelFlag("1");
-            entry.setParentId(id);
-            purchasePlanMapper.updatePurchasePlanEntry(entry);
-        }
-
-        return purchasePlanMapper.updatePurchasePlan(purchasePlan);
+        SecurityUtils.ensureTenantAccess(purchasePlan.getTenantId());
+        String deleteBy = SecurityUtils.getUserIdStr();
+        purchasePlanMapper.deletePurchasePlanEntryByParentId(id, deleteBy);
+        return purchasePlanMapper.deletePurchasePlanById(id, deleteBy);
     }
 
     /**
@@ -177,12 +260,15 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if(!"1".equals(purchasePlan.getPlanStatus())){
             throw new ServiceException(String.format("采购计划ID：%s，状态不正确，只能审核未提交状态的计划!", id));
         }
+        List<PurchasePlanEntry> entryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
+        validateEntriesHaveSupplier(entryList);
+        validateEntriesHaveQty(entryList);
 
         purchasePlan.setPlanStatus("2"); // 已审核状态
         purchasePlan.setAuditBy(auditBy);
         purchasePlan.setAuditDate(new Date());
         purchasePlan.setAuditOpinion(auditOpinion != null ? auditOpinion : "");
-        purchasePlan.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         purchasePlan.setUpdateTime(new Date());
 
         int result = purchasePlanMapper.auditPurchasePlan(purchasePlan);
@@ -224,21 +310,190 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     {
         List<PurchasePlanEntry> purchasePlanEntryList = purchasePlan.getPurchasePlanEntryList();
         Long id = purchasePlan.getId();
-        if (StringUtils.isNotNull(purchasePlanEntryList))
+        if (id == null) {
+            return;
+        }
+        if (StringUtils.isNotNull(purchasePlanEntryList) && !purchasePlanEntryList.isEmpty())
         {
             List<PurchasePlanEntry> list = new ArrayList<PurchasePlanEntry>();
             for (PurchasePlanEntry purchasePlanEntry : purchasePlanEntryList)
             {
+                if (purchasePlanEntry.getMaterialId() == null) {
+                    continue;
+                }
                 purchasePlanEntry.setParentId(id);
+                if (StringUtils.isEmpty(purchasePlanEntry.getTenantId()) && StringUtils.isNotEmpty(purchasePlan.getTenantId())) {
+                    purchasePlanEntry.setTenantId(purchasePlan.getTenantId());
+                }
                 purchasePlanEntry.setDelFlag("0");
-                purchasePlanEntry.setCreateBy(SecurityUtils.getLoginUser().getUsername());
+                purchasePlanEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 purchasePlanEntry.setCreateTime(new Date());
                 list.add(purchasePlanEntry);
             }
-            if (list.size() > 0)
-            {
+            if (list.isEmpty()) {
+                return;
+            }
+            boolean hasBasRefs = list.stream().anyMatch(e -> e.getBasApplyEntryIds() != null && !e.getBasApplyEntryIds().isEmpty());
+            boolean hasDepRefs = list.stream().anyMatch(e -> e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty());
+            boolean hasRefs = hasBasRefs || hasDepRefs;
+            String createBy = SecurityUtils.getUserIdStr();
+            String tenantId = SecurityUtils.getCustomerId();
+            Date now = new Date();
+            if (hasRefs) {
+                for (PurchasePlanEntry e : list) {
+                    purchasePlanMapper.insertPurchasePlanEntry(e);
+                    if (e.getId() != null) {
+                        if (e.getBasApplyEntryIds() != null && !e.getBasApplyEntryIds().isEmpty()) {
+                            List<PurchasePlanEntryApply> refs = e.getBasApplyEntryIds().stream()
+                                .map(applyEntryId -> {
+                                    PurchasePlanEntryApply ref = new PurchasePlanEntryApply();
+                                    ref.setPurchasePlanEntryId(e.getId());
+                                    ref.setBasApplyEntryId(applyEntryId);
+                                    ref.setTenantId(tenantId);
+                                    ref.setCreateBy(createBy);
+                                    ref.setCreateTime(now);
+                                    return ref;
+                                }).collect(Collectors.toList());
+                            purchasePlanEntryApplyMapper.batchInsert(refs);
+                        }
+                        if (e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty()) {
+                            List<PurchasePlanEntryDepApply> depRefs = e.getDepApplyEntryIds().stream()
+                                .map(depEntryId -> {
+                                    PurchasePlanEntryDepApply ref = new PurchasePlanEntryDepApply();
+                                    ref.setPurchasePlanEntryId(e.getId());
+                                    ref.setDepPurchaseApplyEntryId(depEntryId);
+                                    ref.setPurchasePlanId(purchasePlan.getId());
+                                    ref.setPlanNo(purchasePlan.getPlanNo());
+                                    ref.setTenantId(tenantId);
+                                    ref.setCreateBy(createBy);
+                                    ref.setCreateTime(now);
+                                    return ref;
+                                }).collect(Collectors.toList());
+                            purchasePlanEntryDepApplyMapper.batchInsert(depRefs);
+                            purchasePlanEntryDepApplyMapper.updateFillApplyInfo(e.getId());
+                        }
+                    }
+                }
+            } else {
                 purchasePlanMapper.batchPurchasePlanEntry(list);
             }
         }
+    }
+
+    @Override
+    public List<PurchaseRecordExportVO> listPurchaseRecordForExport(String beginDate, String endDate) {
+        PurchasePlan query = new PurchasePlan();
+        query.setPlanStatus("2"); // 已审核
+        query.setBeginDate(beginDate);
+        query.setEndDate(endDate);
+        List<PurchasePlan> plans = purchasePlanMapper.selectPurchasePlanList(query);
+        if (plans == null || plans.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // key: materialName|materialSpec|unit|supplierName -> sum(qty)
+        Map<String, BigDecimal> agg = new LinkedHashMap<>();
+        for (PurchasePlan plan : plans) {
+            PurchasePlan full = selectPurchasePlanById(plan.getId());
+            if (full == null || full.getPurchasePlanEntryList() == null) continue;
+            for (PurchasePlanEntry entry : full.getPurchasePlanEntryList()) {
+                if (entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) <= 0) continue;
+                String materialName = "";
+                String materialSpec = "";
+                String unit = "";
+                if (entry.getMaterial() != null) {
+                    materialName = entry.getMaterial().getName() != null ? entry.getMaterial().getName() : "";
+                    materialSpec = entry.getMaterial().getSpeci() != null ? entry.getMaterial().getSpeci() : "";
+                    if (entry.getMaterial().getFdUnit() != null && entry.getMaterial().getFdUnit().getUnitName() != null) {
+                        unit = entry.getMaterial().getFdUnit().getUnitName();
+                    }
+                }
+                if (materialName.isEmpty() && entry.getMaterialId() != null) {
+                    FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                    if (m != null) {
+                        materialName = m.getName() != null ? m.getName() : "";
+                        materialSpec = m.getSpeci() != null ? m.getSpeci() : "";
+                        if (m.getFdUnit() != null && m.getFdUnit().getUnitName() != null) unit = m.getFdUnit().getUnitName();
+                    }
+                }
+                Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : full.getSupplierId();
+                String supplierName = "";
+                if (supplierId != null) {
+                    FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplierId);
+                    if (sup != null && sup.getName() != null) supplierName = sup.getName();
+                }
+                String key = materialName + "|" + materialSpec + "|" + unit + "|" + supplierName;
+                agg.merge(key, entry.getQty(), BigDecimal::add);
+            }
+        }
+        List<PurchaseRecordExportVO> list = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> e : agg.entrySet()) {
+            String[] parts = e.getKey().split("\\|", -1);
+            PurchaseRecordExportVO vo = new PurchaseRecordExportVO();
+            vo.setMaterialName(parts.length > 0 ? parts[0] : "");
+            vo.setMaterialSpec(parts.length > 1 ? parts[1] : "");
+            vo.setQty(e.getValue());
+            vo.setUnit(parts.length > 2 ? parts[2] : "");
+            vo.setSupplierName(parts.length > 3 ? parts[3] : "");
+            vo.setReceiver("");
+            vo.setReceiveDate("");
+            list.add(vo);
+        }
+        return list;
+    }
+
+    @Override
+    public List<PurchaseRecordExportVO> listPurchaseRecordForExportByIds(Long[] planIds) {
+        if (planIds == null || planIds.length == 0) {
+            return new ArrayList<>();
+        }
+        Map<String, BigDecimal> agg = new LinkedHashMap<>();
+        for (Long planId : planIds) {
+            if (planId == null) continue;
+            PurchasePlan full = selectPurchasePlanById(planId);
+            if (full == null || full.getPurchasePlanEntryList() == null) continue;
+            for (PurchasePlanEntry entry : full.getPurchasePlanEntryList()) {
+                if (entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) <= 0) continue;
+                String materialName = "";
+                String materialSpec = "";
+                String unit = "";
+                if (entry.getMaterial() != null) {
+                    materialName = entry.getMaterial().getName() != null ? entry.getMaterial().getName() : "";
+                    materialSpec = entry.getMaterial().getSpeci() != null ? entry.getMaterial().getSpeci() : "";
+                    if (entry.getMaterial().getFdUnit() != null && entry.getMaterial().getFdUnit().getUnitName() != null) {
+                        unit = entry.getMaterial().getFdUnit().getUnitName();
+                    }
+                }
+                if (materialName.isEmpty() && entry.getMaterialId() != null) {
+                    FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                    if (m != null) {
+                        materialName = m.getName() != null ? m.getName() : "";
+                        materialSpec = m.getSpeci() != null ? m.getSpeci() : "";
+                        if (m.getFdUnit() != null && m.getFdUnit().getUnitName() != null) unit = m.getFdUnit().getUnitName();
+                    }
+                }
+                Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : full.getSupplierId();
+                String supplierName = "";
+                if (supplierId != null) {
+                    FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplierId);
+                    if (sup != null && sup.getName() != null) supplierName = sup.getName();
+                }
+                String key = materialName + "|" + materialSpec + "|" + unit + "|" + supplierName;
+                agg.merge(key, entry.getQty(), BigDecimal::add);
+            }
+        }
+        List<PurchaseRecordExportVO> list = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> e : agg.entrySet()) {
+            String[] parts = e.getKey().split("\\|", -1);
+            PurchaseRecordExportVO vo = new PurchaseRecordExportVO();
+            vo.setMaterialName(parts.length > 0 ? parts[0] : "");
+            vo.setMaterialSpec(parts.length > 1 ? parts[1] : "");
+            vo.setQty(e.getValue());
+            vo.setUnit(parts.length > 2 ? parts[2] : "");
+            vo.setSupplierName(parts.length > 3 ? parts[3] : "");
+            vo.setReceiver("");
+            vo.setReceiveDate("");
+            list.add(vo);
+        }
+        return list;
     }
 }

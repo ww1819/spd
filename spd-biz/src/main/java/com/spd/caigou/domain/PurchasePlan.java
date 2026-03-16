@@ -76,6 +76,24 @@ public class PurchasePlan extends BaseEntity
     /** 删除标志（0代表存在 1代表删除） */
     private String delFlag;
 
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
+    /** 计划明细生成方式：1=按产品档案汇总 2=按申购单明细拆分 */
+    private String planEntryMode;
+
+    /** 制单人姓名（查询带出） */
+    private String createByName;
+    /** 提交人姓名（查询带出） */
+    private String updateByName;
+    /** 审核人姓名（查询带出） */
+    private String auditByName;
+
     /** 开始日期（查询用） */
     private String beginDate;
 
@@ -233,6 +251,23 @@ public class PurchasePlan extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getPlanEntryMode() { return planEntryMode; }
+    public void setPlanEntryMode(String planEntryMode) { this.planEntryMode = planEntryMode; }
+
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
+    public String getUpdateByName() { return updateByName; }
+    public void setUpdateByName(String updateByName) { this.updateByName = updateByName; }
+    public String getAuditByName() { return auditByName; }
+    public void setAuditByName(String auditByName) { this.auditByName = auditByName; }
 
     public void setBeginDate(String beginDate) 
     {

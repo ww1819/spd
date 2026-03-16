@@ -14,7 +14,7 @@ import com.spd.common.core.domain.BaseEntity;
 
 /**
  * 科室申购对象 dep_purchase_apply
- * 
+ *
  * @author spd
  * @date 2025-01-01
  */
@@ -66,6 +66,11 @@ public class DepPurchaseApply extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 删除人（逻辑删除时填充） */
+    private String deleteBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date deleteTime;
+
     /** 计划状态：0-未生成，1-已生成，2-驳回 */
     private Integer planStatus;
 
@@ -84,132 +89,154 @@ public class DepPurchaseApply extends BaseEntity
     /** 科室对象 */
     private FdDepartment department;
 
-    public void setId(Long id) 
+    /** 租户id，客户id */
+    private String tenantId;
+
+    /** 查询时是否排除已被采购计划引用的申购单（仅查询用，非表字段） */
+    private Boolean excludeReferenced;
+
+    public void setId(Long id)
     {
         this.id = id;
     }
 
-    public Long getId() 
+    public Long getId()
     {
         return id;
     }
 
-    public void setPurchaseBillNo(String purchaseBillNo) 
+    public void setPurchaseBillNo(String purchaseBillNo)
     {
         this.purchaseBillNo = purchaseBillNo;
     }
 
-    public String getPurchaseBillNo() 
+    public String getPurchaseBillNo()
     {
         return purchaseBillNo;
     }
 
-    public void setPurchaseBillDate(Date purchaseBillDate) 
+    public void setPurchaseBillDate(Date purchaseBillDate)
     {
         this.purchaseBillDate = purchaseBillDate;
     }
 
-    public Date getPurchaseBillDate() 
+    public Date getPurchaseBillDate()
     {
         return purchaseBillDate;
     }
 
-    public void setWarehouseId(Long warehouseId) 
+    public void setWarehouseId(Long warehouseId)
     {
         this.warehouseId = warehouseId;
     }
 
-    public Long getWarehouseId() 
+    public Long getWarehouseId()
     {
         return warehouseId;
     }
 
-    public void setDepartmentId(Long departmentId) 
+    public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
     }
 
-    public Long getDepartmentId() 
+    public Long getDepartmentId()
     {
         return departmentId;
     }
 
-    public void setUserId(Long userId) 
+    public void setUserId(Long userId)
     {
         this.userId = userId;
     }
 
-    public Long getUserId() 
+    public Long getUserId()
     {
         return userId;
     }
 
-    public void setPurchaseBillStatus(Integer purchaseBillStatus) 
+    public void setPurchaseBillStatus(Integer purchaseBillStatus)
     {
         this.purchaseBillStatus = purchaseBillStatus;
     }
 
-    public Integer getPurchaseBillStatus() 
+    public Integer getPurchaseBillStatus()
     {
         return purchaseBillStatus;
     }
 
-    public void setTotalAmount(BigDecimal totalAmount) 
+    public void setTotalAmount(BigDecimal totalAmount)
     {
         this.totalAmount = totalAmount;
     }
 
-    public BigDecimal getTotalAmount() 
+    public BigDecimal getTotalAmount()
     {
         return totalAmount;
     }
 
-    public void setUrgencyLevel(Integer urgencyLevel) 
+    public void setUrgencyLevel(Integer urgencyLevel)
     {
         this.urgencyLevel = urgencyLevel;
     }
 
-    public Integer getUrgencyLevel() 
+    public Integer getUrgencyLevel()
     {
         return urgencyLevel;
     }
 
-    public void setExpectedDeliveryDate(Date expectedDeliveryDate) 
+    public void setExpectedDeliveryDate(Date expectedDeliveryDate)
     {
         this.expectedDeliveryDate = expectedDeliveryDate;
     }
 
-    public Date getExpectedDeliveryDate() 
+    public Date getExpectedDeliveryDate()
     {
         return expectedDeliveryDate;
     }
 
-    public void setDelFlag(Integer delFlag) 
+    public void setDelFlag(Integer delFlag)
     {
         this.delFlag = delFlag;
     }
 
-    public Integer getDelFlag() 
+    public Integer getDelFlag()
     {
         return delFlag;
     }
 
-    public void setPlanStatus(Integer planStatus) 
+    public String getDeleteBy() {
+        return deleteBy;
+    }
+
+    public void setDeleteBy(String deleteBy) {
+        this.deleteBy = deleteBy;
+    }
+
+    public Date getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(Date deleteTime) {
+        this.deleteTime = deleteTime;
+    }
+
+    public void setPlanStatus(Integer planStatus)
     {
         this.planStatus = planStatus;
     }
 
-    public Integer getPlanStatus() 
+    public Integer getPlanStatus()
     {
         return planStatus;
     }
 
-    public void setRejectReason(String rejectReason) 
+    public void setRejectReason(String rejectReason)
     {
         this.rejectReason = rejectReason;
     }
 
-    public String getRejectReason() 
+    public String getRejectReason()
     {
         return rejectReason;
     }
@@ -271,6 +298,18 @@ public class DepPurchaseApply extends BaseEntity
             .append("warehouse", getWarehouse())
             .append("user", getUser())
             .append("department", getDepartment())
+                .append("tenantId", getTenantId())
             .toString();
     }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public Boolean getExcludeReferenced() { return excludeReferenced; }
+    public void setExcludeReferenced(Boolean excludeReferenced) { this.excludeReferenced = excludeReferenced; }
 }

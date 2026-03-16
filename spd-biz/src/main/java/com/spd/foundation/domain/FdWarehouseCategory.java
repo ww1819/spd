@@ -39,6 +39,9 @@ public class FdWarehouseCategory extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     public void setWarehouseCategoryId(Long warehouseCategoryId) 
     {
         this.warehouseCategoryId = warehouseCategoryId;
@@ -80,11 +83,15 @@ public class FdWarehouseCategory extends BaseEntity
         this.delFlag = delFlag;
     }
 
-    public Integer getDelFlag() 
+    public Integer getDelFlag()
     {
         return delFlag;
     }
-    public void setParentId(Long parentId) 
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public void setParentId(Long parentId)
     {
         this.parentId = parentId;
     }

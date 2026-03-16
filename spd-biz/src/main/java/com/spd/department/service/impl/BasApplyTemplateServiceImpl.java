@@ -4,6 +4,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.department.domain.BasApplyTemplate;
 import com.spd.department.domain.BasApplyTemplateEntry;
 import com.spd.department.mapper.BasApplyTemplateMapper;
@@ -22,6 +24,9 @@ public class BasApplyTemplateServiceImpl implements IBasApplyTemplateService {
 
     @Override
     public List<BasApplyTemplate> selectBasApplyTemplateList(BasApplyTemplate template) {
+        if (template != null && StringUtils.isEmpty(template.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            template.setTenantId(SecurityUtils.getCustomerId());
+        }
         return basApplyTemplateMapper.selectBasApplyTemplateList(template);
     }
 
