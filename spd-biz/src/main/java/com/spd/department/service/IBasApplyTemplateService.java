@@ -25,4 +25,28 @@ public interface IBasApplyTemplateService {
      * @return 制单模板
      */
     BasApplyTemplate selectBasApplyTemplateById(Long id);
+
+    /**
+     * 新增制单模板（含明细）
+     *
+     * @param template 制单模板
+     * @return 结果
+     */
+    int insertBasApplyTemplate(BasApplyTemplate template);
+
+    /**
+     * 删除制单模板（及明细）
+     *
+     * @param id 主键
+     * @return 结果
+     */
+    int deleteBasApplyTemplateById(Long id);
+
+    /**
+     * 修改制单模板（含明细：先删后插）
+     *
+     * @param template 制单模板
+     * @return 结果
+     */
+    int updateBasApplyTemplate(BasApplyTemplate template);
 }

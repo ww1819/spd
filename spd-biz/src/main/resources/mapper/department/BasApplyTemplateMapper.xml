@@ -36,6 +36,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="code" column="material_code"/>
         <result property="name" column="material_name"/>
         <result property="speci" column="material_speci"/>
+        <result property="model" column="material_model"/>
+        <result property="price" column="material_price"/>
+        <result property="registerNo" column="material_register_no"/>
+        <result property="periodDate" column="material_period_date"/>
+        <association property="fdUnit" javaType="com.spd.foundation.domain.FdUnit" resultMap="templateFdUnitResult"/>
+        <association property="fdFactory" javaType="com.spd.foundation.domain.FdFactory" resultMap="templateFdFactoryResult"/>
+        <association property="supplier" javaType="com.spd.foundation.domain.FdSupplier" resultMap="templateSupplierResult"/>
+        <association property="fdWarehouseCategory" javaType="com.spd.foundation.domain.FdWarehouseCategory" resultMap="templateWarehouseCategoryResult"/>
+        <association property="fdFinanceCategory" javaType="com.spd.foundation.domain.FdFinanceCategory" resultMap="templateFinanceCategoryResult"/>
+    </resultMap>
+    <resultMap id="templateFdUnitResult" type="com.spd.foundation.domain.FdUnit">
+        <result property="unitId" column="mat_unit_id"/>
+        <result property="unitName" column="mat_unit_name"/>
+    </resultMap>
+    <resultMap id="templateFdFactoryResult" type="com.spd.foundation.domain.FdFactory">
+        <result property="factoryId" column="mat_factory_id"/>
+        <result property="factoryName" column="mat_factory_name"/>
+    </resultMap>
+    <resultMap id="templateSupplierResult" type="com.spd.foundation.domain.FdSupplier">
+        <result property="id" column="mat_supplier_id"/>
+        <result property="name" column="mat_supplier_name"/>
+    </resultMap>
+    <resultMap id="templateWarehouseCategoryResult" type="com.spd.foundation.domain.FdWarehouseCategory">
+        <result property="warehouseCategoryId" column="mat_warehouse_id"/>
+        <result property="warehouseCategoryName" column="mat_warehouse_name"/>
+    </resultMap>
+    <resultMap id="templateFinanceCategoryResult" type="com.spd.foundation.domain.FdFinanceCategory">
+        <result property="financeCategoryId" column="mat_finance_id"/>
+        <result property="financeCategoryName" column="mat_finance_name"/>
     </resultMap>
 
     <resultMap type="com.spd.department.domain.BasApplyTemplate" id="BasApplyTemplateWithEntryResult" extends="BasApplyTemplateResult">
@@ -63,11 +92,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select t.id, t.template_name, t.warehouse_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName,
                e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
-               m.code as material_code, m.name as material_name, m.speci as material_speci
+               m.code as material_code, m.name as material_name, m.speci as material_speci, m.model as material_model, m.price as material_price,
+               m.register_no as material_register_no, m.period_date as material_period_date,
+               u.unit_id as mat_unit_id, u.unit_name as mat_unit_name,
+               f.factory_id as mat_factory_id, f.factory_name as mat_factory_name,
+               s.id as mat_supplier_id, s.name as mat_supplier_name,
+               wc.warehouse_category_id as mat_warehouse_id, wc.warehouse_category_name as mat_warehouse_name,
+               fc.finance_category_id as mat_finance_id, fc.finance_category_name as mat_finance_name
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
         left join bas_apply_template_entry e on e.paren_id = t.id
         left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on m.supplier_id = s.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where t.id = #{id}
     </select>
 

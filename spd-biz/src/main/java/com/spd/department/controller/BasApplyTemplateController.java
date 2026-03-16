@@ -3,8 +3,12 @@ package com.spd.department.controller;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.core.controller.BaseController;
@@ -13,7 +17,7 @@ import com.spd.department.domain.BasApplyTemplate;
 import com.spd.department.service.IBasApplyTemplateService;
 
 /**
- * 科室申领制单模板Controller（仅查询，供引用模板弹窗使用）
+ * 科室申领制单模板Controller
  *
  * @author spd
  */
@@ -41,5 +45,32 @@ public class BasApplyTemplateController extends BaseController {
     @GetMapping("/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id) {
         return success(basApplyTemplateService.selectBasApplyTemplateById(id));
+    }
+
+    /**
+     * 新增制单模板（含明细）
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:add')")
+    @PostMapping
+    public AjaxResult add(@RequestBody BasApplyTemplate template) {
+        return toAjax(basApplyTemplateService.insertBasApplyTemplate(template));
+    }
+
+    /**
+     * 删除制单模板（及明细）
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:remove')")
+    @DeleteMapping("/{id}")
+    public AjaxResult remove(@PathVariable("id") Long id) {
+        return toAjax(basApplyTemplateService.deleteBasApplyTemplateById(id));
+    }
+
+    /**
+     * 修改制单模板（含明细）
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:edit')")
+    @PutMapping
+    public AjaxResult edit(@RequestBody BasApplyTemplate template) {
+        return toAjax(basApplyTemplateService.updateBasApplyTemplate(template));
     }
 }

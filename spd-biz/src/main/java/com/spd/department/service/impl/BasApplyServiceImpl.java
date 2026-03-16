@@ -173,8 +173,11 @@ public class BasApplyServiceImpl implements IBasApplyService
         if(basApply == null){
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
         }
-        // 驳回时状态保持为1（待审核），但记录驳回原因
+        // 驳回：状态改为已驳回(3)，记录驳回原因、审核人、审核日期
+        basApply.setApplyBillStatus(3);
         basApply.setRejectReason(rejectReason);
+        basApply.setAuditBy(String.valueOf(SecurityUtils.getUserId()));
+        basApply.setAuditDate(new Date());
         basApply.setUpdateBy(SecurityUtils.getUsername());
         basApply.setUpdateTime(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
