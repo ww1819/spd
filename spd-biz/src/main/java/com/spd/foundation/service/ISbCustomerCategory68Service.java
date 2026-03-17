@@ -32,4 +32,7 @@ public interface ISbCustomerCategory68Service extends com.spd.system.service.ISb
     List<SbCustomerCategory68Log> selectLogByCustomerId(String customerId);
 
     List<SbCustomerCategory68Log> selectLogByTargetId(String targetId);
+
+    /** 根据分类名称批量更新当前客户下68分类的拼音简码 */
+    void updatePinyinForCustomer(String customerId);
 }

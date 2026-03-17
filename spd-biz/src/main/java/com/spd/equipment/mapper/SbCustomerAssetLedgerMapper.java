@@ -10,6 +10,9 @@ public interface SbCustomerAssetLedgerMapper {
 
     SbCustomerAssetLedger selectById(String id);
 
+    /** 按客户ID+设备流水号精确匹配一条未删除台账（用于导入时按流水号更新） */
+    SbCustomerAssetLedger selectByCustomerIdAndEquipmentSerialNo(@Param("customerId") String customerId, @Param("equipmentSerialNo") String equipmentSerialNo);
+
     /** 取客户下设备流水号最大值(纯数字部分)，用于生成下一流水号 */
     Integer selectMaxSerialNoNumeric(@Param("customerId") String customerId);
 

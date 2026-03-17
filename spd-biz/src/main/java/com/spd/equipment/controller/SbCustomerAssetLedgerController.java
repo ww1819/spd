@@ -5,6 +5,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
@@ -63,5 +64,22 @@ public class SbCustomerAssetLedgerController extends BaseController {
     @DeleteMapping("/{id}")
     public AjaxResult remove(@PathVariable String id) {
         return toAjax(service.deleteById(id));
+    }
+
+    @Log(title = "资产台账", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('equipment:assetLedger:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file) throws Exception {
+        ExcelUtil<SbCustomerAssetLedger> util = new ExcelUtil<>(SbCustomerAssetLedger.class);
+        List<SbCustomerAssetLedger> list = util.importExcel(file.getInputStream());
+        String message = service.importAssetLedger(list);
+        return success(message);
+    }
+
+    @PreAuthorize("@ss.hasPermi('equipment:assetLedger:import')")
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response) {
+        ExcelUtil<SbCustomerAssetLedger> util = new ExcelUtil<>(SbCustomerAssetLedger.class);
+        util.importTemplateExcel(response, "资产台账");
     }
 }

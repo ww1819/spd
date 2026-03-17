@@ -121,6 +121,18 @@ public class SbCustomerCategory68Controller extends BaseController {
     }
 
     /**
+     * 更新简码：根据分类名称批量更新当前客户下68分类的拼音简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:edit')")
+    @Log(title = "医疗器械68分类更新简码", businessType = BusinessType.UPDATE)
+    @PostMapping("/updatePinyin")
+    public AjaxResult updatePinyin() {
+        String customerId = requireCustomerId();
+        sbCustomerCategory68Service.updatePinyinForCustomer(customerId);
+        return success();
+    }
+
+    /**
      * 查询当前客户的68分类操作记录
      */
     @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:log')")

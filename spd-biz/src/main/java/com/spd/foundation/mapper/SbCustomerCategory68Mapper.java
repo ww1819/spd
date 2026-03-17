@@ -28,4 +28,7 @@ public interface SbCustomerCategory68Mapper {
 
     /** 按客户统计已存在的 ref_category68_id（未删除） */
     List<Long> selectRefCategory68IdsByCustomerId(@Param("customerId") String customerId);
+
+    /** 更新单条记录的拼音简码 */
+    int updatePinyinById(SbCustomerCategory68 row);
 }

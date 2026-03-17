@@ -32,6 +32,27 @@ public class SbEquipmentManufacturerServiceImpl implements ISbEquipmentManufactu
     }
 
     @Override
+    public SbEquipmentManufacturer getOrCreateByName(String name) {
+        if (StringUtils.isEmpty(name)) return null;
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(customerId)) return null;
+        SbEquipmentManufacturer q = new SbEquipmentManufacturer();
+        q.setCustomerId(customerId);
+        q.setName(name.trim());
+        List<SbEquipmentManufacturer> list = mapper.selectList(q);
+        if (list != null) {
+            for (SbEquipmentManufacturer m : list) {
+                if (name.trim().equals(m.getName())) return m;
+            }
+        }
+        SbEquipmentManufacturer row = new SbEquipmentManufacturer();
+        row.setName(name.trim());
+        row.setCustomerId(customerId);
+        insert(row);
+        return row;
+    }
+
+    @Override
     public int insert(SbEquipmentManufacturer row) {
         if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
         if (StringUtils.isNotEmpty(row.getName())) row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));

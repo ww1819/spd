@@ -33,6 +33,13 @@ public class SbEquipmentSupplierController extends BaseController {
         return success(service.selectById(id));
     }
 
+    /** 按名称查找或创建供应商（当前客户下），用于表单可输入新供应商名时自动新增 */
+    @PreAuthorize("@ss.hasPermi('equipment:supplier:list')")
+    @PostMapping("/getOrCreate")
+    public AjaxResult getOrCreate(@RequestParam String name) {
+        return success(service.getOrCreateByName(name));
+    }
+
     @PreAuthorize("@ss.hasPermi('equipment:supplier:add')")
     @Log(title = "设备供应商", businessType = BusinessType.INSERT)
     @PostMapping

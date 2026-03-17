@@ -38,7 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where del_flag != 1
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
         <if test="params != null and params.allowedWarehouseIds != null">
             <choose>
                 <when test="params.allowedWarehouseIds.size() > 0"> and id in <foreach collection="params.allowedWarehouseIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
@@ -54,7 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user u on u.user_id = uw.user_id
         where w.del_flag != 1
         <if test="userId != null"> and u.user_id = #{userId}</if>
-        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and w.tenant_id = #{tenantId}</if>
     </select>
 
     <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -67,6 +68,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
             row.setParentId(parentIdStr);
             row.setCategory68Code(std.getCategory68Code());
             row.setCategory68Name(std.getCategory68Name());
+            row.setNamePinyin(PinyinUtils.getPinyinInitials(std.getCategory68Name()));
             row.setDelFlag(0);
             row.setCreateBy(createBy);
             row.setCreateTime(now);
@@ -107,6 +109,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
                 existing.setParentId(parentIdStr);
                 existing.setCategory68Code(std.getCategory68Code());
                 existing.setCategory68Name(std.getCategory68Name());
+                existing.setNamePinyin(PinyinUtils.getPinyinInitials(std.getCategory68Name()));
                 existing.setUpdateBy(operateBy);
                 existing.setUpdateTime(now);
                 sbCustomerCategory68Mapper.update(existing);
@@ -118,6 +121,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
                 row.setParentId(parentIdStr);
                 row.setCategory68Code(std.getCategory68Code());
                 row.setCategory68Name(std.getCategory68Name());
+                row.setNamePinyin(PinyinUtils.getPinyinInitials(std.getCategory68Name()));
                 row.setDelFlag(0);
                 row.setCreateBy(operateBy);
                 row.setCreateTime(now);
@@ -227,6 +231,23 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
     @Override
     public List<SbCustomerCategory68Log> selectLogByTargetId(String targetId) {
         return sbCustomerCategory68LogMapper.selectByTargetId(targetId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePinyinForCustomer(String customerId) {
+        if (StringUtils.isEmpty(customerId)) return;
+        List<SbCustomerCategory68> list = sbCustomerCategory68Mapper.selectTreeByCustomerId(customerId);
+        if (list == null || list.isEmpty()) return;
+        String updateBy = SecurityUtils.getUserIdStr();
+        Date updateTime = DateUtils.getNowDate();
+        for (SbCustomerCategory68 row : list) {
+            String pinyin = PinyinUtils.getPinyinInitials(row.getCategory68Name());
+            row.setNamePinyin(pinyin);
+            row.setUpdateBy(updateBy);
+            row.setUpdateTime(updateTime);
+            sbCustomerCategory68Mapper.updatePinyinById(row);
+        }
     }
 
     private void saveLog(String customerId, String targetId, Long refCategory68Id, String operationType, String contentOld, String contentNew) {

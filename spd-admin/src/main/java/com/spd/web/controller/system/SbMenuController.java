@@ -58,13 +58,23 @@ public class SbMenuController extends BaseController {
     }
 
   /**
-   * 根据用户获取设备菜单树（menuId/parentId 为 UUID7 字符串）
+   * 获取设备菜单树
+   *
+   * - 平台模式：按当前用户已有设备菜单构建树（selectSbMenuTreeByUserId）
+   * - 租户模式：按当前客户已开启的菜单构建树（selectSbMenuTreeByCustomerIdEnabling），用于
+   *   用户管理 / 岗位管理授权时「列出客户包含的所有权限」。
    */
     @GetMapping("/treeselect")
     public AjaxResult treeselect(SbMenu menu)
     {
-        Long userId = SecurityUtils.getUserId();
-        List<SbMenu> sbMenus = sbMenuService.selectSbMenuTreeByUserId(userId);
+        String customerId = SecurityUtils.getCustomerId();
+        List<SbMenu> sbMenus;
+        if (StringUtils.isNotEmpty(customerId)) {
+            sbMenus = sbMenuService.selectSbMenuTreeByCustomerIdEnabling(customerId);
+        } else {
+            Long userId = SecurityUtils.getUserId();
+            sbMenus = sbMenuService.selectSbMenuTreeByUserId(userId);
+        }
         return success(sbMenus);
     }
 

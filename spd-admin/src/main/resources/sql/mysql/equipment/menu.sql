@@ -128,7 +128,10 @@ INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, 
 SELECT '01900000-0000-7000-8000-00000000d002', '资产台账查询', '01900000-0000-7000-8000-00000000d001', 1, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetLedger:query', '#', '0', '0', '0', 'admin', NOW(), '资产台账查询', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d002');
 /
 INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
-SELECT '01900000-0000-7000-8000-00000000d003', '资产台账新增', '01900000-0000-7000-8000-00000000d001', 2, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetLedger:add', '#', '0', '0', '0', 'admin', NOW(), '资产台账新增', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d003');
+SELECT '01900000-0000-7000-8000-00000000d003', '资产台账新增', '01900000-0000-7000-8000-00000000d001', 2, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetLedger:add', '#', '0', '1', '0', 'admin', NOW(), '资产台账新增', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d003');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d007', '资产台账导入', '01900000-0000-7000-8000-00000000d001', 6, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetLedger:import', '#', '0', '1', '0', 'admin', NOW(), '资产台账导入', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d007');
 /
 INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
 SELECT '01900000-0000-7000-8000-00000000d004', '资产台账修改', '01900000-0000-7000-8000-00000000d001', 3, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetLedger:edit', '#', '0', '0', '0', 'admin', NOW(), '资产台账修改', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d004');
@@ -138,6 +141,9 @@ SELECT '01900000-0000-7000-8000-00000000d005', '资产台账删除', '01900000-0
 /
 INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
 SELECT '01900000-0000-7000-8000-00000000d006', '资产台账导出', '01900000-0000-7000-8000-00000000d001', 5, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetLedger:export', '#', '0', '0', '0', 'admin', NOW(), '资产台账导出', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d006');
+/
+-- 资产台账新增、资产台账导入：默认对客户开放
+UPDATE sb_menu SET default_open_to_customer = '1' WHERE menu_id IN ('01900000-0000-7000-8000-00000000d003', '01900000-0000-7000-8000-00000000d007');
 /
 
 -- 设备管理子菜单：设备巡检
@@ -3278,4 +3284,11 @@ UPDATE sb_menu SET is_platform_only = '1' WHERE menu_id IN (
   '01900000-0000-7000-8000-000000001457',
   '01900000-0000-7000-8000-00000000cb5e','01900000-0000-7000-8000-00000000cb5f','01900000-0000-7000-8000-00000000cb60'
 );
+/
+
+-- 设备菜单图标说明（图标对应 spd-sb/src/assets/icons/svg/*.svg，按钮 F 类型通常为 # 不显示）
+-- 根目录：设备管理=equipment，基础资料=component，系统设置=system
+-- 设备管理下：设备信息=list，资产台账=money，设备巡检=eye，设备维修=tool，设备保养=maintain，设备入库=storage，设备归还=return
+-- 基础资料下：设备字典维护=dict，检验平台设置=component，厂家维护=factory，仓库维护=warehouse，科室维护=tree，设备品牌=star，生产厂家=build，供应商=shopping，资产分类=tree，计量分类=tree-table
+-- 系统设置下：用户管理=user，角色管理=peoples，菜单管理=tree，部门管理=tree，岗位管理=post，客户管理=peoples，客户菜单功能管理=switch
 /

@@ -150,6 +150,16 @@ WHERE menu_id IN (
 );
 /
 
+-- 客户68分类表：名称拼音简码（用于检索、资产台账68分类按简码过滤）
+CALL add_table_column('sb_customer_category68', 'name_pinyin', 'varchar(200)', '名称拼音简码', NULL);
+/
+
+-- 客户资产台账表：财务系统唯一标识、HIS系统唯一标识（与第三方系统对接）
+CALL add_table_column('sb_customer_asset_ledger', 'financial_system_unique_id', 'varchar(100)', '财务系统唯一标识(与第三方财务系统对接)', NULL);
+/
+CALL add_table_column('sb_customer_asset_ledger', 'his_system_unique_id', 'varchar(100)', 'HIS系统唯一标识(与第三方HIS系统对接)', NULL);
+/
+
 -- 客户68分类表 parent_id 改为本表主键id（仅当表中 parent_id 当前为 bigint 时执行以下一段）
 -- 若表是按新 table.sql 建的（parent_id 已是 char(36)），请跳过下面三条语句
 -- ALTER TABLE sb_customer_category68 ADD COLUMN parent_id_new CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键)';

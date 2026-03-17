@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="parentId"        column="parent_id"        />
         <result property="category68Code"  column="category68_code"  />
         <result property="category68Name"  column="category68_name"  />
+        <result property="namePinyin"      column="name_pinyin"      />
         <result property="delFlag"         column="del_flag"         />
         <result property="delBy"           column="del_by"           />
         <result property="delTime"         column="del_time"         />
@@ -21,7 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectVo">
-        select id, customer_id, ref_category68_id, parent_id, category68_code, category68_name,
+        select id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
                del_flag, del_by, del_time, create_by, create_time, update_by, update_time
         from sb_customer_category68
     </sql>
@@ -43,6 +44,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="refCategory68Id != null"> and ref_category68_id = #{refCategory68Id}</if>
             <if test="category68Code != null and category68Code != ''"> and category68_code = #{category68Code}</if>
             <if test="category68Name != null and category68Name != ''"> and category68_name like concat('%', #{category68Name}, '%')</if>
+            <if test="namePinyin != null and namePinyin != ''"> and (name_pinyin like concat('%', #{namePinyin}, '%') or category68_name like concat('%', #{namePinyin}, '%'))</if>
             <if test="delFlag != null"> and del_flag = #{delFlag}</if>
         </where>
         order by parent_id, ref_category68_id
@@ -61,10 +63,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insert" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
         insert into sb_customer_category68 (
-            id, customer_id, ref_category68_id, parent_id, category68_code, category68_name,
+            id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
             del_flag, create_by, create_time, update_by, update_time
         ) values (
-            #{id}, #{customerId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name},
+            #{id}, #{customerId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name}, #{namePinyin},
             #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
         )
     </insert>
@@ -75,6 +77,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="category68Code != null">category68_code = #{category68Code},</if>
             <if test="category68Name != null">category68_name = #{category68Name},</if>
+            <if test="namePinyin != null">name_pinyin = #{namePinyin},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="delBy != null">del_by = #{delBy},</if>
             <if test="delTime != null">del_time = #{delTime},</if>
@@ -82,5 +85,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id}
+    </update>
+
+    <update id="updatePinyinById" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
+        update sb_customer_category68 set name_pinyin = #{namePinyin}, update_by = #{updateBy}, update_time = #{updateTime} where id = #{id}
     </update>
 </mapper>

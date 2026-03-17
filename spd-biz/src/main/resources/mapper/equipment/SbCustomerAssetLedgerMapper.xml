@@ -5,6 +5,8 @@
         <id property="id" column="id"/>
         <result property="customerId" column="customer_id"/>
         <result property="equipmentSerialNo" column="equipment_serial_no"/>
+        <result property="financialSystemUniqueId" column="financial_system_unique_id"/>
+        <result property="hisSystemUniqueId" column="his_system_unique_id"/>
         <result property="category68Id" column="category68_id"/>
         <result property="category68Code" column="category68_code"/>
         <result property="category68ArchiveNo" column="category68_archive_no"/>
@@ -57,7 +59,7 @@
         <result property="updateTime" column="update_time"/>
     </resultMap>
     <sql id="selectVo">
-        select id, customer_id, equipment_serial_no, category68_id, category68_code, category68_archive_no, name, name_pinyin, spec, model, register_cert_no,
+        select id, customer_id, equipment_serial_no, financial_system_unique_id, his_system_unique_id, category68_id, category68_code, category68_archive_no, name, name_pinyin, spec, model, register_cert_no,
         brand_id, brand_name, manufacturer_id, manufacturer_name, supplier_id, supplier_name, serial_number, unit, original_value, net_value,
         dept_id, dept_name, storage_place, acceptance_date, storage_date, manufacture_date, scrap_date, expected_scrap_date,
         asset_category_id, asset_category_name, measuring_category_id, measuring_category_name, calibration_cycle_days, last_calibration_date, next_calibration_date,
@@ -73,11 +75,20 @@
             <if test="name != null and name != ''"> and (name like concat('%', #{name}, '%') or name_pinyin like concat('%', #{name}, '%'))</if>
             <if test="category68Id != null and category68Id != ''"> and category68_id = #{category68Id}</if>
             <if test="equipmentSerialNo != null and equipmentSerialNo != ''"> and equipment_serial_no like concat('%', #{equipmentSerialNo}, '%')</if>
+            <if test="category68ArchiveNo != null and category68ArchiveNo != ''"> and category68_archive_no like concat('%', #{category68ArchiveNo}, '%')</if>
+            <if test="spec != null and spec != ''"> and spec like concat('%', #{spec}, '%')</if>
+            <if test="model != null and model != ''"> and model like concat('%', #{model}, '%')</if>
+            <if test="brandKeyword != null and brandKeyword != ''"> and (brand_name like concat('%', #{brandKeyword}, '%')<if test="customerId != null and customerId != ''"> or brand_id in (select id from sb_equipment_brand where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and (name like concat('%', #{brandKeyword}, '%') or (name_pinyin is not null and name_pinyin like concat('%', #{brandKeyword}, '%'))))</if>)</if>
+            <if test="manufacturerKeyword != null and manufacturerKeyword != ''"> and (manufacturer_name like concat('%', #{manufacturerKeyword}, '%')<if test="customerId != null and customerId != ''"> or manufacturer_id in (select id from sb_equipment_manufacturer where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and (name like concat('%', #{manufacturerKeyword}, '%') or (name_pinyin is not null and name_pinyin like concat('%', #{manufacturerKeyword}, '%'))))</if>)</if>
+            <if test="supplierKeyword != null and supplierKeyword != ''"> and (supplier_name like concat('%', #{supplierKeyword}, '%')<if test="customerId != null and customerId != ''"> or supplier_id in (select id from sb_equipment_supplier where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and (name like concat('%', #{supplierKeyword}, '%') or (name_pinyin is not null and name_pinyin like concat('%', #{supplierKeyword}, '%'))))</if>)</if>
             <if test="useStatus != null and useStatus != ''"> and use_status = #{useStatus}</if>
         </where>
         order by create_time desc
     </select>
     <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <select id="selectByCustomerIdAndEquipmentSerialNo" resultMap="Result">
+        <include refid="selectVo"/> where customer_id = #{customerId} and equipment_serial_no = #{equipmentSerialNo} and (del_flag = 0 or del_flag is null) limit 1
+    </select>
     <select id="selectMaxSerialNoNumeric" resultType="int">
         select ifnull(max(cast(equipment_serial_no as unsigned)), 0) from sb_customer_asset_ledger
         where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and equipment_serial_no regexp '^[0-9]+$'
@@ -88,13 +99,13 @@
         and category68_archive_no is not null and category68_archive_no != '' and category68_archive_no like '%-%'
     </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbCustomerAssetLedger">
-        insert into sb_customer_asset_ledger (id, customer_id, equipment_serial_no, category68_id, category68_code, category68_archive_no, name, name_pinyin, spec, model, register_cert_no,
+        insert into sb_customer_asset_ledger (id, customer_id, equipment_serial_no, financial_system_unique_id, his_system_unique_id, category68_id, category68_code, category68_archive_no, name, name_pinyin, spec, model, register_cert_no,
         brand_id, brand_name, manufacturer_id, manufacturer_name, supplier_id, supplier_name, serial_number, unit, original_value, net_value,
         dept_id, dept_name, storage_place, acceptance_date, storage_date, manufacture_date, scrap_date, expected_scrap_date,
         asset_category_id, asset_category_name, measuring_category_id, measuring_category_name, calibration_cycle_days, last_calibration_date, next_calibration_date,
         use_status, use_status_name, label_print_status, label_print_time, repair_status, repair_status_name,
         warranty_days, warranty_start_time, warranty_end_time, warranty_type, del_flag, create_by, create_time, update_by, update_time)
-        values (#{id}, #{customerId}, #{equipmentSerialNo}, #{category68Id}, #{category68Code}, #{category68ArchiveNo}, #{name}, #{namePinyin}, #{spec}, #{model}, #{registerCertNo},
+        values (#{id}, #{customerId}, #{equipmentSerialNo}, #{financialSystemUniqueId}, #{hisSystemUniqueId}, #{category68Id}, #{category68Code}, #{category68ArchiveNo}, #{name}, #{namePinyin}, #{spec}, #{model}, #{registerCertNo},
         #{brandId}, #{brandName}, #{manufacturerId}, #{manufacturerName}, #{supplierId}, #{supplierName}, #{serialNumber}, #{unit}, #{originalValue}, #{netValue},
         #{deptId}, #{deptName}, #{storagePlace}, #{acceptanceDate}, #{storageDate}, #{manufactureDate}, #{scrapDate}, #{expectedScrapDate},
         #{assetCategoryId}, #{assetCategoryName}, #{measuringCategoryId}, #{measuringCategoryName}, #{calibrationCycleDays}, #{lastCalibrationDate}, #{nextCalibrationDate},
@@ -105,6 +116,8 @@
         update sb_customer_asset_ledger
         <set>
             <if test="equipmentSerialNo != null">equipment_serial_no = #{equipmentSerialNo},</if>
+            <if test="financialSystemUniqueId != null">financial_system_unique_id = #{financialSystemUniqueId},</if>
+            <if test="hisSystemUniqueId != null">his_system_unique_id = #{hisSystemUniqueId},</if>
             <if test="category68Id != null">category68_id = #{category68Id},</if>
             <if test="category68Code != null">category68_code = #{category68Code},</if>
             <if test="category68ArchiveNo != null">category68_archive_no = #{category68ArchiveNo},</if>
