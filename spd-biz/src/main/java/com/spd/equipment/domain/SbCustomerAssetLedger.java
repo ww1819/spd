@@ -54,19 +54,19 @@ public class SbCustomerAssetLedger extends BaseEntity {
     private String deptName;
     @Excel(name = "存放地点")
     private String storagePlace;
-    @Excel(name = "验收日期")
+    @Excel(name = "验收日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date acceptanceDate;
-    @Excel(name = "入库日期")
+    @Excel(name = "入库日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date storageDate;
-    @Excel(name = "出厂日期")
+    @Excel(name = "出厂日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date manufactureDate;
-    @Excel(name = "报废日期")
+    @Excel(name = "报废日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date scrapDate;
-    @Excel(name = "预计报废日期")
+    @Excel(name = "预计报废日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date expectedScrapDate;
     private String assetCategoryId;

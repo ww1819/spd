@@ -162,6 +162,9 @@ public class SbCustomerAssetLedgerServiceImpl implements ISbCustomerAssetLedgerS
             throw new ServiceException("校验未通过，整个文件不允许导入或更新：" + validateErrors.toString());
         }
 
+        // 客户68分类列表（用于按设备名称自动匹配68分类）
+        List<SbCustomerCategory68> customer68List = loadCustomer68Flat(customerId);
+
         // 第二遍：逐行解析并写入
         int successNum = 0;
         for (int i = 0; i < list.size(); i++) {
@@ -216,10 +219,26 @@ public class SbCustomerAssetLedgerServiceImpl implements ISbCustomerAssetLedgerS
                     }
                 }
                 row.setCustomerId(customerId);
-                if (isUpdate) {
-                    if (StringUtils.isNotEmpty(row.getName())) {
-                        row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));
+
+                // 根据名称自动生成拼音简码
+                if (StringUtils.isNotEmpty(row.getName())) {
+                    row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName().trim()));
+                }
+                // 未填写68分类时，根据设备名称自动匹配客户68分类（名称或拼音包含关系，取最长匹配）
+                if (StringUtils.isEmpty(row.getCategory68Id()) && StringUtils.isNotEmpty(row.getName()) && customer68List != null && !customer68List.isEmpty()) {
+                    SbCustomerCategory68 matched = matchCategory68ByName(row.getName().trim(), row.getNamePinyin(), customer68List);
+                    if (matched != null) {
+                        row.setCategory68Id(matched.getId());
+                        row.setCategory68Code(matched.getCategory68Code());
+                        if (isUpdate) {
+                            Integer maxSeq = mapper.selectMaxArchiveNoSeq(customerId, matched.getId());
+                            int next = (maxSeq == null ? 0 : maxSeq) + 1;
+                            row.setCategory68ArchiveNo((matched.getCategory68Code() != null ? matched.getCategory68Code() : "") + "-" + String.format("%04d", next));
+                        }
                     }
+                }
+
+                if (isUpdate) {
                     fillDictLabel(row);
                     mapper.update(row);
                 } else {
@@ -259,5 +278,44 @@ public class SbCustomerAssetLedgerServiceImpl implements ISbCustomerAssetLedgerS
         if (StringUtils.isNotEmpty(r.getRepairStatus())) {
             r.setRepairStatusName(DictUtils.getDictLabel("eq_repair_status", r.getRepairStatus()));
         }
+    }
+
+    /** 加载客户下所有68分类（扁平列表，未删除），用于导入时按名称匹配 */
+    private List<SbCustomerCategory68> loadCustomer68Flat(String customerId) {
+        if (StringUtils.isEmpty(customerId)) return new ArrayList<>();
+        SbCustomerCategory68 q = new SbCustomerCategory68();
+        q.setCustomerId(customerId);
+        q.setDelFlag(0);
+        List<SbCustomerCategory68> list = category68Mapper.selectList(q);
+        return list != null ? list : new ArrayList<>();
+    }
+
+    /**
+     * 根据设备名称（及拼音简码）在客户68分类中匹配最合适的一项。
+     * 规则：设备名称或拼音包含分类名称/拼音，或分类名称/拼音包含设备名称/拼音；取分类名称最长的一项（最具体）。
+     */
+    private SbCustomerCategory68 matchCategory68ByName(String deviceName, String deviceNamePinyin, List<SbCustomerCategory68> category68List) {
+        if (deviceName == null || deviceName.isEmpty() || category68List == null || category68List.isEmpty()) {
+            return null;
+        }
+        String dev = deviceName.trim();
+        String devPy = (deviceNamePinyin != null ? deviceNamePinyin.trim() : "");
+        SbCustomerCategory68 best = null;
+        int bestLen = 0;
+        for (SbCustomerCategory68 c : category68List) {
+            String catName = c.getCategory68Name() != null ? c.getCategory68Name().trim() : "";
+            String catPy = c.getNamePinyin() != null ? c.getNamePinyin().trim() : "";
+            if (catName.isEmpty()) continue;
+            boolean match = false;
+            if (dev.contains(catName) || catName.contains(dev)) match = true;
+            if (!match && !devPy.isEmpty() && !catPy.isEmpty()) {
+                if (devPy.contains(catPy) || catPy.contains(devPy)) match = true;
+            }
+            if (match && catName.length() > bestLen) {
+                best = c;
+                bestLen = catName.length();
+            }
+        }
+        return best;
     }
 }

@@ -7,6 +7,12 @@
     where group_id = #{groupId} and ifnull(del_flag,'0') = '0'
   </select>
 
+  <select id="selectMenuIdsByGroupIdAndCustomerId" resultType="string">
+    select menu_id from sb_work_group_menu
+    where group_id = #{groupId} and (customer_id = #{customerId} or (customer_id is null and #{customerId} is null))
+    and ifnull(del_flag,'0') = '0'
+  </select>
+
   <update id="deleteByGroupId">
     update sb_work_group_menu set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1' where group_id = #{groupId}
   </update>

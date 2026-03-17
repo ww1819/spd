@@ -143,6 +143,10 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
 
   @Override
   public List<String> selectMenuIdsByGroupId(String groupId) {
+    SbWorkGroup group = sbWorkGroupMapper.selectByGroupId(groupId);
+    if (group != null && StringUtils.isNotEmpty(group.getCustomerId())) {
+      return sbWorkGroupMenuMapper.selectMenuIdsByGroupIdAndCustomerId(groupId, group.getCustomerId());
+    }
     return sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
   }
 
