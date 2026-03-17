@@ -55,7 +55,8 @@ public class BasApplyTemplateServiceImpl implements IBasApplyTemplateService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteBasApplyTemplateById(Long id) {
-        return basApplyTemplateMapper.deleteBasApplyTemplateById(id);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        return basApplyTemplateMapper.deleteBasApplyTemplateById(id, deleteBy != null ? deleteBy : "");
     }
 
     @Override
@@ -63,7 +64,8 @@ public class BasApplyTemplateServiceImpl implements IBasApplyTemplateService {
     public int updateBasApplyTemplate(BasApplyTemplate template) {
         int rows = basApplyTemplateMapper.updateBasApplyTemplate(template);
         if (template.getId() != null) {
-            basApplyTemplateMapper.deleteEntryByParenId(template.getId());
+            String deleteBy = SecurityUtils.getUserIdStr();
+            basApplyTemplateMapper.deleteEntryByParenId(template.getId(), deleteBy != null ? deleteBy : "");
             List<BasApplyTemplateEntry> entryList = template.getEntryList();
             if (entryList != null && !entryList.isEmpty()) {
                 for (int i = 0; i < entryList.size(); i++) {
