@@ -51,26 +51,26 @@
 	
 	<select id="selectMenuTreeAll" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
-		from sys_menu m where m.menu_type in ('M', 'C') and m.status = 0
+		from sys_menu m where m.menu_type in ('M', 'C', 'F') and m.status = 0
 		order by m.parent_id, m.order_num
 	</select>
 
-	<!-- 耗材客户权限分配用菜单树：排除平台管理菜单（is_platform=1）及原客户管理/客户菜单功能管理(2100~2105) -->
+	<!-- 耗材客户权限分配用菜单树：排除平台管理菜单（is_platform=1）及原客户管理/客户菜单功能管理(2100~2105)，含按钮(F)便于设置按钮权限 -->
 	<select id="selectMenuTreeForHcCustomerAssign" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
 		from sys_menu m
-		where m.menu_type in ('M', 'C') and m.status = 0
+		where m.menu_type in ('M', 'C', 'F') and m.status = 0
 		and (m.is_platform is null or m.is_platform != '1')
 		and m.menu_id not in (2100, 2101, 2102, 2103, 2104, 2105)
 		order by m.parent_id, m.order_num
 	</select>
 
-	<!-- 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表内该客户已有的菜单，且排除平台管理菜单 -->
+	<!-- 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表内该客户已有的菜单，且排除平台管理菜单，含按钮(F) -->
 	<select id="selectMenuTreeForPostAssign" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
 		from sys_menu m
 		inner join hc_customer_menu hcm on hcm.menu_id = m.menu_id and hcm.tenant_id = #{tenantId}
-		where m.menu_type in ('M', 'C') and m.status = 0
+		where m.menu_type in ('M', 'C', 'F') and m.status = 0
 		and (m.is_platform is null or m.is_platform != '1')
 		order by m.parent_id, m.order_num
 	</select>
@@ -96,11 +96,11 @@
 		order by m.parent_id, m.order_num
 	</select>
     
-	<!-- 耗材：仅从用户权限表 sys_user_menu 读取；forTenant=true 时排除平台管理菜单 -->
+    <!-- 耗材：仅从用户权限表 sys_user_menu 读取；forTenant=true 时排除平台管理菜单；含按钮(F)以支持按钮权限 -->
     <select id="selectMenuTreeByUserId" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, m.create_time
 		from sys_menu m
-		where m.menu_type in ('M', 'C') and m.status = 0
+		where m.menu_type in ('M', 'C', 'F') and m.status = 0
 		and exists (
 			select 1 from sys_user_menu um
 			where um.menu_id = m.menu_id
@@ -130,7 +130,7 @@
 			 left join sys_user_role ur on rm.role_id = ur.role_id
 	</select>
 
-	<!-- 耗材：仅从用户权限表 sys_user_menu 读取；forTenant=true 时排除平台管理菜单 -->
+	<!-- 耗材/管理端：用户登录后菜单及按钮权限从 sys_user_menu 读取（含 F 类型按钮 perms）；forTenant=true 时排除平台管理菜单 -->
 	<select id="selectMenuPermsByUserId" resultType="String">
 		select distinct m.perms
 		from sys_menu m
@@ -236,7 +236,7 @@
 	    delete from sys_menu where menu_id = #{menuId}
 	</delete>
 
-    <!-- 设备前端（sb_menu）菜单树：全部 -->
+    <!-- 设备前端（sb_menu）菜单树：全部，含按钮(F)便于设置按钮权限 -->
     <select id="selectSbMenuTreeAll" resultMap="SysMenuResult">
         select distinct m.menu_id,
                m.parent_id,
@@ -254,12 +254,12 @@
                m.order_num,
                m.create_time
         from sb_menu m
-        where m.menu_type in ('M', 'C')
+        where m.menu_type in ('M', 'C', 'F')
           and m.status = '0'
         order by m.parent_id, m.order_num
     </select>
 
-    <!-- 设备前端（sb_menu）菜单树：按用户 -->
+    <!-- 设备前端（sb_menu）菜单树：按用户，含按钮(F) -->
     <select id="selectSbMenuTreeByUserId" parameterType="Long" resultMap="SysMenuResult">
         select distinct m.menu_id,
                m.parent_id,
@@ -277,7 +277,7 @@
                m.order_num,
                m.create_time
         from sb_menu m
-        where m.menu_type in ('M', 'C')
+        where m.menu_type in ('M', 'C', 'F')
           and m.status = '0'
           and exists (
               select 1

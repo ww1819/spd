@@ -139,8 +139,11 @@ public class SysLoginController
         SysUser user = SecurityUtils.getLoginUser().getUser();
         // 设备角色集合
         Set<String> roles = sbPermissionService.getRolePermission(user);
-        // 设备菜单权限集合
-        Set<String> permissions = sbPermissionService.getMenuPermission(user);
+        // 设备菜单权限集合（与登录时一致：平台 + 设备，供前端 v-hasPermi 使用）
+        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
+        permissions.addAll(sbPermissionService.getMenuPermission(user));
+        // 同步到当前会话，避免「能看到按钮但点击 403」：登录后权限变更或会话中权限与 getInfo 不一致时，以本次为准
+        SecurityUtils.getLoginUser().setPermissions(permissions);
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);

@@ -605,12 +605,10 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       return;
     }
 
+    // 设备功能重置：仅将「默认对客户开放」的权限开放给客户、super 组、super_01 用户（不再回退到系统设置下非平台管理）
     List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsDefaultForCustomer();
-    if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
-      defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
-    }
-    if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
-      return;
+    if (defaultMenuIds == null) {
+      defaultMenuIds = new ArrayList<>();
     }
 
     sbCustomerMenuMapper.deleteSbCustomerMenuByCustomerId(customerId);

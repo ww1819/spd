@@ -48,10 +48,10 @@ public class SysPermissionService
     }
 
     /**
-     * 获取菜单数据权限（耗材：仅从用户权限表 sys_user_menu 读取）
+     * 获取菜单及按钮权限（耗材/管理端：从用户权限表 sys_user_menu 读取，含 F 类型按钮权限）
      * 
      * @param user 用户信息
-     * @return 菜单权限信息
+     * @return 菜单权限信息（含 perms，供 v-hasPermi 等使用）
      */
     public Set<String> getMenuPermission(SysUser user)
     {

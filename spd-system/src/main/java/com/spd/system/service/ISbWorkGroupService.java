@@ -39,4 +39,12 @@ public interface ISbWorkGroupService {
 
   /** 将工作组的菜单、仓库、科室权限同步到组内所有用户（写入用户权限表） */
   int syncToGroupUsers(String groupId);
+
+  /**
+   * 判断用户是否属于指定客户下的 super 组（super 组用户不受科室/仓库权限限制，可看客户下全部）
+   * @param userId 用户ID
+   * @param customerId 客户ID，为空则返回 false
+   * @return 是否在 super 组
+   */
+  boolean isUserInSuperGroup(Long userId, String customerId);
 }

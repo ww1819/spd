@@ -267,4 +267,21 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     }
     return count;
   }
+
+  private static final String GROUP_KEY_SUPER = "super";
+
+  @Override
+  public boolean isUserInSuperGroup(Long userId, String customerId) {
+    if (userId == null || StringUtils.isEmpty(customerId)) {
+      return false;
+    }
+    List<SbWorkGroup> groups = sbWorkGroupMapper.selectListByCustomerId(customerId);
+    if (groups == null) return false;
+    SbWorkGroup superGroup = groups.stream()
+        .filter(g -> GROUP_KEY_SUPER.equals(g.getGroupKey()))
+        .findFirst()
+        .orElse(null);
+    if (superGroup == null) return false;
+    return sbWorkGroupUserMapper.countByGroupIdAndUserId(superGroup.getGroupId(), userId) > 0;
+  }
 }

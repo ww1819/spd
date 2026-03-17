@@ -30,12 +30,12 @@ public class SbCustomerAssetLedgerController extends BaseController {
     }
 
     @PreAuthorize("@ss.hasPermi('equipment:assetLedger:export')")
-    @Log(title = "客户资产台账", businessType = BusinessType.EXPORT)
+    @Log(title = "资产台账", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, SbCustomerAssetLedger q) {
         List<SbCustomerAssetLedger> list = service.selectList(q);
         ExcelUtil<SbCustomerAssetLedger> util = new ExcelUtil<>(SbCustomerAssetLedger.class);
-        util.exportExcel(response, list, "客户资产台账");
+        util.exportExcel(response, list, "资产台账");
     }
 
     @PreAuthorize("@ss.hasPermi('equipment:assetLedger:query')")
@@ -52,14 +52,14 @@ public class SbCustomerAssetLedgerController extends BaseController {
     }
 
     @PreAuthorize("@ss.hasPermi('equipment:assetLedger:edit')")
-    @Log(title = "客户资产台账", businessType = BusinessType.UPDATE)
+    @Log(title = "资产台账", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody SbCustomerAssetLedger row) {
         return toAjax(service.update(row));
     }
 
     @PreAuthorize("@ss.hasPermi('equipment:assetLedger:remove')")
-    @Log(title = "客户资产台账", businessType = BusinessType.DELETE)
+    @Log(title = "资产台账", businessType = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     public AjaxResult remove(@PathVariable String id) {
         return toAjax(service.deleteById(id));

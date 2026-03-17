@@ -24,6 +24,7 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
 import com.spd.common.utils.spring.SpringUtils;
+import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysUserService;
 
@@ -63,6 +64,9 @@ public class SysUserServiceImpl implements ISysUserService
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private ISbUserPermissionService sbUserPermissionService;
 
     @Autowired
     protected Validator validator;
@@ -286,6 +290,11 @@ public class SysUserServiceImpl implements ISysUserService
         insertUserWarehouse(user);
         // 新增用户科室关联
         insertUserDepartment(user);
+        // 租户用户：同步写入 sb_user_permission_dept、sb_user_permission_warehouse
+        if (StringUtils.isNotEmpty(user.getCustomerId())) {
+            sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
+            sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
+        }
         return rows;
     }
 
@@ -335,6 +344,11 @@ public class SysUserServiceImpl implements ISysUserService
         insertUserDepartment(user);
         // 新增用户菜单关联
         insertUserMenu(user);
+        // 租户用户：同步写入 sb_user_permission_dept、sb_user_permission_warehouse
+        if (StringUtils.isNotEmpty(user.getCustomerId())) {
+            sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
+            sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
+        }
         return userMapper.updateUser(user);
     }
 

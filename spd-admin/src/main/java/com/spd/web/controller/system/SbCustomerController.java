@@ -177,7 +177,7 @@ public class SbCustomerController extends BaseController {
   }
 
   /**
-   * 设备功能重置：若 super 组和 super_01 不存在则创建；重置客户菜单权限、super 工作组菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
+   * 设备功能重置：若 super 组和 super_01 不存在则创建；将默认对客户开放的权限开放给客户、super 组、super_01 用户。
    */
   @PreAuthorize("@ss.hasPermi('sb:system:customer:edit')")
   @Log(title = "设备功能重置", businessType = BusinessType.UPDATE)

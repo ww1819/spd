@@ -22,6 +22,10 @@ import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.system.service.ISbUserPermissionService;
+import com.spd.system.service.ISbWorkGroupService;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
@@ -38,6 +42,12 @@ public class FdDepartmentController extends BaseController
     @Autowired
     private IFdDepartmentService fdDepartmentService;
 
+    @Autowired
+    private ISbWorkGroupService sbWorkGroupService;
+
+    @Autowired
+    private ISbUserPermissionService sbUserPermissionService;
+
     /**
      * 查询科室列表
      */
@@ -51,19 +61,25 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
-     * 查询所有科室列表
+     * 查询所有科室列表（租户下：super 组返回客户下全部，否则返回当前用户有权限的科室）
      */
     @GetMapping("/listAll/{userId}")
     public List<FdDepartment> listAll(@PathVariable(value = "userId") Long userId)
     {
-        List<FdDepartment> list = null;
-        if(SysUser.isAdmin(userId)){
+        String customerId = SecurityUtils.getCustomerId();
+        List<FdDepartment> list;
+        if (StringUtils.isNotEmpty(customerId)) {
             list = fdDepartmentService.selectdepartmenAll();
-        }else{
-            list = fdDepartmentService.selectUserDepartmenAll(userId);
+            if (list != null && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+                if (allowedIds == null || allowedIds.isEmpty()) list = new ArrayList<>();
+                else list = list.stream().filter(d -> d.getId() != null && allowedIds.contains(d.getId())).collect(Collectors.toList());
+            }
+        } else {
+            if (SysUser.isAdmin(userId)) list = fdDepartmentService.selectdepartmenAll();
+            else list = fdDepartmentService.selectUserDepartmenAll(userId);
         }
-
-        return list;
+        return list != null ? list : new ArrayList<>();
     }
 
     /**
@@ -142,13 +158,19 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
-     * 获取科室列表
+     * 获取科室列表（租户下：super 组返回客户下全部，否则返回当前用户有权限的科室）
      */
     @GetMapping("/optionselect")
     public AjaxResult optionselect()
     {
         List<FdDepartment> fdDepartmentList = fdDepartmentService.selectdepartmenAll();
-        return success(fdDepartmentList);
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (allowedIds == null || allowedIds.isEmpty()) fdDepartmentList = new ArrayList<>();
+            else fdDepartmentList = fdDepartmentList.stream().filter(d -> d.getId() != null && allowedIds.contains(d.getId())).collect(Collectors.toList());
+        }
+        return success(fdDepartmentList != null ? fdDepartmentList : new ArrayList<>());
     }
 
     /**
