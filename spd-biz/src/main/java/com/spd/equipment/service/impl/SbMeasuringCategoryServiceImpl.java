@@ -2,6 +2,7 @@ package com.spd.equipment.service.impl;
 
 import java.util.List;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -33,6 +34,7 @@ public class SbMeasuringCategoryServiceImpl implements ISbMeasuringCategoryServi
     @Override
     public int insert(SbMeasuringCategory row) {
         if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
+        if (StringUtils.isNotEmpty(row.getCategoryName())) row.setCategoryPinyin(PinyinUtils.getPinyinInitials(row.getCategoryName()));
         row.setId(UUID7.generateUUID7());
         row.setDelFlag(0);
         row.setCreateTime(DateUtils.getNowDate());
@@ -42,6 +44,7 @@ public class SbMeasuringCategoryServiceImpl implements ISbMeasuringCategoryServi
 
     @Override
     public int update(SbMeasuringCategory row) {
+        if (StringUtils.isNotEmpty(row.getCategoryName())) row.setCategoryPinyin(PinyinUtils.getPinyinInitials(row.getCategoryName()));
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) row.setUpdateBy(SecurityUtils.getUserIdStr());
         return mapper.update(row);

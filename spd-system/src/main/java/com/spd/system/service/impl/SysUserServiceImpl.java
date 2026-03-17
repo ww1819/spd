@@ -23,7 +23,6 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
-import com.spd.common.utils.spring.SpringUtils;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysUserService;
@@ -67,6 +66,9 @@ public class SysUserServiceImpl implements ISysUserService
 
     @Autowired
     private ISbUserPermissionService sbUserPermissionService;
+
+    @Autowired
+    private com.spd.system.service.ISbWorkGroupService sbWorkGroupService;
 
     @Autowired
     protected Validator validator;
@@ -249,19 +251,38 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 校验用户是否有数据权限
+     * 校验用户是否有数据权限（不做部门数据范围校验，仅校验：管理员放行；租户用户仅可访问同客户用户；平台用户仅校验用户存在）
      *
      * @param userId 用户id
      */
     @Override
     public void checkUserDataScope(Long userId)
     {
-        if (!SysUser.isAdmin(SecurityUtils.getUserId()))
+        if (SysUser.isAdmin(SecurityUtils.getUserId()))
         {
-            SysUser user = new SysUser();
-            user.setUserId(userId);
-            List<SysUser> users = SpringUtils.getAopProxy(this).selectUserList(user);
-            if (StringUtils.isEmpty(users))
+            return;
+        }
+        // 新增用户时无 userId，直接放行
+        if (userId == null)
+        {
+            return;
+        }
+        SysUser target = userMapper.selectUserById(userId);
+        if (target == null)
+        {
+            throw new ServiceException("没有权限访问用户数据！");
+        }
+        com.spd.common.core.domain.model.LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null)
+        {
+            throw new ServiceException("没有权限访问用户数据！");
+        }
+        String myCustomerId = loginUser.getUser().getCustomerId() != null ? loginUser.getUser().getCustomerId().trim() : "";
+        String targetCustomerId = target.getCustomerId() != null ? target.getCustomerId().trim() : "";
+        // 租户用户只能访问同一客户下的用户；平台用户（无 customerId）可访问平台用户
+        if (StringUtils.isNotEmpty(myCustomerId))
+        {
+            if (!StringUtils.isNotEmpty(targetCustomerId) || !myCustomerId.equals(targetCustomerId))
             {
                 throw new ServiceException("没有权限访问用户数据！");
             }
@@ -294,6 +315,10 @@ public class SysUserServiceImpl implements ISysUserService
         if (StringUtils.isNotEmpty(user.getCustomerId())) {
             sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
             sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
+            // 设备系统工作组写入 sb_work_group_user（非 sys_user_post）
+            if (user.getWorkGroupIds() != null && user.getWorkGroupIds().length > 0) {
+                sbWorkGroupService.setUserWorkGroups(user.getUserId(), user.getCustomerId(), user.getWorkGroupIds());
+            }
         }
         return rows;
     }
@@ -348,6 +373,9 @@ public class SysUserServiceImpl implements ISysUserService
         if (StringUtils.isNotEmpty(user.getCustomerId())) {
             sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
             sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
+            // 设备系统工作组写入 sb_work_group_user（非 sys_user_post）
+            sbWorkGroupService.setUserWorkGroups(user.getUserId(), user.getCustomerId(),
+                user.getWorkGroupIds() != null ? user.getWorkGroupIds() : new String[0]);
         }
         return userMapper.updateUser(user);
     }
@@ -518,63 +546,44 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 新增用户菜单信息
-     * @param user
+     * 新增用户菜单信息（menuIds 为 String[]：平台为数字字符串写 sys_user_menu，租户为 UUID 写 sb_user_permission_menu）
      */
-    public void insertUserMenu(SysUser user){
-        Long[] menuIds = user.getMenuIds();
-        log.info("保存用户菜单权限 - userId: {}, menuIds: {}, menuIds长度: {}", 
-            user.getUserId(), 
-            menuIds != null ? java.util.Arrays.toString(menuIds) : "null",
-            menuIds != null ? menuIds.length : 0);
-        if (menuIds != null && menuIds.length > 0)
-        {
-            try {
-                // 新增用户与菜单关联
-                List<SysUserMenu> list = new ArrayList<SysUserMenu>(menuIds.length);
-                for (Long menuId : menuIds)
-                {
-                    if (menuId != null && menuId > 0)
-                    {
+    public void insertUserMenu(SysUser user) {
+        String[] menuIds = user.getMenuIds();
+        log.info("保存用户菜单权限 - userId: {}, menuIds长度: {}", user.getUserId(), menuIds != null ? menuIds.length : 0);
+        if (menuIds == null || menuIds.length == 0) {
+            if (StringUtils.isNotEmpty(user.getCustomerId())) {
+                sbUserPermissionService.saveUserMenus(user.getUserId(), user.getCustomerId(), new String[0]);
+            }
+            return;
+        }
+        if (StringUtils.isNotEmpty(user.getCustomerId())) {
+            sbUserPermissionService.saveUserMenus(user.getUserId(), user.getCustomerId(), menuIds);
+            return;
+        }
+        try {
+            List<SysUserMenu> list = new ArrayList<>(menuIds.length);
+            for (String menuIdStr : menuIds) {
+                if (StringUtils.isEmpty(menuIdStr)) continue;
+                try {
+                    long menuId = Long.parseLong(menuIdStr.trim());
+                    if (menuId > 0) {
                         SysUserMenu um = new SysUserMenu();
                         um.setUserId(user.getUserId());
                         um.setMenuId(menuId);
                         list.add(um);
-                        log.debug("添加菜单关联 - userId: {}, menuId: {}", user.getUserId(), menuId);
                     }
-                    else
-                    {
-                        log.warn("跳过无效的menuId - userId: {}, menuId: {}", user.getUserId(), menuId);
-                    }
-                }
-                if (list.size() > 0)
-                {
-                    int result = userMenuMapper.batchUserMenu(list);
-                    log.info("保存用户菜单权限成功 - userId: {}, 保存数量: {}", user.getUserId(), result);
-                    if (result <= 0)
-                    {
-                        log.error("保存用户菜单权限失败 - 插入行数为0 - userId: {}, menuIds: {}", 
-                            user.getUserId(), java.util.Arrays.toString(menuIds));
-                    }
-                }
-                else
-                {
-                    log.warn("保存用户菜单权限 - 没有有效的menuId - userId: {}, menuIds: {}", 
-                        user.getUserId(), java.util.Arrays.toString(menuIds));
+                } catch (NumberFormatException e) {
+                    log.debug("跳过非数字 menuId - userId: {}, menuId: {}", user.getUserId(), menuIdStr);
                 }
             }
-            catch (Exception e)
-            {
-                log.error("保存用户菜单权限异常 - userId: {}, menuIds: {}, 错误: {}", 
-                    user.getUserId(), 
-                    menuIds != null ? java.util.Arrays.toString(menuIds) : "null",
-                    e.getMessage(), e);
-                throw e;
+            if (!list.isEmpty()) {
+                userMenuMapper.batchUserMenu(list);
+                log.info("保存用户菜单权限成功 - userId: {}, 保存数量: {}", user.getUserId(), list.size());
             }
-        }
-        else
-        {
-            log.warn("保存用户菜单权限 - menuIds为空或null - userId: {}", user.getUserId());
+        } catch (Exception e) {
+            log.error("保存用户菜单权限异常 - userId: {}, 错误: {}", user.getUserId(), e.getMessage(), e);
+            throw e;
         }
     }
 

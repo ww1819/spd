@@ -39,7 +39,7 @@ public class SbRoleController extends BaseController {
     /**
      * 获取设备角色列表
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:list')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:list') or @ss.hasPermi('system:role:list')")
     @GetMapping("/list")
     public TableDataInfo list(SbRole role)
     {
@@ -54,7 +54,7 @@ public class SbRoleController extends BaseController {
     /**
      * 获取设备角色详细信息
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:query')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:query') or @ss.hasPermi('system:role:query')")
     @GetMapping(value = "/{roleId}")
     public AjaxResult getInfo(@PathVariable String roleId)
     {
@@ -64,7 +64,7 @@ public class SbRoleController extends BaseController {
     /**
      * 新增设备角色
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:add')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:add') or @ss.hasPermi('system:role:add')")
     @Log(title = "设备角色管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SbRole role)
@@ -87,7 +87,7 @@ public class SbRoleController extends BaseController {
     /**
      * 修改保存设备角色
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:edit') or @ss.hasPermi('system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody SbRole role)
@@ -107,7 +107,7 @@ public class SbRoleController extends BaseController {
     /**
      * 修改设备角色状态
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:edit') or @ss.hasPermi('system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.UPDATE)
     @PutMapping("/changeStatus")
     public AjaxResult changeStatus(@RequestBody SbRole role)
@@ -119,7 +119,7 @@ public class SbRoleController extends BaseController {
     /**
      * 删除设备角色
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:remove')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:remove') or @ss.hasPermi('system:role:remove')")
     @Log(title = "设备角色管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{roleIds}")
     public AjaxResult remove(@PathVariable String[] roleIds)
@@ -130,7 +130,7 @@ public class SbRoleController extends BaseController {
     /**
      * 取消授权用户
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:edit') or @ss.hasPermi('system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.GRANT)
     @PutMapping("/authUser/cancel")
     public AjaxResult cancelAuthUser(@RequestBody SbUserRole userRole)
@@ -141,7 +141,7 @@ public class SbRoleController extends BaseController {
     /**
      * 批量取消授权用户
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:edit') or @ss.hasPermi('system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.GRANT)
     @PutMapping("/authUser/cancelAll")
     public AjaxResult cancelAuthUserAll(String roleId, Long[] userIds)
@@ -152,7 +152,7 @@ public class SbRoleController extends BaseController {
     /**
      * 批量选择用户授权
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:role:edit')")
+    @PreAuthorize("@ss.hasPermi('sb:system:role:edit') or @ss.hasPermi('system:role:edit')")
     @Log(title = "设备角色管理", businessType = BusinessType.GRANT)
     @PutMapping("/authUser/selectAll")
     public AjaxResult selectAuthUserAll(String roleId, Long[] userIds)

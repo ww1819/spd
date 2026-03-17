@@ -49,12 +49,21 @@ public class FdDepartmentController extends BaseController
     private ISbUserPermissionService sbUserPermissionService;
 
     /**
-     * 查询科室列表
+     * 查询科室列表（租户非 super 组用户按 sb_user_permission_dept 过滤）
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:list')")
     @GetMapping("/list")
     public TableDataInfo list(FdDepartment fdDepartment)
     {
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (allowedIds != null && !allowedIds.isEmpty()) {
+                fdDepartment.getParams().put("allowedDeptIds", allowedIds);
+            } else {
+                fdDepartment.getParams().put("allowedDeptIds", new ArrayList<Long>());
+            }
+        }
         startPage();
         List<FdDepartment> list = fdDepartmentService.selectFdDepartmentList(fdDepartment);
         return getDataTable(list);
@@ -83,13 +92,22 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
-     * 导出科室列表
+     * 导出科室列表（租户非 super 组用户按权限过滤）
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:export')")
     @Log(title = "科室", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, FdDepartment fdDepartment)
     {
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (allowedIds != null && !allowedIds.isEmpty()) {
+                fdDepartment.getParams().put("allowedDeptIds", allowedIds);
+            } else {
+                fdDepartment.getParams().put("allowedDeptIds", new ArrayList<Long>());
+            }
+        }
         List<FdDepartment> list = fdDepartmentService.selectFdDepartmentList(fdDepartment);
         ExcelUtil<FdDepartment> util = new ExcelUtil<FdDepartment>(FdDepartment.class);
         util.exportExcel(response, list, "科室数据");

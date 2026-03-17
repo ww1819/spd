@@ -118,6 +118,30 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
   }
 
   @Override
+  public List<String> selectGroupIdsByUserId(Long userId, String customerId) {
+    return sbWorkGroupUserMapper.selectGroupIdsByUserId(userId, customerId);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void setUserWorkGroups(Long userId, String customerId, String[] groupIds) {
+    String createBy = SecurityUtils.getUserIdStr();
+    sbWorkGroupUserMapper.deleteByUserIdAndCustomerId(userId, customerId, createBy);
+    if (groupIds == null || groupIds.length == 0) return;
+    java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+    for (String groupId : groupIds) {
+      if (StringUtils.isEmpty(groupId)) continue;
+      if (!seen.add(groupId)) continue;
+      SbWorkGroupUser wgu = new SbWorkGroupUser();
+      wgu.setGroupId(groupId);
+      wgu.setUserId(userId);
+      wgu.setCustomerId(customerId);
+      wgu.setCreateBy(createBy);
+      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
+    }
+  }
+
+  @Override
   public List<String> selectMenuIdsByGroupId(String groupId) {
     return sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
   }

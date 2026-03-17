@@ -90,8 +90,11 @@ public class SysUser extends BaseEntity
     /** 角色组 */
     private Long[] roleIds;
 
-    /** 岗位组 */
+    /** 岗位组（sys_post 岗位 ID，Long） */
     private Long[] postIds;
+
+    /** 工作组ID（设备系统，对应 sb_work_group_user.group_id，String UUID） */
+    private String[] workGroupIds;
 
     /** 角色ID */
     private Long roleId;
@@ -102,8 +105,8 @@ public class SysUser extends BaseEntity
     /** 科室组 */
     private Long[] departmentIds;
 
-    /** 菜单组 */
-    private Long[] menuIds;
+    /** 菜单组（平台为数字字符串，设备系统为 UUID 字符串） */
+    private String[] menuIds;
 
     /** 岗位名称（用于列表显示） */
     private String postName;
@@ -327,6 +330,14 @@ public class SysUser extends BaseEntity
         this.postIds = postIds;
     }
 
+    public String[] getWorkGroupIds() {
+        return workGroupIds;
+    }
+
+    public void setWorkGroupIds(String[] workGroupIds) {
+        this.workGroupIds = workGroupIds;
+    }
+
     public Long getRoleId()
     {
         return roleId;
@@ -353,11 +364,11 @@ public class SysUser extends BaseEntity
         this.departmentIds = departmentIds;
     }
 
-    public Long[] getMenuIds() {
+    public String[] getMenuIds() {
         return menuIds;
     }
 
-    public void setMenuIds(Long[] menuIds) {
+    public void setMenuIds(String[] menuIds) {
         this.menuIds = menuIds;
     }
 

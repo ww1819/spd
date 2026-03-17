@@ -175,12 +175,18 @@ public class SysUserController extends BaseController
                 List<Long> deptIds = sbUserPermissionService.selectDeptIdsByUserId(userId, userCustomerId);
                 ajax.put("warehouseIds", whIds != null ? whIds : new ArrayList<>());
                 ajax.put("departmentIds", deptIds != null ? deptIds : new ArrayList<>());
+                List<String> wgIds = sbWorkGroupService.selectGroupIdsByUserId(userId, userCustomerId);
+                ajax.put("workGroupIds", wgIds != null ? wgIds : new ArrayList<>());
+                // 租户用户菜单从 sb_user_permission_menu 读取（UUID 字符串）
+                List<String> menuIds = sbUserPermissionService.selectMenuIdsByUserId(userId, userCustomerId);
+                ajax.put("menuIds", menuIds != null ? menuIds : new ArrayList<>());
             } else {
                 ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
                 ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
+                List<Long> menuIdLongs = userService.selectMenuListByUserId(userId);
+                List<String> menuIds = menuIdLongs != null ? menuIdLongs.stream().map(Object::toString).collect(Collectors.toList()) : new ArrayList<>();
+                ajax.put("menuIds", menuIds);
             }
-            List<Long> menuIds = userService.selectMenuListByUserId(userId);
-            ajax.put("menuIds", menuIds != null ? menuIds : new ArrayList<>());
         }
         return ajax;
     }
@@ -207,6 +213,10 @@ public class SysUserController extends BaseController
         }
         user.setCreateBy(getUserIdStr());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+        // 租户用户创建的用户继承当前租户ID（前端通常不传 customerId）
+        if (StringUtils.isEmpty(user.getCustomerId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            user.setCustomerId(SecurityUtils.getCustomerId());
+        }
         return toAjax(userService.insertUser(user));
     }
 

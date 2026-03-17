@@ -39,7 +39,7 @@ public class SbMenuController extends BaseController {
     /**
      * 获取设备菜单列表
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:list')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:list') or @ss.hasPermi('system:menu:list')")
     @GetMapping("/list")
     public AjaxResult list(SbMenu menu)
     {
@@ -50,7 +50,7 @@ public class SbMenuController extends BaseController {
     /**
      * 根据菜单ID获取设备菜单详情（修改时回显）
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit') or @ss.hasPermi('system:menu:query')")
     @GetMapping("/{menuId}")
     public AjaxResult getInfo(@PathVariable String menuId)
     {
@@ -82,7 +82,7 @@ public class SbMenuController extends BaseController {
   /**
    * 新增设备菜单
    */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:add')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:add') or @ss.hasPermi('system:menu:add')")
     @Log(title = "设备菜单管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SbMenu menu)
@@ -103,9 +103,9 @@ public class SbMenuController extends BaseController {
   /**
    * 修改设备菜单
    */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit')")
-    @Log(title = "设备菜单管理", businessType = BusinessType.UPDATE)
-    @PutMapping
+@PreAuthorize("@ss.hasPermi('sb:system:menu:edit') or @ss.hasPermi('system:menu:edit')")
+  @Log(title = "设备菜单管理", businessType = BusinessType.UPDATE)
+  @PutMapping
     public AjaxResult edit(@Validated @RequestBody SbMenu menu)
     {
         if (!sbMenuService.checkSbMenuNameUnique(menu))
@@ -124,7 +124,7 @@ public class SbMenuController extends BaseController {
   /**
    * 删除设备菜单
    */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:remove')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:remove') or @ss.hasPermi('system:menu:remove')")
     @Log(title = "设备菜单管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{menuId}")
     public AjaxResult remove(@PathVariable String menuId)

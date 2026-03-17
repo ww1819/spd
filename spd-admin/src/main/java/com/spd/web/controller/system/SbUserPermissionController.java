@@ -33,14 +33,14 @@ public class SbUserPermissionController extends BaseController {
   private ISbMenuService sbMenuService;
 
   /** 用户可分配的菜单树（客户已开启的菜单） */
-  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.hasPermi('system:user:query') or @ss.isPlatformUser()")
   @GetMapping("/menuTree")
   public AjaxResult menuTree(@RequestParam String customerId) {
     List<SbMenu> tree = sbMenuService.selectSbMenuTreeByCustomerIdEnabling(customerId);
     return success(tree);
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.hasPermi('system:user:query') or @ss.isPlatformUser()")
   @GetMapping("/menuIds")
   public AjaxResult getMenuIds(@RequestParam Long userId, @RequestParam(required = false) String customerId) {
     if (customerId == null || customerId.isEmpty()) {
@@ -51,14 +51,14 @@ public class SbUserPermissionController extends BaseController {
     return success(sbUserPermissionService.selectMenuIdsByUserId(userId, customerId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:user:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:edit') or @ss.hasPermi('system:user:edit') or @ss.isPlatformUser()")
   @Log(title = "用户菜单权限", businessType = BusinessType.UPDATE)
   @PutMapping("/menu")
   public AjaxResult saveMenus(@RequestParam Long userId, @RequestParam String customerId, @RequestParam(required = false) String[] menuIds) {
     return toAjax(sbUserPermissionService.saveUserMenus(userId, customerId, menuIds));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.hasPermi('system:user:query') or @ss.isPlatformUser()")
   @GetMapping("/warehouseIds")
   public AjaxResult getWarehouseIds(@RequestParam Long userId, @RequestParam(required = false) String customerId) {
     if ((customerId == null || customerId.isEmpty()) && SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null) {
@@ -67,14 +67,14 @@ public class SbUserPermissionController extends BaseController {
     return success(sbUserPermissionService.selectWarehouseIdsByUserId(userId, customerId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:user:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:edit') or @ss.hasPermi('system:user:edit') or @ss.isPlatformUser()")
   @Log(title = "用户仓库权限", businessType = BusinessType.UPDATE)
   @PutMapping("/warehouse")
   public AjaxResult saveWarehouses(@RequestParam Long userId, @RequestParam String customerId, @RequestParam(required = false) Long[] warehouseIds) {
     return toAjax(sbUserPermissionService.saveUserWarehouses(userId, customerId, warehouseIds));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:query') or @ss.hasPermi('system:user:query') or @ss.isPlatformUser()")
   @GetMapping("/deptIds")
   public AjaxResult getDeptIds(@RequestParam Long userId, @RequestParam(required = false) String customerId) {
     if ((customerId == null || customerId.isEmpty()) && SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null) {
@@ -83,7 +83,7 @@ public class SbUserPermissionController extends BaseController {
     return success(sbUserPermissionService.selectDeptIdsByUserId(userId, customerId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:user:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:user:edit') or @ss.hasPermi('system:user:edit') or @ss.isPlatformUser()")
   @Log(title = "用户科室权限", businessType = BusinessType.UPDATE)
   @PutMapping("/dept")
   public AjaxResult saveDepts(@RequestParam Long userId, @RequestParam String customerId, @RequestParam(required = false) Long[] deptIds) {

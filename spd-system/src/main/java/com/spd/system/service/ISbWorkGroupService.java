@@ -25,6 +25,13 @@ public interface ISbWorkGroupService {
 
   int removeUserFromGroup(String groupId, Long userId);
 
+  /** 查询用户在某客户下所属的工作组ID列表（用于用户编辑回显） */
+  List<String> selectGroupIdsByUserId(Long userId, String customerId);
+
+  /** 设置用户在某客户下的工作组归属（先删后插，写入 sb_work_group_user） */
+  void setUserWorkGroups(Long userId, String customerId, String[] groupIds);
+
+
   List<String> selectMenuIdsByGroupId(String groupId);
 
   int saveGroupMenus(String groupId, String customerId, String[] menuIds);

@@ -91,9 +91,15 @@ public class DataScopeAspect
     public static void dataScopeFilter(JoinPoint joinPoint, SysUser user, String deptAlias, String userAlias, String permission)
     {
         Object arg0 = joinPoint.getArgs().length > 0 ? joinPoint.getArgs()[0] : null;
-        if (arg0 instanceof SysUser && StringUtils.isNotEmpty(((SysUser) arg0).getWorkgroupPostId()))
+        if (arg0 instanceof SysUser)
         {
-            return;
+            SysUser queryUser = (SysUser) arg0;
+            // 按工作组筛选时不再叠加部门数据范围
+            if (StringUtils.isNotEmpty(queryUser.getWorkgroupPostId()))
+                return;
+            // 按租户 customerId 查询时不再叠加部门数据范围，仅按「同客户」展示该租户下所有用户
+            if (StringUtils.isNotEmpty(queryUser.getCustomerId()))
+                return;
         }
         StringBuilder sqlString = new StringBuilder();
         List<String> conditions = new ArrayList<String>();

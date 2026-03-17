@@ -172,7 +172,7 @@
     from sb_menu m
     where m.menu_type in ('M', 'C', 'F')
       and m.status = '0' and ifnull(m.del_flag,'0') = '0'
-      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+      and exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and ifnull(upm.del_flag,'0')='0')
       and (
         exists (select 1 from sys_user u where u.user_id = #{userId} and u.customer_id is null)
         or exists (
@@ -180,6 +180,11 @@
           inner join sb_customer_menu cm on cm.customer_id = u.customer_id and cm.menu_id = m.menu_id and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1' and ifnull(cm.status,'0') = '0'
           where u.user_id = #{userId}
         )
+      )
+      /* 租户用户不展示「系统参数」及平台专属菜单 */
+      and (
+        not exists (select 1 from sys_user u where u.user_id = #{userId} and u.customer_id is not null)
+        or (ifnull(m.is_platform_only,'0') != '1' and (m.path is null or m.path != 'system/config/index'))
       )
     order by m.parent_id, m.order_num
   </select>
@@ -258,7 +263,7 @@
     from sb_menu m
     where m.status = '0' and ifnull(m.del_flag,'0') = '0' and m.perms is not null and m.perms != ''
       and (
-        exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+        exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and ifnull(upm.del_flag,'0')='0')
         or exists (
           select 1 from sb_role_menu rm
           inner join sb_user_role ur on rm.role_id = ur.role_id and ur.user_id = #{userId} and (ur.delete_time is null)
@@ -274,7 +279,7 @@
     from sb_menu m
     where m.status = '0' and ifnull(m.del_flag,'0') = '0' and m.perms is not null and m.perms != ''
       and (
-        exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and upm.delete_time is null)
+        exists (select 1 from sb_user_permission_menu upm where upm.menu_id = m.menu_id and upm.user_id = #{userId} and ifnull(upm.del_flag,'0')='0')
         or exists (
           select 1 from sb_role_menu rm
           inner join sb_user_role ur on rm.role_id = ur.role_id and ur.user_id = #{userId} and (ur.delete_time is null)

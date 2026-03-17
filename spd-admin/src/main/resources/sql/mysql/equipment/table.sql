@@ -454,6 +454,7 @@ CREATE TABLE IF NOT EXISTS `sb_user_permission_menu` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0正常 1删除）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_upm_user_menu` (`user_id`, `menu_id`),
   KEY `idx_upm_customer` (`customer_id`)
@@ -468,6 +469,7 @@ CREATE TABLE IF NOT EXISTS `sb_user_permission_warehouse` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0正常 1删除）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_upw_user_wh` (`user_id`, `warehouse_id`),
   KEY `idx_upw_customer` (`customer_id`)
@@ -482,6 +484,7 @@ CREATE TABLE IF NOT EXISTS `sb_user_permission_dept` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0正常 1删除）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_upd_user_dept` (`user_id`, `dept_id`),
   KEY `idx_upd_customer` (`customer_id`)

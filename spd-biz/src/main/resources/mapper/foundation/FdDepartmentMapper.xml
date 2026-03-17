@@ -28,6 +28,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="referredName != null and referredName != ''"> and referred_name like concat('%', #{referredName}, '%')</if>
         <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
+        <if test="params != null and params.allowedDeptIds != null">
+            <choose>
+                <when test="params.allowedDeptIds.size() > 0"> and id in <foreach collection="params.allowedDeptIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
+                <otherwise> and 1=0</otherwise>
+            </choose>
+        </if>
     </select>
 
     <select id="selectFdDepartmentById" parameterType="String" resultMap="FdDepartmentResult">

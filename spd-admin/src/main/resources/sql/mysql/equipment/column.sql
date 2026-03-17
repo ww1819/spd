@@ -126,6 +126,21 @@ CALL add_table_column('sb_work_group_user', 'del_flag', 'char(1)', '删除标志
 UPDATE sb_work_group_user SET del_flag = '1' WHERE delete_time IS NOT NULL AND (del_flag IS NULL OR del_flag = '0');
 /
 
+-- sb_user_permission_* 三表：逻辑删除标志 del_flag（与 delete_by/delete_time 一并使用）
+CALL add_table_column('sb_user_permission_menu', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+CALL add_table_column('sb_user_permission_warehouse', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+CALL add_table_column('sb_user_permission_dept', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+-- 已有数据：将曾通过 delete_time 标记删除的记录同步为 del_flag='1'
+UPDATE sb_user_permission_menu SET del_flag = '1' WHERE delete_time IS NOT NULL;
+/
+UPDATE sb_user_permission_warehouse SET del_flag = '1' WHERE delete_time IS NOT NULL;
+/
+UPDATE sb_user_permission_dept SET del_flag = '1' WHERE delete_time IS NOT NULL;
+/
+
 -- 数据：将客户 hengsui-third-001 名下在 sb_customer_menu 中的菜单全部设为「默认对客户开放」
 UPDATE sb_menu SET default_open_to_customer = '1'
 WHERE menu_id IN (

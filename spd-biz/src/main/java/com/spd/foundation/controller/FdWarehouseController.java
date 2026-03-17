@@ -49,12 +49,24 @@ public class FdWarehouseController extends BaseController
     private ISbUserPermissionService sbUserPermissionService;
 
     /**
-     * 查询仓库列表
+     * 查询仓库列表（租户非 super 组用户按 sb_user_permission_warehouse 过滤）
      */
     @PreAuthorize("@ss.hasPermi('foundation:warehouse:list')")
     @GetMapping("/list")
     public TableDataInfo list(FdWarehouse fdWarehouse)
     {
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId)) {
+            fdWarehouse.setTenantId(customerId);
+            if (!sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = sbUserPermissionService.selectWarehouseIdsByUserId(SecurityUtils.getUserId(), customerId);
+                if (allowedIds != null && !allowedIds.isEmpty()) {
+                    fdWarehouse.getParams().put("allowedWarehouseIds", allowedIds);
+                } else {
+                    fdWarehouse.getParams().put("allowedWarehouseIds", new ArrayList<Long>());
+                }
+            }
+        }
         startPage();
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(fdWarehouse);
         return getDataTable(list);
@@ -83,13 +95,25 @@ public class FdWarehouseController extends BaseController
     }
 
     /**
-     * 导出仓库列表
+     * 导出仓库列表（租户非 super 组用户按权限过滤）
      */
     @PreAuthorize("@ss.hasPermi('foundation:warehouse:export')")
     @Log(title = "仓库", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, FdWarehouse fdWarehouse)
     {
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId)) {
+            fdWarehouse.setTenantId(customerId);
+            if (!sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = sbUserPermissionService.selectWarehouseIdsByUserId(SecurityUtils.getUserId(), customerId);
+                if (allowedIds != null && !allowedIds.isEmpty()) {
+                    fdWarehouse.getParams().put("allowedWarehouseIds", allowedIds);
+                } else {
+                    fdWarehouse.getParams().put("allowedWarehouseIds", new ArrayList<Long>());
+                }
+            }
+        }
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(fdWarehouse);
         ExcelUtil<FdWarehouse> util = new ExcelUtil<FdWarehouse>(FdWarehouse.class);
         util.exportExcel(response, list, "仓库数据");

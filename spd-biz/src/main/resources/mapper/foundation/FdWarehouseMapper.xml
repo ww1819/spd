@@ -39,6 +39,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="params != null and params.allowedWarehouseIds != null">
+            <choose>
+                <when test="params.allowedWarehouseIds.size() > 0"> and id in <foreach collection="params.allowedWarehouseIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
+                <otherwise> and 1=0</otherwise>
+            </choose>
+        </if>
     </select>
 
     <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">

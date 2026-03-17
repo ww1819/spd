@@ -2013,6 +2013,170 @@ INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-80
 INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb3d' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_role_menu WHERE role_id = '01900000-0000-7000-8000-000000000001' AND menu_id = '01900000-0000-7000-8000-00000000cb3d');
 /
 
+-- 岗位管理-设备工作组接口权限（岗位管理页会调用 /equipment/system/workgroup 接口）
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb3e',
+  '工作组列表',
+  '01900000-0000-7000-8000-000000001455',
+  6,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:workgroup:list',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '设备工作组列表接口权限',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb3e');
+/
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb3f',
+  '工作组查询',
+  '01900000-0000-7000-8000-000000001455',
+  7,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:workgroup:query',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '设备工作组查询接口权限',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb3f');
+/
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb40',
+  '工作组新增',
+  '01900000-0000-7000-8000-000000001455',
+  8,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:workgroup:add',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '设备工作组新增接口权限',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb40');
+/
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb41',
+  '工作组修改',
+  '01900000-0000-7000-8000-000000001455',
+  9,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:workgroup:edit',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '设备工作组修改接口权限',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb41');
+/
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb42',
+  '工作组删除',
+  '01900000-0000-7000-8000-000000001455',
+  10,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:workgroup:remove',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '设备工作组删除接口权限',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb42');
+/
+
+-- 岗位管理-工作组权限按钮赋给平台设备管理员角色
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb3e' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_role_menu WHERE role_id = '01900000-0000-7000-8000-000000000001' AND menu_id = '01900000-0000-7000-8000-00000000cb3e');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb3f' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_role_menu WHERE role_id = '01900000-0000-7000-8000-000000000001' AND menu_id = '01900000-0000-7000-8000-00000000cb3f');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb40' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_role_menu WHERE role_id = '01900000-0000-7000-8000-000000000001' AND menu_id = '01900000-0000-7000-8000-00000000cb40');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb41' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_role_menu WHERE role_id = '01900000-0000-7000-8000-000000000001' AND menu_id = '01900000-0000-7000-8000-00000000cb41');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) SELECT '01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb42' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_role_menu WHERE role_id = '01900000-0000-7000-8000-000000000001' AND menu_id = '01900000-0000-7000-8000-00000000cb42');
+/
+
 -- 系统设置子菜单：客户管理（SaaS租户）
 INSERT INTO sb_menu (
   menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
