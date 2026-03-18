@@ -6,6 +6,7 @@ import java.util.Map;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -36,6 +37,11 @@ public interface StkIoBillMapper
      */
     public List<StkIoBill> selectStkIoBillList(StkIoBill stkIoBill);
 
+    /**
+     * 出库单按单导出：扁平行（bill_type=201）
+     * @param billIds 非空时仅导出这些主键；空时按 q 条件筛选
+     */
+    List<StkOutBillExportFlatRow> selectOutBillGroupedExportRows(@Param("q") StkIoBill q, @Param("billIds") List<Long> billIds);
 
     /**
      * 查询出入库汇总

@@ -1,9 +1,15 @@
 package com.spd.warehouse.service.impl;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
@@ -42,16 +48,34 @@ import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.Objects;
 
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
+import com.spd.system.domain.SbCustomer;
+import com.spd.system.service.ISbCustomerService;
 
 /**
  * 出入库Service业务层处理
@@ -106,6 +130,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private PurchaseOrderMapper purchaseOrderMapper;
+
+    @Autowired
+    private ISbCustomerService sbCustomerService;
 
     /**
      * 查询出入库
@@ -1650,5 +1677,351 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
         }
         return successCount;
+    }
+
+    @Override
+    public void exportOutWarehouseGroupedByBill(StkIoBill q, HttpServletResponse response) throws IOException
+    {
+        if (q == null)
+        {
+            q = new StkIoBill();
+        }
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        List<Long> billIds = null;
+        if (StringUtils.isNotEmpty(q.getExportBillIds()))
+        {
+            billIds = new ArrayList<>();
+            for (String s : q.getExportBillIds().split(","))
+            {
+                if (s == null)
+                {
+                    continue;
+                }
+                s = s.trim();
+                if (s.isEmpty())
+                {
+                    continue;
+                }
+                try
+                {
+                    billIds.add(Long.parseLong(s));
+                }
+                catch (NumberFormatException ignored)
+                {
+                }
+            }
+            if (billIds.isEmpty())
+            {
+                billIds = null;
+            }
+        }
+        List<StkOutBillExportFlatRow> rows = stkIoBillMapper.selectOutBillGroupedExportRows(q, billIds);
+        LinkedHashMap<Long, List<StkOutBillExportFlatRow>> byBill = new LinkedHashMap<>();
+        for (StkOutBillExportFlatRow r : rows)
+        {
+            if (r.getBillId() == null)
+            {
+                continue;
+            }
+            byBill.computeIfAbsent(r.getBillId(), k -> new ArrayList<>()).add(r);
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat fnFmt = new SimpleDateFormat("yyyyMMddHHmmss");
+        Workbook wb = new XSSFWorkbook();
+        Sheet sheet = wb.createSheet("拣货单导出");
+
+        String hospitalName = resolveHospitalNameForExport(q);
+        String mainTitleText = buildPickListMainTitle(q, hospitalName);
+
+        Font fontBold = wb.createFont();
+        fontBold.setBold(true);
+        fontBold.setFontHeightInPoints((short) 11);
+
+        Font bigTitleFont = wb.createFont();
+        bigTitleFont.setBold(true);
+        bigTitleFont.setFontHeightInPoints((short) 16);
+
+        CellStyle bigTitleStyle = wb.createCellStyle();
+        bigTitleStyle.setFont(bigTitleFont);
+        bigTitleStyle.setFillForegroundColor(IndexedColors.PALE_BLUE.getIndex());
+        bigTitleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        setThinBorderAround(bigTitleStyle);
+        bigTitleStyle.setAlignment(HorizontalAlignment.CENTER);
+        bigTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        bigTitleStyle.setWrapText(true);
+
+        CellStyle billMergedInfoStyle = wb.createCellStyle();
+        billMergedInfoStyle.setFont(fontBold);
+        billMergedInfoStyle.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+        billMergedInfoStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        setThinBorderAround(billMergedInfoStyle);
+        billMergedInfoStyle.setAlignment(HorizontalAlignment.LEFT);
+        billMergedInfoStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        billMergedInfoStyle.setWrapText(true);
+
+        CellStyle detailHeadStyle = wb.createCellStyle();
+        detailHeadStyle.setFont(fontBold);
+        detailHeadStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        detailHeadStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        setThinBorderAround(detailHeadStyle);
+        detailHeadStyle.setAlignment(HorizontalAlignment.CENTER);
+        detailHeadStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        CellStyle dataTextStyle = wb.createCellStyle();
+        setThinBorderAround(dataTextStyle);
+        dataTextStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        dataTextStyle.setWrapText(true);
+
+        CellStyle dataNumStyle = wb.createCellStyle();
+        setThinBorderAround(dataNumStyle);
+        dataNumStyle.setAlignment(HorizontalAlignment.RIGHT);
+        dataNumStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        org.apache.poi.ss.usermodel.DataFormat df = wb.createDataFormat();
+        dataNumStyle.setDataFormat(df.getFormat("#,##0.######"));
+
+        CellStyle emptyMsgStyle = wb.createCellStyle();
+        Font fMsg = wb.createFont();
+        fMsg.setBold(true);
+        fMsg.setFontHeightInPoints((short) 12);
+        emptyMsgStyle.setFont(fMsg);
+        emptyMsgStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        emptyMsgStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        emptyMsgStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        final int lastCol = 6;
+        DataFormatter dataFormatter = new DataFormatter();
+
+        int rowNum = 0;
+        if (byBill.isEmpty())
+        {
+            sheet.setColumnWidth(0, 18 * 256);
+            sheet.setColumnWidth(1, 14 * 256);
+            sheet.setColumnWidth(2, 12 * 256);
+            sheet.setColumnWidth(3, 8 * 256);
+            sheet.setColumnWidth(4, 10 * 256);
+            sheet.setColumnWidth(5, 14 * 256);
+            sheet.setColumnWidth(6, 12 * 256);
+            Row r0 = sheet.createRow(rowNum++);
+            Cell c0 = r0.createCell(0);
+            c0.setCellValue(mainTitleText);
+            c0.setCellStyle(bigTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, lastCol));
+            r0.setHeightInPoints(estimateMergedRowHeightPoints(mainTitleText, sheet, 0, lastCol, 16));
+            Row r1 = sheet.createRow(rowNum++);
+            Cell c1a = r1.createCell(0);
+            c1a.setCellValue("无符合条件的出库单或明细数据");
+            c1a.setCellStyle(emptyMsgStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, lastCol));
+            r1.setHeightInPoints(24);
+        }
+        else
+        {
+            sheet.setColumnWidth(0, 18 * 256);
+            sheet.setColumnWidth(1, 14 * 256);
+            sheet.setColumnWidth(2, 12 * 256);
+            sheet.setColumnWidth(3, 8 * 256);
+            sheet.setColumnWidth(4, 10 * 256);
+            sheet.setColumnWidth(5, 14 * 256);
+            sheet.setColumnWidth(6, 12 * 256);
+
+            for (Map.Entry<Long, List<StkOutBillExportFlatRow>> e : byBill.entrySet())
+            {
+                List<StkOutBillExportFlatRow> detail = e.getValue();
+                if (detail == null || detail.isEmpty())
+                {
+                    continue;
+                }
+                StkOutBillExportFlatRow first = detail.get(0);
+
+                int bigTitleRow = rowNum;
+                Row bigRow = sheet.createRow(rowNum++);
+                Cell bt = bigRow.createCell(0);
+                bt.setCellValue(mainTitleText);
+                bt.setCellStyle(bigTitleStyle);
+                sheet.addMergedRegion(new CellRangeAddress(bigTitleRow, bigTitleRow, 0, lastCol));
+                bigRow.setHeightInPoints(estimateMergedRowHeightPoints(mainTitleText, sheet, 0, lastCol, 16));
+
+                int infoRow = rowNum;
+                Row info = sheet.createRow(rowNum++);
+                String billNo = first.getBillNo() != null ? first.getBillNo() : "";
+                String dept = first.getDepartmentName() != null ? first.getDepartmentName() : "";
+                String infoText = "单据号：" + billNo + "        科室名称：" + dept;
+                Cell ic = info.createCell(0);
+                ic.setCellValue(infoText);
+                ic.setCellStyle(billMergedInfoStyle);
+                sheet.addMergedRegion(new CellRangeAddress(infoRow, infoRow, 0, lastCol));
+                info.setHeightInPoints(estimateMergedRowHeightPoints(infoText, sheet, 0, lastCol, 11));
+
+                Row head = sheet.createRow(rowNum++);
+                head.setHeightInPoints(18);
+                String[] cols = { "名称", "规格", "型号", "单位", "数量", "批号", "有效期" };
+                for (int i = 0; i < cols.length; i++)
+                {
+                    Cell hc = head.createCell(i);
+                    hc.setCellValue(cols[i]);
+                    hc.setCellStyle(detailHeadStyle);
+                }
+                for (StkOutBillExportFlatRow r : detail)
+                {
+                    Row dr = sheet.createRow(rowNum++);
+                    setCellStr(dr, 0, r.getMaterialName(), dataTextStyle);
+                    setCellStr(dr, 1, r.getSpeci(), dataTextStyle);
+                    setCellStr(dr, 2, r.getModel(), dataTextStyle);
+                    setCellStr(dr, 3, r.getUnitName(), dataTextStyle);
+                    Cell cq = dr.createCell(4);
+                    if (r.getQty() != null)
+                    {
+                        cq.setCellValue(r.getQty().doubleValue());
+                        cq.setCellStyle(dataNumStyle);
+                    }
+                    else
+                    {
+                        cq.setCellValue("");
+                        cq.setCellStyle(dataTextStyle);
+                    }
+                    setCellStr(dr, 5, r.getBatchPh(), dataTextStyle);
+                    setCellStr(dr, 6, r.getEndTime() != null ? sdf.format(r.getEndTime()) : "", dataTextStyle);
+                    setDetailRowHeightAuto(dr, sheet, dataFormatter);
+                }
+                rowNum++;
+            }
+        }
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String fn = URLEncoder.encode(mainTitleText + "_" + fnFmt.format(new Date()), "UTF-8").replace("+", "%20");
+        response.setHeader("Content-Disposition", "attachment;filename*=utf-8''" + fn + ".xlsx");
+        wb.write(response.getOutputStream());
+        wb.close();
+    }
+
+    private String resolveHospitalNameForExport(StkIoBill q)
+    {
+        String tid = q != null ? q.getTenantId() : null;
+        if (StringUtils.isEmpty(tid))
+        {
+            tid = SecurityUtils.getCustomerId();
+        }
+        if (StringUtils.isEmpty(tid))
+        {
+            return "";
+        }
+        try
+        {
+            SbCustomer c = sbCustomerService.selectSbCustomerById(tid);
+            if (c != null && StringUtils.isNotEmpty(c.getCustomerName()))
+            {
+                return c.getCustomerName();
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return "";
+    }
+
+    private static String buildPickListMainTitle(StkIoBill q, String hospitalName)
+    {
+        Calendar cal = Calendar.getInstance();
+        if (q != null)
+        {
+            if (q.getAuditEndDate() != null)
+            {
+                cal.setTime(q.getAuditEndDate());
+            }
+            else if (q.getEndDate() != null)
+            {
+                cal.setTime(q.getEndDate());
+            }
+            else if (q.getAuditBeginDate() != null)
+            {
+                cal.setTime(q.getAuditBeginDate());
+            }
+            else if (q.getBeginDate() != null)
+            {
+                cal.setTime(q.getBeginDate());
+            }
+        }
+        int y = cal.get(Calendar.YEAR);
+        int m = cal.get(Calendar.MONTH) + 1;
+        String h = StringUtils.isNotEmpty(hospitalName) ? hospitalName : "本院";
+        return y + "年" + m + "月份" + h + "拣货单";
+    }
+
+    private static int textDisplayUnits(String s)
+    {
+        if (s == null || s.isEmpty())
+        {
+            return 0;
+        }
+        int u = 0;
+        for (int i = 0; i < s.length(); i++)
+        {
+            char ch = s.charAt(i);
+            u += ch > 127 ? 2 : 1;
+        }
+        return Math.max(u, 1);
+    }
+
+    private static double mergedWidthChars(Sheet sheet, int fromCol, int toCol)
+    {
+        double w = 0;
+        for (int c = fromCol; c <= toCol; c++)
+        {
+            w += sheet.getColumnWidth(c) / 256.0;
+        }
+        return Math.max(w, 6);
+    }
+
+    private static float estimateMergedRowHeightPoints(String text, Sheet sheet, int c0, int c1, int fontPt)
+    {
+        if (text == null)
+        {
+            text = "";
+        }
+        double widthChars = mergedWidthChars(sheet, c0, c1);
+        double lineCapacity = widthChars * 1.85;
+        int lines = Math.max(1, (int) Math.ceil(textDisplayUnits(text) / lineCapacity));
+        float lineH = Math.max(13f, fontPt * 1.3f);
+        return Math.min(409f, lines * lineH + 8f);
+    }
+
+    private static void setDetailRowHeightAuto(Row row, Sheet sheet, DataFormatter df)
+    {
+        int maxLines = 1;
+        for (int col = 0; col <= 6; col++)
+        {
+            Cell c = row.getCell(col);
+            if (c == null)
+            {
+                continue;
+            }
+            String s = df.formatCellValue(c);
+            int cw = sheet.getColumnWidth(col);
+            double lineCap = Math.max(3.5, cw / 256.0) * 1.85;
+            int lines = Math.max(1, (int) Math.ceil(textDisplayUnits(s) / lineCap));
+            maxLines = Math.max(maxLines, lines);
+        }
+        row.setHeightInPoints(Math.min(409f, maxLines * 15f + 8f));
+    }
+
+    private static void setThinBorderAround(CellStyle style)
+    {
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        style.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+    }
+
+    private static void setCellStr(Row row, int col, String val, CellStyle style)
+    {
+        Cell c = row.createCell(col);
+        c.setCellValue(val != null ? val : "");
+        c.setCellStyle(style);
     }
 }
