@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbAssetPrintTaskItemMapper">
+    <resultMap type="com.spd.equipment.domain.SbAssetPrintTaskItem" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="taskNo" column="task_no"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="assetName" column="asset_name"/>
+        <result property="spec" column="spec"/>
+        <result property="model" column="model"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="manufacturer" column="manufacturer"/>
+        <result property="serialNumber" column="serial_number"/>
+        <result property="rfidEpc" column="rfid_epc"/>
+        <result property="equipmentSerialNo" column="equipment_serial_no"/>
+        <result property="printStatus" column="print_status"/>
+        <result property="printCount" column="print_count"/>
+        <result property="lastPrintTime" column="last_print_time"/>
+        <result property="barcodeType" column="barcode_type"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">
+        select id, customer_id, task_id, task_no, asset_id, asset_name, spec, model, unit_price, manufacturer, serial_number, rfid_epc, equipment_serial_no,
+        print_status, print_count, last_print_time, barcode_type,
+        del_flag, del_by, del_time, create_by, create_time, update_by, update_time
+        from sb_asset_print_task_item
+    </sql>
+    <select id="selectList" resultMap="Result">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            <if test="taskId != null and taskId != ''"> and task_id = #{taskId}</if>
+            <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
+            <if test="taskNo != null and taskNo != ''"> and task_no like concat('%', #{taskNo}, '%')</if>
+            <if test="equipmentSerialNo != null and equipmentSerialNo != ''"> and equipment_serial_no like concat('%', #{equipmentSerialNo}, '%')</if>
+            <if test="printStatus != null and printStatus != ''"> and print_status = #{printStatus}</if>
+        </where>
+        order by create_time asc
+    </select>
+    <select id="selectByTaskId" resultMap="Result">
+        <include refid="selectVo"/> where task_id = #{taskId} and (del_flag = 0 or del_flag is null) order by create_time asc
+    </select>
+    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetPrintTaskItem">
+        insert into sb_asset_print_task_item (id, customer_id, task_id, task_no, asset_id, asset_name, spec, model, unit_price, manufacturer, serial_number, rfid_epc, equipment_serial_no, print_status, print_count, barcode_type, del_flag, create_by, create_time, update_by, update_time)
+        values (#{id}, #{customerId}, #{taskId}, #{taskNo}, #{assetId}, #{assetName}, #{spec}, #{model}, #{unitPrice}, #{manufacturer}, #{serialNumber}, #{rfidEpc}, #{equipmentSerialNo}, #{printStatus}, #{printCount}, #{barcodeType}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+    <insert id="insertBatch">
+        insert into sb_asset_print_task_item (id, customer_id, task_id, task_no, asset_id, asset_name, spec, model, unit_price, manufacturer, serial_number, rfid_epc, equipment_serial_no, print_status, print_count, barcode_type, del_flag, create_by, create_time, update_by, update_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.customerId}, #{item.taskId}, #{item.taskNo}, #{item.assetId}, #{item.assetName}, #{item.spec}, #{item.model}, #{item.unitPrice}, #{item.manufacturer}, #{item.serialNumber}, #{item.rfidEpc}, #{item.equipmentSerialNo}, #{item.printStatus}, #{item.printCount}, #{item.barcodeType}, 0, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+        </foreach>
+    </insert>
+    <update id="update" parameterType="com.spd.equipment.domain.SbAssetPrintTaskItem">
+        update sb_asset_print_task_item
+        <set>
+            <if test="printStatus != null">print_status = #{printStatus},</if>
+            <if test="printCount != null">print_count = #{printCount},</if>
+            <if test="lastPrintTime != null">last_print_time = #{lastPrintTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="deleteById">
+        update sb_asset_print_task_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id}
+    </update>
+    <update id="deleteByTaskId">
+        update sb_asset_print_task_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where task_id = #{taskId}
+    </update>
+</mapper>

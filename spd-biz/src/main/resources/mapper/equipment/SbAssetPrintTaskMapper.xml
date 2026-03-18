@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbAssetPrintTaskMapper">
+    <resultMap type="com.spd.equipment.domain.SbAssetPrintTask" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="taskNo" column="task_no"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceRemark" column="source_remark"/>
+        <result property="totalCount" column="total_count"/>
+        <result property="printedCount" column="printed_count"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">
+        select id, customer_id, task_no, source_type, source_remark, total_count, printed_count, status, remark,
+        del_flag, del_by, del_time, create_by, create_time, update_by, update_time
+        from sb_asset_print_task
+    </sql>
+    <select id="selectList" resultMap="Result">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            <if test="taskNo != null and taskNo != ''"> and task_no like concat('%', #{taskNo}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> and source_type = #{sourceType}</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <select id="selectByTaskNo" resultMap="Result">
+        <include refid="selectVo"/> where customer_id = #{customerId} and task_no = #{taskNo} and (del_flag = 0 or del_flag is null) limit 1
+    </select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetPrintTask">
+        insert into sb_asset_print_task (id, customer_id, task_no, source_type, source_remark, total_count, printed_count, status, remark, del_flag, create_by, create_time, update_by, update_time)
+        values (#{id}, #{customerId}, #{taskNo}, #{sourceType}, #{sourceRemark}, #{totalCount}, #{printedCount}, #{status}, #{remark}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+    <update id="update" parameterType="com.spd.equipment.domain.SbAssetPrintTask">
+        update sb_asset_print_task
+        <set>
+            <if test="taskNo != null">task_no = #{taskNo},</if>
+            <if test="sourceType != null">source_type = #{sourceType},</if>
+            <if test="sourceRemark != null">source_remark = #{sourceRemark},</if>
+            <if test="totalCount != null">total_count = #{totalCount},</if>
+            <if test="printedCount != null">printed_count = #{printedCount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="deleteById">
+        update sb_asset_print_task set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id}
+    </update>
+</mapper>

@@ -291,6 +291,95 @@ CREATE TABLE IF NOT EXISTS `sb_customer_asset_ledger` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户资产台账表';
 /
 
+-- 资产条码打印任务主表（主键UUID7，租户id，逻辑删除；单号、制单人、制单时间、生成途径）
+CREATE TABLE IF NOT EXISTS `sb_asset_print_task` (
+  `id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '租户/客户ID',
+  `task_no` varchar(64) NOT NULL COMMENT '任务单号',
+  `source_type` varchar(32) NOT NULL COMMENT '生成途径(资产台账/盘点/维修/保养/巡检等，中文或字典值)',
+  `source_remark` varchar(200) DEFAULT NULL COMMENT '来源说明(如盘点单号/维修单号等)',
+  `total_count` int(11) DEFAULT 0 COMMENT '任务内明细总数量',
+  `printed_count` int(11) DEFAULT 0 COMMENT '已打印数量',
+  `status` varchar(32) DEFAULT 'NEW' COMMENT '任务状态(NEW/PRINTING/FINISHED/CANCELLED等)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(1) DEFAULT 0 COMMENT '删除标志(0正常 1删除)',
+  `del_by` varchar(36) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '制单人',
+  `create_time` datetime DEFAULT NULL COMMENT '制单时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sb_apt_task_no` (`task_no`),
+  KEY `idx_sb_apt_customer` (`customer_id`),
+  KEY `idx_sb_apt_source_type` (`source_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产条码打印任务主表';
+/
+
+-- 资产条码打印任务明细表（主键UUID7，主表ID，单号，资产台账id，名称/规格/型号/单价/厂家/序列号/rfid_epc/流水号，打印状态/次数/最终打印时间）
+CREATE TABLE IF NOT EXISTS `sb_asset_print_task_item` (
+  `id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '租户/客户ID',
+  `task_id` char(36) NOT NULL COMMENT '主表ID(sb_asset_print_task.id)',
+  `task_no` varchar(64) NOT NULL COMMENT '任务单号',
+  `asset_id` char(36) NOT NULL COMMENT '资产台账ID(sb_customer_asset_ledger.id)',
+  `asset_name` varchar(200) DEFAULT NULL COMMENT '资产名称',
+  `spec` varchar(200) DEFAULT NULL COMMENT '规格',
+  `model` varchar(200) DEFAULT NULL COMMENT '型号',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `manufacturer` varchar(200) DEFAULT NULL COMMENT '生产厂家名称',
+  `serial_number` varchar(100) DEFAULT NULL COMMENT '机身序列号',
+  `rfid_epc` varchar(200) DEFAULT NULL COMMENT 'RFID EPC区域值',
+  `equipment_serial_no` varchar(64) DEFAULT NULL COMMENT '设备流水号(二维码主要编码值)',
+  `print_status` varchar(16) DEFAULT '未打印' COMMENT '打印状态(未打印/已打印)',
+  `print_count` int(11) DEFAULT 0 COMMENT '打印次数',
+  `last_print_time` datetime DEFAULT NULL COMMENT '最终打印时间',
+  `barcode_type` varchar(32) DEFAULT 'QRCODE' COMMENT '条码类型(QRCODE/一维码等，预留)',
+  `del_flag` tinyint(1) DEFAULT 0 COMMENT '删除标志(0正常 1删除)',
+  `del_by` varchar(36) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_sb_apti_task` (`task_id`),
+  KEY `idx_sb_apti_asset` (`asset_id`),
+  KEY `idx_sb_apti_equipment_serial_no` (`equipment_serial_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产条码打印任务明细表';
+/
+
+-- 资产条码打印日志表（主键UUID7，主表id，单号，明细id，资产台账id，打印时间，打印结果，生成途径，打印人）
+CREATE TABLE IF NOT EXISTS `sb_asset_print_log` (
+  `id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '租户/客户ID',
+  `task_id` char(36) NOT NULL COMMENT '任务主表ID',
+  `task_no` varchar(64) NOT NULL COMMENT '任务单号',
+  `item_id` char(36) NOT NULL COMMENT '任务明细ID',
+  `asset_id` char(36) NOT NULL COMMENT '资产台账ID',
+  `print_time` datetime NOT NULL COMMENT '打印时间',
+  `print_result` varchar(16) NOT NULL COMMENT '打印结果(成功/失败)',
+  `error_message` varchar(500) DEFAULT NULL COMMENT '失败原因(失败时记录)',
+  `source_type` varchar(32) NOT NULL COMMENT '生成途径(从主表获取)',
+  `printer_name` varchar(100) DEFAULT NULL COMMENT '打印机名称(可选)',
+  `printer_ip` varchar(64) DEFAULT NULL COMMENT '打印机IP(可选)',
+  `print_user_id` bigint(20) DEFAULT NULL COMMENT '打印人ID',
+  `print_user_name` varchar(100) DEFAULT NULL COMMENT '打印人姓名',
+  `del_flag` tinyint(1) DEFAULT 0 COMMENT '删除标志(0正常 1删除)',
+  `del_by` varchar(36) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者(=打印人)',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间(=打印时间)',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_sb_apl_task` (`task_id`),
+  KEY `idx_sb_apl_item` (`item_id`),
+  KEY `idx_sb_apl_asset` (`asset_id`),
+  KEY `idx_sb_apl_print_time` (`print_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产条码打印日志表';
+/
+
 -- 设备前端独立菜单权限表：设备专用菜单（主键 UUID7）
 CREATE TABLE IF NOT EXISTS `sb_menu` (
   `menu_id` char(36) NOT NULL COMMENT '菜单ID(UUID7)',
