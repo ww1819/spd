@@ -95,6 +95,52 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     private static final Logger log = LoggerFactory.getLogger(FdMaterialServiceImpl.class);
 
+    /** 新增：名称、规格、单价、入选原因必填 */
+    private void validateMaterialForInsert(FdMaterial m)
+    {
+        if (m == null)
+        {
+            throw new ServiceException("参数不能为空");
+        }
+        if (StringUtils.isEmpty(StringUtils.trim(m.getName())))
+        {
+            throw new ServiceException("耗材名称不能为空");
+        }
+        if (StringUtils.isEmpty(StringUtils.trim(m.getSpeci())))
+        {
+            throw new ServiceException("规格不能为空");
+        }
+        if (m.getPrice() == null)
+        {
+            throw new ServiceException("单价不能为空");
+        }
+        if (StringUtils.isEmpty(StringUtils.trim(m.getSelectionReason())))
+        {
+            throw new ServiceException("入选原因不能为空");
+        }
+    }
+
+    /** 修改：名称、规格、单价必填 */
+    private void validateMaterialForUpdate(FdMaterial m)
+    {
+        if (m == null || m.getId() == null)
+        {
+            throw new ServiceException("参数无效");
+        }
+        if (StringUtils.isEmpty(StringUtils.trim(m.getName())))
+        {
+            throw new ServiceException("耗材名称不能为空");
+        }
+        if (StringUtils.isEmpty(StringUtils.trim(m.getSpeci())))
+        {
+            throw new ServiceException("规格不能为空");
+        }
+        if (m.getPrice() == null)
+        {
+            throw new ServiceException("单价不能为空");
+        }
+    }
+
     /** 产品档案字段中文名（用于变更记录） */
     private static final Map<String, String> MATERIAL_FIELD_LABELS = new LinkedHashMap<>();
     static {
@@ -195,6 +241,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public int insertFdMaterial(FdMaterial fdMaterial)
     {
+        validateMaterialForInsert(fdMaterial);
         fdMaterial.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
@@ -214,6 +261,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public int updateFdMaterial(FdMaterial fdMaterial)
     {
+        validateMaterialForUpdate(fdMaterial);
         Date now = DateUtils.getNowDate();
         fdMaterial.setUpdateTime(now);
         String operator = SecurityUtils.getUserIdStr();
