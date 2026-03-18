@@ -89,6 +89,33 @@
     <select id="selectByCustomerIdAndEquipmentSerialNo" resultMap="Result">
         <include refid="selectVo"/> where customer_id = #{customerId} and equipment_serial_no = #{equipmentSerialNo} and (del_flag = 0 or del_flag is null) limit 1
     </select>
+    <select id="selectListByDeptId" resultMap="Result">
+        <include refid="selectVo"/>
+        where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and dept_id = #{deptId}
+        order by equipment_serial_no
+    </select>
+    <select id="selectListByCategory68Ids" resultMap="Result">
+        <include refid="selectVo"/>
+        where customer_id = #{customerId} and (del_flag = 0 or del_flag is null)
+        <choose>
+            <when test="category68Ids != null and category68Ids.size() > 0">
+                and category68_id in
+                <foreach collection="category68Ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>and 1=0</otherwise>
+        </choose>
+        order by category68_code, equipment_serial_no
+    </select>
+    <select id="selectListByStoragePlace" resultMap="Result">
+        <include refid="selectVo"/>
+        where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and storage_place = #{storagePlace}
+        order by equipment_serial_no
+    </select>
+    <select id="selectDistinctStoragePlace" resultType="java.lang.String">
+        select distinct storage_place from sb_customer_asset_ledger
+        where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and storage_place is not null and storage_place != ''
+        order by storage_place
+    </select>
     <select id="selectMaxSerialNoNumeric" resultType="int">
         select ifnull(max(cast(equipment_serial_no as unsigned)), 0) from sb_customer_asset_ledger
         where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and equipment_serial_no regexp '^[0-9]+$'

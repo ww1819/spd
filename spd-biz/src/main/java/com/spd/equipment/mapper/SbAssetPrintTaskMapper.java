@@ -12,6 +12,8 @@ public interface SbAssetPrintTaskMapper {
     List<SbAssetPrintTask> selectList(SbAssetPrintTask q);
     SbAssetPrintTask selectById(String id);
     SbAssetPrintTask selectByTaskNo(@Param("customerId") String customerId, @Param("taskNo") String taskNo);
+    /** 当日打印任务单号最大序号（task_no 格式 DYRWyyyyMMddXXXX） */
+    Integer selectMaxTaskNoSeqToday(@Param("customerId") String customerId, @Param("datePrefix") String datePrefix);
     int insert(SbAssetPrintTask row);
     int update(SbAssetPrintTask row);
     /** 逻辑删除 */

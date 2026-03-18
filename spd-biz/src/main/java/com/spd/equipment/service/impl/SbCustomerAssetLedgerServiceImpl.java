@@ -318,4 +318,12 @@ public class SbCustomerAssetLedgerServiceImpl implements ISbCustomerAssetLedgerS
         }
         return best;
     }
+
+    @Override
+    public List<String> listDistinctStoragePlace() {
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(customerId)) return new ArrayList<>();
+        List<String> list = mapper.selectDistinctStoragePlace(customerId);
+        return list != null ? list : new ArrayList<>();
+    }
 }

@@ -160,6 +160,18 @@ CALL add_table_column('sb_customer_asset_ledger', 'financial_system_unique_id', 
 CALL add_table_column('sb_customer_asset_ledger', 'his_system_unique_id', 'varchar(100)', 'HIS系统唯一标识(与第三方HIS系统对接)', NULL);
 /
 
+-- 资产盘点单主表：68分类ID/编码（按68分类盘点时）、存放地点（按存放地点盘点时）
+CALL add_table_column('sb_asset_inventory', 'inventory_category68_id', 'char(36)', '盘点68分类ID(按68分类盘点时)', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'inventory_category68_code', 'varchar(64)', '盘点68分类编码', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'storage_place', 'varchar(200)', '盘点存放地点(按存放地点盘点时)', NULL);
+/
+
+-- 资产盘点单明细与标签打印关联表：打印任务单号
+CALL add_table_column('sb_asset_inventory_item_print', 'print_task_no', 'varchar(64)', '打印任务单号', NULL);
+/
+
 -- 客户68分类表 parent_id 改为本表主键id（仅当表中 parent_id 当前为 bigint 时执行以下一段）
 -- 若表是按新 table.sql 建的（parent_id 已是 char(36)），请跳过下面三条语句
 -- ALTER TABLE sb_customer_category68 ADD COLUMN parent_id_new CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键)';

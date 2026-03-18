@@ -11,6 +11,8 @@ public interface ISbAssetPrintTaskService {
     List<SbAssetPrintTask> selectList(SbAssetPrintTask q);
     SbAssetPrintTask selectById(String id);
     SbAssetPrintTask selectByTaskNo(String customerId, String taskNo);
+    /** 生成打印任务单号：DYRW + yyyyMMdd + 4位序号 */
+    String generateTaskNo(String customerId);
     int insert(SbAssetPrintTask row);
     int update(SbAssetPrintTask row);
     /** 逻辑删除 */

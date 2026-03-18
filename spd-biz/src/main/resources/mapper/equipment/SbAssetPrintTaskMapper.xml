@@ -39,6 +39,10 @@
     <select id="selectByTaskNo" resultMap="Result">
         <include refid="selectVo"/> where customer_id = #{customerId} and task_no = #{taskNo} and (del_flag = 0 or del_flag is null) limit 1
     </select>
+    <select id="selectMaxTaskNoSeqToday" resultType="int">
+        select ifnull(max(cast(substring(task_no, char_length(#{datePrefix}) + 1) as unsigned)), 0) from sb_asset_print_task
+        where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and task_no like concat(#{datePrefix}, '%') and char_length(task_no) = char_length(#{datePrefix}) + 4
+    </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetPrintTask">
         insert into sb_asset_print_task (id, customer_id, task_no, source_type, source_remark, total_count, printed_count, status, remark, del_flag, create_by, create_time, update_by, update_time)
         values (#{id}, #{customerId}, #{taskNo}, #{sourceType}, #{sourceRemark}, #{totalCount}, #{printedCount}, #{status}, #{remark}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})

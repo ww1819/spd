@@ -380,6 +380,108 @@ CREATE TABLE IF NOT EXISTS `sb_asset_print_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产条码打印日志表';
 /
 
+-- 资产盘点单主表（主键UUID7，客户id，单号/制单人/制单时间/状态/审核人/审核时间/盘点类型/盘点科室id，逻辑删除+审计）
+CREATE TABLE IF NOT EXISTS `sb_asset_inventory` (
+  `id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '客户ID',
+  `order_no` varchar(64) NOT NULL COMMENT '单号',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '制单人',
+  `create_time` datetime DEFAULT NULL COMMENT '制单时间',
+  `status` varchar(32) DEFAULT 'draft' COMMENT '状态(draft草稿/audited已审核/in_progress盘点中/completed已完成/cancelled已取消)',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `inventory_type` varchar(64) NOT NULL COMMENT '盘点类型(中文：按科室盘点/按68分类盘点/按存放地点/多科室盘点等)',
+  `inventory_dept_id` varchar(64) DEFAULT NULL COMMENT '盘点科室ID(按科室盘点时填，多科室可为空)',
+  `inventory_dept_name` varchar(100) DEFAULT NULL COMMENT '盘点科室名称',
+  `plan_date` date DEFAULT NULL COMMENT '计划盘点日期',
+  `finish_time` datetime DEFAULT NULL COMMENT '实际完成时间',
+  `total_count` int(11) DEFAULT 0 COMMENT '明细总数',
+  `checked_count` int(11) DEFAULT 0 COMMENT '已盘点数量',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(1) DEFAULT 0 COMMENT '删除标志(0正常 1删除)',
+  `del_by` varchar(36) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '变更者',
+  `update_time` datetime DEFAULT NULL COMMENT '变更时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sb_ai_order_no` (`order_no`),
+  KEY `idx_sb_ai_customer` (`customer_id`),
+  KEY `idx_sb_ai_status` (`status`),
+  KEY `idx_sb_ai_type` (`inventory_type`),
+  KEY `idx_sb_ai_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产盘点单主表';
+/
+
+-- 资产盘点单明细表（主键UUID7，客户id，主表id，单号，资产台账id，名称/规格/型号/原值/科室/存放地点，补打标签/打印次数/打印状态等，逻辑删除+审计）
+CREATE TABLE IF NOT EXISTS `sb_asset_inventory_item` (
+  `id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '客户ID',
+  `inventory_id` char(36) NOT NULL COMMENT '盘点单主表ID',
+  `order_no` varchar(64) NOT NULL COMMENT '单号',
+  `asset_id` char(36) NOT NULL COMMENT '资产台账ID',
+  `name` varchar(200) DEFAULT NULL COMMENT '名称',
+  `spec` varchar(200) DEFAULT NULL COMMENT '规格',
+  `model` varchar(200) DEFAULT NULL COMMENT '型号',
+  `original_value` decimal(18,4) DEFAULT NULL COMMENT '原值',
+  `dept_id` varchar(64) DEFAULT NULL COMMENT '所属科室ID',
+  `dept_name` varchar(100) DEFAULT NULL COMMENT '所属科室名称',
+  `storage_place` varchar(200) DEFAULT NULL COMMENT '存放地点',
+  `equipment_serial_no` varchar(64) DEFAULT NULL COMMENT '设备流水号',
+  `category68_id` char(36) DEFAULT NULL COMMENT '68分类ID',
+  `category68_name` varchar(100) DEFAULT NULL COMMENT '68分类名称',
+  `manufacturer_name` varchar(200) DEFAULT NULL COMMENT '生产厂家名称',
+  `need_reprint_label` char(1) DEFAULT 'N' COMMENT '是否补打标签(Y/N)',
+  `print_count` int(11) DEFAULT 0 COMMENT '打印次数',
+  `last_print_time` datetime DEFAULT NULL COMMENT '最终打印时间',
+  `print_status` varchar(16) DEFAULT '未打印' COMMENT '打印状态(未打印/已打印)',
+  `check_status` varchar(16) DEFAULT '未盘点' COMMENT '盘点状态(未盘点/已盘点)',
+  `check_time` datetime DEFAULT NULL COMMENT '盘点时间',
+  `check_by` varchar(64) DEFAULT NULL COMMENT '盘点人',
+  `real_storage_place` varchar(200) DEFAULT NULL COMMENT '实盘存放地点',
+  `difference_remark` varchar(500) DEFAULT NULL COMMENT '差异说明',
+  `sort_order` int(11) DEFAULT 0 COMMENT '排序号',
+  `del_flag` tinyint(1) DEFAULT 0 COMMENT '删除标志(0正常 1删除)',
+  `del_by` varchar(36) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '变更者',
+  `update_time` datetime DEFAULT NULL COMMENT '变更时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_sb_aii_inventory` (`inventory_id`),
+  KEY `idx_sb_aii_asset` (`asset_id`),
+  KEY `idx_sb_aii_customer` (`customer_id`),
+  KEY `idx_sb_aii_order_no` (`order_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产盘点单明细表';
+/
+
+-- 资产盘点单明细与标签打印关联表（主键UUID7，盘点单主表id/单号/明细id/资产id，关联打印任务或日志，逻辑删除+审计）
+CREATE TABLE IF NOT EXISTS `sb_asset_inventory_item_print` (
+  `id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '客户ID',
+  `inventory_id` char(36) NOT NULL COMMENT '盘点单主表ID',
+  `order_no` varchar(64) DEFAULT NULL COMMENT '盘点单号',
+  `inventory_item_id` char(36) NOT NULL COMMENT '盘点单明细ID',
+  `asset_id` char(36) NOT NULL COMMENT '资产台账ID',
+  `print_task_id` char(36) DEFAULT NULL COMMENT '关联打印任务ID(sb_asset_print_task.id)',
+  `print_task_no` varchar(64) DEFAULT NULL COMMENT '打印任务单号',
+  `print_task_item_id` char(36) DEFAULT NULL COMMENT '关联打印任务明细ID(sb_asset_print_task_item.id)',
+  `print_log_id` char(36) DEFAULT NULL COMMENT '关联打印日志ID(sb_asset_print_log.id)',
+  `del_flag` tinyint(1) DEFAULT 0 COMMENT '删除标志(0正常 1删除)',
+  `del_by` varchar(36) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '变更者',
+  `update_time` datetime DEFAULT NULL COMMENT '变更时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_sb_aiip_inventory` (`inventory_id`),
+  KEY `idx_sb_aiip_item` (`inventory_item_id`),
+  KEY `idx_sb_aiip_asset` (`asset_id`),
+  KEY `idx_sb_aiip_customer` (`customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产盘点单明细与标签打印关联表';
+/
+
 -- 设备前端独立菜单权限表：设备专用菜单（主键 UUID7）
 CREATE TABLE IF NOT EXISTS `sb_menu` (
   `menu_id` char(36) NOT NULL COMMENT '菜单ID(UUID7)',

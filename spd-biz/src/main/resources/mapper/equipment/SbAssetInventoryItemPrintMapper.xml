@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbAssetInventoryItemPrintMapper">
+    <resultMap type="com.spd.equipment.domain.SbAssetInventoryItemPrint" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="inventoryId" column="inventory_id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="inventoryItemId" column="inventory_item_id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="printTaskId" column="print_task_id"/>
+        <result property="printTaskNo" column="print_task_no"/>
+        <result property="printTaskItemId" column="print_task_item_id"/>
+        <result property="printLogId" column="print_log_id"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">
+        select id, customer_id, inventory_id, order_no, inventory_item_id, asset_id, print_task_id, print_task_no, print_task_item_id, print_log_id, del_flag, del_by, del_time, create_by, create_time, update_by, update_time from sb_asset_inventory_item_print
+    </sql>
+    <select id="selectList" resultMap="Result">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            <if test="inventoryId != null and inventoryId != ''"> and inventory_id = #{inventoryId}</if>
+            <if test="inventoryItemId != null and inventoryItemId != ''"> and inventory_item_id = #{inventoryItemId}</if>
+            <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="selectByInventoryItemId" resultMap="Result">
+        <include refid="selectVo"/> where inventory_item_id = #{inventoryItemId} and (del_flag = 0 or del_flag is null) order by create_time desc
+    </select>
+    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetInventoryItemPrint">
+        insert into sb_asset_inventory_item_print (id, customer_id, inventory_id, order_no, inventory_item_id, asset_id, print_task_id, print_task_no, print_task_item_id, print_log_id, del_flag, create_by, create_time, update_by, update_time)
+        values (#{id}, #{customerId}, #{inventoryId}, #{orderNo}, #{inventoryItemId}, #{assetId}, #{printTaskId}, #{printTaskNo}, #{printTaskItemId}, #{printLogId}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+    <update id="deleteById">
+        update sb_asset_inventory_item_print set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id}
+    </update>
+</mapper>

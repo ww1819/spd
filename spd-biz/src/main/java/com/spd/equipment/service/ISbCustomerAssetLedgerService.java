@@ -17,4 +17,7 @@ public interface ISbCustomerAssetLedgerService {
      * @return 导入结果消息
      */
     String importAssetLedger(List<SbCustomerAssetLedger> list);
+
+    /** 查询当前客户台账中不重复的存放地点列表（用于按存放地点盘点下拉） */
+    List<String> listDistinctStoragePlace();
 }

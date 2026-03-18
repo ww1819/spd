@@ -146,6 +146,39 @@ SELECT '01900000-0000-7000-8000-00000000d006', '资产台账导出', '01900000-0
 UPDATE sb_menu SET default_open_to_customer = '1' WHERE menu_id IN ('01900000-0000-7000-8000-00000000d003', '01900000-0000-7000-8000-00000000d007');
 /
 
+-- 设备管理子菜单：资产盘点（名下所有权限默认对客户开放）
+-- 注意：不得使用 d010-d017，该段 ID 已被「基础资料」下设备品牌/厂家/供应商/资产分类/计量分类占用，会导致主菜单与按钮无法插入。
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d020', '资产盘点', '01900000-0000-7000-8000-000000001388', 1, 'assetInventory', 'equipment/assetInventory/index', '1', '0', 'C', '0', '0', 'equipment:assetInventory:list', 'list', '0', '1', '0', 'admin', NOW(), '资产盘点', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d020');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d021', '资产盘点查询', '01900000-0000-7000-8000-00000000d020', 1, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:query', '#', '0', '1', '0', 'admin', NOW(), '资产盘点查询', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d021');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d022', '资产盘点新增', '01900000-0000-7000-8000-00000000d020', 2, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:add', '#', '0', '1', '0', 'admin', NOW(), '资产盘点新增', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d022');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d023', '资产盘点修改', '01900000-0000-7000-8000-00000000d020', 3, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:edit', '#', '0', '1', '0', 'admin', NOW(), '资产盘点修改', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d023');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d024', '资产盘点删除', '01900000-0000-7000-8000-00000000d020', 4, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:remove', '#', '0', '1', '0', 'admin', NOW(), '资产盘点删除', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d024');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d025', '资产盘点导出', '01900000-0000-7000-8000-00000000d020', 5, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:export', '#', '0', '1', '0', 'admin', NOW(), '资产盘点导出', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d025');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d026', '资产盘点提交审核', '01900000-0000-7000-8000-00000000d020', 6, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:submit', '#', '0', '1', '0', 'admin', NOW(), '资产盘点提交审核', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d026');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000d027', '资产盘点审核', '01900000-0000-7000-8000-00000000d020', 7, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:assetInventory:audit', '#', '0', '1', '0', 'admin', NOW(), '资产盘点审核', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d027');
+/
+-- 修复历史：误用 d015-d017 的孤立资产盘点按钮（父菜单未正确插入时），逻辑删除以免重复
+UPDATE sb_menu SET del_flag = '1', delete_time = NOW(), delete_by = 'admin', remark = CONCAT(IFNULL(remark,''), ' [已废弃：资产盘点完整菜单为d020-d027]')
+WHERE menu_id IN ('01900000-0000-7000-8000-00000000d015','01900000-0000-7000-8000-00000000d016','01900000-0000-7000-8000-00000000d017')
+  AND perms IN ('equipment:assetInventory:export','equipment:assetInventory:submit','equipment:assetInventory:audit')
+  AND menu_name IN ('资产盘点导出','资产盘点提交审核','资产盘点审核');
+/
+
 -- 设备管理子菜单：设备巡检
 INSERT INTO sb_menu (
   menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time

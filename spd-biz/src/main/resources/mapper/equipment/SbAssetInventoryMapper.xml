@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbAssetInventoryMapper">
+    <resultMap type="com.spd.equipment.domain.SbAssetInventory" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="status" column="status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="inventoryType" column="inventory_type"/>
+        <result property="inventoryDeptId" column="inventory_dept_id"/>
+        <result property="inventoryDeptName" column="inventory_dept_name"/>
+        <result property="inventoryCategory68Id" column="inventory_category68_id"/>
+        <result property="inventoryCategory68Code" column="inventory_category68_code"/>
+        <result property="storagePlace" column="storage_place"/>
+        <result property="planDate" column="plan_date"/>
+        <result property="finishTime" column="finish_time"/>
+        <result property="totalCount" column="total_count"/>
+        <result property="checkedCount" column="checked_count"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">
+        select id, customer_id, order_no, create_by, create_time, status, audit_by, audit_time, inventory_type, inventory_dept_id, inventory_dept_name, inventory_category68_id, inventory_category68_code, storage_place, plan_date, finish_time, total_count, checked_count, remark, del_flag, del_by, del_time, update_by, update_time from sb_asset_inventory
+    </sql>
+    <select id="selectList" resultMap="Result">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            <if test="orderNo != null and orderNo != ''"> and order_no like concat('%', #{orderNo}, '%')</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+            <if test="inventoryType != null and inventoryType != ''"> and inventory_type = #{inventoryType}</if>
+            <if test="inventoryDeptId != null and inventoryDeptId != ''"> and inventory_dept_id = #{inventoryDeptId}</if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <select id="selectByOrderNo" resultMap="Result">
+        <include refid="selectVo"/> where customer_id = #{customerId} and order_no = #{orderNo} and (del_flag = 0 or del_flag is null) limit 1
+    </select>
+    <select id="selectMaxOrderNoSeqToday" resultType="int">
+        select ifnull(max(cast(substring(order_no, length(#{datePrefix}) + 1) as unsigned)), 0) from sb_asset_inventory
+        where customer_id = #{customerId} and (del_flag = 0 or del_flag is null) and order_no like concat(#{datePrefix}, '%') and length(order_no) = length(#{datePrefix}) + 4
+    </select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetInventory">
+        insert into sb_asset_inventory (id, customer_id, order_no, create_by, create_time, status, inventory_type, inventory_dept_id, inventory_dept_name, inventory_category68_id, inventory_category68_code, storage_place, plan_date, total_count, checked_count, remark, del_flag, update_by, update_time)
+        values (#{id}, #{customerId}, #{orderNo}, #{createBy}, #{createTime}, #{status}, #{inventoryType}, #{inventoryDeptId}, #{inventoryDeptName}, #{inventoryCategory68Id}, #{inventoryCategory68Code}, #{storagePlace}, #{planDate}, #{totalCount}, #{checkedCount}, #{remark}, 0, #{updateBy}, #{updateTime})
+    </insert>
+    <update id="update" parameterType="com.spd.equipment.domain.SbAssetInventory">
+        update sb_asset_inventory
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="inventoryType != null">inventory_type = #{inventoryType},</if>
+            <if test="inventoryDeptId != null">inventory_dept_id = #{inventoryDeptId},</if>
+            <if test="inventoryDeptName != null">inventory_dept_name = #{inventoryDeptName},</if>
+            <if test="inventoryCategory68Id != null">inventory_category68_id = #{inventoryCategory68Id},</if>
+            <if test="inventoryCategory68Code != null">inventory_category68_code = #{inventoryCategory68Code},</if>
+            <if test="storagePlace != null">storage_place = #{storagePlace},</if>
+            <if test="planDate != null">plan_date = #{planDate},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="totalCount != null">total_count = #{totalCount},</if>
+            <if test="checkedCount != null">checked_count = #{checkedCount},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="deleteById">
+        update sb_asset_inventory set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id}
+    </update>
+</mapper>

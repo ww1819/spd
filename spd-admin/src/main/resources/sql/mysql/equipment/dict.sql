@@ -61,3 +61,15 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status,
 /
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, is_default, create_time) SELECT 2, '否', 'N', 'eq_label_print_status', '0', 'Y', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'eq_label_print_status' AND dict_value = 'N');
 /
+
+-- 盘点类型 eq_inventory_type（按科室/按68分类/按存放地点）
+INSERT INTO sys_dict_type (dict_name, dict_type, status, remark, create_by, create_time)
+SELECT '盘点类型', 'eq_inventory_type', '0', '资产盘点单盘点类型', 'admin', NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'eq_inventory_type');
+/
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time) SELECT 1, '按科室盘点', 'dept', 'eq_inventory_type', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'eq_inventory_type' AND dict_value = 'dept');
+/
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time) SELECT 2, '按68分类盘点', 'category68', 'eq_inventory_type', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'eq_inventory_type' AND dict_value = 'category68');
+/
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time) SELECT 3, '按存放地点盘点', 'storage_place', 'eq_inventory_type', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'eq_inventory_type' AND dict_value = 'storage_place');
+/
