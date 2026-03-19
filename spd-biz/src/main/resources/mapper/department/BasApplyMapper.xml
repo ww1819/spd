@@ -133,10 +133,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
                 b.batch_numer as sub_batch_numer, b.remark as sub_remark, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.tenant_id as sub_tenant_id,
+               d.id as dId, d.code as departmentCode, d.name as departmentName,
                au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
         from bas_apply a
         left join bas_apply_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_department d on a.department_id = d.id
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
         left join fd_material m on b.material_id = m.id
