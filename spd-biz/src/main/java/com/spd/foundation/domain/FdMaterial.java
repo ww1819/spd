@@ -77,6 +77,10 @@ public class FdMaterial extends BaseEntity
     @Excel(name = "库房分类*")
     private Long storeroomId;
 
+    /** 产品档案默认所属仓库ID（用于科室盘盈可退库仓库） */
+    @Excel(name = "默认所属仓库ID")
+    private Long defaultWarehouseId;
+
     /** 财务分类ID */
     @Excel(name = "财务分类*")
     private Long financeCategoryId;

@@ -326,6 +326,8 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             flow.setEndTime(entry.getEndTime());
             flow.setSupplierId(entry.getSupplierId());
             flow.setLx("QC");
+            flow.setBatchId(inv.getBatchId());
+            flow.setOriginBusinessType("期初导入");
             flow.setKcNo(inv.getId());
             flow.setFlowTime(auditTime);
             flow.setDelFlag(0);
@@ -361,6 +363,13 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         b.setBillNo(main.getBillNo());
         b.setRefEntryId(entry.getId());
         b.setBatchSource(BATCH_SOURCE_QC);
+        b.setOriginBillType(null);
+        b.setOriginFlowLx(BATCH_SOURCE_QC);
+        b.setOriginBusinessType("期初导入");
+        if (main.getWarehouseId() != null) {
+            b.setOriginFromWarehouseId(main.getWarehouseId());
+            b.setOriginToWarehouseId(main.getWarehouseId());
+        }
         Date now = new Date();
         String username = SecurityUtils.getUserIdStr();
         b.setAuditTime(now);

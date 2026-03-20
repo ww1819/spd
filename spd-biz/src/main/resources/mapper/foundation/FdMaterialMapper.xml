@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci"    column="speci"    />
         <result property="model"    column="model"    />
         <result property="price"    column="price"    />
+        <result property="defaultWarehouseId"    column="default_warehouse_id"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -105,7 +106,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdMaterialVo">
         select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
-            m.price, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
+            m.price, m.default_warehouse_id as default_warehouse_id, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
             m.his_id,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
@@ -184,6 +185,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="speci != null">speci,</if>
             <if test="model != null">model,</if>
             <if test="price != null">price,</if>
+            <if test="defaultWarehouseId != null">default_warehouse_id,</if>
             <if test="referredName != null">referred_name,</if>
             <if test="useName != null">use_name,</if>
             <if test="factoryId != null">factory_id,</if>
@@ -239,6 +241,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="speci != null">#{speci},</if>
             <if test="model != null">#{model},</if>
             <if test="price != null">#{price},</if>
+            <if test="defaultWarehouseId != null">#{defaultWarehouseId},</if>
             <if test="referredName != null">#{referredName},</if>
             <if test="useName != null">#{useName},</if>
             <if test="factoryId != null">#{factoryId},</if>
@@ -297,6 +300,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="speci != null">speci = #{speci},</if>
             <if test="model != null">model = #{model},</if>
             <if test="price != null">price = #{price},</if>
+            <if test="defaultWarehouseId != null">default_warehouse_id = #{defaultWarehouseId},</if>
             <if test="referredName != null">referred_name = #{referredName},</if>
             <if test="useName != null">use_name = #{useName},</if>
             <if test="factoryId != null">factory_id = #{factoryId},</if>

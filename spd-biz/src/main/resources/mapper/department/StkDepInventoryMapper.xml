@@ -8,10 +8,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="materialId"    column="material_id"    />
         <result property="departmentId"    column="department_id"    />
+        <result property="warehouseId"    column="warehouse_id"    />
         <result property="qty"    column="qty"    />
         <result property="unitPrice"    column="unit_price"    />
         <result property="amt"    column="amt"    />
         <result property="batchNo"    column="batch_no"    />
+        <result property="batchId"    column="batch_id"    />
         <result property="materialNo"    column="material_no"    />
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
@@ -23,6 +25,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="billEntryId"    column="bill_entry_id"    />
         <result property="billNo"    column="bill_no"    />
         <result property="billType"    column="bill_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="kcNo"    column="kc_no"    />
         <result property="batchNumber"    column="batch_number"    />
         <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
@@ -56,8 +61,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectStkDepInventoryVo">
         select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
-			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
+			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
 			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
+			stk.del_flag, stk.delete_by, stk.delete_time,
 			stk.main_barcode, stk.sub_barcode,
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
@@ -112,10 +118,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
             <if test="departmentId != null">department_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
             <if test="qty != null">qty,</if>
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
             <if test="batchNo != null">batch_no,</if>
+            <if test="batchId != null">batch_id,</if>
             <if test="materialNo != null">material_no,</if>
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
@@ -136,10 +144,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
             <if test="departmentId != null">#{departmentId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
             <if test="qty != null">#{qty},</if>
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
             <if test="batchNo != null">#{batchNo},</if>
+            <if test="batchId != null">#{batchId},</if>
             <if test="materialNo != null">#{materialNo},</if>
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
@@ -164,10 +174,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialId != null">material_id = #{materialId},</if>
             <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="qty != null">qty = #{qty},</if>
             <if test="unitPrice != null">unit_price = #{unitPrice},</if>
             <if test="amt != null">amt = #{amt},</if>
             <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
             <if test="materialNo != null">material_no = #{materialNo},</if>
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
@@ -183,6 +195,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">bill_type = #{billType},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
         where id = #{id}
     </update>
@@ -207,9 +221,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <!-- 退库用：只查已收货确认的科室库存 -->
-    <select id="selectStkDepInventoryOne" parameterType="java.lang.String" resultMap="StkDepInventoryResult">
+    <select id="selectStkDepInventoryOne" parameterType="map" resultMap="StkDepInventoryResult">
         select * from stk_dep_inventory
         where batch_no = #{batchNo}
+          and warehouse_id = #{warehouseId}
           and (receipt_confirm_status = 1 or receipt_confirm_status is null)
           and (del_flag = 0 or del_flag is null)
         order by id desc
@@ -217,9 +232,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 退库校验可用数量：只统计已收货确认的科室库存 -->
-    <select id="selectTKStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
+    <select id="selectTKStkInvntoryByBatchNo" parameterType="map" resultType="java.math.BigDecimal">
         select SUM(IFNULL(qty, 0)) from stk_dep_inventory
         where batch_no = #{batchNo}
+          and warehouse_id = #{warehouseId}
           and (receipt_confirm_status = 1 or receipt_confirm_status is null)
           and (del_flag = 0 or del_flag is null)
     </select>

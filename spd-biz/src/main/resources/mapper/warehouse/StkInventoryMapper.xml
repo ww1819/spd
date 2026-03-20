@@ -22,6 +22,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="receiptOrderNo"    column="receipt_order_no"    />
         <result property="kcNo"    column="kc_no"    />
         <result property="batchNumber"    column="batch_number"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="settlementType"    column="settlement_type"    />
         <result property="mainBarcode"    column="main_barcode"    />
@@ -122,8 +125,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 					END
 				) as unit_price,
 				stk.amt,
-				stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date,
-				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,
+				stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date,
+				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,
+				stk.del_flag, stk.delete_by, stk.delete_time,
+				stk.tenant_id, stk.settlement_type, stk.main_barcode, stk.sub_barcode,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
 				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
@@ -329,8 +334,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="kcNo != null">kc_no = #{kcNo},</if>
             <if test="batchNumber != null">batch_number = #{batchNumber},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>
             <if test="subBarcode != null">sub_barcode = #{subBarcode},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
         where id = #{id}
     </update>

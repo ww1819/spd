@@ -93,6 +93,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="batchNumber"    column="batch_number"    />
         <result property="materialDate"    column="material_date"    />
         <result property="materialNo"    column="material_no"    />
+        <result property="warehouseName"    column="warehouse_name"    />
+        <result property="batchSource"    column="batch_source"    />
+        <result property="originBusinessType"    column="origin_business_type"    />
         <association property="material"    column="entry_material_id" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -293,10 +296,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.speci as materialSpeci, m.model as materialModel,
                gdi.material_date as begin_time, gdi.material_no as batch_number,
                gdi.material_date as material_date, gdi.material_no as material_no
+               ,sb.warehouse_name as warehouse_name, sb.batch_source as batch_source, sb.origin_business_type as origin_business_type
         from gz_traceability_entry te
         left join gz_traceability t on te.parent_id = t.id
         left join fd_material m on te.material_id = m.id
         left join gz_dep_inventory gdi on te.inventory_id = gdi.id
+        left join stk_batch sb on sb.material_id = gdi.material_id
+            and sb.batch_no = gdi.batch_no
+            and (sb.del_flag = 0 or sb.del_flag is null)
         where te.del_flag = '0' and t.del_flag = '0'
         <!-- 显示所有已保存的追溯单明细（包括未审核和已审核），如果传入了orderStatus参数则使用参数值过滤 -->
         <if test="orderStatus != null">

@@ -2,32 +2,32 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.spd.department.mapper.HcKsFlowMapper">
+<mapper namespace="com.spd.warehouse.mapper.StkProfitLossPendingMapper">
 
-    <insert id="insertHcKsFlow" parameterType="HcKsFlow" useGeneratedKeys="true" keyProperty="id">
-        insert into t_hc_ks_flow
+    <insert id="insertStkProfitLossPending" parameterType="com.spd.warehouse.domain.StkProfitLossPending"
+            useGeneratedKeys="true" keyProperty="id">
+        insert into stk_profit_loss_pending
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billId != null">bill_id,</if>
             <if test="entryId != null">entry_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
             <if test="departmentId != null">department_id,</if>
             <if test="materialId != null">material_id,</if>
+            <if test="supplierId != null">supplier_id,</if>
             <if test="batchNo != null">batch_no,</if>
-            <if test="batchNumber != null">batch_number,</if>
             <if test="batchId != null">batch_id,</if>
-            <if test="mainBarcode != null">main_barcode,</if>
-            <if test="subBarcode != null">sub_barcode,</if>
+            <if test="batchNumber != null">batch_number,</if>
             <if test="qty != null">qty,</if>
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
             <if test="beginTime != null">begin_time,</if>
             <if test="endTime != null">end_time,</if>
-            <if test="supplierId != null">supplier_id,</if>
-            <if test="kcNo != null">kc_no,</if>
-            <if test="lx != null">lx,</if>
-            <if test="flowTime != null">flow_time,</if>
-            <if test="originBusinessType != null">origin_business_type,</if>
-            <if test="delFlag != null">del_flag,</if>
+            <if test="mainBarcode != null">main_barcode,</if>
+            <if test="subBarcode != null">sub_barcode,</if>
+            <if test="applyStatus != null">apply_status,</if>
+            <if test="settlementEffectStatus != null">settlement_effect_status,</if>
             <if test="tenantId != null">tenant_id,</if>
+            <if test="delFlag != null">del_flag,</if>
             <if test="deleteBy != null">delete_by,</if>
             <if test="deleteTime != null">delete_time,</if>
             <if test="createBy != null">create_by,</if>
@@ -38,24 +38,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billId != null">#{billId},</if>
             <if test="entryId != null">#{entryId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
             <if test="departmentId != null">#{departmentId},</if>
             <if test="materialId != null">#{materialId},</if>
+            <if test="supplierId != null">#{supplierId},</if>
             <if test="batchNo != null">#{batchNo},</if>
+            <if test="batchId != null">#{batchId},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
-            <if test="mainBarcode != null">#{mainBarcode},</if>
-            <if test="subBarcode != null">#{subBarcode},</if>
             <if test="qty != null">#{qty},</if>
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
             <if test="beginTime != null">#{beginTime},</if>
             <if test="endTime != null">#{endTime},</if>
-            <if test="supplierId != null">#{supplierId},</if>
-            <if test="kcNo != null">#{kcNo},</if>
-            <if test="lx != null">#{lx},</if>
-            <if test="flowTime != null">#{flowTime},</if>
-            <if test="originBusinessType != null">#{originBusinessType},</if>
-            <if test="delFlag != null">#{delFlag},</if>
+            <if test="mainBarcode != null">#{mainBarcode},</if>
+            <if test="subBarcode != null">#{subBarcode},</if>
+            <if test="applyStatus != null">#{applyStatus},</if>
+            <if test="settlementEffectStatus != null">#{settlementEffectStatus},</if>
             <if test="tenantId != null">#{tenantId},</if>
+            <if test="delFlag != null">#{delFlag},</if>
             <if test="deleteBy != null">#{deleteBy},</if>
             <if test="deleteTime != null">#{deleteTime},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -64,4 +64,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
         </trim>
     </insert>
+
 </mapper>
+

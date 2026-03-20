@@ -48,6 +48,9 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
+    /** 批次对象表ID（stk_batch.id） */
+    private Long batchId;
+
     /** 耗材批次号 */
     @Excel(name = "耗材批次号")
     private String materialNo;
@@ -91,6 +94,9 @@ public class StkDepInventory extends BaseEntity
     private Long billEntryId;
     /** 单据号 */
     private String billNo;
+
+    /** 删除标识（0正常 1已删除） */
+    private Integer delFlag;
 
     /** 科室库存明细id（反写） */
     private Long kcNo;
@@ -186,6 +192,16 @@ public class StkDepInventory extends BaseEntity
     public String getBatchNo()
     {
         return batchNo;
+    }
+
+    public Long getBatchId()
+    {
+        return batchId;
+    }
+
+    public void setBatchId(Long batchId)
+    {
+        this.batchId = batchId;
     }
     public void setMaterialNo(String materialNo)
     {
@@ -320,6 +336,14 @@ public class StkDepInventory extends BaseEntity
 
     public void setKcNo(Long kcNo) {
         this.kcNo = kcNo;
+    }
+
+    public Integer getDelFlag() {
+        return delFlag;
+    }
+
+    public void setDelFlag(Integer delFlag) {
+        this.delFlag = delFlag;
     }
 
     public String getBatchNumber() {

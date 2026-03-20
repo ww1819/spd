@@ -74,14 +74,15 @@ public interface StkDepInventoryMapper
      * @param batchNo 批次号
      * @return 科室库存
      */
-    StkDepInventory selectStkDepInventoryOne(String batchNo);
+    StkDepInventory selectStkDepInventoryOne(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 根据批次号查询科室库存实际数量
      * @param batchNo
+     * @param warehouseId
      * @return
      */
-    BigDecimal selectTKStkInvntoryByBatchNo(String batchNo);
+    BigDecimal selectTKStkInvntoryByBatchNo(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 查询库存汇总列表

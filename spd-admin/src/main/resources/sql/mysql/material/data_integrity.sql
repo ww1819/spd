@@ -446,6 +446,27 @@ WHERE up.tenant_id IS NULL OR TRIM(up.tenant_id) = '';
 update fd_material fm set is_gz = '2' where fm.is_gz is null or fm.is_gz = '';
 /
 
+-- ========== 入库明细/库存/流水 供应商对齐（可选，修复历史数据） ==========
+-- 已审核入库单：明细 suppler_id 为空时用主表 suppler_id
+UPDATE stk_io_bill_entry e
+INNER JOIN stk_io_bill b ON b.id = e.paren_id AND b.bill_type = 101 AND b.bill_status = 2 AND b.suppler_id IS NOT NULL
+SET e.suppler_id = CAST(b.suppler_id AS CHAR)
+WHERE (e.suppler_id IS NULL OR TRIM(COALESCE(e.suppler_id, '')) = '')
+  AND (e.del_flag IS NULL OR e.del_flag != 1);
+/
+-- 仓库库存：supplier_id 为空时，从已审入库单主表按批次+耗材汇总回填（多单一证时取 MAX(suppler_id)，可人工复核）
+UPDATE stk_inventory s
+INNER JOIN (
+  SELECT e.batch_no AS bn, e.material_id AS mid, MAX(b.suppler_id) AS sid
+  FROM stk_io_bill_entry e
+  INNER JOIN stk_io_bill b ON b.id = e.paren_id AND b.bill_type = 101 AND b.bill_status = 2 AND b.suppler_id IS NOT NULL
+  WHERE e.batch_no IS NOT NULL AND (e.del_flag IS NULL OR e.del_flag != 1)
+  GROUP BY e.batch_no, e.material_id
+) x ON x.bn = s.batch_no AND x.mid = s.material_id
+SET s.supplier_id = x.sid
+WHERE s.supplier_id IS NULL AND (s.del_flag IS NULL OR s.del_flag != 1);
+/
+
 -- ========== 采购计划状态字典（purchase_plan.plan_status） ==========
 -- 代码逻辑：0=未提交 1=待审核 2=已审核 3=已执行 4=已取消（与字段注释 1待审核 2已审核 3已执行 4已取消 一致，仅实体类注释有笔误写为 1未提交，此处按实际逻辑补全）
 -- 若不存在字典类型则先插入

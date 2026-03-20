@@ -132,6 +132,15 @@ public class GzTraceabilityEntry extends BaseEntity
     /** 批次号（material_no） */
     private String materialNo;
 
+    /** 仓库来源（来自 stk_batch.warehouse_name） */
+    private String warehouseName;
+
+    /** 批次来源（来自 stk_batch.batch_source） */
+    private String batchSource;
+
+    /** 来源业务类型（来自 stk_batch.origin_business_type） */
+    private String originBusinessType;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -445,6 +454,36 @@ public class GzTraceabilityEntry extends BaseEntity
         return materialNo;
     }
 
+    public void setWarehouseName(String warehouseName)
+    {
+        this.warehouseName = warehouseName;
+    }
+
+    public String getWarehouseName()
+    {
+        return warehouseName;
+    }
+
+    public void setBatchSource(String batchSource)
+    {
+        this.batchSource = batchSource;
+    }
+
+    public String getBatchSource()
+    {
+        return batchSource;
+    }
+
+    public void setOriginBusinessType(String originBusinessType)
+    {
+        this.originBusinessType = originBusinessType;
+    }
+
+    public String getOriginBusinessType()
+    {
+        return originBusinessType;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -466,6 +505,9 @@ public class GzTraceabilityEntry extends BaseEntity
             .append("certificateNo", getCertificateNo())
             .append("billingFollow", getBillingFollow())
             .append("delFlag", getDelFlag())
+            .append("warehouseName", getWarehouseName())
+            .append("batchSource", getBatchSource())
+            .append("originBusinessType", getOriginBusinessType())
             .toString();
     }
 }

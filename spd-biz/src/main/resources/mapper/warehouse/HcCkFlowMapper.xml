@@ -15,6 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialId != null">material_id,</if>
             <if test="batchNo != null">batch_no,</if>
             <if test="batchNumber != null">batch_number,</if>
+            <if test="batchId != null">batch_id,</if>
             <if test="mainBarcode != null">main_barcode,</if>
             <if test="subBarcode != null">sub_barcode,</if>
             <if test="qty != null">qty,</if>
@@ -26,10 +27,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="kcNo != null">kc_no,</if>
             <if test="lx != null">lx,</if>
             <if test="flowTime != null">flow_time,</if>
+            <if test="originBusinessType != null">origin_business_type,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="tenantId != null">tenant_id,</if>
+            <if test="deleteBy != null">delete_by,</if>
+            <if test="deleteTime != null">delete_time,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billId != null">#{billId},</if>
@@ -40,6 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialId != null">#{materialId},</if>
             <if test="batchNo != null">#{batchNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="batchId != null">#{batchId},</if>
             <if test="mainBarcode != null">#{mainBarcode},</if>
             <if test="subBarcode != null">#{subBarcode},</if>
             <if test="qty != null">#{qty},</if>
@@ -51,10 +58,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="kcNo != null">#{kcNo},</if>
             <if test="lx != null">#{lx},</if>
             <if test="flowTime != null">#{flowTime},</if>
+            <if test="originBusinessType != null">#{originBusinessType},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="tenantId != null">#{tenantId},</if>
+            <if test="deleteBy != null">#{deleteBy},</if>
+            <if test="deleteTime != null">#{deleteTime},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
         </trim>
     </insert>
 

@@ -75,6 +75,9 @@ public class StkIoBillEntry extends BaseEntity
     /** 耗材对象 */
     private FdMaterial material;
 
+    /** 仓库ID（用于科室退库锁定可退库仓库） */
+    private Long warehouseId;
+
     /** 查询参数：仓库名称 */
     private String warehouseName;
 
@@ -221,6 +224,14 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setMaterial(FdMaterial material) {
         this.material = material;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public String getWarehouseName() {

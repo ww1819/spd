@@ -28,6 +28,9 @@ public class HcKsFlow extends BaseEntity {
     private String batchNo;
     /** 批号 */
     private String batchNumber;
+
+    /** 批次对象表ID（stk_batch.id） */
+    private Long batchId;
     /** 数量 */
     private BigDecimal qty;
     /** 单价 */
@@ -49,6 +52,9 @@ public class HcKsFlow extends BaseEntity {
     /** 流水时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date flowTime;
+
+    /** 来源业务类型中文（便于追溯展示） */
+    private String originBusinessType;
     /** 删除标志 */
     private Integer delFlag;
     /** 租户ID(同sb_customer.customer_id) */
@@ -72,6 +78,8 @@ public class HcKsFlow extends BaseEntity {
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public String getBatchNumber() { return batchNumber; }
     public void setBatchNumber(String batchNumber) { this.batchNumber = batchNumber; }
+    public Long getBatchId() { return batchId; }
+    public void setBatchId(Long batchId) { this.batchId = batchId; }
     public BigDecimal getQty() { return qty; }
     public void setQty(BigDecimal qty) { this.qty = qty; }
     public BigDecimal getUnitPrice() { return unitPrice; }
@@ -90,6 +98,8 @@ public class HcKsFlow extends BaseEntity {
     public void setLx(String lx) { this.lx = lx; }
     public Date getFlowTime() { return flowTime; }
     public void setFlowTime(Date flowTime) { this.flowTime = flowTime; }
+    public String getOriginBusinessType() { return originBusinessType; }
+    public void setOriginBusinessType(String originBusinessType) { this.originBusinessType = originBusinessType; }
     public Integer getDelFlag() { return delFlag; }
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
     public String getMainBarcode() { return mainBarcode; }

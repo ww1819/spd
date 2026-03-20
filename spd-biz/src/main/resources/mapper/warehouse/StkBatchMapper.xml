@@ -44,6 +44,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="financeCategoryCode"    column="finance_category_code"    />
         <result property="financeCategoryName"    column="finance_category_name"    />
         <result property="batchSource"    column="batch_source"    />
+        <result property="originBillType"    column="origin_bill_type"    />
+        <result property="originFlowLx"    column="origin_flow_lx"    />
+        <result property="originBusinessType"    column="origin_business_type"    />
+        <result property="originFromWarehouseId"    column="origin_from_warehouse_id"    />
+        <result property="originToWarehouseId"    column="origin_to_warehouse_id"    />
         <result property="billId"    column="bill_id"    />
         <result property="billNo"    column="bill_no"    />
         <result property="entryId"    column="entry_id"    />
@@ -72,7 +77,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             department_id, department_code, department_name,
             storeroom_id, storeroom_code, storeroom_name,
             finance_category_id, finance_category_code, finance_category_name,
-            batch_source, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
+            batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+            bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
             create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         ) values (
             #{batchNo}, #{materialId}, #{materialCode}, #{materialName}, #{speci}, #{model},
@@ -83,7 +89,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{departmentId}, #{departmentCode}, #{departmentName},
             #{storeroomId}, #{storeroomCode}, #{storeroomName},
             #{financeCategoryId}, #{financeCategoryCode}, #{financeCategoryName},
-            #{batchSource}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
+            #{batchSource}, #{originBillType}, #{originFlowLx}, #{originBusinessType}, #{originFromWarehouseId}, #{originToWarehouseId},
+            #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
             #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}, #{tenantId}
         )
     </insert>
@@ -97,7 +104,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                department_id, department_code, department_name,
                storeroom_id, storeroom_code, storeroom_name,
                finance_category_id, finance_category_code, finance_category_name,
-               batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
+               batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+               bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
                create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         from stk_batch
         where batch_no = #{batchNo} and (del_flag = 0 or del_flag is null)
@@ -113,7 +121,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                department_id, department_code, department_name,
                storeroom_id, storeroom_code, storeroom_name,
                finance_category_id, finance_category_code, finance_category_name,
-               batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
+               batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+               bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
                create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         from stk_batch
         where id = #{id}
