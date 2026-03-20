@@ -118,7 +118,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectPurchaseOrderVo"/>
         <where>  
             (po.del_flag = '0' or po.del_flag is null)
-            <if test="tenantId != null and tenantId != ''"> and (po.tenant_id = #{tenantId} or po.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (po.tenant_id = #{tenantId})</if>
             <if test="orderNo != null  and orderNo != ''"> and po.order_no like concat('%', #{orderNo}, '%')</if>
             <if test="supplierId != null "> and po.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and po.warehouse_id = #{warehouseId}</if>

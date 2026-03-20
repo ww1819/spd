@@ -1,6 +1,9 @@
 package com.spd.system.mapper;
 
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
 import com.spd.system.domain.SysPost;
 
 /**
@@ -96,4 +99,9 @@ public interface SysPostMapper
      * @return 结果
      */
     public SysPost checkPostCodeUnique(String postCode);
+
+    /**
+     * 用户是否属于指定租户下耗材管理员组（post_code=super）
+     */
+    public int countUserSuperPostInTenant(@Param("userId") Long userId, @Param("tenantId") String tenantId);
 }

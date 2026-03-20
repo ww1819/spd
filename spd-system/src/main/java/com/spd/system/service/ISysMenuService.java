@@ -172,4 +172,14 @@ public interface ISysMenuService
    * @return 下拉树结构列表
    */
   List<TreeSelect> selectMenuTreeForPostAssign(String tenantId);
+
+  /**
+   * 耗材菜单树（含 default_open_to_customer），用于批量设置默认对客户开放
+   */
+  List<SysMenu> selectMenuTreeForDefaultOpenBatch();
+
+  /**
+   * 批量设置耗材菜单「默认对客户开放」：先全部置否，再对 menuIds 置是（平台管理菜单始终为否）
+   */
+  void batchSetDefaultOpenToCustomer(List<Long> menuIds);
 }

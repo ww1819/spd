@@ -64,7 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzDepApplyList" parameterType="GzDepApply" resultMap="GzDepApplyResult">
         <include refid="selectGzDepApplyVo"/>
         <where>
-            <if test="tenantId != null and tenantId != ''"> and (a.tenant_id = #{tenantId} or a.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (a.tenant_id = #{tenantId})</if>
             <if test="applyBillNo != null  and applyBillNo != ''"> and a.apply_bill_no = #{applyBillNo}</if>
             <if test="applyBillDate != null "> and a.apply_bill_date = #{applyBillDate}</if>
             <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>

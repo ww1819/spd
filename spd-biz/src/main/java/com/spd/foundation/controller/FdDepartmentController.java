@@ -22,8 +22,7 @@ import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
-import com.spd.system.service.ISbUserPermissionService;
-import com.spd.system.service.ISbWorkGroupService;
+import com.spd.system.service.ITenantScopeService;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -43,10 +42,7 @@ public class FdDepartmentController extends BaseController
     private IFdDepartmentService fdDepartmentService;
 
     @Autowired
-    private ISbWorkGroupService sbWorkGroupService;
-
-    @Autowired
-    private ISbUserPermissionService sbUserPermissionService;
+    private ITenantScopeService tenantScopeService;
 
     /**
      * 查询科室列表（租户非 super 组用户按 sb_user_permission_dept 过滤）
@@ -56,8 +52,11 @@ public class FdDepartmentController extends BaseController
     public TableDataInfo list(FdDepartment fdDepartment)
     {
         String customerId = SecurityUtils.getCustomerId();
-        if (StringUtils.isNotEmpty(customerId) && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+        if (StringUtils.isNotEmpty(customerId)) {
+            fdDepartment.setTenantId(customerId);
+        }
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds != null && !allowedIds.isEmpty()) {
                 fdDepartment.getParams().put("allowedDeptIds", allowedIds);
             } else {
@@ -79,8 +78,8 @@ public class FdDepartmentController extends BaseController
         List<FdDepartment> list;
         if (StringUtils.isNotEmpty(customerId)) {
             list = fdDepartmentService.selectdepartmenAll();
-            if (list != null && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (list != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
                 if (allowedIds == null || allowedIds.isEmpty()) list = new ArrayList<>();
                 else list = list.stream().filter(d -> d.getId() != null && allowedIds.contains(d.getId())).collect(Collectors.toList());
             }
@@ -100,8 +99,11 @@ public class FdDepartmentController extends BaseController
     public void export(HttpServletResponse response, FdDepartment fdDepartment)
     {
         String customerId = SecurityUtils.getCustomerId();
-        if (StringUtils.isNotEmpty(customerId) && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+        if (StringUtils.isNotEmpty(customerId)) {
+            fdDepartment.setTenantId(customerId);
+        }
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds != null && !allowedIds.isEmpty()) {
                 fdDepartment.getParams().put("allowedDeptIds", allowedIds);
             } else {
@@ -183,8 +185,8 @@ public class FdDepartmentController extends BaseController
     {
         List<FdDepartment> fdDepartmentList = fdDepartmentService.selectdepartmenAll();
         String customerId = SecurityUtils.getCustomerId();
-        if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = sbUserPermissionService.selectDeptIdsByUserId(SecurityUtils.getUserId(), customerId);
+        if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds == null || allowedIds.isEmpty()) fdDepartmentList = new ArrayList<>();
             else fdDepartmentList = fdDepartmentList.stream().filter(d -> d.getId() != null && allowedIds.contains(d.getId())).collect(Collectors.toList());
         }

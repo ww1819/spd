@@ -66,6 +66,9 @@ public class SysMenu extends BaseEntity
     /** 是否仅平台管理（0否 1是，为1时不对客户显示） */
     private String isPlatform;
 
+    /** 耗材：功能重置时默认对客户/super/super_01 开放（0否 1是，对齐 sb_menu.default_open_to_customer） */
+    private String defaultOpenToCustomer;
+
     /** 子菜单 */
     private List<SysMenu> children = new ArrayList<SysMenu>();
 
@@ -236,6 +239,16 @@ public class SysMenu extends BaseEntity
         this.isPlatform = isPlatform;
     }
 
+    public String getDefaultOpenToCustomer()
+    {
+        return defaultOpenToCustomer;
+    }
+
+    public void setDefaultOpenToCustomer(String defaultOpenToCustomer)
+    {
+        this.defaultOpenToCustomer = defaultOpenToCustomer;
+    }
+
     public List<SysMenu> getChildren()
     {
         return children;
@@ -263,6 +276,7 @@ public class SysMenu extends BaseEntity
             .append("perms", getPerms())
             .append("icon", getIcon())
             .append("isPlatform", getIsPlatform())
+            .append("defaultOpenToCustomer", getDefaultOpenToCustomer())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

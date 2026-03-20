@@ -86,7 +86,7 @@
 
     <select id="selectDeptFixedNumberList" parameterType="DeptFixedNumber" resultMap="DeptFixedNumberResult">
         <include refid="selectDeptFixedNumberVo"/>
-        <if test="tenantId != null and tenantId != ''"> and (f.tenant_id = #{tenantId} or f.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (f.tenant_id = #{tenantId})</if>
         <if test="departmentId != null">
             and f.department_id = #{departmentId}
         </if>

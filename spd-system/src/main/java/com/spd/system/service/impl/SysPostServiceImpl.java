@@ -61,7 +61,12 @@ public class SysPostServiceImpl implements ISysPostService
     @Override
     public List<SysPost> selectPostList(SysPost post)
     {
-        if (post != null && StringUtils.isEmpty(post.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            if (post == null)
+            {
+                post = new SysPost();
+            }
             post.setTenantId(SecurityUtils.getCustomerId());
         }
         return postMapper.selectPostList(post);

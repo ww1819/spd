@@ -49,7 +49,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdSupplierList" parameterType="FdSupplier" resultMap="FdSupplierResult">
         <include refid="selectFdSupplierVo"/>
         where del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId})</if>
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
     </select>

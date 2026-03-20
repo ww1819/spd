@@ -1089,6 +1089,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Override
     public List<Map<String, Object>> selectRTHStkIoBillList(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectRTHStkIoBillList(stkIoBill);
     }
 
@@ -1105,6 +1108,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     public List<Map<String, Object>> selectRTHStkIoBillSummaryList(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoBillMapper.selectRTHStkIoBillSummaryList(stkIoBill);
     }
 

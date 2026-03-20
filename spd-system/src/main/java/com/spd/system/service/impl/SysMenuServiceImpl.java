@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.constant.Constants;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.TreeSelect;
@@ -325,6 +326,7 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public int insertMenu(SysMenu menu)
     {
+        sanitizeHcMenuFlags(menu);
         return menuMapper.insertMenu(menu);
     }
 
@@ -337,7 +339,35 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public int updateMenu(SysMenu menu)
     {
+        sanitizeHcMenuFlags(menu);
         return menuMapper.updateMenu(menu);
+    }
+
+    /**
+     * 耗材菜单扩展字段：仅允许 0/1；平台独占菜单不可「默认对客户开放」（与功能重置 SQL 一致）。
+     */
+    private void sanitizeHcMenuFlags(SysMenu menu)
+    {
+        if (menu == null)
+        {
+            return;
+        }
+        String ip = StringUtils.trimToEmpty(menu.getIsPlatform());
+        if (!"1".equals(ip))
+        {
+            ip = "0";
+        }
+        menu.setIsPlatform(ip);
+        String open = StringUtils.trimToEmpty(menu.getDefaultOpenToCustomer());
+        if (!"1".equals(open))
+        {
+            open = "0";
+        }
+        if ("1".equals(ip))
+        {
+            open = "0";
+        }
+        menu.setDefaultOpenToCustomer(open);
     }
 
     /**
@@ -406,6 +436,29 @@ public class SysMenuServiceImpl implements ISysMenuService
         }
         List<SysMenu> menus = menuMapper.selectMenuTreeForPostAssign(tenantId);
         return buildMenuTreeSelect(menus);
+    }
+
+    @Override
+    public List<SysMenu> selectMenuTreeForDefaultOpenBatch()
+    {
+        List<SysMenu> menus = menuMapper.selectMenuTreeAll();
+        if (menus == null)
+        {
+            return new ArrayList<>();
+        }
+        return getChildPerms(menus, 0);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchSetDefaultOpenToCustomer(List<Long> menuIds)
+    {
+        String updateBy = SecurityUtils.getUserIdStr();
+        menuMapper.resetAllDefaultOpenToCustomer(updateBy);
+        if (menuIds != null && !menuIds.isEmpty())
+        {
+            menuMapper.batchSetDefaultOpenToCustomer(menuIds, updateBy);
+        }
     }
 
     /**

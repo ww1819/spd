@@ -86,7 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on t.warehouse_id = w.id
         <where>
             and (t.del_flag = 0 or t.del_flag is null)
-            <if test="tenantId != null and tenantId != ''">and (t.tenant_id = #{tenantId} or t.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''">and (t.tenant_id = #{tenantId})</if>
             <if test="templateName != null and templateName != ''">and t.template_name like concat('%', #{templateName}, '%')</if>
         </where>
         order by t.create_time desc

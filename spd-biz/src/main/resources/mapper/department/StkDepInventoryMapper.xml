@@ -97,7 +97,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -245,7 +245,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (stk.del_flag = 0 or stk.del_flag is null)
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
         order by m.code, d.name
     </select>

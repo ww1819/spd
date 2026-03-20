@@ -110,7 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDeptBatchConsumeList" parameterType="DeptBatchConsume" resultMap="DeptBatchConsumeResult">
         <include refid="selectDeptBatchConsumeVo"/>
         <where>
-            <if test="tenantId != null and tenantId != ''"> and (a.tenant_id = #{tenantId} or a.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (a.tenant_id = #{tenantId})</if>
             <if test="consumeBillNo != null  and consumeBillNo != ''"> and a.consume_bill_no = #{consumeBillNo}</if>
             <if test="consumeBillDate != null "> and a.consume_bill_date = #{consumeBillDate}</if>
             <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>

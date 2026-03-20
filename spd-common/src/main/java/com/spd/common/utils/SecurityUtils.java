@@ -54,6 +54,21 @@ public class SecurityUtils
     }
 
     /**
+     * 租户登录渠道：hc=耗材，equipment=设备；无租户或未设置时为 null。
+     */
+    public static String getLoginChannel()
+    {
+        try
+        {
+            return getLoginUser().getLoginChannel();
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    /**
      * 获取部门ID
      **/
     public static Long getDeptId()

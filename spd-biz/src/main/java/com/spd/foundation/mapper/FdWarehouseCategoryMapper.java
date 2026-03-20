@@ -1,6 +1,9 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
 import com.spd.foundation.domain.FdWarehouseCategory;
 
 /**
@@ -28,11 +31,12 @@ public interface FdWarehouseCategoryMapper
     public List<FdWarehouseCategory> selectFdWarehouseCategoryList(FdWarehouseCategory fdWarehouseCategory);
 
     /**
-     * 查询库房分类树形列表
+     * 查询库房分类树形列表（平台不传 tenantId 则查全部；租户登录时传当前 customerId）
      *
+     * @param tenantId 租户ID，可为空
      * @return 库房分类集合
      */
-    public List<FdWarehouseCategory> selectFdWarehouseCategoryTree();
+    public List<FdWarehouseCategory> selectFdWarehouseCategoryTree(@Param("tenantId") String tenantId);
 
     /**
      * 新增库房分类

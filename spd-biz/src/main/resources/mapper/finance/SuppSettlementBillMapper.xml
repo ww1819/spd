@@ -69,7 +69,7 @@
         <include refid="selectSuppSettlementBillVo"/>
         <where>
             (s.del_flag = 0 or s.del_flag is null)
-            <if test="tenantId != null and tenantId != ''">and (s.tenant_id = #{tenantId} or s.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''">and (s.tenant_id = #{tenantId})</if>
             <if test="billNo != null and billNo != ''">and s.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="supplierId != null">and s.supplier_id = #{supplierId}</if>
             <if test="whSettlementId != null and whSettlementId != ''">and s.wh_settlement_id = #{whSettlementId}</if>

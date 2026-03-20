@@ -1,180 +1,201 @@
--- ========== 耗材模块 菜单与权限 ==========
--- 建议在 table.sql、column.sql 之后执行；按「/」分段执行
--- 期初库存导入菜单：若不存在则插入，存在则跳过（项目启动时执行）
-/
-INSERT INTO sys_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
-)
-SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) AS t),
-  '期初库存导入',
-  (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1),
-  15,
-  'initialStockImport',
-  'warehouse/initialStockImport/index',
-  1, 0, 'C', '0', '0',
-  'warehouse:initialStockImport:list',
-  'upload',
-  'admin', NOW(), '期初库存导入'
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1));
-/
-INSERT INTO sys_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
-)
-SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) AS t),
-  '期初库存导入查询',
-  (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1),
-  1, '#', '', 1, 0, 'F', '0', '0',
-  'warehouse:initialStockImport:query',
-  '#', 'admin', NOW(), ''
-FROM DUAL
-WHERE EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1))
-  AND NOT EXISTS (SELECT 1 FROM sys_menu m2 WHERE m2.parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1) AND m2.perms = 'warehouse:initialStockImport:query');
-/
-INSERT INTO sys_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
-)
-SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) AS t),
-  '期初库存导入',
-  (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1),
-  2, '#', '', 1, 0, 'F', '0', '0',
-  'warehouse:initialStockImport:import',
-  '#', 'admin', NOW(), ''
-FROM DUAL
-WHERE EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1))
-  AND NOT EXISTS (SELECT 1 FROM sys_menu m2 WHERE m2.parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1) AND m2.perms = 'warehouse:initialStockImport:import');
-/
-INSERT INTO sys_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark
-)
-SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) AS t),
-  '期初库存导入审核',
-  (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1),
-  3, '#', '', 1, 0, 'F', '0', '0',
-  'warehouse:initialStockImport:audit',
-  '#', 'admin', NOW(), ''
-FROM DUAL
-WHERE EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1))
-  AND NOT EXISTS (SELECT 1 FROM sys_menu m2 WHERE m2.parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '期初库存导入' AND parent_id = (SELECT parent_id FROM sys_menu WHERE menu_id = 1552 LIMIT 1) LIMIT 1) AND m2.perms = 'warehouse:initialStockImport:audit');
+-- ========== 耗材模块 菜单与权限（由 aspt.sys_menu 扫描刷新）==========
+-- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,2201–2207,2210–2216,2220,2222–2223)
+--           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
+-- 执行顺序：建议在主库 sys_menu 基础数据（若依）之后执行；按「/」分段执行
+-- 依赖：parent_id=1「系统管理」、1065「财务管理」、1070「盘点管理」须已存在（ID 以主库为准）
+-- 写入方式：INSERT...ON DUPLICATE KEY UPDATE（不先 DELETE，避免波及 sys_role_menu 等关联）
 /
 
--- 客户管理、客户菜单功能管理（挂在「系统管理」下；设为仅平台管理 is_platform=1，租户不展示、新租户默认授权不包含）
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
-SELECT 2100, '客户管理',
-  COALESCE((SELECT menu_id FROM sys_menu WHERE menu_name = '系统管理' AND menu_type = 'M' LIMIT 1), 1),
-  20, 'customer', 'material/system/customer/index', 1, 0, 'C', '0', '0',
-  'hc:system:customer:list', 'peoples', '1', 'admin', NOW(), '耗材系统客户（租户）管理'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2100);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
-SELECT 2102, '客户查询', 2100, 1, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customer:query', '#', '1', 'admin', NOW(), '客户查询、启停记录与时间段'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2102);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
-SELECT 2101, '客户菜单功能管理',
-  COALESCE((SELECT menu_id FROM sys_menu WHERE menu_name = '系统管理' AND menu_type = 'M' LIMIT 1), 1),
-  21, 'customerMenuManage', 'material/system/customerMenuManage/index', 1, 0, 'C', '0', '0',
-  'hc:system:customerMenuManage:list', 'switch', '1', 'admin', NOW(), '客户名下已具备功能的启用停用，租户不可见'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2101);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
-SELECT 2103, '功能管理列表', 2101, 1, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customerMenuManage:list', '#', '1', 'admin', NOW(), '客户菜单功能管理列表'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2103);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
-SELECT 2104, '功能管理查询', 2101, 2, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customerMenuManage:query', '#', '1', 'admin', NOW(), '启停用记录与时间段查询'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2104);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform, create_by, create_time, remark)
-SELECT 2105, '功能管理启停用', 2101, 3, '#', '', 1, 0, 'F', '0', '0',
-  'hc:system:customerMenuManage:edit', '#', '1', 'admin', NOW(), '客户菜单功能启用停用'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2105);
+-- ---------- 1) 期初库存导入（挂在「盘点管理」下；现网 menu_id 1594–1597）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) VALUES
+(1594, '期初库存导入', 1070, 15, 'initialStockImport', 'warehouse/initialStockImport/index', NULL,
+ 1, 0, 'C', '0', '0', 'warehouse:initialStockImport:list', 'upload',
+ 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '期初库存导入',
+ '0', '1'),
+(1595, '期初库存导入查询', 1594, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'warehouse:initialStockImport:query', '#',
+ 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
+ '0', '1'),
+(1596, '期初库存导入', 1594, 2, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'warehouse:initialStockImport:import', '#',
+ 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
+ '0', '1'),
+(1597, '期初库存导入审核', 1594, 3, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'warehouse:initialStockImport:audit', '#',
+ 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
+ '0', '1')
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  create_by = VALUES(create_by),
+  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
--- ========== 财务管理、发票管理（合并到老财务管理菜单下，避免出现两个财务管理） ==========
+-- ---------- 2) 客户管理、客户菜单功能管理（系统管理下；is_platform=1 租户不展示）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) VALUES
+(2100, '客户管理', 1, 20, 'customer', 'material/system/customer/index', NULL,
+ 1, 0, 'C', '0', '0', 'hc:system:customer:list', 'peoples',
+ 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '耗材系统客户（租户）管理',
+ '1', '0'),
+(2101, '客户菜单功能管理', 1, 21, 'customerMenuManage', 'material/system/customerMenuManage/index', NULL,
+ 1, 0, 'C', '0', '0', 'hc:system:customerMenuManage:list', 'switch',
+ 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户名下已具备功能的启用停用，租户不可见',
+ '1', '0'),
+(2102, '客户查询', 2100, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'hc:system:customer:query', '#',
+ 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户查询、启停记录与时间段',
+ '1', '0'),
+(2103, '功能管理列表', 2101, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:list', '#',
+ 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户菜单功能管理列表',
+ '1', '0'),
+(2104, '功能管理查询', 2101, 2, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:query', '#',
+ 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '启停用记录与时间段查询',
+ '1', '0'),
+(2105, '功能管理启停用', 2101, 3, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:edit', '#',
+ 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户菜单功能启用停用',
+ '1', '0')
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  create_by = VALUES(create_by),
+  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
 
--- 4) 插入发票管理及按钮（若不存在）；parent 为当前唯一的「财务管理」id
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2201, '发票管理', 1065, 1, 'invoice', 'finance/invoice/index', 1, 0, 'C', '0', '0',
-  'finance:invoice:list', 'form', 'admin', NOW(), '发票管理'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2201);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2202, '发票查询', 2201, 1, '#', '', 1, 0, 'F', '0', '0',
-  'finance:invoice:query', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2202);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2203, '发票新增', 2201, 2, '#', '', 1, 0, 'F', '0', '0',
-  'finance:invoice:add', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2203);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2204, '发票修改', 2201, 3, '#', '', 1, 0, 'F', '0', '0',
-  'finance:invoice:edit', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2204);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2205, '发票删除', 2201, 4, '#', '', 1, 0, 'F', '0', '0',
-  'finance:invoice:remove', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2205);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2206, '发票审核', 2201, 5, '#', '', 1, 0, 'F', '0', '0',
-  'finance:invoice:audit', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2206);
-/
--- 财务管理下：发票录入（为入库单/供应商结算单与发票关联做准备）
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2207, '发票录入', 1065, 2, 'invoiceEntry', 'finance/invoice/entry', 1, 0, 'C', '0', '0',
-  'finance:invoice:add', 'edit', 'admin', NOW(), '发票录入，供入库单与供应商结算单关联'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2207);
-/
--- 仓库结算单（选仓库+时间范围提取未结算的入库/出库明细，审核后生成供应商结算单）
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2210, '仓库结算单', 1065, 3, 'whSettlement', 'finance/whSettlement/index', 1, 0, 'C', '0', '0',
-  'finance:whSettlement:list', 'list', 'admin', NOW(), '仓库结算单'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2210);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2212, '仓库结算单查询', 2210, 1, '#', '', 1, 0, 'F', '0', '0', 'finance:whSettlement:query', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2212);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2213, '仓库结算单新增', 2210, 2, '#', '', 1, 0, 'F', '0', '0', 'finance:whSettlement:add', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2213);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2214, '仓库结算单修改', 2210, 3, '#', '', 1, 0, 'F', '0', '0', 'finance:whSettlement:edit', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2214);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2215, '仓库结算单删除', 2210, 4, '#', '', 1, 0, 'F', '0', '0', 'finance:whSettlement:remove', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2215);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2216, '仓库结算单审核', 2210, 5, '#', '', 1, 0, 'F', '0', '0', 'finance:whSettlement:audit', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2216);
-/
--- 供应商结算单（由仓库结算单审核生成，可关联发票）
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2220, '供应商结算单', 1065, 4, 'suppSettlement', 'finance/suppSettlement/index', 1, 0, 'C', '0', '0',
-  'finance:suppSettlement:list', 'money', 'admin', NOW(), '供应商结算单'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2220);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2222, '供应商结算单查询', 2220, 1, '#', '', 1, 0, 'F', '0', '0', 'finance:suppSettlement:query', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2222);
-/
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 2223, '供应商结算单关联发票', 2220, 2, '#', '', 1, 0, 'F', '0', '0', 'finance:suppSettlement:linkInvoice', '#', 'admin', NOW(), ''
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2223);
+-- ---------- 3) 财务管理下：发票、仓库结算单、供应商结算单（合并到既有「财务管理」1065）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) VALUES
+(2201, '发票管理', 1065, 1, 'invoice', 'finance/invoice/index', NULL,
+ 1, 0, 'C', '0', '0', 'finance:invoice:list', 'form',
+ 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票信息新增、修改、查询、审核',
+ '0', '0'),
+(2202, '发票查询', 2201, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:invoice:query', '#',
+ 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票查询',
+ '0', '0'),
+(2203, '发票新增', 2201, 2, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:invoice:add', '#',
+ 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票新增',
+ '0', '0'),
+(2204, '发票修改', 2201, 3, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:invoice:edit', '#',
+ 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票修改（审核后不可修改）',
+ '0', '0'),
+(2205, '发票删除', 2201, 4, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:invoice:remove', '#',
+ 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票删除',
+ '0', '0'),
+(2206, '发票审核', 2201, 5, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:invoice:audit', '#',
+ 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票审核（审核后不可变更）',
+ '0', '0'),
+(2207, '发票录入', 1065, 2, 'invoiceEntry', 'finance/invoice/entry', NULL,
+ 1, 0, 'C', '0', '0', 'finance:invoice:add', 'edit',
+ 'admin', '2026-03-08 01:48:59', '1', '2026-03-20 11:00:13', '发票录入，供入库单与供应商结算单关联',
+ '0', '0'),
+(2210, '仓库结算单', 1065, 3, 'whSettlement', 'finance/whSettlement/index', NULL,
+ 1, 0, 'C', '0', '0', 'finance:whSettlement:list', 'list',
+ 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '仓库结算单',
+ '0', '0'),
+(2212, '仓库结算单查询', 2210, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:whSettlement:query', '#',
+ 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+ '0', '0'),
+(2213, '仓库结算单新增', 2210, 2, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:whSettlement:add', '#',
+ 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+ '0', '0'),
+(2214, '仓库结算单修改', 2210, 3, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:whSettlement:edit', '#',
+ 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+ '0', '0'),
+(2215, '仓库结算单删除', 2210, 4, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:whSettlement:remove', '#',
+ 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+ '0', '0'),
+(2216, '仓库结算单审核', 2210, 5, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:whSettlement:audit', '#',
+ 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+ '0', '0'),
+(2220, '供应商结算单', 1065, 4, 'suppSettlement', 'finance/suppSettlement/index', NULL,
+ 1, 0, 'C', '0', '0', 'finance:suppSettlement:list', 'money',
+ 'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '供应商结算单',
+ '0', '0'),
+(2222, '供应商结算单查询', 2220, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:suppSettlement:query', '#',
+ 'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '',
+ '0', '0'),
+(2223, '供应商结算单关联发票', 2220, 2, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'finance:suppSettlement:linkInvoice', '#',
+ 'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '',
+ '0', '0')
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  create_by = VALUES(create_by),
+  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /

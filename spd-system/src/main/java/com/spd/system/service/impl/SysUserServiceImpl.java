@@ -83,6 +83,14 @@ public class SysUserServiceImpl implements ISysUserService
     @DataScope(deptAlias = "d", userAlias = "u")
     public List<SysUser> selectUserList(SysUser user)
     {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            if (user == null)
+            {
+                user = new SysUser();
+            }
+            user.setCustomerId(SecurityUtils.getCustomerId());
+        }
         return userMapper.selectUserList(user);
     }
 
@@ -96,6 +104,14 @@ public class SysUserServiceImpl implements ISysUserService
     @DataScope(deptAlias = "d", userAlias = "u")
     public List<SysUser> selectAllocatedList(SysUser user)
     {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            if (user == null)
+            {
+                user = new SysUser();
+            }
+            user.setCustomerId(SecurityUtils.getCustomerId());
+        }
         return userMapper.selectAllocatedList(user);
     }
 
@@ -109,6 +125,14 @@ public class SysUserServiceImpl implements ISysUserService
     @DataScope(deptAlias = "d", userAlias = "u")
     public List<SysUser> selectUnallocatedList(SysUser user)
     {
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            if (user == null)
+            {
+                user = new SysUser();
+            }
+            user.setCustomerId(SecurityUtils.getCustomerId());
+        }
         return userMapper.selectUnallocatedList(user);
     }
 
@@ -357,9 +381,14 @@ public class SysUserServiceImpl implements ISysUserService
         userWarehouseMapper.deleteUserWarehouseByUserId(userId);
         // 删除用户与科室关联
         userDepartmentMapper.deleteUserDepartmentByUserId(userId);
-        // 删除用户与菜单关联
-        userMenuMapper.deleteUserMenuByUserId(userId);
-        log.info("已删除用户菜单关联 - userId: {}", userId);
+        // 删除用户与菜单关联：平台用户全量替换；租户用户仅在本次提交包含耗材数字菜单或清空时清理 sys_user_menu，避免设备端只改 UUID 菜单时误删耗材菜单
+        if (StringUtils.isEmpty(user.getCustomerId())) {
+            userMenuMapper.deleteUserMenuByUserId(userId);
+        } else if (user.getMenuIds() != null
+            && (user.getMenuIds().length == 0 || containsMaterialMenuId(user.getMenuIds()))) {
+            userMenuMapper.deleteUserMenuByUserId(userId);
+        }
+        log.info("已处理用户菜单关联清理 - userId: {}", userId);
 
         // 新增用户与岗位管理
         insertUserPost(user);
@@ -546,19 +575,43 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 新增用户菜单信息（menuIds 为 String[]：平台为数字字符串写 sys_user_menu，租户为 UUID 写 sb_user_permission_menu）
+     * 新增用户菜单信息：平台用户写入 sys_user_menu；租户用户数字 ID 写入 sys_user_menu（耗材），非数字写入 sb_user_permission_menu（设备），互不覆盖。
      */
     public void insertUserMenu(SysUser user) {
         String[] menuIds = user.getMenuIds();
         log.info("保存用户菜单权限 - userId: {}, menuIds长度: {}", user.getUserId(), menuIds != null ? menuIds.length : 0);
-        if (menuIds == null || menuIds.length == 0) {
-            if (StringUtils.isNotEmpty(user.getCustomerId())) {
-                sbUserPermissionService.saveUserMenus(user.getUserId(), user.getCustomerId(), new String[0]);
-            }
+        if (menuIds == null) {
             return;
         }
+        Long uid = user.getUserId();
         if (StringUtils.isNotEmpty(user.getCustomerId())) {
-            sbUserPermissionService.saveUserMenus(user.getUserId(), user.getCustomerId(), menuIds);
+            List<String> sbIds = new ArrayList<>();
+            List<SysUserMenu> materialRows = new ArrayList<>();
+            for (String raw : menuIds) {
+                if (StringUtils.isEmpty(raw)) {
+                    continue;
+                }
+                String t = raw.trim();
+                try {
+                    long mid = Long.parseLong(t);
+                    if (mid > 0) {
+                        SysUserMenu um = new SysUserMenu();
+                        um.setUserId(uid);
+                        um.setMenuId(mid);
+                        materialRows.add(um);
+                    }
+                } catch (NumberFormatException e) {
+                    sbIds.add(t);
+                }
+            }
+            if (!sbIds.isEmpty()) {
+                sbUserPermissionService.saveUserMenus(uid, user.getCustomerId(), sbIds.toArray(new String[0]));
+            } else if (menuIds.length == 0) {
+                sbUserPermissionService.saveUserMenus(uid, user.getCustomerId(), new String[0]);
+            }
+            if (!materialRows.isEmpty()) {
+                userMenuMapper.batchUserMenu(materialRows);
+            }
             return;
         }
         try {
@@ -585,6 +638,25 @@ public class SysUserServiceImpl implements ISysUserService
             log.error("保存用户菜单权限异常 - userId: {}, 错误: {}", user.getUserId(), e.getMessage(), e);
             throw e;
         }
+    }
+
+    private static boolean containsMaterialMenuId(String[] menuIds) {
+        if (menuIds == null) {
+            return false;
+        }
+        for (String raw : menuIds) {
+            if (StringUtils.isEmpty(raw)) {
+                continue;
+            }
+            try {
+                long mid = Long.parseLong(raw.trim());
+                if (mid > 0) {
+                    return true;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return false;
     }
 
     /**

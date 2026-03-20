@@ -32,7 +32,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdFactoryList" parameterType="FdFactory" resultMap="FdFactoryResult">
         <include refid="selectFdFactoryVo"/>
         where del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId})</if>
         <if test="factoryCode != null  and factoryCode != ''"> and factory_code = #{factoryCode}</if>
         <if test="factoryName != null  and factoryName != ''"> and factory_name like concat('%', #{factoryName}, '%')</if>
         <if test="factoryAddress != null  and factoryAddress != ''"> and factory_address = #{factoryAddress}</if>

@@ -24,8 +24,7 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
-import com.spd.system.service.ISbUserPermissionService;
-import com.spd.system.service.ISbWorkGroupService;
+import com.spd.system.service.ITenantScopeService;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -43,10 +42,7 @@ public class FdWarehouseController extends BaseController
     private IFdWarehouseService fdWarehouseService;
 
     @Autowired
-    private ISbWorkGroupService sbWorkGroupService;
-
-    @Autowired
-    private ISbUserPermissionService sbUserPermissionService;
+    private ITenantScopeService tenantScopeService;
 
     /**
      * 查询仓库列表（租户非 super 组用户按 sb_user_permission_warehouse 过滤）
@@ -58,8 +54,8 @@ public class FdWarehouseController extends BaseController
         String customerId = SecurityUtils.getCustomerId();
         if (StringUtils.isNotEmpty(customerId)) {
             fdWarehouse.setTenantId(customerId);
-            if (!sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = sbUserPermissionService.selectWarehouseIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (!tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
                 if (allowedIds != null && !allowedIds.isEmpty()) {
                     fdWarehouse.getParams().put("allowedWarehouseIds", allowedIds);
                 } else {
@@ -82,8 +78,8 @@ public class FdWarehouseController extends BaseController
         List<FdWarehouse> list;
         if (StringUtils.isNotEmpty(customerId)) {
             list = fdWarehouseService.selectwarehouseAll();
-            if (list != null && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = sbUserPermissionService.selectWarehouseIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (list != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
                 if (allowedIds == null || allowedIds.isEmpty()) list = new ArrayList<>();
                 else list = list.stream().filter(w -> w.getId() != null && allowedIds.contains(w.getId())).collect(Collectors.toList());
             }
@@ -105,8 +101,8 @@ public class FdWarehouseController extends BaseController
         String customerId = SecurityUtils.getCustomerId();
         if (StringUtils.isNotEmpty(customerId)) {
             fdWarehouse.setTenantId(customerId);
-            if (!sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = sbUserPermissionService.selectWarehouseIdsByUserId(SecurityUtils.getUserId(), customerId);
+            if (!tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
                 if (allowedIds != null && !allowedIds.isEmpty()) {
                     fdWarehouse.getParams().put("allowedWarehouseIds", allowedIds);
                 } else {
@@ -170,8 +166,8 @@ public class FdWarehouseController extends BaseController
     {
         List<FdWarehouse> fdWarehouseList = fdWarehouseService.selectwarehouseAll();
         String customerId = SecurityUtils.getCustomerId();
-        if (StringUtils.isNotEmpty(customerId) && fdWarehouseList != null && !sbWorkGroupService.isUserInSuperGroup(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = sbUserPermissionService.selectWarehouseIdsByUserId(SecurityUtils.getUserId(), customerId);
+        if (StringUtils.isNotEmpty(customerId) && fdWarehouseList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds == null || allowedIds.isEmpty()) fdWarehouseList = new ArrayList<>();
             else fdWarehouseList = fdWarehouseList.stream().filter(w -> w.getId() != null && allowedIds.contains(w.getId())).collect(Collectors.toList());
         }

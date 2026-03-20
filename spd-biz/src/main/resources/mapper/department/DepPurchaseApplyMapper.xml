@@ -129,7 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDepPurchaseApplyList" parameterType="DepPurchaseApply" resultMap="DepPurchaseApplyResult">
         <include refid="selectDepPurchaseApplyVo"/>
         <where>  
-            <if test="tenantId != null and tenantId != ''"> and (dpa.tenant_id = #{tenantId} or dpa.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (dpa.tenant_id = #{tenantId})</if>
             <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
             <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>

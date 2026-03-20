@@ -152,7 +152,7 @@ public interface SysMenuMapper
    * @param userId 用户ID
    * @return 菜单列表
    */
-  public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
+  public List<SysMenu> selectSbMenuTreeByUserId(@Param("userId") Long userId);
 
   /**
    * 耗材系统：查询「系统设置」下除「客户管理」「客户菜单功能管理」外的菜单ID（用于新租户默认授权 super 组和 super_01）
@@ -160,4 +160,15 @@ public interface SysMenuMapper
    * @return 菜单ID列表
    */
   public List<Long> selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
+
+  /**
+   * 耗材：default_open_to_customer=1 且非平台独占的菜单 ID（功能重置、新租户默认授权）
+   */
+  public List<Long> selectMenuIdsDefaultOpenForHcCustomer();
+
+  /** 耗材菜单：批量默认开放前先全部置 0 */
+  int resetAllDefaultOpenToCustomer(@Param("updateBy") String updateBy);
+
+  /** 耗材菜单：将指定菜单 default_open_to_customer 置 1（不含平台管理 is_platform=1） */
+  int batchSetDefaultOpenToCustomer(@Param("menuIds") List<Long> menuIds, @Param("updateBy") String updateBy);
 }

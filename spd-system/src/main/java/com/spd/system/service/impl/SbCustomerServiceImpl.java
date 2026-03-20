@@ -39,6 +39,7 @@ import com.spd.system.mapper.SysMenuMapper;
 import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
 import com.spd.system.mapper.SysPostMenuMapper;
+import com.spd.system.mapper.SysUserMenuMapper;
 import com.spd.system.mapper.HcUserPermissionMenuMapper;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.HcCustomerStatusLogMapper;
@@ -49,6 +50,7 @@ import com.spd.system.domain.hc.HcCustomerPeriodLog;
 import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysUserPost;
 import com.spd.system.domain.SysPostMenu;
+import com.spd.system.domain.SysUserMenu;
 import com.spd.system.domain.hc.HcUserPermissionMenu;
 import com.spd.system.service.ISbCustomerCategory68Service;
 import com.spd.system.service.ISbCustomerService;
@@ -107,6 +109,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   private HcCustomerPeriodLogMapper hcCustomerPeriodLogMapper;
   @Autowired
   private HcCustomerMenuMapper hcCustomerMenuMapper;
+  @Autowired
+  private SysUserMenuMapper sysUserMenuMapper;
   @Autowired
   private ISbCustomerCategory68Service sbCustomerCategory68Service;
 
@@ -299,7 +303,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     userPostList.add(userPost);
     sysUserPostMapper.batchUserPost(userPostList);
 
-    List<Long> materialMenuIds = sysMenuMapper.selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
+    List<Long> materialMenuIds = resolveDefaultMaterialMenuIds();
     if (materialMenuIds != null && !materialMenuIds.isEmpty()) {
       List<SysPostMenu> postMenus = new ArrayList<>();
       for (Long menuId : materialMenuIds) {
@@ -343,6 +347,39 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       if (!hcCustomerMenus.isEmpty()) {
         hcCustomerMenuMapper.batchInsert(hcCustomerMenus);
       }
+      syncSysUserMenusForMaterial(user.getUserId(), materialMenuIds);
+    }
+  }
+
+  /** 耗材默认菜单：优先 default_open_to_customer，未配置时回退到「系统设置」子树（兼容旧库） */
+  private List<Long> resolveDefaultMaterialMenuIds() {
+    List<Long> ids = sysMenuMapper.selectMenuIdsDefaultOpenForHcCustomer();
+    if (ids != null && !ids.isEmpty()) {
+      return ids;
+    }
+    return sysMenuMapper.selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
+  }
+
+  private void syncSysUserMenusForMaterial(Long userId, List<Long> menuIds) {
+    if (userId == null) {
+      return;
+    }
+    sysUserMenuMapper.deleteUserMenuByUserId(userId);
+    if (menuIds == null || menuIds.isEmpty()) {
+      return;
+    }
+    List<SysUserMenu> rows = new ArrayList<>();
+    for (Long menuId : menuIds) {
+      if (menuId == null || menuId <= 0) {
+        continue;
+      }
+      SysUserMenu um = new SysUserMenu();
+      um.setUserId(userId);
+      um.setMenuId(menuId);
+      rows.add(um);
+    }
+    if (!rows.isEmpty()) {
+      sysUserMenuMapper.batchUserMenu(rows);
     }
   }
 
@@ -688,7 +725,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       return;
     }
 
-    List<Long> materialMenuIds = sysMenuMapper.selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
+    List<Long> materialMenuIds = resolveDefaultMaterialMenuIds();
     if (materialMenuIds == null || materialMenuIds.isEmpty()) {
       return;
     }
@@ -741,6 +778,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (!hcUserMenus.isEmpty()) {
       hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
     }
+
+    syncSysUserMenusForMaterial(super01.getUserId(), materialMenuIds);
   }
 
   /** 设备侧：若 super 组或 super_01 缺失则补齐（不创建菜单） */

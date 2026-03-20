@@ -134,7 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectNewProductApplyList" parameterType="NewProductApply" resultMap="NewProductApplyResult">
         <include refid="selectNewProductApplyVo"/>
         <where>  
-            <if test="tenantId != null and tenantId != ''"> and (npa.tenant_id = #{tenantId} or npa.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (npa.tenant_id = #{tenantId})</if>
             <if test="applyNo != null  and applyNo != ''"> and npa.apply_no like concat('%', #{applyNo}, '%')</if>
             <if test="applyDate != null "> and npa.apply_date = #{applyDate}</if>
             <if test="departmentId != null "> and npa.department_id = #{departmentId}</if>

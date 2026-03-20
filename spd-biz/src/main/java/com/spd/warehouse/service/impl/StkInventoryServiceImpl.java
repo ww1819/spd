@@ -186,11 +186,17 @@ public class StkInventoryServiceImpl implements IStkInventoryService
 
     @Override
     public List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkInventoryMapper.selectInventoryAlertList(stkInventory);
     }
 
     @Override
     public List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkInventoryMapper.selectExpiryAlertList(stkInventory);
     }
 

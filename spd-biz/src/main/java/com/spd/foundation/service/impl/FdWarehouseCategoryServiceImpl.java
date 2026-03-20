@@ -60,7 +60,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     @Override
     public List<FdWarehouseCategory> selectFdWarehouseCategoryTree()
     {
-        return fdWarehouseCategoryMapper.selectFdWarehouseCategoryTree();
+        return fdWarehouseCategoryMapper.selectFdWarehouseCategoryTree(SecurityUtils.getCustomerId());
     }
 
     /**

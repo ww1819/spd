@@ -141,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier ms on m.supplier_id = ms.id
         where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.material_id, stk.batch_no, stk.id
     </select>
 
@@ -163,7 +163,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -185,7 +185,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -214,7 +214,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         GROUP BY stk.id, m.code,m.name,m.speci,
         m.model,u.unit_name,stk.material_id,stk.unit_price,
         w.name,f.factory_name,s.name
@@ -243,7 +243,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
     </select>
 
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">
@@ -251,7 +251,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             and (stk.del_flag = 0 or stk.del_flag is null)
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
-            <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         </where>
     </select>
 
@@ -423,6 +423,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where stk.qty &gt; 0
         and stk.end_time IS NOT NULL
         and (m.id IS NULL OR m.del_flag IS NULL OR m.del_flag != 1)
+        <if test="tenantId != null and tenantId != ''"> and stk.tenant_id = #{tenantId}</if>
         <if test="daysToExpiry != null">
         <![CDATA[
         and DATEDIFF(stk.end_time, CURDATE()) <= #{daysToExpiry}

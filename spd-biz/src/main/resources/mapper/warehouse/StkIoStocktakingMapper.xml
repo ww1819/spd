@@ -129,7 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkIoStocktakingList" parameterType="StkIoStocktaking" resultMap="StkIoStocktakingResult">
         <include refid="selectStkIoStocktakingVo"/>
         where stk.del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         <if test="stockNo != null  and stockNo != ''"> and stk.stock_no like concat('%', #{stockNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="stockDate != null "> and stk.stock_date = #{stockDate}</if>

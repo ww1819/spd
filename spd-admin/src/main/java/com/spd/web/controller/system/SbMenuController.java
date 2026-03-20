@@ -58,6 +58,28 @@ public class SbMenuController extends BaseController {
     }
 
   /**
+   * 设备菜单树（含默认对客户开放），用于批量设置
+   */
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:query') or @ss.hasPermi('system:menu:query')")
+    @GetMapping("/defaultOpen/tree")
+    public AjaxResult defaultOpenTree()
+    {
+        return success(sbMenuService.selectSbMenuTreeForDefaultOpenBatch());
+    }
+
+  /**
+   * 批量设置设备菜单「默认对客户开放」
+   */
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit') or @ss.hasPermi('system:menu:edit')")
+    @Log(title = "设备菜单管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/defaultOpen/batch")
+    public AjaxResult batchDefaultOpen(@RequestBody List<String> menuIds)
+    {
+        sbMenuService.batchSetDefaultOpenToCustomer(menuIds);
+        return success();
+    }
+
+  /**
    * 获取设备菜单树
    *
    * - 平台模式：按当前用户已有设备菜单构建树（selectSbMenuTreeByUserId）

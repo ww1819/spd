@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdWarehouseCategoryList" parameterType="FdWarehouseCategory" resultMap="FdWarehouseCategoryResult">
         <include refid="selectFdWarehouseCategoryVo"/>
         where del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId})</if>
         <if test="warehouseCategoryCode != null  and warehouseCategoryCode != ''"> and warehouse_category_code = #{warehouseCategoryCode}</if>
         <if test="warehouseCategoryName != null  and warehouseCategoryName != ''"> and warehouse_category_name like concat('%', #{warehouseCategoryName}, '%')</if>
         <if test="parentId != null"> and parent_id = #{parentId}</if>
@@ -37,6 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdWarehouseCategoryTree" resultMap="FdWarehouseCategoryResult">
         <include refid="selectFdWarehouseCategoryVo"/>
         where del_flag != 1
+        <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
         order by parent_id, warehouse_category_id
     </select>
 

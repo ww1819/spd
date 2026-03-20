@@ -67,7 +67,7 @@
         <include refid="selectWhSettlementBillVo"/>
         <where>
             (w.del_flag = 0 or w.del_flag is null)
-            <if test="tenantId != null and tenantId != ''">and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''">and (w.tenant_id = #{tenantId})</if>
             <if test="billNo != null and billNo != ''">and w.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and w.warehouse_id = #{warehouseId}</if>
             <if test="settlementMethod != null and settlementMethod != ''">and w.settlement_method = #{settlementMethod}</if>
@@ -155,7 +155,7 @@
         left join fd_supplier s on b.suppler_id = s.id
         where b.warehouse_id = #{warehouseId} and b.bill_type = 101 and b.bill_status = 2 and (b.del_flag = 0 or b.del_flag is null)
           and (b.bill_date &gt;= #{beginTime} and b.bill_date &lt;= #{endTime})
-          <if test="tenantId != null and tenantId != ''">and (b.tenant_id = #{tenantId} or b.tenant_id is null)</if>
+          <if test="tenantId != null and tenantId != ''">and (b.tenant_id = #{tenantId})</if>
           and not exists (select 1 from wh_settlement_bill_entry w where w.source_bill_type = 101 and w.source_bill_id = b.id and w.source_entry_id = e.id and (w.del_flag = 0 or w.del_flag is null))
         order by b.bill_date, b.id, e.id
     </select>
@@ -177,7 +177,7 @@
         left join fd_supplier s on b.suppler_id = s.id
         where b.warehouse_id = #{warehouseId} and b.bill_type = 201 and b.bill_status = 2 and (b.del_flag = 0 or b.del_flag is null)
           and (b.audit_date &gt;= #{beginTime} and b.audit_date &lt;= #{endTime})
-          <if test="tenantId != null and tenantId != ''">and (b.tenant_id = #{tenantId} or b.tenant_id is null)</if>
+          <if test="tenantId != null and tenantId != ''">and (b.tenant_id = #{tenantId})</if>
           and not exists (select 1 from wh_settlement_bill_entry w where w.source_bill_type = 201 and w.source_bill_id = b.id and w.source_entry_id = e.id and (w.del_flag = 0 or w.del_flag is null))
         order by b.audit_date, b.id, e.id
     </select>

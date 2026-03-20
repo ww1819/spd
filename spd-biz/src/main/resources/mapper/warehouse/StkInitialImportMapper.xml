@@ -50,7 +50,7 @@
             <if test="billNo != null and billNo != ''">and m.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
             <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
-            <if test="tenantId != null and tenantId != ''">and (m.tenant_id = #{tenantId} or m.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''">and (m.tenant_id = #{tenantId})</if>
             <if test="params != null and params.beginTime != null">and m.import_time &gt;= #{params.beginTime}</if>
             <if test="params != null and params.endTime != null">and m.import_time &lt;= #{params.endTime}</if>
         </where>

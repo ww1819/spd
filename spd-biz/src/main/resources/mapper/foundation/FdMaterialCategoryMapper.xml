@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdMaterialCategoryList" parameterType="FdMaterialCategory" resultMap="FdMaterialCategoryResult">
         <include refid="selectFdMaterialCategoryVo"/>
         where del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId})</if>
         <if test="materialCategoryCode != null  and materialCategoryCode != ''"> and material_category_code = #{materialCategoryCode}</if>
         <if test="materialCategoryName != null  and materialCategoryName != ''"> and material_category_name like concat('%', #{materialCategoryName}, '%')</if>
         <if test="materialCategoryAddress != null  and materialCategoryAddress != ''"> and material_category_address = #{materialCategoryAddress}</if>

@@ -118,7 +118,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkIoProfitLossVo"/>
         <where>
             (p.del_flag is null or p.del_flag != 1)
-            <if test="tenantId != null and tenantId != ''"> and (p.tenant_id = #{tenantId} or p.tenant_id is null)</if>
+            <if test="tenantId != null and tenantId != ''"> and (p.tenant_id = #{tenantId})</if>
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingId != null"> and p.stocktaking_id = #{stocktakingId}</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>

@@ -78,5 +78,15 @@ public interface ISbMenuService {
    * 某客户已开启的菜单树（用于工作组/用户权限分配）
    */
   List<SbMenu> selectSbMenuTreeByCustomerIdEnabling(String customerId);
+
+  /**
+   * 设备菜单树（含 default_open_to_customer），用于批量设置默认对客户开放
+   */
+  List<SbMenu> selectSbMenuTreeForDefaultOpenBatch();
+
+  /**
+   * 批量设置设备菜单「默认对客户开放」：先全部置否，再对 menuIds 置是（平台专属菜单始终为否）
+   */
+  void batchSetDefaultOpenToCustomer(List<String> menuIds);
 }
 

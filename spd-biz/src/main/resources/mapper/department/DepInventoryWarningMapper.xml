@@ -91,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDepInventoryWarningList" parameterType="DepInventoryWarning" resultMap="DepInventoryWarningResult">
         <include refid="selectDepInventoryWarningVo"/>
         where w.del_flag = 0
-        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId})</if>
         <if test="departmentId != null "> and w.department_id = #{departmentId}</if>
         <if test="materialId != null "> and w.material_id = #{materialId}</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>

@@ -86,7 +86,7 @@
 
     <select id="selectWhFixedNumberList" parameterType="WhFixedNumber" resultMap="WhFixedNumberResult">
         <include refid="selectWhFixedNumberVo"/>
-        <if test="tenantId != null and tenantId != ''"> and (f.tenant_id = #{tenantId} or f.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (f.tenant_id = #{tenantId})</if>
         <if test="warehouseId != null">
             and f.warehouse_id = #{warehouseId}
         </if>
