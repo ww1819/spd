@@ -127,9 +127,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectDepPurchaseApplyList" parameterType="DepPurchaseApply" resultMap="DepPurchaseApplyResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectDepPurchaseApplyVo"/>
         <where>  
-            <if test="tenantId != null and tenantId != ''"> and (dpa.tenant_id = #{tenantId})</if>
+            and dpa.tenant_id = #{tenantId}
             <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
             <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
@@ -140,8 +141,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="expectedDeliveryDate != null "> and dpa.expected_delivery_date = #{expectedDeliveryDate}</if>
             <if test="excludeReferenced != null and excludeReferenced == true"> and not exists (
                 select 1 from purchase_plan_entry_dep_apply r
-                inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and (r.del_flag = '0' or r.del_flag is null)
-                where e.parent_id = dpa.id and (e.del_flag is null or e.del_flag != 1)
+                inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and r.tenant_id = #{tenantId} and (r.del_flag = '0' or r.del_flag is null)
+                where e.parent_id = dpa.id and e.tenant_id = #{tenantId} and (e.del_flag is null or e.del_flag != 1)
             )</if>
             and (dpa.del_flag = 0 or dpa.del_flag is null)
         </where>
@@ -225,6 +226,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
         
     <insert id="insertDepPurchaseApply" parameterType="DepPurchaseApply" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into dep_purchase_apply
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="purchaseBillNo != null and purchaseBillNo != ''">purchase_bill_no,</if>
@@ -244,7 +246,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="purchaseBillNo != null and purchaseBillNo != ''">#{purchaseBillNo},</if>
@@ -264,11 +266,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 
     <update id="updateDepPurchaseApply" parameterType="DepPurchaseApply">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update dep_purchase_apply
         <trim prefix="SET" suffixOverrides=",">
             <if test="purchaseBillNo != null and purchaseBillNo != ''">purchase_bill_no = #{purchaseBillNo},</if>
@@ -289,29 +292,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteDepPurchaseApplyById">
-        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteDepPurchaseApplyByIds">
-        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteDepPurchaseApplyEntryByParentIds">
-        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and parent_id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteDepPurchaseApplyEntryByParentId">
-        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <!-- 批量新增申购明细，主键ID使用自增，不再从代码端传入，避免重复主键错误 -->

@@ -40,8 +40,9 @@
     </sql>
 
     <select id="selectById" resultMap="FinInvoiceResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
-        where f.id = #{id} and (f.del_flag = 0 or f.del_flag is null)
+        where f.id = #{id} and (f.del_flag = 0 or f.del_flag is null) and f.tenant_id = #{tenantId}
     </select>
 
     <select id="selectList" resultMap="FinInvoiceResult">
@@ -70,6 +71,7 @@
     </insert>
 
     <update id="update" parameterType="com.spd.finance.domain.FinInvoice">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fin_invoice
         <set>
             <if test="invoiceNo != null">invoice_no = #{invoiceNo},</if>
@@ -87,15 +89,17 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = now()
         </set>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <update id="updateAuditStatus">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fin_invoice set audit_status = 1, audit_by = #{auditBy}, audit_time = now(), update_time = now()
-        where id = #{id} and (audit_status = 0 or audit_status is null)
+        where id = #{id} and tenant_id = #{tenantId} and (audit_status = 0 or audit_status is null)
     </update>
 
     <update id="deleteById">
-        update fin_invoice set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update fin_invoice set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </update>
 </mapper>

@@ -96,6 +96,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzShipmentById" parameterType="Long" resultMap="GzShipmentGzShipmentEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.id, a.shipment_no, a.department_id, a.shipment_date, a.warehouse_id, 
 				a.shipment_status, a.shipment_type, a.del_flag,
                 a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
@@ -105,7 +106,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode, b.in_hospital_code as sub_in_hospital_code, b.remark as sub_remark
         from gz_shipment a
         left join gz_shipment_entry b on b.paren_id = a.id
-        where a.id = #{id}
+        where a.id = #{id} and a.tenant_id = #{tenantId}
     </select>
 
     <insert id="insertGzShipment" parameterType="GzShipment" useGeneratedKeys="true" keyProperty="id">
@@ -145,6 +146,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateGzShipment" parameterType="GzShipment">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_shipment
         <trim prefix="SET" suffixOverrides=",">
             <if test="shipmentNo != null">shipment_no = #{shipmentNo},</if>
@@ -162,15 +164,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteGzShipmentById" parameterType="Long">
-        update gz_shipment set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_shipment set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteGzShipmentEntryByParenId" parameterType="Long">
-        update gz_shipment_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_shipment_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId}
     </delete>
 
     <insert id="batchGzShipmentEntry">
@@ -181,17 +185,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(shipment_no) from gz_shipment
         where shipment_no like concat(#{prefix},'%')
         and shipment_no like concat('%',#{date},'%')
+        and tenant_id = #{tenantId}
     </select>
 
     <update id="updateGzShipmentEntry" parameterType="GzShipmentEntry">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_shipment_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where paren_id = #{parenId}
+        where paren_id = #{parenId} and tenant_id = #{tenantId}
     </update>
 </mapper>
 

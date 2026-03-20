@@ -417,6 +417,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             stkDepInventory.setUnitPrice(entry.getUnitPrice());
             stkDepInventory.setAmt(entry.getAmt());
             stkDepInventory.setBatchNo(entry.getBatchNo());
+            // batch_number 为产品生产批号；batch_no 为系统追溯批次号
+            stkDepInventory.setBatchNumber(entry.getBatchNumber());
             stkDepInventory.setMaterialNo(inventory.getMaterialNo());
             stkDepInventory.setBatchId(inventory.getBatchId());
             stkDepInventory.setMaterialDate(inventory.getMaterialDate());
@@ -430,6 +432,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             BigDecimal qty = entry.getQty();
 
             stkDepInventory.setQty(oldQty.add(qty));//数量
+            if (stkDepInventory.getBatchNumber() == null) {
+                stkDepInventory.setBatchNumber(entry.getBatchNumber());
+            }
             stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
         }
     }

@@ -538,6 +538,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
+                    if (StringUtils.isEmpty(batchNo)) {
+                        throw new ServiceException("出库批次号不能为空");
+                    }
+                    if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new ServiceException(String.format("出库数量必须大于0，批次号：%s", batchNo));
+                    }
                     Long warehouseId = stkIoBill.getWarehouseId();
                     // 优先使用批次号和仓库ID精确查询，如果查不到再使用仅批次号查询
                     StkInventory inventory = null;
@@ -638,6 +644,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
+                    if (StringUtils.isEmpty(batchNo)) {
+                        throw new ServiceException("退货批次号不能为空");
+                    }
+                    if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new ServiceException(String.format("退货数量必须大于0，批次号：%s", batchNo));
+                    }
                     StkInventory inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
 
                     if(inventory == null){
@@ -689,6 +701,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库）
                     String batchNo = entry.getBatchNo();//退库批次号
                     BigDecimal qty = entry.getQty();//退库数量
+                    if (StringUtils.isEmpty(batchNo)) {
+                        throw new ServiceException("退库批次号不能为空");
+                    }
+                    if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new ServiceException(String.format("退库数量必须大于0，批次号：%s", batchNo));
+                    }
 
                     // 限定退库目标仓库：仅允许退向科室库存明细中记录的 warehouse_id
                     StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo, entry.getWarehouseId());
@@ -1415,9 +1433,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (oldWarehouseId == null) {
             throw new ServiceException("仓库ID不能为空，无法按仓库校验科室库存");
         }
+        if (StringUtils.isEmpty(oldBatchNo) || stkIoBillEntryList == null) {
+            return;
+        }
         for(StkIoBillEntry entry : stkIoBillEntryList){
+            if (entry == null) {
+                continue;
+            }
             String batchNo = entry.getBatchNo();
             BigDecimal qty = entry.getQty();//退库数量
+            if (StringUtils.isEmpty(batchNo) || qty == null) {
+                continue;
+            }
 
             if(!oldBatchNo.equals(batchNo) || (oldWarehouseId != null && !oldWarehouseId.equals(entry.getWarehouseId()))){
                 continue;
@@ -1425,6 +1452,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
             //当前批次实际数量
             BigDecimal inventoryQty = stkDepInventoryMapper.selectTKStkInvntoryByBatchNo(batchNo, oldWarehouseId);
+            if (inventoryQty == null) {
+                inventoryQty = BigDecimal.ZERO;
+            }
 
             if(qty.compareTo(inventoryQty) > 0){
                 throw new ServiceException(String.format("科室库存不足！退库数量：%s，实际库存：%s", qty,inventoryQty));

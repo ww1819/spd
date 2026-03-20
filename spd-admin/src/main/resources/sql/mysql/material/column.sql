@@ -1164,6 +1164,22 @@ CALL add_table_column('stk_inventory', 'delete_by', 'varchar(64)', '删除者', 
 CALL add_table_column('stk_inventory', 'delete_time', 'datetime', '删除时间', NULL);
 /
 
+-- 变更日志表补 tenant_id（多租户隔离）
+CALL add_table_column('fd_department_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_supplier_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_factory_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+
+-- 高值科室库存补 tenant_id
+CALL add_table_column('gz_dep_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+
+-- 科室批量消耗明细补 tenant_id
+CALL add_table_column('t_hc_ks_xh_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+
 CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',
   `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',

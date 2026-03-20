@@ -141,6 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectDeptStocktakingById" parameterType="Long" resultMap="DeptStocktakingStkIoStocktakingEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
                 a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
@@ -170,7 +171,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
-        where a.id = #{id}
+        where a.id = #{id} and a.tenant_id = #{tenantId}
     </select>
 
     <insert id="insertDeptStocktaking" parameterType="StkIoStocktaking" useGeneratedKeys="true" keyProperty="id">
@@ -193,6 +194,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="isMonthInit != null">is_month_init,</if>
+            <if test="tenantId != null">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="stockNo != null">#{stockNo},</if>
@@ -212,10 +214,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
+            <if test="tenantId != null">#{tenantId},</if>
          </trim>
     </insert>
 
     <update id="updateDeptStocktaking" parameterType="StkIoStocktaking">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_io_stocktaking
         <trim prefix="SET" suffixOverrides=",">
             <if test="stockNo != null">stock_no = #{stockNo},</if>
@@ -236,48 +240,55 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteDeptStocktakingById" parameterType="Long">
-        update stk_io_stocktaking set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_stocktaking set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteDeptStocktakingByIds" parameterType="String">
-        update stk_io_stocktaking set del_flag = 1, update_time = now() where id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_stocktaking set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteDeptStocktakingEntryByParenIds" parameterType="String">
-        update stk_io_stocktaking_entry set del_flag = 1 where paren_id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_stocktaking_entry set del_flag = 1 where tenant_id = #{tenantId} and paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
     <delete id="deleteDeptStocktakingEntryByParenId" parameterType="Long">
-        update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId} and tenant_id = #{tenantId}
     </delete>
 
     <update id="updateDeptStocktakingEntry" parameterType="StkIoStocktakingEntry">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_io_stocktaking_entry
         set paren_id = #{parenId}, commodity_id = #{commodityId}, material_id = #{materialId}, unit_price = #{unitPrice},
             qty = #{qty}, price = #{price}, amt = #{amt}, batch_no = #{batchNo}, kc_no = #{kcNo}, batch_number = #{batchNumber},
             begin_time = #{beginTime}, end_time = #{endTime}, del_flag = #{delFlag}, remark = #{remark},
             stock_qty = #{stockQty}, profit_qty = #{profitQty}, stock_amount = #{stockAmount}, profit_amount = #{profitAmount},
             return_warehouse_id = #{returnWarehouseId}
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <insert id="insertDeptStocktakingEntrySingle" parameterType="StkIoStocktakingEntry" useGeneratedKeys="true" keyProperty="id">
-        insert into stk_io_stocktaking_entry( paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount, profit_amount, return_warehouse_id)
-        values ( #{parenId}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark}, #{stockQty}, #{profitQty}, #{stockAmount}, #{profitAmount}, #{returnWarehouseId})
+        insert into stk_io_stocktaking_entry( paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount, profit_amount, return_warehouse_id, tenant_id)
+        values ( #{parenId}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark}, #{stockQty}, #{profitQty}, #{stockAmount}, #{profitAmount}, #{returnWarehouseId},
+                 (select t.tenant_id from stk_io_stocktaking t where t.id = #{parenId} limit 1))
     </insert>
 
     <update id="deleteDeptStocktakingEntryByParenIdExceptIds">
-        update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId} and (del_flag is null or del_flag != 1)
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId} and tenant_id = #{tenantId} and (del_flag is null or del_flag != 1)
         <if test="keepIds != null and keepIds.size() > 0">
             and id not in
             <foreach item="id" collection="keepIds" open="(" separator="," close=")">#{id}</foreach>
@@ -285,9 +296,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <insert id="batchDeptStocktakingEntry">
-        insert into stk_io_stocktaking_entry( paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount, profit_amount, return_warehouse_id) values
+        insert into stk_io_stocktaking_entry( paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, stock_amount, profit_amount, return_warehouse_id, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.parenId}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.stockQty}, #{item.profitQty}, #{item.stockAmount}, #{item.profitAmount}, #{item.returnWarehouseId})
+            ( #{item.parenId}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.stockQty}, #{item.profitQty}, #{item.stockAmount}, #{item.profitAmount}, #{item.returnWarehouseId},
+              (select t.tenant_id from stk_io_stocktaking t where t.id = #{item.parenId} limit 1))
         </foreach>
     </insert>
 

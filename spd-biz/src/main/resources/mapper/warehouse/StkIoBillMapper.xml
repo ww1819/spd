@@ -206,8 +206,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectStkIoBillList" parameterType="StkIoBill" resultMap="StkIoBillResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkIoBillVo"/>
         where stk.del_flag != 1
+        and stk.tenant_id = #{tenantId}
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
@@ -225,13 +227,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="auditBeginDate != null "> and stk.audit_date &gt;= #{auditBeginDate}</if>
         <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_bill_entry e inner join fd_material m on e.material_id = m.id where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%')))</if>
         order by stk.bill_date desc
     </select>
 
     <!-- 出库单按单导出（bill_type=201），扁平行 -->
     <select id="selectOutBillGroupedExportRows" resultType="com.spd.warehouse.domain.vo.StkOutBillExportFlatRow">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id as billId,
                stk.bill_no as billNo,
                ifnull(d.name, '') as departmentName,
@@ -247,12 +249,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join fd_material m on b.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
-        where stk.del_flag != 1 and stk.bill_type = 201
+        where stk.del_flag != 1 and stk.bill_type = 201 and stk.tenant_id = #{tenantId}
         <choose>
             <when test="billIds != null and billIds.size() > 0">
                 and stk.id in
                 <foreach collection="billIds" item="bid" open="(" separator="," close=")">#{bid}</foreach>
-                <if test="q.tenantId != null and q.tenantId != ''"> and (stk.tenant_id = #{q.tenantId})</if>
             </when>
             <otherwise>
                 <if test="q.billNo != null and q.billNo != ''"> and stk.bill_no like concat('%', #{q.billNo}, '%')</if>
@@ -266,7 +267,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="q.auditBeginDate != null"> and stk.audit_date &gt;= #{q.auditBeginDate}</if>
                 <if test="q.auditEndDate != null"> and DATE(stk.audit_date) &lt;= DATE(#{q.auditEndDate})</if>
                 <if test="q.receiptConfirmStatus != null"> and stk.receipt_confirm_status = #{q.receiptConfirmStatus}</if>
-                <if test="q.tenantId != null and q.tenantId != ''"> and (stk.tenant_id = #{q.tenantId})</if>
                 <if test="q.materialName != null and q.materialName != ''"> and (m.name like concat('%', #{q.materialName}, '%') or m.code like concat('%', #{q.materialName}, '%'))</if>
                 <if test="q.materialNameLike != null and q.materialNameLike != ''"> and (m.name like concat('%', #{q.materialNameLike}, '%') or m.code like concat('%', #{q.materialNameLike}, '%') or m.referred_name like concat('%', #{q.materialNameLike}, '%'))</if>
                 <if test="q.materialSpeciLike != null and q.materialSpeciLike != ''"> and m.speci like concat('%', #{q.materialSpeciLike}, '%')</if>
@@ -277,8 +277,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkIoBillTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkIoBillTotalVo"/>
         where stk.del_flag != 1
+        and stk.tenant_id = #{tenantId}
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
@@ -289,11 +291,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
         <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.bill_date desc
     </select>
 
     <select id="selectOutboundSummaryByDepartment" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.department_id as departmentId,
                d.name as departmentName,
                ifnull(sum(stk.total_amount), 0) as outboundAmount,
@@ -302,6 +304,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join stk_io_bill_entry e on e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
         where stk.del_flag != 1
+          and stk.tenant_id = #{tenantId}
           and stk.bill_type = 201
           and stk.bill_status = 2
           and stk.department_id is not null
@@ -310,6 +313,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectRTHStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                 stk.bill_type billType,b.qty materialQty, b.unit_price unitPrice,
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
@@ -325,6 +329,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where stk.del_flag != 1
+        and stk.tenant_id = #{tenantId}
         and stk.bill_type in (101,301)
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
@@ -344,6 +349,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectRTHStkIoBillSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
                 sum(b.qty) materialQty, b.price unitPrice,ROUND(sum(b.qty) * b.price, 2) materialAmt,
                 m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
@@ -356,6 +362,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         where stk.del_flag != 1
+        and stk.tenant_id = #{tenantId}
         and stk.bill_type in (101,301)
         and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
@@ -372,6 +379,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 出退库汇总：仅报表所需字段，无嵌套子查询，供应商取单据供应商 -->
     <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id, m.code materialCode, m.name materialName, stk.bill_type billType,
                sum(b.qty) materialQty, b.unit_price unitPrice, ROUND(sum(b.qty) * b.unit_price, 2) materialAmt,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
@@ -394,6 +402,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user cu on stk.create_by = cu.user_id
         left join sys_user au on stk.audit_by = au.user_id
         where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
           and stk.bill_type in (201,401)
           and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
@@ -404,7 +413,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         GROUP BY stk.id, m.code, m.name, stk.bill_type, b.unit_price, m.speci, m.model, u.unit_name,
                  f.factory_name, s.name, fc.finance_category_name, d.name, w.name, b.material_id,
                  m.register_no, m.package_speci, m.is_way, wc.warehouse_category_name,
@@ -413,6 +421,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 出退库明细：仅报表所需字段，无嵌套子查询。单价优先明细行再按金额/数量计算，供应商取单据供应商 -->
     <select id="selectCTKStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id, m.code materialCode, m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                stk.bill_type billType, b.qty materialQty,
                IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END) unitPrice,
@@ -438,6 +447,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user cu on stk.create_by = cu.user_id
         left join sys_user au on stk.audit_by = au.user_id
         where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
           and stk.bill_type in (201,401)
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
@@ -453,10 +463,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="billType != null "> and stk.bill_Type = #{billType}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
     </select>
 
     <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select SUM(IFNULL(b.qty,0)) totalQty,SUM(IFNULL(b.amt,0)) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
@@ -465,6 +475,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
         where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.tenant_id = #{tenantId}
         and stk.bill_type in (201,401)
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
@@ -484,10 +495,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="billType != null "> and stk.bill_Type = #{billType}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
     </select>
 
     <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select SUM(IFNULL(b.qty,0)) totalQty,SUM(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
@@ -496,6 +507,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
         where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.tenant_id = #{tenantId}
         and stk.bill_type in (201,401)
         and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
@@ -506,10 +518,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
     </select>
 
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.tenant_id, a.delete_by, a.delete_time, a.settlement_type, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
 				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,a.audit_by,
@@ -543,7 +555,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on m.supplier_id = s.id
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
-        where a.id = #{id}
+        where a.id = #{id} and a.tenant_id = #{tenantId}
     </select>
 
     <insert id="insertStkIoBill" parameterType="StkIoBill" useGeneratedKeys="true" keyProperty="id">
@@ -613,6 +625,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateStkIoBill" parameterType="StkIoBill">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_io_bill
         <trim prefix="SET" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">bill_no = #{billNo},</if>
@@ -647,17 +660,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <update id="updatestkIobillEntry" parameterType="StkIoBillEntry">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_io_bill_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
 
@@ -668,14 +682,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <update id="deleteStkIoBillEntryByParenIds">
-        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where paren_id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where tenant_id = #{tenantId} and paren_id in
         <foreach item="parenId" collection="parenIds" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </update>
 
     <update id="deleteStkIoBillEntryByParenId">
-        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where paren_id = #{parenId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where paren_id = #{parenId} and tenant_id = #{tenantId}
     </update>
 
     <insert id="batchStkIoBillEntry">
@@ -686,7 +702,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateStkIoBillEntryKcNo">
-        update stk_io_bill_entry set kc_no = #{kcNo} where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_bill_entry set kc_no = #{kcNo} where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <select id="selectMaxBillNo" resultType="String">
@@ -730,6 +747,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectListPurInventory" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select id,materialCode,materialName,billNo,billDate,billType,materialQty,price,materialAmt,
                 batchNo,batchNumber,beginTime,endTime,materialSpeci,materialModel,unitName,factoryName,
                 financeCategoryName,departmentName,warehouseName,supplierName
@@ -749,7 +767,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_factory f on f.factory_id = m.factory_id
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,301)
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,301) and stk.tenant_id = #{tenantId}
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
             select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
@@ -767,7 +785,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_factory f on f.factory_id = m.factory_id
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201,401)
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201,401) and stk.tenant_id = #{tenantId}
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
             -- 调拨单：调出仓库记录（数量为负数，表示出库）
@@ -786,7 +804,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_factory f on f.factory_id = m.factory_id
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%'
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{tenantId}
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
             -- 调拨单：调入仓库记录（数量为正数，表示入库）
@@ -806,7 +824,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_factory f on f.factory_id = m.factory_id
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%'
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{tenantId}
             <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union
             select a.id,m.code materialCode,m.name materialName, a.stock_no billNo, a.stock_date billDate,
@@ -824,7 +842,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_factory f on f.factory_id = m.factory_id
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-            where a.del_flag != 1 and a.stock_status = 2
+            where a.del_flag != 1 and a.stock_status = 2 and a.tenant_id = #{tenantId}
         ) t
         <where>
             <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
@@ -845,6 +863,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectMonthInitDataList" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select wCategoryName,sum(initAmount) initAmount,sum(beginAmount) beginAmount,sum(endAmount) endAmount,
 				sum(beginAmount) - sum(endAmount) settleAmount,
 				sum(profitAmount) profitAmount,sum(loseAmount) loseAmount,
@@ -864,7 +883,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 left join fd_material m on b.material_id = m.id
                 left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
                 left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
-                where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101)
+                where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101) and stk.tenant_id = #{tenantId}
                 and stk.bill_date &gt;= #{beginDate} and stk.bill_date &lt;= #{endDate}
                 GROUP BY fw.warehouse_category_name
                 union
@@ -875,7 +894,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 left join fd_material m on b.material_id = m.id
                 left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
                 left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
-                where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201)
+                where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201) and stk.tenant_id = #{tenantId}
                 and stk.bill_date &gt;= #{beginDate} and stk.bill_date &lt;= #{endDate}
                 GROUP BY fw.warehouse_category_name
                 union
@@ -886,7 +905,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 left join fd_material m on b.material_id = m.id
                 left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
                 left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
-                where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502)
+                where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502) and a.tenant_id = #{tenantId}
                 and a.stock_date &gt;= #{beginDate} and a.stock_date &lt;= #{endDate}
                 GROUP BY fw.warehouse_category_name
                 union
@@ -897,7 +916,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 left join fd_material m on b.material_id = m.id
                 left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
                 left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
-                where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502)
+                where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502) and a.tenant_id = #{tenantId}
                 and a.stock_date &gt;= #{beginDate} and a.stock_date &lt;= #{endDate}
                 GROUP BY fw.warehouse_category_name
                 union
@@ -910,7 +929,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     left join fd_material m on b.material_id = m.id
                     left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
                     left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
-                    where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,401)
+                    where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,401) and stk.tenant_id = #{tenantId}
                     and stk.bill_date &gt;= #{beginDate} and stk.bill_date &lt;= #{endDate}
                     GROUP BY fw.warehouse_category_name
                     union
@@ -921,7 +940,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     left join fd_material m on b.material_id = m.id
                     left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
                     left join fd_warehouse_category fw on fw.warehouse_category_id = m.storeroom_id
-                    where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502)
+                    where a.del_flag != 1 and a.stock_status = 2 and a.stock_type in (502) and a.tenant_id = #{tenantId}
                     and a.stock_date &gt;= #{beginDate} and a.stock_date &lt;= #{endDate}
                     GROUP BY fw.warehouse_category_name
                 ) qc where 1=1
@@ -932,12 +951,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="getMonthHandleDataList" resultMap="StkIoBillResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select * from stk_io_bill
-        where bill_date &gt;= #{beginDate} and bill_date &lt;= #{endDate}
+        where bill_date &gt;= #{beginDate} and bill_date &lt;= #{endDate} and tenant_id = #{tenantId}
     </select>
 
     <!-- 查询结算明细：根据供应商、日期范围、仓库结算类型查询出库明细，排除已结算的产品 -->
     <select id="selectSettlementDetails" parameterType="StkIoBill" resultMap="StkIoBillEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select 
             b.id as sub_id,
             b.paren_id as sub_paren_id,
@@ -997,6 +1018,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse_category wc on wc.warehouse_category_id = m.storeroom_id
         left join fd_supplier s on s.id = m.supplier_id
         where stk.del_flag != 1
+        and stk.tenant_id = #{tenantId}
         and stk.bill_status = 2
         <if test="supplerId != null"> and m.supplier_id = #{supplerId}</if>
         <if test="beginDate != null"> and DATE(stk.audit_date) &gt;= DATE(#{beginDate})</if>
@@ -1018,6 +1040,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             from stk_io_bill settlement
             left join stk_io_bill_entry settlement_entry on settlement_entry.paren_id = settlement.id and settlement_entry.del_flag != 1
             where settlement.del_flag != 1
+            and settlement.tenant_id = #{tenantId}
             and settlement.bill_type = 501
             and settlement_entry.material_id = b.material_id
             and settlement_entry.batch_no = b.batch_no
@@ -1028,6 +1051,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询领用明细列表 -->
     <select id="selectConsumeDetailList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         SELECT 
             stk.id, stk.bill_no billNo, stk.bill_date billDate, stk.warehouse_id warehouseId, stk.department_id departmentId,
             m.code materialCode, m.name materialName, m.speci materialSpeci, m.model materialModel,
@@ -1048,6 +1072,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
         WHERE stk.del_flag != 1 
+          AND stk.tenant_id = #{tenantId}
           AND stk.bill_status = 2 
           AND stk.bill_type = 201
         <if test="billNo != null and billNo != ''"> AND stk.bill_no LIKE CONCAT('%', #{billNo}, '%')</if>
@@ -1063,6 +1088,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询领用汇总列表（按耗材汇总） -->
     <select id="selectConsumeSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         SELECT 
             m.id materialId, m.code materialCode, m.name materialName, 
             m.speci materialSpeci, m.model materialModel,
@@ -1078,6 +1104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
         WHERE stk.del_flag != 1 
+          AND stk.tenant_id = #{tenantId}
           AND stk.bill_status = 2 
           AND stk.bill_type = 201
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
@@ -1093,6 +1120,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询领用排名列表（按金额降序） -->
     <select id="selectConsumeRankingList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         SELECT 
             m.id materialId, m.code materialCode, m.name materialName,
             m.speci materialSpeci, m.model materialModel,
@@ -1101,6 +1129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             ROUND((SUM(b.amt) / (SELECT IFNULL(SUM(amt), 1) FROM stk_io_bill_entry entry
                 INNER JOIN stk_io_bill bill ON bill.id = entry.paren_id
                 WHERE bill.del_flag != 1 AND bill.bill_status = 2 AND bill.bill_type = 201
+                AND bill.tenant_id = #{tenantId}
                 AND entry.del_flag != 1
                 <if test="warehouseId != null"> AND bill.warehouse_id = #{warehouseId}</if>
                 <if test="departmentId != null"> AND bill.department_id = #{departmentId}</if>
@@ -1115,6 +1144,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
         WHERE stk.del_flag != 1 
+          AND stk.tenant_id = #{tenantId}
           AND stk.bill_status = 2 
           AND stk.bill_type = 201
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
@@ -1127,6 +1157,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询仓库进销存 -->
     <select id="selectWarehousePsiReport" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         SELECT
         vsadj.warehouse_id
         ,vsadj.warehouse_code
@@ -1152,6 +1183,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         view_stock_all_detail_jxc vsadj
         WHERE
         1 = 1
+        and vsadj.tenant_id = #{tenantId}
         and vsadj.audit_date &lt;= #{endDate}
         <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
         <if test="warehouseCategoryId != null"> AND vsadj.storeroom_id = #{warehouseCategoryId}</if>

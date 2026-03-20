@@ -84,38 +84,62 @@ public class StkInventoryController extends BaseController
     {
         List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
 //        startPage();
+        if (mapList == null) {
+            mapList = new ArrayList<>();
+        }
         List<StkInventorySummaryVo> summaryVoList = new ArrayList<StkInventorySummaryVo>();
         BigDecimal subTotalQty = BigDecimal.ZERO;
         BigDecimal subTotalAmt = BigDecimal.ZERO;
         for(Map<String, Object> map : mapList){
-            StkInventorySummaryVo inventoryVo = new StkInventorySummaryVo();
-            inventoryVo.setId((Long) map.get("id"));
-            inventoryVo.setMaterialCode(map.get("materialCode").toString());
-            inventoryVo.setMaterialName(map.get("materialName").toString());
-            String materialModel = map.get("materialModel") == null ? "" : map.get("materialModel").toString();
-            inventoryVo.setMaterialModel(materialModel);
-            inventoryVo.setMaterialQty((BigDecimal) map.get("materialQty"));
-            inventoryVo.setMaterialSpeci(map.get("materialSpeci").toString());
-            inventoryVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
-            inventoryVo.setUnitName(map.get("unitName").toString());
-            inventoryVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
-            inventoryVo.setWarehouseName(map.get("warehouseName").toString());
-            inventoryVo.setFactoryName(map.get("factoryName").toString());
-            inventoryVo.setSupplierName(map.get("supplierName").toString());
-            summaryVoList.add(inventoryVo);
-            BigDecimal materialQty, materialAmt;
-            if (map.get("materialQty") == null) {
-                materialQty = BigDecimal.ZERO;
-            } else {
-                materialQty = (BigDecimal) map.get("materialQty");
+            if (map == null) {
+                continue;
             }
-            if (map.get("materialAmt") == null) {
-                materialAmt = BigDecimal.ZERO;
-            } else {
-                materialAmt = (BigDecimal) map.get("materialAmt");
+            try {
+                StkInventorySummaryVo inventoryVo = new StkInventorySummaryVo();
+                Object idObj = map.get("id");
+                if (idObj instanceof Long) {
+                    inventoryVo.setId((Long) idObj);
+                } else if (idObj != null) {
+                    inventoryVo.setId(Long.valueOf(idObj.toString()));
+                }
+
+                Object materialCodeObj = map.get("materialCode");
+                inventoryVo.setMaterialCode(materialCodeObj == null ? "" : materialCodeObj.toString());
+                Object materialNameObj = map.get("materialName");
+                inventoryVo.setMaterialName(materialNameObj == null ? "" : materialNameObj.toString());
+
+                String materialModel = map.get("materialModel") == null ? "" : map.get("materialModel").toString();
+                inventoryVo.setMaterialModel(materialModel);
+                inventoryVo.setMaterialQty((BigDecimal) map.get("materialQty"));
+
+                Object materialSpeciObj = map.get("materialSpeci");
+                inventoryVo.setMaterialSpeci(materialSpeciObj == null ? "" : materialSpeciObj.toString());
+                inventoryVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
+
+                Object unitNameObj = map.get("unitName");
+                inventoryVo.setUnitName(unitNameObj == null ? "" : unitNameObj.toString());
+                inventoryVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
+
+                Object warehouseNameObj = map.get("warehouseName");
+                inventoryVo.setWarehouseName(warehouseNameObj == null ? "" : warehouseNameObj.toString());
+
+                Object factoryNameObj = map.get("factoryName");
+                inventoryVo.setFactoryName(factoryNameObj == null ? "" : factoryNameObj.toString());
+
+                Object supplierNameObj = map.get("supplierName");
+                inventoryVo.setSupplierName(supplierNameObj == null ? "" : supplierNameObj.toString());
+
+                summaryVoList.add(inventoryVo);
+
+                BigDecimal materialQty = map.get("materialQty") == null ? BigDecimal.ZERO : (BigDecimal) map.get("materialQty");
+                BigDecimal materialAmt = map.get("materialAmt") == null ? BigDecimal.ZERO : (BigDecimal) map.get("materialAmt");
+                subTotalQty = subTotalQty.add(materialQty);
+                subTotalAmt = subTotalAmt.add(materialAmt);
+            } catch (Exception e) {
+                // 单行脏数据不应导致整页查询失败
+                logger.error("库存明细汇总行组装失败", e);
+                continue;
             }
-            subTotalQty = subTotalQty.add(materialQty);
-            subTotalAmt = subTotalAmt.add(materialAmt);
         }
         Long total = Long.valueOf(summaryVoList.size());
         summaryVoList = subListPage(summaryVoList);

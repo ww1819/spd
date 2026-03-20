@@ -39,18 +39,20 @@
     </sql>
 
     <select id="selectById" resultMap="StkInitialImportResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
-        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null)
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
     </select>
 
     <select id="selectList" resultMap="StkInitialImportResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
             (m.del_flag = 0 or m.del_flag is null)
+            and (m.tenant_id = #{tenantId})
             <if test="billNo != null and billNo != ''">and m.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
             <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
-            <if test="tenantId != null and tenantId != ''">and (m.tenant_id = #{tenantId})</if>
             <if test="params != null and params.beginTime != null">and m.import_time &gt;= #{params.beginTime}</if>
             <if test="params != null and params.endTime != null">and m.import_time &lt;= #{params.endTime}</if>
         </where>
@@ -58,7 +60,8 @@
     </select>
 
     <select id="selectMaxBillNo" resultType="java.lang.String">
-        select max(bill_no) from stk_initial_import where bill_no like concat(#{datePrefix}, '%')
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select max(bill_no) from stk_initial_import where bill_no like concat(#{datePrefix}, '%') and tenant_id = #{tenantId}
     </select>
 
     <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImport">
@@ -67,6 +70,7 @@
     </insert>
 
     <update id="update" parameterType="com.spd.warehouse.domain.StkInitialImport">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_initial_import
         <set>
             <if test="stockGenTime != null">stock_gen_time = #{stockGenTime},</if>
@@ -76,11 +80,12 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = now()
         </set>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <!-- 逻辑删除：设置 del_flag=1, delete_by, delete_time -->
     <update id="logicalDeleteById">
-        update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </update>
 </mapper>

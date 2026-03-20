@@ -142,6 +142,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateBasApplyTemplate" parameterType="com.spd.department.domain.BasApplyTemplate">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update bas_apply_template
         <trim prefix="SET" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
@@ -152,22 +153,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <update id="deleteBasApplyTemplateById">
-        update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <!-- 逻辑删除：表有 delete_by、delete_time，使用更新代替物理删除 -->
     <update id="deleteEntryByParenId">
-        update bas_apply_template_entry set delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and (delete_time is null)
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update bas_apply_template_entry set delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId} and (delete_time is null)
     </update>
 
     <insert id="batchInsertEntry">
-        insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order) values
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order, tenant_id) values
         <foreach item="item" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder})
+            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder}, #{tenantId})
         </foreach>
     </insert>
 </mapper>

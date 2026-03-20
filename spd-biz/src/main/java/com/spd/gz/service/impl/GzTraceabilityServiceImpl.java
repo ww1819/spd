@@ -129,6 +129,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Transactional
     public int deleteGzTraceabilityByIds(Long[] ids)
     {
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
         // 恢复库存
         for (Long id : ids) {
             restoreDepartmentInventory(id);
@@ -205,6 +208,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
             List<GzTraceabilityEntry> list = new ArrayList<GzTraceabilityEntry>();
             for (GzTraceabilityEntry entry : traceabilityEntryList)
             {
+                if (entry == null) {
+                    continue;
+                }
                 entry.setParentId(id);
                 if (StringUtils.isNotEmpty(tenantId)) {
                     entry.setTenantId(tenantId);
@@ -273,6 +279,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         
         for (GzTraceabilityEntry entry : gzTraceability.getTraceabilityEntryList()) {
+            if (entry == null) {
+                continue;
+            }
             if (entry.getInventoryId() != null) {
                 // 根据inventoryId扣减库存
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
@@ -317,6 +326,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
      * @param traceabilityId 追溯单ID
      */
     private void restoreDepartmentInventory(Long traceabilityId) {
+        if (traceabilityId == null) {
+            return;
+        }
         // 查询旧的明细数据
         GzTraceability oldTraceability = gzTraceabilityMapper.selectGzTraceabilityById(traceabilityId);
         if (oldTraceability == null || oldTraceability.getTraceabilityEntryList() == null || oldTraceability.getTraceabilityEntryList().isEmpty()) {
@@ -329,6 +341,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         
         for (GzTraceabilityEntry entry : oldTraceability.getTraceabilityEntryList()) {
+            if (entry == null) {
+                continue;
+            }
             if (entry.getInventoryId() != null) {
                 // 根据inventoryId恢复库存
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());

@@ -64,10 +64,20 @@ public class GzOrderServiceImpl implements IGzOrderService
 
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
         List<FdMaterial> materialList = new ArrayList<FdMaterial>();
-        for(GzOrderEntry entry : gzOrderEntryList){
-            Long materialId = entry.getMaterialId();
-            FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-            materialList.add(fdMaterial);
+        if (gzOrderEntryList != null) {
+            for(GzOrderEntry entry : gzOrderEntryList){
+                if (entry == null) {
+                    continue;
+                }
+                Long materialId = entry.getMaterialId();
+                if (materialId == null) {
+                    continue;
+                }
+                FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
+                if (fdMaterial != null) {
+                    materialList.add(fdMaterial);
+                }
+            }
         }
         gzOrder.setMaterialList(materialList);
         return gzOrder;
@@ -169,11 +179,20 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     @Transactional
     public int auditGzOrder(String id) {
-        GzOrder gzOrder = gzOrderMapper.selectGzOrderById(Long.parseLong(id));
+        Long billId;
+        try {
+            billId = Long.parseLong(id);
+        } catch (Exception e) {
+            throw new ServiceException(String.format("高值入库业务ID：%s 非法", id));
+        }
+        GzOrder gzOrder = gzOrderMapper.selectGzOrderById(billId);
         if(gzOrder == null){
             throw new ServiceException(String.format("高值入库业务ID：%s，不存在!", id));
         }
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
+        if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
+            throw new ServiceException(String.format("高值入库单 %s 无明细，无法审核", id));
+        }
 
         //更新高值仓库库存
         updateDepotInventory(gzOrder,gzOrderEntryList);
@@ -188,8 +207,17 @@ public class GzOrderServiceImpl implements IGzOrderService
         // 获取或初始化序列号
         Long sheetId = getOrInitSheetId();
         
+        if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
+            return;
+        }
         for(GzOrderEntry orderEntry : gzOrderEntryList){
+            if (orderEntry == null) {
+                continue;
+            }
             if(orderEntry.getQty() != null && BigDecimal.ZERO.compareTo(orderEntry.getQty()) != 0){
+                if (orderEntry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ServiceException(String.format("高值入库明细数量必须大于0，物料ID：%s", orderEntry.getMaterialId()));
+                }
                 // 根据数量循环生成多条库存记录，每条数量为1，并生成一个院内码
                 int qty = orderEntry.getQty().intValue();
                 for(int i = 0; i < qty; i++){

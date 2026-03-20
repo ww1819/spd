@@ -98,6 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectStkIoProfitLossById" resultMap="StkIoProfitLossWithEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
                p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag, p.tenant_id,
                w.id as wId, w.code as warehouseCode, w.name as warehouseName,
@@ -111,14 +112,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on p.warehouse_id = w.id
         left join stk_io_profit_loss_entry e on e.paren_id = p.id and (e.del_flag is null or e.del_flag != 1)
         left join fd_material m on e.material_id = m.id
-        where p.id = #{id} and (p.del_flag is null or p.del_flag != 1)
+        where p.id = #{id} and (p.del_flag is null or p.del_flag != 1) and p.tenant_id = #{tenantId}
     </select>
 
     <select id="selectStkIoProfitLossList" resultMap="StkIoProfitLossResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkIoProfitLossVo"/>
         <where>
             (p.del_flag is null or p.del_flag != 1)
-            <if test="tenantId != null and tenantId != ''"> and (p.tenant_id = #{tenantId})</if>
+            and (p.tenant_id = #{tenantId})
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingId != null"> and p.stocktaking_id = #{stocktakingId}</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
@@ -181,18 +183,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="deleteStkIoProfitLossById" parameterType="Long">
-        update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <update id="deleteStkIoProfitLossEntryByParenId">
-        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId}
     </update>
 
     <insert id="batchStkIoProfitLossEntry">
-        insert into stk_io_profit_loss_entry (paren_id, stocktaking_entry_id, kc_no, material_id, batch_no, batch_number, book_qty, stock_qty, profit_qty, unit_price, profit_amount, begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id, create_by, create_time, update_by, update_time)
+        insert into stk_io_profit_loss_entry (paren_id, stocktaking_entry_id, kc_no, material_id, batch_no, batch_number, book_qty, stock_qty, profit_qty, unit_price, profit_amount, begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id, create_by, create_time, update_by, update_time, tenant_id)
         values
         <foreach item="item" collection="list" separator=",">
-            ( #{item.parenId}, #{item.stocktakingEntryId}, #{item.kcNo}, #{item.materialId}, #{item.batchNo}, #{item.batchNumber}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime} )
+            ( #{item.parenId}, #{item.stocktakingEntryId}, #{item.kcNo}, #{item.materialId}, #{item.batchNo}, #{item.batchNumber}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime},
+              (select t.tenant_id from stk_io_profit_loss t where t.id = #{item.parenId} limit 1) )
         </foreach>
     </insert>
 
@@ -212,21 +217,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectMaxBillNo" resultType="java.lang.String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_profit_loss
-        where bill_no like concat(#{datePrefix}, '%')
+        where bill_no like concat(#{datePrefix}, '%') and tenant_id = #{tenantId}
     </select>
 
     <select id="countByStocktakingId" resultType="java.lang.Integer">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select count(1) from stk_io_profit_loss
-        where stocktaking_id = #{stocktakingId} and (del_flag is null or del_flag != 1)
+        where stocktaking_id = #{stocktakingId} and tenant_id = #{tenantId} and (del_flag is null or del_flag != 1)
     </select>
 
     <update id="updateStkIoProfitLossEntryBatchNo">
-        update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <!-- 查询盈亏明细列表（用于报表） -->
     <select id="selectProfitLossEntryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             e.id,
             p.bill_no as billNo,
@@ -257,6 +266,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
+            and p.tenant_id = #{tenantId}
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
@@ -269,6 +279,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询盈亏明细汇总列表（用于报表） -->
     <select id="selectProfitLossEntrySummaryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             m.id as materialId,
             m.code as materialCode,
@@ -288,6 +299,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
+            and p.tenant_id = #{tenantId}
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
             <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
             <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
@@ -299,6 +311,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询盈亏明细列表合计（用于报表） -->
     <select id="selectProfitLossEntryListTotal" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             COALESCE(SUM(e.profit_qty), 0) as totalQty,
             COALESCE(SUM(e.profit_amount), 0) as totalAmt
@@ -307,6 +320,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
+            and p.tenant_id = #{tenantId}
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
@@ -318,6 +332,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询盈亏明细汇总列表合计（用于报表） -->
     <select id="selectProfitLossEntrySummaryListTotal" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             COALESCE(SUM(e.profit_qty), 0) as totalQty,
             COALESCE(SUM(e.profit_amount), 0) as totalAmt
@@ -326,6 +341,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
+            and p.tenant_id = #{tenantId}
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
             <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_profit_loss_entry e2 left join fd_material m2 on e2.material_id = m2.id where e2.paren_id = p.id and (m2.name like concat('%', #{materialName}, '%') or m2.code like concat('%', #{materialName}, '%')))</if>
             <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>

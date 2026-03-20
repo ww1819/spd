@@ -106,6 +106,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectPDInventoryFilter" parameterType="StkInventory" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id, stk.qty, stk.material_id, stk.warehouse_id, 
 				COALESCE(stk.unit_price, 
 					(select COALESCE(entry.unit_price, entry.price) 
@@ -144,16 +145,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
-        where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0
+        where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0 and stk.tenant_id = #{tenantId}
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.material_id, stk.batch_no, stk.id
     </select>
 
     <select id="selectStkInventoryList" parameterType="StkInventory" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkInventoryVo"/>
         where stk.qty &gt; 0
         and (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -168,14 +170,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
 
     <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkInventoryTotalVo"/>
         where stk.qty &gt; 0
         and (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -190,11 +193,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
 
     <select id="selectStkInventoryListSummary" parameterType="StkInventory" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select stk.id, m.code materialCode,m.name materialName,sum(stk.qty) materialQty,m.speci materialSpeci,
                 m.model materialModel,u.unit_name unitName,stk.material_id,stk.unit_price unitPrice,
                 ROUND(sum(stk.qty) * stk.unit_price, 2) materialAmt,
@@ -207,6 +210,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         where stk.qty &gt; 0
           and (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -219,7 +223,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         GROUP BY stk.id, m.code,m.name,m.speci,
         m.model,u.unit_name,stk.material_id,stk.unit_price,
         w.name,f.factory_name,s.name
@@ -227,6 +230,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
 
     <select id="selectStkInventoryListSummaryTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select SUM(IFNULL(stk.qty,0)) totalQty,SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
         from stk_inventory stk
         left join fd_warehouse w on stk.warehouse_id = w.id
@@ -236,6 +240,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         where stk.qty &gt; 0
           and (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -248,21 +253,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
     </select>
 
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkInventoryMaterialVo"/>
         <where>
             and (stk.del_flag = 0 or stk.del_flag is null)
+            and stk.tenant_id = #{tenantId}
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
-            <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         </where>
     </select>
 
     <select id="selectStkInventoryById" parameterType="Long" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkInventoryVo"/>
         where stk.id = #{id}
+          and stk.tenant_id = #{tenantId}
           and (stk.del_flag = 0 or stk.del_flag is null)
     </select>
 
@@ -315,6 +322,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateStkInventory" parameterType="StkInventory">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="qty != null">qty = #{qty},</if>
@@ -339,60 +347,70 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="subBarcode != null">sub_barcode = #{subBarcode},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteStkInventoryById" parameterType="map">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now()
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteStkInventoryByIds" parameterType="map">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now()
-        where id in
+        where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select SUM(IFNULL(qty, 0))
         from stk_inventory
         where batch_no = #{batchNo}
+          and tenant_id = #{tenantId}
           and (del_flag = 0 or del_flag is null)
     </select>
 
     <select id="selectStkInventoryOne" parameterType="java.lang.String" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select *
         from stk_inventory
         where batch_no = #{batchNo}
+          and tenant_id = #{tenantId}
           and (del_flag = 0 or del_flag is null)
         order by id desc
         limit 1
     </select>
 
     <select id="selectStkInventoryByBatchNoAndWarehouse" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select *
         from stk_inventory
         where batch_no = #{batchNo}
           and warehouse_id = #{warehouseId}
+          and tenant_id = #{tenantId}
           and (del_flag = 0 or del_flag is null)
         order by id desc
         limit 1
     </select>
 
     <select id="selectStkInventoryByBatchNoAndMaterialIdAndWarehouse" resultMap="StkInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select *
         from stk_inventory
         where batch_no = #{batchNo}
           and material_id = #{materialId}
           and warehouse_id = #{warehouseId}
+          and tenant_id = #{tenantId}
           and (del_flag = 0 or del_flag is null)
         order by id desc
         limit 1
@@ -405,6 +423,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 有效期预警表列表：根据预警天数查询近效期库存明细 -->
     <select id="selectExpiryAlertList" parameterType="StkInventory" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select 
             stk.id,
             IFNULL(m.code, '') materialCode,
@@ -430,7 +449,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where stk.qty &gt; 0
         and stk.end_time IS NOT NULL
         and (m.id IS NULL OR m.del_flag IS NULL OR m.del_flag != 1)
-        <if test="tenantId != null and tenantId != ''"> and stk.tenant_id = #{tenantId}</if>
+        and stk.tenant_id = #{tenantId}
         <if test="daysToExpiry != null">
         <![CDATA[
         and DATEDIFF(stk.end_time, CURDATE()) <= #{daysToExpiry}
@@ -454,8 +473,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectSumQtyByMaterialAndWarehouse" resultType="java.math.BigDecimal">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select COALESCE(SUM(stk.qty), 0) from stk_inventory stk
         where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.tenant_id = #{tenantId}
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
     </select>

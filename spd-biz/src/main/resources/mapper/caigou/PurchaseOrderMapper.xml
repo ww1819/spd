@@ -115,10 +115,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectPurchaseOrderList" parameterType="PurchaseOrder" resultMap="PurchaseOrderResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectPurchaseOrderVo"/>
         <where>  
             (po.del_flag = '0' or po.del_flag is null)
-            <if test="tenantId != null and tenantId != ''"> and (po.tenant_id = #{tenantId})</if>
+            and po.tenant_id = #{tenantId}
             <if test="orderNo != null  and orderNo != ''"> and po.order_no like concat('%', #{orderNo}, '%')</if>
             <if test="supplierId != null "> and po.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and po.warehouse_id = #{warehouseId}</if>
@@ -137,11 +138,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectPurchaseOrderById" parameterType="Long" resultMap="PurchaseOrderResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectPurchaseOrderVo"/>
-        where po.id = #{id} and (po.del_flag = '0' or po.del_flag is null)
+        where po.id = #{id} and (po.del_flag = '0' or po.del_flag is null) and po.tenant_id = #{tenantId}
     </select>
 
     <select id="selectPurchaseOrderEntryByParentId" parameterType="Long" resultMap="PurchaseOrderEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select poe.id, poe.parent_id, poe.material_id, poe.material_code, poe.material_name, 
                poe.material_spec, poe.material_unit, poe.order_qty, poe.received_qty, poe.unit_price, 
                poe.total_amount, poe.expected_delivery_date, poe.actual_delivery_date, poe.quality_status, 
@@ -150,11 +153,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.name as material_name, m.code as material_code, m.speci as material_spec, m.model as material_unit
         from purchase_order_entry poe
         left join fd_material m on poe.material_id = m.id
-        where poe.parent_id = #{parentId} and (poe.del_flag = '0' or poe.del_flag is null)
+        where poe.parent_id = #{parentId} and (poe.del_flag = '0' or poe.del_flag is null) and poe.tenant_id = #{tenantId}
         order by poe.id
     </select>
         
     <insert id="insertPurchaseOrder" parameterType="PurchaseOrder" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into purchase_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">order_no,</if>
@@ -185,7 +189,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">#{orderNo},</if>
@@ -216,11 +220,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 
     <insert id="insertPurchaseOrderEntry" parameterType="PurchaseOrderEntry">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into purchase_order_entry
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -241,7 +246,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planId != null">plan_id,</if>
             <if test="planNo != null">plan_no,</if>
             <if test="planEntryId != null">plan_entry_id,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -266,7 +271,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planId != null">#{planId},</if>
             <if test="planNo != null">#{planNo},</if>
             <if test="planEntryId != null">#{planEntryId},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -292,6 +297,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updatePurchaseOrder" parameterType="PurchaseOrder">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_order
         <trim prefix="SET" suffixOverrides=",">
             <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
@@ -320,10 +326,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <update id="auditPurchaseOrder" parameterType="PurchaseOrder">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_order
         <trim prefix="SET" suffixOverrides=",">
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
@@ -333,26 +340,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deletePurchaseOrderById">
-        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deletePurchaseOrderByIds">
-        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deletePurchaseOrderEntryByParentId">
-        update purchase_order_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_order_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{tenantId}
     </delete>
 
     <select id="selectMaxOrderNo" parameterType="String" resultType="String">
-        select max(order_no) from purchase_order where order_no like concat('PO', #{date}, '%')
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select max(order_no) from purchase_order where order_no like concat('PO', #{date}, '%') and tenant_id = #{tenantId}
     </select>
 
 </mapper>

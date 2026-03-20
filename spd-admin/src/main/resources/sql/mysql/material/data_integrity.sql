@@ -183,6 +183,12 @@ INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
 SET m.tenant_id = d.tenant_id
 WHERE m.tenant_id IS NULL;
 /
+-- 科室批量消耗明细：从主表取 tenant_id
+UPDATE t_hc_ks_xh_entry e
+INNER JOIN t_hc_ks_xh b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
+SET e.tenant_id = b.tenant_id
+WHERE e.tenant_id IS NULL;
+/
 -- 盘点主表：从仓库取 tenant_id
 UPDATE stk_io_stocktaking m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
@@ -242,6 +248,12 @@ WHERE m.tenant_id IS NULL;
 UPDATE gz_depot_inventory m
 INNER JOIN fd_warehouse w ON w.id = m.warehouse_id AND w.tenant_id IS NOT NULL
 SET m.tenant_id = w.tenant_id
+WHERE m.tenant_id IS NULL;
+/
+-- gz_dep_inventory：优先从科室取 tenant_id
+UPDATE gz_dep_inventory m
+INNER JOIN fd_department d ON d.id = m.department_id AND d.tenant_id IS NOT NULL
+SET m.tenant_id = d.tenant_id
 WHERE m.tenant_id IS NULL;
 /
 -- 高值订单明细：从主表取 tenant_id
@@ -307,6 +319,23 @@ UPDATE purchase_order_entry e
 INNER JOIN purchase_order b ON b.id = e.parent_id AND b.tenant_id IS NOT NULL
 SET e.tenant_id = b.tenant_id
 WHERE e.tenant_id IS NULL;
+/
+
+-- 三类变更日志表 tenant_id 回填（从主数据取）
+UPDATE fd_department_change_log l
+INNER JOIN fd_department d ON d.id = l.department_id AND d.tenant_id IS NOT NULL
+SET l.tenant_id = d.tenant_id
+WHERE l.tenant_id IS NULL;
+/
+UPDATE fd_supplier_change_log l
+INNER JOIN fd_supplier s ON s.id = l.supplier_id AND s.tenant_id IS NOT NULL
+SET l.tenant_id = s.tenant_id
+WHERE l.tenant_id IS NULL;
+/
+UPDATE fd_factory_change_log l
+INNER JOIN fd_factory f ON f.factory_id = l.factory_id AND f.tenant_id IS NOT NULL
+SET l.tenant_id = f.tenant_id
+WHERE l.tenant_id IS NULL;
 /
 -- 高值科室申领：从仓库取 tenant_id
 UPDATE gz_dep_apply m

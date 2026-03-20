@@ -61,8 +61,9 @@
     </sql>
 
     <select id="selectById" resultMap="SuppSettlementBillResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectSuppSettlementBillVo"/>
-        where s.id = #{id} and (s.del_flag = 0 or s.del_flag is null)
+        where s.id = #{id} and (s.del_flag = 0 or s.del_flag is null) and s.tenant_id = #{tenantId}
     </select>
 
     <select id="selectList" resultMap="SuppSettlementBillResult">
@@ -86,12 +87,13 @@
     </insert>
 
     <update id="update" parameterType="com.spd.finance.domain.SuppSettlementBill">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update supp_settlement_bill
         <set>
             <if test="remark != null">remark = #{remark},</if>
             update_time = now()
         </set>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <insert id="insertEntry" parameterType="com.spd.finance.domain.SuppSettlementBillEntry">
@@ -112,17 +114,20 @@
     </insert>
 
     <select id="selectEntriesByParenId" resultMap="SuppSettlementBillEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select id, tenant_id, paren_id, bill_no, wh_settlement_id, wh_settlement_bill_no, wh_settlement_entry_id, material_id, material_name, speci, model, unit, unit_price, qty, amt,
                batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_time, sort_order
-        from supp_settlement_bill_entry where paren_id = #{parenId} and (del_flag = 0 or del_flag is null) order by sort_order, id
+        from supp_settlement_bill_entry where paren_id = #{parenId} and tenant_id = #{tenantId} and (del_flag = 0 or del_flag is null) order by sort_order, id
     </select>
 
     <update id="updateAuditStatus">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update supp_settlement_bill set audit_status = 1, audit_by = #{auditBy}, audit_time = #{auditTime}, update_time = now()
-        where id = #{id} and (audit_status = 0 or audit_status is null)
+        where id = #{id} and tenant_id = #{tenantId} and (audit_status = 0 or audit_status is null)
     </update>
 
     <select id="selectMaxBillNo" resultType="string">
-        select max(bill_no) from supp_settlement_bill where bill_no like concat(#{prefix}, '%')
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select max(bill_no) from supp_settlement_bill where bill_no like concat(#{prefix}, '%') and tenant_id = #{tenantId}
     </select>
 </mapper>

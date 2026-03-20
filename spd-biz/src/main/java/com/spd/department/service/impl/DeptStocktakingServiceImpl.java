@@ -246,6 +246,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     stkDepInventory.setMaterialDate(new Date());
                     stkDepInventory.setWarehouseDate(new Date());
                     stkDepInventory.setMaterialNo(entry.getBatchNumber());
+                    // batch_number 为产品生产批号；batch_no 为系统追溯批次号
+                    stkDepInventory.setBatchNumber(entry.getBatchNumber());
                     stkDepInventory.setBeginDate(entry.getBeginTime());
                     stkDepInventory.setEndDate(entry.getEndTime());
                     // 科室盘点审核后视为已收货确认，避免退库时被 receipt_confirm_status=0 拦截
@@ -292,6 +294,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                         if (depInventory.getWarehouseId() == null) {
                             depInventory.setWarehouseId(warehouseId);
                         }
+                        if (depInventory.getBatchNumber() == null) {
+                            depInventory.setBatchNumber(entry.getBatchNumber());
+                        }
                         if (depInventory.getBatchId() != null && depInventory.getBatchId().compareTo(0L) != 0) {
                             // 不强制额外写金额/数量，仅更新已确认/批次关联（如有）
                         }
@@ -328,6 +333,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     }
                     if (stkBatch != null && stkBatch.getId() != null) {
                         depInventory.setBatchId(stkBatch.getId());
+                    }
+                    if (depInventory.getBatchNumber() == null) {
+                        depInventory.setBatchNumber(entry.getBatchNumber());
                     }
                     // 盘盈时补齐仓库 qty=0 库存记录+批次对象，供退库/追溯使用
                     if (isProfit) {
