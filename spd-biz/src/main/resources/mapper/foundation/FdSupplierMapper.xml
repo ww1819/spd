@@ -48,9 +48,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdSupplierList" parameterType="FdSupplier" resultMap="FdSupplierResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdSupplierVo"/>
         where del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId})</if>
+        and tenant_id = #{tenantId}
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="referredCode != null and referredCode != ''"> and referred_code like concat('%', #{referredCode}, '%')</if>
@@ -60,40 +61,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdSupplierById" parameterType="Long" resultMap="FdSupplierResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdSupplierVo"/>
-        where id = #{id} and (del_flag = 0 or del_flag is null)
+        where id = #{id} and (del_flag = 0 or del_flag is null) and tenant_id = #{tenantId}
     </select>
 
     <select id="selectFdSupplierByCodeAndTenantId" resultMap="FdSupplierResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdSupplierVo"/>
-        where del_flag != 1 and code = #{code}
-        <choose>
-            <when test="tenantId != null and tenantId != ''">
-                and tenant_id = #{tenantId}
-            </when>
-            <otherwise>
-                and (tenant_id is null or tenant_id = '')
-            </otherwise>
-        </choose>
+        where del_flag != 1 and code = #{code} and tenant_id = #{tenantId}
         limit 1
     </select>
 
     <select id="countSupplierByTenantAndHisId" resultType="int">
-        select count(*) from fd_supplier where del_flag != 1 and his_id = #{hisId}
-        <choose>
-            <when test="tenantId != null and tenantId != ''">
-                and tenant_id = #{tenantId}
-            </when>
-            <otherwise>
-                and (tenant_id is null or tenant_id = '')
-            </otherwise>
-        </choose>
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select count(*) from fd_supplier where del_flag != 1 and his_id = #{hisId} and tenant_id = #{tenantId}
         <if test="excludeId != null">
             and id != #{excludeId}
         </if>
     </select>
 
     <insert id="insertFdSupplier" parameterType="FdSupplier" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_supplier
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">code,</if>
@@ -124,7 +113,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="remark != null">remark,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -156,12 +145,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="remark != null">#{remark},</if>
         </trim>
     </insert>
 
     <update id="updateFdSupplier" parameterType="FdSupplier">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_supplier
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -193,26 +183,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteFdSupplierById">
-        update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteFdSupplierByIds">
-        update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectSupplierIsExist" parameterType="Long" resultType="int">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select count(*) from stk_io_bill
         where del_flag !=1
         and suppler_id = #{id}
+        and tenant_id = #{tenantId}
     </select>
 </mapper>

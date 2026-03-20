@@ -95,8 +95,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentInfoList" parameterType="EquipmentInfo" resultMap="EquipmentInfoResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentInfoVo"/>
         <where>  
+            and tenant_id = #{tenantId}
             <if test="assetCode != null  and assetCode != ''"> and asset_code like concat('%', #{assetCode}, '%')</if>
             <if test="assetName != null  and assetName != ''"> and asset_name like concat('%', #{assetName}, '%')</if>
             <if test="useDepartment != null  and useDepartment != ''"> and use_department like concat('%', #{useDepartment}, '%')</if>
@@ -116,16 +118,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentInfoById" parameterType="String" resultMap="EquipmentInfoResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentInfoVo"/>
-        where id = #{id} and del_flag = '0'
+        where id = #{id} and tenant_id = #{tenantId} and del_flag = '0'
     </select>
 
     <select id="selectEquipmentInfoByAssetCode" parameterType="String" resultMap="EquipmentInfoResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentInfoVo"/>
-        where asset_code = #{assetCode} and del_flag = '0'
+        where asset_code = #{assetCode} and tenant_id = #{tenantId} and del_flag = '0'
     </select>
         
     <insert id="insertEquipmentInfo" parameterType="EquipmentInfo" useGeneratedKeys="false">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into equipment_info
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -211,6 +216,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createBy != null">create_by,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -296,10 +302,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createBy != null">#{createBy},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            #{tenantId},
          </trim>
     </insert>
 
     <update id="updateEquipmentInfo" parameterType="EquipmentInfo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update equipment_info
         <trim prefix="SET" suffixOverrides=",">
             <if test="assetCode != null">asset_code = #{assetCode},</if>
@@ -384,27 +392,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteEquipmentInfoById" parameterType="String">
-        update equipment_info set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_info set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteEquipmentInfoByIds" parameterType="String">
-        update equipment_info set del_flag = 1, update_time = now() where id in 
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_info set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectEquipmentInfoStatistics" parameterType="EquipmentInfo" resultMap="EquipmentInfoResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select 
             asset_type,
             count(*) as quantity,
             sum(invoice_amount) as invoice_amount
         from equipment_info
         <where>
+            and tenant_id = #{tenantId}
             <if test="assetStatus != null and assetStatus != ''"> and asset_status = #{assetStatus}</if>
             <if test="useDepartment != null and useDepartment != ''"> and use_department = #{useDepartment}</if>
             and del_flag = '0'

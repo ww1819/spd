@@ -124,8 +124,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectDeptStocktakingList" parameterType="StkIoStocktaking" resultMap="DeptStocktakingResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectDeptStocktakingVo"/>
         where stk.del_flag != 1
+        and stk.tenant_id = #{tenantId}
         and stk.department_id is not null
         and (stk.warehouse_id is null or stk.warehouse_id = 0)
         <if test="stockNo != null  and stockNo != ''"> and stk.stock_no like concat('%', #{stockNo}, '%')</if>
@@ -175,6 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertDeptStocktaking" parameterType="StkIoStocktaking" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into stk_io_stocktaking
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="stockNo != null">stock_no,</if>
@@ -194,7 +197,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="isMonthInit != null">is_month_init,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="stockNo != null">#{stockNo},</if>
@@ -214,7 +217,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 
@@ -304,7 +307,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(stock_no) from stk_io_stocktaking
         where stock_no like concat('KSPD%',#{date},'%')
+        and tenant_id = #{tenantId}
     </select>
 </mapper>

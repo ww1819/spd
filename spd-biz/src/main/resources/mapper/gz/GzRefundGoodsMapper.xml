@@ -79,6 +79,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzRefundGoodsList" parameterType="GzRefundGoods" resultMap="GzRefundGoodsResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id, gz.department_id,
 				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.audit_by, gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
@@ -92,6 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on gz.department_id = d.id
         left join gz_refund_goods_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
+        and gz.tenant_id = #{tenantId}
         <if test="goodsNo != null  and goodsNo != ''"> and gz.goods_no like concat('%', #{goodsNo}, '%')</if>
         <if test="supplerId != null "> and gz.suppler_id = #{supplerId}</if>
         <if test="goodsDate != null "> and gz.goods_date = #{goodsDate}</if>
@@ -121,6 +123,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertGzRefundGoods" parameterType="GzRefundGoods" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_refund_goods
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="goodsNo != null">goods_no,</if>
@@ -138,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="goodsNo != null">#{goodsNo},</if>
@@ -156,7 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 

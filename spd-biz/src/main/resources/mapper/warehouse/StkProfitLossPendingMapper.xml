@@ -6,6 +6,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertStkProfitLossPending" parameterType="com.spd.warehouse.domain.StkProfitLossPending"
             useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into stk_profit_loss_pending
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billId != null">bill_id,</if>
@@ -26,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="subBarcode != null">sub_barcode,</if>
             <if test="applyStatus != null">apply_status,</if>
             <if test="settlementEffectStatus != null">settlement_effect_status,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="delFlag != null">del_flag,</if>
             <if test="deleteBy != null">delete_by,</if>
             <if test="deleteTime != null">delete_time,</if>
@@ -54,7 +55,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="subBarcode != null">#{subBarcode},</if>
             <if test="applyStatus != null">#{applyStatus},</if>
             <if test="settlementEffectStatus != null">#{settlementEffectStatus},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="delFlag != null">#{delFlag},</if>
             <if test="deleteBy != null">#{deleteBy},</if>
             <if test="deleteTime != null">#{deleteTime},</if>

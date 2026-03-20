@@ -108,12 +108,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkDepInventoryById" parameterType="Long" resultMap="StkDepInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkDepInventoryVo"/>
         where stk.id = #{id}
+          and stk.tenant_id = #{tenantId}
           and (stk.del_flag = 0 or stk.del_flag is null)
     </select>
 
     <insert id="insertStkDepInventory" parameterType="StkDepInventory" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into stk_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
@@ -138,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billNo != null">bill_no,</if>
             <if test="billType != null">bill_type,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="settlementType != null">settlement_type,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -164,12 +167,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billNo != null">#{billNo},</if>
             <if test="billType != null">#{billType},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="settlementType != null">#{settlementType},</if>
          </trim>
     </insert>
 
     <update id="updateStkDepInventory" parameterType="StkDepInventory">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_dep_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialId != null">material_id = #{materialId},</if>
@@ -198,23 +202,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteStkDepInventoryById" parameterType="map">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_dep_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now()
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteStkDepInventoryByIds" parameterType="map">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_dep_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now()
-        where id in
+        where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -222,9 +228,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 退库用：只查已收货确认的科室库存 -->
     <select id="selectStkDepInventoryOne" parameterType="map" resultMap="StkDepInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select * from stk_dep_inventory
         where batch_no = #{batchNo}
           and warehouse_id = #{warehouseId}
+          and tenant_id = #{tenantId}
           and (receipt_confirm_status = 1 or receipt_confirm_status is null)
           and (del_flag = 0 or del_flag is null)
         order by id desc
@@ -233,9 +241,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 退库校验可用数量：只统计已收货确认的科室库存 -->
     <select id="selectTKStkInvntoryByBatchNo" parameterType="map" resultType="java.math.BigDecimal">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select SUM(IFNULL(qty, 0)) from stk_dep_inventory
         where batch_no = #{batchNo}
           and warehouse_id = #{warehouseId}
+          and tenant_id = #{tenantId}
           and (receipt_confirm_status = 1 or receipt_confirm_status is null)
           and (del_flag = 0 or del_flag is null)
     </select>
@@ -268,6 +278,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 科室进销存明细查询 -->
     <select id="selectDepartmentInOutDetailList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentInOutDetailVo">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select 
             bill.id,
             bill.bill_no as billNo,
@@ -292,6 +303,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on entry.material_id = m.id
         left join fd_warehouse w on bill.warehouse_id = w.id
         where bill.del_flag = 0
+          and bill.tenant_id = #{tenantId}
           and (entry.del_flag = 0 or entry.del_flag is null)
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>

@@ -114,9 +114,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzTraceabilityList" parameterType="GzTraceability" resultMap="GzTraceabilityResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzTraceabilityVo"/>
         <where>
             t.del_flag = '0'
+            and t.tenant_id = #{tenantId}
             <if test="traceNo != null and traceNo != ''"> and t.trace_no = #{traceNo}</if>
             <if test="medicalRecordNo != null and medicalRecordNo != ''"> and t.medical_record_no = #{medicalRecordNo}</if>
             <if test="patientName != null and patientName != ''"> and t.patient_name like concat('%', #{patientName}, '%')</if>
@@ -154,12 +156,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectMaxTraceNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(trace_no) from gz_traceability
         where trace_no like concat(#{prefix},'%')
         and trace_no like concat('%',#{date},'%')
+        and tenant_id = #{tenantId}
     </select>
 
     <insert id="insertGzTraceability" parameterType="GzTraceability" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_traceability
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="traceNo != null and traceNo != ''">trace_no,</if>
@@ -190,7 +195,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="traceNo != null and traceNo != ''">#{traceNo},</if>
@@ -221,7 +226,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 
@@ -280,7 +285,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteGzTraceabilityEntryByParentId" parameterType="Long">
-        update gz_traceability_entry set del_flag = 1, update_time = now() where parent_id = #{parentId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_traceability_entry set del_flag = 1, update_time = now() where parent_id = #{parentId} and tenant_id = #{tenantId}
     </delete>
 
     <!-- 查询追溯单明细列表（用于使用追溯明细表） -->

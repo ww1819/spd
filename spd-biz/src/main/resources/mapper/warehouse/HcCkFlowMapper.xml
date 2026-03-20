@@ -5,6 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.warehouse.mapper.HcCkFlowMapper">
 
     <insert id="insertHcCkFlow" parameterType="HcCkFlow" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into t_hc_ck_flow
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billId != null">bill_id,</if>
@@ -29,7 +30,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="flowTime != null">flow_time,</if>
             <if test="originBusinessType != null">origin_business_type,</if>
             <if test="delFlag != null">del_flag,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="deleteBy != null">delete_by,</if>
             <if test="deleteTime != null">delete_time,</if>
             <if test="createBy != null">create_by,</if>
@@ -60,7 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="flowTime != null">#{flowTime},</if>
             <if test="originBusinessType != null">#{originBusinessType},</if>
             <if test="delFlag != null">#{delFlag},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="deleteBy != null">#{deleteBy},</if>
             <if test="deleteTime != null">#{deleteTime},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -71,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateKcNoByEntryId">
-        update t_hc_ck_flow set kc_no = #{kcNo}, update_time = now() where entry_id = #{entryId} and (del_flag = 0 or del_flag is null)
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update t_hc_ck_flow set kc_no = #{kcNo}, update_time = now() where entry_id = #{entryId} and tenant_id = #{tenantId} and (del_flag = 0 or del_flag is null)
     </update>
 </mapper>

@@ -168,6 +168,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertGzDepotInventory" parameterType="GzDepotInventory" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_depot_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="qty != null">qty,</if>
@@ -181,7 +182,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="inHospitalCode != null">in_hospital_code,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="masterBarcode != null">master_barcode,</if>
             <if test="secondaryBarcode != null">secondary_barcode,</if>
          </trim>
@@ -197,7 +198,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="masterBarcode != null">#{masterBarcode},</if>
             <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
          </trim>

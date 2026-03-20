@@ -34,11 +34,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdWarehouseList" parameterType="FdWarehouse" resultMap="FdWarehouseResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdWarehouseVo"/>
         where del_flag != 1
+        and tenant_id = #{tenantId}
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
         <if test="params != null and params.allowedWarehouseIds != null">
             <choose>
                 <when test="params.allowedWarehouseIds.size() > 0"> and id in <foreach collection="params.allowedWarehouseIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
@@ -48,35 +49,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select w.id,w.code,w.name
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
         left join sys_user u on u.user_id = uw.user_id
         where w.del_flag != 1
         <if test="userId != null"> and u.user_id = #{userId}</if>
-        <if test="tenantId != null and tenantId != ''"> and w.tenant_id = #{tenantId}</if>
+        and w.tenant_id = #{tenantId}
     </select>
 
     <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdWarehouseVo"/>
-        where id = #{id} and (del_flag = 0 or del_flag is null)
+        where id = #{id} and (del_flag = 0 or del_flag is null) and tenant_id = #{tenantId}
     </select>
 
     <select id="selectwarehouseAll" resultMap="FdWarehouseResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdWarehouseVo"/>
-        where del_flag != 1
+        where del_flag != 1 and tenant_id = #{tenantId}
     </select>
 
     <select id="selectWarehouseListByUserId" parameterType="Long" resultType="Long">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select w.id
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
         left join sys_user u on u.user_id = uw.user_id
-        where w.del_flag != 1
+        where w.del_flag != 1 and w.tenant_id = #{tenantId}
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
 	</select>
 
     <insert id="insertFdWarehouse" parameterType="FdWarehouse">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_warehouse
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -92,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type,</if>
             <if test="settlementType != null and settlementType != ''">settlement_type,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -108,11 +114,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">#{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 
     <update id="updateFdWarehouse" parameterType="FdWarehouse">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_warehouse
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -128,25 +135,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type = #{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="remark != null">remark = #{remark},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteFdWarehouseById" parameterType="String">
-        update fd_warehouse set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update fd_warehouse set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
     </delete>
 
     <delete id="deleteFdWarehouseByIds" parameterType="String">
-        update fd_warehouse set del_flag = 1, update_time = now() where id in
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update fd_warehouse set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectWarehouseIsExist" parameterType="Long" resultType="int">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select count(*) from stk_io_bill
         where del_flag !=1
         and warehouse_id = #{id}
+        and tenant_id = #{tenantId}
     </select>
 </mapper>

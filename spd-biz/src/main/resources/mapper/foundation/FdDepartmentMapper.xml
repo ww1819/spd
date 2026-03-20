@@ -25,13 +25,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdDepartmentList" parameterType="FdDepartment" resultMap="FdDepartmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdDepartmentVo"/>
         where del_flag != 1
+        and tenant_id = #{tenantId}
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="referredName != null and referredName != ''"> and referred_name like concat('%', #{referredName}, '%')</if>
         <if test="deptRemark != null and deptRemark != ''"> and remark like concat('%', #{deptRemark}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
         <if test="treeParentId != null"> and parent_id = #{treeParentId}</if>
         <if test="params != null and params.allowedDeptIds != null">
             <choose>
@@ -42,58 +43,58 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdDepartmentById" parameterType="String" resultMap="FdDepartmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdDepartmentVo"/>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </select>
 
     <!-- 按编码+租户查一条（导入去重；平台 tenantId 为空时匹配 tenant_id 为空） -->
     <select id="selectFdDepartmentByCodeAndTenantId" resultMap="FdDepartmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdDepartmentVo"/>
-        where del_flag != 1 and code = #{code}
-        <choose>
-            <when test="tenantId != null and tenantId != ''">
-                and tenant_id = #{tenantId}
-            </when>
-            <otherwise>
-                and (tenant_id is null or tenant_id = '')
-            </otherwise>
-        </choose>
+        where del_flag != 1 and code = #{code} and tenant_id = #{tenantId}
         limit 1
     </select>
 
     <select id="selectdepartmenAll" resultMap="FdDepartmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdDepartmentVo"/>
-        where del_flag != 1
+        where del_flag != 1 and tenant_id = #{tenantId}
     </select>
 
     <select id="selectdepartmenAllByTenantId" resultMap="FdDepartmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdDepartmentVo"/>
         where del_flag != 1 and tenant_id = #{tenantId}
     </select>
 
     <select id="selectDepartmenListByUserId" parameterType="Long" resultType="Long">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select d.id
         from fd_department d
         left join sys_user_department ud on ud.department_id = d.id
         left join sys_user u on u.user_id = ud.user_id
-        where d.del_flag != 1
+        where d.del_flag != 1 and d.tenant_id = #{tenantId}
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
     </select>
 
     <select id="countChildrenByParentId" resultType="int">
-        select count(*) from fd_department where del_flag != 1 and parent_id = #{parentId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select count(*) from fd_department where del_flag != 1 and parent_id = #{parentId} and tenant_id = #{tenantId}
     </select>
 
     <select id="selectUserDepartmenAll" parameterType="Long" resultMap="FdDepartmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select d.id,d.code,d.name
         from fd_department d
         left join sys_user_department ud on ud.department_id = d.id
         left join sys_user u on u.user_id = ud.user_id
-        where d.del_flag != 1
+        where d.del_flag != 1 and d.tenant_id = #{tenantId}
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
     </select>
 
     <insert id="insertFdDepartment" parameterType="FdDepartment">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_department
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -106,7 +107,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="parentId != null">parent_id,</if>
             <if test="thirdPartyDeptId != null and thirdPartyDeptId != ''">third_party_dept_id,</if>
          </trim>
@@ -121,13 +122,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="parentId != null">#{parentId},</if>
             <if test="thirdPartyDeptId != null and thirdPartyDeptId != ''">#{thirdPartyDeptId},</if>
          </trim>
     </insert>
 
     <update id="updateFdDepartment" parameterType="FdDepartment">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_department
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -139,7 +141,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             parent_id = #{parentId,jdbcType=BIGINT},
             <choose>
                 <when test="params != null and params.skipThirdPartyDeptId == true"></when>
@@ -148,7 +149,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 </otherwise>
             </choose>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
     </update>
 
 <!--    <delete id="deleteFdDepartmentById" parameterType="String">-->

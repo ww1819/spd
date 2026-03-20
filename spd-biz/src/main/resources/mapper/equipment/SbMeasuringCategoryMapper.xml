@@ -18,21 +18,27 @@
     </resultMap>
     <sql id="selectVo">select id, customer_id, category_code, category_name, category_pinyin, calibration_cycle_days, del_flag, del_by, del_time, create_by, create_time, update_by, update_time from sb_measuring_category</sql>
     <select id="selectList" resultMap="Result">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
             (del_flag = 0 or del_flag is null)
-            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            and customer_id = #{tenantId}
             <if test="categoryName != null and categoryName != ''"> and (category_name like concat('%', #{categoryName}, '%') or category_pinyin like concat('%', #{categoryName}, '%'))</if>
             <if test="categoryCode != null and categoryCode != ''"> and category_code like concat('%', #{categoryCode}, '%')</if>
         </where>
         order by create_time desc
     </select>
-    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <select id="selectById" resultMap="Result">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{tenantId}
+    </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbMeasuringCategory">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into sb_measuring_category (id, customer_id, category_code, category_name, category_pinyin, calibration_cycle_days, del_flag, create_by, create_time, update_by, update_time)
-        values (#{id}, #{customerId}, #{categoryCode}, #{categoryName}, #{categoryPinyin}, #{calibrationCycleDays}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+        values (#{id}, #{tenantId}, #{categoryCode}, #{categoryName}, #{categoryPinyin}, #{calibrationCycleDays}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
     <update id="update" parameterType="com.spd.equipment.domain.SbMeasuringCategory">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update sb_measuring_category
         <set>
             <if test="categoryCode != null">category_code = #{categoryCode},</if>
@@ -45,6 +51,6 @@
             <if test="delBy != null">del_by = #{delBy},</if>
             <if test="delTime != null">del_time = #{delTime},</if>
         </set>
-        where id = #{id}
+        where id = #{id} and customer_id = #{tenantId}
     </update>
 </mapper>

@@ -101,8 +101,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzDepInventoryList" parameterType="GzDepInventory" resultMap="GzDepInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzDepInventoryVo"/>
         where 1=1
+        and gz.tenant_id = #{tenantId}
         <!-- 只查询有院内码的记录，确保每个院内码一行 -->
         and gz.in_hospital_code IS NOT NULL and gz.in_hospital_code != ''
         <!-- 根据showZeroStock参数决定是否过滤数量为0的记录 -->
@@ -129,6 +131,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
@@ -141,7 +144,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="inHospitalCode != null">in_hospital_code,</if>
-            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
@@ -154,7 +157,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
-            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 
@@ -200,9 +203,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectGzDepInventoryByCodeAndDept" resultMap="GzDepInventoryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzDepInventoryVo"/>
         where gz.in_hospital_code = #{inHospitalCode}
         and gz.department_id = #{departmentId}
+        and gz.tenant_id = #{tenantId}
         <!-- 不过滤数量为0的记录 -->
         limit 1
     </select>

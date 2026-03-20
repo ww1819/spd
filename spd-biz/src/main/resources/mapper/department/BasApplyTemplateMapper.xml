@@ -80,19 +80,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectBasApplyTemplateList" resultMap="BasApplyTemplateResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
         <where>
             and (t.del_flag = 0 or t.del_flag is null)
-            <if test="tenantId != null and tenantId != ''">and (t.tenant_id = #{tenantId})</if>
+            and t.tenant_id = #{tenantId}
             <if test="templateName != null and templateName != ''">and t.template_name like concat('%', #{templateName}, '%')</if>
         </where>
         order by t.create_time desc
     </select>
 
     <select id="selectBasApplyTemplateById" resultMap="BasApplyTemplateWithEntryResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName,
                e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
@@ -105,22 +107,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                fc.finance_category_id as mat_finance_id, fc.finance_category_name as mat_finance_name
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
-        left join bas_apply_template_entry e on e.paren_id = t.id and (e.delete_time is null)
+        left join bas_apply_template_entry e on e.paren_id = t.id and e.tenant_id = #{tenantId} and (e.delete_time is null)
         left join fd_material m on e.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier s on m.supplier_id = s.id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
-        where t.id = #{id}
+        where t.id = #{id} and t.tenant_id = #{tenantId}
     </select>
 
     <insert id="insertBasApplyTemplate" parameterType="com.spd.department.domain.BasApplyTemplate" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into bas_apply_template
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name,</if>
             <if test="warehouseId != null">warehouse_id,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -131,7 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">#{templateName},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>

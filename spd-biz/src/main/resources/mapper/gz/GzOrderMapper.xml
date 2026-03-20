@@ -159,6 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertGzOrder" parameterType="GzOrder" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="orderNo != null">order_no,</if>
@@ -170,7 +171,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">order_status,</if>
             <if test="orderType != null">order_type,</if>
             <if test="delFlag != null">del_flag,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="auditDate != null">audit_date,</if>
             <if test="isFollowFlag != null and isFollowFlag != ''">is_follow_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -189,7 +190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="orderType != null">#{orderType},</if>
             <if test="delFlag != null">#{delFlag},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="auditDate != null">#{auditDate},</if>
             <if test="isFollowFlag != null and isFollowFlag != ''">#{isFollowFlag},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -262,11 +263,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 根据院内码查询是否有未出库的出库单 -->
     <select id="selectOutboundOrderNosByInHospitalCode" parameterType="String" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select distinct go.order_no
         from gz_order go
         inner join gz_order_entry goe on go.id = goe.paren_id
         inner join gz_depot_inventory gdi on goe.batch_no = gdi.batch_no
         where gdi.in_hospital_code = #{inHospitalCode}
+        and go.tenant_id = #{tenantId}
         and go.order_type = 102
         and go.order_status = 1
         and go.del_flag != 1

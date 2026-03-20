@@ -70,6 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzShipmentList" parameterType="GzShipment" resultMap="GzShipmentResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
 				gs.create_time, gs.update_by, gs.update_time, gs.remark,
@@ -81,6 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on gs.department_id = d.id
         left join gz_shipment_entry gse on gse.paren_id = gs.id and gse.del_flag != 1
         where gs.del_flag != 1
+        and gs.tenant_id = #{tenantId}
         <if test="shipmentNo != null  and shipmentNo != ''"> and gs.shipment_no like concat('%', #{shipmentNo}, '%')</if>
         <if test="departmentId != null "> and gs.department_id = #{departmentId}</if>
         <if test="shipmentDate != null "> and gs.shipment_date = #{shipmentDate}</if>
@@ -110,6 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertGzShipment" parameterType="GzShipment" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_shipment
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="shipmentNo != null">shipment_no,</if>
@@ -125,7 +128,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="shipmentNo != null">#{shipmentNo},</if>
@@ -141,7 +144,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
+            #{tenantId},
          </trim>
     </insert>
 

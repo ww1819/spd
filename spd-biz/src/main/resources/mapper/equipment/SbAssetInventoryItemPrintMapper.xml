@@ -24,10 +24,11 @@
         select id, customer_id, inventory_id, order_no, inventory_item_id, asset_id, print_task_id, print_task_no, print_task_item_id, print_log_id, del_flag, del_by, del_time, create_by, create_time, update_by, update_time from sb_asset_inventory_item_print
     </sql>
     <select id="selectList" resultMap="Result">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
             (del_flag = 0 or del_flag is null)
-            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            and customer_id = #{tenantId}
             <if test="inventoryId != null and inventoryId != ''"> and inventory_id = #{inventoryId}</if>
             <if test="inventoryItemId != null and inventoryItemId != ''"> and inventory_item_id = #{inventoryItemId}</if>
             <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
@@ -35,14 +36,20 @@
         order by create_time desc
     </select>
     <select id="selectByInventoryItemId" resultMap="Result">
-        <include refid="selectVo"/> where inventory_item_id = #{inventoryItemId} and (del_flag = 0 or del_flag is null) order by create_time desc
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where inventory_item_id = #{inventoryItemId} and customer_id = #{tenantId} and (del_flag = 0 or del_flag is null) order by create_time desc
     </select>
-    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <select id="selectById" resultMap="Result">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{tenantId}
+    </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetInventoryItemPrint">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into sb_asset_inventory_item_print (id, customer_id, inventory_id, order_no, inventory_item_id, asset_id, print_task_id, print_task_no, print_task_item_id, print_log_id, del_flag, create_by, create_time, update_by, update_time)
-        values (#{id}, #{customerId}, #{inventoryId}, #{orderNo}, #{inventoryItemId}, #{assetId}, #{printTaskId}, #{printTaskNo}, #{printTaskItemId}, #{printLogId}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+        values (#{id}, #{tenantId}, #{inventoryId}, #{orderNo}, #{inventoryItemId}, #{assetId}, #{printTaskId}, #{printTaskNo}, #{printTaskItemId}, #{printLogId}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
     <update id="deleteById">
-        update sb_asset_inventory_item_print set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_inventory_item_print set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{tenantId}
     </update>
 </mapper>

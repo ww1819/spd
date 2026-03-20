@@ -559,6 +559,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertStkIoBill" parameterType="StkIoBill" useGeneratedKeys="true" keyProperty="id">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into stk_io_bill
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">bill_no,</if>
@@ -588,7 +589,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isMonthInit != null">is_month_init,</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status,</if>
             <if test="auditBy != null">audit_by,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="settlementType != null and settlementType != ''">settlement_type,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -619,7 +620,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isMonthInit != null">#{isMonthInit},</if>
             <if test="receiptConfirmStatus != null">#{receiptConfirmStatus},</if>
             <if test="auditBy != null">#{auditBy},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
          </trim>
     </insert>
@@ -676,9 +677,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
 
     <select id="selectStkIobillEntryMaterialIsExist" parameterType="Long" resultType="int">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select count(*) from stk_io_bill_entry
         where del_flag !=1
         and material_id = #{id}
+        and tenant_id = #{tenantId}
     </select>
 
     <update id="deleteStkIoBillEntryByParenIds">
@@ -707,42 +710,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <select id="selectMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_bill
         where bill_no like concat('%',#{billNo},'%')
         and bill_type = 101
+        and tenant_id = #{tenantId}
     </select>
 
     <select id="selectOutMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_bill
         where bill_no like concat('%',#{billNo},'%')
         and bill_type = 201
+        and tenant_id = #{tenantId}
     </select>
 
     <select id="selectTHMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_bill
         where bill_no like concat('%',#{billNo},'%')
         and bill_type = 301
+        and tenant_id = #{tenantId}
     </select>
 
     <select id="selectTKMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_bill
         where bill_no like concat('%',#{billNo},'%')
         and bill_type = 401
+        and tenant_id = #{tenantId}
     </select>
 
     <select id="selectJSMaxBillNo" resultType="String">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_bill
         where bill_no like concat('%',#{billNo},'%')
         and bill_type = 501
+        and tenant_id = #{tenantId}
     </select>
 
     <select id="selectHistoryInventory" parameterType="String" resultType="java.util.HashMap">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select m.name materialName,sum(b.qty) historyQty from stk_io_bill a
         left join stk_io_bill_entry b on b.paren_id = a.id
         left join fd_material m on b.material_id = m.id
         where a.bill_status = 2
         and a.bill_type = '101'
-        and a.create_time concat('%',#{previousDateString},'%')
+        and a.tenant_id = #{tenantId}
+        and a.create_time like concat('%',#{previousDateString},'%')
         GROUP BY m.name
     </select>
 

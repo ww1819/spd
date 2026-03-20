@@ -31,10 +31,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <sql id="tenantFilter">
-        <if test="tenantId != null and tenantId != ''"> and (l.tenant_id = #{tenantId})</if>
+        and l.tenant_id = #{tenantId}
     </sql>
 
     <select id="selectFdLocationList" parameterType="FdLocation" resultMap="FdLocationResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdLocationVo"/>
         where l.del_flag != 1
         <include refid="tenantFilter"/>
@@ -46,6 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdLocationTree" parameterType="FdLocation" resultMap="FdLocationResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdLocationVo"/>
         where l.del_flag != 1
         <include refid="tenantFilter"/>
@@ -53,11 +55,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdLocationByLocationId" parameterType="Long" resultMap="FdLocationResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdLocationVo"/>
-        where l.location_id = #{locationId} and (l.del_flag = 0 or l.del_flag is null)
+        where l.location_id = #{locationId} and (l.del_flag = 0 or l.del_flag is null) and l.tenant_id = #{tenantId}
     </select>
 
     <insert id="insertFdLocation" parameterType="FdLocation" useGeneratedKeys="true" keyProperty="locationId">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_location
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -65,7 +69,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationName != null">location_name,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="delFlag != null">del_flag,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -78,7 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationName != null">#{locationName},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="delFlag != null">#{delFlag},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{tenantId},
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -88,6 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdLocation" parameterType="FdLocation">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_location
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -95,7 +100,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationName != null">location_name = #{locationName},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
@@ -104,10 +108,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where location_id = #{locationId}
+        where location_id = #{locationId} and tenant_id = #{tenantId}
     </update>
 
     <delete id="deleteFdLocationByLocationId" parameterType="Long">
-        update fd_location set del_flag = 1 where location_id = #{locationId}
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update fd_location set del_flag = 1 where location_id = #{locationId} and tenant_id = #{tenantId}
     </delete>
 </mapper>

@@ -46,10 +46,11 @@
     </select>
 
     <select id="selectList" resultMap="FinInvoiceResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
             (f.del_flag = 0 or f.del_flag is null)
-            <if test="tenantId != null and tenantId != ''">and f.tenant_id = #{tenantId}</if>
+            and f.tenant_id = #{tenantId}
             <if test="invoiceNo != null and invoiceNo != ''">and f.invoice_no like concat('%', #{invoiceNo}, '%')</if>
             <if test="invoiceCode != null and invoiceCode != ''">and f.invoice_code like concat('%', #{invoiceCode}, '%')</if>
             <if test="supplierId != null">and f.supplier_id = #{supplierId}</if>
