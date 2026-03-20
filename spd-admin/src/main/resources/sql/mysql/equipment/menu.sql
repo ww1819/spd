@@ -3391,3 +3391,66 @@ UPDATE sb_menu SET is_platform_only = '1' WHERE menu_id IN (
 -- 基础资料下：设备字典维护=dict，检验平台设置=component，厂家维护=factory，仓库维护=warehouse，科室维护=tree，设备品牌=star，生产厂家=build，供应商=shopping，资产分类=tree，计量分类=tree-table
 -- 系统设置下：用户管理=user，角色管理=peoples，菜单管理=tree，部门管理=tree，岗位管理=post，客户管理=peoples，客户菜单功能管理=switch
 /
+
+-- ========== 设备 sb_menu（父：客户管理按钮组 01900000-0000-7000-8000-000000001456）==========
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb6e',
+  '清理设备数据(行)',
+  '01900000-0000-7000-8000-000000001456',
+  5,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'sb:system:customer:purgeEq',
+  '#',
+  '0',
+  '0',
+  '0',
+  'admin',
+  NOW(),
+  '按客户物理删除设备侧数据',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb6e');
+/
+
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000cb6f',
+  '清理耗材数据(行)',
+  '01900000-0000-7000-8000-000000001456',
+  6,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'hc:system:customer:purgeHc',
+  '#',
+  '0',
+  '0',
+  '0',
+  'admin',
+  NOW(),
+  '设备客户列表行内清理耗材租户数据',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb6f');
+/

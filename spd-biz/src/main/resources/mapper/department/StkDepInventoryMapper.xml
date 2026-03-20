@@ -20,6 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="beginDate"    column="begin_time"    />
         <result property="endDate"    column="end_time"    />
         <result property="supplierId"    column="supplier_id"    />
+        <result property="factoryId"    column="factory_id"    />
         <result property="outOrderNo"    column="out_order_no"    />
         <result property="billId"    column="bill_id"    />
         <result property="billEntryId"    column="bill_entry_id"    />
@@ -39,6 +40,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="warehouse" javaType="FdWarehouse" resultMap="depInvWhResult" />
+        <association property="fdFactory" javaType="FdFactory" resultMap="depInvFactoryResult" />
+    </resultMap>
+
+    <resultMap id="depInvWhResult" type="FdWarehouse">
+        <id     property="id"    column="whId"     />
+        <result property="code"  column="whCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+    <resultMap id="depInvFactoryResult" type="FdFactory">
+        <id     property="factoryId"    column="ff_id"     />
+        <result property="factoryName"  column="ff_name"   />
     </resultMap>
 
     <resultMap id="departmentResult" type="FdDepartment">
@@ -51,6 +64,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="mId"     />
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
+        <result property="speci" column="m_speci" />
+        <result property="model" column="m_model" />
+        <result property="registerNo" column="m_registerNo" />
+        <association property="fdUnit" javaType="FdUnit" resultMap="depInvFdUnitResult" />
+    </resultMap>
+    <resultMap id="depInvFdUnitResult" type="FdUnit">
+        <id property="unitId" column="u_id" />
+        <result property="unitCode" column="u_code" />
+        <result property="unitName" column="u_name" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -61,32 +83,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectStkDepInventoryVo">
         select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
-			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
+			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
 			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
 			stk.del_flag, stk.delete_by, stk.delete_time,
-			stk.main_barcode, stk.sub_barcode,
+			stk.main_barcode, stk.sub_barcode, stk.factory_id,
+			wh.id whId, wh.code whCode, wh.name warehouseName,
+			ff.factory_id ff_id, ff.factory_name ff_name,
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
+			m.speci m_speci, m.model m_model, m.register_no m_registerNo,
+			u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
                s.id sId,s.code supplierCode,s.name supplierName,
-               (select entry.begin_time from stk_io_bill_entry entry 
+               coalesce(stk.begin_time, (select entry.begin_time from stk_io_bill_entry entry 
                 inner join stk_io_bill bill on bill.id = entry.paren_id 
                 where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id 
                 and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0 
-                order by bill.id desc limit 1) as begin_time,
-               (select entry.end_time from stk_io_bill_entry entry 
+                order by bill.id desc limit 1)) as begin_time,
+               coalesce(stk.end_time, (select entry.end_time from stk_io_bill_entry entry 
                 inner join stk_io_bill bill on bill.id = entry.paren_id 
                 where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id 
                 and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0 
-                order by bill.id desc limit 1) as end_time,
-               (select bill.bill_no from stk_io_bill_entry entry 
+                order by bill.id desc limit 1)) as end_time,
+               coalesce(stk.out_order_no, (select bill.bill_no from stk_io_bill_entry entry 
                 inner join stk_io_bill bill on bill.id = entry.paren_id 
                 where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id 
                 and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0 
-                order by bill.id desc limit 1) as out_order_no
+                order by bill.id desc limit 1)) as out_order_no
         from stk_dep_inventory stk
+        left join fd_warehouse wh on stk.warehouse_id = wh.id
         left join fd_department d on stk.department_id = d.id
         left join fd_material m on stk.material_id = m.id
-        left join fd_supplier s on stk.supplier_id = s.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory ff on ff.factory_id = COALESCE(stk.factory_id, m.factory_id)
+        left join fd_supplier s on stk.supplier_id = CONVERT(s.id, CHAR)
     </sql>
 
     <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
@@ -99,10 +128,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
         <if test="amt != null "> and stk.amt = #{amt}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="supplierId != null and supplierId != ''"> and (stk.supplier_id = #{supplierId} or stk.supplier_id = cast(#{supplierId} as char))</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
@@ -131,6 +163,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="beginDate != null">begin_time,</if>
+            <if test="endDate != null">end_time,</if>
+            <if test="factoryId != null">factory_id,</if>
             <if test="kcNo != null">kc_no,</if>
             <if test="batchNumber != null">batch_number,</if>
             <if test="mainBarcode != null">main_barcode,</if>
@@ -157,6 +192,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="beginDate != null">#{beginDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="factoryId != null">#{factoryId},</if>
             <if test="kcNo != null">#{kcNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
             <if test="mainBarcode != null">#{mainBarcode},</if>
@@ -188,6 +226,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="beginDate != null">begin_time = #{beginDate},</if>
+            <if test="endDate != null">end_time = #{endDate},</if>
+            <if test="factoryId != null">factory_id = #{factoryId},</if>
             <if test="kcNo != null">kc_no = #{kcNo},</if>
             <if test="batchNumber != null">batch_number = #{batchNumber},</if>
             <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>

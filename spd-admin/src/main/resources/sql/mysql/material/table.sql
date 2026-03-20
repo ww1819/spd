@@ -1,7 +1,7 @@
 -- ========== 耗材模块 建表脚本 ==========
 -- 执行顺序建议：1.table.sql 2.column.sql(含存储过程与增量字段) 3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
--- 本脚本已含：stk_io_bill / stk_io_bill_entry / stk_inventory / stk_dep_inventory / stk_batch / t_hc_ck_flow / t_hc_ks_flow（与 column.sql 增量一致）；存量库若已建表可跳过对应 CREATE IF NOT EXISTS
--- 本脚本为完整建表 DDL；期初库存导入明细表 stk_initial_import_entry 已包含 column.sql 中新增字段（第三方ID、耗材编码/规格/型号/注册证/医保/条码等）
+-- 本脚本已含：出入库/库存/批次/仓库与科室流水、盘点单、盈亏单、科室批量消耗、期初导入、结算与 SaaS 权限等（与 column.sql 增量对齐）；存量库若已建表可跳过对应 CREATE IF NOT EXISTS
+-- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；增量字段见 material/column.sql
 -- 按「/」分段，每段一条语句执行
 /
 
@@ -310,11 +310,13 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import` (
   `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_initial_import_bill_no` (`bill_no`),
   KEY `idx_warehouse_id` (`warehouse_id`),
   KEY `idx_bill_status` (`bill_status`),
-  KEY `idx_import_time` (`import_time`)
+  KEY `idx_import_time` (`import_time`),
+  KEY `idx_stk_initial_import_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='期初库存导入主表';
 /
 
@@ -342,15 +344,18 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import_entry` (
   `medical_no` varchar(64) DEFAULT NULL COMMENT '医保编码',
   `medical_name` varchar(255) DEFAULT NULL COMMENT '医保名称',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '主条码',
+  `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值耗材辅条码',
   `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`),
   KEY `idx_paren_id` (`paren_id`),
   KEY `idx_material_id` (`material_id`),
-  KEY `idx_warehouse_id` (`warehouse_id`)
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  KEY `idx_stk_initial_import_entry_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='期初库存导入明细表';
 /
 
@@ -367,9 +372,11 @@ CREATE TABLE IF NOT EXISTS `bas_apply_template` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   KEY `idx_template_name` (`template_name`),
-  KEY `idx_warehouse_id` (`warehouse_id`)
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  KEY `idx_bas_apply_template_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申领制单模板主表';
 /
 
@@ -381,9 +388,16 @@ CREATE TABLE IF NOT EXISTS `bas_apply_template_entry` (
   `qty` decimal(18,2) NOT NULL DEFAULT 1.00 COMMENT '数量',
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`),
   KEY `idx_paren_id` (`paren_id`),
-  KEY `idx_material_id` (`material_id`)
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_bas_apply_template_entry_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申领制单模板明细表';
 /
 
@@ -789,6 +803,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill` (
 CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `paren_id` bigint NOT NULL COMMENT '主表ID',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT '出入库单号（冗余主表 bill_no，便于按单号查明细）',
   `commodity_id` bigint DEFAULT NULL COMMENT '商品ID',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
   `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
@@ -843,6 +858,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
+  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID（fd_factory.factory_id，冗余追溯）',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -853,6 +869,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   KEY `idx_hc_ck_entry` (`entry_id`),
   KEY `idx_hc_ck_flow_time` (`flow_time`),
   KEY `idx_hc_ck_supplier` (`supplier_id`),
+  KEY `idx_hc_ck_factory` (`factory_id`),
   KEY `idx_hc_ck_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库流水表';
 /
@@ -862,6 +879,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   `bill_id` bigint DEFAULT NULL COMMENT '出库单id',
   `entry_id` bigint DEFAULT NULL COMMENT '出库明细id',
   `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '库存归属仓库ID（出库来源仓库）',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
   `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
   `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
@@ -881,6 +899,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
+  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID（fd_factory.factory_id，冗余追溯）',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -890,6 +909,8 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   KEY `idx_hc_ks_bill` (`bill_id`),
   KEY `idx_hc_ks_entry` (`entry_id`),
   KEY `idx_hc_ks_flow_time` (`flow_time`),
+  KEY `idx_hc_ks_wh` (`warehouse_id`),
+  KEY `idx_hc_ks_factory` (`factory_id`),
   KEY `idx_hc_ks_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室流水表';
 /
@@ -908,6 +929,7 @@ CREATE TABLE IF NOT EXISTS `stk_inventory` (
   `material_date` date DEFAULT NULL COMMENT '耗材日期',
   `warehouse_date` date DEFAULT NULL COMMENT '入库日期',
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID（与入库单一致）',
+  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID（冗余，与批次/档案一致）',
   `begin_time` date DEFAULT NULL COMMENT '生产日期',
   `end_time` date DEFAULT NULL COMMENT '有效期',
   `receipt_order_no` varchar(64) DEFAULT NULL COMMENT '入库单号',
@@ -928,6 +950,7 @@ CREATE TABLE IF NOT EXISTS `stk_inventory` (
   KEY `idx_stk_inv_batch_id` (`batch_id`),
   KEY `idx_stk_inv_mat_wh` (`material_id`,`warehouse_id`),
   KEY `idx_stk_inv_supplier` (`supplier_id`),
+  KEY `idx_stk_inv_factory` (`factory_id`),
   KEY `idx_stk_inv_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库库存明细表';
 /
@@ -936,6 +959,7 @@ CREATE TABLE IF NOT EXISTS `stk_dep_inventory` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
   `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '库存归属仓库ID（与出库来源仓库一致）',
   `qty` decimal(18,2) DEFAULT NULL COMMENT '数量',
   `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
   `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
@@ -945,6 +969,9 @@ CREATE TABLE IF NOT EXISTS `stk_dep_inventory` (
   `material_date` date DEFAULT NULL COMMENT '耗材日期',
   `warehouse_date` date DEFAULT NULL COMMENT '入库日期',
   `supplier_id` varchar(64) DEFAULT NULL COMMENT '供应商ID（与出库批次仓库库存一致）',
+  `begin_time` date DEFAULT NULL COMMENT '生产日期',
+  `end_time` date DEFAULT NULL COMMENT '有效期',
+  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID（fd_factory.factory_id，冗余追溯）',
   `out_order_no` varchar(64) DEFAULT NULL COMMENT '出库单号',
   `kc_no` bigint DEFAULT NULL COMMENT '科室库存明细id',
   `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
@@ -968,6 +995,7 @@ CREATE TABLE IF NOT EXISTS `stk_dep_inventory` (
   PRIMARY KEY (`id`),
   KEY `idx_stk_dep_inv_batch` (`batch_no`),
   KEY `idx_stk_dep_inv_batch_id` (`batch_id`),
+  KEY `idx_stk_dep_inv_wh` (`warehouse_id`),
   KEY `idx_stk_dep_inv_dept` (`department_id`),
   KEY `idx_stk_dep_inv_bill` (`bill_id`,`bill_entry_id`),
   KEY `idx_stk_dep_inv_tenant` (`tenant_id`)
@@ -1081,6 +1109,181 @@ CREATE TABLE IF NOT EXISTS `stk_batch` (
   KEY `idx_stk_batch_supplier` (`supplier_id`),
   KEY `idx_stk_batch_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批次追溯表';
+/
+
+-- ========== 仓库盘点单（与 StkIoStocktakingMapper 一致；明细含 tenant_id 与逻辑删除审计） ==========
+CREATE TABLE IF NOT EXISTS `stk_io_stocktaking` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `stock_no` varchar(64) DEFAULT NULL COMMENT '盘点单号',
+  `suppler_id` bigint DEFAULT NULL COMMENT '供应商ID',
+  `stock_date` date DEFAULT NULL COMMENT '盘点日期',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `stock_status` int DEFAULT NULL COMMENT '盘点状态',
+  `user_id` bigint DEFAULT NULL COMMENT '操作人',
+  `stock_type` int DEFAULT NULL COMMENT '盘点类型',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `is_month_init` int DEFAULT NULL COMMENT '是否月结',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`id`),
+  KEY `idx_stk_stocktaking_wh` (`warehouse_id`),
+  KEY `idx_stk_stocktaking_tenant` (`tenant_id`),
+  KEY `idx_stk_stocktaking_no` (`stock_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库盘点单主表';
+/
+
+CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `paren_id` bigint NOT NULL COMMENT '主表ID',
+  `commodity_id` bigint DEFAULT NULL COMMENT '商品ID',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `qty` decimal(18,2) DEFAULT NULL COMMENT '数量',
+  `price` decimal(18,2) DEFAULT NULL COMMENT '价格',
+  `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
+  `kc_no` bigint DEFAULT NULL COMMENT '库存明细id',
+  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  `begin_time` date DEFAULT NULL COMMENT '生产日期',
+  `end_time` date DEFAULT NULL COMMENT '有效期',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `stock_qty` decimal(18,2) DEFAULT NULL COMMENT '盘点数量',
+  `profit_qty` decimal(18,2) DEFAULT NULL COMMENT '盈亏数量',
+  `stock_amount` decimal(18,2) DEFAULT NULL COMMENT '盘点金额',
+  `profit_amount` decimal(18,2) DEFAULT NULL COMMENT '盈亏金额',
+  `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
+  `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
+  `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID（盘盈等）',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_stk_ste_paren` (`paren_id`),
+  KEY `idx_stk_ste_material` (`material_id`),
+  KEY `idx_stk_ste_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库盘点单明细表';
+/
+
+-- ========== 盈亏单（与 StkIoProfitLossMapper 一致） ==========
+CREATE TABLE IF NOT EXISTS `stk_io_profit_loss` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT '盈亏单号',
+  `stocktaking_id` bigint DEFAULT NULL COMMENT '关联盘点单ID',
+  `stocktaking_no` varchar(64) DEFAULT NULL COMMENT '盘点单号',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `bill_status` int DEFAULT 1 COMMENT '单据状态 1待审核 2已审核',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`id`),
+  KEY `idx_pl_stocktaking` (`stocktaking_id`),
+  KEY `idx_pl_warehouse` (`warehouse_id`),
+  KEY `idx_pl_tenant` (`tenant_id`),
+  KEY `idx_pl_bill_status` (`bill_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盈亏单主表';
+/
+
+CREATE TABLE IF NOT EXISTS `stk_io_profit_loss_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `paren_id` bigint DEFAULT NULL COMMENT '盈亏单ID',
+  `stocktaking_entry_id` bigint DEFAULT NULL COMMENT '来源盘点明细ID',
+  `kc_no` bigint DEFAULT NULL COMMENT '库存明细id',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
+  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  `book_qty` decimal(18,2) DEFAULT NULL COMMENT '账面数量',
+  `stock_qty` decimal(18,2) DEFAULT NULL COMMENT '盘点数量',
+  `profit_qty` decimal(18,2) DEFAULT NULL COMMENT '盈亏数量',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `profit_amount` decimal(18,2) DEFAULT NULL COMMENT '盈亏金额',
+  `begin_time` date DEFAULT NULL COMMENT '生产日期',
+  `end_time` date DEFAULT NULL COMMENT '有效期',
+  `del_flag` int DEFAULT 0 COMMENT '删除标志',
+  `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
+  `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
+  `suppler_id` varchar(128) DEFAULT NULL COMMENT '供应商ID',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_pl_entry_paren` (`paren_id`),
+  KEY `idx_pl_entry_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盈亏单明细表';
+/
+
+-- ========== 科室批量消耗（与 DeptBatchConsumeMapper 一致；明细列 batch_number 与代码一致） ==========
+CREATE TABLE IF NOT EXISTS `t_hc_ks_xh` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `consume_bill_no` varchar(50) DEFAULT NULL COMMENT '消耗单号',
+  `consume_bill_date` date DEFAULT NULL COMMENT '消耗日期',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `user_id` bigint DEFAULT NULL COMMENT '操作人ID',
+  `consume_bill_status` int DEFAULT 1 COMMENT '单据状态 1待审核 2已审核',
+  `total_amount` decimal(18,2) DEFAULT 0.00 COMMENT '总金额',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
+  `reject_reason` varchar(500) DEFAULT NULL COMMENT '驳回原因',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hc_ks_xh_no` (`consume_bill_no`),
+  KEY `idx_hc_ks_xh_wh` (`warehouse_id`),
+  KEY `idx_hc_ks_xh_dept` (`department_id`),
+  KEY `idx_hc_ks_xh_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室批量消耗主表';
+/
+
+CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `paren_id` bigint NOT NULL COMMENT '父表ID',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
+  `unit_price` decimal(18,2) DEFAULT 0.00 COMMENT '单价',
+  `qty` decimal(18,2) DEFAULT 0.00 COMMENT '数量',
+  `price` decimal(18,2) DEFAULT 0.00 COMMENT '价格',
+  `amt` decimal(18,2) DEFAULT 0.00 COMMENT '金额',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
+  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  `begin_time` date DEFAULT NULL COMMENT '生产日期',
+  `end_time` date DEFAULT NULL COMMENT '有效期',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
+  `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hc_ks_xh_e_paren` (`paren_id`),
+  KEY `idx_hc_ks_xh_e_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室批量消耗明细表';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

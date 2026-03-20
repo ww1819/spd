@@ -27,6 +27,7 @@ import com.spd.common.enums.TenantEnum;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerMenuService;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ITenantDataPurgeService;
 
 /**
  * 设备系统客户（SaaS租户）管理
@@ -43,6 +44,8 @@ public class SbCustomerController extends BaseController {
 
   @Autowired
   private ISbCustomerMenuService sbCustomerMenuService;
+  @Autowired
+  private ITenantDataPurgeService tenantDataPurgeService;
 
   @PreAuthorize("@ss.hasPermi('sb:system:customer:list')")
   @GetMapping("/list")
@@ -196,5 +199,38 @@ public class SbCustomerController extends BaseController {
   public AjaxResult resetMaterial(@PathVariable String customerId) {
     sbCustomerService.resetMaterialFunctions(customerId);
     return success();
+  }
+
+  /**
+   * 按客户物理删除设备侧数据（customer_id）；不删除 sb_customer 行；删除该客户下 sys_user。
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:purgeEq')")
+  @Log(title = "清理设备租户数据", businessType = BusinessType.DELETE)
+  @PostMapping("/{customerId}/purgeEquipmentData")
+  public AjaxResult purgeEquipmentData(@PathVariable String customerId,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String c = body != null ? body.get("confirm") : null;
+    if (!"PURGE_EQ".equals(c)) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_EQ\"} 以确认清理设备数据");
+    }
+    int n = tenantDataPurgeService.purgeEquipmentDataForCustomer(customerId);
+    return success("已清理设备数据，影响行数约 " + n);
+  }
+
+  /**
+   * 与耗材客户管理并列：在设备客户列表行内可触发清理该租户耗材数据（逻辑同
+   * {@code POST /material/system/customer/{id}/purgeConsumablesData}）。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:purgeHc')")
+  @Log(title = "清理耗材租户数据", businessType = BusinessType.DELETE)
+  @PostMapping("/{customerId}/purgeConsumablesData")
+  public AjaxResult purgeConsumablesDataFromEquipmentUi(@PathVariable String customerId,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String c = body != null ? body.get("confirm") : null;
+    if (!"PURGE_HC".equals(c)) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_HC\"} 以确认清理耗材数据");
+    }
+    int n = tenantDataPurgeService.purgeConsumablesDataForTenant(customerId);
+    return success("已清理耗材数据，影响行数约 " + n);
   }
 }

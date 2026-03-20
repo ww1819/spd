@@ -22,6 +22,8 @@ public class HcKsFlow extends BaseEntity {
     private Long entryId;
     /** 科室ID */
     private Long departmentId;
+    /** 库存归属仓库ID（出库来源仓库） */
+    private Long warehouseId;
     /** 耗材ID */
     private Long materialId;
     /** 批次号 */
@@ -45,6 +47,8 @@ public class HcKsFlow extends BaseEntity {
     private Date endTime;
     /** 供应商ID */
     private String supplierId;
+    /** 生产厂家ID（fd_factory.factory_id） */
+    private Long factoryId;
     /** 科室库存明细id */
     private Long kcNo;
     /** 类型：CK出库 */
@@ -72,6 +76,8 @@ public class HcKsFlow extends BaseEntity {
     public void setEntryId(Long entryId) { this.entryId = entryId; }
     public Long getDepartmentId() { return departmentId; }
     public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
     public String getBatchNo() { return batchNo; }
@@ -92,6 +98,8 @@ public class HcKsFlow extends BaseEntity {
     public void setEndTime(Date endTime) { this.endTime = endTime; }
     public String getSupplierId() { return supplierId; }
     public void setSupplierId(String supplierId) { this.supplierId = supplierId; }
+    public Long getFactoryId() { return factoryId; }
+    public void setFactoryId(Long factoryId) { this.factoryId = factoryId; }
     public Long getKcNo() { return kcNo; }
     public void setKcNo(Long kcNo) { this.kcNo = kcNo; }
     public String getLx() { return lx; }

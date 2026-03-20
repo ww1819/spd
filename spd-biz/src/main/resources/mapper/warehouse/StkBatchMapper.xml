@@ -129,4 +129,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from stk_batch
         where id = #{id} and tenant_id = #{tenantId}
     </select>
+
+    <select id="selectStkBatchList" parameterType="com.spd.warehouse.domain.StkBatch" resultMap="StkBatchResult">
+        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select id, batch_no, material_id, material_code, material_name, speci, model,
+               unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
+               sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
+               register_no, permit_no, factory_id, factory_code, factory_name,
+               supplier_id, supplier_code, supplier_name, warehouse_id, warehouse_code, warehouse_name,
+               department_id, department_code, department_name,
+               storeroom_id, storeroom_code, storeroom_name,
+               finance_category_id, finance_category_code, finance_category_name,
+               batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+               bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
+        from stk_batch
+        <where>
+            tenant_id = #{tenantId}
+            and (del_flag = 0 or del_flag is null)
+            <if test="id != null">and id = #{id}</if>
+            <if test="batchNo != null and batchNo != ''">and batch_no like concat('%', #{batchNo}, '%')</if>
+            <if test="materialId != null">and material_id = #{materialId}</if>
+            <if test="materialCode != null and materialCode != ''">and material_code like concat('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''">and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="supplierId != null">and supplier_id = #{supplierId}</if>
+            <if test="warehouseId != null">and warehouse_id = #{warehouseId}</if>
+            <if test="batchSource != null and batchSource != ''">and batch_source = #{batchSource}</if>
+            <if test="originFlowLx != null and originFlowLx != ''">and origin_flow_lx = #{originFlowLx}</if>
+        </where>
+        order by id desc
+    </select>
 </mapper>

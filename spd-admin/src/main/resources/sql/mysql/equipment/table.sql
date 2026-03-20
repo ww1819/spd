@@ -1,4 +1,8 @@
 -- mysql 追加表（按「/」分段，每段一条语句执行）
+-- ========== 设备系统（SaaS）建表脚本 ==========
+-- 覆盖：sb_customer、客户菜单/启停、68 分类、资产台账、条码打印、资产盘点、设备端菜单/角色/工作组与用户权限等。
+-- 当前仓库内未发现额外「仅存在于 spd/sql 且未纳入本文件」的设备业务表；增量字段见 equipment/column.sql。
+-- 说明：fd_department / fd_department_change_log 与耗材库共用表结构，部署时与 material/table.sql 二选一执行或保证结构一致即可。
 
 -- 客户表（SaaS 租户，主键 UUID7）
 CREATE TABLE IF NOT EXISTS `sb_customer` (
@@ -723,4 +727,8 @@ CREATE TABLE IF NOT EXISTS `sb_user_permission_dept` (
   UNIQUE KEY `uk_upd_user_dept` (`user_id`, `dept_id`),
   KEY `idx_upd_customer` (`customer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备用户科室权限';
+/
+
+-- ========== 覆盖说明（扫描结论）==========
+-- 设备侧业务表已全部包含于上文；若后续新增表，请同步本文件并补充 equipment/column.sql 与相关 Mapper。
 /

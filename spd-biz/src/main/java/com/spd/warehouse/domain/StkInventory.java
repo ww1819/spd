@@ -69,6 +69,9 @@ public class StkInventory extends BaseEntity
     @Excel(name = "供应商ID")
     private Long supplierId;
 
+    /** 生产厂家ID（冗余，与批次/耗材档案一致） */
+    private Long factoryId;
+
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "生产日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -247,6 +250,14 @@ public class StkInventory extends BaseEntity
 
     public void setSupplierId(Long supplierId) {
         this.supplierId = supplierId;
+    }
+
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
     }
 
     public Date getBeginTime() {

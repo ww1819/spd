@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
         <result property="supplierId"    column="supplier_id"    />
+        <result property="factoryId"    column="factory_id"    />
         <result property="beginTime"    column="begin_time"    />
         <result property="endTime"    column="end_time"    />
         <result property="receiptOrderNo"    column="receipt_order_no"    />
@@ -34,6 +35,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
     </resultMap>
 
+    <resultMap id="wcCatResult" type="FdWarehouseCategory">
+        <id     property="warehouseCategoryId" column="wc_id" />
+        <result property="warehouseCategoryName" column="wc_name" />
+    </resultMap>
+    <resultMap id="fcCatResult" type="FdFinanceCategory">
+        <id     property="financeCategoryId" column="fc_id" />
+        <result property="financeCategoryName" column="fc_name" />
+    </resultMap>
+
     <resultMap id="warehouseResult" type="FdWarehouse">
         <id     property="id"    column="wId"     />
         <result property="code"  column="warehouseCode"   />
@@ -47,9 +57,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci"    column="m_speci"    />
         <result property="model"    column="m_model"    />
         <result property="registerNo"    column="m_registerNo"    />
+        <result property="isBilling"    column="m_isBilling"    />
+        <result property="periodDate"    column="m_periodDate"    />
+        <result property="packageSpeci"    column="m_packageSpeci"    />
+        <result property="isWay"    column="m_isWay"    />
         <association property="fdUnit"    javaType="FdUnit" resultMap="fdUnitResult" />
         <association property="fdFactory"    javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="supplier"    javaType="FdSupplier" resultMap="materialSupplierResult" />
+        <association property="fdWarehouseCategory" javaType="FdWarehouseCategory" resultMap="wcCatResult" />
+        <association property="fdFinanceCategory" javaType="FdFinanceCategory" resultMap="fcCatResult" />
     </resultMap>
 
     <resultMap id="fdUnitResult" type="FdUnit">
@@ -78,16 +94,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectStkInventoryVo">
         select stk.id, stk.qty, stk.material_id, stk.warehouse_id, stk.unit_price,stk.amt,
-				stk.batch_no, stk.batch_id, stk.material_no, stk.material_date, stk.warehouse_date,
-				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,stk.tenant_id,stk.settlement_type,
+				stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date,
+				stk.supplier_id,stk.factory_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,stk.tenant_id,stk.settlement_type,
 				stk.main_barcode, stk.sub_barcode,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
-				s.id sId,s.code supplierCode,s.name supplierName
+				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
+				m.unit_id m_unitId, m.factory_id m_factoryId, m.supplier_id m_supplierId,
+				m.is_billing m_isBilling, m.period_date m_periodDate,
+				m.package_speci m_packageSpeci, m.is_way m_isWay,
+				u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
+				f.factory_id f_id, f.factory_code f_code, f.factory_name f_name,
+				ms.id ms_id, ms.code ms_code, ms.name ms_name,
+				s.id sId,s.code supplierCode,s.name supplierName,
+				wc.warehouse_category_id wc_id, wc.warehouse_category_name wc_name,
+				fc.finance_category_id fc_id, fc.finance_category_name fc_name
         from stk_inventory stk
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_supplier s on stk.supplier_id = s.id
         left join fd_material m on stk.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on f.factory_id = COALESCE(stk.factory_id, m.factory_id)
+        left join fd_supplier ms on m.supplier_id = ms.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
     </sql>
 
     <sql id="selectStkInventoryTotalVo">
@@ -162,6 +192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="amt != null "> and stk.amt = #{amt}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
@@ -185,6 +216,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="amt != null "> and stk.amt = #{amt}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
@@ -217,6 +249,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="amt != null "> and stk.amt = #{amt}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
@@ -247,6 +280,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="amt != null "> and stk.amt = #{amt}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
@@ -288,6 +322,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="factoryId != null">factory_id,</if>
             <if test="beginTime != null">begin_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="receiptOrderNo != null">receipt_order_no,</if>
@@ -310,6 +345,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="factoryId != null">#{factoryId},</if>
             <if test="beginTime != null">#{beginTime},</if>
             <if test="endTime != null">#{endTime},</if>
             <if test="receiptOrderNo != null">#{receiptOrderNo},</if>
@@ -337,6 +373,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="factoryId != null">factory_id = #{factoryId},</if>
             <if test="beginTime != null">begin_time = #{beginTime},</if>
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="receiptOrderNo != null">receipt_order_no = #{receiptOrderNo},</if>

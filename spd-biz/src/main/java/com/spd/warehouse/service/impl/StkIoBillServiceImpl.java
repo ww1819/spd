@@ -402,6 +402,25 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     /**
+     * 生产厂家：优先取仓库库存行冗余字段，其次批次表 stk_batch.factory_id
+     */
+    private Long resolveFactoryId(StkInventory inv) {
+        if (inv == null) {
+            return null;
+        }
+        if (inv.getFactoryId() != null) {
+            return inv.getFactoryId();
+        }
+        if (inv.getBatchId() != null) {
+            StkBatch b = stkBatchMapper.selectStkBatchById(inv.getBatchId());
+            if (b != null && b.getFactoryId() != null) {
+                return b.getFactoryId();
+            }
+        }
+        return null;
+    }
+
+    /**
      * 入库保存/审核前：补全明细与主表供应商，保证库存、批次、仓库流水一致
      */
     private void normalizeInboundSupplierFields(StkIoBill bill) {
@@ -479,6 +498,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkInventory.setBatchNo(entry.getBatchNo());
                     if (stkBatch != null) {
                         stkInventory.setBatchId(stkBatch.getId());
+                        stkInventory.setFactoryId(stkBatch.getFactoryId());
                     }
                     stkInventory.setMaterialNo(entry.getBatchNumber());
                     stkInventory.setMaterialId(entry.getMaterialId());
@@ -522,6 +542,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     rkFlow.setMainBarcode(entry.getMainBarcode());
                     rkFlow.setSubBarcode(entry.getSubBarcode());
                     rkFlow.setSupplierId(lineSupplerId);
+                    rkFlow.setFactoryId(stkInventory.getFactoryId());
                     rkFlow.setLx("RK");
                     rkFlow.setBatchId(stkInventory.getBatchId());
                     rkFlow.setOriginBusinessType("入库结算");
@@ -595,6 +616,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ckFlow.setMainBarcode(inventory.getMainBarcode());
                     ckFlow.setSubBarcode(inventory.getSubBarcode());
                     ckFlow.setSupplierId(resolveStockFlowSupplierId(stkIoBill, entry, inventory));
+                    ckFlow.setFactoryId(resolveFactoryId(inventory));
                     ckFlow.setLx("CK");
                     ckFlow.setBatchId(inventory.getBatchId());
                     ckFlow.setOriginBusinessType("出库结算");
@@ -617,10 +639,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkDepInventory.setBatchId(inventory.getBatchId());
                     stkDepInventory.setMaterialDate(inventory.getMaterialDate());
                     stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
-                    stkDepInventory.setBeginDate(inventory.getBeginTime());
-                    stkDepInventory.setEndDate(inventory.getEndTime());
+                    stkDepInventory.setWarehouseId(stkIoBill.getWarehouseId());
+                    stkDepInventory.setBeginDate(entry.getBeginTime() != null ? entry.getBeginTime() : inventory.getBeginTime());
+                    stkDepInventory.setEndDate(entry.getEndTime() != null ? entry.getEndTime() : inventory.getEndTime());
                     Long ckLineSup = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
                     stkDepInventory.setSupplierId(ckLineSup != null ? String.valueOf(ckLineSup) : null);
+                    stkDepInventory.setFactoryId(resolveFactoryId(inventory));
                     stkDepInventory.setMainBarcode(inventory.getMainBarcode());
                     stkDepInventory.setSubBarcode(inventory.getSubBarcode());
                     stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
@@ -688,6 +712,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     thFlow.setBeginTime(entry.getBeginTime());
                     thFlow.setEndTime(entry.getEndTime());
                     thFlow.setSupplierId(resolveStockFlowSupplierId(stkIoBill, entry, inventory));
+                    thFlow.setFactoryId(resolveFactoryId(inventory));
+                    thFlow.setMainBarcode(inventory.getMainBarcode());
+                    thFlow.setSubBarcode(inventory.getSubBarcode());
                     thFlow.setLx("TH");
                     thFlow.setBatchId(inventory.getBatchId());
                     thFlow.setOriginBusinessType("退货结算");
@@ -756,6 +783,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inventory.setMaterialDate(new Date());
                         inventory.setWarehouseDate(new Date());
                         inventory.setSupplierId(parseSupplerIdString(stkDepInventory.getSupplierId()));
+                        inventory.setFactoryId(stkBatch.getFactoryId());
                         inventory.setMainBarcode(entry.getMainBarcode());
                         inventory.setSubBarcode(entry.getSubBarcode());
                         inventory.setBeginTime(entry.getBeginTime());
@@ -798,6 +826,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setBeginTime(entry.getBeginTime());
                     tkFlow.setEndTime(entry.getEndTime());
                     tkFlow.setSupplierId(resolveStockFlowSupplierId(stkIoBill, entry, inventory));
+                    tkFlow.setFactoryId(resolveFactoryId(inventory));
+                    tkFlow.setMainBarcode(inventory.getMainBarcode());
+                    tkFlow.setSubBarcode(inventory.getSubBarcode());
                     tkFlow.setLx("TK");
                     tkFlow.setBatchId(inventory.getBatchId());
                     tkFlow.setOriginBusinessType("退库结算");
@@ -863,6 +894,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     zcFlow.setBeginTime(entry.getBeginTime());
                     zcFlow.setEndTime(entry.getEndTime());
                     zcFlow.setSupplierId(resolveStockFlowSupplierId(stkIoBill, entry, outInventory));
+                    zcFlow.setFactoryId(resolveFactoryId(outInventory));
+                    zcFlow.setMainBarcode(outInventory.getMainBarcode());
+                    zcFlow.setSubBarcode(outInventory.getSubBarcode());
                     zcFlow.setLx("ZC");
                     zcFlow.setBatchId(outInventory.getBatchId());
                     zcFlow.setOriginBusinessType("调拨转出");
@@ -890,6 +924,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inInventory.setBatchNo(batchNo);
                         if (stkBatch != null) {
                             inInventory.setBatchId(stkBatch.getId());
+                            inInventory.setFactoryId(stkBatch.getFactoryId());
                         }
                         inInventory.setMaterialNo(entry.getBatchNumber());
                         inInventory.setMaterialId(entry.getMaterialId());
@@ -903,6 +938,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inInventory.setSupplierId(transferSup);
                         inInventory.setBeginTime(entry.getBeginTime());
                         inInventory.setEndTime(entry.getEndTime());
+                        inInventory.setMainBarcode(entry.getMainBarcode());
+                        inInventory.setSubBarcode(entry.getSubBarcode());
                         inInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                         inInventory.setCreateTime(new Date());
                         inInventory.setCreateBy(SecurityUtils.getUserIdStr());
@@ -924,6 +961,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setBeginTime(entry.getBeginTime());
                         zrFlow.setEndTime(entry.getEndTime());
                         zrFlow.setSupplierId(transferSup);
+                        zrFlow.setFactoryId(resolveFactoryId(inInventory));
+                        zrFlow.setMainBarcode(inInventory.getMainBarcode());
+                        zrFlow.setSubBarcode(inInventory.getSubBarcode());
                         zrFlow.setLx("ZR");
                         zrFlow.setBatchId(inInventory.getBatchId());
                         zrFlow.setOriginBusinessType("调拨转入");
@@ -956,6 +996,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setBeginTime(entry.getBeginTime());
                         zrFlow.setEndTime(entry.getEndTime());
                         zrFlow.setSupplierId(inInventory.getSupplierId());
+                        zrFlow.setFactoryId(resolveFactoryId(inInventory));
+                        zrFlow.setMainBarcode(inInventory.getMainBarcode());
+                        zrFlow.setSubBarcode(inInventory.getSubBarcode());
                         zrFlow.setLx("ZR");
                         zrFlow.setBatchId(inInventory.getBatchId());
                         zrFlow.setOriginBusinessType("调拨转入");
@@ -1080,6 +1123,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 b.setWarehouseName(wh.getName());
             }
         }
+        b.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
         return b;
     }
 
@@ -1114,6 +1158,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setSupplierId(depSup != null ? String.valueOf(depSup) : null);
             stkDepInventory.setBatchNumber(entry.getBatchNumber());
             stkDepInventory.setWarehouseId(warehouseId);
+            stkDepInventory.setMainBarcode(inventory.getMainBarcode());
+            stkDepInventory.setSubBarcode(inventory.getSubBarcode());
+            stkDepInventory.setFactoryId(resolveFactoryId(inventory));
             if (StringUtils.isEmpty(stkDepInventory.getTenantId()) && stkIoBill != null) {
                 stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
             }
@@ -1154,6 +1201,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setBatchNo(getBatchNumber());
                 stkIoBillEntry.setDelFlag(0);
                 // 将表头仓库ID反写到明细，保证退库按仓库锁定
@@ -1185,6 +1233,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 if(StringUtils.isEmpty(stkIoBillEntry.getBatchNo())){
                     stkIoBillEntry.setBatchNo(getBatchNumber());
                 }
@@ -1414,6 +1463,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
                 validateTKInventory(stkIoBillEntry.getBatchNo(), stkIoBillEntry.getWarehouseId(), stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, stkIoBillEntry);
                 list.add(stkIoBillEntry);
@@ -1481,6 +1531,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
                 validateInventory(stkIoBillEntry.getBatchNo(), stkIoBill.getWarehouseId(), stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, stkIoBillEntry);
                 list.add(stkIoBillEntry);
@@ -1875,6 +1926,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
                         stkDepInventory.setBeginDate(inventory.getBeginTime());
                         stkDepInventory.setEndDate(inventory.getEndTime());
+                        stkDepInventory.setWarehouseId(stkIoBill.getWarehouseId());
+                        stkDepInventory.setMainBarcode(inventory.getMainBarcode());
+                        stkDepInventory.setSubBarcode(inventory.getSubBarcode());
+                        stkDepInventory.setFactoryId(resolveFactoryId(inventory));
                         Long depSup2 = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
                         stkDepInventory.setSupplierId(depSup2 != null ? String.valueOf(depSup2) : null);
                         stkDepInventory.setOutOrderNo(stkIoBill.getBillNo());
@@ -1912,6 +1967,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksFlow.setBillId(stkIoBill.getId());
                     ksFlow.setEntryId(entry.getId());
                     ksFlow.setDepartmentId(stkIoBill.getDepartmentId());
+                    ksFlow.setWarehouseId(stkIoBill.getWarehouseId());
                     ksFlow.setMaterialId(entry.getMaterialId());
                     ksFlow.setBatchNo(entry.getBatchNo());
                     ksFlow.setBatchNumber(entry.getBatchNumber());
@@ -1925,6 +1981,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksFlow.setEndTime(entry.getEndTime());
                     Long ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
                     ksFlow.setSupplierId(ksSupplierId != null ? String.valueOf(ksSupplierId) : null);
+                    ksFlow.setFactoryId(resolveFactoryId(inventory));
+                    if (inventory != null) {
+                        ksFlow.setMainBarcode(inventory.getMainBarcode());
+                        ksFlow.setSubBarcode(inventory.getSubBarcode());
+                    }
                     ksFlow.setKcNo(depId);
                     ksFlow.setLx("CK");
                     ksFlow.setOriginBusinessType("出库结算");

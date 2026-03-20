@@ -461,6 +461,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setBatchNo(getBatchNumber());
                 stkIoBillEntry.setDelFlag(0);
                 list.add(stkIoBillEntry);
@@ -487,6 +488,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 if(StringUtils.isEmpty(stkIoBillEntry.getBatchNo())){
                     stkIoBillEntry.setBatchNo(getBatchNumber());
                 }
@@ -641,6 +643,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                 stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
                 validateTKInventory(stkIoBillEntry.getBatchNo(),stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 list.add(stkIoBillEntry);
             }
@@ -694,6 +697,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             {
                 validateInventory(stkIoBillEntry.getBatchNo(),stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 list.add(stkIoBillEntry);
             }

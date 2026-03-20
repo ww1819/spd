@@ -434,6 +434,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 b.setWarehouseName(wh.getName());
             }
         }
+        b.setTenantId(StringUtils.isNotEmpty(main.getTenantId()) ? main.getTenantId() : SecurityUtils.getCustomerId());
         return b;
     }
 

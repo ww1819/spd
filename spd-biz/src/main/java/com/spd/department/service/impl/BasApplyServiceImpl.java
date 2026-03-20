@@ -230,7 +230,6 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setUpdateBy(SecurityUtils.getUserIdStr());
         basApply.setAuditBy(String.valueOf(SecurityUtils.getUserId()));
         basApply.setAuditDate(new Date());
-        basApply.setUpdateBy(SecurityUtils.getUsername());
         basApply.setUpdateTime(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
         return res;

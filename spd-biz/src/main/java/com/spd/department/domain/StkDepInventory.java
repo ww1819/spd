@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdWarehouse;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -68,6 +70,9 @@ public class StkDepInventory extends BaseEntity
     /** 仓库ID */
     private Long warehouseId;
 
+    /** 生产厂家ID（fd_factory.factory_id） */
+    private Long factoryId;
+
     /** 单据类型 */
     private Integer billType;
 
@@ -109,6 +114,12 @@ public class StkDepInventory extends BaseEntity
 
     /** 供应商对象 */
     private FdSupplier supplier;
+
+    /** 归属仓库（出库来源仓库） */
+    private FdWarehouse warehouse;
+
+    /** 生产厂家（优先库存行 factory_id，否则耗材档案） */
+    private FdFactory fdFactory;
 
     @Excel(name = "批号")
     private String batchNumber;
@@ -239,6 +250,14 @@ public class StkDepInventory extends BaseEntity
         this.warehouseId = warehouseId;
     }
 
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
+    }
+
     public Integer getBillType() {
         return billType;
     }
@@ -320,6 +339,22 @@ public class StkDepInventory extends BaseEntity
 
     public void setSupplier(FdSupplier supplier) {
         this.supplier = supplier;
+    }
+
+    public FdWarehouse getWarehouse() {
+        return warehouse;
+    }
+
+    public void setWarehouse(FdWarehouse warehouse) {
+        this.warehouse = warehouse;
+    }
+
+    public FdFactory getFdFactory() {
+        return fdFactory;
+    }
+
+    public void setFdFactory(FdFactory fdFactory) {
+        this.fdFactory = fdFactory;
     }
 
     public String getOutOrderNo() {

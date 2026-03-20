@@ -437,6 +437,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         b.setCreateTime(now);
         b.setCreateBy(username);
         b.setDelFlag(0);
+        b.setTenantId(bill.getTenantId());
         if (StringUtils.isNotEmpty(entry.getSupplerId())) {
             try {
                 Long supplierId = Long.valueOf(entry.getSupplerId().trim());

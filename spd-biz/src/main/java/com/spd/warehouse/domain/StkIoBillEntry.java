@@ -27,6 +27,10 @@ public class StkIoBillEntry extends BaseEntity
     @Excel(name = "父类ID")
     private Long parenId;
 
+    /** 出入库单号（冗余主表，便于明细直接展示/筛选） */
+    @Excel(name = "单号")
+    private String billNo;
+
     /** 商品ID */
     @Excel(name = "商品ID")
     private Long commodityId;
@@ -122,6 +126,17 @@ public class StkIoBillEntry extends BaseEntity
     {
         return parenId;
     }
+
+    public String getBillNo()
+    {
+        return billNo;
+    }
+
+    public void setBillNo(String billNo)
+    {
+        this.billNo = billNo;
+    }
+
     public void setCommodityId(Long commodityId)
     {
         this.commodityId = commodityId;
@@ -276,6 +291,7 @@ public class StkIoBillEntry extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("parenId", getParenId())
+            .append("billNo", getBillNo())
             .append("commodityId", getCommodityId())
             .append("materialId", getMaterialId())
             .append("unitPrice", getUnitPrice())

@@ -25,6 +25,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginTime != null">begin_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="factoryId != null">factory_id,</if>
             <if test="kcNo != null">kc_no,</if>
             <if test="lx != null">lx,</if>
             <if test="flowTime != null">flow_time,</if>
@@ -56,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginTime != null">#{beginTime},</if>
             <if test="endTime != null">#{endTime},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="factoryId != null">#{factoryId},</if>
             <if test="kcNo != null">#{kcNo},</if>
             <if test="lx != null">#{lx},</if>
             <if test="flowTime != null">#{flowTime},</if>
