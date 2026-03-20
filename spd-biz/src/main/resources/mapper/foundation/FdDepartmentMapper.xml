@@ -15,10 +15,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="parentId"    column="parent_id"    />
+        <result property="deptRemark"    column="remark"    />
+        <result property="thirdPartyDeptId"    column="third_party_dept_id"    />
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, referred_name, create_by, create_time, update_by, update_time, tenant_id from fd_department
+        select id, code, name, referred_name, remark, third_party_dept_id, del_flag, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
     </sql>
 
     <select id="selectFdDepartmentList" parameterType="FdDepartment" resultMap="FdDepartmentResult">
@@ -27,7 +30,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="referredName != null and referredName != ''"> and referred_name like concat('%', #{referredName}, '%')</if>
+        <if test="deptRemark != null and deptRemark != ''"> and remark like concat('%', #{deptRemark}, '%')</if>
         <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
+        <if test="treeParentId != null"> and parent_id = #{treeParentId}</if>
         <if test="params != null and params.allowedDeptIds != null">
             <choose>
                 <when test="params.allowedDeptIds.size() > 0"> and id in <foreach collection="params.allowedDeptIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
@@ -39,6 +44,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdDepartmentById" parameterType="String" resultMap="FdDepartmentResult">
         <include refid="selectFdDepartmentVo"/>
         where id = #{id}
+    </select>
+
+    <!-- 按编码+租户查一条（导入去重；平台 tenantId 为空时匹配 tenant_id 为空） -->
+    <select id="selectFdDepartmentByCodeAndTenantId" resultMap="FdDepartmentResult">
+        <include refid="selectFdDepartmentVo"/>
+        where del_flag != 1 and code = #{code}
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                and tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                and (tenant_id is null or tenant_id = '')
+            </otherwise>
+        </choose>
+        limit 1
     </select>
 
     <select id="selectdepartmenAll" resultMap="FdDepartmentResult">
@@ -60,6 +80,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
     </select>
 
+    <select id="countChildrenByParentId" resultType="int">
+        select count(*) from fd_department where del_flag != 1 and parent_id = #{parentId}
+    </select>
+
     <select id="selectUserDepartmenAll" parameterType="Long" resultMap="FdDepartmentResult">
         select d.id,d.code,d.name
         from fd_department d
@@ -76,22 +100,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">code,</if>
             <if test="name != null">name,</if>
             <if test="referredName != null">referred_name,</if>
+            <if test="deptRemark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="tenantId != null">tenant_id,</if>
+            <if test="parentId != null">parent_id,</if>
+            <if test="thirdPartyDeptId != null and thirdPartyDeptId != ''">third_party_dept_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
             <if test="code != null and code != ''">#{code},</if>
             <if test="name != null">#{name},</if>
             <if test="referredName != null">#{referredName},</if>
+            <if test="deptRemark != null">#{deptRemark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="tenantId != null">#{tenantId},</if>
+            <if test="parentId != null">#{parentId},</if>
+            <if test="thirdPartyDeptId != null and thirdPartyDeptId != ''">#{thirdPartyDeptId},</if>
          </trim>
     </insert>
 
@@ -101,12 +133,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
             <if test="referredName != null">referred_name = #{referredName},</if>
+            <if test="deptRemark != null">remark = #{deptRemark},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            parent_id = #{parentId,jdbcType=BIGINT},
+            <choose>
+                <when test="params != null and params.skipThirdPartyDeptId == true"></when>
+                <otherwise>
+                    <if test="thirdPartyDeptId != null">third_party_dept_id = #{thirdPartyDeptId},</if>
+                </otherwise>
+            </choose>
         </trim>
         where id = #{id}
     </update>

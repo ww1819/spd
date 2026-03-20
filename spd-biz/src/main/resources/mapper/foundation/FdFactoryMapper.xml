@@ -20,13 +20,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="factoryReferredCode"    column="factory_referred_code"    />
         <result property="factoryStatus"    column="factory_status"    />
+        <result property="hisId"    column="his_id"    />
         <result property="remark"    column="remark"    />
     </resultMap>
 
     <sql id="selectFdFactoryVo">
         select factory_id, factory_code, factory_name, factory_address, factory_contact, del_flag,
         tenant_id, delete_by, delete_time,
-        create_by, create_time, update_by, update_time,factory_referred_code,factory_status,remark from fd_factory
+        create_by, create_time, update_by, update_time, factory_referred_code, factory_status, his_id, remark from fd_factory
     </sql>
 
     <select id="selectFdFactoryList" parameterType="FdFactory" resultMap="FdFactoryResult">
@@ -44,6 +45,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where factory_id = #{factoryId} and (del_flag = 0 or del_flag is null)
     </select>
 
+    <select id="selectFdFactoryByCodeAndTenantId" resultMap="FdFactoryResult">
+        <include refid="selectFdFactoryVo"/>
+        where del_flag != 1 and factory_code = #{factoryCode}
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                and tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                and (tenant_id is null or tenant_id = '')
+            </otherwise>
+        </choose>
+        limit 1
+    </select>
+
+    <select id="countFactoryByTenantAndHisId" resultType="int">
+        select count(*) from fd_factory where del_flag != 1 and his_id = #{hisId}
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                and tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                and (tenant_id is null or tenant_id = '')
+            </otherwise>
+        </choose>
+        <if test="excludeFactoryId != null">
+            and factory_id != #{excludeFactoryId}
+        </if>
+    </select>
+
     <insert id="insertFdFactory" parameterType="FdFactory" useGeneratedKeys="true" keyProperty="factoryId">
         insert into fd_factory
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -59,6 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             <if test="factoryReferredCode != null">factory_referred_code,</if>
             <if test="factoryStatus != null">factory_status,</if>
+            <if test="hisId != null and hisId != ''">his_id,</if>
             <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -74,6 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="factoryReferredCode != null">#{factoryReferredCode},</if>
             <if test="factoryStatus != null">#{factoryStatus},</if>
+            <if test="hisId != null and hisId != ''">#{hisId},</if>
             <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
@@ -83,8 +115,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="factoryCode != null and factoryCode != ''">factory_code = #{factoryCode},</if>
             <if test="factoryName != null and factoryName != ''">factory_name = #{factoryName},</if>
-            <if test="factoryAddress != null and factoryAddress != ''">factory_address = #{factoryAddress},</if>
-            <if test="factoryContact != null and factoryContact != ''">factory_contact = #{factoryContact},</if>
+            <if test="factoryAddress != null">factory_address = #{factoryAddress},</if>
+            <if test="factoryContact != null">factory_contact = #{factoryContact},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>

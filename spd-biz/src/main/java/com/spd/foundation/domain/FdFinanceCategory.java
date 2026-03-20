@@ -45,6 +45,9 @@ public class FdFinanceCategory extends BaseEntity
     @Excel(name = "使用状态", readConverterExp = "停用/在用")
     private String isUse;
 
+    /** 租户ID（同 sb_customer.customer_id） */
+    private String tenantId;
+
     public void setFinanceCategoryId(Long financeCategoryId) 
     {
         this.financeCategoryId = financeCategoryId;
@@ -109,6 +112,14 @@ public class FdFinanceCategory extends BaseEntity
         return delFlag;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -123,7 +134,8 @@ public class FdFinanceCategory extends BaseEntity
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
-                .append("isUser", getIsUse())
+            .append("isUse", getIsUse())
+            .append("tenantId", getTenantId())
             .toString();
     }
 

@@ -118,6 +118,10 @@ public class FdSupplier extends BaseEntity
     @Excel(name = "供应商类型")
     private String supplierType;
 
+    /** HIS 供应商 ID（衡水市第三人民医院租户内必填且唯一，保存后不可通过维护接口修改） */
+    @Excel(name = "HIS供应商ID", width = 22, prompt = "衡水市第三人民医院新增与导入时必填，租户内唯一；保存后不可修改")
+    private String hisId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -307,7 +311,7 @@ public class FdSupplier extends BaseEntity
     {
         return companyReferred;
     }
-    public void setsupplierRange(String supplierRange)
+    public void setSupplierRange(String supplierRange)
     {
         this.supplierRange = supplierRange;
     }
@@ -333,6 +337,16 @@ public class FdSupplier extends BaseEntity
     public String getSupplierType()
     {
         return supplierType;
+    }
+
+    public String getHisId()
+    {
+        return hisId;
+    }
+
+    public void setHisId(String hisId)
+    {
+        this.hisId = hisId;
     }
 
     @Override
@@ -362,6 +376,7 @@ public class FdSupplier extends BaseEntity
             .append("supplierRange", getSupplierRange())
             .append("supplierStatus", getSupplierStatus())
             .append("supplierType", getSupplierType())
+            .append("hisId", getHisId())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

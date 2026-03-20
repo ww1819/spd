@@ -16,6 +16,9 @@ public class SysUserPost
     /** 岗位ID */
     private Long postId;
 
+    /** 租户ID（同 sys_user.customer_id） */
+    private String tenantId;
+
     public Long getUserId()
     {
         return userId;
@@ -36,11 +39,20 @@ public class SysUserPost
         this.postId = postId;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("userId", getUserId())
             .append("postId", getPostId())
+            .append("tenantId", getTenantId())
             .toString();
     }
 }

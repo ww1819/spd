@@ -21,6 +21,16 @@ public interface FdSupplierMapper
     public FdSupplier selectFdSupplierById(Long id);
 
     /**
+     * 按编码+租户查一条（未删除）
+     */
+    FdSupplier selectFdSupplierByCodeAndTenantId(@Param("code") String code, @Param("tenantId") String tenantId);
+
+    /**
+     * 租户内 his_id 已存在条数（可排除某 id，用于唯一校验）
+     */
+    int countSupplierByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeId") Long excludeId);
+
+    /**
      * 查询供应商列表
      *
      * @param fdSupplier 供应商

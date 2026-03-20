@@ -79,6 +79,36 @@ INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2104 FROM DUAL WHERE NOT 
 INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2105 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2105);
 /
 
+-- 科室维护（2230–2237）：挂到「基础资料」M 下，若无则系统管理（与 material/menu.sql 中 COALESCE 一致）
+/
+UPDATE sys_menu
+SET parent_id = COALESCE(
+  (SELECT t.menu_id FROM (SELECT menu_id FROM sys_menu WHERE menu_name = '基础资料' AND menu_type = 'M' ORDER BY menu_id LIMIT 1) t),
+  (SELECT t.menu_id FROM (SELECT menu_id FROM sys_menu WHERE menu_name = '系统管理' AND menu_type = 'M' ORDER BY menu_id LIMIT 1) t),
+  1
+)
+WHERE menu_id = 2230;
+/
+
+-- 为 admin 角色授予科室维护全套按钮（含导入、更新简码）
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2230 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2230);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2231 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2231);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2232 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2232);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2233 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2233);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2234 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2234);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2235 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2235);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2236 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2236);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2237 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2237);
+/
+
 -- 客户管理、客户菜单功能管理设为仅平台管理（不对客户显示）；需先执行 column.sql 增加 is_platform 字段
 /
 UPDATE sys_menu SET is_platform = '1' WHERE menu_id IN (2100, 2101, 2102, 2103, 2104, 2105);
@@ -406,6 +436,12 @@ UPDATE fd_material_change_log e
 INNER JOIN fd_material b ON b.id = e.material_id AND b.tenant_id IS NOT NULL
 SET e.tenant_id = b.tenant_id
 WHERE e.tenant_id IS NULL;
+/
+-- 用户-工作组关联：从用户表回填 tenant_id（需已执行 column.sql 为 sys_user_post 增加 tenant_id）
+UPDATE sys_user_post up
+INNER JOIN sys_user u ON u.user_id = up.user_id AND u.del_flag = '0' AND u.customer_id IS NOT NULL AND TRIM(u.customer_id) != ''
+SET up.tenant_id = u.customer_id
+WHERE up.tenant_id IS NULL OR TRIM(up.tenant_id) = '';
 /
 update fd_material fm set is_gz = '2' where fm.is_gz is null or fm.is_gz = '';
 /

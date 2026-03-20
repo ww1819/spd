@@ -114,6 +114,9 @@ public class SysUser extends BaseEntity
     /** 工作组ID（设备系统，列表筛选：仅显示该工作组下的用户，对应 sb_work_group_user.group_id） */
     private String workgroupPostId;
 
+    /** 耗材岗位/工作组ID（列表筛选：对应 sys_user_post.post_id） */
+    private Long sysPostId;
+
     public SysUser()
     {
 
@@ -386,6 +389,14 @@ public class SysUser extends BaseEntity
 
     public void setWorkgroupPostId(String workgroupPostId) {
         this.workgroupPostId = workgroupPostId;
+    }
+
+    public Long getSysPostId() {
+        return sysPostId;
+    }
+
+    public void setSysPostId(Long sysPostId) {
+        this.sysPostId = sysPostId;
     }
 
     @Override

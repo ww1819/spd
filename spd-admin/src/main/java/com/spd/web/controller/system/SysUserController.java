@@ -80,14 +80,19 @@ public class SysUserController extends BaseController
     private ISbUserPermissionService sbUserPermissionService;
 
     /**
-     * 获取用户列表（支持 workgroupPostId 按设备工作组筛选，对应 sb_work_group_user.group_id）
+     * 获取用户列表（workgroupPostId：设备工作组 sb_work_group_user；sysPostId：耗材工作组 sys_user_post）
      */
     @PreAuthorize("@ss.hasPermi('system:user:list')")
     @GetMapping("/list")
-    public TableDataInfo list(SysUser user, @RequestParam(value = "workgroupPostId", required = false) String workgroupPostId)
+    public TableDataInfo list(SysUser user,
+        @RequestParam(value = "workgroupPostId", required = false) String workgroupPostId,
+        @RequestParam(value = "sysPostId", required = false) Long sysPostId)
     {
         if (StringUtils.isNotEmpty(workgroupPostId)) {
             user.setWorkgroupPostId(workgroupPostId);
+        }
+        if (sysPostId != null) {
+            user.setSysPostId(sysPostId);
         }
         startPage();
         List<SysUser> list = userService.selectUserList(user);

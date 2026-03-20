@@ -34,7 +34,12 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     @Override
     public FdWarehouseCategory selectFdWarehouseCategoryByWarehouseCategoryId(Long warehouseCategoryId)
     {
-        return fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(warehouseCategoryId);
+        FdWarehouseCategory row = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(warehouseCategoryId);
+        if (row != null)
+        {
+            SecurityUtils.ensureTenantAccess(row.getTenantId());
+        }
+        return row;
     }
 
     /**
@@ -79,6 +84,9 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         if (StringUtils.isEmpty(fdWarehouseCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             fdWarehouseCategory.setTenantId(SecurityUtils.getCustomerId());
         }
+        if (fdWarehouseCategory.getDelFlag() == null) {
+            fdWarehouseCategory.setDelFlag(0);
+        }
         return fdWarehouseCategoryMapper.insertFdWarehouseCategory(fdWarehouseCategory);
     }
 
@@ -91,6 +99,15 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     @Override
     public int updateFdWarehouseCategory(FdWarehouseCategory fdWarehouseCategory)
     {
+        if (fdWarehouseCategory.getWarehouseCategoryId() == null) {
+            throw new ServiceException("库房分类主键不能为空");
+        }
+        FdWarehouseCategory before = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(fdWarehouseCategory.getWarehouseCategoryId());
+        if (before == null) {
+            throw new ServiceException("库房分类不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(before.getTenantId());
+        fdWarehouseCategory.setTenantId(before.getTenantId());
         fdWarehouseCategory.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdWarehouseCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -108,10 +125,13 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     public int deleteFdWarehouseCategoryByWarehouseCategoryIds(Long warehouseCategoryIds)
     {
         FdWarehouseCategory fdWarehouseCategory = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(warehouseCategoryIds);
-        if(fdWarehouseCategory == null){
+        if (fdWarehouseCategory == null) {
             throw new ServiceException(String.format("库房分类：%s，不存在!", warehouseCategoryIds));
         }
+        SecurityUtils.ensureTenantAccess(fdWarehouseCategory.getTenantId());
         fdWarehouseCategory.setDelFlag(1);
+        fdWarehouseCategory.setDeleteBy(SecurityUtils.getUserIdStr());
+        fdWarehouseCategory.setDeleteTime(DateUtils.getNowDate());
         fdWarehouseCategory.setUpdateTime(new Date());
         fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
@@ -133,6 +153,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
             if (category == null) {
                 continue;
             }
+            SecurityUtils.ensureTenantAccess(category.getTenantId());
             String name = category.getWarehouseCategoryName();
             if (StringUtils.isEmpty(name)) {
                 continue;

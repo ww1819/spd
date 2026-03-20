@@ -66,6 +66,8 @@ public class FixedNumberController extends BaseController
                 map.put("monitoring", item.getMonitoring());
                 map.put("location", item.getLocation());
                 map.put("locationId", item.getLocationId());
+                map.put("tenantId", item.getTenantId());
+                map.put("remark", item.getRemark());
                 if (item.getMaterial() != null) {
                     map.put("code", item.getMaterial().getCode());
                     map.put("name", item.getMaterial().getName());
@@ -115,6 +117,8 @@ public class FixedNumberController extends BaseController
                 map.put("monitoring", item.getMonitoring());
                 map.put("location", item.getLocation());
                 map.put("locationId", item.getLocationId());
+                map.put("tenantId", item.getTenantId());
+                map.put("remark", item.getRemark());
                 if (item.getMaterial() != null) {
                     map.put("code", item.getMaterial().getCode());
                     map.put("name", item.getMaterial().getName());

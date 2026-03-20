@@ -178,3 +178,56 @@ CALL add_table_column('sb_asset_inventory_item_print', 'print_task_no', 'varchar
 -- UPDATE sb_customer_category68 c1 INNER JOIN sb_customer_category68 c2 ON c2.customer_id = c1.customer_id AND c2.ref_category68_id = c1.parent_id SET c1.parent_id_new = c2.id WHERE c1.parent_id IS NOT NULL AND c1.parent_id != 0;
 -- ALTER TABLE sb_customer_category68 DROP COLUMN parent_id, CHANGE parent_id_new parent_id CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键id，对应父记录)';
 /
+
+/* fd_department：删除历史误加列 his_dept_id / his_id（与耗材 column.sql 对齐） */
+SET @__db_eq := DATABASE();
+/
+SET @__exist_his_dept_eq := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db_eq AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_dept_id'
+);
+/
+SET @__drop_his_dept_eq := IF(@__exist_his_dept_eq > 0,
+  'ALTER TABLE fd_department DROP COLUMN `his_dept_id`',
+  'SELECT ''skip_fd_department_his_dept_id_eq'' AS msg'
+);
+/
+PREPARE __stmt_his_dept_eq FROM @__drop_his_dept_eq;
+/
+EXECUTE __stmt_his_dept_eq;
+/
+DEALLOCATE PREPARE __stmt_his_dept_eq;
+/
+SET @__exist_his_id_eq := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db_eq AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_id'
+);
+/
+SET @__drop_his_id_eq := IF(@__exist_his_id_eq > 0,
+  'ALTER TABLE fd_department DROP COLUMN `his_id`',
+  'SELECT ''skip_fd_department_his_id_eq'' AS msg'
+);
+/
+PREPARE __stmt_his_id_eq FROM @__drop_his_id_eq;
+/
+EXECUTE __stmt_his_id_eq;
+/
+DEALLOCATE PREPARE __stmt_his_id_eq;
+/
+CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
+/
+
+CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_dept_log_dept` (`department_id`),
+  KEY `idx_fd_dept_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
+/

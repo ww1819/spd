@@ -48,10 +48,12 @@ public class SysPermissionService
     }
 
     /**
-     * 获取菜单及按钮权限（耗材/管理端：从用户权限表 sys_user_menu 读取，含 F 类型按钮权限）
-     * 
+     * 获取菜单及按钮权限：非管理员统一从 {@code sys_user_menu} 关联 {@code sys_menu.perms} 读取（含 F 按钮）；
+     * 租户（有 customerId）时额外排除 {@code is_platform=1} 的菜单权限，与 {@code getRouters} 菜单树数据源一致。
+     * 设备端 sb 权限由 SbPermissionService#getMenuPermission 在登录/getInfo 时与上述结果合并进 LoginUser。
+     *
      * @param user 用户信息
-     * @return 菜单权限信息（含 perms，供 v-hasPermi 等使用）
+     * @return 菜单权限信息（供 v-hasPermi、@PreAuthorize 等使用）
      */
     public Set<String> getMenuPermission(SysUser user)
     {

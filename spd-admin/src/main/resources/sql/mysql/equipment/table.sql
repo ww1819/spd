@@ -22,6 +22,43 @@ CREATE TABLE IF NOT EXISTS `sb_customer` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备/耗材共用客户表(SaaS租户)；设备用 status/planned_disable_time，耗材用 hc_status/hc_planned_disable_time';
 /
 
+-- 科室主数据（设备/耗材业务共用；tenant_id 同 sb_customer.customer_id）
+CREATE TABLE IF NOT EXISTS `fd_department` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `code` varchar(64) DEFAULT NULL COMMENT '科室编码',
+  `name` varchar(255) DEFAULT NULL COMMENT '科室名称',
+  `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码（拼音简码）',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `third_party_dept_id` varchar(128) DEFAULT NULL COMMENT '其他第三方系统科室ID',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `parent_id` bigint DEFAULT NULL COMMENT '上级科室ID（NULL表示客户下顶级）',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_department_tenant_code` (`tenant_id`,`code`),
+  KEY `idx_fd_department_parent` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室主数据';
+/
+
+-- 科室档案字段变更记录（与耗材共用表结构）
+CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_dept_log_dept` (`department_id`),
+  KEY `idx_fd_dept_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
+/
+
 -- 客户启停用记录表（时间、操作人、启停用原因）
 CREATE TABLE IF NOT EXISTS `sb_customer_status_log` (
   `log_id` char(36) NOT NULL COMMENT '记录ID(UUID7)',

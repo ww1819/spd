@@ -91,6 +91,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="workgroupPostId != null and workgroupPostId != ''">
 			AND EXISTS (SELECT 1 FROM sb_work_group_user wgu WHERE wgu.user_id = u.user_id AND wgu.group_id = #{workgroupPostId} AND IFNULL(wgu.del_flag, '0') = '0')
 		</if>
+		<if test="sysPostId != null">
+			AND EXISTS (SELECT 1 FROM sys_user_post up WHERE up.user_id = u.user_id AND up.post_id = #{sysPostId}
+			<if test="customerId != null and customerId != ''">
+				AND (up.tenant_id IS NULL OR up.tenant_id = '' OR up.tenant_id = #{customerId})
+			</if>
+			)
+		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
 	</select>

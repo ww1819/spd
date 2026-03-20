@@ -1,6 +1,9 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
 import com.spd.foundation.domain.FdDepartment;
 
 /**
@@ -20,12 +23,25 @@ public interface FdDepartmentMapper
     public FdDepartment selectFdDepartmentById(String id);
 
     /**
+     * 按科室编码与租户查询（未删除）
+     *
+     * @param code     科室编码
+     * @param tenantId 租户ID，空表示平台侧（tenant_id 为空）
+     */
+    FdDepartment selectFdDepartmentByCodeAndTenantId(@Param("code") String code, @Param("tenantId") String tenantId);
+
+    /**
      * 查询科室列表
      *
      * @param fdDepartment 科室
      * @return 科室集合
      */
-    public List<FdDepartment> selectFdDepartmentList(FdDepartment fdDepartment);
+    public     List<FdDepartment> selectFdDepartmentList(FdDepartment fdDepartment);
+
+    /**
+     * 未删除子科室数量（用于删除前校验）
+     */
+    int countChildrenByParentId(@Param("parentId") Long parentId);
 
     /**
      * 新增科室

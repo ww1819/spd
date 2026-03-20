@@ -3,6 +3,228 @@
 -- 本脚本为完整建表 DDL；期初库存导入明细表 stk_initial_import_entry 已包含 column.sql 中新增字段（第三方ID、耗材编码/规格/型号/注册证/医保/条码等）
 -- 按「/」分段，每段一条语句执行
 /
+
+-- 科室主数据（科室定数等关联 fd_department.id；tenant_id 同 sb_customer.customer_id）
+CREATE TABLE IF NOT EXISTS `fd_department` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `code` varchar(64) DEFAULT NULL COMMENT '科室编码',
+  `name` varchar(255) DEFAULT NULL COMMENT '科室名称',
+  `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码（拼音简码）',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `third_party_dept_id` varchar(128) DEFAULT NULL COMMENT '其他第三方系统科室ID',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `parent_id` bigint DEFAULT NULL COMMENT '上级科室ID（NULL表示客户下顶级）',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_department_tenant_code` (`tenant_id`,`code`),
+  KEY `idx_fd_department_parent` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室主数据';
+/
+
+-- 科室档案字段变更记录（主键 UUID7）
+CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_dept_log_dept` (`department_id`),
+  KEY `idx_fd_dept_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
+/
+
+-- 供应商主数据（业务表 stk_io_bill.suppler_id 等关联 fd_supplier.id）
+CREATE TABLE IF NOT EXISTS `fd_supplier` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `code` varchar(64) DEFAULT NULL COMMENT '供应商编码',
+  `name` varchar(255) DEFAULT NULL COMMENT '供应商名称',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `tax_number` varchar(64) DEFAULT NULL COMMENT '税号',
+  `referred_code` varchar(64) DEFAULT NULL COMMENT '名称简码',
+  `reg_money` decimal(18,2) DEFAULT NULL COMMENT '注册资金',
+  `valid_time` date DEFAULT NULL COMMENT '资质有效期',
+  `contacts` varchar(64) DEFAULT NULL COMMENT '联系人',
+  `contacts_phone` varchar(32) DEFAULT NULL COMMENT '联系电话',
+  `website` varchar(255) DEFAULT NULL COMMENT '网址',
+  `legal_person` varchar(64) DEFAULT NULL COMMENT '法人',
+  `zip_code` varchar(16) DEFAULT NULL COMMENT '邮编',
+  `email` varchar(128) DEFAULT NULL COMMENT '邮箱',
+  `address` varchar(500) DEFAULT NULL COMMENT '地址',
+  `company_person` varchar(64) DEFAULT NULL COMMENT '公司负责人',
+  `phone` varchar(32) DEFAULT NULL COMMENT '电话',
+  `cert_number` varchar(128) DEFAULT NULL COMMENT '证件号',
+  `fax` varchar(32) DEFAULT NULL COMMENT '传真',
+  `bank_account` varchar(128) DEFAULT NULL COMMENT '银行账号',
+  `company_referred` varchar(128) DEFAULT NULL COMMENT '公司简称',
+  `supplier_range` varchar(2000) DEFAULT NULL COMMENT '经营范围',
+  `supplier_status` varchar(16) DEFAULT NULL COMMENT '状态',
+  `supplier_type` varchar(255) DEFAULT NULL COMMENT '供应商类型（可多选逗号分隔）',
+  `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS供应商ID（衡水市第三人民医院租户内必填且唯一，保存后不可改）',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fd_supplier_tenant_his` (`tenant_id`,`his_id`),
+  KEY `idx_fd_supplier_tenant_code` (`tenant_id`,`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商主数据';
+/
+
+-- 供应商档案字段变更记录
+CREATE TABLE IF NOT EXISTS `fd_supplier_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `supplier_id` bigint NOT NULL COMMENT '供应商ID（fd_supplier.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_supplier_log_supp` (`supplier_id`),
+  KEY `idx_fd_supplier_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商档案变更记录';
+/
+
+-- 生产厂家主数据（业务表 fd_material.factory_id 等关联 fd_factory.factory_id）
+CREATE TABLE IF NOT EXISTS `fd_factory` (
+  `factory_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `factory_code` varchar(64) DEFAULT NULL COMMENT '厂家编码',
+  `factory_name` varchar(255) DEFAULT NULL COMMENT '厂家名称',
+  `factory_address` varchar(500) DEFAULT NULL COMMENT '厂家地址',
+  `factory_contact` varchar(128) DEFAULT NULL COMMENT '厂家联系方式',
+  `factory_referred_code` varchar(64) DEFAULT NULL COMMENT '厂家简码',
+  `factory_status` varchar(16) DEFAULT NULL COMMENT '状态',
+  `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS生产厂家ID（衡水市第三人民医院租户内必填且唯一，保存后不可改）',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`factory_id`),
+  UNIQUE KEY `uk_fd_factory_tenant_his` (`tenant_id`,`his_id`),
+  KEY `idx_fd_factory_tenant_code` (`tenant_id`,`factory_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生产厂家主数据';
+/
+
+CREATE TABLE IF NOT EXISTS `fd_factory_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `factory_id` bigint NOT NULL COMMENT '生产厂家ID（fd_factory.factory_id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_factory_log_fid` (`factory_id`),
+  KEY `idx_fd_factory_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生产厂家档案变更记录';
+/
+
+-- 计量单位（业务表 fd_material.unit_id 等关联 fd_unit.unit_id）
+CREATE TABLE IF NOT EXISTS `fd_unit` (
+  `unit_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `unit_code` varchar(64) DEFAULT NULL COMMENT '单位编码',
+  `unit_name` varchar(255) DEFAULT NULL COMMENT '单位名称',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`unit_id`),
+  KEY `idx_fd_unit_tenant_code` (`tenant_id`,`unit_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计量单位';
+/
+
+-- 货位（业务表 fd_material.location_id 等关联 fd_location.location_id）
+CREATE TABLE IF NOT EXISTS `fd_location` (
+  `location_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `parent_id` bigint DEFAULT NULL COMMENT '父货位ID（0或NULL表示顶级）',
+  `location_code` varchar(64) DEFAULT NULL COMMENT '货位编码',
+  `location_name` varchar(255) DEFAULT NULL COMMENT '货位名称',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID（fd_warehouse.id）',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`location_id`),
+  KEY `idx_fd_location_tenant` (`tenant_id`),
+  KEY `idx_fd_location_wh` (`warehouse_id`),
+  KEY `idx_fd_location_parent` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='货位';
+/
+
+-- 库房分类（业务表 fd_material.storeroom_id 等关联 warehouse_category_id）
+CREATE TABLE IF NOT EXISTS `fd_warehouse_category` (
+  `warehouse_category_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `parent_id` bigint DEFAULT NULL COMMENT '父分类ID（0或NULL表示顶级）',
+  `warehouse_category_code` varchar(64) DEFAULT NULL COMMENT '库房分类编码',
+  `warehouse_category_name` varchar(255) DEFAULT NULL COMMENT '库房分类名称',
+  `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码（拼音简码）',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`warehouse_category_id`),
+  KEY `idx_fd_wh_cat_tenant` (`tenant_id`),
+  KEY `idx_fd_wh_cat_parent` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房分类';
+/
+
+-- 财务分类（业务表 fd_material.finance_category_id 等关联 finance_category_id）
+CREATE TABLE IF NOT EXISTS `fd_finance_category` (
+  `finance_category_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `finance_category_code` varchar(64) DEFAULT NULL COMMENT '财务分类编码',
+  `finance_category_name` varchar(255) DEFAULT NULL COMMENT '财务分类名称',
+  `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码',
+  `finance_category_address` varchar(500) DEFAULT NULL COMMENT '地址',
+  `finance_category_contact` varchar(128) DEFAULT NULL COMMENT '联系方式',
+  `is_use` char(1) DEFAULT '1' COMMENT '使用状态（字典 is_use_status）',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  PRIMARY KEY (`finance_category_id`),
+  KEY `idx_fd_fin_cat_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='财务分类';
+/
+
 CREATE TABLE IF NOT EXISTS `fd_material_import` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',
   `code` varchar(64) DEFAULT NULL COMMENT '耗材编码',
@@ -31,6 +253,7 @@ CREATE TABLE IF NOT EXISTS `wh_fixed_number` (
   `location` varchar(128) DEFAULT NULL COMMENT '货位',
   `location_id` bigint DEFAULT NULL COMMENT '货位ID',
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `del_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -54,6 +277,7 @@ CREATE TABLE IF NOT EXISTS `dept_fixed_number` (
   `location` varchar(128) DEFAULT NULL COMMENT '货位',
   `location_id` bigint DEFAULT NULL COMMENT '货位ID',
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `del_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -195,6 +419,17 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
 -- 耗材系统 SaaS 表（与设备共用 sb_customer 客户列表，耗材侧单独建表并与租户 tenant_id 关联）
 -- 执行时按「/」分段执行
 -- 耗材工作组：使用系统岗位表 sys_post（及 sys_user_post、sys_post_menu 等），不单独建 hc_work_group 表。
+
+-- 用户与岗位(耗材工作组)关联（与 sys_post.post_id、sys_user.user_id；tenant_id 与 sys_user.customer_id 对齐）
+CREATE TABLE IF NOT EXISTS `sys_user_post` (
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `post_id` bigint NOT NULL COMMENT '岗位/工作组ID(sys_post.post_id)',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sys_user.customer_id)',
+  PRIMARY KEY (`user_id`,`post_id`),
+  KEY `idx_sys_user_post_post` (`post_id`),
+  KEY `idx_sys_user_post_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户与岗位(工作组)关联';
+/
 
 -- 耗材用户菜单权限（工作人员菜单权限，与租户关联）
 CREATE TABLE IF NOT EXISTS `hc_user_permission_menu` (

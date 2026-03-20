@@ -1,7 +1,11 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+import java.util.Map;
+
 import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.domain.FdDepartmentChangeLog;
+import com.spd.foundation.domain.vo.FdDepartmentTreeNode;
 
 /**
  * 科室Service接口
@@ -26,6 +30,13 @@ public interface IFdDepartmentService
      * @return 科室集合
      */
     public List<FdDepartment> selectFdDepartmentList(FdDepartment fdDepartment);
+
+    /**
+     * 构建科室维护左侧树：单根节点为客户显示名称，子节点为当前用户可见科室树
+     *
+     * @param flatList 已按租户与权限过滤的扁平科室列表
+     */
+    List<FdDepartmentTreeNode> buildDepartmentTreeWithCustomerRoot(List<FdDepartment> flatList);
 
     /**
      * 新增科室
@@ -86,4 +97,29 @@ public interface IFdDepartmentService
      * @param ids 科室ID列表
      */
     void updateReferred(java.util.List<Long> ids);
+
+    /**
+     * 校验科室导入数据（不落库；全部通过时 valid=true）
+     *
+     * @param list            解析后的行（方法内会规范化 trim 等）
+     * @param isUpdateSupport 是否允许按科室编码更新已存在记录
+     * @return valid、errors、insertCount、updateCount、totalRows 等
+     */
+    Map<String, Object> validateFdDepartmentImport(List<FdDepartment> list, Boolean isUpdateSupport);
+
+    /**
+     * 导入科室（Excel），须先校验且用户确认（confirm=true）后再调用
+     *
+     * @param list            解析后的行
+     * @param isUpdateSupport 是否按「科室编码」更新已存在记录
+     * @param operName        操作人
+     * @param confirmed       必须为 true，否则拒绝导入
+     * @return 结果说明
+     */
+    String importFdDepartment(List<FdDepartment> list, Boolean isUpdateSupport, String operName, boolean confirmed);
+
+    /**
+     * 科室字段变更记录（按时间倒序）
+     */
+    List<FdDepartmentChangeLog> selectDepartmentChangeLog(Long departmentId);
 }

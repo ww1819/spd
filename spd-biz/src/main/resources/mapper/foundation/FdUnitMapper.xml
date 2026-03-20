@@ -9,26 +9,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="unitCode"    column="unit_code"    />
         <result property="unitName"    column="unit_name"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
     </resultMap>
 
     <sql id="selectFdUnitVo">
-        select unit_id, unit_code, unit_name, del_flag, create_by, create_time, update_by, update_time from fd_unit
+        select unit_id, unit_code, unit_name, del_flag, tenant_id, delete_by, delete_time,
+        create_by, create_time, update_by, update_time, remark from fd_unit
     </sql>
 
     <select id="selectFdUnitList" parameterType="FdUnit" resultMap="FdUnitResult">
         <include refid="selectFdUnitVo"/>
         where del_flag != 1
+        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId})</if>
         <if test="unitCode != null  and unitCode != ''"> and unit_code = #{unitCode}</if>
         <if test="unitName != null  and unitName != ''"> and unit_name like concat('%', #{unitName}, '%')</if>
     </select>
 
     <select id="selectFdUnitByUnitId" parameterType="Long" resultMap="FdUnitResult">
         <include refid="selectFdUnitVo"/>
-        where unit_id = #{unitId}
+        where unit_id = #{unitId} and (del_flag = 0 or del_flag is null)
     </select>
 
     <insert id="insertFdUnit" parameterType="FdUnit" useGeneratedKeys="true" keyProperty="unitId">
@@ -37,19 +43,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="unitCode != null">unit_code,</if>
             <if test="unitName != null">unit_name,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="unitCode != null">#{unitCode},</if>
             <if test="unitName != null">#{unitName},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
 
@@ -59,37 +69,43 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="unitCode != null">unit_code = #{unitCode},</if>
             <if test="unitName != null">unit_name = #{unitName},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
         </trim>
         where unit_id = #{unitId}
     </update>
 
+    <sql id="maxUnitTenantFilter">
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                AND (tenant_id IS NULL OR tenant_id = '')
+            </otherwise>
+        </choose>
+    </sql>
+
     <select id="selectMaxUnitCode" resultType="String">
-        SELECT unit_code 
-        FROM fd_unit 
-        WHERE unit_code LIKE 'D%' 
+        SELECT unit_code
+        FROM fd_unit
+        WHERE unit_code LIKE 'D%'
         AND del_flag != 1
+        <include refid="maxUnitTenantFilter"/>
         AND CAST(SUBSTRING(unit_code, 2) AS UNSIGNED) = (
             SELECT MAX(CAST(SUBSTRING(unit_code, 2) AS UNSIGNED))
             FROM fd_unit
-            WHERE unit_code LIKE 'D%' 
+            WHERE unit_code LIKE 'D%'
             AND del_flag != 1
+            <include refid="maxUnitTenantFilter"/>
         )
         ORDER BY unit_id DESC
         LIMIT 1
     </select>
-
-<!--    <delete id="deleteFdUnitByUnitId" parameterType="Long">-->
-<!--        delete from fd_unit where unit_id = #{unitId}-->
-<!--    </delete>-->
-
-<!--    <delete id="deleteFdUnitByUnitIds" parameterType="String">-->
-<!--        delete from fd_unit where unit_id in -->
-<!--        <foreach item="unitId" collection="array" open="(" separator="," close=")">-->
-<!--            #{unitId}-->
-<!--        </foreach>-->
-<!--    </delete>-->
 </mapper>

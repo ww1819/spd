@@ -73,6 +73,23 @@ public class PermissionService
     }
 
     /**
+     * 是否已绑定客户（租户端用户），与 {@link #isPlatformUser()} 互斥（超级管理员视为平台侧）。
+     */
+    public boolean isTenantUser()
+    {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null)
+        {
+            return false;
+        }
+        if (loginUser.getUser().isAdmin())
+        {
+            return false;
+        }
+        return StringUtils.isNotEmpty(loginUser.getUser().getCustomerId());
+    }
+
+    /**
      * 是否为租户用户且请求的客户即本人所属客户（用于允许访问“本人客户”下的数据，如工作组列表）。
      * 当 requestCustomerId 为空时视为访问本人客户。
      */

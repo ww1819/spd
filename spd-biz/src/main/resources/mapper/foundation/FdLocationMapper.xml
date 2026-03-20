@@ -12,6 +12,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="warehouseName"    column="warehouse_name"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -20,15 +23,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdLocationVo">
-        select l.location_id, l.parent_id, l.location_code, l.location_name, l.warehouse_id, 
-               w.name as warehouse_name, l.del_flag, l.create_by, l.create_time, l.update_by, l.update_time, l.remark 
+        select l.location_id, l.parent_id, l.location_code, l.location_name, l.warehouse_id,
+               w.name as warehouse_name, l.del_flag, l.tenant_id, l.delete_by, l.delete_time,
+               l.create_by, l.create_time, l.update_by, l.update_time, l.remark
         from fd_location l
         left join fd_warehouse w on l.warehouse_id = w.id
+    </sql>
+
+    <sql id="tenantFilter">
+        <if test="tenantId != null and tenantId != ''"> and (l.tenant_id = #{tenantId})</if>
     </sql>
 
     <select id="selectFdLocationList" parameterType="FdLocation" resultMap="FdLocationResult">
         <include refid="selectFdLocationVo"/>
         where l.del_flag != 1
+        <include refid="tenantFilter"/>
         <if test="locationCode != null  and locationCode != ''"> and l.location_code = #{locationCode}</if>
         <if test="locationName != null  and locationName != ''"> and l.location_name like concat('%', #{locationName}, '%')</if>
         <if test="parentId != null"> and l.parent_id = #{parentId}</if>
@@ -36,15 +45,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by l.parent_id, l.location_id
     </select>
 
-    <select id="selectFdLocationTree" resultMap="FdLocationResult">
+    <select id="selectFdLocationTree" parameterType="FdLocation" resultMap="FdLocationResult">
         <include refid="selectFdLocationVo"/>
         where l.del_flag != 1
+        <include refid="tenantFilter"/>
         order by l.parent_id, l.location_id
     </select>
 
     <select id="selectFdLocationByLocationId" parameterType="Long" resultMap="FdLocationResult">
         <include refid="selectFdLocationVo"/>
-        where l.location_id = #{locationId}
+        where l.location_id = #{locationId} and (l.del_flag = 0 or l.del_flag is null)
     </select>
 
     <insert id="insertFdLocation" parameterType="FdLocation" useGeneratedKeys="true" keyProperty="locationId">
@@ -55,6 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationName != null">location_name,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -67,6 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationName != null">#{locationName},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -83,6 +95,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationName != null">location_name = #{locationName},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -96,4 +111,3 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update fd_location set del_flag = 1 where location_id = #{locationId}
     </delete>
 </mapper>
-

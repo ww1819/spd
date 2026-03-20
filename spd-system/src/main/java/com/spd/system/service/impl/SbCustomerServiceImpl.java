@@ -299,6 +299,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     SysUserPost userPost = new SysUserPost();
     userPost.setUserId(user.getUserId());
     userPost.setPostId(post.getPostId());
+    userPost.setTenantId(customerId);
     List<SysUserPost> userPostList = new ArrayList<>();
     userPostList.add(userPost);
     sysUserPostMapper.batchUserPost(userPostList);
@@ -896,6 +897,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SysUserPost userPost = new SysUserPost();
       userPost.setUserId(user.getUserId());
       userPost.setPostId(post.getPostId());
+      userPost.setTenantId(customerId);
       List<SysUserPost> userPostList = new ArrayList<>();
       userPostList.add(userPost);
       sysUserPostMapper.batchUserPost(userPostList);
@@ -915,6 +917,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SysUserPost userPost = new SysUserPost();
       userPost.setUserId(existingUser.getUserId());
       userPost.setPostId(post.getPostId());
+      userPost.setTenantId(customerId);
       List<SysUserPost> userPostList = new ArrayList<>();
       userPostList.add(userPost);
       sysUserPostMapper.batchUserPost(userPostList);

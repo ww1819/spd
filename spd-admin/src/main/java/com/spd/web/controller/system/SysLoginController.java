@@ -117,8 +117,9 @@ public class SysLoginController
         SysUser user = SecurityUtils.getLoginUser().getUser();
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
-        // 权限集合
-        Set<String> permissions = permissionService.getMenuPermission(user);
+        // 权限集合：与 UserDetailsServiceImpl.createLoginUser 一致（sys_user_menu 耗材权限 + 设备 sb 权限）
+        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
+        permissions.addAll(sbPermissionService.getMenuPermission(user));
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
@@ -168,6 +169,7 @@ public class SysLoginController
         tenant.put("customerName", customer.getCustomerName());
         tenant.put("customerId", customer.getCustomerId());
         tenant.put("customerCode", customer.getCustomerCode());
+        tenant.put("tenantKey", StringUtils.isNotEmpty(customer.getTenantKey()) ? customer.getTenantKey() : null);
         ajax.put("tenant", tenant);
     }
 

@@ -1,6 +1,7 @@
 package com.spd.foundation.controller;
 
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,13 +13,18 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
+import com.spd.common.enums.TenantEnum;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.enums.BusinessType;
 import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.domain.FdDepartmentChangeLog;
+import com.spd.foundation.domain.vo.FdDepartmentTreeNode;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -44,28 +50,54 @@ public class FdDepartmentController extends BaseController
     @Autowired
     private ITenantScopeService tenantScopeService;
 
+    /** 租户与科室数据权限（与列表一致） */
+    private void applyTenantDepartmentListScope(FdDepartment fdDepartment)
+    {
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId))
+        {
+            fdDepartment.setTenantId(customerId);
+        }
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
+            if (allowedIds != null && !allowedIds.isEmpty())
+            {
+                fdDepartment.getParams().put("allowedDeptIds", allowedIds);
+            }
+            else
+            {
+                fdDepartment.getParams().put("allowedDeptIds", new ArrayList<Long>());
+            }
+        }
+    }
+
     /**
-     * 查询科室列表（租户非 super 组用户按 sb_user_permission_dept 过滤）
+     * 查询科室列表（租户非 super：耗材端按 sys_user_department，设备端按 sb_user_permission_dept，见 {@link ITenantScopeService#resolveDepartmentScope}）；
+     * 可选 treeParentId：仅查该上级下的直接子科室；不传则与点击客户根节点一致，为当前用户可见的全部科室。
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:list')")
     @GetMapping("/list")
     public TableDataInfo list(FdDepartment fdDepartment)
     {
-        String customerId = SecurityUtils.getCustomerId();
-        if (StringUtils.isNotEmpty(customerId)) {
-            fdDepartment.setTenantId(customerId);
-        }
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
-            if (allowedIds != null && !allowedIds.isEmpty()) {
-                fdDepartment.getParams().put("allowedDeptIds", allowedIds);
-            } else {
-                fdDepartment.getParams().put("allowedDeptIds", new ArrayList<Long>());
-            }
-        }
+        applyTenantDepartmentListScope(fdDepartment);
         startPage();
         List<FdDepartment> list = fdDepartmentService.selectFdDepartmentList(fdDepartment);
         return getDataTable(list);
+    }
+
+    /**
+     * 科室维护左侧树：根节点为客户名称（无租户时为「全部科室」），子树为当前用户有权限的科室层级。
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:depart:list')")
+    @GetMapping("/tree")
+    public AjaxResult departmentTree()
+    {
+        FdDepartment q = new FdDepartment();
+        applyTenantDepartmentListScope(q);
+        List<FdDepartment> flat = fdDepartmentService.selectFdDepartmentList(q);
+        List<FdDepartmentTreeNode> tree = fdDepartmentService.buildDepartmentTreeWithCustomerRoot(flat);
+        return success(tree);
     }
 
     /**
@@ -98,18 +130,7 @@ public class FdDepartmentController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, FdDepartment fdDepartment)
     {
-        String customerId = SecurityUtils.getCustomerId();
-        if (StringUtils.isNotEmpty(customerId)) {
-            fdDepartment.setTenantId(customerId);
-        }
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
-            if (allowedIds != null && !allowedIds.isEmpty()) {
-                fdDepartment.getParams().put("allowedDeptIds", allowedIds);
-            } else {
-                fdDepartment.getParams().put("allowedDeptIds", new ArrayList<Long>());
-            }
-        }
+        applyTenantDepartmentListScope(fdDepartment);
         List<FdDepartment> list = fdDepartmentService.selectFdDepartmentList(fdDepartment);
         ExcelUtil<FdDepartment> util = new ExcelUtil<FdDepartment>(FdDepartment.class);
         util.exportExcel(response, list, "科室数据");
@@ -130,6 +151,13 @@ public class FdDepartmentController extends BaseController
         if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
             return error("无权查看非本客户的科室");
         }
+        if (StringUtils.isNotEmpty(customerId) && dept.getId() != null
+            && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
+            if (allowedIds == null || allowedIds.isEmpty() || !allowedIds.contains(dept.getId())) {
+                return error("无权查看该科室");
+            }
+        }
         return success(dept);
     }
 
@@ -141,6 +169,10 @@ public class FdDepartmentController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FdDepartment fdDepartment)
     {
+        // 非衡水租户：手工新增不接收第三方科室 ID（仅导入等场景由服务层写入）；衡水市第三人民医院手工新增须填 HIS/第三方科室 ID
+        if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.getCustomerId())) {
+            fdDepartment.setThirdPartyDeptId(null);
+        }
         return toAjax(fdDepartmentService.insertFdDepartment(fdDepartment));
     }
 
@@ -194,9 +226,37 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
+     * 科室变更记录（字段级）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:depart:list')")
+    @GetMapping("/changeLog/{deptId}")
+    public AjaxResult changeLog(@PathVariable("deptId") Long deptId)
+    {
+        if (deptId == null) {
+            return error("科室 id 无效");
+        }
+        FdDepartment dept = fdDepartmentService.selectFdDepartmentById(String.valueOf(deptId));
+        if (dept == null) {
+            return error("科室不存在");
+        }
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
+            return error("无权查看非本客户的科室");
+        }
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
+            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
+            if (allowedIds == null || allowedIds.isEmpty() || !allowedIds.contains(deptId)) {
+                return error("无权查看该科室的变更记录");
+            }
+        }
+        List<FdDepartmentChangeLog> logs = fdDepartmentService.selectDepartmentChangeLog(deptId);
+        return success(logs);
+    }
+
+    /**
      * 批量更新科室名称简码
      */
-    @PreAuthorize("@ss.hasPermi('foundation:depart:edit')")
+    @PreAuthorize("@ss.hasPermi('foundation:depart:edit') || @ss.hasPermi('foundation:depart:updateReferred')")
     @Log(title = "科室", businessType = BusinessType.UPDATE)
     @PostMapping("/updateReferred")
     public AjaxResult updateReferred(@RequestBody java.util.Map<String, java.util.List<Long>> body)
@@ -208,5 +268,48 @@ public class FdDepartmentController extends BaseController
         }
         fdDepartmentService.updateReferred(ids);
         return success("更新简码成功");
+    }
+
+    /**
+     * 科室导入：仅校验不落库（须全部通过后再由用户确认调用 importData?confirm=true）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:depart:import')")
+    @PostMapping("/importValidate")
+    public AjaxResult importValidate(MultipartFile file, boolean updateSupport) throws Exception
+    {
+        ExcelUtil<FdDepartment> util = new ExcelUtil<FdDepartment>(FdDepartment.class);
+        List<FdDepartment> list = util.importExcel(file.getInputStream());
+        Map<String, Object> data = fdDepartmentService.validateFdDepartmentImport(list, updateSupport);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.success("校验未通过", data);
+        }
+        return AjaxResult.success("校验通过，请确认后导入", data);
+    }
+
+    /**
+     * 科室 Excel 导入（须先 importValidate 通过，且 confirm=true）
+     */
+    @Log(title = "科室导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('foundation:depart:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport,
+        @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
+    {
+        ExcelUtil<FdDepartment> util = new ExcelUtil<FdDepartment>(FdDepartment.class);
+        List<FdDepartment> list = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        String message = fdDepartmentService.importFdDepartment(list, updateSupport, operName, confirm);
+        return success(message);
+    }
+
+    /**
+     * 科室导入模板下载
+     */
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response) throws Exception
+    {
+        ExcelUtil<FdDepartment> util = new ExcelUtil<FdDepartment>(FdDepartment.class);
+        util.importTemplateExcel(response, "科室数据");
     }
 }

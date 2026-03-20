@@ -119,6 +119,14 @@ CALL add_table_column(
   NULL
 );
 /
+CALL add_table_column('fd_finance_category', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_finance_category', 'remark', 'varchar(512)', '备注', NULL);
+/
+CALL add_table_column('fd_finance_category', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_finance_category', 'delete_time', 'datetime', '删除时间', NULL);
+/
 /* 仓库流水表 t_hc_ck_flow 增加 期初单主表/明细表ID（UUID7 引用） */
 CALL add_table_column('t_hc_ck_flow', 'ref_bill_id', 'varchar(36)', '期初单主表ID（UUID7）', NULL);
 /
@@ -184,6 +192,50 @@ CALL add_table_column('stk_dep_inventory', 'remark', 'varchar(500)', '备注', N
 /
 /* 耗材科室列表与租户关联 */
 CALL add_table_column('fd_department', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+/* 科室表备注（维护/导入） */
+CALL add_table_column('fd_department', 'remark', 'varchar(500)', '备注', NULL);
+/
+/* 科室与第三方系统对照（导入与维护）；已废弃 his_dept_id，若库中仍存在该列则删除 */
+/* SqlInitRunner 每条片段单独 execute，不可在同一段内写多条分号语句（需 allowMultiQueries） */
+SET @__db := DATABASE();
+/
+SET @__exist_his_dept := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_dept_id'
+);
+/
+SET @__drop_his_sql := IF(@__exist_his_dept > 0,
+  'ALTER TABLE fd_department DROP COLUMN `his_dept_id`',
+  'SELECT ''skip_fd_department_his_dept_id'' AS msg'
+);
+/
+PREPARE __stmt_his FROM @__drop_his_sql;
+/
+EXECUTE __stmt_his;
+/
+DEALLOCATE PREPARE __stmt_his;
+/
+/* fd_department 已废弃列 his_id（若存在则删除） */
+SET @__exist_his_id := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_id'
+);
+/
+SET @__drop_his_id_sql := IF(@__exist_his_id > 0,
+  'ALTER TABLE fd_department DROP COLUMN `his_id`',
+  'SELECT ''skip_fd_department_his_id'' AS msg'
+);
+/
+PREPARE __stmt_his_id FROM @__drop_his_id_sql;
+/
+EXECUTE __stmt_his_id;
+/
+DEALLOCATE PREPARE __stmt_his_id;
+/
+CALL add_table_column('fd_department', 'third_party_dept_id', 'varchar(128)', '其他第三方系统科室ID', NULL);
+/
+CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
 /
 /* 耗材业务表与租户关联：仓库、出入库单、库存、科室库存、申领单 */
 CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
@@ -271,6 +323,19 @@ CALL add_table_column('stk_io_profit_loss', 'tenant_id', 'varchar(36)', '租户I
 CALL add_table_column('wh_fixed_number', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
 CALL add_table_column('dept_fixed_number', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+/* 定数表：备注与逻辑删除审计（存量库若仅有 del_flag 时补齐） */
+CALL add_table_column('wh_fixed_number', 'remark', 'varchar(512)', '备注', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'delete_by', 'varchar(64)', '删除人', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'remark', 'varchar(512)', '备注', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'delete_by', 'varchar(64)', '删除人', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('fd_material_import', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
@@ -459,6 +524,23 @@ CALL add_table_column('fd_supplier', 'delete_time', 'datetime', '删除时间', 
 /
 CALL add_table_column('fd_supplier', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('fd_supplier', 'his_id', 'varchar(128)', 'HIS供应商ID', NULL);
+/
+
+CREATE TABLE IF NOT EXISTS `fd_supplier_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `supplier_id` bigint NOT NULL COMMENT '供应商ID（fd_supplier.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_supplier_log_supp` (`supplier_id`),
+  KEY `idx_fd_supplier_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商档案变更记录';
+/
 
 -- fd_factory 生产厂家
 CALL add_table_column('fd_factory', 'tenant_id', 'varchar(36)', '租户ID', NULL);
@@ -467,8 +549,45 @@ CALL add_table_column('fd_factory', 'delete_by', 'varchar(64)', '删除者', NUL
 /
 CALL add_table_column('fd_factory', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('fd_factory', 'his_id', 'varchar(128)', 'HIS生产厂家ID', NULL);
+/
+
+CREATE TABLE IF NOT EXISTS `fd_factory_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `factory_id` bigint NOT NULL COMMENT '生产厂家ID（fd_factory.factory_id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_factory_log_fid` (`factory_id`),
+  KEY `idx_fd_factory_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生产厂家档案变更记录';
+/
+
+-- fd_unit 计量单位
+CALL add_table_column('fd_unit', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('fd_unit', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_unit', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_unit', 'remark', 'varchar(500)', '备注', NULL);
+/
+
+-- fd_location 货位
+CALL add_table_column('fd_location', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('fd_location', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_location', 'delete_time', 'datetime', '删除时间', NULL);
+/
 
 -- fd_warehouse_category
+CALL add_table_column('fd_warehouse_category', 'remark', 'varchar(512)', '备注', NULL);
+/
 CALL add_table_column('fd_warehouse_category', 'delete_by', 'varchar(64)', '删除者', NULL);
 /
 CALL add_table_column('fd_warehouse_category', 'delete_time', 'datetime', '删除时间', NULL);
@@ -1004,6 +1123,21 @@ CALL add_table_column('stk_inventory', 'del_flag', 'int', '删除标识', '0');
 CALL add_table_column('stk_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
 /
 CALL add_table_column('stk_inventory', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_dept_log_dept` (`department_id`),
+  KEY `idx_fd_dept_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
 /
 
 ALTER TABLE purchase_plan MODIFY COLUMN plan_status char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '1' NOT NULL COMMENT '计划状态（0未提交1待审核 2已审核 3已执行 4已取消）';

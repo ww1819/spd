@@ -23,7 +23,9 @@ import com.spd.system.domain.SysConfig;
 import com.spd.system.service.ISysConfigService;
 
 /**
- * 参数配置 信息操作处理（列表/增删改等仅平台用户可访问，租户用户不可见系统参数；getConfigKey 允许租户按 key 读取）
+ * 参数配置 信息操作处理。
+ * 列表：平台需权限；租户可访问（与 getConfigKey 一致，供导航栏/打印等读取展示参数）。
+ * 增删改/导出/详情/刷新缓存：仅平台用户。
  *
  * @author spd
  */
@@ -35,9 +37,9 @@ public class SysConfigController extends BaseController
     private ISysConfigService configService;
 
     /**
-     * 获取参数配置列表（仅平台用户，租户不可访问）
+     * 获取参数配置列表（平台：需 system:config:list；租户：已登录即可，用于前端机构名称/医院名称等）
      */
-    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:list')")
+    @PreAuthorize("(@ss.isPlatformUser() and @ss.hasPermi('system:config:list')) or @ss.isTenantUser()")
     @GetMapping("/list")
     public TableDataInfo list(SysConfig config)
     {

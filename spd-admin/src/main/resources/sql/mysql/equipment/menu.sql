@@ -1108,6 +1108,72 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000c76e');
 /
 
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000c76f',
+  '科室导入',
+  '01900000-0000-7000-8000-0000000013f1',
+  5,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'foundation:depart:import',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '科室导入按钮',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000c76f');
+/
+
+-- 科室导入：默认对客户开放（已插入旧数据的库可重复执行本句修正）
+UPDATE sb_menu SET default_open_to_customer = '1' WHERE menu_id = '01900000-0000-7000-8000-00000000c76f';
+/
+
+INSERT INTO sb_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time
+)
+SELECT
+  '01900000-0000-7000-8000-00000000c770',
+  '科室更新简码',
+  '01900000-0000-7000-8000-0000000013f1',
+  6,
+  '#',
+  NULL,
+  '1',
+  '0',
+  'F',
+  '0',
+  '0',
+  'foundation:depart:updateReferred',
+  '#',
+  '0',
+  '1',
+  '0',
+  'admin',
+  NOW(),
+  '按名称批量生成拼音简码',
+  NULL,
+  NULL,
+  NULL,
+  NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000c770');
+/
+
 -- 基础资料子菜单：供应商维护
 INSERT INTO sb_menu (
   menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time

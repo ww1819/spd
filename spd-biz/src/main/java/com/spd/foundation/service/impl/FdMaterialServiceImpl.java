@@ -35,8 +35,6 @@ import com.spd.foundation.mapper.FdMaterialImportMapper;
 import com.spd.foundation.mapper.FdMaterialStatusLogMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
-import com.spd.foundation.mapper.FdUnitMapper;
-import com.spd.foundation.mapper.FdLocationMapper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +43,8 @@ import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.service.IFdMaterialService;
+import com.spd.foundation.service.IFdUnitService;
+import com.spd.foundation.service.IFdLocationService;
 
 import javax.validation.Validator;
 
@@ -82,10 +82,10 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     private FdFinanceCategoryMapper fdFinanceCategoryMapper;
 
     @Autowired
-    private FdUnitMapper fdUnitMapper;
+    private IFdUnitService fdUnitService;
 
     @Autowired
-    private FdLocationMapper fdLocationMapper;
+    private IFdLocationService fdLocationService;
 
     @Autowired
     private FdMaterialStatusLogMapper fdMaterialStatusLogMapper;
@@ -843,7 +843,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         if (value.matches("^\\d+$")) {
             try {
                 Long id = Long.parseLong(value);
-                FdUnit u = fdUnitMapper.selectFdUnitByUnitId(id);
+                FdUnit u = fdUnitService.selectFdUnitByUnitId(id);
                 if (u != null) {
                     return id;
                 }
@@ -852,7 +852,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         FdUnit query = new FdUnit();
         query.setUnitName(value);
-        List<FdUnit> list = fdUnitMapper.selectFdUnitList(query);
+        List<FdUnit> list = fdUnitService.selectFdUnitList(query);
         if (list != null && !list.isEmpty()) {
             return list.get(0).getUnitId();
         }
@@ -866,7 +866,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         if (value.matches("^\\d+$")) {
             try {
                 Long id = Long.parseLong(value);
-                FdLocation l = fdLocationMapper.selectFdLocationByLocationId(id);
+                FdLocation l = fdLocationService.selectFdLocationByLocationId(id);
                 if (l != null) {
                     return id;
                 }
@@ -875,7 +875,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         FdLocation query = new FdLocation();
         query.setLocationName(value);
-        List<FdLocation> list = fdLocationMapper.selectFdLocationList(query);
+        List<FdLocation> list = fdLocationService.selectFdLocationList(query);
         if (list != null && !list.isEmpty()) {
             return list.get(0).getLocationId();
         }

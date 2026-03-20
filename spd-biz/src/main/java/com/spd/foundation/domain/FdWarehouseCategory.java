@@ -118,6 +118,8 @@ public class FdWarehouseCategory extends BaseEntity
             .append("warehouseCategoryCode", getWarehouseCategoryCode())
             .append("warehouseCategoryName", getWarehouseCategoryName())
             .append("referredName", getReferredName())
+            .append("remark", getRemark())
+            .append("tenantId", getTenantId())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())

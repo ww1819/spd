@@ -1,6 +1,7 @@
 package com.spd.foundation.controller;
 
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +12,17 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
+import com.spd.common.enums.TenantEnum;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.foundation.domain.FdFactory;
+import com.spd.foundation.domain.FdFactoryChangeLog;
 import com.spd.foundation.service.IFdFactoryService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -34,9 +40,6 @@ public class FdFactoryController extends BaseController
     @Autowired
     private IFdFactoryService fdFactoryService;
 
-    /**
-     * 查询厂家维护列表
-     */
     @PreAuthorize("@ss.hasPermi('foundation:factory:list')")
     @GetMapping("/list")
     public TableDataInfo list(FdFactory fdFactory)
@@ -46,9 +49,6 @@ public class FdFactoryController extends BaseController
         return getDataTable(list);
     }
 
-    /**
-     * 查询所有厂家维护列表
-     */
     @GetMapping("/listAll")
     public List<FdFactory> listAll(FdFactory fdFactory)
     {
@@ -56,9 +56,6 @@ public class FdFactoryController extends BaseController
         return list;
     }
 
-    /**
-     * 导出厂家维护列表
-     */
     @PreAuthorize("@ss.hasPermi('foundation:factory:export')")
     @Log(title = "厂家维护", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -69,9 +66,57 @@ public class FdFactoryController extends BaseController
         util.exportExcel(response, list, "厂家维护数据");
     }
 
-    /**
-     * 获取厂家维护详细信息
-     */
+    @PreAuthorize("@ss.hasPermi('foundation:factory:list')")
+    @GetMapping("/changeLog/{factoryId}")
+    public AjaxResult factoryChangeLog(@PathVariable("factoryId") Long factoryId)
+    {
+        if (factoryId == null)
+        {
+            return error("生产厂家 id 无效");
+        }
+        FdFactory f = fdFactoryService.selectFdFactoryByFactoryId(factoryId);
+        if (f == null)
+        {
+            return error("生产厂家不存在");
+        }
+        List<FdFactoryChangeLog> logs = fdFactoryService.selectFactoryChangeLog(factoryId);
+        return success(logs);
+    }
+
+    @PreAuthorize("@ss.hasPermi('foundation:factory:import')")
+    @PostMapping("/importValidate")
+    public AjaxResult importValidate(MultipartFile file, boolean updateSupport) throws Exception
+    {
+        ExcelUtil<FdFactory> util = new ExcelUtil<FdFactory>(FdFactory.class);
+        List<FdFactory> list = util.importExcel(file.getInputStream());
+        Map<String, Object> data = fdFactoryService.validateFdFactoryImport(list, updateSupport);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.success("校验未通过", data);
+        }
+        return AjaxResult.success("校验通过，请确认后导入", data);
+    }
+
+    @Log(title = "生产厂家导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('foundation:factory:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport,
+        @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
+    {
+        ExcelUtil<FdFactory> util = new ExcelUtil<FdFactory>(FdFactory.class);
+        List<FdFactory> list = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        String message = fdFactoryService.importFdFactory(list, updateSupport, operName, confirm);
+        return success(message);
+    }
+
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response) throws Exception
+    {
+        ExcelUtil<FdFactory> util = new ExcelUtil<FdFactory>(FdFactory.class);
+        util.importTemplateExcel(response, "生产厂家数据");
+    }
+
     @PreAuthorize("@ss.hasPermi('foundation:factory:query')")
     @GetMapping(value = "/{factoryId}")
     public AjaxResult getInfo(@PathVariable("factoryId") Long factoryId)
@@ -79,20 +124,18 @@ public class FdFactoryController extends BaseController
         return success(fdFactoryService.selectFdFactoryByFactoryId(factoryId));
     }
 
-    /**
-     * 新增厂家维护
-     */
     @PreAuthorize("@ss.hasPermi('foundation:factory:add')")
     @Log(title = "厂家维护", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody FdFactory fdFactory)
     {
+        if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.getCustomerId()))
+        {
+            fdFactory.setHisId(null);
+        }
         return toAjax(fdFactoryService.insertFdFactory(fdFactory));
     }
 
-    /**
-     * 修改厂家维护
-     */
     @PreAuthorize("@ss.hasPermi('foundation:factory:edit')")
     @Log(title = "厂家维护", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -101,9 +144,6 @@ public class FdFactoryController extends BaseController
         return toAjax(fdFactoryService.updateFdFactory(fdFactory));
     }
 
-    /**
-     * 删除厂家维护
-     */
     @PreAuthorize("@ss.hasPermi('foundation:factory:remove')")
     @Log(title = "厂家维护", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{factoryIds}")
@@ -112,9 +152,6 @@ public class FdFactoryController extends BaseController
         return toAjax(fdFactoryService.deleteFdFactoryByFactoryId(factoryIds));
     }
 
-    /**
-     * 批量更新厂家简码
-     */
     @PreAuthorize("@ss.hasPermi('foundation:factory:updateReferred')")
     @Log(title = "厂家维护", businessType = BusinessType.UPDATE)
     @PostMapping("/updateReferred")

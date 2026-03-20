@@ -318,10 +318,12 @@ public class ExcelUtil<T>
     public List<T> importExcel(String sheetName, InputStream is, int titleNum) throws Exception
     {
         this.type = Type.IMPORT;
-        this.wb = WorkbookFactory.create(is);
         List<T> list = new ArrayList<T>();
-        // 如果指定sheet名,则取指定sheet中的内容 否则默认指向第1个sheet
-        Sheet sheet = StringUtils.isNotEmpty(sheetName) ? wb.getSheet(sheetName) : wb.getSheetAt(0);
+        try
+        {
+            this.wb = WorkbookFactory.create(is);
+            // 如果指定sheet名,则取指定sheet中的内容 否则默认指向第1个sheet
+            Sheet sheet = StringUtils.isNotEmpty(sheetName) ? wb.getSheet(sheetName) : wb.getSheetAt(0);
         if (sheet == null)
         {
             throw new IOException("文件sheet不存在");
@@ -365,6 +367,20 @@ public class ExcelUtil<T>
             {
                 Excel attr = (Excel) objects[1];
                 Integer column = cellMap.get(attr.name());
+                if (column == null && attr.nameAliases() != null)
+                {
+                    for (String alias : attr.nameAliases())
+                    {
+                        if (StringUtils.isNotEmpty(alias))
+                        {
+                            column = cellMap.get(alias);
+                            if (column != null)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
                 if (column != null)
                 {
                     fieldsMap.put(column, objects);
@@ -485,6 +501,23 @@ public class ExcelUtil<T>
             }
         }
         return list;
+        }
+        finally
+        {
+            if (this.wb != null)
+            {
+                try
+                {
+                    this.wb.close();
+                }
+                catch (IOException e)
+                {
+                    log.warn("关闭导入用工作簿失败", e);
+                }
+                this.wb = null;
+            }
+            IOUtils.closeQuietly(is);
+        }
     }
 
     /**

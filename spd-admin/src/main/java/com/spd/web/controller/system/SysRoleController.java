@@ -1,6 +1,8 @@
 package com.spd.web.controller.system;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,7 @@ import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.framework.web.service.SbPermissionService;
 import com.spd.framework.web.service.SysPermissionService;
 import com.spd.framework.web.service.TokenService;
 import com.spd.system.domain.SysUserRole;
@@ -48,6 +51,9 @@ public class SysRoleController extends BaseController
 
     @Autowired
     private SysPermissionService permissionService;
+
+    @Autowired
+    private SbPermissionService sbPermissionService;
 
     @Autowired
     private ISysUserService userService;
@@ -132,7 +138,9 @@ public class SysRoleController extends BaseController
             LoginUser loginUser = getLoginUser();
             if (StringUtils.isNotNull(loginUser.getUser()) && !loginUser.getUser().isAdmin())
             {
-                loginUser.setPermissions(permissionService.getMenuPermission(loginUser.getUser()));
+                Set<String> merged = new HashSet<>(permissionService.getMenuPermission(loginUser.getUser()));
+                merged.addAll(sbPermissionService.getMenuPermission(loginUser.getUser()));
+                loginUser.setPermissions(merged);
                 loginUser.setUser(userService.selectUserByUserName(loginUser.getUser().getUserName()));
                 tokenService.setLoginUser(loginUser);
             }

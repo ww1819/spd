@@ -526,6 +526,7 @@ public class SysUserServiceImpl implements ISysUserService
                 SysUserPost up = new SysUserPost();
                 up.setUserId(user.getUserId());
                 up.setPostId(postId);
+                up.setTenantId(user.getCustomerId());
                 list.add(up);
             }
             userPostMapper.batchUserPost(list);

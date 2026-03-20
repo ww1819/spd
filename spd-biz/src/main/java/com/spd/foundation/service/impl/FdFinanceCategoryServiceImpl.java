@@ -34,7 +34,12 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     @Override
     public FdFinanceCategory selectFdFinanceCategoryByFinanceCategoryId(Long financeCategoryId)
     {
-        return fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(financeCategoryId);
+        FdFinanceCategory row = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(financeCategoryId);
+        if (row != null)
+        {
+            SecurityUtils.ensureTenantAccess(row.getTenantId());
+        }
+        return row;
     }
 
     /**
@@ -46,6 +51,10 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     @Override
     public List<FdFinanceCategory> selectFdFinanceCategoryList(FdFinanceCategory fdFinanceCategory)
     {
+        if (fdFinanceCategory != null && StringUtils.isEmpty(fdFinanceCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            fdFinanceCategory.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdFinanceCategoryMapper.selectFdFinanceCategoryList(fdFinanceCategory);
     }
 
@@ -59,6 +68,22 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     public int insertFdFinanceCategory(FdFinanceCategory fdFinanceCategory)
     {
         fdFinanceCategory.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdFinanceCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
+        {
+            fdFinanceCategory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (StringUtils.isEmpty(fdFinanceCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            fdFinanceCategory.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (fdFinanceCategory.getDelFlag() == null)
+        {
+            fdFinanceCategory.setDelFlag(0);
+        }
+        if (StringUtils.isEmpty(fdFinanceCategory.getIsUse()))
+        {
+            fdFinanceCategory.setIsUse("1");
+        }
         return fdFinanceCategoryMapper.insertFdFinanceCategory(fdFinanceCategory);
     }
 
@@ -71,7 +96,22 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     @Override
     public int updateFdFinanceCategory(FdFinanceCategory fdFinanceCategory)
     {
+        if (fdFinanceCategory.getFinanceCategoryId() == null)
+        {
+            throw new ServiceException("财务分类主键不能为空");
+        }
+        FdFinanceCategory before = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(fdFinanceCategory.getFinanceCategoryId());
+        if (before == null)
+        {
+            throw new ServiceException("财务分类不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(before.getTenantId());
+        fdFinanceCategory.setTenantId(before.getTenantId());
         fdFinanceCategory.setUpdateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdFinanceCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
+        {
+            fdFinanceCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
     }
 
@@ -97,10 +137,14 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     public int deleteFdFinanceCategoryByFinanceCategoryId(Long financeCategoryId)
     {
         FdFinanceCategory fdFinanceCategory = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(financeCategoryId);
-        if(fdFinanceCategory == null){
+        if (fdFinanceCategory == null)
+        {
             throw new ServiceException(String.format("财务分类：%s，不存在!", financeCategoryId));
         }
+        SecurityUtils.ensureTenantAccess(fdFinanceCategory.getTenantId());
         fdFinanceCategory.setDelFlag(1);
+        fdFinanceCategory.setDeleteBy(SecurityUtils.getUserIdStr());
+        fdFinanceCategory.setDeleteTime(DateUtils.getNowDate());
         fdFinanceCategory.setUpdateTime(DateUtils.getNowDate());
         fdFinanceCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
@@ -122,6 +166,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
             if (category == null) {
                 continue;
             }
+            SecurityUtils.ensureTenantAccess(category.getTenantId());
             String name = category.getFinanceCategoryName();
             if (StringUtils.isEmpty(name)) {
                 continue;
