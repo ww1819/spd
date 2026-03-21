@@ -25,7 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 客户68分类 Service 实现：初始化、同步、增删改查及操作记录
+ * 客户 68 分类（sb_customer_category68）实现：初始化/同步时以系统标准表 {@code fd_category68} 为蓝本
+ * （该表为全库共用字典模板，无 tenant_id）；本服务内数据按 {@code customerId} 隔离。
  *
  * @author spd
  */

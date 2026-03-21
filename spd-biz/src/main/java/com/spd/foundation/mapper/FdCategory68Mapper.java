@@ -4,7 +4,7 @@ import java.util.List;
 import com.spd.foundation.domain.FdCategory68;
 
 /**
- * 68分类Mapper接口
+ * 系统 68 分类标准表 fd_category68 的 Mapper（全库一套参照模板，无租户字段）。
  *
  * @author spd
  * @date 2024-04-12

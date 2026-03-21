@@ -1162,6 +1162,10 @@ INSERT INTO sys_menu (
 (2281, '清理耗材数据(行)', 2100, 51, '#', '', NULL,
  1, 0, 'F', '0', '0', 'hc:system:customer:purgeHc', '#',
  'admin', NOW(), '1', NOW(), '按租户物理删除耗材侧数据',
+ '1', '0'),
+(2297, '清理设备数据(行)', 2100, 52, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'sb:system:customer:purgeEq', '#',
+ 'admin', NOW(), '1', NOW(), '按租户物理删除设备侧数据（耗材客户管理行内）',
  '1', '0')
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),

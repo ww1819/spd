@@ -74,7 +74,7 @@ public class HcCustomerController extends BaseController {
     return customer != null ? success(customer) : error("客户不存在");
   }
 
-  /** 耗材侧客户更新（仅允许更新客户名称、备注、耗材状态、耗材计划停用时间，不修改设备侧 status/planned_disable_time） */
+  /** 耗材侧客户更新：客户名称、备注、耗材状态、耗材/设备系统计划停用时间（不修改设备侧 status） */
   @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
   @PutMapping
   public AjaxResult update(@RequestBody SbCustomer body) {
@@ -89,6 +89,7 @@ public class HcCustomerController extends BaseController {
     existing.setRemark(body.getRemark());
     existing.setHcStatus(body.getHcStatus());
     existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
+    existing.setPlannedDisableTime(body.getPlannedDisableTime());
     existing.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(existing));
   }

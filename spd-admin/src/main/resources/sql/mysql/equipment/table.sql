@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `sb_customer_menu_period_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户菜单功能启停用时间段表';
 /
 
--- 客户68分类表（以 fd_category68 为蓝本，客户可自行维护；主键 UUID7，含删除标志/删除者/删除时间）
+-- 客户68分类表。系统标准模板为 fd_category68（全库共用字典/参照，无 tenant_id）；本表为客户侧副本，按 customer_id 隔离。
 CREATE TABLE IF NOT EXISTS `sb_customer_category68` (
   `id` char(36) NOT NULL COMMENT '主键UUID7',
   `customer_id` char(36) NOT NULL COMMENT '客户ID(UUID7)',

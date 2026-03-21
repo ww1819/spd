@@ -20,7 +20,10 @@ public interface ITenantDataPurgeService
 
     /**
      * 平台级「初始化数据库」：清空租户与业务数据，保留 sys_menu、sys_dict_*、sys_config、sys_role、sys_role_menu、
-     * sb_menu、定时任务相关表等；仅保留 user_name='admin' 的用户并保证其超级管理员角色。
+     * sb_menu、定时任务相关表等；另保留 fd_category68、名称以 scm_/spd_ 开头的表（供应链/SPD 配置与字典类数据）。
+     * 另支持「租户维度白名单」（见 {@code TenantDataPurgeServiceImpl} 中 {@code FULL_RESET_TENANT_NULL_PRESERVE_WHITELIST}）：
+     * 对白名单中的表仅删除 tenant_id/customer_id 有值的行，保留 NULL/空白行（如平台操作记录）。
+     * 仅保留 user_name='admin' 的用户并保证其超级管理员角色。
      * 调用前须二次确认口令。
      *
      * @param confirmToken 必须为固定口令 {@link #FULL_RESET_CONFIRM_TOKEN}

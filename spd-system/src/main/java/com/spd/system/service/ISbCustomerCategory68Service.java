@@ -1,8 +1,8 @@
 package com.spd.system.service;
 
 /**
- * 客户68分类 Service 接口（系统模块最小依赖）
- * 新增客户时初始化、重置时同步，具体实现在 biz 模块
+ * 客户 68 分类 Service（系统模块最小依赖；实现在 biz）。
+ * <p>系统标准模板表 {@code fd_category68} 为全库字典参照（无 tenant_id）；初始化/同步均以此为蓝本。</p>
  */
 public interface ISbCustomerCategory68Service {
 

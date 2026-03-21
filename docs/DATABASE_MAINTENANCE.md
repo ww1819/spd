@@ -23,7 +23,8 @@
 
 实现类：`com.spd.system.service.impl.TenantDataPurgeServiceImpl`  
 - 按租户清理：扫描 `information_schema` 中带 `tenant_id` / `customer_id` 的表并 `DELETE`，期间 `FOREIGN_KEY_CHECKS=0`。  
-- **全库初始化**为高危操作，执行前务必备份；保留表包括：`sys_menu`、`sys_dict_*`、`sys_config`、`sys_role`、`sys_role_menu`、`sys_role_dept`、`sys_dept`、`sys_post`、`sys_user` 系列关联表、`sb_menu`、`sys_job` 及 Quartz 表等；**不删除** `user_name='admin'` 的用户，并尝试补全 `sys_user_role(管理员,1)`。
+- **全库初始化**为高危操作，执行前务必备份；保留表包括：`sys_menu`、`sys_dict_*`、`sys_config`、`sys_role`、`sys_role_menu`、`sys_role_dept`、`sys_dept`、`sys_post`、`sys_user` 系列关联表、`sb_menu`、`sys_job` 及 Quartz 表等；另 **保留** `fd_category68`、**以 `scm_` / `spd_` 开头的全部表**（供应链与 SPD 侧配置，永不清）；**不删除** `user_name='admin'` 的用户，并尝试补全 `sys_user_role(管理员,1)`。  
+- **租户维度白名单**（`FULL_RESET_TENANT_NULL_PRESERVE_WHITELIST`，当前为空）：若某表加入该白名单，则全库初始化时对该表**不**再 `DELETE` 整表，而是只删除 `tenant_id` / `customer_id` 非空且非纯空白的行，**保留**两列均为 NULL 或仅空白的行（便于保留平台管理员相关记录）。白名单表须至少含 `tenant_id` 或 `customer_id` 之一；详见实现类内注释。
 
 若线上库表结构与脚本不一致，请在测试库验证后再用。
 
@@ -38,6 +39,7 @@
 ## 5. 参考 SQL 脚本目录
 
 - `spd/sql/maintenance/backfill_stk_io_bill_entry_bill_no.sql` — 明细单号回填
+- `spd/sql/maintenance/drop_fd_category68_tenant_id_if_exists.sql` — 若曾误给系统字典表 `fd_category68` 增加 `tenant_id`，可按注释删除该列
 - `spd/sql/add_customer_database_maintenance_menus.sql` — 客户管理相关权限菜单
 
 前端需在「客户管理」列表行内调用上述 API，并弹出二次确认（全库初始化必须输入口令 `CONFIRM_PURGE_ALL_TENANT_DATA`）。

@@ -6,8 +6,9 @@ import com.spd.foundation.domain.SbCustomerCategory68;
 import com.spd.foundation.domain.SbCustomerCategory68Log;
 
 /**
- * 客户68分类 Service 接口（扩展系统模块接口）
- * 以 fd_category68 为蓝本，客户可自行维护；含初始化、同步、增删改查及操作记录
+ * 客户 68 分类 Service（扩展系统模块接口）。
+ * <p>系统标准模板为 {@code fd_category68}（全库字典/参照，无 tenant_id）；本接口管理客户表 {@code sb_customer_category68}，
+ * 含初始化、同步、增删改查及操作记录。</p>
  *
  * @author spd
  */

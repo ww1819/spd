@@ -2,6 +2,10 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  表 fd_category68：系统级「医疗器械 68 分类」标准字典/参照模板，全库一套，不按租户隔离，无 tenant_id。
+  客户侧自建数据见 sb_customer_category68（通过 ref_category68_id 与本表对应）。
+-->
 <mapper namespace="com.spd.foundation.mapper.FdCategory68Mapper">
 
     <resultMap type="FdCategory68" id="FdCategory68Result">
@@ -21,10 +25,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdCategory68List" parameterType="FdCategory68" resultMap="FdCategory68Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdCategory68Vo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
         <if test="category68Code != null  and category68Code != ''"> and category68_code = #{category68Code}</if>
         <if test="category68Name != null  and category68Name != ''"> and category68_name like concat('%', #{category68Name}, '%')</if>
         <if test="parentId != null"> and parent_id = #{parentId}</if>
@@ -32,21 +34,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdCategory68Tree" resultMap="FdCategory68Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdCategory68Vo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
         order by parent_id, category68_id
     </select>
 
     <select id="selectFdCategory68ByCategory68Id" parameterType="Long" resultMap="FdCategory68Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdCategory68Vo"/>
-        where category68_id = #{category68Id} and tenant_id = #{tenantId}
+        where category68_id = #{category68Id}
     </select>
 
     <insert id="insertFdCategory68" parameterType="FdCategory68" useGeneratedKeys="true" keyProperty="category68Id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_category68
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -57,7 +55,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="parentId != null">#{parentId},</if>
@@ -68,12 +65,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            #{tenantId},
          </trim>
     </insert>
 
     <update id="updateFdCategory68" parameterType="FdCategory68">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_category68
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -85,8 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where category68_id = #{category68Id} and tenant_id = #{tenantId}
+        where category68_id = #{category68Id}
     </update>
 
 </mapper>
-

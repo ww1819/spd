@@ -13,7 +13,7 @@ import com.spd.foundation.domain.FdCategory68;
 import com.spd.foundation.service.IFdCategory68Service;
 
 /**
- * 68分类Service业务层处理
+ * 系统 68 分类标准（fd_category68）业务层：全库共用参照模板，不按 tenant 隔离。
  *
  * @author spd
  */

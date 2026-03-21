@@ -22,6 +22,12 @@ import com.spd.system.service.ITenantDataPurgeService;
 
 /**
  * 使用 information_schema 发现带 tenant_id / customer_id 的表并执行 DELETE，外键检查关闭以保证顺序无关。
+ * <p>全库初始化 {@link #purgeAllDataKeepPlatform}：
+ * <ul>
+ *   <li>{@link #shouldSkipFullResetTable(String)} — 整表保留（不执行 DELETE）；</li>
+ *   <li>{@link #FULL_RESET_TENANT_NULL_PRESERVE_WHITELIST} — 仅删除「带租户/客户维度」的行，保留 tenant_id、customer_id 为空或空白的行；</li>
+ *   <li>其余表 — 整表 {@code DELETE}。</li>
+ * </ul>
  */
 @Service
 public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
@@ -29,6 +35,69 @@ public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
     private static final Logger log = LoggerFactory.getLogger(TenantDataPurgeServiceImpl.class);
 
     private static final Set<String> FULL_RESET_SKIP = buildFullResetSkip();
+
+    /**
+     * <p><b>全库初始化 — 租户维度「白名单」</b>（表名一律小写，与 {@link #shouldSkipFullResetTable(String)} 入参一致）。</p>
+     *
+     * <p><b>语义（与「整表跳过」不同）：</b></p>
+     * <ul>
+     *   <li>对<b>不在</b> {@link #FULL_RESET_SKIP} / {@link #shouldSkipFullResetTable(String)} 中的表，默认是 {@code DELETE FROM 表} 清空整表；</li>
+     *   <li>若表加入<b>本白名单</b>，则改为<b>只删除「存在租户/客户归属」的行</b>，即：
+     *     <ul>
+     *       <li>若表含 {@code tenant_id}：删除 {@code tenant_id IS NOT NULL} 且去掉首尾空白后非空的行；</li>
+     *       <li>若表含 {@code customer_id}（可与 tenant_id 同时存在）：同样规则；若两列均存在，则满足任一列「有非空归属」即删除该行（平台侧记录通常两列均为 NULL 或空白）；</li>
+     *       <li><b>保留</b>：{@code tenant_id} / {@code customer_id} 为 {@code NULL}，或仅含空白字符的行 —— 常见于平台管理员产生的与租户无关的操作记录、全局配置痕迹等。</li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     *
+     * <p><b>扩展方式：</b>在 {@link #buildFullResetTenantNullPreserveWhitelist()} 中向集合添加小写表名即可，例如 {@code Collections.addAll(s, "your_audit_log");}。</p>
+     *
+     * <p><b>注意：</b></p>
+     * <ul>
+     *   <li>若白名单表<b>既没有</b> {@code tenant_id} 也<b>没有</b> {@code customer_id} 列，则无法按上述语义清理，将打日志并<b>跳过</b>该表（避免误整表删除）；请从白名单移除或增加列后再使用白名单；</li>
+     *   <li>本白名单仅作用于 {@link #purgeAllDataKeepPlatform}，不影响按租户/客户单点清理 {@link #purgeConsumablesDataForTenant} / {@link #purgeEquipmentDataForCustomer}。</li>
+     * </ul>
+     *
+     * <p>当前策略：<b>白名单为空</b>，所有非跳过表仍走整表 {@code DELETE}。</p>
+     */
+    private static final Set<String> FULL_RESET_TENANT_NULL_PRESERVE_WHITELIST = buildFullResetTenantNullPreserveWhitelist();
+
+    private static Set<String> buildFullResetTenantNullPreserveWhitelist()
+    {
+        Set<String> s = new HashSet<>();
+        // 后续在此添加需「保留 NULL/空白 租户或客户键」的表名（小写），例如：
+        // Collections.addAll(s, "biz_operation_log");
+        return s;
+    }
+
+    /** @return 是否在全库初始化中按「仅删有租户/客户维度的行」处理 */
+    private static boolean isFullResetTenantNullPreserveWhitelist(String tl)
+    {
+        return tl != null && FULL_RESET_TENANT_NULL_PRESERVE_WHITELIST.contains(tl);
+    }
+
+    /** 表名已统一为小写 */
+    private static boolean shouldSkipFullResetTable(String tl)
+    {
+        if (tl == null)
+        {
+            return false;
+        }
+        if (FULL_RESET_SKIP.contains(tl) || "sys_user".equals(tl))
+        {
+            return true;
+        }
+        if ("fd_category68".equals(tl))
+        {
+            return true;
+        }
+        if (tl.startsWith("scm_") || tl.startsWith("spd_"))
+        {
+            return true;
+        }
+        return false;
+    }
 
     private static Set<String> buildFullResetSkip()
     {
@@ -201,7 +270,7 @@ public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
                 for (String table : allTables)
                 {
                     String tl = table.toLowerCase(Locale.ROOT);
-                    if (FULL_RESET_SKIP.contains(tl) || "sys_user".equals(tl))
+                    if (shouldSkipFullResetTable(tl))
                     {
                         continue;
                     }
@@ -209,9 +278,19 @@ public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
                     {
                         continue;
                     }
-                    try (Statement st = conn.createStatement())
+                    try
                     {
-                        st.executeUpdate("DELETE FROM `" + table + "`");
+                        if (isFullResetTenantNullPreserveWhitelist(tl))
+                        {
+                            deleteTenantScopedRowsOnly(conn, table);
+                        }
+                        else
+                        {
+                            try (Statement st = conn.createStatement())
+                            {
+                                st.executeUpdate("DELETE FROM `" + table + "`");
+                            }
+                        }
                     }
                     catch (SQLException ex)
                     {
@@ -265,6 +344,64 @@ public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
                 return rs.next();
             }
         }
+    }
+
+    /**
+     * 判断当前库中指定表是否包含某列（用于白名单删除前检测 tenant_id / customer_id）。
+     */
+    private boolean tableHasColumn(Connection conn, String tableName, String columnName) throws SQLException
+    {
+        if (!isSafeIdentifier(tableName) || !isSafeIdentifier(columnName))
+        {
+            return false;
+        }
+        String sql = "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql))
+        {
+            ps.setString(1, tableName);
+            ps.setString(2, columnName);
+            try (ResultSet rs = ps.executeQuery())
+            {
+                return rs.next();
+            }
+        }
+    }
+
+    /**
+     * 全库初始化 — 白名单表：仅删除「可识别为租户/客户数据」的行。
+     * <p>使用 {@code TRIM(CAST(col AS CHAR))} 以同时兼容字符型与数值型主键列；NULL 与空串、纯空白均不删。</p>
+     *
+     * @return true 已执行 DELETE；false 表上无 tenant_id/customer_id，未执行任何删除
+     */
+    private boolean deleteTenantScopedRowsOnly(Connection conn, String table) throws SQLException
+    {
+        boolean hasTenant = tableHasColumn(conn, table, "tenant_id");
+        boolean hasCustomer = tableHasColumn(conn, table, "customer_id");
+        if (!hasTenant && !hasCustomer)
+        {
+            log.warn("全库初始化白名单表「{}」既无 tenant_id 也无 customer_id，跳过删除以免整表误删", table);
+            return false;
+        }
+        String sql;
+        if (hasTenant && hasCustomer)
+        {
+            sql = "DELETE FROM `" + table + "` WHERE (tenant_id IS NOT NULL AND TRIM(CAST(tenant_id AS CHAR)) <> '')"
+                + " OR (customer_id IS NOT NULL AND TRIM(CAST(customer_id AS CHAR)) <> '')";
+        }
+        else if (hasTenant)
+        {
+            sql = "DELETE FROM `" + table + "` WHERE tenant_id IS NOT NULL AND TRIM(CAST(tenant_id AS CHAR)) <> ''";
+        }
+        else
+        {
+            sql = "DELETE FROM `" + table + "` WHERE customer_id IS NOT NULL AND TRIM(CAST(customer_id AS CHAR)) <> ''";
+        }
+        try (Statement st = conn.createStatement())
+        {
+            int n = st.executeUpdate(sql);
+            log.info("全库初始化白名单表「{}」按租户/客户维度删除 {} 行", table, n);
+        }
+        return true;
     }
 
     private List<String> allBaseTables(Connection conn) throws SQLException
