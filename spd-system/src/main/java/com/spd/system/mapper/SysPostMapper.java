@@ -104,4 +104,14 @@ public interface SysPostMapper
      * 用户是否属于指定租户下耗材管理员组（post_code=super）
      */
     public int countUserSuperPostInTenant(@Param("userId") Long userId, @Param("tenantId") String tenantId);
+
+    /**
+     * 耗材：按客户下已关联用户解析 super 岗位（tenant_id 为空时仍能找到，便于回填）
+     */
+    public SysPost selectHcSuperPostLinkedToCustomer(@Param("tenantId") String tenantId);
+
+    /**
+     * 回填岗位租户 ID（仅当 tenant_id 为空时更新，避免误改）
+     */
+    public int updatePostTenantIdIfBlank(@Param("postId") Long postId, @Param("tenantId") String tenantId);
 }

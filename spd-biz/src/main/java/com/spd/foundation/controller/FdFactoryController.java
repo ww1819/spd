@@ -113,9 +113,7 @@ public class FdFactoryController extends BaseController
         List<FdFactory> list = util.importExcel(file.getInputStream());
         String operName = getUsername();
         String message = fdFactoryService.importFdFactory(list, updateSupport, operName, confirm);
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(FdFactory.class, list));
-        return AjaxResult.success(message, preview);
+        return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
 
     @PostMapping("/importTemplate")
@@ -179,7 +177,6 @@ public class FdFactoryController extends BaseController
             return AjaxResult.error("数据校验未通过：" + String.valueOf(data.get("errors")));
         }
         int successNum = 0;
-        StringBuilder msg = new StringBuilder();
         for (FactoryImportUpdateDto row : list)
         {
             if (row == null || row.getFactoryId() == null)
@@ -192,19 +189,9 @@ public class FdFactoryController extends BaseController
             existing.setUpdateBy(getUsername());
             fdFactoryService.updateFdFactory(existing);
             successNum++;
-            msg.append("<br/>").append(successNum).append("、生产厂家 ").append(existing.getFactoryName()).append(" 更新成功");
         }
-        msg.insert(0, "更新导入完成。共处理 " + successNum + " 条，明细如下：");
-        for (FactoryImportUpdateDto row : list)
-        {
-            if (row != null && row.getFactoryId() != null)
-            {
-                row.setValidationResult("更新成功");
-            }
-        }
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(FactoryImportUpdateDto.class, list));
-        return AjaxResult.success(msg.toString(), preview);
+        String shortMsg = "更新导入完成，共成功 " + successNum + " 条";
+        return AjaxResult.success(shortMsg, ExcelUtil.buildImportCommitSummaryMap(successNum));
     }
 
     @PostMapping("/importUpdateTemplate")

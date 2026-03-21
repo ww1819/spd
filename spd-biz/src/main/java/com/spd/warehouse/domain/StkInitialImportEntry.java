@@ -57,8 +57,8 @@ public class StkInitialImportEntry extends BaseEntity {
     /** 排序 */
     private Integer sortOrder;
 
-    /** 第三方系统库存明细ID */
-    private String thirdPartyDetailId;
+    /** 第三方/HIS 系统库存明细 ID（对应 Excel「第三方系统库存明细ID」，库字段 his_id） */
+    private String hisId;
     /** 第三方系统产品档案ID */
     private String thirdPartyMaterialId;
 

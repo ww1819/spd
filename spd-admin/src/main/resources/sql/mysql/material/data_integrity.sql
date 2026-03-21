@@ -117,8 +117,8 @@ UPDATE sys_menu SET is_platform = '1' WHERE menu_id IN (2100, 2101, 2102, 2103, 
 -- 将耗材菜单全部加到 admin 用户名下（用户权限表 sys_user_menu，耗材登录后仅读此表）
 -- admin 假定为 user_id=1；插入 sys_menu 中 status='0' 的全部菜单，已存在则跳过
 /
-INSERT INTO sys_user_menu (user_id, menu_id)
-SELECT 1, m.menu_id
+INSERT INTO sys_user_menu (user_id, menu_id, tenant_id)
+SELECT 1, m.menu_id, NULL
 FROM sys_menu m
 WHERE m.status = '0'
   AND NOT EXISTS (SELECT 1 FROM sys_user_menu um WHERE um.user_id = 1 AND um.menu_id = m.menu_id);

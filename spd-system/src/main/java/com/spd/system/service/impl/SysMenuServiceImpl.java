@@ -2,10 +2,14 @@ package com.spd.system.service.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -435,7 +439,189 @@ public class SysMenuServiceImpl implements ISysMenuService
             return new ArrayList<>();
         }
         List<SysMenu> menus = menuMapper.selectMenuTreeForPostAssign(tenantId);
+        // 客户 hc_customer_menu 中可能只登记了父目录，未登记子菜单「收货确认」等，需向下补齐才能在授权树中展示
+        menus = appendDescendantMenusForHcAssignTree(menus);
+        menus = appendAncestorMenusForHcAssignTree(menus);
         return buildMenuTreeSelect(menus);
+    }
+
+    @Override
+    public List<Long> expandMenuIdsWithAncestorsForTenant(List<Long> menuIds)
+    {
+        if (menuIds == null || menuIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        Set<Long> have = new LinkedHashSet<>();
+        for (Long id : menuIds)
+        {
+            if (id == null || id <= 0)
+            {
+                continue;
+            }
+            Long cur = id;
+            while (cur != null && cur > 0)
+            {
+                if (!have.add(cur))
+                {
+                    break;
+                }
+                SysMenu m = menuMapper.selectMenuById(cur);
+                if (m == null)
+                {
+                    break;
+                }
+                Long pid = m.getParentId();
+                if (pid == null || pid <= 0)
+                {
+                    break;
+                }
+                SysMenu parent = menuMapper.selectMenuById(pid);
+                if (parent != null && "1".equals(String.valueOf(parent.getIsPlatform()).trim()))
+                {
+                    break;
+                }
+                cur = pid;
+            }
+        }
+        return new ArrayList<>(have);
+    }
+
+    @Override
+    public List<Long> expandMenuIdsWithDescendants(List<Long> menuIds)
+    {
+        if (menuIds == null || menuIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        Set<Long> have = new LinkedHashSet<>();
+        for (Long id : menuIds)
+        {
+            if (id != null && id > 0)
+            {
+                have.add(id);
+            }
+        }
+        List<Long> frontier = new ArrayList<>(have);
+        while (!frontier.isEmpty())
+        {
+            List<SysMenu> children = menuMapper.selectMenuListChildrenOfParents(frontier);
+            frontier = new ArrayList<>();
+            if (children == null)
+            {
+                break;
+            }
+            for (SysMenu ch : children)
+            {
+                if (ch == null || ch.getMenuId() == null)
+                {
+                    continue;
+                }
+                if (have.add(ch.getMenuId()))
+                {
+                    frontier.add(ch.getMenuId());
+                }
+            }
+        }
+        return new ArrayList<>(have);
+    }
+
+    /**
+     * 向下补齐：任意 hc_customer_menu 中存在的节点，其下所有非平台 M/C/F 子孙均纳入授权树
+     */
+    private List<SysMenu> appendDescendantMenusForHcAssignTree(List<SysMenu> menus)
+    {
+        if (menus == null || menus.isEmpty())
+        {
+            return menus;
+        }
+        Map<Long, SysMenu> byId = new LinkedHashMap<>();
+        for (SysMenu m : menus)
+        {
+            if (m != null && m.getMenuId() != null)
+            {
+                byId.put(m.getMenuId(), m);
+            }
+        }
+        List<Long> frontier = new ArrayList<>(byId.keySet());
+        while (!frontier.isEmpty())
+        {
+            List<SysMenu> children = menuMapper.selectMenuListChildrenOfParents(frontier);
+            frontier = new ArrayList<>();
+            if (children == null)
+            {
+                break;
+            }
+            for (SysMenu ch : children)
+            {
+                if (ch == null || ch.getMenuId() == null)
+                {
+                    continue;
+                }
+                if (!byId.containsKey(ch.getMenuId()))
+                {
+                    byId.put(ch.getMenuId(), ch);
+                    frontier.add(ch.getMenuId());
+                }
+            }
+        }
+        List<SysMenu> merged = new ArrayList<>(byId.values());
+        merged.sort(Comparator
+            .comparing((SysMenu x) -> x.getParentId() != null ? x.getParentId() : 0L)
+            .thenComparing(x -> x.getOrderNum() != null ? x.getOrderNum() : 0));
+        return merged;
+    }
+
+    /**
+     * 客户可分配菜单可能未包含目录(M)节点，仅含子菜单/按钮时无法建树；向上补齐 sys_menu 中的父级（至根），便于「全功能展示、按需勾选」。
+     */
+    private List<SysMenu> appendAncestorMenusForHcAssignTree(List<SysMenu> menus)
+    {
+        if (menus == null || menus.isEmpty())
+        {
+            return menus;
+        }
+        Map<Long, SysMenu> byId = new LinkedHashMap<>();
+        for (SysMenu m : menus)
+        {
+            if (m != null && m.getMenuId() != null)
+            {
+                byId.put(m.getMenuId(), m);
+            }
+        }
+        Set<Long> pending = new HashSet<>(byId.keySet());
+        while (!pending.isEmpty())
+        {
+            java.util.Iterator<Long> it = pending.iterator();
+            Long mid = it.next();
+            it.remove();
+            SysMenu cur = byId.get(mid);
+            if (cur == null)
+            {
+                continue;
+            }
+            Long pid = cur.getParentId();
+            if (pid == null || pid <= 0)
+            {
+                continue;
+            }
+            if (byId.containsKey(pid))
+            {
+                continue;
+            }
+            SysMenu parent = menuMapper.selectMenuById(pid);
+            // 不向上挂平台管理目录，避免在租户授权树中露出平台节点
+            if (parent != null && (parent.getIsPlatform() == null || !"1".equals(String.valueOf(parent.getIsPlatform()).trim())))
+            {
+                byId.put(pid, parent);
+                pending.add(pid);
+            }
+        }
+        List<SysMenu> merged = new ArrayList<>(byId.values());
+        merged.sort(Comparator
+            .comparing((SysMenu x) -> x.getParentId() != null ? x.getParentId() : 0L)
+            .thenComparing(x -> x.getOrderNum() != null ? x.getOrderNum() : 0));
+        return merged;
     }
 
     @Override

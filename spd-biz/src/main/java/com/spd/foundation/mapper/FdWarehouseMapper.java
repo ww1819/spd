@@ -22,6 +22,12 @@ public interface FdWarehouseMapper
     public FdWarehouse selectFdWarehouseById(String id);
 
     /**
+     * 按主键查询仓库（不按租户过滤），调用方需自行校验租户/数据权限。
+     * 解决 {@link #selectFdWarehouseById} 因当前线程租户上下文与库中 tenant_id 不一致而误查不到的问题。
+     */
+    FdWarehouse selectFdWarehouseByIdIgnoreTenant(@Param("id") String id);
+
+    /**
      * 查询仓库列表
      *
      * @param fdWarehouse 仓库

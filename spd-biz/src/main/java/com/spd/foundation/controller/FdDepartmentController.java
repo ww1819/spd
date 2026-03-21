@@ -57,7 +57,7 @@ public class FdDepartmentController extends BaseController
     /** 租户与科室数据权限（与列表一致） */
     private void applyTenantDepartmentListScope(FdDepartment fdDepartment)
     {
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(customerId))
         {
             fdDepartment.setTenantId(customerId);
@@ -110,7 +110,7 @@ public class FdDepartmentController extends BaseController
     @GetMapping("/listAll/{userId}")
     public List<FdDepartment> listAll(@PathVariable(value = "userId") Long userId)
     {
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         List<FdDepartment> list;
         if (StringUtils.isNotEmpty(customerId)) {
             list = fdDepartmentService.selectdepartmenAll();
@@ -151,7 +151,7 @@ public class FdDepartmentController extends BaseController
         if (dept == null) {
             return error("科室不存在");
         }
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
             return error("无权查看非本客户的科室");
         }
@@ -174,7 +174,7 @@ public class FdDepartmentController extends BaseController
     public AjaxResult add(@RequestBody FdDepartment fdDepartment)
     {
         // 非衡水租户：手工新增不接收第三方科室 ID（仅导入等场景由服务层写入）；衡水市第三人民医院手工新增须填 HIS/第三方科室 ID
-        if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.getCustomerId())) {
+        if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null))) {
             fdDepartment.setHisId(null);
         }
         return toAjax(fdDepartmentService.insertFdDepartment(fdDepartment));
@@ -220,7 +220,7 @@ public class FdDepartmentController extends BaseController
     public AjaxResult optionselect()
     {
         List<FdDepartment> fdDepartmentList = fdDepartmentService.selectdepartmenAll();
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
             List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds == null || allowedIds.isEmpty()) fdDepartmentList = new ArrayList<>();
@@ -243,7 +243,7 @@ public class FdDepartmentController extends BaseController
         if (dept == null) {
             return error("科室不存在");
         }
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
             return error("无权查看非本客户的科室");
         }
@@ -304,9 +304,7 @@ public class FdDepartmentController extends BaseController
         List<FdDepartment> list = util.importExcel(file.getInputStream());
         String operName = getUsername();
         String message = fdDepartmentService.importFdDepartment(list, updateSupport, operName, confirm);
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(FdDepartment.class, list));
-        return AjaxResult.success(message, preview);
+        return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
 
     /**
@@ -373,7 +371,6 @@ public class FdDepartmentController extends BaseController
             return AjaxResult.error("数据校验未通过：" + String.valueOf(data.get("errors")));
         }
         int successNum = 0;
-        StringBuilder msg = new StringBuilder();
         for (DepartmentImportUpdateDto row : list)
         {
             if (row == null || row.getId() == null)
@@ -386,19 +383,9 @@ public class FdDepartmentController extends BaseController
             existing.setUpdateBy(getUsername());
             fdDepartmentService.updateFdDepartment(existing);
             successNum++;
-            msg.append("<br/>").append(successNum).append("、科室 ").append(existing.getName()).append(" 更新成功");
         }
-        msg.insert(0, "更新导入完成。共处理 " + successNum + " 条，明细如下：");
-        for (DepartmentImportUpdateDto row : list)
-        {
-            if (row != null && row.getId() != null)
-            {
-                row.setValidationResult("更新成功");
-            }
-        }
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(DepartmentImportUpdateDto.class, list));
-        return AjaxResult.success(msg.toString(), preview);
+        String shortMsg = "更新导入完成，共成功 " + successNum + " 条";
+        return AjaxResult.success(shortMsg, ExcelUtil.buildImportCommitSummaryMap(successNum));
     }
 
     @PostMapping("/importUpdateTemplate")
@@ -419,7 +406,7 @@ public class FdDepartmentController extends BaseController
         }
         else
         {
-            String customerId = SecurityUtils.getCustomerId();
+            String customerId = SecurityUtils.resolveEffectiveTenantId(null);
             for (int i = 0; i < list.size(); i++)
             {
                 DepartmentImportUpdateDto row = list.get(i);

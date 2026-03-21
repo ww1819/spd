@@ -27,10 +27,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdWarehouseCategoryList" parameterType="FdWarehouseCategory" resultMap="FdWarehouseCategoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdWarehouseCategoryVo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
         <if test="warehouseCategoryCode != null  and warehouseCategoryCode != ''"> and warehouse_category_code = #{warehouseCategoryCode}</if>
         <if test="warehouseCategoryName != null  and warehouseCategoryName != ''"> and warehouse_category_name like concat('%', #{warehouseCategoryName}, '%')</if>
         <if test="parentId != null"> and parent_id = #{parentId}</if>
@@ -38,17 +38,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdWarehouseCategoryTree" resultMap="FdWarehouseCategoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdWarehouseCategoryVo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
         order by parent_id, warehouse_category_id
     </select>
 
     <select id="selectFdWarehouseCategoryByWarehouseCategoryId" parameterType="Long" resultMap="FdWarehouseCategoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdWarehouseCategoryVo"/>
-        where warehouse_category_id = #{warehouseCategoryId} and del_flag != 1 and tenant_id = #{tenantId}
+        where warehouse_category_id = #{warehouseCategoryId} and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectFdWarehouseCategoryByCodeAndTenantId" resultMap="FdWarehouseCategoryResult">
@@ -65,7 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertFdWarehouseCategory" parameterType="FdWarehouseCategory" useGeneratedKeys="true" keyProperty="warehouseCategoryId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_warehouse_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -93,12 +93,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateFdWarehouseCategory" parameterType="FdWarehouseCategory">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_warehouse_category
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -115,7 +115,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
         </trim>
-        where warehouse_category_id = #{warehouseCategoryId} and tenant_id = #{tenantId}
+        where warehouse_category_id = #{warehouseCategoryId} and tenant_id = #{scopedTenantId}
     </update>
 
 <!--    <delete id="deleteFdWarehouseCategoryByWarehouseCategoryId" parameterType="Long">-->

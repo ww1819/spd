@@ -24,11 +24,45 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, code, name, referred_name, remark, his_id, del_flag, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
     </sql>
 
+    <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id） -->
+    <sql id="fdDepartmentTenantMatch">
+        (
+        fd_department.tenant_id = #{scopedTenantId}
+        or (
+        #{scopedTenantId} != null and #{scopedTenantId} != ''
+        and exists (
+        select 1 from sb_customer sc_me
+        inner join sb_customer sc_alt on sc_me.tenant_key is not null
+        and trim(sc_me.tenant_key) != ''
+        and sc_me.tenant_key = sc_alt.tenant_key
+        where sc_me.customer_id = #{scopedTenantId}
+        and fd_department.tenant_id = sc_alt.customer_id
+        )
+        )
+        )
+    </sql>
+    <sql id="fdDepartmentTenantMatchD">
+        (
+        d.tenant_id = #{scopedTenantId}
+        or (
+        #{scopedTenantId} != null and #{scopedTenantId} != ''
+        and exists (
+        select 1 from sb_customer sc_me
+        inner join sb_customer sc_alt on sc_me.tenant_key is not null
+        and trim(sc_me.tenant_key) != ''
+        and sc_me.tenant_key = sc_alt.tenant_key
+        where sc_me.customer_id = #{scopedTenantId}
+        and d.tenant_id = sc_alt.customer_id
+        )
+        )
+        )
+    </sql>
+
     <select id="selectFdDepartmentList" parameterType="FdDepartment" resultMap="FdDepartmentResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         <include refid="selectFdDepartmentVo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
+        and <include refid="fdDepartmentTenantMatch"/>
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="referredName != null and referredName != ''"> and referred_name like concat('%', #{referredName}, '%')</if>
@@ -43,58 +77,58 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdDepartmentById" parameterType="String" resultMap="FdDepartmentResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         <include refid="selectFdDepartmentVo"/>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and <include refid="fdDepartmentTenantMatch"/>
     </select>
 
     <!-- 按编码+租户查一条（导入去重；平台 tenantId 为空时匹配 tenant_id 为空） -->
     <select id="selectFdDepartmentByCodeAndTenantId" resultMap="FdDepartmentResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         <include refid="selectFdDepartmentVo"/>
-        where del_flag != 1 and code = #{code} and tenant_id = #{tenantId}
+        where del_flag != 1 and code = #{code} and <include refid="fdDepartmentTenantMatch"/>
         limit 1
     </select>
 
     <select id="selectdepartmenAll" resultMap="FdDepartmentResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         <include refid="selectFdDepartmentVo"/>
-        where del_flag != 1 and tenant_id = #{tenantId}
+        where del_flag != 1 and <include refid="fdDepartmentTenantMatch"/>
     </select>
 
     <select id="selectdepartmenAllByTenantId" resultMap="FdDepartmentResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         <include refid="selectFdDepartmentVo"/>
-        where del_flag != 1 and tenant_id = #{tenantId}
+        where del_flag != 1 and <include refid="fdDepartmentTenantMatch"/>
     </select>
 
     <select id="selectDepartmenListByUserId" parameterType="Long" resultType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         select d.id
         from fd_department d
         left join sys_user_department ud on ud.department_id = d.id
         left join sys_user u on u.user_id = ud.user_id
-        where d.del_flag != 1 and d.tenant_id = #{tenantId}
+        where d.del_flag != 1 and <include refid="fdDepartmentTenantMatchD"/>
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
     </select>
 
     <select id="countChildrenByParentId" resultType="int">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        select count(*) from fd_department where del_flag != 1 and parent_id = #{parentId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        select count(*) from fd_department where del_flag != 1 and parent_id = #{parentId} and <include refid="fdDepartmentTenantMatch"/>
     </select>
 
     <select id="selectUserDepartmenAll" parameterType="Long" resultMap="FdDepartmentResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         select d.id,d.code,d.name
         from fd_department d
         left join sys_user_department ud on ud.department_id = d.id
         left join sys_user u on u.user_id = ud.user_id
-        where d.del_flag != 1 and d.tenant_id = #{tenantId}
+        where d.del_flag != 1 and <include refid="fdDepartmentTenantMatchD"/>
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
     </select>
 
-    <insert id="insertFdDepartment" parameterType="FdDepartment">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+    <insert id="insertFdDepartment" parameterType="FdDepartment" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         insert into fd_department
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -122,14 +156,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            #{tenantId},
+            #{scopedTenantId},
             <if test="parentId != null">#{parentId},</if>
             <if test="hisId != null and hisId != ''">#{hisId},</if>
          </trim>
     </insert>
 
     <update id="updateFdDepartment" parameterType="FdDepartment">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
         update fd_department
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -149,7 +183,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 </otherwise>
             </choose>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and <include refid="fdDepartmentTenantMatch"/>
     </update>
 
 <!--    <delete id="deleteFdDepartmentById" parameterType="String">-->

@@ -61,9 +61,13 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     @Override
     public List<FdFactory> selectFdFactoryList(FdFactory fdFactory)
     {
-        if (fdFactory != null && StringUtils.isEmpty(fdFactory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        if (fdFactory != null && StringUtils.isEmpty(fdFactory.getTenantId()))
         {
-            fdFactory.setTenantId(SecurityUtils.getCustomerId());
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid))
+            {
+                fdFactory.setTenantId(tid);
+            }
         }
         return fdFactoryMapper.selectFdFactoryList(fdFactory);
     }
@@ -71,9 +75,13 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     @Override
     public int insertFdFactory(FdFactory fdFactory)
     {
-        if (StringUtils.isEmpty(fdFactory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        if (StringUtils.isEmpty(fdFactory.getTenantId()))
         {
-            fdFactory.setTenantId(SecurityUtils.getCustomerId());
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid))
+            {
+                fdFactory.setTenantId(tid);
+            }
         }
         fdFactory.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdFactory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
@@ -197,7 +205,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         result.put("totalRows", list != null ? list.size() : 0);
         if (valid && list != null && !list.isEmpty())
         {
-            String tenantId = SecurityUtils.getCustomerId();
+            String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
             int insertCount = 0;
             int updateCount = 0;
             for (FdFactory row : list)
@@ -256,7 +264,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
         }
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         int successNum = 0;
         StringBuilder successMsg = new StringBuilder();
         for (FdFactory row : list)
@@ -315,7 +323,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
 
     private static boolean importRequiresMandatoryHisId()
     {
-        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.getCustomerId());
+        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null));
     }
 
     private static String normalizeHisId(String raw)
@@ -377,7 +385,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             c.addGlobal("导入生产厂家数据不能为空");
             return c;
         }
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         Map<String, Integer> codeFirstRow = new LinkedHashMap<>();
         Map<String, Integer> hisFirstRow = new LinkedHashMap<>();
         for (int i = 0; i < list.size(); i++)

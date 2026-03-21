@@ -114,11 +114,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzTraceabilityList" parameterType="GzTraceability" resultMap="GzTraceabilityResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzTraceabilityVo"/>
         <where>
             t.del_flag = '0'
-            and t.tenant_id = #{tenantId}
+            and t.tenant_id = #{scopedTenantId}
             <if test="traceNo != null and traceNo != ''"> and t.trace_no = #{traceNo}</if>
             <if test="medicalRecordNo != null and medicalRecordNo != ''"> and t.medical_record_no = #{medicalRecordNo}</if>
             <if test="patientName != null and patientName != ''"> and t.patient_name like concat('%', #{patientName}, '%')</if>
@@ -131,7 +131,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzTraceabilityById" parameterType="Long" resultMap="GzTraceabilityWithEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select t.id, t.trace_no, t.medical_record_no, t.patient_name, t.patient_sex, t.patient_age,
                t.hospital_number, t.ward, t.ward_no, t.bed_no, t.apply_dept_id, t.exec_dept_id,
                t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
@@ -152,19 +152,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department ad on t.apply_dept_id = ad.id
         left join fd_department ed on t.exec_dept_id = ed.id
         left join gz_traceability_entry te on te.parent_id = t.id and te.del_flag = '0'
-        where t.id = #{id} and t.del_flag = '0' and t.tenant_id = #{tenantId}
+        where t.id = #{id} and t.del_flag = '0' and t.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectMaxTraceNo" resultType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(trace_no) from gz_traceability
         where trace_no like concat(#{prefix},'%')
         and trace_no like concat('%',#{date},'%')
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzTraceability" parameterType="GzTraceability" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_traceability
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="traceNo != null and traceNo != ''">trace_no,</if>
@@ -226,12 +226,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateGzTraceability" parameterType="GzTraceability">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_traceability
         <trim prefix="SET" suffixOverrides=",">
             <if test="traceNo != null and traceNo != ''">trace_no = #{traceNo},</if>
@@ -261,17 +261,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteGzTraceabilityById" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update gz_traceability set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_traceability set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzTraceabilityByIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update gz_traceability set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_traceability set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -285,13 +285,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteGzTraceabilityEntryByParentId" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update gz_traceability_entry set del_flag = 1, update_time = now() where parent_id = #{parentId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_traceability_entry set del_flag = 1, update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <!-- 查询追溯单明细列表（用于使用追溯明细表） -->
     <select id="selectTraceabilityEntryList" parameterType="GzTraceability" resultMap="GzTraceabilityEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select te.id as entry_id, te.parent_id as entry_parent_id, te.material_id as entry_material_id,
                te.inventory_id as entry_inventory_id, te.material_name as entry_material_name,
                te.specification as entry_specification, te.model as entry_model, te.unit as entry_unit,
@@ -315,7 +315,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join stk_batch sb on sb.material_id = gdi.material_id
             and sb.batch_no = gdi.batch_no
             and (sb.del_flag = 0 or sb.del_flag is null)
-        where te.del_flag = '0' and t.del_flag = '0' and t.tenant_id = #{tenantId}
+        where te.del_flag = '0' and t.del_flag = '0' and t.tenant_id = #{scopedTenantId}
         <!-- 显示所有已保存的追溯单明细（包括未审核和已审核），如果传入了orderStatus参数则使用参数值过滤 -->
         <if test="orderStatus != null">
             and t.order_status = #{orderStatus}

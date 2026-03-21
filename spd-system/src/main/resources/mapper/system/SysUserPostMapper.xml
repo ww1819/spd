@@ -31,5 +31,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			(#{item.userId},#{item.postId},#{item.tenantId})
 		</foreach>
 	</insert>
+
+	<update id="updateUserPostTenantIdIfBlank">
+		update sys_user_post
+		set tenant_id = #{tenantId}
+		where user_id = #{userId}
+		  and post_id = #{postId}
+		  and (tenant_id is null or tenant_id = '')
+	</update>
+
+	<update id="updateTenantIdIfBlankForCustomerSuperPost">
+		update sys_user_post up
+		inner join sys_user u on u.user_id = up.user_id
+		set up.tenant_id = #{tenantId}
+		where up.post_id = #{postId}
+		  and u.customer_id = #{tenantId}
+		  and (up.tenant_id is null or up.tenant_id = '')
+	</update>
 	
 </mapper> 

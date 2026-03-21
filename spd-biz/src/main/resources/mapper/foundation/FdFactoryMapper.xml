@@ -31,10 +31,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdFactoryList" parameterType="FdFactory" resultMap="FdFactoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         <include refid="selectFdFactoryVo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
         <if test="factoryCode != null  and factoryCode != ''"> and factory_code = #{factoryCode}</if>
         <if test="factoryName != null  and factoryName != ''"> and factory_name like concat('%', #{factoryName}, '%')</if>
         <if test="factoryAddress != null  and factoryAddress != ''"> and factory_address = #{factoryAddress}</if>
@@ -42,28 +43,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdFactoryByFactoryId" parameterType="Long" resultMap="FdFactoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         <include refid="selectFdFactoryVo"/>
-        where factory_id = #{factoryId} and (del_flag = 0 or del_flag is null) and tenant_id = #{tenantId}
+        where factory_id = #{factoryId} and (del_flag = 0 or del_flag is null) and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectFdFactoryByCodeAndTenantId" resultMap="FdFactoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdFactoryVo"/>
         where del_flag != 1 and factory_code = #{factoryCode} and tenant_id = #{tenantId}
         limit 1
     </select>
 
     <select id="countFactoryByTenantAndHisId" resultType="int">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select count(*) from fd_factory where del_flag != 1 and his_id = #{hisId} and tenant_id = #{tenantId}
         <if test="excludeFactoryId != null">
             and factory_id != #{excludeFactoryId}
         </if>
     </select>
 
+    <select id="selectFdFactoryByTenantAndHisId" resultMap="FdFactoryResult">
+        <include refid="selectFdFactoryVo"/>
+        where del_flag != 1 and tenant_id = #{tenantId} and his_id = #{hisId}
+        limit 1
+    </select>
+
     <insert id="insertFdFactory" parameterType="FdFactory" useGeneratedKeys="true" keyProperty="factoryId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         insert into fd_factory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="factoryCode != null and factoryCode != ''">factory_code,</if>
@@ -87,7 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="factoryAddress != null and factoryAddress != ''">#{factoryAddress},</if>
             <if test="factoryContact != null and factoryContact != ''">#{factoryContact},</if>
             <if test="delFlag != null">#{delFlag},</if>
-            #{tenantId},
+            #{insertTenantId},
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -100,7 +107,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdFactory" parameterType="FdFactory">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         update fd_factory
         <trim prefix="SET" suffixOverrides=",">
             <if test="factoryCode != null and factoryCode != ''">factory_code = #{factoryCode},</if>
@@ -118,27 +126,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="factoryStatus != null">factory_status = #{factoryStatus},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where factory_id = #{factoryId} and tenant_id = #{tenantId}
+        where factory_id = #{factoryId} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteFdFactoryByFactoryId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where factory_id = #{factoryId} and tenant_id = #{tenantId}
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
+        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where factory_id = #{factoryId} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteFdFactoryByFactoryIds">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and factory_id in
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
+        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and factory_id in
         <foreach item="factoryId" collection="factoryIds" open="(" separator="," close=")">
             #{factoryId}
         </foreach>
     </update>
 
     <select id="selectFdFactoryIsExist" parameterType="Long" resultType="int">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         select count(*) from stk_io_bill
         where del_flag !=1
         and factory_id = #{id}
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

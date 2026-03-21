@@ -59,17 +59,17 @@
     </sql>
 
     <select id="selectById" resultMap="WhSettlementBillResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectWhSettlementBillVo"/>
-        where w.id = #{id} and (w.del_flag = 0 or w.del_flag is null) and w.tenant_id = #{tenantId}
+        where w.id = #{id} and (w.del_flag = 0 or w.del_flag is null) and w.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectList" resultMap="WhSettlementBillResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectWhSettlementBillVo"/>
         <where>
             (w.del_flag = 0 or w.del_flag is null)
-            and w.tenant_id = #{tenantId}
+            and w.tenant_id = #{scopedTenantId}
             <if test="billNo != null and billNo != ''">and w.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and w.warehouse_id = #{warehouseId}</if>
             <if test="settlementMethod != null and settlementMethod != ''">and w.settlement_method = #{settlementMethod}</if>
@@ -88,13 +88,13 @@
     </insert>
 
     <update id="update" parameterType="com.spd.finance.domain.WhSettlementBill">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update wh_settlement_bill
         <set>
             <if test="remark != null">remark = #{remark},</if>
             update_time = now()
         </set>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <insert id="insertEntry" parameterType="com.spd.finance.domain.WhSettlementBillEntry">
@@ -115,37 +115,37 @@
     </insert>
 
     <select id="selectEntriesByParenId" resultMap="WhSettlementBillEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
                batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_time, sort_order
-        from wh_settlement_bill_entry where paren_id = #{parenId} and tenant_id = #{tenantId} and (del_flag = 0 or del_flag is null) order by sort_order, id
+        from wh_settlement_bill_entry where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null) order by sort_order, id
     </select>
 
     <update id="deleteEntriesByParenId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteEntriesByIds">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId} and id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
     <update id="updateAuditStatus">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update wh_settlement_bill set audit_status = 1, audit_by = #{auditBy}, audit_time = #{auditTime}, update_time = now()
-        where id = #{id} and tenant_id = #{tenantId} and (audit_status = 0 or audit_status is null)
+        where id = #{id} and tenant_id = #{scopedTenantId} and (audit_status = 0 or audit_status is null)
     </update>
 
     <update id="deleteById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update wh_settlement_bill set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update wh_settlement_bill set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <select id="selectMaxBillNo" resultType="string">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        select max(bill_no) from wh_settlement_bill where bill_no like concat(#{prefix}, '%') and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select max(bill_no) from wh_settlement_bill where bill_no like concat(#{prefix}, '%') and tenant_id = #{scopedTenantId}
     </select>
 
     <!-- 未结算的入库单明细：bill_type=101，已审核，且未出现在 wh_settlement_bill_entry 中 -->

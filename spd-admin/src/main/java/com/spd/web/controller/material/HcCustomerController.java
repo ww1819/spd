@@ -170,6 +170,8 @@ public class HcCustomerController extends BaseController {
         throw new ServiceException("不能将平台管理菜单分配给客户，请从可分配菜单中选择");
       }
     }
+    // 勾选父目录时一并写入全部子孙菜单 ID，避免 hc_customer_menu 仅有父节点导致工作组/用户授权树缺少「收货确认」等子功能
+    menuIds = sysMenuService.expandMenuIdsWithDescendants(menuIds);
     String username = SecurityUtils.getUserIdStr();
     hcCustomerMenuMapper.deleteByTenantId(customerId);
     if (!menuIds.isEmpty()) {

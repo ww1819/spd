@@ -29,27 +29,27 @@ public class FdMaterial extends BaseEntity
     private Long id;
 
     /** 耗材编码 */
-    @Excel(name = "耗材编码*")
+    @Excel(name = "耗材编码")
     private String code;
 
     /** 耗材名称 */
-    @Excel(name = "耗材名称*")
+    @Excel(name = "耗材名称*", nameAliases = { "耗材名称", "名称" })
     private String name;
 
     /** 供应商ID */
-    @Excel(name = "供应商*")
+    @Excel(name = "供应商")
     private Long supplierId;
 
     /** 规格 */
-    @Excel(name = "规格*")
+    @Excel(name = "规格")
     private String speci;
 
     /** 型号 */
-    @Excel(name = "型号*")
+    @Excel(name = "型号")
     private String model;
 
     /** 价格 */
-    @Excel(name = "价格*")
+    @Excel(name = "价格")
     private BigDecimal price;
 
     /** 供应商对象 */
@@ -70,11 +70,11 @@ public class FdMaterial extends BaseEntity
     private String useName;
 
     /** 生产厂家ID */
-    @Excel(name = "生产厂家*")
+    @Excel(name = "生产厂家")
     private Long factoryId;
 
     /** 库房分类ID */
-    @Excel(name = "库房分类*")
+    @Excel(name = "库房分类")
     private Long storeroomId;
 
     /** 产品档案默认所属仓库ID（用于科室盘盈可退库仓库） */
@@ -82,11 +82,11 @@ public class FdMaterial extends BaseEntity
     private Long defaultWarehouseId;
 
     /** 财务分类ID */
-    @Excel(name = "财务分类*")
+    @Excel(name = "财务分类")
     private Long financeCategoryId;
 
     /** 单位分类ID */
-    @Excel(name = "单位*")
+    @Excel(name = "单位")
     private Long unitId;
 
     /** 注册证名称 */
@@ -255,11 +255,11 @@ public class FdMaterial extends BaseEntity
     private String includeMaterialIds;
 
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
-    @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "与 HIS 等产品编码对接时使用")
+    @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "选填；与 HIS 等产品编码对接时使用")
     private String hisId;
 
     /** 入选原因 */
-    @Excel(name = "入选原因")
+    @Excel(name = "入选原因", prompt = "选填")
     private String selectionReason;
 
     /** 状态变更原因（仅用于启用/停用时传参，不持久化） */

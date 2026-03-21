@@ -1,7 +1,12 @@
 package com.spd.common.utils;
 
+import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.spd.common.constant.HttpStatus;
 import com.spd.common.core.domain.model.LoginUser;
@@ -14,6 +19,11 @@ import com.spd.common.exception.ServiceException;
  */
 public class SecurityUtils
 {
+    /**
+     * 请求头：耗材/租户工作台当前租户 ID（与 {@code TenantContextFilter} 一致）
+     */
+    public static final String X_TENANT_ID_HEADER = "X-Tenant-Id";
+
     /**
      * 用户ID
      **/
@@ -51,6 +61,57 @@ public class SecurityUtils
         {
             return null;
         }
+    }
+
+    /**
+     * 写入租户字段时解析有效客户 ID：优先实体上已带有的 tenantId，其次登录用户 customerId，再次 {@link TenantContext}（请求线程内），
+     * 最后读当前请求头 {@link #X_TENANT_ID_HEADER}（与前端工作台一致，避免仅依赖 Filter 写入 ThreadLocal 的时机差异）。
+     * <p>说明：MyBatis 中 {@code #{tenantId}} 会与实体属性同名绑定冲突，应使用本方法结果写入独立变量名。</p>
+     */
+    public static String resolveEffectiveTenantId(String entityTenantId)
+    {
+        if (StringUtils.isNotEmpty(entityTenantId))
+        {
+            return entityTenantId.trim();
+        }
+        String c = getCustomerId();
+        if (StringUtils.isNotEmpty(c))
+        {
+            return c;
+        }
+        String ctx = TenantContext.getTenantId();
+        if (StringUtils.isNotEmpty(ctx))
+        {
+            return ctx;
+        }
+        try
+        {
+            RequestAttributes ra = RequestContextHolder.getRequestAttributes();
+            if (ra instanceof ServletRequestAttributes)
+            {
+                HttpServletRequest req = ((ServletRequestAttributes) ra).getRequest();
+                if (req != null)
+                {
+                    String h = req.getHeader(X_TENANT_ID_HEADER);
+                    if (StringUtils.isNotEmpty(h))
+                    {
+                        return h.trim();
+                    }
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return null;
+    }
+
+    /**
+     * 供 MyBatis bind 调用（无参），避免 OGNL 对 {@code resolveEffectiveTenantId(null)} 中 null 字面量兼容问题。
+     */
+    public static String scopedTenantIdForSql()
+    {
+        return resolveEffectiveTenantId(null);
     }
 
     /**

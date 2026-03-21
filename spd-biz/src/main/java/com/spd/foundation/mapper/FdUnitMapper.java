@@ -49,6 +49,11 @@ public interface FdUnitMapper
      */
     String selectMaxUnitCode(@Param("tenantId") String tenantId);
 
+    /**
+     * 按租户 + 单位名称（精确匹配，不含模糊）查一条（未删除）
+     */
+    FdUnit selectFdUnitByTenantAndUnitName(@Param("tenantId") String tenantId, @Param("unitName") String unitName);
+
 //    /**
 //     * 删除单位明细
 //     *

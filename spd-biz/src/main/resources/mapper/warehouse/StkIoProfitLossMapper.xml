@@ -98,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectStkIoProfitLossById" resultMap="StkIoProfitLossWithEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
                p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag, p.tenant_id,
                w.id as wId, w.code as warehouseCode, w.name as warehouseName,
@@ -112,15 +112,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on p.warehouse_id = w.id
         left join stk_io_profit_loss_entry e on e.paren_id = p.id and (e.del_flag is null or e.del_flag != 1)
         left join fd_material m on e.material_id = m.id
-        where p.id = #{id} and (p.del_flag is null or p.del_flag != 1) and p.tenant_id = #{tenantId}
+        where p.id = #{id} and (p.del_flag is null or p.del_flag != 1) and p.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectStkIoProfitLossList" resultMap="StkIoProfitLossResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectStkIoProfitLossVo"/>
         <where>
             (p.del_flag is null or p.del_flag != 1)
-            and (p.tenant_id = #{tenantId})
+            and (p.tenant_id = #{scopedTenantId})
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingId != null"> and p.stocktaking_id = #{stocktakingId}</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
@@ -131,7 +131,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertStkIoProfitLoss" parameterType="com.spd.warehouse.domain.StkIoProfitLoss" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into stk_io_profit_loss
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billNo != null">bill_no,</if>
@@ -161,12 +161,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="delFlag != null">#{delFlag},</if>
-            #{tenantId},
+            #{scopedTenantId},
         </trim>
     </insert>
 
     <update id="updateStkIoProfitLoss" parameterType="com.spd.warehouse.domain.StkIoProfitLoss">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_io_profit_loss
         <trim prefix="SET" suffixOverrides=",">
             <if test="billNo != null">bill_no = #{billNo},</if>
@@ -180,17 +180,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteStkIoProfitLossById" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteStkIoProfitLossEntryByParenId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <insert id="batchStkIoProfitLossEntry">
@@ -204,7 +204,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 根据盘点单ID查询有盈亏的盘点明细（profit_qty != 0 或 profit_amount != 0） -->
     <select id="selectStocktakingEntriesWithProfitLoss" resultMap="StocktakingEntryWithProfitResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select e.id as e_id, e.paren_id as e_paren_id, e.kc_no as e_kc_no, e.material_id as e_material_id, e.unit_price as e_unit_price, e.price as e_price,
                e.qty as e_qty, e.batch_no as e_batch_no, e.batch_number as e_batch_number,
                e.begin_time as e_begin_time, e.end_time as e_end_time,
@@ -214,31 +214,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from stk_io_stocktaking_entry e
         left join fd_material m on e.material_id = m.id
         where e.paren_id = #{stocktakingId}
-          and e.tenant_id = #{tenantId}
+          and e.tenant_id = #{scopedTenantId}
           and (e.del_flag is null or e.del_flag != 1)
           and ( (e.profit_qty is not null and e.profit_qty != 0) or (e.profit_amount is not null and e.profit_amount != 0) )
     </select>
 
     <select id="selectMaxBillNo" resultType="java.lang.String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(bill_no) from stk_io_profit_loss
-        where bill_no like concat(#{datePrefix}, '%') and tenant_id = #{tenantId}
+        where bill_no like concat(#{datePrefix}, '%') and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="countByStocktakingId" resultType="java.lang.Integer">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select count(1) from stk_io_profit_loss
-        where stocktaking_id = #{stocktakingId} and tenant_id = #{tenantId} and (del_flag is null or del_flag != 1)
+        where stocktaking_id = #{stocktakingId} and tenant_id = #{scopedTenantId} and (del_flag is null or del_flag != 1)
     </select>
 
     <update id="updateStkIoProfitLossEntryBatchNo">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <!-- 查询盈亏明细列表（用于报表） -->
     <select id="selectProfitLossEntryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             e.id,
             p.bill_no as billNo,
@@ -269,7 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{tenantId}
+            and p.tenant_id = #{scopedTenantId}
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
@@ -282,7 +282,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询盈亏明细汇总列表（用于报表） -->
     <select id="selectProfitLossEntrySummaryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             m.id as materialId,
             m.code as materialCode,
@@ -302,7 +302,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{tenantId}
+            and p.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
             <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
             <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
@@ -314,7 +314,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询盈亏明细列表合计（用于报表） -->
     <select id="selectProfitLossEntryListTotal" resultType="com.spd.common.core.page.TotalInfo">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             COALESCE(SUM(e.profit_qty), 0) as totalQty,
             COALESCE(SUM(e.profit_amount), 0) as totalAmt
@@ -323,7 +323,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{tenantId}
+            and p.tenant_id = #{scopedTenantId}
             <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
@@ -335,7 +335,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询盈亏明细汇总列表合计（用于报表） -->
     <select id="selectProfitLossEntrySummaryListTotal" resultType="com.spd.common.core.page.TotalInfo">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select
             COALESCE(SUM(e.profit_qty), 0) as totalQty,
             COALESCE(SUM(e.profit_amount), 0) as totalAmt
@@ -344,7 +344,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             (e.del_flag is null or e.del_flag != 1)
             and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{tenantId}
+            and p.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
             <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_profit_loss_entry e2 left join fd_material m2 on e2.material_id = m2.id where e2.paren_id = p.id and (m2.name like concat('%', #{materialName}, '%') or m2.code like concat('%', #{materialName}, '%')))</if>
             <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>

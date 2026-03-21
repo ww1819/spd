@@ -14,6 +14,9 @@ public class SysUserMenu {
     /** 菜单ID */
     private Long menuId;
 
+    /** 租户ID（同 sb_customer.customer_id；平台用户可为空） */
+    private String tenantId;
+
     public Long getUserId() {
         return userId;
     }
@@ -30,11 +33,20 @@ public class SysUserMenu {
         this.menuId = menuId;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
                 .append("userId", getUserId())
                 .append("menuId", getMenuId())
+                .append("tenantId", getTenantId())
                 .toString();
     }
 }

@@ -42,6 +42,7 @@ import com.spd.system.service.ITenantScopeService;
 import com.spd.system.service.ISysDeptService;
 import com.spd.system.service.ISysPostService;
 import com.spd.system.service.ISysRoleService;
+import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +83,32 @@ public class SysUserController extends BaseController
 
     @Autowired
     private ISbUserPermissionService sbUserPermissionService;
+
+    @Autowired
+    private ISysMenuService sysMenuService;
+
+    /**
+     * 耗材租户用户授权：菜单树 = 本客户 hc_customer_menu 已开通的全部功能；checkedKeys = 该用户已分配的 sys_user_menu
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:query')")
+    @GetMapping("/roleMenuTreeselect/{userId}")
+    public AjaxResult roleMenuTreeselect(@PathVariable Long userId)
+    {
+        userService.checkUserDataScope(userId);
+        SysUser u = userService.selectUserById(userId);
+        AjaxResult ajax = AjaxResult.success();
+        String tenantId = u != null ? u.getCustomerId() : null;
+        if (StringUtils.isEmpty(tenantId))
+        {
+            ajax.put("menus", new ArrayList<>());
+            ajax.put("checkedKeys", new ArrayList<>());
+            return ajax;
+        }
+        ajax.put("menus", sysMenuService.selectMenuTreeForPostAssign(tenantId));
+        List<Long> checked = userService.selectMenuListByUserId(userId);
+        ajax.put("checkedKeys", checked != null ? checked : new ArrayList<>());
+        return ajax;
+    }
 
     /**
      * 获取用户列表（workgroupPostId：设备工作组 sb_work_group_user；sysPostId：耗材工作组 sys_user_post）
@@ -190,7 +217,6 @@ public class SysUserController extends BaseController
             return AjaxResult.error("数据校验未通过：" + String.valueOf(data.get("errors")));
         }
         int successNum = 0;
-        StringBuilder msg = new StringBuilder();
         for (UserImportUpdateDto row : list)
         {
             if (row == null || row.getUserId() == null)
@@ -210,19 +236,9 @@ public class SysUserController extends BaseController
             existing.setUpdateBy(getUserIdStr());
             userService.updateUser(existing);
             successNum++;
-            msg.append("<br/>").append(successNum).append("、用户 ").append(existing.getUserName()).append(" 更新成功");
         }
-        msg.insert(0, "更新导入完成。共处理 " + successNum + " 条，明细如下：");
-        for (UserImportUpdateDto row : list)
-        {
-            if (row != null && row.getUserId() != null)
-            {
-                row.setValidationResult("更新成功");
-            }
-        }
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(UserImportUpdateDto.class, list));
-        return AjaxResult.success(msg.toString(), preview);
+        String shortMsg = "更新导入完成，共成功 " + successNum + " 条";
+        return AjaxResult.success(shortMsg, ExcelUtil.buildImportCommitSummaryMap(successNum));
     }
 
     @PostMapping("/importUpdateTemplate")
@@ -339,7 +355,7 @@ public class SysUserController extends BaseController
         ajax.put("roles", SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
         ajax.put("posts", postService.selectPostAll());
         // 科室/仓库：客户名下；非超级管理员仅见本人权限（设备 sb_user_permission_* 与耗材 sys_user_* 并集，见 TenantScopeService）
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         List<com.spd.foundation.domain.FdDepartment> allDepts = fdDepartmentService.selectdepartmenAll();
         List<com.spd.foundation.domain.FdWarehouse> allWarehouses = fdWarehouseService.selectwarehouseAll();
         if (StringUtils.isNotEmpty(customerId)) {

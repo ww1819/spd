@@ -234,11 +234,44 @@ public class ExcelUtil<T>
     }
 
     /**
+     * 导入校验/预览时单行回传上限，避免 JSON 过大导致客户端或网关读响应超时（如 {@link org.apache.catalina.connector.ClientAbortException}）。
+     */
+    public static final int IMPORT_PREVIEW_MAX_ROWS = 200;
+
+    /**
      * 按导入模板列（{@link com.spd.common.annotation.Excel.Type#IMPORT}）将数据转为「表头中文名 -&gt; 单元格文本」行列表，用于导入解析预览与导出解析结果。
+     * <p>默认最多回传 {@link #IMPORT_PREVIEW_MAX_ROWS} 行，需全量请使用 {@link #buildImportPreviewMaps(Class, List, int)} 并传入 {@code maxRows &lt;= 0}。</p>
      */
     public static <T> List<LinkedHashMap<String, Object>> buildImportPreviewMaps(Class<T> clazz, List<T> data)
     {
-        return new ExcelUtil<>(clazz).buildImportPreviewMaps(data);
+        return buildImportPreviewMaps(clazz, data, IMPORT_PREVIEW_MAX_ROWS);
+    }
+
+    /**
+     * @param maxRows 最大行数；{@code &lt;= 0} 表示不截断（与历史行为一致，慎用大文件）
+     */
+    public static <T> List<LinkedHashMap<String, Object>> buildImportPreviewMaps(Class<T> clazz, List<T> data, int maxRows)
+    {
+        if (data == null || data.isEmpty())
+        {
+            return new ExcelUtil<>(clazz).buildImportPreviewMaps(data);
+        }
+        if (maxRows <= 0 || data.size() <= maxRows)
+        {
+            return new ExcelUtil<>(clazz).buildImportPreviewMaps(data);
+        }
+        List<T> sub = data.subList(0, maxRows);
+        return new ExcelUtil<>(clazz).buildImportPreviewMaps(sub);
+    }
+
+    /**
+     * 确认导入（commit）成功后的响应体：不回传逐行预览，仅行数摘要，避免大文件响应体过大。
+     */
+    public static Map<String, Object> buildImportCommitSummaryMap(int totalRows)
+    {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("totalRows", totalRows);
+        return m;
     }
 
     /**
@@ -1328,6 +1361,10 @@ public class ExcelUtil<T>
         for (String item : convertSource)
         {
             String[] itemArray = item.split("=");
+            if (itemArray.length < 2)
+            {
+                continue;
+            }
             if (StringUtils.containsAny(propertyValue, separator))
             {
                 for (String value : propertyValue.split(separator))
@@ -1365,6 +1402,10 @@ public class ExcelUtil<T>
         for (String item : convertSource)
         {
             String[] itemArray = item.split("=");
+            if (itemArray.length < 2)
+            {
+                continue;
+            }
             if (StringUtils.containsAny(propertyValue, separator))
             {
                 for (String value : propertyValue.split(separator))

@@ -31,6 +31,11 @@ public interface FdSupplierMapper
     int countSupplierByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeId") Long excludeId);
 
     /**
+     * 按租户 + HIS 供应商 ID 查一条（未删除）
+     */
+    FdSupplier selectFdSupplierByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
+
+    /**
      * 查询供应商列表
      *
      * @param fdSupplier 供应商

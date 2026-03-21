@@ -34,11 +34,11 @@
         from sb_asset_print_task_item
     </sql>
     <select id="selectList" resultMap="Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
             (del_flag = 0 or del_flag is null)
-            and customer_id = #{tenantId}
+            and customer_id = #{scopedTenantId}
             <if test="taskId != null and taskId != ''"> and task_id = #{taskId}</if>
             <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
             <if test="taskNo != null and taskNo != ''"> and task_no like concat('%', #{taskNo}, '%')</if>
@@ -48,20 +48,20 @@
         order by create_time asc
     </select>
     <select id="selectByTaskId" resultMap="Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        <include refid="selectVo"/> where task_id = #{taskId} and customer_id = #{tenantId} and (del_flag = 0 or del_flag is null) order by create_time asc
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where task_id = #{taskId} and customer_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null) order by create_time asc
     </select>
     <select id="selectById" resultMap="Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        <include refid="selectVo"/> where id = #{id} and customer_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
     </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetPrintTaskItem">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into sb_asset_print_task_item (id, customer_id, task_id, task_no, asset_id, asset_name, spec, model, unit_price, manufacturer, serial_number, rfid_epc, equipment_serial_no, print_status, print_count, barcode_type, del_flag, create_by, create_time, update_by, update_time)
         values (#{id}, #{tenantId}, #{taskId}, #{taskNo}, #{assetId}, #{assetName}, #{spec}, #{model}, #{unitPrice}, #{manufacturer}, #{serialNumber}, #{rfidEpc}, #{equipmentSerialNo}, #{printStatus}, #{printCount}, #{barcodeType}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
     <insert id="insertBatch">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into sb_asset_print_task_item (id, customer_id, task_id, task_no, asset_id, asset_name, spec, model, unit_price, manufacturer, serial_number, rfid_epc, equipment_serial_no, print_status, print_count, barcode_type, del_flag, create_by, create_time, update_by, update_time)
         values
         <foreach collection="list" item="item" separator=",">
@@ -69,7 +69,7 @@
         </foreach>
     </insert>
     <update id="update" parameterType="com.spd.equipment.domain.SbAssetPrintTaskItem">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update sb_asset_print_task_item
         <set>
             <if test="printStatus != null">print_status = #{printStatus},</if>
@@ -78,14 +78,14 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </set>
-        where id = #{id} and customer_id = #{tenantId}
+        where id = #{id} and customer_id = #{scopedTenantId}
     </update>
     <update id="deleteById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update sb_asset_print_task_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_print_task_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{scopedTenantId}
     </update>
     <update id="deleteByTaskId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update sb_asset_print_task_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where task_id = #{taskId} and customer_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_print_task_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where task_id = #{taskId} and customer_id = #{scopedTenantId}
     </update>
 </mapper>

@@ -238,12 +238,24 @@ public class SysPostServiceImpl implements ISysPostService
         Long postId = post.getPostId();
         Long[] menuIds = post.getMenuIds();
         String tenantId = post.getTenantId();
+        if (StringUtils.isEmpty(tenantId))
+        {
+            tenantId = SecurityUtils.getCustomerId();
+        }
+        if (StringUtils.isEmpty(tenantId) && postId != null)
+        {
+            SysPost db = postMapper.selectPostById(postId);
+            if (db != null)
+            {
+                tenantId = db.getTenantId();
+            }
+        }
         if (StringUtils.isNotNull(menuIds) && menuIds.length > 0 && StringUtils.isNotEmpty(tenantId))
         {
             for (Long menuId : menuIds)
             {
                 if (menuId == null || menuId <= 0) continue;
-                if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, menuId) <= 0)
+                if (!isMenuUnderCustomerHcScope(tenantId, menuId))
                 {
                     throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
                 }
@@ -386,5 +398,32 @@ public class SysPostServiceImpl implements ISysPostService
     public List<Long> selectWarehouseListByPostId(Long postId)
     {
         return postWarehouseMapper.selectWarehouseListByPostId(postId);
+    }
+
+    /**
+     * 菜单是否在客户耗材权限范围内：自身在 hc_customer_menu，或任一祖先在 hc_customer_menu（客户只勾父目录「科室收货」时子页「收货确认」未单独落表也可分配工作组）
+     */
+    private boolean isMenuUnderCustomerHcScope(String tenantId, Long menuId)
+    {
+        if (StringUtils.isEmpty(tenantId) || menuId == null || menuId <= 0)
+        {
+            return false;
+        }
+        Long cur = menuId;
+        int guard = 0;
+        while (cur != null && cur > 0 && guard++ < 200)
+        {
+            if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, cur) > 0)
+            {
+                return true;
+            }
+            SysMenu m = sysMenuMapper.selectMenuById(cur);
+            if (m == null || m.getParentId() == null)
+            {
+                break;
+            }
+            cur = m.getParentId();
+        }
+        return false;
     }
 }

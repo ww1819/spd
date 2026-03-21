@@ -39,17 +39,17 @@
     </sql>
 
     <select id="selectById" resultMap="StkInitialImportResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectList" resultMap="StkInitialImportResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         <include refid="selectVo"/>
         <where>
             (m.del_flag = 0 or m.del_flag is null)
-            and (m.tenant_id = #{tenantId})
+            and (m.tenant_id = #{scopedTenantId})
             <if test="billNo != null and billNo != ''">and m.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
             <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
@@ -59,9 +59,13 @@
         order by m.import_time desc, m.id desc
     </select>
 
+    <!-- 单号 uk 为 bill_no 全局唯一：取号不可按 tenant 过滤；流水用数值排序避免 max(字符串) 在 00009/00010 时字典序错误 -->
     <select id="selectMaxBillNo" resultType="java.lang.String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        select max(bill_no) from stk_initial_import where bill_no like concat(#{datePrefix}, '%') and tenant_id = #{tenantId}
+        select bill_no from stk_initial_import
+        where bill_no like concat(#{datePrefix}, '%')
+          and char_length(bill_no) &gt;= 15
+        order by cast(substring(bill_no, 11) as unsigned) desc
+        limit 1
     </select>
 
     <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImport">
@@ -69,8 +73,8 @@
         values (#{id}, #{billNo}, #{warehouseId}, #{importOperator}, #{importTime}, #{stockGenTime}, #{billStatus}, #{remark}, 0, #{tenantId}, #{createBy}, #{createTime}, #{auditBy}, #{auditTime})
     </insert>
 
+    <!-- 审核/更新：必须用主单自身 tenant_id；仅用 getCustomerId 时平台账号 customer_id 为空会导致 where 不匹配、Updates=0、接口报 500 -->
     <update id="update" parameterType="com.spd.warehouse.domain.StkInitialImport">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update stk_initial_import
         <set>
             <if test="stockGenTime != null">stock_gen_time = #{stockGenTime},</if>
@@ -85,7 +89,7 @@
 
     <!-- 逻辑删除：设置 del_flag=1, delete_by, delete_time -->
     <update id="logicalDeleteById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

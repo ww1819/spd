@@ -73,6 +73,11 @@ public interface SysMenuMapper
     List<SysMenu> selectMenuTreeForPostAssign(@Param("tenantId") String tenantId);
 
     /**
+     * 查询若干父菜单下的直接子菜单（非平台、M/C/F）
+     */
+    List<SysMenu> selectMenuListChildrenOfParents(@Param("parentIds") List<Long> parentIds);
+
+    /**
      * 根据用户ID查询菜单
      *
      * @param userId 用户ID

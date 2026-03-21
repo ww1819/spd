@@ -113,9 +113,7 @@ public class FdWarehouseCategoryController extends BaseController
         ExcelUtil<FdWarehouseCategory> util = new ExcelUtil<FdWarehouseCategory>(FdWarehouseCategory.class);
         List<FdWarehouseCategory> list = util.importExcel(file.getInputStream());
         String message = fdWarehouseCategoryService.importWarehouseCategory(list, updateSupport, getUsername(), confirm);
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(FdWarehouseCategory.class, list));
-        return AjaxResult.success(message, preview);
+        return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
 
     @PostMapping("/importTemplate")
@@ -179,7 +177,6 @@ public class FdWarehouseCategoryController extends BaseController
             return AjaxResult.error("数据校验未通过：" + String.valueOf(data.get("errors")));
         }
         int successNum = 0;
-        StringBuilder msg = new StringBuilder();
         for (WarehouseCategoryImportUpdateDto row : list)
         {
             if (row == null || row.getWarehouseCategoryId() == null)
@@ -192,19 +189,9 @@ public class FdWarehouseCategoryController extends BaseController
             existing.setUpdateBy(getUsername());
             fdWarehouseCategoryService.updateFdWarehouseCategory(existing);
             successNum++;
-            msg.append("<br/>").append(successNum).append("、库房分类 ").append(existing.getWarehouseCategoryName()).append(" 更新成功");
         }
-        msg.insert(0, "更新导入完成。共处理 " + successNum + " 条，明细如下：");
-        for (WarehouseCategoryImportUpdateDto row : list)
-        {
-            if (row != null && row.getWarehouseCategoryId() != null)
-            {
-                row.setValidationResult("更新成功");
-            }
-        }
-        java.util.Map<String, Object> preview = new LinkedHashMap<>();
-        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(WarehouseCategoryImportUpdateDto.class, list));
-        return AjaxResult.success(msg.toString(), preview);
+        String shortMsg = "更新导入完成，共成功 " + successNum + " 条";
+        return AjaxResult.success(shortMsg, ExcelUtil.buildImportCommitSummaryMap(successNum));
     }
 
     @PostMapping("/importUpdateTemplate")

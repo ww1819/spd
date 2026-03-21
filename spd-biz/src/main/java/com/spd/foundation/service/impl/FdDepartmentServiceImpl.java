@@ -37,6 +37,7 @@ import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ITenantFoundationAutoGrantService;
 
 /**
  * 科室Service业务层处理
@@ -57,6 +58,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
 
     @Autowired
     private ISbCustomerService sbCustomerService;
+
+    @Autowired
+    private ITenantFoundationAutoGrantService tenantFoundationAutoGrantService;
 
     @Autowired
     protected Validator validator;
@@ -82,8 +86,11 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     @Override
     public List<FdDepartment> selectFdDepartmentList(FdDepartment fdDepartment)
     {
-        if (fdDepartment != null && StringUtils.isEmpty(fdDepartment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            fdDepartment.setTenantId(SecurityUtils.getCustomerId());
+        if (fdDepartment != null && StringUtils.isEmpty(fdDepartment.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                fdDepartment.setTenantId(tid);
+            }
         }
         return fdDepartmentMapper.selectFdDepartmentList(fdDepartment);
     }
@@ -91,7 +98,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     @Override
     public List<FdDepartmentTreeNode> buildDepartmentTreeWithCustomerRoot(List<FdDepartment> flatList)
     {
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         String rootLabel = "全部科室";
         if (StringUtils.isNotEmpty(customerId))
         {
@@ -174,8 +181,11 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (fdDepartment.getDelFlag() == null) {
             fdDepartment.setDelFlag(0);
         }
-        if (StringUtils.isEmpty(fdDepartment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            fdDepartment.setTenantId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(fdDepartment.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                fdDepartment.setTenantId(tid);
+            }
         }
         validateParentAssignment(null, fdDepartment.getParentId(), fdDepartment.getTenantId());
         fdDepartment.setHisId(normalizeExternalId(fdDepartment.getHisId()));
@@ -186,7 +196,20 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         } else if (isExternalIdBlank(fdDepartment.getHisId())) {
             fdDepartment.setHisId(null);
         }
-        return fdDepartmentMapper.insertFdDepartment(fdDepartment);
+        int n = fdDepartmentMapper.insertFdDepartment(fdDepartment);
+        if (n > 0 && StringUtils.isNotEmpty(fdDepartment.getTenantId())) {
+            Long deptId = fdDepartment.getId();
+            if (deptId == null && StringUtils.isNotEmpty(fdDepartment.getCode())) {
+                FdDepartment re = fdDepartmentMapper.selectFdDepartmentByCodeAndTenantId(fdDepartment.getCode(), fdDepartment.getTenantId());
+                if (re != null) {
+                    deptId = re.getId();
+                }
+            }
+            if (deptId != null) {
+                tenantFoundationAutoGrantService.grantDepartmentToTenantAdmins(fdDepartment.getTenantId(), deptId);
+            }
+        }
+        return n;
     }
 
     /**
@@ -198,7 +221,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     @Override
     public int updateFdDepartment(FdDepartment fdDepartment)
     {
-        String custId = SecurityUtils.getCustomerId();
+        String custId = SecurityUtils.resolveEffectiveTenantId(null);
         if (fdDepartment.getId() == null) {
             throw new ServiceException("科室主键不能为空");
         }
@@ -237,7 +260,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (fdDepartment == null) {
             throw new ServiceException(String.format("科室：%s，不存在!", id));
         }
-        String custId = SecurityUtils.getCustomerId();
+        String custId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(custId) && !custId.equals(fdDepartment.getTenantId())) {
             throw new ServiceException("只能删除本客户下的科室");
         }
@@ -252,7 +275,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
 
     @Override
     public List<FdDepartment> selectdepartmenAll() {
-        String custId = SecurityUtils.getCustomerId();
+        String custId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(custId)) {
             return fdDepartmentMapper.selectdepartmenAllByTenantId(custId);
         }
@@ -267,7 +290,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     @Override
     public List<FdDepartment> selectUserDepartmenAll(Long userId) {
         List<FdDepartment> list = fdDepartmentMapper.selectUserDepartmenAll(userId);
-        String custId = SecurityUtils.getCustomerId();
+        String custId = SecurityUtils.resolveEffectiveTenantId(null);
         if (StringUtils.isNotEmpty(custId) && list != null) {
             list = list.stream().filter(d -> custId.equals(d.getTenantId())).collect(Collectors.toList());
         }
@@ -306,7 +329,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (ids == null || ids.isEmpty()) {
             return;
         }
-        String custId = SecurityUtils.getCustomerId();
+        String custId = SecurityUtils.resolveEffectiveTenantId(null);
         String op = SecurityUtils.getUserIdStr();
         for (Long id : ids) {
             if (id == null) {
@@ -436,7 +459,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             result.put("totalRows", 0);
         }
         if (valid && list != null && !list.isEmpty()) {
-            String tenantId = SecurityUtils.getCustomerId();
+            String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
             int insertCount = 0;
             int updateCount = 0;
             for (FdDepartment row : list) {
@@ -482,7 +505,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (!errors.isEmpty()) {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
         }
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         int successNum = 0;
         StringBuilder successMsg = new StringBuilder();
         for (FdDepartment row : list) {
@@ -521,7 +544,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
      * 衡水市第三人民医院（{@link TenantEnum#HS_003}）等对接 HIS 的租户：导入时每行必须填写 HIS 科室 ID（库字段 his_id）
      */
     private static boolean importRequiresMandatoryHisDeptId() {
-        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.getCustomerId());
+        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null));
     }
 
     /**
@@ -567,7 +590,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             c.addGlobal("导入科室数据不能为空");
             return c;
         }
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         Map<String, Integer> codeFirstRow = new HashMap<>();
         for (int i = 0; i < list.size(); i++) {
             FdDepartment row = list.get(i);

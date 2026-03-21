@@ -48,8 +48,8 @@ public class FdFactory extends BaseEntity
     @Excel(name = "厂家简码")
     private String factoryReferredCode;
 
-    /** 厂家状态 */
-    @Excel(name = "厂家状态", readConverterExp = "启用/停用")
+    /** 厂家状态（启用/停用，存库 0/1） */
+    @Excel(name = "厂家状态", readConverterExp = "0=启用,1=停用")
     private String factoryStatus;
 
     @Excel(name = "数据校验结果", width = 40, sort = 99999)

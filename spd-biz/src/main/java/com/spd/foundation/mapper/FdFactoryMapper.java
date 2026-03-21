@@ -78,4 +78,9 @@ public interface FdFactoryMapper
      * 租户下 HIS 生产厂家 ID 出现次数（可排除某 factory_id）
      */
     int countFactoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeFactoryId") Long excludeFactoryId);
+
+    /**
+     * 按租户 + HIS 生产厂家 ID 查一条（未删除）
+     */
+    FdFactory selectFdFactoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
 }

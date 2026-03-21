@@ -110,8 +110,8 @@ public class FdSupplier extends BaseEntity
     @Excel(name = "经营范围")
     private String supplierRange;
 
-    /** 状态（启用/停用） */
-    @Excel(name = "状态", readConverterExp = "启用/停用")
+    /** 状态（启用/停用，存库 0/1） */
+    @Excel(name = "状态", readConverterExp = "0=启用,1=停用")
     private String supplierStatus;
 
     /** 供应商类型 */

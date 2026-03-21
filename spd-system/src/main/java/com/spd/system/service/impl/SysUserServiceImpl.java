@@ -25,6 +25,7 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISysConfigService;
+import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysUserService;
 
 /**
@@ -68,6 +69,9 @@ public class SysUserServiceImpl implements ISysUserService
     private ISbUserPermissionService sbUserPermissionService;
 
     @Autowired
+    private ISysMenuService menuService;
+
+    @Autowired
     private com.spd.system.service.ISbWorkGroupService sbWorkGroupService;
 
     @Autowired
@@ -83,13 +87,14 @@ public class SysUserServiceImpl implements ISysUserService
     @DataScope(deptAlias = "d", userAlias = "u")
     public List<SysUser> selectUserList(SysUser user)
     {
-        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        String tid = SecurityUtils.resolveEffectiveTenantId(null);
+        if (StringUtils.isNotEmpty(tid))
         {
             if (user == null)
             {
                 user = new SysUser();
             }
-            user.setCustomerId(SecurityUtils.getCustomerId());
+            user.setCustomerId(tid);
         }
         return userMapper.selectUserList(user);
     }
@@ -104,13 +109,14 @@ public class SysUserServiceImpl implements ISysUserService
     @DataScope(deptAlias = "d", userAlias = "u")
     public List<SysUser> selectAllocatedList(SysUser user)
     {
-        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        String tid = SecurityUtils.resolveEffectiveTenantId(null);
+        if (StringUtils.isNotEmpty(tid))
         {
             if (user == null)
             {
                 user = new SysUser();
             }
-            user.setCustomerId(SecurityUtils.getCustomerId());
+            user.setCustomerId(tid);
         }
         return userMapper.selectAllocatedList(user);
     }
@@ -125,13 +131,14 @@ public class SysUserServiceImpl implements ISysUserService
     @DataScope(deptAlias = "d", userAlias = "u")
     public List<SysUser> selectUnallocatedList(SysUser user)
     {
-        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        String tid = SecurityUtils.resolveEffectiveTenantId(null);
+        if (StringUtils.isNotEmpty(tid))
         {
             if (user == null)
             {
                 user = new SysUser();
             }
-            user.setCustomerId(SecurityUtils.getCustomerId());
+            user.setCustomerId(tid);
         }
         return userMapper.selectUnallocatedList(user);
     }
@@ -170,6 +177,16 @@ public class SysUserServiceImpl implements ISysUserService
     public SysUser selectUserById(Long userId)
     {
         return userMapper.selectUserById(userId);
+    }
+
+    @Override
+    public String selectCustomerIdByUserId(Long userId)
+    {
+        if (userId == null)
+        {
+            return null;
+        }
+        return userMapper.selectCustomerIdByUserId(userId);
     }
 
     /**
@@ -526,7 +543,12 @@ public class SysUserServiceImpl implements ISysUserService
                 SysUserPost up = new SysUserPost();
                 up.setUserId(user.getUserId());
                 up.setPostId(postId);
-                up.setTenantId(user.getCustomerId());
+                String tenantForPost = user.getCustomerId();
+                if (StringUtils.isEmpty(tenantForPost))
+                {
+                    tenantForPost = SecurityUtils.resolveEffectiveTenantId(null);
+                }
+                up.setTenantId(tenantForPost);
                 list.add(up);
             }
             userPostMapper.batchUserPost(list);
@@ -586,6 +608,7 @@ public class SysUserServiceImpl implements ISysUserService
         }
         Long uid = user.getUserId();
         if (StringUtils.isNotEmpty(user.getCustomerId())) {
+            String tenantIdForHc = StringUtils.trimToNull(user.getCustomerId());
             List<String> sbIds = new ArrayList<>();
             List<SysUserMenu> materialRows = new ArrayList<>();
             for (String raw : menuIds) {
@@ -599,6 +622,7 @@ public class SysUserServiceImpl implements ISysUserService
                         SysUserMenu um = new SysUserMenu();
                         um.setUserId(uid);
                         um.setMenuId(mid);
+                        um.setTenantId(tenantIdForHc);
                         materialRows.add(um);
                     }
                 } catch (NumberFormatException e) {
@@ -611,7 +635,25 @@ public class SysUserServiceImpl implements ISysUserService
                 sbUserPermissionService.saveUserMenus(uid, user.getCustomerId(), new String[0]);
             }
             if (!materialRows.isEmpty()) {
-                userMenuMapper.batchUserMenu(materialRows);
+                List<Long> mids = new ArrayList<>();
+                for (SysUserMenu um : materialRows) {
+                    mids.add(um.getMenuId());
+                }
+                List<Long> expanded = menuService.expandMenuIdsWithAncestorsForTenant(mids);
+                List<SysUserMenu> toSave = new ArrayList<>();
+                for (Long mid : expanded) {
+                    if (mid == null || mid <= 0) {
+                        continue;
+                    }
+                    SysUserMenu um = new SysUserMenu();
+                    um.setUserId(uid);
+                    um.setMenuId(mid);
+                    um.setTenantId(tenantIdForHc);
+                    toSave.add(um);
+                }
+                if (!toSave.isEmpty()) {
+                    userMenuMapper.batchUserMenu(toSave);
+                }
             }
             return;
         }
@@ -625,6 +667,8 @@ public class SysUserServiceImpl implements ISysUserService
                         SysUserMenu um = new SysUserMenu();
                         um.setUserId(user.getUserId());
                         um.setMenuId(menuId);
+                        // 平台用户：无租户
+                        um.setTenantId(null);
                         list.add(um);
                     }
                 } catch (NumberFormatException e) {

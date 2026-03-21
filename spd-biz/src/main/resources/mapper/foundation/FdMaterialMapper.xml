@@ -134,10 +134,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdMaterialVo"/>
         where m.del_flag != 1
-        and m.tenant_id = #{tenantId}
+        and m.tenant_id = #{scopedTenantId}
         <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
         <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
@@ -160,28 +160,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdMaterialVo"/>
-        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
     <select id="selectFdMaterialByCode" parameterType="String" resultMap="FdMaterialResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdMaterialVo"/>
-        where m.code = #{code} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
+        where m.code = #{code} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
     <select id="selectFdMaterialByHisId" parameterType="String" resultMap="FdMaterialResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdMaterialVo"/>
-        where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId} limit 1
+        where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId} limit 1
+    </select>
+
+    <select id="selectFdMaterialByTenantAndHisId" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
+        limit 1
+    </select>
+
+    <select id="selectFdMaterialByTenantAndCode" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.code = #{code} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
+        limit 1
     </select>
     <!-- 根据主条码(udi_no)或耗材编码查询产品档案，用于入库扫码带出产品 -->
     <select id="selectFdMaterialByMainBarcode" parameterType="String" resultMap="FdMaterialResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdMaterialVo"/>
-        where (m.udi_no = #{mainBarcode} or m.code = #{mainBarcode}) and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId} limit 1
+        where (m.udi_no = #{mainBarcode} or m.code = #{mainBarcode}) and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId} limit 1
     </select>
     <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         insert into fd_material
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">code,</if>
@@ -287,7 +300,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            #{tenantId},
+            #{insertTenantId},
             <if test="isGz != null">#{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">#{isFollow},</if>
@@ -298,7 +311,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdMaterial" parameterType="FdMaterial">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         update fd_material
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -357,17 +371,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationId != null">location_id = #{locationId},</if>
             <if test="selectionReason != null">selection_reason = #{selectionReason},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteFdMaterialById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
+        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdMaterialByIds">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and id in
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
+        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

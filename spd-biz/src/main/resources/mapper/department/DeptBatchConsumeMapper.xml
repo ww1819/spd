@@ -104,14 +104,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on a.department_id = d.id
         left join sys_user cu on a.create_by = cu.user_id
         left join sys_user au on a.audit_by = au.user_name
-        where a.del_flag != 1
     </sql>
 
     <select id="selectDeptBatchConsumeList" parameterType="DeptBatchConsume" resultMap="DeptBatchConsumeResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectDeptBatchConsumeVo"/>
         <where>
-            and a.tenant_id = #{tenantId}
+            and a.del_flag != 1
+            and a.tenant_id = #{scopedTenantId}
             <if test="consumeBillNo != null  and consumeBillNo != ''"> and a.consume_bill_no = #{consumeBillNo}</if>
             <if test="consumeBillDate != null "> and a.consume_bill_date = #{consumeBillDate}</if>
             <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>
@@ -125,7 +125,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectDeptBatchConsumeById" parameterType="Long" resultMap="DeptBatchConsumeDeptBatchConsumeEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id, a.consume_bill_status, a.del_flag, a.tenant_id,
                 a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price,
@@ -139,11 +139,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user au on a.audit_by = au.user_name
         left join sys_user cu on a.create_by = cu.user_id
         left join fd_material m on b.material_id = m.id
-        where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{tenantId}
+        where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertDeptBatchConsume" parameterType="DeptBatchConsume" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into t_hc_ks_xh
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="consumeBillNo != null">consume_bill_no,</if>
@@ -179,12 +179,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="rejectReason != null">#{rejectReason},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateDeptBatchConsume" parameterType="DeptBatchConsume">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update t_hc_ks_xh
         <trim prefix="SET" suffixOverrides=",">
             <if test="consumeBillNo != null">consume_bill_no = #{consumeBillNo},</if>
@@ -204,33 +204,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteDeptBatchConsumeById" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update t_hc_ks_xh set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update t_hc_ks_xh set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteDeptBatchConsumeByIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update t_hc_ks_xh set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update t_hc_ks_xh set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </update>
 
     <update id="deleteDeptBatchConsumeEntryByParenIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and paren_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </update>
 
     <update id="deleteDeptBatchConsumeEntryByParenId" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <insert id="batchDeptBatchConsumeEntry">
@@ -242,14 +242,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(consume_bill_no) from t_hc_ks_xh
-        where consume_bill_no like concat('%',#{date},'%') and tenant_id = #{tenantId}
+        where consume_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
     </select>
 
     <!-- 查询已审核的科室批量消耗明细列表（用于消耗追溯报表） -->
     <select id="selectAuditedConsumeDetailList" parameterType="DeptBatchConsume" resultType="java.util.Map">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select 
             a.consume_bill_no as billNo,
             a.consume_bill_date as consumeDate,
@@ -268,14 +268,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             NULL as hisChargeItemCode,
             u.unit_name as unitName
         from t_hc_ks_xh a
-        left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{tenantId} and e.del_flag != 1
+        left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and e.del_flag != 1
         left join fd_department d on a.department_id = d.id
         left join fd_material m on e.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where a.del_flag != 1 
-        and a.tenant_id = #{tenantId}
+        and a.tenant_id = #{scopedTenantId}
         and a.consume_bill_status = 2
         <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
         <if test="materialId != null"> and e.material_id = #{materialId}</if>
@@ -293,7 +293,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表） -->
     <select id="selectAuditedConsumeSummaryList" parameterType="DeptBatchConsume" resultType="java.util.Map">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select 
             d.name as departmentName,
             m.code as materialCode,
@@ -306,13 +306,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             AVG(e.unit_price) as averagePrice,
             wc.warehouse_category_name as category
         from t_hc_ks_xh a
-        left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{tenantId} and e.del_flag != 1
+        left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and e.del_flag != 1
         left join fd_department d on a.department_id = d.id
         left join fd_material m on e.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         where a.del_flag != 1 
-        and a.tenant_id = #{tenantId}
+        and a.tenant_id = #{scopedTenantId}
         and a.consume_bill_status = 2
         <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
         <if test="materialId != null"> and e.material_id = #{materialId}</if>

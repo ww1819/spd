@@ -70,7 +70,7 @@ public interface FdDepartmentMapper
      * @param tenantId 租户/客户ID
      * @return
      */
-    List<FdDepartment> selectdepartmenAllByTenantId(String tenantId);
+    List<FdDepartment> selectdepartmenAllByTenantId(@Param("tenantId") String tenantId);
 
     /**
      * 根据用户ID获取科室ID列表

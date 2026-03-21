@@ -91,9 +91,9 @@
     </sql>
 
     <select id="selectWhFixedNumberList" parameterType="WhFixedNumber" resultMap="WhFixedNumberResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectWhFixedNumberVo"/>
-        and (f.tenant_id = #{tenantId})
+        and (f.tenant_id = #{scopedTenantId})
         <if test="warehouseId != null">
             and f.warehouse_id = #{warehouseId}
         </if>
@@ -132,7 +132,7 @@
     </insert>
 
     <update id="updateWhFixedNumber" parameterType="WhFixedNumber">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update wh_fixed_number
         set
             upper_limit = #{upperLimit},
@@ -145,23 +145,23 @@
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             update_by = #{updateBy},
             update_time = now()
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteWhFixedNumberById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update wh_fixed_number
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now(),
             update_time = now()
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectWhFixedNumberVo"/>
-        and f.tenant_id = #{tenantId}
+        and f.tenant_id = #{scopedTenantId}
         and f.warehouse_id = #{warehouseId}
         and f.material_id = #{materialId}
     </select>

@@ -348,7 +348,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       if (!hcCustomerMenus.isEmpty()) {
         hcCustomerMenuMapper.batchInsert(hcCustomerMenus);
       }
-      syncSysUserMenusForMaterial(user.getUserId(), materialMenuIds);
+      syncSysUserMenusForMaterial(user.getUserId(), materialMenuIds, customerId);
     }
   }
 
@@ -361,7 +361,41 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     return sysMenuMapper.selectMaterialSystemSettingMenuIdsExcludeCustomerManage();
   }
 
-  private void syncSysUserMenusForMaterial(Long userId, List<Long> menuIds) {
+  /**
+   * 解析耗材管理员组（post_code=super）：优先 tenant_id=客户；历史数据 tenant_id 为空时按客户下用户已关联岗位反查，并回填 sys_post.tenant_id。
+   */
+  private SysPost resolveHcSuperPostForTenant(String customerId) {
+    if (StringUtils.isEmpty(customerId)) {
+      return null;
+    }
+    SysPost q = new SysPost();
+    q.setTenantId(customerId);
+    q.setPostCode(DEFAULT_GROUP_KEY);
+    List<SysPost> posts = sysPostMapper.selectPostList(q);
+    if (posts != null && !posts.isEmpty()) {
+      SysPost p = posts.get(0);
+      sysPostMapper.updatePostTenantIdIfBlank(p.getPostId(), customerId);
+      return sysPostMapper.selectPostById(p.getPostId());
+    }
+    SysPost linked = sysPostMapper.selectHcSuperPostLinkedToCustomer(customerId);
+    if (linked != null) {
+      sysPostMapper.updatePostTenantIdIfBlank(linked.getPostId(), customerId);
+      return sysPostMapper.selectPostById(linked.getPostId());
+    }
+    return null;
+  }
+
+  /**
+   * 回填 super 岗位下该客户用户的 sys_user_post.tenant_id（关联丢失修复后统一补租户字段）
+   */
+  private void patchHcSuperUserPostTenantIds(String customerId, Long superPostId) {
+    if (StringUtils.isEmpty(customerId) || superPostId == null) {
+      return;
+    }
+    sysUserPostMapper.updateTenantIdIfBlankForCustomerSuperPost(customerId, superPostId);
+  }
+
+  private void syncSysUserMenusForMaterial(Long userId, List<Long> menuIds, String tenantId) {
     if (userId == null) {
       return;
     }
@@ -369,6 +403,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (menuIds == null || menuIds.isEmpty()) {
       return;
     }
+    String tid = StringUtils.trimToNull(tenantId);
     List<SysUserMenu> rows = new ArrayList<>();
     for (Long menuId : menuIds) {
       if (menuId == null || menuId <= 0) {
@@ -377,6 +412,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SysUserMenu um = new SysUserMenu();
       um.setUserId(userId);
       um.setMenuId(menuId);
+      um.setTenantId(tid);
       rows.add(um);
     }
     if (!rows.isEmpty()) {
@@ -692,6 +728,10 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     sbCustomerCategory68Service.syncFromStandard(customerId);
   }
 
+  /**
+   * 耗材功能重置：仅下发「客户名下」默认开放的功能菜单（{@link #resolveDefaultMaterialMenuIds}），不含平台独占菜单；
+   * 若 super 岗位、super_01 或其关联、tenant_id 缺失，则自动补齐并回填租户字段，保证管理员组用户可见租户内全部仓库与科室（见 {@link com.spd.system.service.ITenantScopeService#isTenantSuper}）。
+   */
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void resetMaterialFunctions(String customerId) {
@@ -704,11 +744,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     }
     String createBy = SecurityUtils.getUserIdStr();
 
-    SysPost q = new SysPost();
-    q.setTenantId(customerId);
-    q.setPostCode(DEFAULT_GROUP_KEY);
-    List<SysPost> posts = sysPostMapper.selectPostList(q);
-    SysPost superPost = (posts != null && !posts.isEmpty()) ? posts.get(0) : null;
+    SysPost superPost = resolveHcSuperPostForTenant(customerId);
     SysUser super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
 
     if (superPost == null && super01 == null) {
@@ -716,12 +752,11 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       return;
     }
     ensureMaterialSuperAndUser(customerId, customer.getCustomerName(), createBy, superPost, super01);
-    q = new SysPost();
-    q.setTenantId(customerId);
-    q.setPostCode(DEFAULT_GROUP_KEY);
-    posts = sysPostMapper.selectPostList(q);
-    superPost = (posts != null && !posts.isEmpty()) ? posts.get(0) : null;
+    superPost = resolveHcSuperPostForTenant(customerId);
     super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
+    if (superPost != null) {
+      patchHcSuperUserPostTenantIds(customerId, superPost.getPostId());
+    }
     if (superPost == null || super01 == null) {
       return;
     }
@@ -780,12 +815,21 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
     }
 
-    syncSysUserMenusForMaterial(super01.getUserId(), materialMenuIds);
+    syncSysUserMenusForMaterial(super01.getUserId(), materialMenuIds, customerId);
   }
 
   /** 设备侧：若 super 组或 super_01 缺失则补齐（不创建菜单） */
   private void ensureEquipmentSuperAndUser(String customerId, String customerName, String createBy, SbWorkGroup existingGroup, SysUser existingUser) {
     if (existingUser != null && existingGroup != null) {
+      // 工作组与用户均存在时仍可能缺少 sb_work_group_user（历史数据或误删），否则 isTenantSuper 设备侧恒为 false
+      if (sbWorkGroupUserMapper.countByGroupIdAndUserId(existingGroup.getGroupId(), existingUser.getUserId()) == 0) {
+        SbWorkGroupUser wgu = new SbWorkGroupUser();
+        wgu.setGroupId(existingGroup.getGroupId());
+        wgu.setUserId(existingUser.getUserId());
+        wgu.setCustomerId(customerId);
+        wgu.setCreateBy(createBy);
+        sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
+      }
       return;
     }
     String initPassword = configService.selectConfigByKey("sys.user.initPassword");
@@ -866,6 +910,20 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   /** 耗材侧：若 super 岗位或 super_01 缺失则补齐（不创建菜单） */
   private void ensureMaterialSuperAndUser(String customerId, String customerName, String createBy, SysPost existingPost, SysUser existingUser) {
     if (existingUser != null && existingPost != null) {
+      // 回填岗位租户 ID（历史数据 tenant_id 为空会导致功能重置/管理员判定失败）
+      sysPostMapper.updatePostTenantIdIfBlank(existingPost.getPostId(), customerId);
+      // 岗位与用户均存在时仍可能缺少 sys_user_post（历史数据或误删），补齐后「用户管理-管理员组」筛选才能命中
+      List<Long> assignedPostIds = sysPostMapper.selectPostListByUserId(existingUser.getUserId());
+      if (assignedPostIds == null || !assignedPostIds.contains(existingPost.getPostId())) {
+        SysUserPost userPost = new SysUserPost();
+        userPost.setUserId(existingUser.getUserId());
+        userPost.setPostId(existingPost.getPostId());
+        userPost.setTenantId(customerId);
+        List<SysUserPost> userPostList = new ArrayList<>();
+        userPostList.add(userPost);
+        sysUserPostMapper.batchUserPost(userPostList);
+      }
+      sysUserPostMapper.updateUserPostTenantIdIfBlank(existingUser.getUserId(), existingPost.getPostId(), customerId);
       return;
     }
     String initPassword = configService.selectConfigByKey("sys.user.initPassword");

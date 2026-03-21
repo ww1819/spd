@@ -14,16 +14,16 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdSupplierChangeLog">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         INSERT INTO fd_supplier_change_log (id, supplier_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id)
         VALUES (#{id}, #{supplierId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{tenantId})
     </insert>
 
     <select id="selectBySupplierId" resultMap="FdSupplierChangeLogResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         SELECT id, supplier_id, change_time, operator, field_name, field_label, old_value, new_value
         FROM fd_supplier_change_log
-        WHERE supplier_id = #{supplierId} and tenant_id = #{tenantId}
+        WHERE supplier_id = #{supplierId} and tenant_id = #{scopedTenantId}
         ORDER BY change_time DESC
     </select>
 </mapper>

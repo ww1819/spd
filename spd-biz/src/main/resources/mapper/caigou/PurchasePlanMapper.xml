@@ -134,11 +134,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectPurchasePlanList" parameterType="PurchasePlan" resultMap="PurchasePlanResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectPurchasePlanVo"/>
         <where>
             and (pp.del_flag = '0' or pp.del_flag is null)
-            and pp.tenant_id = #{tenantId}
+            and pp.tenant_id = #{scopedTenantId}
             <if test="planNo != null  and planNo != ''"> and pp.plan_no like concat('%', #{planNo}, '%')</if>
             <if test="supplierId != null "> and pp.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and pp.warehouse_id = #{warehouseId}</if>
@@ -157,19 +157,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectPurchasePlanById" parameterType="Long" resultMap="PurchasePlanResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectPurchasePlanVo"/>
-        where pp.id = #{id} and (pp.del_flag = '0' or pp.del_flag is null) and pp.tenant_id = #{tenantId}
+        where pp.id = #{id} and (pp.del_flag = '0' or pp.del_flag is null) and pp.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectPurchasePlanEntryByParentId" parameterType="Long" resultMap="PurchasePlanEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectPurchasePlanEntryVo"/>
-        where ppe.parent_id = #{parentId} and (ppe.del_flag = '0' or ppe.del_flag is null) and ppe.tenant_id = #{tenantId}
+        where ppe.parent_id = #{parentId} and (ppe.del_flag = '0' or ppe.del_flag is null) and ppe.tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertPurchasePlan" parameterType="PurchasePlan" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into purchase_plan
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">plan_no,</if>
@@ -212,13 +212,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditOpinion != null">#{auditOpinion},</if>
-            #{tenantId},
+            #{scopedTenantId},
             <if test="planEntryMode != null">#{planEntryMode},</if>
          </trim>
     </insert>
 
     <insert id="insertPurchasePlanEntry" parameterType="PurchasePlanEntry" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into purchase_plan_entry
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -252,7 +252,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="applyDepartmentId != null">#{applyDepartmentId},</if>
-            #{tenantId},
+            #{scopedTenantId},
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -269,7 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updatePurchasePlan" parameterType="PurchasePlan">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_plan
         <trim prefix="SET" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
@@ -293,11 +293,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planEntryMode != null">plan_entry_mode = #{planEntryMode},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="updatePurchasePlanEntry" parameterType="PurchasePlanEntry">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_plan_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -318,11 +318,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="auditPurchasePlan" parameterType="PurchasePlan">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_plan
         <trim prefix="SET" suffixOverrides=",">
             <if test="planStatus != null">plan_status = #{planStatus},</if>
@@ -332,37 +332,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deletePurchasePlanById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deletePurchasePlanByIds">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deletePurchasePlanEntryByParentId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deletePurchasePlanEntryByParentIds">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{tenantId} and parent_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
         <foreach item="parentId" collection="parentIds" open="(" separator="," close=")">
             #{parentId}
         </foreach>
     </delete>
 
     <select id="selectMaxPlanNo" parameterType="String" resultType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        select max(plan_no) from purchase_plan where plan_no like concat('JH', #{date}, '%') and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select max(plan_no) from purchase_plan where plan_no like concat('JH', #{date}, '%') and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

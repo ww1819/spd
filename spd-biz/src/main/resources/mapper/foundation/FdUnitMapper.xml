@@ -25,22 +25,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdUnitList" parameterType="FdUnit" resultMap="FdUnitResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdUnitVo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
         <if test="unitCode != null  and unitCode != ''"> and unit_code = #{unitCode}</if>
         <if test="unitName != null  and unitName != ''"> and unit_name like concat('%', #{unitName}, '%')</if>
     </select>
 
     <select id="selectFdUnitByUnitId" parameterType="Long" resultMap="FdUnitResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdUnitVo"/>
-        where unit_id = #{unitId} and (del_flag = 0 or del_flag is null) and tenant_id = #{tenantId}
+        where unit_id = #{unitId} and (del_flag = 0 or del_flag is null) and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectFdUnitByTenantAndUnitName" resultMap="FdUnitResult">
+        <include refid="selectFdUnitVo"/>
+        where del_flag != 1 and tenant_id = #{tenantId} and unit_name = #{unitName}
+        limit 1
     </select>
 
     <insert id="insertFdUnit" parameterType="FdUnit" useGeneratedKeys="true" keyProperty="unitId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_unit
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="unitCode != null">unit_code,</if>
@@ -57,7 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="unitCode != null">#{unitCode},</if>
             <if test="unitName != null">#{unitName},</if>
             <if test="delFlag != null">#{delFlag},</if>
-            #{tenantId},
+            #{scopedTenantId},
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -67,7 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdUnit" parameterType="FdUnit">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update fd_unit
         <trim prefix="SET" suffixOverrides=",">
             <if test="unitCode != null">unit_code = #{unitCode},</if>
@@ -81,15 +87,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where unit_id = #{unitId} and tenant_id = #{tenantId}
+        where unit_id = #{unitId} and tenant_id = #{scopedTenantId}
     </update>
 
     <sql id="maxUnitTenantFilter">
-        AND tenant_id = #{tenantId}
+        AND tenant_id = #{scopedTenantId}
     </sql>
 
     <select id="selectMaxUnitCode" resultType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         SELECT unit_code
         FROM fd_unit
         WHERE unit_code LIKE 'D%'

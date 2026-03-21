@@ -30,10 +30,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdFinanceCategoryList" parameterType="FdFinanceCategory" resultMap="FdFinanceCategoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         <include refid="selectFdFinanceCategoryVo"/>
         where del_flag != 1
-        and tenant_id = #{tenantId}
+        and tenant_id = #{scopedTenantId}
         <if test="financeCategoryCode != null  and financeCategoryCode != ''"> and finance_category_code = #{financeCategoryCode}</if>
         <if test="financeCategoryName != null  and financeCategoryName != ''"> and finance_category_name like concat('%', #{financeCategoryName}, '%')</if>
         <if test="financeCategoryAddress != null  and financeCategoryAddress != ''"> and finance_category_address = #{financeCategoryAddress}</if>
@@ -41,9 +41,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdFinanceCategoryByFinanceCategoryId" parameterType="Long" resultMap="FdFinanceCategoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         <include refid="selectFdFinanceCategoryVo"/>
-        where finance_category_id = #{financeCategoryId} and del_flag != 1 and tenant_id = #{tenantId}
+        where finance_category_id = #{financeCategoryId} and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectFdFinanceCategoryByCodeAndTenantId" resultMap="FdFinanceCategoryResult">
@@ -59,8 +59,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="excludeId != null"> and finance_category_id != #{excludeId} </if>
     </select>
 
+    <select id="selectFdFinanceCategoryByTenantAndHisId" resultMap="FdFinanceCategoryResult">
+        <include refid="selectFdFinanceCategoryVo"/>
+        where del_flag != 1 and tenant_id = #{tenantId} and his_id = #{hisId}
+        limit 1
+    </select>
+
     <insert id="insertFdFinanceCategory" parameterType="FdFinanceCategory" useGeneratedKeys="true" keyProperty="financeCategoryId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         insert into fd_finance_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="financeCategoryCode != null and financeCategoryCode != ''">finance_category_code,</if>
@@ -94,12 +100,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="isUse != null">#{isUse},</if>
             <if test="remark != null">#{remark},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateFdFinanceCategory" parameterType="FdFinanceCategory">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         update fd_finance_category
         <trim prefix="SET" suffixOverrides=",">
             <if test="financeCategoryCode != null and financeCategoryCode != ''">finance_category_code = #{financeCategoryCode},</if>
@@ -119,17 +125,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
         </trim>
-        where finance_category_id = #{financeCategoryId} and tenant_id = #{tenantId}
+        where finance_category_id = #{financeCategoryId} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteFdFinanceCategoryByFinanceCategoryId" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update fd_finance_category set del_flag = 1, update_time = now() where finance_category_id = #{financeCategoryId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        update fd_finance_category set del_flag = 1, update_time = now() where finance_category_id = #{financeCategoryId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdFinanceCategoryByFinanceCategoryIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update fd_finance_category set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and finance_category_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        update fd_finance_category set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and finance_category_id in
         <foreach item="financeCategoryId" collection="array" open="(" separator="," close=")">
             #{financeCategoryId}
         </foreach>

@@ -101,10 +101,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzDepInventoryList" parameterType="GzDepInventory" resultMap="GzDepInventoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzDepInventoryVo"/>
         where 1=1
-        and gz.tenant_id = #{tenantId}
+        and gz.tenant_id = #{scopedTenantId}
         <!-- 只查询有院内码的记录，确保每个院内码一行 -->
         and gz.in_hospital_code IS NOT NULL and gz.in_hospital_code != ''
         <!-- 根据showZeroStock参数决定是否过滤数量为0的记录 -->
@@ -125,13 +125,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzDepInventoryById" parameterType="Long" resultMap="GzDepInventoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzDepInventoryVo"/>
-        where gz.id = #{id} and gz.tenant_id = #{tenantId}
+        where gz.id = #{id} and gz.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
@@ -157,12 +157,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateGzDepInventory" parameterType="GzDepInventory">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_dep_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialId != null">material_id = #{materialId},</if>
@@ -175,39 +175,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
         </trim>
-        where id = #{id} and tenant_id = #{tenantId}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteGzDepInventoryById" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update gz_dep_inventory set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_dep_inventory set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzDepInventoryByIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update gz_dep_inventory set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_dep_inventory set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectGzDepInventoryOne" parameterType="java.lang.String" resultMap="GzDepInventoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        select * from gz_dep_inventory where batch_no = #{batchNo} and tenant_id = #{tenantId} order by id desc limit 1
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select * from gz_dep_inventory where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} order by id desc limit 1
     </select>
 
     <select id="selectTKDepInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select SUM(IFNULL(qty, 0)) from gz_dep_inventory
-        where batch_no = #{batchNo} and tenant_id = #{tenantId}
+        where batch_no = #{batchNo} and tenant_id = #{scopedTenantId}
     </select>
     
     <select id="selectGzDepInventoryByCodeAndDept" resultMap="GzDepInventoryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectGzDepInventoryVo"/>
         where gz.in_hospital_code = #{inHospitalCode}
         and gz.department_id = #{departmentId}
-        and gz.tenant_id = #{tenantId}
+        and gz.tenant_id = #{scopedTenantId}
         <!-- 不过滤数量为0的记录 -->
         limit 1
     </select>

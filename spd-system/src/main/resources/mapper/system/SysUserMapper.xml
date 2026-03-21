@@ -92,11 +92,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="workgroupPostId != null and workgroupPostId != ''">
 			AND EXISTS (SELECT 1 FROM sb_work_group_user wgu WHERE wgu.user_id = u.user_id AND wgu.group_id = #{workgroupPostId} AND IFNULL(wgu.del_flag, '0') = '0')
 		</if>
+		<!-- 耗材工作组筛选：sys_user_post；若历史数据仅有租户管理员角色未写关联，则 post_code=super 时按 tenant_admin 角色兜底 -->
 		<if test="sysPostId != null">
-			AND EXISTS (SELECT 1 FROM sys_user_post up WHERE up.user_id = u.user_id AND up.post_id = #{sysPostId}
-			<if test="customerId != null and customerId != ''">
-				AND (up.tenant_id IS NULL OR up.tenant_id = '' OR up.tenant_id = #{customerId})
-			</if>
+			AND (
+				EXISTS (SELECT 1 FROM sys_user_post up WHERE up.user_id = u.user_id AND up.post_id = #{sysPostId})
+				OR EXISTS (
+					SELECT 1 FROM sys_post p
+					WHERE p.post_id = #{sysPostId} AND p.post_code = 'super' AND p.status = '0'
+					AND (p.tenant_id = u.customer_id OR (p.tenant_id IS NULL AND (u.customer_id IS NULL OR u.customer_id = '')))
+					AND EXISTS (
+						SELECT 1 FROM sys_user_role ur
+						INNER JOIN sys_role r ON r.role_id = ur.role_id AND IFNULL(r.del_flag, '0') = '0'
+						WHERE ur.user_id = u.user_id AND r.role_key = 'tenant_admin'
+					)
+				)
 			)
 		</if>
 		<!-- 数据范围过滤 -->
@@ -156,6 +165,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<select id="selectUserById" parameterType="Long" resultMap="SysUserResult">
 		<include refid="selectUserVo"/>
 		where u.user_id = #{userId}
+	</select>
+
+	<select id="selectCustomerIdByUserId" parameterType="Long" resultType="java.lang.String">
+		select u.customer_id from sys_user u where u.user_id = #{userId} limit 1
 	</select>
 	
 	<select id="checkUserNameUnique" parameterType="SysUser" resultMap="SysUserResult">

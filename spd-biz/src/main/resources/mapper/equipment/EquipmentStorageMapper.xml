@@ -39,10 +39,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentStorageList" parameterType="EquipmentStorage" resultMap="EquipmentStorageResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentStorageVo"/>
         <where>  
-            and s.tenant_id = #{tenantId}
+            and s.tenant_id = #{scopedTenantId}
             <if test="storageNo != null  and storageNo != ''"> and s.storage_no like concat('%', #{storageNo}, '%')</if>
             <if test="warehouseId != null "> and s.warehouse_id = #{warehouseId}</if>
             <if test="storageStatus != null  and storageStatus != ''"> and s.storage_status = #{storageStatus}</if>
@@ -58,7 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and exists (
                     select 1 from equipment_storage_detail d 
                     where d.storage_id = s.storage_id 
-                    and d.tenant_id = #{tenantId}
+                    and d.tenant_id = #{scopedTenantId}
                     and d.equipment_name like concat('%', #{equipmentName}, '%')
                 )
             </if>
@@ -67,13 +67,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentStorageById" parameterType="Long" resultMap="EquipmentStorageResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentStorageVo"/>
-        where s.storage_id = #{storageId} and s.tenant_id = #{tenantId}
+        where s.storage_id = #{storageId} and s.tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertEquipmentStorage" parameterType="EquipmentStorage" useGeneratedKeys="true" keyProperty="storageId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into equipment_storage
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="storageId != null">storage_id,</if>
@@ -105,12 +105,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateEquipmentStorage" parameterType="EquipmentStorage">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update equipment_storage
         <trim prefix="SET" suffixOverrides=",">
             <if test="storageNo != null">storage_no = #{storageNo},</if>
@@ -124,24 +124,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where storage_id = #{storageId} and tenant_id = #{tenantId}
+        where storage_id = #{storageId} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteEquipmentStorageById" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update equipment_storage set del_flag = 1, update_time = now() where storage_id = #{storageId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_storage set del_flag = 1, update_time = now() where storage_id = #{storageId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentStorageByIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update equipment_storage set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and storage_id in 
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_storage set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and storage_id in 
         <foreach item="storageId" collection="array" open="(" separator="," close=")">
             #{storageId}
         </foreach>
     </delete>
 
     <update id="auditEquipmentStorage" parameterType="EquipmentStorage">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update equipment_storage
         <trim prefix="SET" suffixOverrides=",">
             <if test="storageStatus != null">storage_status = #{storageStatus},</if>
@@ -150,6 +150,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where storage_id = #{storageId} and tenant_id = #{tenantId}
+        where storage_id = #{storageId} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

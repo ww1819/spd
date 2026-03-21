@@ -56,14 +56,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentReturnDetailList" parameterType="Long" resultMap="EquipmentReturnDetailResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentReturnDetailVo"/>
-        where return_id = #{returnId} and tenant_id = #{tenantId}
+        where return_id = #{returnId} and tenant_id = #{scopedTenantId}
         order by detail_id
     </select>
         
     <insert id="insertEquipmentReturnDetail" parameterType="EquipmentReturnDetail" useGeneratedKeys="true" keyProperty="detailId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into equipment_return_detail
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="detailId != null">detail_id,</if>
@@ -143,7 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="acceptanceResult != null">#{acceptanceResult},</if>
             <if test="acceptanceDate != null">#{acceptanceDate},</if>
             <if test="remark != null">#{remark},</if>
-            #{tenantId},
+            #{scopedTenantId},
          </trim>
     </insert>
 
@@ -169,13 +169,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteEquipmentReturnDetailByReturnId" parameterType="Long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update equipment_return_detail set del_flag = 1, update_time = now() where return_id = #{returnId} and tenant_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_return_detail set del_flag = 1, update_time = now() where return_id = #{returnId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentReturnDetailByReturnIds" parameterType="String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update equipment_return_detail set del_flag = 1, update_time = now() where tenant_id = #{tenantId} and return_id in 
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_return_detail set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and return_id in 
         <foreach item="returnId" collection="array" open="(" separator="," close=")">
             #{returnId}
         </foreach>

@@ -62,6 +62,11 @@ public interface SysUserMapper
     public SysUser selectUserById(Long userId);
 
     /**
+     * 仅查询 customer_id（按主键），用于修正 Redis 中 LoginUser 与库不一致。
+     */
+    String selectCustomerIdByUserId(Long userId);
+
+    /**
      * 新增用户信息
      * 
      * @param user 用户信息

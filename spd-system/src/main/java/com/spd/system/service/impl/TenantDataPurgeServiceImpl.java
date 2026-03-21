@@ -27,6 +27,7 @@ import com.spd.system.service.ITenantDataPurgeService;
  *   <li>{@link #shouldSkipFullResetTable(String)} — 整表保留（不执行 DELETE）；</li>
  *   <li>{@link #FULL_RESET_TENANT_NULL_PRESERVE_WHITELIST} — 仅删除「带租户/客户维度」的行，保留 tenant_id、customer_id 为空或空白的行；</li>
  *   <li>其余表 — 整表 {@code DELETE}。</li>
+ *   <li>主循环之后：{@link #purgeTenantScopedHcPostAndUserPost} 删除 {@code sys_post}/{@code sys_user_post} 中租户侧耗材工作组（两表在跳过列表中）；{@link #purgeSbWorkGroupCustomerScoped} 补删设备侧 {@code sb_work_group*} 中带 {@code customer_id} 的行。</li>
  * </ul>
  */
 @Service
@@ -297,6 +298,11 @@ public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
                         log.warn("跳过表 {}: {}", table, ex.getMessage());
                     }
                 }
+                // sys_post、sys_user_post 在 FULL_RESET_SKIP 中整表保留；主循环会清空 sys_post_menu 等子表，
+                // 但租户侧耗材工作组（sys_post.tenant_id 非空）会残留，须单独删除。
+                purgeTenantScopedHcPostAndUserPost(conn);
+                // 设备侧 sb_work_group* 含 customer_id；若主循环因异常等未清空，补删客户维度工作组数据。
+                purgeSbWorkGroupCustomerScoped(conn);
                 try (Statement st = conn.createStatement())
                 {
                     st.executeUpdate("DELETE FROM sys_user WHERE LOWER(user_name) <> 'admin'");
@@ -363,6 +369,64 @@ public class TenantDataPurgeServiceImpl implements ITenantDataPurgeService
             try (ResultSet rs = ps.executeQuery())
             {
                 return rs.next();
+            }
+        }
+    }
+
+    /**
+     * 耗材工作组：删除 sys_user_post、sys_post 中带租户 ID 的行（平台岗位 tenant_id 为空则保留）。
+     */
+    private void purgeTenantScopedHcPostAndUserPost(Connection conn) throws SQLException
+    {
+        if (!tableExists(conn, "sys_post") || !tableHasColumn(conn, "sys_post", "tenant_id"))
+        {
+            return;
+        }
+        if (tableExists(conn, "sys_user_post") && tableHasColumn(conn, "sys_user_post", "tenant_id"))
+        {
+            String sql = "DELETE FROM sys_user_post WHERE tenant_id IS NOT NULL AND TRIM(CAST(tenant_id AS CHAR)) <> ''";
+            try (Statement st = conn.createStatement())
+            {
+                int n = st.executeUpdate(sql);
+                log.info("全库初始化：sys_user_post 按租户删除 {} 行", n);
+            }
+        }
+        try (Statement st = conn.createStatement())
+        {
+            int n = st.executeUpdate(
+                "DELETE FROM sys_post WHERE tenant_id IS NOT NULL AND TRIM(CAST(tenant_id AS CHAR)) <> ''");
+            log.info("全库初始化：sys_post 按租户删除工作组行 {} 行", n);
+        }
+    }
+
+    /**
+     * 设备工作组：删除 customer_id 非空（即客户归属）的关联行；子表先于 sb_work_group。
+     */
+    private void purgeSbWorkGroupCustomerScoped(Connection conn) throws SQLException
+    {
+        String[][] tablesWithCustomer = {
+            {"sb_work_group_user", "customer_id"},
+            {"sb_work_group_menu", "customer_id"},
+            {"sb_work_group_warehouse", "customer_id"},
+            {"sb_work_group_dept", "customer_id"},
+            {"sb_work_group", "customer_id"},
+        };
+        for (String[] spec : tablesWithCustomer)
+        {
+            String table = spec[0];
+            String col = spec[1];
+            if (!tableExists(conn, table) || !tableHasColumn(conn, table, col))
+            {
+                continue;
+            }
+            String sql = "DELETE FROM `" + table + "` WHERE " + col + " IS NOT NULL AND TRIM(CAST(" + col + " AS CHAR)) <> ''";
+            try (Statement st = conn.createStatement())
+            {
+                int n = st.executeUpdate(sql);
+                if (n > 0)
+                {
+                    log.info("全库初始化：{} 按客户维度删除 {} 行", table, n);
+                }
             }
         }
     }

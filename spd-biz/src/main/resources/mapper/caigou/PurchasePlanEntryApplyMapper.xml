@@ -30,22 +30,22 @@
     </insert>
 
     <update id="logicDeleteByPurchasePlanEntryId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_plan_entry_apply
         set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now()
-        where purchase_plan_entry_id = #{purchasePlanEntryId} and tenant_id = #{tenantId} and (del_flag = '0' or del_flag is null)
+        where purchase_plan_entry_id = #{purchasePlanEntryId} and tenant_id = #{scopedTenantId} and (del_flag = '0' or del_flag is null)
     </update>
 
     <update id="logicDeleteByPlanId">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update purchase_plan_entry_apply r
-        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{tenantId}
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
         set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
-        where e.parent_id = #{planId} and r.tenant_id = #{tenantId} and (r.del_flag = '0' or r.del_flag is null)
+        where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
     </update>
 
     <select id="selectApplyDetailsByEntryId" resultType="com.spd.caigou.domain.vo.ApplyDetailVO">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.apply_bill_no as applyBillNo,
                d.name as departmentName,
                e.qty as qty,
@@ -54,23 +54,23 @@
                coalesce(au.nick_name, au.user_name) as auditByName,
                a.audit_date as auditTime
         from purchase_plan_entry_apply r
-        inner join bas_apply_entry e on r.bas_apply_entry_id = e.id and e.tenant_id = #{tenantId} and (e.del_flag is null or e.del_flag != 1)
-        inner join bas_apply a on e.paren_id = a.id and a.tenant_id = #{tenantId} and (a.del_flag = 0 or a.del_flag is null)
+        inner join bas_apply_entry e on r.bas_apply_entry_id = e.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
+        inner join bas_apply a on e.paren_id = a.id and a.tenant_id = #{scopedTenantId} and (a.del_flag = 0 or a.del_flag is null)
         left join fd_department d on a.department_id = d.id
         left join sys_user cu on a.create_by = cu.user_id
         left join sys_user au on a.audit_by = au.user_id
-        where r.purchase_plan_entry_id = #{entryId} and r.tenant_id = #{tenantId} and (r.del_flag = '0' or r.del_flag is null)
+        where r.purchase_plan_entry_id = #{entryId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
         order by a.apply_bill_no, e.id
     </select>
 
     <select id="selectBillNoListByPlanId" resultType="java.lang.String">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select distinct a.apply_bill_no
         from purchase_plan_entry_apply r
-        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{tenantId}
-        inner join bas_apply_entry be on r.bas_apply_entry_id = be.id and be.tenant_id = #{tenantId} and (be.del_flag is null or be.del_flag != 1)
-        inner join bas_apply a on be.paren_id = a.id and a.tenant_id = #{tenantId} and (a.del_flag = 0 or a.del_flag is null)
-        where e.parent_id = #{planId} and r.tenant_id = #{tenantId} and (r.del_flag = '0' or r.del_flag is null)
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        inner join bas_apply_entry be on r.bas_apply_entry_id = be.id and be.tenant_id = #{scopedTenantId} and (be.del_flag is null or be.del_flag != 1)
+        inner join bas_apply a on be.paren_id = a.id and a.tenant_id = #{scopedTenantId} and (a.del_flag = 0 or a.del_flag is null)
+        where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
         and a.apply_bill_no is not null and a.apply_bill_no != ''
         order by a.apply_bill_no
     </select>

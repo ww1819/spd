@@ -30,6 +30,7 @@ import com.spd.warehouse.service.IStkInventoryService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.constant.HttpStatus;
+import com.spd.common.core.text.Convert;
 
 /**
  * 库存明细Controller
@@ -110,15 +111,16 @@ public class StkInventoryController extends BaseController
 
                 String materialModel = map.get("materialModel") == null ? "" : map.get("materialModel").toString();
                 inventoryVo.setMaterialModel(materialModel);
-                inventoryVo.setMaterialQty((BigDecimal) map.get("materialQty"));
+                // MyBatis 聚合可能返回 Long/Double，强转 BigDecimal 会抛 ClassCastException，导致整页被 skip
+                inventoryVo.setMaterialQty(Convert.toBigDecimal(map.get("materialQty"), BigDecimal.ZERO));
 
                 Object materialSpeciObj = map.get("materialSpeci");
                 inventoryVo.setMaterialSpeci(materialSpeciObj == null ? "" : materialSpeciObj.toString());
-                inventoryVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
+                inventoryVo.setMaterialAmt(Convert.toBigDecimal(map.get("materialAmt"), BigDecimal.ZERO));
 
                 Object unitNameObj = map.get("unitName");
                 inventoryVo.setUnitName(unitNameObj == null ? "" : unitNameObj.toString());
-                inventoryVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
+                inventoryVo.setUnitPrice(Convert.toBigDecimal(map.get("unitPrice")));
 
                 Object warehouseNameObj = map.get("warehouseName");
                 inventoryVo.setWarehouseName(warehouseNameObj == null ? "" : warehouseNameObj.toString());
@@ -131,8 +133,8 @@ public class StkInventoryController extends BaseController
 
                 summaryVoList.add(inventoryVo);
 
-                BigDecimal materialQty = map.get("materialQty") == null ? BigDecimal.ZERO : (BigDecimal) map.get("materialQty");
-                BigDecimal materialAmt = map.get("materialAmt") == null ? BigDecimal.ZERO : (BigDecimal) map.get("materialAmt");
+                BigDecimal materialQty = Convert.toBigDecimal(map.get("materialQty"), BigDecimal.ZERO);
+                BigDecimal materialAmt = Convert.toBigDecimal(map.get("materialAmt"), BigDecimal.ZERO);
                 subTotalQty = subTotalQty.add(materialQty);
                 subTotalAmt = subTotalAmt.add(materialAmt);
             } catch (Exception e) {

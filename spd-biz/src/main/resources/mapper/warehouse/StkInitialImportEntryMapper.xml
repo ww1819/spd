@@ -21,7 +21,7 @@
         <result property="deleteTime" column="delete_time"/>
         <result property="sortOrder" column="sort_order"/>
         <result property="createTime" column="create_time"/>
-        <result property="thirdPartyDetailId" column="third_party_detail_id"/>
+        <result property="hisId" column="his_id"/>
         <result property="thirdPartyMaterialId" column="third_party_material_id"/>
         <result property="materialCode" column="entry_material_code"/>
         <result property="speci" column="speci"/>
@@ -42,28 +42,28 @@
     </resultMap>
 
     <select id="selectByParenId" resultMap="StkInitialImportEntryResult">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         select e.id, e.paren_id, e.material_id, e.warehouse_id, e.unit_price, e.qty, e.amt,
                e.batch_no, e.batch_number, e.begin_time, e.end_time, e.factory_id, e.supplier_id, e.del_flag, e.delete_by, e.delete_time, e.sort_order, e.create_time,
-               e.third_party_detail_id, e.third_party_material_id, e.material_code entry_material_code, e.speci, e.model, e.register_no, e.medical_no, e.medical_name, e.main_barcode, e.sub_barcode,
+               e.his_id, e.third_party_material_id, e.material_code entry_material_code, e.speci, e.model, e.register_no, e.medical_no, e.medical_name, e.main_barcode, e.sub_barcode,
                m.id mId, m.code materialCode, m.name materialName, m.speci m_speci
         from stk_initial_import_entry e
         left join fd_material m on e.material_id = m.id
-        where e.paren_id = #{parenId} and e.tenant_id = #{tenantId} and (e.del_flag = 0 or e.del_flag is null)
+        where e.paren_id = #{parenId} and e.tenant_id = #{scopedTenantId} and (e.del_flag = 0 or e.del_flag is null)
         order by e.sort_order, e.id
     </select>
 
     <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImportEntry">
-        insert into stk_initial_import_entry (id, paren_id, material_id, warehouse_id, unit_price, qty, amt, batch_no, batch_number, begin_time, end_time, factory_id, supplier_id, del_flag, sort_order, third_party_detail_id, third_party_material_id, material_code, speci, model, register_no, medical_no, medical_name, main_barcode, sub_barcode, tenant_id)
-        values (#{id}, #{parenId}, #{materialId}, #{warehouseId}, #{unitPrice}, #{qty}, #{amt}, #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{factoryId}, #{supplierId}, 0, #{sortOrder}, #{thirdPartyDetailId}, #{thirdPartyMaterialId}, #{materialCode}, #{speci}, #{model}, #{registerNo}, #{medicalNo}, #{medicalName}, #{mainBarcode}, #{subBarcode},
+        insert into stk_initial_import_entry (id, paren_id, material_id, warehouse_id, unit_price, qty, amt, batch_no, batch_number, begin_time, end_time, factory_id, supplier_id, del_flag, sort_order, his_id, third_party_material_id, material_code, speci, model, register_no, medical_no, medical_name, main_barcode, sub_barcode, tenant_id)
+        values (#{id}, #{parenId}, #{materialId}, #{warehouseId}, #{unitPrice}, #{qty}, #{amt}, #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{factoryId}, #{supplierId}, 0, #{sortOrder}, #{hisId}, #{thirdPartyMaterialId}, #{materialCode}, #{speci}, #{model}, #{registerNo}, #{medicalNo}, #{medicalName}, #{mainBarcode}, #{subBarcode},
                 (select m.tenant_id from stk_initial_import m where m.id = #{parenId} limit 1))
     </insert>
 
     <insert id="insertBatch" parameterType="java.util.List">
-        insert into stk_initial_import_entry (id, paren_id, material_id, warehouse_id, unit_price, qty, amt, batch_no, batch_number, begin_time, end_time, factory_id, supplier_id, del_flag, sort_order, third_party_detail_id, third_party_material_id, material_code, speci, model, register_no, medical_no, medical_name, main_barcode, sub_barcode, tenant_id)
+        insert into stk_initial_import_entry (id, paren_id, material_id, warehouse_id, unit_price, qty, amt, batch_no, batch_number, begin_time, end_time, factory_id, supplier_id, del_flag, sort_order, his_id, third_party_material_id, material_code, speci, model, register_no, medical_no, medical_name, main_barcode, sub_barcode, tenant_id)
         values
         <foreach collection="list" item="item" separator=",">
-            (#{item.id}, #{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.unitPrice}, #{item.qty}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.factoryId}, #{item.supplierId}, 0, #{item.sortOrder}, #{item.thirdPartyDetailId}, #{item.thirdPartyMaterialId}, #{item.materialCode}, #{item.speci}, #{item.model}, #{item.registerNo}, #{item.medicalNo}, #{item.medicalName}, #{item.mainBarcode}, #{item.subBarcode},
+            (#{item.id}, #{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.unitPrice}, #{item.qty}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.factoryId}, #{item.supplierId}, 0, #{item.sortOrder}, #{item.hisId}, #{item.thirdPartyMaterialId}, #{item.materialCode}, #{item.speci}, #{item.model}, #{item.registerNo}, #{item.medicalNo}, #{item.medicalName}, #{item.mainBarcode}, #{item.subBarcode},
              (select m.tenant_id from stk_initial_import m where m.id = #{item.parenId} limit 1))
         </foreach>
     </insert>

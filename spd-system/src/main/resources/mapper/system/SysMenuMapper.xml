@@ -66,13 +66,33 @@
 		order by m.parent_id, m.order_num
 	</select>
 
-	<!-- 耗材工作组（岗位）分配菜单用：仅展示客户菜单权限表内该客户已有的菜单，且排除平台管理菜单，含按钮(F) -->
+	<!-- 耗材工作组（岗位）分配菜单用：展示客户 hc_customer_menu 中已开通的功能（含按钮 F）；排除平台菜单；未勾选父级目录时由 Java 补祖先节点以拼出完整树 -->
 	<select id="selectMenuTreeForPostAssign" resultMap="SysMenuResult">
 		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, ifnull(m.default_open_to_customer,'0') as default_open_to_customer, m.create_time
 		from sys_menu m
 		inner join hc_customer_menu hcm on hcm.menu_id = m.menu_id and hcm.tenant_id = #{tenantId}
+			and (hcm.is_enabled = '1' or hcm.is_enabled is null)
+			and (hcm.status = '0' or hcm.status is null)
 		where m.menu_type in ('M', 'C', 'F') and m.status = 0
 		and (m.is_platform is null or m.is_platform != '1')
+		order by m.parent_id, m.order_num
+	</select>
+
+	<!-- 按父菜单 ID 批量查直接子节点（工作组/客户权限树：向下补齐子孙） -->
+	<select id="selectMenuListChildrenOfParents" resultMap="SysMenuResult">
+		select distinct m.menu_id, m.parent_id, m.menu_name, m.path, m.component, m.`query`, m.visible, m.status, ifnull(m.perms,'') as perms, m.is_frame, m.is_cache, m.menu_type, m.icon, m.order_num, ifnull(m.is_platform,'0') as is_platform, ifnull(m.default_open_to_customer,'0') as default_open_to_customer, m.create_time
+		from sys_menu m
+		where m.menu_type in ('M', 'C', 'F') and m.status = 0
+		and (m.is_platform is null or m.is_platform != '1')
+		<if test="parentIds != null and parentIds.size() > 0">
+		and m.parent_id in
+		<foreach collection="parentIds" item="id" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+		</if>
+		<if test="parentIds == null or parentIds.size() == 0">
+		and 1 = 0
+		</if>
 		order by m.parent_id, m.order_num
 	</select>
 	

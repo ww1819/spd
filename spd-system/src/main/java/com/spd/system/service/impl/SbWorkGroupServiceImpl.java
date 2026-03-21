@@ -235,7 +235,9 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     if (userIds == null || userIds.isEmpty()) return 0;
     String createBy = SecurityUtils.getUserIdStr();
 
-    List<String> menuIds = sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
+    List<String> menuIds = StringUtils.isNotEmpty(customerId)
+        ? sbWorkGroupMenuMapper.selectMenuIdsByGroupIdAndCustomerId(groupId, customerId)
+        : sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
     List<Long> warehouseIds = sbWorkGroupWarehouseMapper.selectWarehouseIdsByGroupId(groupId);
     List<Long> deptIds = sbWorkGroupDeptMapper.selectDeptIdsByGroupId(groupId);
 

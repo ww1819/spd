@@ -62,9 +62,13 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     @Override
     public List<FdSupplier> selectFdSupplierList(FdSupplier fdSupplier)
     {
-        if (fdSupplier != null && StringUtils.isEmpty(fdSupplier.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        if (fdSupplier != null && StringUtils.isEmpty(fdSupplier.getTenantId()))
         {
-            fdSupplier.setTenantId(SecurityUtils.getCustomerId());
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid))
+            {
+                fdSupplier.setTenantId(tid);
+            }
         }
         return fdSupplierMapper.selectFdSupplierList(fdSupplier);
     }
@@ -77,9 +81,13 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         {
             fdSupplier.setCreateBy(SecurityUtils.getUserIdStr());
         }
-        if (StringUtils.isEmpty(fdSupplier.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        if (StringUtils.isEmpty(fdSupplier.getTenantId()))
         {
-            fdSupplier.setTenantId(SecurityUtils.getCustomerId());
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid))
+            {
+                fdSupplier.setTenantId(tid);
+            }
         }
         fdSupplier.setHisId(normalizeHisId(fdSupplier.getHisId()));
         if (importRequiresMandatoryHisId())
@@ -215,7 +223,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         }
         if (valid && list != null && !list.isEmpty())
         {
-            String tenantId = SecurityUtils.getCustomerId();
+            String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
             int insertCount = 0;
             int updateCount = 0;
             for (FdSupplier row : list)
@@ -274,7 +282,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
         }
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         int successNum = 0;
         StringBuilder successMsg = new StringBuilder();
         for (FdSupplier row : list)
@@ -336,7 +344,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
      */
     private static boolean importRequiresMandatoryHisId()
     {
-        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.getCustomerId());
+        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null));
     }
 
     private static String normalizeHisId(String raw)
@@ -398,7 +406,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             c.addGlobal("导入供应商数据不能为空");
             return c;
         }
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         Map<String, Integer> codeFirstRow = new LinkedHashMap<>();
         Map<String, Integer> hisFirstRow = new LinkedHashMap<>();
         for (int i = 0; i < list.size(); i++)

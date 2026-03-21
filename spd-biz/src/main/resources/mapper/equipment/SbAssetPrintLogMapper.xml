@@ -30,11 +30,11 @@
         from sb_asset_print_log
     </sql>
     <select id="selectList" resultMap="Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
             (del_flag = 0 or del_flag is null)
-            and customer_id = #{tenantId}
+            and customer_id = #{scopedTenantId}
             <if test="taskId != null and taskId != ''"> and task_id = #{taskId}</if>
             <if test="itemId != null and itemId != ''"> and item_id = #{itemId}</if>
             <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
@@ -44,16 +44,16 @@
         order by print_time desc
     </select>
     <select id="selectById" resultMap="Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        <include refid="selectVo"/> where id = #{id} and customer_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
     </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetPrintLog">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into sb_asset_print_log (id, customer_id, task_id, task_no, item_id, asset_id, print_time, print_result, error_message, source_type, printer_name, printer_ip, print_user_id, print_user_name, del_flag, create_by, create_time, update_by, update_time)
         values (#{id}, #{tenantId}, #{taskId}, #{taskNo}, #{itemId}, #{assetId}, #{printTime}, #{printResult}, #{errorMessage}, #{sourceType}, #{printerName}, #{printerIp}, #{printUserId}, #{printUserName}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
     <update id="deleteById">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update sb_asset_print_log set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{tenantId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_print_log set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{scopedTenantId}
     </update>
 </mapper>

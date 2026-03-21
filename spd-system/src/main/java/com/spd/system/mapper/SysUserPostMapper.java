@@ -1,6 +1,9 @@
 package com.spd.system.mapper;
 
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
 import com.spd.system.domain.SysUserPost;
 
 /**
@@ -41,4 +44,15 @@ public interface SysUserPostMapper
      * @return 结果
      */
     public int batchUserPost(List<SysUserPost> userPostList);
+
+    /**
+     * 回填用户-岗位关联的租户 ID（仅当 tenant_id 为空）
+     */
+    public int updateUserPostTenantIdIfBlank(@Param("userId") Long userId, @Param("postId") Long postId,
+        @Param("tenantId") String tenantId);
+
+    /**
+     * 将该客户下所有关联指定 super 岗位的用户行的 tenant_id 回填
+     */
+    public int updateTenantIdIfBlankForCustomerSuperPost(@Param("tenantId") String tenantId, @Param("postId") Long postId);
 }

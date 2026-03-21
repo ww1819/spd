@@ -57,6 +57,11 @@ public interface FdFinanceCategoryMapper
     int countFinanceCategoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeId") Long excludeId);
 
     /**
+     * 按租户 + HIS 财务分类 ID 查一条（未删除）
+     */
+    FdFinanceCategory selectFdFinanceCategoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
+
+    /**
      * 删除财务分类维护
      * 
      * @param financeCategoryId 财务分类维护主键
