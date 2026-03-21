@@ -1,6 +1,8 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+import java.util.Map;
+
 import com.spd.foundation.domain.FdWarehouseCategory;
 
 /**
@@ -64,6 +66,16 @@ public interface IFdWarehouseCategoryService
      * @param ids 库房分类主键集合
      */
     void updateReferred(List<Long> ids);
+
+    /**
+     * 库房分类 Excel 导入：仅校验
+     */
+    Map<String, Object> validateWarehouseCategoryImport(List<FdWarehouseCategory> list, Boolean isUpdateSupport);
+
+    /**
+     * 库房分类 Excel 导入：确认后落库
+     */
+    String importWarehouseCategory(List<FdWarehouseCategory> list, Boolean isUpdateSupport, String operName, boolean confirmed);
 
 //    /**
 //     * 删除库房分类信息

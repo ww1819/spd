@@ -32,6 +32,10 @@ public class SysUser extends BaseEntity
     /** 客户ID（SaaS租户，归属客户） */
     private String customerId;
 
+    /** HIS 系统用户ID（对接 HIS 等） */
+    @Excel(name = "HIS系统ID", width = 22, prompt = "与 HIS 用户主键对接时使用")
+    private String hisId;
+
     /** 用户账号 */
     @Excel(name = "登录名称")
     private String userName;
@@ -165,6 +169,16 @@ public class SysUser extends BaseEntity
     public void setCustomerId(String customerId)
     {
         this.customerId = customerId;
+    }
+
+    public String getHisId()
+    {
+        return hisId;
+    }
+
+    public void setHisId(String hisId)
+    {
+        this.hisId = hisId;
     }
 
     @Xss(message = "用户昵称不能包含脚本字符")
@@ -404,6 +418,7 @@ public class SysUser extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("userId", getUserId())
             .append("deptId", getDeptId())
+            .append("hisId", getHisId())
             .append("userName", getUserName())
             .append("nickName", getNickName())
             .append("referredName", getReferredName())

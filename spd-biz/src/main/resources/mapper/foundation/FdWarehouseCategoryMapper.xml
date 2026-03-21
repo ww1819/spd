@@ -19,10 +19,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deleteBy"    column="delete_by"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="hisId"    column="his_id"    />
     </resultMap>
 
     <sql id="selectFdWarehouseCategoryVo">
-        select warehouse_category_id, parent_id, warehouse_category_code, warehouse_category_name, referred_name, remark, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time, tenant_id from fd_warehouse_category
+        select warehouse_category_id, parent_id, warehouse_category_code, warehouse_category_name, referred_name, remark, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time, tenant_id, his_id from fd_warehouse_category
     </sql>
 
     <select id="selectFdWarehouseCategoryList" parameterType="FdWarehouseCategory" resultMap="FdWarehouseCategoryResult">
@@ -50,6 +51,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where warehouse_category_id = #{warehouseCategoryId} and del_flag != 1 and tenant_id = #{tenantId}
     </select>
 
+    <select id="selectFdWarehouseCategoryByCodeAndTenantId" resultMap="FdWarehouseCategoryResult">
+        <include refid="selectFdWarehouseCategoryVo"/>
+        where warehouse_category_code = #{code} and tenant_id = #{tenantId} and del_flag != 1
+        limit 1
+    </select>
+
+    <select id="countWarehouseCategoryByTenantAndHisId" resultType="int">
+        select count(1) from fd_warehouse_category
+        where tenant_id = #{tenantId} and del_flag != 1
+        and his_id = #{hisId}
+        <if test="excludeId != null"> and warehouse_category_id != #{excludeId} </if>
+    </select>
+
     <insert id="insertFdWarehouseCategory" parameterType="FdWarehouseCategory" useGeneratedKeys="true" keyProperty="warehouseCategoryId">
         <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into fd_warehouse_category
@@ -58,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseCategoryCode != null">warehouse_category_code,</if>
             <if test="warehouseCategoryName != null">warehouse_category_name,</if>
             <if test="referredName != null">referred_name,</if>
+            <if test="hisId != null and hisId != ''">his_id,</if>
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -71,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseCategoryCode != null">#{warehouseCategoryCode},</if>
             <if test="warehouseCategoryName != null">#{warehouseCategoryName},</if>
             <if test="referredName != null">#{referredName},</if>
+            <if test="hisId != null and hisId != ''">#{hisId},</if>
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -89,6 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseCategoryCode != null">warehouse_category_code = #{warehouseCategoryCode},</if>
             <if test="warehouseCategoryName != null">warehouse_category_name = #{warehouseCategoryName},</if>
             <if test="referredName != null">referred_name = #{referredName},</if>
+            <if test="hisId != null">his_id = #{hisId},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>

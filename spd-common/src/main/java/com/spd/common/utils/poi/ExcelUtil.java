@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -224,12 +225,97 @@ public class ExcelUtil<T>
         }
         this.list = list;
         this.sheetName = sheetName;
-        this.type = type;
         this.title = title;
+        this.type = type;
         createExcelField();
         createWorkbook();
         createTitle();
         createSubHead();
+    }
+
+    /**
+     * 按导入模板列（{@link com.spd.common.annotation.Excel.Type#IMPORT}）将数据转为「表头中文名 -&gt; 单元格文本」行列表，用于导入解析预览与导出解析结果。
+     */
+    public static <T> List<LinkedHashMap<String, Object>> buildImportPreviewMaps(Class<T> clazz, List<T> data)
+    {
+        return new ExcelUtil<>(clazz).buildImportPreviewMaps(data);
+    }
+
+    /**
+     * 实例方法：生成导入预览行（不创建工作簿）。
+     */
+    public List<LinkedHashMap<String, Object>> buildImportPreviewMaps(List<T> data)
+    {
+        this.type = Type.IMPORT;
+        this.list = data != null ? data : new ArrayList<>();
+        createExcelField();
+        List<LinkedHashMap<String, Object>> rows = new ArrayList<>();
+        for (T vo : this.list)
+        {
+            LinkedHashMap<String, Object> row = new LinkedHashMap<>();
+            for (Object[] os : this.fields)
+            {
+                Field field = (Field) os[0];
+                Excel attr = (Excel) os[1];
+                String header = attr.name();
+                if (StringUtils.isEmpty(header))
+                {
+                    continue;
+                }
+                Object cellVal = "";
+                try
+                {
+                    if (vo != null && attr.isExport())
+                    {
+                        Object value = getTargetValue(vo, field, attr);
+                        cellVal = formatAttributeForPreview(value, attr);
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.warn("导入预览单元格取值失败: {}", e.getMessage());
+                    cellVal = "";
+                }
+                row.put(header, cellVal);
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /**
+     * 与导出单元格一致的文本化规则（用于预览/再导出）。
+     */
+    private Object formatAttributeForPreview(Object value, Excel attr)
+    {
+        if (value == null)
+        {
+            return "";
+        }
+        String dateFormat = attr.dateFormat();
+        if (StringUtils.isNotEmpty(dateFormat))
+        {
+            return parseDateToStr(dateFormat, value);
+        }
+        String readConverterExp = attr.readConverterExp();
+        if (StringUtils.isNotEmpty(readConverterExp))
+        {
+            return convertByExp(Convert.toStr(value), readConverterExp, attr.separator());
+        }
+        String dictType = attr.dictType();
+        if (StringUtils.isNotEmpty(dictType))
+        {
+            return convertDictByExp(Convert.toStr(value), dictType, attr.separator());
+        }
+        if (value instanceof BigDecimal && -1 != attr.scale())
+        {
+            return ((BigDecimal) value).setScale(attr.scale(), attr.roundingMode()).stripTrailingZeros().toPlainString();
+        }
+        if (!attr.handler().equals(ExcelHandlerAdapter.class))
+        {
+            return Convert.toStr(dataFormatHandlerAdapter(value, attr));
+        }
+        return Convert.toStr(value);
     }
 
     /**

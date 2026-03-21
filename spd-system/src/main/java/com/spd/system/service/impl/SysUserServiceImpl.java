@@ -753,6 +753,10 @@ public class SysUserServiceImpl implements ISysUserService
                     BeanValidators.validateWithException(validator, user);
                     user.setPassword(SecurityUtils.encryptPassword(password));
                     user.setCreateBy(operName);
+                    String __name = StringUtils.isNotEmpty(user.getNickName()) ? user.getNickName() : user.getUserName();
+                    if (StringUtils.isNotEmpty(__name)) {
+                        user.setReferredName(PinyinUtils.getPinyinInitials(__name));
+                    }
                     userMapper.insertUser(user);
                     successNum++;
                     successMsg.append("<br/>" + successNum + "、账号 " + user.getUserName() + " 导入成功");
@@ -764,6 +768,10 @@ public class SysUserServiceImpl implements ISysUserService
                     checkUserDataScope(u.getUserId());
                     user.setUserId(u.getUserId());
                     user.setUpdateBy(operName);
+                    String __name2 = StringUtils.isNotEmpty(user.getNickName()) ? user.getNickName() : user.getUserName();
+                    if (StringUtils.isNotEmpty(__name2)) {
+                        user.setReferredName(PinyinUtils.getPinyinInitials(__name2));
+                    }
                     userMapper.updateUser(user);
                     successNum++;
                     successMsg.append("<br/>" + successNum + "、账号 " + user.getUserName() + " 更新成功");

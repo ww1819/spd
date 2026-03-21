@@ -2,6 +2,7 @@ package com.spd.web.controller.system;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,8 +31,11 @@ import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.poi.ImportRowErrorCollector;
+import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISbWorkGroupService;
 import com.spd.system.service.ITenantScopeService;
@@ -136,6 +140,189 @@ public class SysUserController extends BaseController
     {
         ExcelUtil<SysUser> util = new ExcelUtil<SysUser>(SysUser.class);
         util.importTemplateExcel(response, "用户数据");
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importAddValidate")
+    public AjaxResult importAddValidate(MultipartFile file) throws Exception
+    {
+        return AjaxResult.success("用户新增导入无需单独校验接口，请直接确认导入");
+    }
+
+    @Log(title = "用户新增导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importAddData")
+    public AjaxResult importAddData(MultipartFile file) throws Exception
+    {
+        return importData(file, false);
+    }
+
+    @PostMapping("/importAddTemplate")
+    public void importAddTemplate(HttpServletResponse response)
+    {
+        importTemplate(response);
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importUpdateValidate")
+    public AjaxResult importUpdateValidate(MultipartFile file) throws Exception
+    {
+        ExcelUtil<UserImportUpdateDto> util = new ExcelUtil<UserImportUpdateDto>(UserImportUpdateDto.class);
+        List<UserImportUpdateDto> list = util.importExcel(file.getInputStream());
+        java.util.Map<String, Object> data = validateUserImportUpdateRows(list);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.success("校验未通过", data);
+        }
+        return AjaxResult.success("校验通过，请确认后导入", data);
+    }
+
+    @Log(title = "用户更新导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importUpdateData")
+    public AjaxResult importUpdateData(MultipartFile file) throws Exception
+    {
+        ExcelUtil<UserImportUpdateDto> util = new ExcelUtil<UserImportUpdateDto>(UserImportUpdateDto.class);
+        List<UserImportUpdateDto> list = util.importExcel(file.getInputStream());
+        java.util.Map<String, Object> data = validateUserImportUpdateRows(list);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.error("数据校验未通过：" + String.valueOf(data.get("errors")));
+        }
+        int successNum = 0;
+        StringBuilder msg = new StringBuilder();
+        for (UserImportUpdateDto row : list)
+        {
+            if (row == null || row.getUserId() == null)
+            {
+                continue;
+            }
+            SysUser existing = userService.selectUserById(row.getUserId());
+            if (StringUtils.isNotEmpty(row.getNickName()))
+            {
+                existing.setNickName(row.getNickName().trim());
+            }
+            String name = StringUtils.isNotEmpty(existing.getNickName()) ? existing.getNickName() : existing.getUserName();
+            if (StringUtils.isNotEmpty(name))
+            {
+                existing.setReferredName(PinyinUtils.getPinyinInitials(name));
+            }
+            existing.setUpdateBy(getUserIdStr());
+            userService.updateUser(existing);
+            successNum++;
+            msg.append("<br/>").append(successNum).append("、用户 ").append(existing.getUserName()).append(" 更新成功");
+        }
+        msg.insert(0, "更新导入完成。共处理 " + successNum + " 条，明细如下：");
+        for (UserImportUpdateDto row : list)
+        {
+            if (row != null && row.getUserId() != null)
+            {
+                row.setValidationResult("更新成功");
+            }
+        }
+        java.util.Map<String, Object> preview = new LinkedHashMap<>();
+        preview.put("previewRows", ExcelUtil.buildImportPreviewMaps(UserImportUpdateDto.class, list));
+        return AjaxResult.success(msg.toString(), preview);
+    }
+
+    @PostMapping("/importUpdateTemplate")
+    public void importUpdateTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<UserImportUpdateDto> util = new ExcelUtil<UserImportUpdateDto>(UserImportUpdateDto.class);
+        util.importTemplateExcel(response, "用户更新导入模板");
+    }
+
+    private java.util.Map<String, Object> validateUserImportUpdateRows(List<UserImportUpdateDto> list)
+    {
+        clearUserImportUpdateDtoValidation(list);
+        java.util.Map<String, Object> result = new LinkedHashMap<>();
+        ImportRowErrorCollector c = new ImportRowErrorCollector();
+        if (list == null || list.isEmpty())
+        {
+            c.addGlobal("导入数据不能为空");
+        }
+        else
+        {
+            String customerId = SecurityUtils.getCustomerId();
+            for (int i = 0; i < list.size(); i++)
+            {
+                UserImportUpdateDto row = list.get(i);
+                int excelRow = i + 2;
+                if (row == null || row.getUserId() == null)
+                {
+                    c.addRow(excelRow, "主键用户ID不能为空");
+                    continue;
+                }
+                SysUser existing = userService.selectUserById(row.getUserId());
+                if (existing == null || (StringUtils.isNotEmpty(customerId) && !customerId.equals(existing.getCustomerId())))
+                {
+                    c.addRow(excelRow, "主键用户ID=" + row.getUserId() + " 在当前租户下不存在");
+                    continue;
+                }
+                if (StringUtils.isEmpty(row.getNickName()) || StringUtils.isEmpty(row.getNickName().trim()))
+                {
+                    c.addRow(excelRow, "用户姓名不能为空");
+                }
+            }
+        }
+        List<String> errors = c.getAllErrors();
+        boolean valid = errors.isEmpty();
+        result.put("valid", valid);
+        result.put("errors", errors);
+        result.put("totalRows", list == null ? 0 : list.size());
+        fillUserImportUpdateValidationTexts(list, c, valid);
+        result.put("previewRows", ExcelUtil.buildImportPreviewMaps(UserImportUpdateDto.class, list));
+        return result;
+    }
+
+    private void clearUserImportUpdateDtoValidation(List<UserImportUpdateDto> list)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (UserImportUpdateDto row : list)
+        {
+            if (row != null)
+            {
+                row.setValidationResult(null);
+            }
+        }
+    }
+
+    private void fillUserImportUpdateValidationTexts(List<UserImportUpdateDto> list, ImportRowErrorCollector c, boolean fileValid)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++)
+        {
+            int excelRow = i + 2;
+            UserImportUpdateDto row = list.get(i);
+            if (row == null)
+            {
+                continue;
+            }
+            if (row.getUserId() == null && StringUtils.isEmpty(row.getNickName()))
+            {
+                row.setValidationResult("空行（已跳过）");
+                continue;
+            }
+            java.util.List<String> msgs = c.getRowMessages(excelRow);
+            if (!msgs.isEmpty())
+            {
+                row.setValidationResult(String.join("；", msgs));
+            }
+            else if (fileValid)
+            {
+                row.setValidationResult("校验通过");
+            }
+            else
+            {
+                row.setValidationResult("本行未单独报错；文件因其他数据未通过校验");
+            }
+        }
     }
 
     /**

@@ -33,17 +33,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and customer_id = #{tenantId}
     </select>
 
+    <!-- customerId 必须使用入参/实体字段：平台管理员新增客户并 init/sync 时 SecurityUtils.getCustomerId() 为空 -->
     <select id="selectByCustomerIdAndRefId" resultMap="SbCustomerCategory68Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
-        where customer_id = #{tenantId} and ref_category68_id = #{refCategory68Id}
+        where customer_id = #{customerId} and ref_category68_id = #{refCategory68Id}
     </select>
 
     <select id="selectList" parameterType="com.spd.foundation.domain.SbCustomerCategory68" resultMap="SbCustomerCategory68Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
         <where>
-            and customer_id = #{tenantId}
+            and customer_id = #{customerId}
             <if test="refCategory68Id != null"> and ref_category68_id = #{refCategory68Id}</if>
             <if test="category68Code != null and category68Code != ''"> and category68_code = #{category68Code}</if>
             <if test="category68Name != null and category68Name != ''"> and category68_name like concat('%', #{category68Name}, '%')</if>
@@ -54,31 +53,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectTreeByCustomerId" resultMap="SbCustomerCategory68Result">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectVo"/>
-        where customer_id = #{tenantId} and (del_flag is null or del_flag != 1)
+        where customer_id = #{customerId} and (del_flag is null or del_flag != 1)
         order by parent_id, ref_category68_id
     </select>
 
     <select id="selectRefCategory68IdsByCustomerId" resultType="long">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select ref_category68_id from sb_customer_category68
-        where customer_id = #{tenantId} and (del_flag is null or del_flag != 1)
+        where customer_id = #{customerId} and (del_flag is null or del_flag != 1)
     </select>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into sb_customer_category68 (
             id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
             del_flag, create_by, create_time, update_by, update_time
         ) values (
-            #{id}, #{tenantId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name}, #{namePinyin},
+            #{id}, #{customerId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name}, #{namePinyin},
             #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
         )
     </insert>
 
     <update id="update" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update sb_customer_category68
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -91,11 +86,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id} and customer_id = #{tenantId}
+        where id = #{id} and customer_id = #{customerId}
     </update>
 
     <update id="updatePinyinById" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
-        <bind name="tenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
-        update sb_customer_category68 set name_pinyin = #{namePinyin}, update_by = #{updateBy}, update_time = #{updateTime} where id = #{id} and customer_id = #{tenantId}
+        update sb_customer_category68 set name_pinyin = #{namePinyin}, update_by = #{updateBy}, update_time = #{updateTime} where id = #{id} and customer_id = #{customerId}
     </update>
 </mapper>

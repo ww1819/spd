@@ -36,6 +36,8 @@
 
 新增「初始化数据库 / 清理租户」按钮权限脚本：`spd/sql/add_customer_database_maintenance_menus.sql`（执行一次合并进权限体系）。
 
+- **基础资料「导入」默认对客户开放**：`menu.sql` 中科室/供应商/厂家/库房分类/财务分类等导入按钮已设 `default_open_to_customer=1`；`material/column.sql` 末尾另有 **UPDATE sys_menu** + **回填 hc_customer_menu**（含 `foundation:material:import`、`system:user:import` 等），便于存量库升级后老客户自动拥有导入权限。
+
 ## 5. 参考 SQL 脚本目录
 
 - `spd/sql/maintenance/backfill_stk_io_bill_entry_bill_no.sql` — 明细单号回填

@@ -256,24 +256,38 @@ EXECUTE __stmt_his;
 /
 DEALLOCATE PREPARE __stmt_his;
 /
-/* fd_department 已废弃列 his_id（若存在则删除） */
-SET @__exist_his_id := (
+/* fd_department：third_party_dept_id 重命名为 his_id（HIS系统科室ID）；若仅有新库已含 his_id 则跳过 */
+SET @__exist_tp := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'third_party_dept_id'
+);
+/
+SET @__exist_his := (
   SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_id'
 );
 /
-SET @__drop_his_id_sql := IF(@__exist_his_id > 0,
-  'ALTER TABLE fd_department DROP COLUMN `his_id`',
-  'SELECT ''skip_fd_department_his_id'' AS msg'
+SET @__mig_sql := IF(@__exist_tp > 0 AND @__exist_his = 0,
+  'ALTER TABLE fd_department CHANGE COLUMN `third_party_dept_id` `his_id` varchar(128) DEFAULT NULL COMMENT ''HIS系统科室ID''',
+  IF(@__exist_his = 0,
+    'ALTER TABLE fd_department ADD COLUMN `his_id` varchar(128) DEFAULT NULL COMMENT ''HIS系统科室ID''',
+    'SELECT ''skip_fd_department_his_id'' AS msg'
+  )
 );
 /
-PREPARE __stmt_his_id FROM @__drop_his_id_sql;
+PREPARE __stmt_mig FROM @__mig_sql;
 /
-EXECUTE __stmt_his_id;
+EXECUTE __stmt_mig;
 /
-DEALLOCATE PREPARE __stmt_his_id;
+DEALLOCATE PREPARE __stmt_mig;
 /
-CALL add_table_column('fd_department', 'third_party_dept_id', 'varchar(128)', '其他第三方系统科室ID', NULL);
+CALL add_table_column('sys_user', 'his_id', 'varchar(128)', 'HIS系统用户ID', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'his_id', 'varchar(128)', 'HIS系统库房分类ID', NULL);
+/
+CALL add_table_column('fd_finance_category', 'his_id', 'varchar(128)', 'HIS系统财务分类ID', NULL);
+/
+CALL add_table_column('fd_finance_category', 'parent_id', 'bigint(20)', '上级财务分类ID', NULL);
 /
 CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
 /
@@ -1365,3 +1379,47 @@ CREATE TABLE IF NOT EXISTS `stk_profit_loss_pending` (
   KEY `idx_stk_profit_pending_wh` (`warehouse_id`),
   KEY `idx_stk_profit_pending_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盘盈新增明细/待入账表（不直接影响结算）';
+/
+
+-- ========== 基础资料等「导入」按钮：默认对客户开放 ==========
+-- 1) sys_menu：保证 default_open_to_customer=1（新租户/功能重置会按此字段下发 hc_customer_menu）
+UPDATE sys_menu
+SET default_open_to_customer = '1',
+    update_time = NOW()
+WHERE IFNULL(status, '0') = '0'
+  AND (is_platform IS NULL OR is_platform != '1')
+  AND perms IN (
+    'foundation:depart:import',
+    'foundation:supplier:import',
+    'foundation:factory:import',
+    'foundation:warehouseCategory:import',
+    'foundation:financeCategory:import',
+    'foundation:material:import',
+    'system:user:import'
+  );
+/
+
+-- 2) 存量租户：为已启用客户补授权（避免仅改菜单表后老客户仍无「导入」权限）
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM sb_customer c
+JOIN sys_menu m
+  ON m.perms IN (
+    'foundation:depart:import',
+    'foundation:supplier:import',
+    'foundation:factory:import',
+    'foundation:warehouseCategory:import',
+    'foundation:financeCategory:import',
+    'foundation:material:import',
+    'system:user:import'
+  )
+  AND IFNULL(m.status, '0') = '0'
+  AND (m.is_platform IS NULL OR m.is_platform != '1')
+WHERE IFNULL(c.hc_status, '0') = '0'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id
+      AND h.menu_id = m.menu_id
+  );
+/

@@ -255,6 +255,7 @@ public class FdMaterial extends BaseEntity
     private String includeMaterialIds;
 
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
+    @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "与 HIS 等产品编码对接时使用")
     private String hisId;
 
     /** 入选原因 */

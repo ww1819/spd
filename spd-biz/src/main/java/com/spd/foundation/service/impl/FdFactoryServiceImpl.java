@@ -20,6 +20,8 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
+import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFactoryChangeLog;
@@ -184,9 +186,11 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     @Override
     public Map<String, Object> validateFdFactoryImport(List<FdFactory> list, Boolean isUpdateSupport)
     {
+        clearFactoryImportValidationColumn(list);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("requiresHisId", importRequiresMandatoryHisId());
-        List<String> errors = collectFactoryImportErrors(list, isUpdateSupport);
+        ImportRowErrorCollector collector = collectFactoryImportErrors(list, isUpdateSupport);
+        List<String> errors = collector.getAllErrors();
         boolean valid = errors.isEmpty();
         result.put("valid", valid);
         result.put("errors", errors);
@@ -229,6 +233,8 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             result.put("insertCount", 0);
             result.put("updateCount", 0);
         }
+        fillFactoryValidationTexts(list, collector, valid);
+        result.put("previewRows", ExcelUtil.buildImportPreviewMaps(FdFactory.class, list));
         return result;
     }
 
@@ -243,7 +249,9 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         {
             throw new ServiceException("导入生产厂家数据不能为空！");
         }
-        List<String> errors = collectFactoryImportErrors(list, isUpdateSupport);
+        clearFactoryImportValidationColumn(list);
+        ImportRowErrorCollector collector = collectFactoryImportErrors(list, isUpdateSupport);
+        List<String> errors = collector.getAllErrors();
         if (!errors.isEmpty())
         {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
@@ -266,10 +274,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             {
                 throw new ServiceException("导入校验异常：" + e.getMessage());
             }
-            if (StringUtils.isEmpty(row.getFactoryReferredCode()))
-            {
-                row.setFactoryReferredCode(PinyinUtils.getPinyinInitials(row.getFactoryName()));
-            }
+            row.setFactoryReferredCode(PinyinUtils.getPinyinInitials(row.getFactoryName()));
             FdFactory existing = fdFactoryMapper.selectFdFactoryByCodeAndTenantId(row.getFactoryCode(), tenantId);
             if (existing == null)
             {
@@ -304,6 +309,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             }
         }
         successMsg.insert(0, "增量导入完成（仅新增或按选项更新已有编码；更新时不修改HIS生产厂家ID）。共处理 " + successNum + " 条，明细如下：");
+        markFactoryImportSuccessTexts(list);
         return successMsg.toString();
     }
 
@@ -363,13 +369,13 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         }
     }
 
-    private List<String> collectFactoryImportErrors(List<FdFactory> list, Boolean isUpdateSupport)
+    private ImportRowErrorCollector collectFactoryImportErrors(List<FdFactory> list, Boolean isUpdateSupport)
     {
-        List<String> errors = new ArrayList<>();
+        ImportRowErrorCollector c = new ImportRowErrorCollector();
         if (list == null || list.isEmpty())
         {
-            errors.add("导入生产厂家数据不能为空");
-            return errors;
+            c.addGlobal("导入生产厂家数据不能为空");
+            return c;
         }
         String tenantId = SecurityUtils.getCustomerId();
         Map<String, Integer> codeFirstRow = new LinkedHashMap<>();
@@ -380,7 +386,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             int excelRow = i + 2;
             if (row == null)
             {
-                errors.add("第" + excelRow + "行：数据为空");
+                c.addRow(excelRow, "数据为空");
                 continue;
             }
             normalizeImportRow(row);
@@ -390,13 +396,13 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             }
             if (StringUtils.isEmpty(row.getFactoryCode()) || StringUtils.isEmpty(row.getFactoryName()))
             {
-                errors.add("第" + excelRow + "行：厂家编码与名称均不能为空");
+                c.addRow(excelRow, "厂家编码与名称均不能为空");
                 continue;
             }
             String code = row.getFactoryCode();
             if (codeFirstRow.containsKey(code))
             {
-                errors.add("第" + excelRow + "行：厂家编码「" + code + "」与第" + codeFirstRow.get(code) + "行重复");
+                c.addRow(excelRow, "厂家编码「" + code + "」与第" + codeFirstRow.get(code) + "行重复");
             }
             else
             {
@@ -407,14 +413,14 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             {
                 if (importRequiresMandatoryHisId() && isHisIdBlank(row.getHisId()))
                 {
-                    errors.add("第" + excelRow + "行：HIS生产厂家ID不能为空（衡水市第三人民医院新增时必填）");
+                    c.addRow(excelRow, "HIS生产厂家ID不能为空（衡水市第三人民医院新增时必填）");
                 }
                 if (!isHisIdBlank(row.getHisId()))
                 {
                     String hid = row.getHisId();
                     if (hisFirstRow.containsKey(hid))
                     {
-                        errors.add("第" + excelRow + "行：HIS生产厂家ID「" + hid + "」与第" + hisFirstRow.get(hid) + "行重复");
+                        c.addRow(excelRow, "HIS生产厂家ID「" + hid + "」与第" + hisFirstRow.get(hid) + "行重复");
                     }
                     else
                     {
@@ -422,7 +428,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
                     }
                     if (fdFactoryMapper.countFactoryByTenantAndHisId(tenantId, hid, null) > 0)
                     {
-                        errors.add("第" + excelRow + "行：HIS生产厂家ID「" + hid + "」在租户下已存在");
+                        c.addRow(excelRow, "HIS生产厂家ID「" + hid + "」在租户下已存在");
                     }
                 }
             }
@@ -430,7 +436,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             {
                 if (!Boolean.TRUE.equals(isUpdateSupport))
                 {
-                    errors.add("第" + excelRow + "行：厂家编码「" + code + "」在租户下已存在，未勾选「更新已存在」则无法导入");
+                    c.addRow(excelRow, "厂家编码「" + code + "」在租户下已存在，未勾选「更新已存在」则无法导入");
                     continue;
                 }
             }
@@ -440,10 +446,85 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             }
             catch (Exception e)
             {
-                errors.add("第" + excelRow + "行：" + e.getMessage());
+                c.addRow(excelRow, e.getMessage());
             }
         }
-        return errors;
+        return c;
+    }
+
+    private void clearFactoryImportValidationColumn(List<FdFactory> list)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (FdFactory r : list)
+        {
+            if (r != null)
+            {
+                r.setValidationResult(null);
+            }
+        }
+    }
+
+    private void fillFactoryValidationTexts(List<FdFactory> list, ImportRowErrorCollector collector, boolean fileValid)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++)
+        {
+            int excelRow = i + 2;
+            FdFactory row = list.get(i);
+            if (row == null)
+            {
+                continue;
+            }
+            normalizeImportRow(row);
+            if (StringUtils.isEmpty(row.getFactoryCode()) && StringUtils.isEmpty(row.getFactoryName()))
+            {
+                row.setValidationResult("空行（已跳过）");
+                continue;
+            }
+            List<String> msgs = collector.getRowMessages(excelRow);
+            if (!msgs.isEmpty())
+            {
+                row.setValidationResult(String.join("；", msgs));
+            }
+            else if (fileValid)
+            {
+                row.setValidationResult("校验通过");
+            }
+            else
+            {
+                row.setValidationResult("本行未单独报错；文件因其他数据未通过校验");
+            }
+        }
+    }
+
+    private void markFactoryImportSuccessTexts(List<FdFactory> list)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (FdFactory row : list)
+        {
+            if (row == null)
+            {
+                continue;
+            }
+            normalizeImportRow(row);
+            if (StringUtils.isEmpty(row.getFactoryCode()) && StringUtils.isEmpty(row.getFactoryName()))
+            {
+                row.setValidationResult("空行（已跳过）");
+            }
+            else
+            {
+                row.setValidationResult("导入成功");
+            }
+        }
     }
 
     /**

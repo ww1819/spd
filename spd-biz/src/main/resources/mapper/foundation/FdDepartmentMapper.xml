@@ -17,11 +17,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="tenantId"    column="tenant_id"    />
         <result property="parentId"    column="parent_id"    />
         <result property="deptRemark"    column="remark"    />
-        <result property="thirdPartyDeptId"    column="third_party_dept_id"    />
+        <result property="hisId"    column="his_id"    />
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, referred_name, remark, third_party_dept_id, del_flag, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
+        select id, code, name, referred_name, remark, his_id, del_flag, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
     </sql>
 
     <select id="selectFdDepartmentList" parameterType="FdDepartment" resultMap="FdDepartmentResult">
@@ -109,7 +109,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             tenant_id,
             <if test="parentId != null">parent_id,</if>
-            <if test="thirdPartyDeptId != null and thirdPartyDeptId != ''">third_party_dept_id,</if>
+            <if test="hisId != null and hisId != ''">his_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -124,7 +124,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             #{tenantId},
             <if test="parentId != null">#{parentId},</if>
-            <if test="thirdPartyDeptId != null and thirdPartyDeptId != ''">#{thirdPartyDeptId},</if>
+            <if test="hisId != null and hisId != ''">#{hisId},</if>
          </trim>
     </insert>
 
@@ -145,7 +145,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <choose>
                 <when test="params != null and params.skipThirdPartyDeptId == true"></when>
                 <otherwise>
-                    <if test="thirdPartyDeptId != null">third_party_dept_id = #{thirdPartyDeptId},</if>
+                    <if test="hisId != null">his_id = #{hisId},</if>
                 </otherwise>
             </choose>
         </trim>

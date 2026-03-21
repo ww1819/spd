@@ -179,7 +179,7 @@ CALL add_table_column('sb_asset_inventory_item_print', 'print_task_no', 'varchar
 -- ALTER TABLE sb_customer_category68 DROP COLUMN parent_id, CHANGE parent_id_new parent_id CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键id，对应父记录)';
 /
 
-/* fd_department：删除历史误加列 his_dept_id / his_id（与耗材 column.sql 对齐） */
+/* fd_department：删除历史误加列 his_dept_id（保留 his_id：HIS系统科室ID，与耗材 material/column.sql 一致） */
 SET @__db_eq := DATABASE();
 /
 SET @__exist_his_dept_eq := (
@@ -197,22 +197,6 @@ PREPARE __stmt_his_dept_eq FROM @__drop_his_dept_eq;
 EXECUTE __stmt_his_dept_eq;
 /
 DEALLOCATE PREPARE __stmt_his_dept_eq;
-/
-SET @__exist_his_id_eq := (
-  SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = @__db_eq AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_id'
-);
-/
-SET @__drop_his_id_eq := IF(@__exist_his_id_eq > 0,
-  'ALTER TABLE fd_department DROP COLUMN `his_id`',
-  'SELECT ''skip_fd_department_his_id_eq'' AS msg'
-);
-/
-PREPARE __stmt_his_id_eq FROM @__drop_his_id_eq;
-/
-EXECUTE __stmt_his_id_eq;
-/
-DEALLOCATE PREPARE __stmt_his_id_eq;
 /
 CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
 /

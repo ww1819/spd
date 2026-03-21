@@ -122,6 +122,10 @@ public class FdSupplier extends BaseEntity
     @Excel(name = "HIS供应商ID", width = 22, prompt = "衡水市第三人民医院新增与导入时必填，租户内唯一；保存后不可修改")
     private String hisId;
 
+    /** 数据校验结果（模板列；导入时忽略用户填写，由系统回填预览/导出） */
+    @Excel(name = "数据校验结果", width = 40, sort = 99999)
+    private String validationResult;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -349,6 +353,16 @@ public class FdSupplier extends BaseEntity
         this.hisId = hisId;
     }
 
+    public String getValidationResult()
+    {
+        return validationResult;
+    }
+
+    public void setValidationResult(String validationResult)
+    {
+        this.validationResult = validationResult;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -377,6 +391,7 @@ public class FdSupplier extends BaseEntity
             .append("supplierStatus", getSupplierStatus())
             .append("supplierType", getSupplierType())
             .append("hisId", getHisId())
+            .append("validationResult", getValidationResult())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

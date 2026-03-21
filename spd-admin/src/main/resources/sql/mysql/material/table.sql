@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `name` varchar(255) DEFAULT NULL COMMENT '科室名称',
   `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码（拼音简码）',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `third_party_dept_id` varchar(128) DEFAULT NULL COMMENT '其他第三方系统科室ID',
+  `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统科室ID',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -197,6 +197,7 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse_category` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统库房分类ID',
   PRIMARY KEY (`warehouse_category_id`),
   KEY `idx_fd_wh_cat_tenant` (`tenant_id`),
   KEY `idx_fd_wh_cat_parent` (`parent_id`)
@@ -206,6 +207,7 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse_category` (
 -- 财务分类（业务表 fd_material.finance_category_id 等关联 finance_category_id）
 CREATE TABLE IF NOT EXISTS `fd_finance_category` (
   `finance_category_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `parent_id` bigint DEFAULT NULL COMMENT '父分类ID（0或NULL表示顶级）',
   `finance_category_code` varchar(64) DEFAULT NULL COMMENT '财务分类编码',
   `finance_category_name` varchar(255) DEFAULT NULL COMMENT '财务分类名称',
   `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码',
@@ -221,8 +223,10 @@ CREATE TABLE IF NOT EXISTS `fd_finance_category` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统财务分类ID',
   PRIMARY KEY (`finance_category_id`),
-  KEY `idx_fd_fin_cat_tenant` (`tenant_id`)
+  KEY `idx_fd_fin_cat_tenant` (`tenant_id`),
+  KEY `idx_fd_fin_cat_parent` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='财务分类';
 /
 

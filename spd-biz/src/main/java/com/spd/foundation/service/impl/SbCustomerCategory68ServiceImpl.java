@@ -197,6 +197,9 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
         if (old == null) {
             throw new ServiceException("客户68分类记录不存在");
         }
+        if (StringUtils.isEmpty(row.getCustomerId())) {
+            row.setCustomerId(old.getCustomerId());
+        }
         String summaryOld = toSummary(old);
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) row.setUpdateBy(SecurityUtils.getUserIdStr());

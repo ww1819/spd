@@ -31,9 +31,9 @@ public class FdDepartment extends BaseEntity
     @Excel(name = "简码")
     private String referredName;
 
-    /** HIS/第三方系统科室 ID（导入模板列名；衡水市第三人民医院等租户导入时必填） */
-    @Excel(name = "HIS科室ID", nameAliases = {"其他第三方系统科室ID"}, width = 22, prompt = "衡水市第三人民医院导入时必填；其他租户建议填写对接系统科室标识")
-    private String thirdPartyDeptId;
+    /** HIS 系统科室 ID（库字段 his_id；与 HIS 等对接） */
+    @Excel(name = "HIS系统ID", nameAliases = {"HIS科室ID", "其他第三方系统科室ID"}, width = 22, prompt = "对接 HIS 等系统时填写科室标识；部分租户导入时必填")
+    private String hisId;
 
     /** 删除标识 */
     private Integer delFlag;
@@ -50,6 +50,9 @@ public class FdDepartment extends BaseEntity
     /** 备注（表字段 fd_department.remark，与基类 remark 区分，避免全局基类加 Excel 注解） */
     @Excel(name = "备注")
     private String deptRemark;
+
+    @Excel(name = "数据校验结果", width = 40, sort = 99999)
+    private String validationResult;
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
@@ -126,12 +129,20 @@ public class FdDepartment extends BaseEntity
         this.deptRemark = deptRemark;
     }
 
-    public String getThirdPartyDeptId() {
-        return thirdPartyDeptId;
+    public String getHisId() {
+        return hisId;
     }
 
-    public void setThirdPartyDeptId(String thirdPartyDeptId) {
-        this.thirdPartyDeptId = thirdPartyDeptId;
+    public void setHisId(String hisId) {
+        this.hisId = hisId;
+    }
+
+    public String getValidationResult() {
+        return validationResult;
+    }
+
+    public void setValidationResult(String validationResult) {
+        this.validationResult = validationResult;
     }
 
     @Override
@@ -149,7 +160,8 @@ public class FdDepartment extends BaseEntity
             .append("tenantId", getTenantId())
             .append("parentId", getParentId())
             .append("deptRemark", getDeptRemark())
-            .append("thirdPartyDeptId", getThirdPartyDeptId())
+            .append("hisId", getHisId())
+            .append("validationResult", getValidationResult())
             .toString();
     }
 }

@@ -52,6 +52,9 @@ public class FdFactory extends BaseEntity
     @Excel(name = "厂家状态", readConverterExp = "启用/停用")
     private String factoryStatus;
 
+    @Excel(name = "数据校验结果", width = 40, sort = 99999)
+    private String validationResult;
+
     public void setFactoryId(Long factoryId)
     {
         this.factoryId = factoryId;
@@ -136,6 +139,14 @@ public class FdFactory extends BaseEntity
         this.factoryStatus = factoryStatus;
     }
 
+    public String getValidationResult() {
+        return validationResult;
+    }
+
+    public void setValidationResult(String validationResult) {
+        this.validationResult = validationResult;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -152,6 +163,7 @@ public class FdFactory extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("factoryReferredCode", getFactoryReferredCode())
             .append("factoryStatus", getFactoryStatus())
+            .append("validationResult", getValidationResult())
             .toString();
     }
 }

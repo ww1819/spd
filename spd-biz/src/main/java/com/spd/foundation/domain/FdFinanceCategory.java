@@ -18,6 +18,10 @@ public class FdFinanceCategory extends BaseEntity
     /** ID */
     private Long financeCategoryId;
 
+    /** 上级分类ID */
+    @Excel(name = "上级分类id")
+    private Long parentId;
+
     /** 财务分类编码 */
     @Excel(name = "财务分类编码")
     private String financeCategoryCode;
@@ -48,6 +52,13 @@ public class FdFinanceCategory extends BaseEntity
     /** 租户ID（同 sb_customer.customer_id） */
     private String tenantId;
 
+    /** HIS系统财务分类ID */
+    @Excel(name = "HIS系统ID", width = 22, prompt = "与 HIS 财务分类主键对接时使用")
+    private String hisId;
+
+    @Excel(name = "数据校验结果", width = 40, sort = 99999)
+    private String validationResult;
+
     public void setFinanceCategoryId(Long financeCategoryId) 
     {
         this.financeCategoryId = financeCategoryId;
@@ -56,6 +67,14 @@ public class FdFinanceCategory extends BaseEntity
     public Long getFinanceCategoryId() 
     {
         return financeCategoryId;
+    }
+    public Long getParentId()
+    {
+        return parentId;
+    }
+    public void setParentId(Long parentId)
+    {
+        this.parentId = parentId;
     }
     public void setFinanceCategoryCode(String financeCategoryCode) 
     {
@@ -120,10 +139,27 @@ public class FdFinanceCategory extends BaseEntity
         this.tenantId = tenantId;
     }
 
+    public String getHisId() {
+        return hisId;
+    }
+
+    public void setHisId(String hisId) {
+        this.hisId = hisId;
+    }
+
+    public String getValidationResult() {
+        return validationResult;
+    }
+
+    public void setValidationResult(String validationResult) {
+        this.validationResult = validationResult;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("financeCategoryId", getFinanceCategoryId())
+            .append("parentId", getParentId())
             .append("financeCategoryCode", getFinanceCategoryCode())
             .append("financeCategoryName", getFinanceCategoryName())
             .append("referredName", getReferredName())
@@ -136,6 +172,8 @@ public class FdFinanceCategory extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("isUse", getIsUse())
             .append("tenantId", getTenantId())
+            .append("hisId", getHisId())
+            .append("validationResult", getValidationResult())
             .toString();
     }
 

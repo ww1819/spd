@@ -26,6 +26,8 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
+import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdDepartmentChangeLog;
@@ -176,13 +178,13 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             fdDepartment.setTenantId(SecurityUtils.getCustomerId());
         }
         validateParentAssignment(null, fdDepartment.getParentId(), fdDepartment.getTenantId());
-        fdDepartment.setThirdPartyDeptId(normalizeExternalId(fdDepartment.getThirdPartyDeptId()));
+        fdDepartment.setHisId(normalizeExternalId(fdDepartment.getHisId()));
         if (importRequiresMandatoryHisDeptId()) {
-            if (isExternalIdBlank(fdDepartment.getThirdPartyDeptId())) {
+            if (isExternalIdBlank(fdDepartment.getHisId())) {
                 throw new ServiceException("衡水市第三人民医院新增科室时必须填写HIS科室ID（第三方系统科室ID）");
             }
-        } else if (isExternalIdBlank(fdDepartment.getThirdPartyDeptId())) {
-            fdDepartment.setThirdPartyDeptId(null);
+        } else if (isExternalIdBlank(fdDepartment.getHisId())) {
+            fdDepartment.setHisId(null);
         }
         return fdDepartmentMapper.insertFdDepartment(fdDepartment);
     }
@@ -209,7 +211,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         }
         // 第三方/HIS 科室 ID 仅展示，禁止通过维护接口修改（仅导入新增时可写入）
         if (before != null) {
-            fdDepartment.setThirdPartyDeptId(before.getThirdPartyDeptId());
+            fdDepartment.setHisId(before.getHisId());
         }
         validateParentAssignment(fdDepartment.getId(), fdDepartment.getParentId(), before.getTenantId());
         fdDepartment.setUpdateTime(DateUtils.getNowDate());
@@ -420,9 +422,11 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
 
     @Override
     public Map<String, Object> validateFdDepartmentImport(List<FdDepartment> list, Boolean isUpdateSupport) {
+        clearDepartmentImportValidationColumn(list);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("requiresHisDeptId", importRequiresMandatoryHisDeptId());
-        List<String> errors = collectImportValidationErrors(list, isUpdateSupport);
+        ImportRowErrorCollector collector = collectImportValidationErrors(list, isUpdateSupport);
+        List<String> errors = collector.getAllErrors();
         boolean valid = errors.isEmpty();
         result.put("valid", valid);
         result.put("errors", errors);
@@ -459,6 +463,8 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             result.put("insertCount", 0);
             result.put("updateCount", 0);
         }
+        fillDepartmentValidationTexts(list, collector, valid);
+        result.put("previewRows", ExcelUtil.buildImportPreviewMaps(FdDepartment.class, list));
         return result;
     }
 
@@ -470,7 +476,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (list == null || list.isEmpty()) {
             throw new ServiceException("导入科室数据不能为空！");
         }
-        List<String> errors = collectImportValidationErrors(list, isUpdateSupport);
+        clearDepartmentImportValidationColumn(list);
+        ImportRowErrorCollector collector = collectImportValidationErrors(list, isUpdateSupport);
+        List<String> errors = collector.getAllErrors();
         if (!errors.isEmpty()) {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
         }
@@ -505,11 +513,12 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             }
         }
         successMsg.insert(0, "增量导入完成（仅新增或按选项更新已有编码，不会删除未出现在文件中的科室）。共处理 " + successNum + " 条，明细如下：");
+        markDepartmentImportSuccessTexts(list);
         return successMsg.toString();
     }
 
     /**
-     * 衡水市第三人民医院（{@link TenantEnum#HS_003}）等对接 HIS 的租户：导入时每行必须填写 HIS 科室 ID（对应库字段 third_party_dept_id）
+     * 衡水市第三人民医院（{@link TenantEnum#HS_003}）等对接 HIS 的租户：导入时每行必须填写 HIS 科室 ID（库字段 his_id）
      */
     private static boolean importRequiresMandatoryHisDeptId() {
         return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.getCustomerId());
@@ -531,7 +540,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (row.getDeptRemark() != null) {
             row.setDeptRemark(row.getDeptRemark().trim());
         }
-        row.setThirdPartyDeptId(normalizeExternalId(row.getThirdPartyDeptId()));
+        row.setHisId(normalizeExternalId(row.getHisId()));
     }
 
     private static String normalizeExternalId(String raw) {
@@ -552,11 +561,11 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         return v == null || v.trim().isEmpty();
     }
 
-    private List<String> collectImportValidationErrors(List<FdDepartment> list, Boolean isUpdateSupport) {
-        List<String> errors = new ArrayList<>();
+    private ImportRowErrorCollector collectImportValidationErrors(List<FdDepartment> list, Boolean isUpdateSupport) {
+        ImportRowErrorCollector c = new ImportRowErrorCollector();
         if (list == null || list.isEmpty()) {
-            errors.add("导入科室数据不能为空");
-            return errors;
+            c.addGlobal("导入科室数据不能为空");
+            return c;
         }
         String tenantId = SecurityUtils.getCustomerId();
         Map<String, Integer> codeFirstRow = new HashMap<>();
@@ -564,7 +573,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             FdDepartment row = list.get(i);
             int excelRow = i + 2;
             if (row == null) {
-                errors.add("第" + excelRow + "行：数据为空");
+                c.addRow(excelRow, "数据为空");
                 continue;
             }
             normalizeImportRow(row);
@@ -572,33 +581,87 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
                 continue;
             }
             if (StringUtils.isEmpty(row.getCode()) || StringUtils.isEmpty(row.getName())) {
-                errors.add("第" + excelRow + "行：科室编码与名称均不能为空");
+                c.addRow(excelRow, "科室编码与名称均不能为空");
                 continue;
             }
             String code = row.getCode();
             if (codeFirstRow.containsKey(code)) {
-                errors.add("第" + excelRow + "行：科室编码「" + code + "」与第" + codeFirstRow.get(code) + "行重复");
+                c.addRow(excelRow, "科室编码「" + code + "」与第" + codeFirstRow.get(code) + "行重复");
             } else {
                 codeFirstRow.put(code, excelRow);
             }
             FdDepartment existing = fdDepartmentMapper.selectFdDepartmentByCodeAndTenantId(code, tenantId);
             if (existing == null) {
-                if (importRequiresMandatoryHisDeptId() && isExternalIdBlank(row.getThirdPartyDeptId())) {
-                    errors.add("第" + excelRow + "行：HIS科室ID（第三方系统科室ID）不能为空（衡水市第三人民医院新增科室时必填）");
+                if (importRequiresMandatoryHisDeptId() && isExternalIdBlank(row.getHisId())) {
+                    c.addRow(excelRow, "HIS科室ID（第三方系统科室ID）不能为空（衡水市第三人民医院新增科室时必填）");
                 }
             } else {
                 if (!Boolean.TRUE.equals(isUpdateSupport)) {
-                    errors.add("第" + excelRow + "行：科室编码「" + code + "」在租户下已存在，未勾选「更新已存在」则无法导入");
+                    c.addRow(excelRow, "科室编码「" + code + "」在租户下已存在，未勾选「更新已存在」则无法导入");
                     continue;
                 }
             }
             try {
                 BeanValidators.validateWithException(validator, row);
             } catch (Exception e) {
-                errors.add("第" + excelRow + "行：" + e.getMessage());
+                c.addRow(excelRow, e.getMessage());
             }
         }
-        return errors;
+        return c;
+    }
+
+    private void clearDepartmentImportValidationColumn(List<FdDepartment> list) {
+        if (list == null) {
+            return;
+        }
+        for (FdDepartment r : list) {
+            if (r != null) {
+                r.setValidationResult(null);
+            }
+        }
+    }
+
+    private void fillDepartmentValidationTexts(List<FdDepartment> list, ImportRowErrorCollector collector, boolean fileValid) {
+        if (list == null) {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            int excelRow = i + 2;
+            FdDepartment row = list.get(i);
+            if (row == null) {
+                continue;
+            }
+            normalizeImportRow(row);
+            if (StringUtils.isEmpty(row.getCode()) && StringUtils.isEmpty(row.getName())) {
+                row.setValidationResult("空行（已跳过）");
+                continue;
+            }
+            List<String> msgs = collector.getRowMessages(excelRow);
+            if (!msgs.isEmpty()) {
+                row.setValidationResult(String.join("；", msgs));
+            } else if (fileValid) {
+                row.setValidationResult("校验通过");
+            } else {
+                row.setValidationResult("本行未单独报错；文件因其他数据未通过校验");
+            }
+        }
+    }
+
+    private void markDepartmentImportSuccessTexts(List<FdDepartment> list) {
+        if (list == null) {
+            return;
+        }
+        for (FdDepartment row : list) {
+            if (row == null) {
+                continue;
+            }
+            normalizeImportRow(row);
+            if (StringUtils.isEmpty(row.getCode()) && StringUtils.isEmpty(row.getName())) {
+                row.setValidationResult("空行（已跳过）");
+            } else {
+                row.setValidationResult("导入成功");
+            }
+        }
     }
 
     /**

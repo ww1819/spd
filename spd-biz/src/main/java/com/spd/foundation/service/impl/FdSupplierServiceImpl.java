@@ -21,6 +21,8 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
+import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdSupplierChangeLog;
@@ -195,9 +197,11 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     @Override
     public Map<String, Object> validateFdSupplierImport(List<FdSupplier> list, Boolean isUpdateSupport)
     {
+        clearSupplierImportValidationColumn(list);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("requiresHisId", importRequiresMandatoryHisId());
-        List<String> errors = collectSupplierImportErrors(list, isUpdateSupport);
+        ImportRowErrorCollector collector = collectSupplierImportErrors(list, isUpdateSupport);
+        List<String> errors = collector.getAllErrors();
         boolean valid = errors.isEmpty();
         result.put("valid", valid);
         result.put("errors", errors);
@@ -247,6 +251,8 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             result.put("insertCount", 0);
             result.put("updateCount", 0);
         }
+        fillSupplierValidationTexts(list, collector, valid);
+        result.put("previewRows", ExcelUtil.buildImportPreviewMaps(FdSupplier.class, list));
         return result;
     }
 
@@ -261,7 +267,9 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         {
             throw new ServiceException("导入供应商数据不能为空！");
         }
-        List<String> errors = collectSupplierImportErrors(list, isUpdateSupport);
+        clearSupplierImportValidationColumn(list);
+        ImportRowErrorCollector collector = collectSupplierImportErrors(list, isUpdateSupport);
+        List<String> errors = collector.getAllErrors();
         if (!errors.isEmpty())
         {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
@@ -284,10 +292,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             {
                 throw new ServiceException("导入校验异常：" + e.getMessage());
             }
-            if (StringUtils.isEmpty(row.getReferredCode()))
-            {
-                row.setReferredCode(PinyinUtils.getPinyinInitials(row.getName()));
-            }
+            row.setReferredCode(PinyinUtils.getPinyinInitials(row.getName()));
             FdSupplier existing = fdSupplierMapper.selectFdSupplierByCodeAndTenantId(row.getCode(), tenantId);
             if (existing == null)
             {
@@ -322,6 +327,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             }
         }
         successMsg.insert(0, "增量导入完成（仅新增或按选项更新已有编码；更新时不修改HIS供应商ID）。共处理 " + successNum + " 条，明细如下：");
+        markSupplierImportSuccessTexts(list);
         return successMsg.toString();
     }
 
@@ -384,13 +390,13 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         }
     }
 
-    private List<String> collectSupplierImportErrors(List<FdSupplier> list, Boolean isUpdateSupport)
+    private ImportRowErrorCollector collectSupplierImportErrors(List<FdSupplier> list, Boolean isUpdateSupport)
     {
-        List<String> errors = new ArrayList<>();
+        ImportRowErrorCollector c = new ImportRowErrorCollector();
         if (list == null || list.isEmpty())
         {
-            errors.add("导入供应商数据不能为空");
-            return errors;
+            c.addGlobal("导入供应商数据不能为空");
+            return c;
         }
         String tenantId = SecurityUtils.getCustomerId();
         Map<String, Integer> codeFirstRow = new LinkedHashMap<>();
@@ -401,7 +407,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             int excelRow = i + 2;
             if (row == null)
             {
-                errors.add("第" + excelRow + "行：数据为空");
+                c.addRow(excelRow, "数据为空");
                 continue;
             }
             normalizeImportRow(row);
@@ -411,13 +417,13 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             }
             if (StringUtils.isEmpty(row.getCode()) || StringUtils.isEmpty(row.getName()))
             {
-                errors.add("第" + excelRow + "行：供应商编码与名称均不能为空");
+                c.addRow(excelRow, "供应商编码与名称均不能为空");
                 continue;
             }
             String code = row.getCode();
             if (codeFirstRow.containsKey(code))
             {
-                errors.add("第" + excelRow + "行：供应商编码「" + code + "」与第" + codeFirstRow.get(code) + "行重复");
+                c.addRow(excelRow, "供应商编码「" + code + "」与第" + codeFirstRow.get(code) + "行重复");
             }
             else
             {
@@ -428,14 +434,14 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             {
                 if (importRequiresMandatoryHisId() && isHisIdBlank(row.getHisId()))
                 {
-                    errors.add("第" + excelRow + "行：HIS供应商ID不能为空（衡水市第三人民医院新增时必填）");
+                    c.addRow(excelRow, "HIS供应商ID不能为空（衡水市第三人民医院新增时必填）");
                 }
                 if (!isHisIdBlank(row.getHisId()))
                 {
                     String hid = row.getHisId();
                     if (hisFirstRow.containsKey(hid))
                     {
-                        errors.add("第" + excelRow + "行：HIS供应商ID「" + hid + "」与第" + hisFirstRow.get(hid) + "行重复");
+                        c.addRow(excelRow, "HIS供应商ID「" + hid + "」与第" + hisFirstRow.get(hid) + "行重复");
                     }
                     else
                     {
@@ -443,7 +449,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
                     }
                     if (fdSupplierMapper.countSupplierByTenantAndHisId(tenantId, hid, null) > 0)
                     {
-                        errors.add("第" + excelRow + "行：HIS供应商ID「" + hid + "」在租户下已存在");
+                        c.addRow(excelRow, "HIS供应商ID「" + hid + "」在租户下已存在");
                     }
                 }
             }
@@ -451,7 +457,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             {
                 if (!Boolean.TRUE.equals(isUpdateSupport))
                 {
-                    errors.add("第" + excelRow + "行：供应商编码「" + code + "」在租户下已存在，未勾选「更新已存在」则无法导入");
+                    c.addRow(excelRow, "供应商编码「" + code + "」在租户下已存在，未勾选「更新已存在」则无法导入");
                     continue;
                 }
             }
@@ -461,10 +467,85 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             }
             catch (Exception e)
             {
-                errors.add("第" + excelRow + "行：" + e.getMessage());
+                c.addRow(excelRow, e.getMessage());
             }
         }
-        return errors;
+        return c;
+    }
+
+    private void clearSupplierImportValidationColumn(List<FdSupplier> list)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (FdSupplier r : list)
+        {
+            if (r != null)
+            {
+                r.setValidationResult(null);
+            }
+        }
+    }
+
+    private void fillSupplierValidationTexts(List<FdSupplier> list, ImportRowErrorCollector collector, boolean fileValid)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++)
+        {
+            int excelRow = i + 2;
+            FdSupplier row = list.get(i);
+            if (row == null)
+            {
+                continue;
+            }
+            normalizeImportRow(row);
+            if (StringUtils.isEmpty(row.getCode()) && StringUtils.isEmpty(row.getName()))
+            {
+                row.setValidationResult("空行（已跳过）");
+                continue;
+            }
+            List<String> msgs = collector.getRowMessages(excelRow);
+            if (!msgs.isEmpty())
+            {
+                row.setValidationResult(String.join("；", msgs));
+            }
+            else if (fileValid)
+            {
+                row.setValidationResult("校验通过");
+            }
+            else
+            {
+                row.setValidationResult("本行未单独报错；文件因其他数据未通过校验");
+            }
+        }
+    }
+
+    private void markSupplierImportSuccessTexts(List<FdSupplier> list)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (FdSupplier row : list)
+        {
+            if (row == null)
+            {
+                continue;
+            }
+            normalizeImportRow(row);
+            if (StringUtils.isEmpty(row.getCode()) && StringUtils.isEmpty(row.getName()))
+            {
+                row.setValidationResult("空行（已跳过）");
+            }
+            else
+            {
+                row.setValidationResult("导入成功");
+            }
+        }
     }
 
     /**

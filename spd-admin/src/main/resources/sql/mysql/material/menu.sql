@@ -840,6 +840,10 @@ INSERT INTO sys_menu (
 (2286, '库房分类更新简码', 2280, 6, '#', '', NULL,
  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:updateReferred', '#',
  'admin', NOW(), '1', NOW(), '',
+ '0', '1'),
+(2287, '库房分类导入', 2280, 7, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:import', '#',
+ 'admin', NOW(), '1', NOW(), '',
  '0', '1')
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
@@ -949,6 +953,10 @@ INSERT INTO sys_menu (
  '0', '1'),
 (2296, '财务分类更新简码', 2290, 6, '#', '', NULL,
  1, 0, 'F', '0', '0', 'foundation:financeCategory:updateReferred', '#',
+ 'admin', NOW(), '1', NOW(), '',
+ '0', '1'),
+(2297, '财务分类导入', 2290, 7, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'foundation:financeCategory:import', '#',
  'admin', NOW(), '1', NOW(), '',
  '0', '1')
 ON DUPLICATE KEY UPDATE

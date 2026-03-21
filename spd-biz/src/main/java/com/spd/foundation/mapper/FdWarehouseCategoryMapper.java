@@ -54,6 +54,16 @@ public interface FdWarehouseCategoryMapper
      */
     public int updateFdWarehouseCategory(FdWarehouseCategory fdWarehouseCategory);
 
+    /**
+     * 按编码与租户查询库房分类（未删除）
+     */
+    FdWarehouseCategory selectFdWarehouseCategoryByCodeAndTenantId(@Param("code") String code, @Param("tenantId") String tenantId);
+
+    /**
+     * 租户下 HIS 库房分类 ID 出现次数（可排除某主键）
+     */
+    int countWarehouseCategoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeId") Long excludeId);
+
 //    /**
 //     * 删除库房分类
 //     *
