@@ -164,6 +164,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdMaterialVo"/>
         where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
+
+    <select id="selectFdMaterialByIdAndTenant" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null)
+        <if test="tenantId != null and tenantId != ''">
+            and m.tenant_id = #{tenantId}
+        </if>
+    </select>
     <select id="selectFdMaterialByCode" parameterType="String" resultMap="FdMaterialResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectFdMaterialVo"/>

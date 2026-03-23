@@ -60,6 +60,11 @@ public interface FdMaterialMapper
     public FdMaterial selectFdMaterialById(Long id);
 
     /**
+     * 按主键 + 租户查产品档案（与单据 tenant 一致，避免仅用 getCustomerId() 导致查不到）
+     */
+    FdMaterial selectFdMaterialByIdAndTenant(@Param("id") Long id, @Param("tenantId") String tenantId);
+
+    /**
      * 查询耗材产品列表
      *
      * @param fdMaterial 耗材产品

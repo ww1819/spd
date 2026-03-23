@@ -505,9 +505,33 @@ CALL add_table_column('stk_io_bill', 'settlement_type', 'varchar(16)', '结算�
 /
 CALL add_table_column('stk_io_bill_entry', 'settlement_type', 'varchar(16)', '结算方式（与主表一致）', NULL);
 /
+CALL add_table_column('stk_io_bill_entry', 'material_name', 'varchar(256)', '产品名称（快照）', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'material_speci', 'varchar(256)', '规格（快照）', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'material_model', 'varchar(256)', '型号（快照）', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
+/
 CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自入库单）', NULL);
 /
 CALL add_table_column('stk_dep_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自出库单）', NULL);
+/
+CALL add_table_column('stk_inventory', 'material_name', 'varchar(256)', '产品名称（快照）', NULL);
+/
+CALL add_table_column('stk_inventory', 'material_speci', 'varchar(256)', '规格（快照）', NULL);
+/
+CALL add_table_column('stk_inventory', 'material_model', 'varchar(256)', '型号（快照）', NULL);
+/
+CALL add_table_column('stk_inventory', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'material_name', 'varchar(256)', '产品名称（快照）', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'material_speci', 'varchar(256)', '规格（快照）', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'material_model', 'varchar(256)', '型号（快照）', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
 /
 /* 发票表增加供应商ID */
 CALL add_table_column('fin_invoice', 'supplier_id', 'bigint(20)', '供应商ID', NULL);

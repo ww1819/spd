@@ -28,6 +28,11 @@ public interface StkDepInventoryMapper
     public StkDepInventory selectStkDepInventoryById(Long id);
 
     /**
+     * 按出库单主表与明细定位科室库存（出库审核生成，收货确认时 kc_no 可能未反写）
+     */
+    StkDepInventory selectStkDepInventoryByBillEntry(@Param("billId") Long billId, @Param("billEntryId") Long billEntryId, @Param("tenantId") String tenantId);
+
+    /**
      * 查询科室库存列表
      *
      * @param stkDepInventory 科室库存

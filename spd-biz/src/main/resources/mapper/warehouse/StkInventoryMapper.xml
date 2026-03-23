@@ -8,6 +8,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="qty"    column="qty"    />
         <result property="materialId"    column="material_id"    />
+        <result property="snapMaterialName"    column="snap_material_name"    />
+        <result property="snapMaterialSpeci"    column="snap_material_speci"    />
+        <result property="snapMaterialModel"    column="snap_material_model"    />
+        <result property="snapMaterialFactoryId"    column="snap_material_factory_id"    />
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="unitPrice"    column="unit_price"    />
         <result property="amt"    column="amt"    />
@@ -93,7 +97,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectStkInventoryVo">
-        select stk.id, stk.qty, stk.material_id, stk.warehouse_id, stk.unit_price,stk.amt,
+        select stk.id, stk.qty, stk.material_id,
+        stk.material_name as snap_material_name, stk.material_speci as snap_material_speci, stk.material_model as snap_material_model, stk.material_factory_id as snap_material_factory_id,
+        stk.warehouse_id, stk.unit_price,stk.amt,
 				stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date,
 				stk.supplier_id,stk.factory_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,stk.tenant_id,stk.settlement_type,
 				stk.main_barcode, stk.sub_barcode,
@@ -136,7 +142,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectPDInventoryFilter" parameterType="StkInventory" resultMap="StkInventoryResult">
-        select stk.id, stk.qty, stk.material_id, stk.warehouse_id, 
+        select stk.id, stk.qty, stk.material_id,
+        stk.material_name as snap_material_name, stk.material_speci as snap_material_speci, stk.material_model as snap_material_model, stk.material_factory_id as snap_material_factory_id,
+        stk.warehouse_id, 
 				COALESCE(stk.unit_price, 
 					(select COALESCE(entry.unit_price, entry.price) 
 					 from stk_io_bill_entry entry
@@ -323,6 +331,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="qty != null">qty,</if>
             <if test="materialId != null">material_id,</if>
+            <if test="snapMaterialName != null and snapMaterialName != ''">material_name,</if>
+            <if test="snapMaterialSpeci != null and snapMaterialSpeci != ''">material_speci,</if>
+            <if test="snapMaterialModel != null and snapMaterialModel != ''">material_model,</if>
+            <if test="snapMaterialFactoryId != null">material_factory_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
@@ -346,6 +358,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
             <if test="materialId != null">#{materialId},</if>
+            <if test="snapMaterialName != null and snapMaterialName != ''">#{snapMaterialName},</if>
+            <if test="snapMaterialSpeci != null and snapMaterialSpeci != ''">#{snapMaterialSpeci},</if>
+            <if test="snapMaterialModel != null and snapMaterialModel != ''">#{snapMaterialModel},</if>
+            <if test="snapMaterialFactoryId != null">#{snapMaterialFactoryId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
@@ -373,6 +389,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="qty != null">qty = #{qty},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="snapMaterialName != null">material_name = #{snapMaterialName},</if>
+            <if test="snapMaterialSpeci != null">material_speci = #{snapMaterialSpeci},</if>
+            <if test="snapMaterialModel != null">material_model = #{snapMaterialModel},</if>
+            <if test="snapMaterialFactoryId != null">material_factory_id = #{snapMaterialFactoryId},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="unitPrice != null">unit_price = #{unitPrice},</if>
             <if test="amt != null">amt = #{amt},</if>

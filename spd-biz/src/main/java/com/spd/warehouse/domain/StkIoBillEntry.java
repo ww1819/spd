@@ -39,6 +39,21 @@ public class StkIoBillEntry extends BaseEntity
     @Excel(name = "耗材ID")
     private Long materialId;
 
+    /** 产品名称（快照，与保存时耗材档案一致） */
+    @Excel(name = "产品名称")
+    private String materialName;
+
+    /** 规格（快照） */
+    @Excel(name = "规格")
+    private String materialSpeci;
+
+    /** 型号（快照） */
+    @Excel(name = "型号")
+    private String materialModel;
+
+    /** 生产厂家ID（快照，fd_factory.factory_id） */
+    private Long materialFactoryId;
+
     /** 单价 */
     @Excel(name = "单价")
     private BigDecimal unitPrice;
@@ -155,6 +170,39 @@ public class StkIoBillEntry extends BaseEntity
     {
         return materialId;
     }
+
+    public String getMaterialName() {
+        return materialName;
+    }
+
+    public void setMaterialName(String materialName) {
+        this.materialName = materialName;
+    }
+
+    public String getMaterialSpeci() {
+        return materialSpeci;
+    }
+
+    public void setMaterialSpeci(String materialSpeci) {
+        this.materialSpeci = materialSpeci;
+    }
+
+    public String getMaterialModel() {
+        return materialModel;
+    }
+
+    public void setMaterialModel(String materialModel) {
+        this.materialModel = materialModel;
+    }
+
+    public Long getMaterialFactoryId() {
+        return materialFactoryId;
+    }
+
+    public void setMaterialFactoryId(Long materialFactoryId) {
+        this.materialFactoryId = materialFactoryId;
+    }
+
     public void setUnitPrice(BigDecimal unitPrice)
     {
         this.unitPrice = unitPrice;
@@ -294,6 +342,10 @@ public class StkIoBillEntry extends BaseEntity
             .append("billNo", getBillNo())
             .append("commodityId", getCommodityId())
             .append("materialId", getMaterialId())
+            .append("materialName", getMaterialName())
+            .append("materialSpeci", getMaterialSpeci())
+            .append("materialModel", getMaterialModel())
+            .append("materialFactoryId", getMaterialFactoryId())
             .append("unitPrice", getUnitPrice())
             .append("qty", getQty())
             .append("price", getPrice())

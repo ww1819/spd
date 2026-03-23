@@ -16,6 +16,7 @@ import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -257,6 +258,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if (StringUtils.isEmpty(stkInventory.getTenantId())) {
                         stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    InventoryMaterialSnapshotHelper.fillWarehouseRow(stkInventory, entry, fdMaterialMapper, stkIoBill.getTenantId());
                     stkInventoryMapper.insertStkInventory(stkInventory);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();

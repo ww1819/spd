@@ -30,6 +30,15 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "耗材ID")
     private Long materialId;
 
+    /** 产品名称（表 material_name，快照） */
+    private String snapMaterialName;
+    /** 规格（表 material_speci） */
+    private String snapMaterialSpeci;
+    /** 型号（表 material_model） */
+    private String snapMaterialModel;
+    /** 生产厂家ID快照（表 material_factory_id） */
+    private Long snapMaterialFactoryId;
+
     /** 科室ID */
     @Excel(name = "科室ID")
     private Long departmentId;
@@ -159,6 +168,39 @@ public class StkDepInventory extends BaseEntity
     {
         return materialId;
     }
+
+    public String getSnapMaterialName() {
+        return snapMaterialName;
+    }
+
+    public void setSnapMaterialName(String snapMaterialName) {
+        this.snapMaterialName = snapMaterialName;
+    }
+
+    public String getSnapMaterialSpeci() {
+        return snapMaterialSpeci;
+    }
+
+    public void setSnapMaterialSpeci(String snapMaterialSpeci) {
+        this.snapMaterialSpeci = snapMaterialSpeci;
+    }
+
+    public String getSnapMaterialModel() {
+        return snapMaterialModel;
+    }
+
+    public void setSnapMaterialModel(String snapMaterialModel) {
+        this.snapMaterialModel = snapMaterialModel;
+    }
+
+    public Long getSnapMaterialFactoryId() {
+        return snapMaterialFactoryId;
+    }
+
+    public void setSnapMaterialFactoryId(Long snapMaterialFactoryId) {
+        this.snapMaterialFactoryId = snapMaterialFactoryId;
+    }
+
     public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
@@ -311,6 +353,10 @@ public class StkDepInventory extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("materialId", getMaterialId())
+            .append("snapMaterialName", getSnapMaterialName())
+            .append("snapMaterialSpeci", getSnapMaterialSpeci())
+            .append("snapMaterialModel", getSnapMaterialModel())
+            .append("snapMaterialFactoryId", getSnapMaterialFactoryId())
             .append("departmentId", getDepartmentId())
             .append("qty", getQty())
             .append("unitPrice", getUnitPrice())
