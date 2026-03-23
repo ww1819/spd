@@ -36,12 +36,22 @@ public class SbCustomer extends BaseEntity {
   @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
   private String status;
 
-  /** 计划停用时间，到达后租户无法使用 */
+  /** 计划停用时间（设备侧），到达后租户无法使用设备系统 */
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date plannedDisableTime;
 
+  /** 耗材侧状态（0正常 1停用），与设备侧 status 分开 */
+  private String hcStatus;
+
+  /** 计划停用时间（耗材侧），到达后租户无法使用耗材系统 */
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private Date hcPlannedDisableTime;
+
   /** 启停用原因（仅更新状态时使用，不入库） */
   private transient String statusChangeReason;
+
+  /** 租户枚举键（关联 TenantEnum.name），用于与代码内租户列表一致并区分条件分支 */
+  private String tenantKey;
 
   /** 删除者 */
   private String deleteBy;
@@ -93,12 +103,36 @@ public class SbCustomer extends BaseEntity {
     this.plannedDisableTime = plannedDisableTime;
   }
 
+  public String getHcStatus() {
+    return hcStatus;
+  }
+
+  public void setHcStatus(String hcStatus) {
+    this.hcStatus = hcStatus;
+  }
+
+  public Date getHcPlannedDisableTime() {
+    return hcPlannedDisableTime;
+  }
+
+  public void setHcPlannedDisableTime(Date hcPlannedDisableTime) {
+    this.hcPlannedDisableTime = hcPlannedDisableTime;
+  }
+
   public String getStatusChangeReason() {
     return statusChangeReason;
   }
 
   public void setStatusChangeReason(String statusChangeReason) {
     this.statusChangeReason = statusChangeReason;
+  }
+
+  public String getTenantKey() {
+    return tenantKey;
+  }
+
+  public void setTenantKey(String tenantKey) {
+    this.tenantKey = tenantKey;
   }
 
   public String getDeleteBy() {
@@ -124,6 +158,7 @@ public class SbCustomer extends BaseEntity {
         .append("customerName", getCustomerName())
         .append("customerCode", getCustomerCode())
         .append("status", getStatus())
+        .append("tenantKey", getTenantKey())
         .append("createBy", getCreateBy())
         .append("createTime", getCreateTime())
         .append("updateBy", getUpdateBy())

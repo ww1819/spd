@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +37,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public StkInventory selectStkInventoryById(Long id)
     {
-        return stkInventoryMapper.selectStkInventoryById(id);
+        StkInventory inv = stkInventoryMapper.selectStkInventoryById(id);
+        if (inv != null) {
+            SecurityUtils.ensureTenantAccess(inv.getTenantId());
+        }
+        return inv;
     }
 
     /**
@@ -47,6 +53,12 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public List<StkInventory> selectStkInventoryList(StkInventory stkInventory)
     {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         List<StkInventory> list = stkInventoryMapper.selectStkInventoryList(stkInventory);
         if (list != null && list.size() > 0) {
             for (StkInventory inventory : list) {
@@ -60,6 +72,12 @@ public class StkInventoryServiceImpl implements IStkInventoryService
 
     @Override
     public TotalInfo selectStkInventoryListTotal(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return this.stkInventoryMapper.selectStkInventoryListTotal(stkInventory);
     }
 
@@ -72,6 +90,15 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int insertStkInventory(StkInventory stkInventory)
     {
+        if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
+        if (StringUtils.isEmpty(stkInventory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
+        }
         return stkInventoryMapper.insertStkInventory(stkInventory);
     }
 
@@ -84,6 +111,18 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int updateStkInventory(StkInventory stkInventory)
     {
+        if (stkInventory == null) {
+            return 0;
+        }
+        if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
+        if (StringUtils.isEmpty(stkInventory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            stkInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return stkInventoryMapper.updateStkInventory(stkInventory);
     }
 
@@ -96,7 +135,13 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int deleteStkInventoryByIds(Long[] ids)
     {
-        return stkInventoryMapper.deleteStkInventoryByIds(ids);
+        for (Long id : ids) {
+            StkInventory existing = stkInventoryMapper.selectStkInventoryById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        return stkInventoryMapper.deleteStkInventoryByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -108,7 +153,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     @Override
     public int deleteStkInventoryById(Long id)
     {
-        return stkInventoryMapper.deleteStkInventoryById(id);
+        StkInventory existing = stkInventoryMapper.selectStkInventoryById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        return stkInventoryMapper.deleteStkInventoryById(id, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -118,11 +167,23 @@ public class StkInventoryServiceImpl implements IStkInventoryService
      */
     @Override
     public List<StkInventory> selectStkMaterialList(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return stkInventoryMapper.selectStkMaterialList(stkInventory);
     }
 
     @Override
     public List<StkInventory> selectPDInventoryFilter(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return stkInventoryMapper.selectPDInventoryFilter(stkInventory);
     }
 
@@ -133,21 +194,45 @@ public class StkInventoryServiceImpl implements IStkInventoryService
      */
     @Override
     public List<Map<String, Object>> selectStkInventoryListSummary(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return stkInventoryMapper.selectStkInventoryListSummary(stkInventory);
     }
 
     @Override
     public TotalInfo selectStkInventoryListSummaryTotal(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return stkInventoryMapper.selectStkInventoryListSummaryTotal(stkInventory);
     }
 
     @Override
     public List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return stkInventoryMapper.selectInventoryAlertList(stkInventory);
     }
 
     @Override
     public List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory) {
+        if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
+            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            if (StringUtils.isNotEmpty(tid)) {
+                stkInventory.setTenantId(tid);
+            }
+        }
         return stkInventoryMapper.selectExpiryAlertList(stkInventory);
     }
 

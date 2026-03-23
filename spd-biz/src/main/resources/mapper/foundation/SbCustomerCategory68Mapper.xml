@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SbCustomerCategory68Mapper">
+
+    <resultMap type="com.spd.foundation.domain.SbCustomerCategory68" id="SbCustomerCategory68Result">
+        <id     property="id"               column="id"               />
+        <result property="customerId"       column="customer_id"      />
+        <result property="refCategory68Id" column="ref_category68_id" />
+        <result property="parentId"        column="parent_id"        />
+        <result property="category68Code"  column="category68_code"  />
+        <result property="category68Name"  column="category68_name"  />
+        <result property="namePinyin"      column="name_pinyin"      />
+        <result property="delFlag"         column="del_flag"         />
+        <result property="delBy"           column="del_by"           />
+        <result property="delTime"         column="del_time"         />
+        <result property="createBy"       column="create_by"        />
+        <result property="createTime"      column="create_time"     />
+        <result property="updateBy"        column="update_by"       />
+        <result property="updateTime"       column="update_time"     />
+    </resultMap>
+
+    <sql id="selectVo">
+        select id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
+               del_flag, del_by, del_time, create_by, create_time, update_by, update_time
+        from sb_customer_category68
+    </sql>
+
+    <select id="selectById" resultMap="SbCustomerCategory68Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/>
+        where id = #{id} and customer_id = #{scopedTenantId}
+    </select>
+
+    <!-- customerId 必须使用入参/实体字段：平台管理员新增客户并 init/sync 时 SecurityUtils.getCustomerId() 为空 -->
+    <select id="selectByCustomerIdAndRefId" resultMap="SbCustomerCategory68Result">
+        <include refid="selectVo"/>
+        where customer_id = #{customerId} and ref_category68_id = #{refCategory68Id}
+    </select>
+
+    <select id="selectList" parameterType="com.spd.foundation.domain.SbCustomerCategory68" resultMap="SbCustomerCategory68Result">
+        <include refid="selectVo"/>
+        <where>
+            and customer_id = #{customerId}
+            <if test="refCategory68Id != null"> and ref_category68_id = #{refCategory68Id}</if>
+            <if test="category68Code != null and category68Code != ''"> and category68_code = #{category68Code}</if>
+            <if test="category68Name != null and category68Name != ''"> and category68_name like concat('%', #{category68Name}, '%')</if>
+            <if test="namePinyin != null and namePinyin != ''"> and (name_pinyin like concat('%', #{namePinyin}, '%') or category68_name like concat('%', #{namePinyin}, '%'))</if>
+            <if test="delFlag != null"> and del_flag = #{delFlag}</if>
+        </where>
+        order by parent_id, ref_category68_id
+    </select>
+
+    <select id="selectTreeByCustomerId" resultMap="SbCustomerCategory68Result">
+        <include refid="selectVo"/>
+        where customer_id = #{customerId} and (del_flag is null or del_flag != 1)
+        order by parent_id, ref_category68_id
+    </select>
+
+    <select id="selectRefCategory68IdsByCustomerId" resultType="long">
+        select ref_category68_id from sb_customer_category68
+        where customer_id = #{customerId} and (del_flag is null or del_flag != 1)
+    </select>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
+        insert into sb_customer_category68 (
+            id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
+            del_flag, create_by, create_time, update_by, update_time
+        ) values (
+            #{id}, #{customerId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name}, #{namePinyin},
+            #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
+        update sb_customer_category68
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="category68Code != null">category68_code = #{category68Code},</if>
+            <if test="category68Name != null">category68_name = #{category68Name},</if>
+            <if test="namePinyin != null">name_pinyin = #{namePinyin},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="delBy != null">del_by = #{delBy},</if>
+            <if test="delTime != null">del_time = #{delTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id} and customer_id = #{customerId}
+    </update>
+
+    <update id="updatePinyinById" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
+        update sb_customer_category68 set name_pinyin = #{namePinyin}, update_by = #{updateBy}, update_time = #{updateTime} where id = #{id} and customer_id = #{customerId}
+    </update>
+</mapper>

@@ -11,6 +11,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
+import com.github.pagehelper.PageInfo;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.monitoring.domain.DeptFixedNumber;
 import com.spd.monitoring.domain.WhFixedNumber;
@@ -44,6 +45,7 @@ public class FixedNumberController extends BaseController
     {
         startPage();
         List<Map<String, Object>> result = new ArrayList<>();
+        long total = 0L;
 
         // 默认为仓库定数监测
         if (fixedNumberType == null || "".equals(fixedNumberType) || "1".equals(fixedNumberType)) {
@@ -52,6 +54,7 @@ public class FixedNumberController extends BaseController
                 return getDataTable(result);
             }
             List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
+            total = new PageInfo<>(list).getTotal();
             for (WhFixedNumber item : list) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", item.getId());
@@ -63,6 +66,8 @@ public class FixedNumberController extends BaseController
                 map.put("monitoring", item.getMonitoring());
                 map.put("location", item.getLocation());
                 map.put("locationId", item.getLocationId());
+                map.put("tenantId", item.getTenantId());
+                map.put("remark", item.getRemark());
                 if (item.getMaterial() != null) {
                     map.put("code", item.getMaterial().getCode());
                     map.put("name", item.getMaterial().getName());
@@ -73,6 +78,25 @@ public class FixedNumberController extends BaseController
                 if (item.getWarehouse() != null) {
                     map.put("warehouseName", item.getWarehouse().getName());
                 }
+                // 产品档案展示字段（来自关联查询）
+                if (item.getUnitName() != null) {
+                    map.put("unitName", item.getUnitName());
+                }
+                if (item.getPrice() != null) {
+                    map.put("price", item.getPrice());
+                }
+                if (item.getSupplierName() != null) {
+                    map.put("supplierName", item.getSupplierName());
+                }
+                if (item.getFactoryName() != null) {
+                    map.put("factoryName", item.getFactoryName());
+                }
+                if (item.getWarehouseCategoryName() != null) {
+                    map.put("warehouseCategoryName", item.getWarehouseCategoryName());
+                }
+                if (item.getRegisterNo() != null) {
+                    map.put("registerNo", item.getRegisterNo());
+                }
                 result.add(map);
             }
         } else if ("2".equals(fixedNumberType)) {
@@ -81,6 +105,7 @@ public class FixedNumberController extends BaseController
                 return getDataTable(result);
             }
             List<DeptFixedNumber> list = fixedNumberService.selectDeptFixedNumberList(deptQuery);
+            total = new PageInfo<>(list).getTotal();
             for (DeptFixedNumber item : list) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", item.getId());
@@ -92,6 +117,8 @@ public class FixedNumberController extends BaseController
                 map.put("monitoring", item.getMonitoring());
                 map.put("location", item.getLocation());
                 map.put("locationId", item.getLocationId());
+                map.put("tenantId", item.getTenantId());
+                map.put("remark", item.getRemark());
                 if (item.getMaterial() != null) {
                     map.put("code", item.getMaterial().getCode());
                     map.put("name", item.getMaterial().getName());
@@ -102,11 +129,78 @@ public class FixedNumberController extends BaseController
                 if (item.getDepartment() != null) {
                     map.put("departmentName", item.getDepartment().getName());
                 }
+                // 产品档案展示字段（来自关联查询）
+                if (item.getUnitName() != null) {
+                    map.put("unitName", item.getUnitName());
+                }
+                if (item.getPrice() != null) {
+                    map.put("price", item.getPrice());
+                }
+                if (item.getSupplierName() != null) {
+                    map.put("supplierName", item.getSupplierName());
+                }
+                if (item.getFactoryName() != null) {
+                    map.put("factoryName", item.getFactoryName());
+                }
+                if (item.getWarehouseCategoryName() != null) {
+                    map.put("warehouseCategoryName", item.getWarehouseCategoryName());
+                }
+                if (item.getRegisterNo() != null) {
+                    map.put("registerNo", item.getRegisterNo());
+                }
                 result.add(map);
             }
         }
 
-        return getDataTable(result);
+        TableDataInfo data = getDataTable(result);
+        data.setTotal(total);
+        return data;
+    }
+
+    /**
+     * 科室申购新增明细专用：查询指定仓库的定数检测数据（不依赖 monitoring:fixedNumber:list 权限）
+     */
+    @PreAuthorize("@ss.hasPermi('department:purchase:add')")
+    @GetMapping("/listForPurchase")
+    public TableDataInfo listForPurchase(WhFixedNumber whQuery)
+    {
+        if (whQuery == null || whQuery.getWarehouseId() == null) {
+            return getDataTable(new ArrayList<>());
+        }
+        whQuery.setIsGz("2");
+        startPage();
+        List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
+        long total = new PageInfo<>(list).getTotal();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (WhFixedNumber item : list) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", item.getMaterialId());
+            map.put("materialId", item.getMaterialId());
+            map.put("code", item.getMaterial() != null ? item.getMaterial().getCode() : null);
+            map.put("name", item.getMaterial() != null ? item.getMaterial().getName() : null);
+            map.put("speci", item.getMaterial() != null ? item.getMaterial().getSpeci() : null);
+            map.put("specification", item.getMaterial() != null ? item.getMaterial().getSpeci() : null);
+            map.put("model", item.getMaterial() != null ? item.getMaterial().getModel() : null);
+            map.put("registerNo", item.getRegisterNo());
+            map.put("unitName", item.getUnitName());
+            map.put("price", item.getPrice());
+            map.put("supplierName", item.getSupplierName());
+            map.put("factoryName", item.getFactoryName());
+            map.put("warehouseCategoryName", item.getWarehouseCategoryName());
+            if (item.getUnitName() != null) {
+                map.put("fdUnit", java.util.Collections.singletonMap("unitName", item.getUnitName()));
+            }
+            if (item.getSupplierName() != null) {
+                map.put("supplier", java.util.Collections.singletonMap("name", item.getSupplierName()));
+            }
+            if (item.getFactoryName() != null) {
+                map.put("fdFactory", java.util.Collections.singletonMap("factoryName", item.getFactoryName()));
+            }
+            result.add(map);
+        }
+        TableDataInfo data = getDataTable(result);
+        data.setTotal(total);
+        return data;
     }
 
     /**

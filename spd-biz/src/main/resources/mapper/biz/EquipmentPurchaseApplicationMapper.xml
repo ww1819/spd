@@ -51,6 +51,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentPurchaseApplicationList" parameterType="EquipmentPurchaseApplication" resultMap="EquipmentPurchaseApplicationResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentPurchaseApplicationVo"/>
         <where>  
             <if test="applicationNo != null  and applicationNo != ''"> and application_no like concat('%', #{applicationNo}, '%')</if>
@@ -76,17 +77,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="params.endExpectedDeliveryDate != null and params.endExpectedDeliveryDate != ''"><!-- 结束期望交货日期检索 -->
                 and date_format(expected_delivery_date,'%y%m%d') &lt;= date_format(#{params.endExpectedDeliveryDate},'%y%m%d')
             </if>
+            and tenant_id = #{scopedTenantId}
             and del_flag = '0'
         </where>
         order by application_date desc
     </select>
     
     <select id="selectEquipmentPurchaseApplicationById" parameterType="String" resultMap="EquipmentPurchaseApplicationResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentPurchaseApplicationVo"/>
-        where id = #{id} and del_flag = '0'
+        where id = #{id} and tenant_id = #{scopedTenantId} and del_flag = '0'
     </select>
         
     <insert id="insertEquipmentPurchaseApplication" parameterType="EquipmentPurchaseApplication" useGeneratedKeys="false">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into equipment_purchase_application
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -128,6 +132,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -169,10 +174,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateEquipmentPurchaseApplication" parameterType="EquipmentPurchaseApplication">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update equipment_purchase_application
         <trim prefix="SET" suffixOverrides=",">
             <if test="applicationNo != null">application_no = #{applicationNo},</if>
@@ -214,15 +221,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteEquipmentPurchaseApplicationById" parameterType="String">
-        update equipment_purchase_application set del_flag = '2' where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_purchase_application set del_flag = '2' where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentPurchaseApplicationByIds" parameterType="String">
-        update equipment_purchase_application set del_flag = '2' where id in 
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_purchase_application set del_flag = '2' where tenant_id = #{scopedTenantId} and id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

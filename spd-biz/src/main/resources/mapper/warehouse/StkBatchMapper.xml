@@ -44,6 +44,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="financeCategoryCode"    column="finance_category_code"    />
         <result property="financeCategoryName"    column="finance_category_name"    />
         <result property="batchSource"    column="batch_source"    />
+        <result property="originBillType"    column="origin_bill_type"    />
+        <result property="originFlowLx"    column="origin_flow_lx"    />
+        <result property="originBusinessType"    column="origin_business_type"    />
+        <result property="originFromWarehouseId"    column="origin_from_warehouse_id"    />
+        <result property="originToWarehouseId"    column="origin_to_warehouse_id"    />
         <result property="billId"    column="bill_id"    />
         <result property="billNo"    column="bill_no"    />
         <result property="entryId"    column="entry_id"    />
@@ -59,6 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="delTime"    column="del_time"    />
         <result property="delBy"    column="del_by"    />
+        <result property="tenantId"    column="tenant_id"    />
     </resultMap>
 
     <insert id="insertStkBatch" parameterType="com.spd.warehouse.domain.StkBatch" useGeneratedKeys="true" keyProperty="id">
@@ -71,8 +77,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             department_id, department_code, department_name,
             storeroom_id, storeroom_code, storeroom_name,
             finance_category_id, finance_category_code, finance_category_name,
-            batch_source, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
-            create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+            batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+            bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
+            create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         ) values (
             #{batchNo}, #{materialId}, #{materialCode}, #{materialName}, #{speci}, #{model},
             #{unitId}, #{unitName}, #{unitPrice}, #{batchNumber}, #{endTime}, #{beginTime},
@@ -82,12 +89,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{departmentId}, #{departmentCode}, #{departmentName},
             #{storeroomId}, #{storeroomCode}, #{storeroomName},
             #{financeCategoryId}, #{financeCategoryCode}, #{financeCategoryName},
-            #{batchSource}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
-            #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}
+            #{batchSource}, #{originBillType}, #{originFlowLx}, #{originBusinessType}, #{originFromWarehouseId}, #{originToWarehouseId},
+            #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{inCodeDetailId}, #{auditTime}, #{auditBy},
+            #{createTime}, #{createBy}, #{updateTime}, #{updateBy}, #{delFlag}, #{delTime}, #{delBy}, #{tenantId}
         )
     </insert>
 
     <select id="selectByBatchNo" resultMap="StkBatchResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         select id, batch_no, material_id, material_code, material_name, speci, model,
                unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
                sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
@@ -96,14 +105,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                department_id, department_code, department_name,
                storeroom_id, storeroom_code, storeroom_name,
                finance_category_id, finance_category_code, finance_category_name,
-               batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
-               create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+               batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+               bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         from stk_batch
-        where batch_no = #{batchNo} and (del_flag = 0 or del_flag is null)
+        where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null)
         limit 1
     </select>
 
     <select id="selectStkBatchById" resultMap="StkBatchResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select id, batch_no, material_id, material_code, material_name, speci, model,
                unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
                sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
@@ -112,9 +123,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                department_id, department_code, department_name,
                storeroom_id, storeroom_code, storeroom_name,
                finance_category_id, finance_category_code, finance_category_name,
-               batch_source, bill_id, bill_no, entry_id, in_code_detail_id, audit_time, audit_by,
-               create_time, create_by, update_time, update_by, del_flag, del_time, del_by
+               batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+               bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
         from stk_batch
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectStkBatchList" parameterType="com.spd.warehouse.domain.StkBatch" resultMap="StkBatchResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select id, batch_no, material_id, material_code, material_name, speci, model,
+               unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
+               sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
+               register_no, permit_no, factory_id, factory_code, factory_name,
+               supplier_id, supplier_code, supplier_name, warehouse_id, warehouse_code, warehouse_name,
+               department_id, department_code, department_name,
+               storeroom_id, storeroom_code, storeroom_name,
+               finance_category_id, finance_category_code, finance_category_name,
+               batch_source, origin_bill_type, origin_flow_lx, origin_business_type, origin_from_warehouse_id, origin_to_warehouse_id,
+               bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, in_code_detail_id, audit_time, audit_by,
+               create_time, create_by, update_time, update_by, del_flag, del_time, del_by, tenant_id
+        from stk_batch
+        <where>
+            tenant_id = #{scopedTenantId}
+            and (del_flag = 0 or del_flag is null)
+            <if test="id != null">and id = #{id}</if>
+            <if test="batchNo != null and batchNo != ''">and batch_no like concat('%', #{batchNo}, '%')</if>
+            <if test="materialId != null">and material_id = #{materialId}</if>
+            <if test="materialCode != null and materialCode != ''">and material_code like concat('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''">and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="supplierId != null">and supplier_id = #{supplierId}</if>
+            <if test="warehouseId != null">and warehouse_id = #{warehouseId}</if>
+            <if test="batchSource != null and batchSource != ''">and batch_source = #{batchSource}</if>
+            <if test="originFlowLx != null and originFlowLx != ''">and origin_flow_lx = #{originFlowLx}</if>
+        </where>
+        order by id desc
     </select>
 </mapper>

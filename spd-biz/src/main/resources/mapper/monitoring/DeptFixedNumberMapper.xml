@@ -15,10 +15,20 @@
         <result property="location" column="location"/>
         <result property="locationId" column="location_id"/>
         <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="remark" column="remark"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
+        <result property="supplierName" column="supplierName"/>
+        <result property="factoryName" column="factoryName"/>
+        <result property="registerNo" column="registerNo"/>
+        <result property="unitName" column="unitName"/>
+        <result property="price" column="price"/>
+        <result property="warehouseCategoryName" column="warehouseCategoryName"/>
         <association property="department" javaType="FdDepartment" resultMap="departmentResult"/>
         <association property="material" javaType="FdMaterial" resultMap="materialResult"/>
     </resultMap>
@@ -49,6 +59,10 @@
             f.location,
             f.location_id,
             f.del_flag,
+            f.tenant_id,
+            f.remark,
+            f.delete_by,
+            f.delete_time,
             f.create_by,
             f.create_time,
             f.update_by,
@@ -60,15 +74,26 @@
             m.name     as materialName,
             m.speci    as specification,
             m.model    as model,
-            m.register_no as registerNo
+            m.register_no as registerNo,
+            u.unit_name as unitName,
+            m.price as price,
+            s.name as supplierName,
+            fac.factory_name as factoryName,
+            wc.warehouse_category_name as warehouseCategoryName
         from dept_fixed_number f
                  left join fd_department d on f.department_id = d.id
                  left join fd_material m on f.material_id = m.id
+                 left join fd_unit u on m.unit_id = u.unit_id
+                 left join fd_supplier s on m.supplier_id = s.id
+                 left join fd_factory fac on m.factory_id = fac.factory_id
+                 left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         where f.del_flag = 0
     </sql>
 
     <select id="selectDeptFixedNumberList" parameterType="DeptFixedNumber" resultMap="DeptFixedNumberResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectDeptFixedNumberVo"/>
+        and (f.tenant_id = #{scopedTenantId})
         <if test="departmentId != null">
             and f.department_id = #{departmentId}
         </if>
@@ -86,12 +111,13 @@
 
     <insert id="insertDeptFixedNumber" parameterType="DeptFixedNumber">
         insert into dept_fixed_number
-        (id, material_id, department_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, create_by, create_time)
+        (id, material_id, department_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, tenant_id, create_by, create_time)
         values
-        (#{id}, #{materialId}, #{departmentId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{createBy}, now())
+        (#{id}, #{materialId}, #{departmentId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{tenantId}, #{createBy}, now())
     </insert>
 
     <update id="updateDeptFixedNumber" parameterType="DeptFixedNumber">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update dept_fixed_number
         set
             upper_limit = #{upperLimit},
@@ -100,19 +126,27 @@
             monitoring = #{monitoring},
             location = #{location},
             location_id = #{locationId},
+            remark = #{remark},
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             update_by = #{updateBy},
             update_time = now()
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <delete id="deleteDeptFixedNumberById" parameterType="String">
+    <update id="deleteDeptFixedNumberById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update dept_fixed_number
-        set del_flag = 1, update_time = now()
-        where id = #{id}
-    </delete>
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
 
     <select id="selectByDepartmentAndMaterial" parameterType="map" resultMap="DeptFixedNumberResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectDeptFixedNumberVo"/>
+        and f.tenant_id = #{scopedTenantId}
         and f.department_id = #{departmentId}
         and f.material_id = #{materialId}
     </select>

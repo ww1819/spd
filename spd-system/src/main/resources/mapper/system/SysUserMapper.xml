@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="userId"       column="user_id"      />
         <result property="deptId"       column="dept_id"      />
         <result property="customerId"   column="customer_id"  />
+        <result property="hisId"        column="his_id"       />
         <result property="userName"     column="user_name"    />
         <result property="nickName"     column="nick_name"    />
         <result property="email"        column="email"        />
@@ -49,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 	
 	<sql id="selectUserVo">
-        select u.user_id, u.dept_id, u.customer_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, 
+        select u.user_id, u.dept_id, u.customer_id, u.his_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, 
         d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.status as dept_status,
         r.role_id, r.role_name, r.role_key, r.role_sort, r.data_scope, r.status as role_status
         from sys_user u
@@ -59,7 +60,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
     
     <select id="selectUserList" parameterType="SysUser" resultMap="SysUserResult">
-		select u.user_id, u.dept_id, u.customer_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader,
+		select u.user_id, u.dept_id, u.customer_id, u.his_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader,
 		(select p.post_name from sys_user_post up left join sys_post p on up.post_id = p.post_id where up.user_id = u.user_id limit 1) as post_name
 		from sys_user u
 		left join sys_dept d on u.dept_id = d.dept_id
@@ -87,6 +88,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		</if>
 		<if test="customerId != null and customerId != ''">
 			AND u.customer_id = #{customerId}
+		</if>
+		<if test="workgroupPostId != null and workgroupPostId != ''">
+			AND EXISTS (SELECT 1 FROM sb_work_group_user wgu WHERE wgu.user_id = u.user_id AND wgu.group_id = #{workgroupPostId} AND IFNULL(wgu.del_flag, '0') = '0')
+		</if>
+		<!-- 耗材工作组筛选：sys_user_post；若历史数据仅有租户管理员角色未写关联，则 post_code=super 时按 tenant_admin 角色兜底 -->
+		<if test="sysPostId != null">
+			AND (
+				EXISTS (SELECT 1 FROM sys_user_post up WHERE up.user_id = u.user_id AND up.post_id = #{sysPostId})
+				OR EXISTS (
+					SELECT 1 FROM sys_post p
+					WHERE p.post_id = #{sysPostId} AND p.post_code = 'super' AND p.status = '0'
+					AND (p.tenant_id = u.customer_id OR (p.tenant_id IS NULL AND (u.customer_id IS NULL OR u.customer_id = '')))
+					AND EXISTS (
+						SELECT 1 FROM sys_user_role ur
+						INNER JOIN sys_role r ON r.role_id = ur.role_id AND IFNULL(r.del_flag, '0') = '0'
+						WHERE ur.user_id = u.user_id AND r.role_key = 'tenant_admin'
+					)
+				)
+			)
 		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
@@ -146,6 +166,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<include refid="selectUserVo"/>
 		where u.user_id = #{userId}
 	</select>
+
+	<select id="selectCustomerIdByUserId" parameterType="Long" resultType="java.lang.String">
+		select u.customer_id from sys_user u where u.user_id = #{userId} limit 1
+	</select>
 	
 	<select id="checkUserNameUnique" parameterType="SysUser" resultMap="SysUserResult">
 		select user_id, user_name, customer_id from sys_user
@@ -174,6 +198,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="userId != null and userId != 0">user_id,</if>
  			<if test="deptId != null and deptId != 0">dept_id,</if>
  			<if test="customerId != null and customerId != ''">customer_id,</if>
+ 			<if test="hisId != null and hisId != ''">his_id,</if>
  			<if test="userName != null and userName != ''">user_name,</if>
  			<if test="nickName != null and nickName != ''">nick_name,</if>
  			<if test="email != null and email != ''">email,</if>
@@ -189,6 +214,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="userId != null and userId != 0">#{userId},</if>
  			<if test="deptId != null and deptId != 0">#{deptId},</if>
  			<if test="customerId != null and customerId != ''">#{customerId},</if>
+ 			<if test="hisId != null and hisId != ''">#{hisId},</if>
  			<if test="userName != null and userName != ''">#{userName},</if>
  			<if test="nickName != null and nickName != ''">#{nickName},</if>
  			<if test="email != null and email != ''">#{email},</if>
@@ -208,6 +234,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		<set>
  			<if test="deptId != null and deptId != 0">dept_id = #{deptId},</if>
  			<if test="customerId != null">customer_id = #{customerId},</if>
+ 			<if test="hisId != null">his_id = #{hisId},</if>
  			<if test="userName != null and userName != ''">user_name = #{userName},</if>
  			<if test="nickName != null and nickName != ''">nick_name = #{nickName},</if>
  			<if test="referredName != null">referred_name = #{referredName},</if>

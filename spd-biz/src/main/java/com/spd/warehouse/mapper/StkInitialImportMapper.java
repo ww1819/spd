@@ -24,5 +24,8 @@ public interface StkInitialImportMapper {
 
     int update(StkInitialImport record);
 
+    /** 逻辑删除：设置 del_flag=1, delete_by, delete_time */
+    int logicalDeleteById(@Param("id") String id, @Param("deleteBy") String deleteBy);
+
     String selectMaxBillNo(@Param("datePrefix") String datePrefix);
 }

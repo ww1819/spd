@@ -2,6 +2,7 @@ package com.spd.caigou.mapper;
 
 import com.spd.caigou.domain.PurchasePlan;
 import com.spd.caigou.domain.PurchasePlanEntry;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -46,20 +47,14 @@ public interface PurchasePlanMapper
     public int updatePurchasePlan(PurchasePlan purchasePlan);
 
     /**
-     * 删除采购计划
-     *
-     * @param id 采购计划主键
-     * @return 结果
+     * 逻辑删除采购计划（设置 del_flag、delete_by、delete_time）
      */
-    public int deletePurchasePlanById(Long id);
+    public int deletePurchasePlanById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除采购计划
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
+     * 批量逻辑删除采购计划
      */
-    public int deletePurchasePlanByIds(Long[] ids);
+    public int deletePurchasePlanByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询采购计划明细
@@ -94,20 +89,14 @@ public interface PurchasePlanMapper
     public int updatePurchasePlanEntry(PurchasePlanEntry purchasePlanEntry);
 
     /**
-     * 删除采购计划明细
-     *
-     * @param parentId 主表ID
-     * @return 结果
+     * 逻辑删除采购计划明细
      */
-    public int deletePurchasePlanEntryByParentId(Long parentId);
+    public int deletePurchasePlanEntryByParentId(@Param("parentId") Long parentId, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除采购计划明细
-     *
-     * @param parentIds 需要删除的数据主键集合
-     * @return 结果
+     * 批量逻辑删除采购计划明细
      */
-    public int deletePurchasePlanEntryByParentIds(Long[] parentIds);
+    public int deletePurchasePlanEntryByParentIds(@Param("parentIds") Long[] parentIds, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询最大计划单号

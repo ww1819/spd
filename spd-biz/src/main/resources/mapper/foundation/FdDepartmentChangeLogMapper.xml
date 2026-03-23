@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdDepartmentChangeLogMapper">
+
+    <resultMap id="FdDepartmentChangeLogResult" type="com.spd.foundation.domain.FdDepartmentChangeLog">
+        <id property="id" column="id"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="changeTime" column="change_time"/>
+        <result property="operator" column="operator"/>
+        <result property="fieldName" column="field_name"/>
+        <result property="fieldLabel" column="field_label"/>
+        <result property="oldValue" column="old_value"/>
+        <result property="newValue" column="new_value"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.FdDepartmentChangeLog">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        INSERT INTO fd_department_change_log (id, department_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id)
+        VALUES (#{id}, #{departmentId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{tenantId})
+    </insert>
+
+    <select id="selectByDepartmentId" resultMap="FdDepartmentChangeLogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        SELECT id, department_id, change_time, operator, field_name, field_label, old_value, new_value
+        FROM fd_department_change_log
+        WHERE department_id = #{departmentId} and tenant_id = #{scopedTenantId}
+        ORDER BY change_time DESC
+    </select>
+</mapper>

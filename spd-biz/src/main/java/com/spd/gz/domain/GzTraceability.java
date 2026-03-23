@@ -26,6 +26,14 @@ public class GzTraceability extends BaseEntity
     @Excel(name = "追溯单号")
     private String traceNo;
 
+    /** 批次号（系统追溯批次号，对应 te.batch_no） */
+    @Excel(name = "批次号")
+    private String batchNo;
+
+    /** 批号（生产批号，对应 gdi.material_no） */
+    @Excel(name = "批号")
+    private String materialNo;
+
     /** 病历号 */
     @Excel(name = "病历号")
     private String medicalRecordNo;
@@ -118,6 +126,9 @@ public class GzTraceability extends BaseEntity
     /** 删除标识 */
     private String delFlag;
 
+    /** 租户ID */
+    private String tenantId;
+
     /** 申请科室对象 */
     private FdDepartment applyDept;
 
@@ -145,6 +156,26 @@ public class GzTraceability extends BaseEntity
     public String getTraceNo()
     {
         return traceNo;
+    }
+
+    public void setBatchNo(String batchNo)
+    {
+        this.batchNo = batchNo;
+    }
+
+    public String getBatchNo()
+    {
+        return batchNo;
+    }
+
+    public void setMaterialNo(String materialNo)
+    {
+        this.materialNo = materialNo;
+    }
+
+    public String getMaterialNo()
+    {
+        return materialNo;
     }
 
     public void setMedicalRecordNo(String medicalRecordNo)
@@ -377,6 +408,9 @@ public class GzTraceability extends BaseEntity
         return delFlag;
     }
 
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
     public FdDepartment getApplyDept() {
         return applyDept;
     }
@@ -406,6 +440,8 @@ public class GzTraceability extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("traceNo", getTraceNo())
+            .append("batchNo", getBatchNo())
+            .append("materialNo", getMaterialNo())
             .append("medicalRecordNo", getMedicalRecordNo())
             .append("patientName", getPatientName())
             .append("patientSex", getPatientSex())

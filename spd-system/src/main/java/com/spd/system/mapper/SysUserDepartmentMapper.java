@@ -37,4 +37,9 @@ public interface SysUserDepartmentMapper {
      * @return 结果
      */
     public int batchUserDepartment(List<SysUserDepartment> userDepartmentList);
+
+    /**
+     * 用户已授权的科室 ID（sys_user_department）
+     */
+    public List<Long> selectDepartmentIdsByUserId(Long userId);
 }

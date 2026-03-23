@@ -43,6 +43,9 @@ public class DeptFixedNumber extends BaseEntity {
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
 
+    /** 租户ID（同sb_customer.customer_id） */
+    private String tenantId;
+
     /** 关联：科室 */
     private FdDepartment department;
 
@@ -57,6 +60,15 @@ public class DeptFixedNumber extends BaseEntity {
 
     /** 查询字段：注册证号 */
     private String registerNo;
+
+    /** 查询字段：单位名称 */
+    private String unitName;
+
+    /** 查询字段：单价 */
+    private java.math.BigDecimal price;
+
+    /** 查询字段：库房分类名称 */
+    private String warehouseCategoryName;
 
     public String getId() {
         return id;
@@ -138,6 +150,14 @@ public class DeptFixedNumber extends BaseEntity {
         this.delFlag = delFlag;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public FdDepartment getDepartment() {
         return department;
     }
@@ -176,6 +196,30 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setRegisterNo(String registerNo) {
         this.registerNo = registerNo;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
+    }
+
+    public java.math.BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(java.math.BigDecimal price) {
+        this.price = price;
+    }
+
+    public String getWarehouseCategoryName() {
+        return warehouseCategoryName;
+    }
+
+    public void setWarehouseCategoryName(String warehouseCategoryName) {
+        this.warehouseCategoryName = warehouseCategoryName;
     }
 
     @Override

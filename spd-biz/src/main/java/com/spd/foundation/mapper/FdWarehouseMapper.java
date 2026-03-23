@@ -1,6 +1,8 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
 import com.spd.foundation.domain.FdWarehouse;
 
 /**
@@ -18,6 +20,12 @@ public interface FdWarehouseMapper
      * @return 仓库
      */
     public FdWarehouse selectFdWarehouseById(String id);
+
+    /**
+     * 按主键查询仓库（不按租户过滤），调用方需自行校验租户/数据权限。
+     * 解决 {@link #selectFdWarehouseById} 因当前线程租户上下文与库中 tenant_id 不一致而误查不到的问题。
+     */
+    FdWarehouse selectFdWarehouseByIdIgnoreTenant(@Param("id") String id);
 
     /**
      * 查询仓库列表
@@ -73,11 +81,12 @@ public interface FdWarehouseMapper
     List<Long> selectWarehouseListByUserId(Long userId);
 
     /**
-     * 根据用户ID查询所有仓库列表
-     * @param userId
-     * @return
+     * 根据用户ID查询所有仓库列表（可选按租户过滤）
+     * @param userId 用户ID
+     * @param tenantId 租户ID，为空则不按租户过滤
+     * @return 仓库列表
      */
-    List<FdWarehouse> selectUserWarehouseAll(Long userId);
+    List<FdWarehouse> selectUserWarehouseAll(@Param("userId") Long userId, @Param("tenantId") String tenantId);
 
     /**
      * 校验仓库是否已存在出入库业务

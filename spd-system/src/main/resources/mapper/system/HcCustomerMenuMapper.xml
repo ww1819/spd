@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.HcCustomerMenuMapper">
+
+  <select id="selectListWithMenuNameByTenantId" resultType="com.spd.system.domain.vo.HcCustomerMenuManageVo">
+    select cm.tenant_id as tenantId, cm.menu_id as menuId, m.menu_name as menuName, ifnull(cm.status,'0') as status
+    from hc_customer_menu cm
+    inner join sys_menu m on m.menu_id = cm.menu_id and m.menu_type in ('M','C','F')
+    where cm.tenant_id = #{tenantId}
+    order by m.parent_id, m.order_num
+  </select>
+
+  <select id="selectMenuIdsByTenantId" resultType="long">
+    select menu_id from hc_customer_menu where tenant_id = #{tenantId}
+  </select>
+
+  <!-- 耗材租户下已被暂停的菜单ID（status='1'），用于登录后路由 meta.paused 标记 -->
+  <select id="selectPausedMenuIdsByTenantId" resultType="long">
+    select menu_id from hc_customer_menu where tenant_id = #{tenantId} and status = '1'
+  </select>
+
+  <delete id="deleteByTenantId">
+    delete from hc_customer_menu where tenant_id = #{tenantId}
+  </delete>
+
+  <select id="countByTenantIdAndMenuId" resultType="int">
+    select count(1) from hc_customer_menu
+    where tenant_id = #{tenantId} and menu_id = #{menuId}
+  </select>
+
+  <update id="updateStatus">
+    update hc_customer_menu set status = #{status} where tenant_id = #{tenantId} and menu_id = #{menuId}
+  </update>
+
+  <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerMenu">
+    insert into hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+    values (#{tenantId}, #{menuId}, ifnull(#{status},'0'), ifnull(#{isEnabled},'1'), #{createBy}, now())
+  </insert>
+
+  <insert id="batchInsert">
+    insert into hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+    values
+    <foreach item="item" collection="list" separator=",">
+      (#{item.tenantId}, #{item.menuId}, ifnull(#{item.status},'0'), ifnull(#{item.isEnabled},'1'), #{item.createBy}, now())
+    </foreach>
+  </insert>
+</mapper>

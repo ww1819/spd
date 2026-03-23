@@ -20,6 +20,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SbMenu;
 import com.spd.system.domain.SbWorkGroup;
 import com.spd.system.service.ISbMenuService;
@@ -38,9 +39,9 @@ public class SbWorkGroupController extends BaseController {
   @Autowired
   private ISbMenuService sbMenuService;
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:list') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:list') or @ss.hasPermi('system:post:list') or @ss.isPlatformUser() or @ss.isTenantUserWithCustomer(#customerId)")
   @GetMapping("/list")
-  public AjaxResult list(@RequestParam String customerId) {
+  public AjaxResult list(@RequestParam(required = false) String customerId) {
     if (customerId == null || customerId.isEmpty()) {
       if (SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null
           && SecurityUtils.getLoginUser().getUser().getCustomerId() != null) {
@@ -53,49 +54,49 @@ public class SbWorkGroupController extends BaseController {
     return success(list);
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @GetMapping("/{groupId}")
   public AjaxResult getInfo(@PathVariable String groupId) {
     return success(sbWorkGroupService.selectByGroupId(groupId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:add') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:add') or @ss.hasPermi('system:post:add') or @ss.isPlatformUser()")
   @Log(title = "设备工作组", businessType = BusinessType.INSERT)
   @PostMapping
   public AjaxResult add(@Validated @RequestBody SbWorkGroup group) {
-    group.setCreateBy(SecurityUtils.getUsername());
+    group.setCreateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbWorkGroupService.insertSbWorkGroup(group));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser()")
   @Log(title = "设备工作组", businessType = BusinessType.UPDATE)
   @PutMapping
   public AjaxResult edit(@Validated @RequestBody SbWorkGroup group) {
-    group.setUpdateBy(SecurityUtils.getUsername());
+    group.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbWorkGroupService.updateSbWorkGroup(group));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:remove') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:remove') or @ss.hasPermi('system:post:remove') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "设备工作组", businessType = BusinessType.DELETE)
   @DeleteMapping("/{groupId}")
   public AjaxResult remove(@PathVariable String groupId) {
     return toAjax(sbWorkGroupService.deleteByGroupId(groupId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @GetMapping("/users/{groupId}")
   public AjaxResult listUsers(@PathVariable String groupId) {
     return success(sbWorkGroupService.selectUserIdsByGroupId(groupId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "工作组添加用户", businessType = BusinessType.UPDATE)
   @PostMapping("/users/{groupId}")
   public AjaxResult addUsers(@PathVariable String groupId, @RequestBody Long[] userIds) {
     return toAjax(sbWorkGroupService.addUsersToGroup(groupId, userIds));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "工作组移除用户", businessType = BusinessType.UPDATE)
   @DeleteMapping("/users/{groupId}/{userId}")
   public AjaxResult removeUser(@PathVariable String groupId, @PathVariable Long userId) {
@@ -103,56 +104,95 @@ public class SbWorkGroupController extends BaseController {
   }
 
   /** 工作组可分配的菜单树（客户已开启的菜单） */
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithCustomer(#customerId)")
   @GetMapping("/menuTree")
   public AjaxResult menuTree(@RequestParam String customerId) {
     List<SbMenu> tree = sbMenuService.selectSbMenuTreeByCustomerIdEnabling(customerId);
     return success(tree);
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @GetMapping("/menuIds/{groupId}")
   public AjaxResult getMenuIds(@PathVariable String groupId) {
     return success(sbWorkGroupService.selectMenuIdsByGroupId(groupId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "工作组菜单权限", businessType = BusinessType.UPDATE)
   @PutMapping("/menu/{groupId}")
-  public AjaxResult saveMenus(@PathVariable String groupId, @RequestParam String customerId, @RequestParam(required = false) String[] menuIds) {
-    return toAjax(sbWorkGroupService.saveGroupMenus(groupId, customerId, menuIds));
+  public AjaxResult saveMenus(@PathVariable String groupId, @RequestParam String customerId,
+      @RequestParam(required = false) String[] menuIds,
+      @RequestParam(value = "menuIdsStr", required = false) String menuIdsStr) {
+    sbWorkGroupService.saveGroupMenus(groupId, customerId, normalizeMenuIds(menuIds, menuIdsStr));
+    return success();
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @GetMapping("/warehouseIds/{groupId}")
   public AjaxResult getWarehouseIds(@PathVariable String groupId) {
     return success(sbWorkGroupService.selectWarehouseIdsByGroupId(groupId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "工作组仓库权限", businessType = BusinessType.UPDATE)
   @PutMapping("/warehouse/{groupId}")
-  public AjaxResult saveWarehouses(@PathVariable String groupId, @RequestParam String customerId, @RequestParam(required = false) Long[] warehouseIds) {
-    return toAjax(sbWorkGroupService.saveGroupWarehouses(groupId, customerId, warehouseIds));
+  public AjaxResult saveWarehouses(@PathVariable String groupId, @RequestParam String customerId,
+      @RequestParam(required = false) Long[] warehouseIds,
+      @RequestParam(value = "warehouseIdsStr", required = false) String warehouseIdsStr) {
+    sbWorkGroupService.saveGroupWarehouses(groupId, customerId, normalizeLongArray(warehouseIds, warehouseIdsStr));
+    return success();
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @GetMapping("/deptIds/{groupId}")
   public AjaxResult getDeptIds(@PathVariable String groupId) {
     return success(sbWorkGroupService.selectDeptIdsByGroupId(groupId));
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "工作组科室权限", businessType = BusinessType.UPDATE)
   @PutMapping("/dept/{groupId}")
-  public AjaxResult saveDepts(@PathVariable String groupId, @RequestParam String customerId, @RequestParam(required = false) Long[] deptIds) {
-    return toAjax(sbWorkGroupService.saveGroupDepts(groupId, customerId, deptIds));
+  public AjaxResult saveDepts(@PathVariable String groupId, @RequestParam String customerId,
+      @RequestParam(required = false) Long[] deptIds,
+      @RequestParam(value = "deptIdsStr", required = false) String deptIdsStr) {
+    sbWorkGroupService.saveGroupDepts(groupId, customerId, normalizeLongArray(deptIds, deptIdsStr));
+    return success();
   }
 
-  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.isPlatformUser()")
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:edit') or @ss.hasPermi('system:post:edit') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
   @Log(title = "工作组权限同步到用户", businessType = BusinessType.UPDATE)
   @PostMapping("/sync/{groupId}")
   public AjaxResult syncToGroupUsers(@PathVariable String groupId) {
     return success(sbWorkGroupService.syncToGroupUsers(groupId));
+  }
+
+  /** 兼容前端 PUT 数组参数绑定失败：支持 menuIds 数组或 menuIdsStr 逗号分隔字符串 */
+  private static String[] normalizeMenuIds(String[] menuIds, String menuIdsStr) {
+    if (menuIds != null && menuIds.length > 0) {
+      if (menuIds.length == 1 && menuIds[0] != null && menuIds[0].contains(",")) {
+        return java.util.Arrays.stream(menuIds[0].split(",")).map(String::trim).filter(s -> !s.isEmpty()).toArray(String[]::new);
+      }
+      return menuIds;
+    }
+    if (StringUtils.isNotEmpty(menuIdsStr)) {
+      return java.util.Arrays.stream(menuIdsStr.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toArray(String[]::new);
+    }
+    return null;
+  }
+
+  /** 兼容前端 PUT 数组参数绑定失败：支持 Long[] 或逗号分隔字符串 */
+  private static Long[] normalizeLongArray(Long[] arr, String str) {
+    if (arr != null && arr.length > 0) return arr;
+    if (StringUtils.isEmpty(str)) return null;
+    String[] parts = str.split(",");
+    java.util.List<Long> list = new java.util.ArrayList<>();
+    for (String s : parts) {
+      s = s != null ? s.trim() : "";
+      if (s.isEmpty()) continue;
+      try {
+        list.add(Long.valueOf(s));
+      } catch (NumberFormatException ignored) { }
+    }
+    return list.isEmpty() ? null : list.toArray(new Long[0]);
   }
 }

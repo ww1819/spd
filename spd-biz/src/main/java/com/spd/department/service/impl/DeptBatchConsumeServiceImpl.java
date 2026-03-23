@@ -12,6 +12,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.department.domain.DeptBatchConsumeEntry;
@@ -43,9 +44,15 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     public DeptBatchConsume selectDeptBatchConsumeById(Long id)
     {
         DeptBatchConsume deptBatchConsume = deptBatchConsumeMapper.selectDeptBatchConsumeById(id);
+        if (deptBatchConsume == null) {
+            return null;
+        }
         List<DeptBatchConsumeEntry> deptBatchConsumeEntryList = deptBatchConsume.getDeptBatchConsumeEntryList();
         if (deptBatchConsumeEntryList != null) {
             for (DeptBatchConsumeEntry deptBatchConsumeEntry : deptBatchConsumeEntryList) {
+                if (deptBatchConsumeEntry == null) {
+                    continue;
+                }
                 FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(deptBatchConsumeEntry.getMaterialId());
                 deptBatchConsumeEntry.setMaterial(material);
             }
@@ -62,6 +69,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public List<DeptBatchConsume> selectDeptBatchConsumeList(DeptBatchConsume deptBatchConsume)
     {
+        if (deptBatchConsume != null && StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
+        }
         return deptBatchConsumeMapper.selectDeptBatchConsumeList(deptBatchConsume);
     }
 
@@ -79,6 +89,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         deptBatchConsume.setConsumeBillNo(getNumber());
         deptBatchConsume.setConsumeBillStatus(1); // 待审核状态
         deptBatchConsume.setDelFlag(0);
+        if (StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = deptBatchConsumeMapper.insertDeptBatchConsume(deptBatchConsume);
         insertDeptBatchConsumeEntry(deptBatchConsume);
         return rows;
@@ -122,6 +135,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int deleteDeptBatchConsumeByIds(Long[] ids)
     {
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
         deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenIds(ids);
         return deptBatchConsumeMapper.deleteDeptBatchConsumeByIds(ids);
     }
@@ -149,7 +165,13 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     @Transactional
     public int auditConsume(String id, String auditBy) {
-        DeptBatchConsume deptBatchConsume = deptBatchConsumeMapper.selectDeptBatchConsumeById(Long.parseLong(id));
+        Long consumeId;
+        try {
+            consumeId = Long.parseLong(id);
+        } catch (Exception e) {
+            throw new ServiceException(String.format("科室批量消耗ID：%s 非法", id));
+        }
+        DeptBatchConsume deptBatchConsume = deptBatchConsumeMapper.selectDeptBatchConsumeById(consumeId);
         if(deptBatchConsume == null){
             throw new ServiceException(String.format("科室批量消耗ID：%s，不存在!", id));
         }

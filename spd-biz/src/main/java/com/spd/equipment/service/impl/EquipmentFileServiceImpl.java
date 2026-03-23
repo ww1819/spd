@@ -59,7 +59,7 @@ public class EquipmentFileServiceImpl implements IEquipmentFileService
             equipmentFile.setFileId(UUID7.generateUUID7Simple());
         }
         equipmentFile.setCreateTime(DateUtils.getNowDate());
-        equipmentFile.setCreateBy(SecurityUtils.getUsername());
+        equipmentFile.setCreateBy(SecurityUtils.getUserIdStr());
         return equipmentFileMapper.insertEquipmentFile(equipmentFile);
     }
 
@@ -73,7 +73,7 @@ public class EquipmentFileServiceImpl implements IEquipmentFileService
     public int updateEquipmentFile(EquipmentFile equipmentFile)
     {
         equipmentFile.setUpdateTime(DateUtils.getNowDate());
-        equipmentFile.setUpdateBy(SecurityUtils.getUsername());
+        equipmentFile.setUpdateBy(SecurityUtils.getUserIdStr());
         return equipmentFileMapper.updateEquipmentFile(equipmentFile);
     }
 

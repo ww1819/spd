@@ -6,8 +6,12 @@ import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
 
 /**
- * 68分类对象 fd_category68
- * 
+ * 系统表 fd_category68：医疗器械「68 分类」标准字典/参照模板，供全库共用。
+ * <p>
+ * 本表属于系统级模板数据，不按租户隔离（无 tenant_id）；各客户在 {@code sb_customer_category68}
+ * 中维护自有副本，通过 {@code ref_category68_id} 与本表主键对应。
+ * </p>
+ *
  * @author spd
  * @date 2024-04-12
  */

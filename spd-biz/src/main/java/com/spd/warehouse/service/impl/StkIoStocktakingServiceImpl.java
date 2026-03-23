@@ -38,7 +38,11 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public StkIoStocktaking selectStkIoStocktakingById(Long id)
     {
-        return stkIoStocktakingMapper.selectStkIoStocktakingById(id);
+        StkIoStocktaking stk = stkIoStocktakingMapper.selectStkIoStocktakingById(id);
+        if (stk != null) {
+            SecurityUtils.ensureTenantAccess(stk.getTenantId());
+        }
+        return stk;
     }
 
     /**
@@ -50,6 +54,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public List<StkIoStocktaking> selectStkIoStocktakingList(StkIoStocktaking stkIoStocktaking)
     {
+        if (stkIoStocktaking != null && StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoStocktakingMapper.selectStkIoStocktakingList(stkIoStocktaking);
     }
 
@@ -65,6 +72,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     {
         stkIoStocktaking.setStockNo(getNumber());
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = stkIoStocktakingMapper.insertStkIoStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
         return rows;
@@ -121,7 +131,14 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public int deleteStkIoStocktakingByIds(Long[] ids)
     {
-        stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIds(ids);
+        for (Long id : ids) {
+            StkIoStocktaking existing = stkIoStocktakingMapper.selectStkIoStocktakingById(id);
+            if (existing != null) {
+                SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            }
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIds(ids, deleteBy);
         return stkIoStocktakingMapper.deleteStkIoStocktakingByIds(ids);
     }
 
@@ -135,7 +152,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public int deleteStkIoStocktakingById(Long id)
     {
-        stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenId(id);
+        StkIoStocktaking existing = stkIoStocktakingMapper.selectStkIoStocktakingById(id);
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        }
+        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenId(id, deleteBy);
         return stkIoStocktakingMapper.deleteStkIoStocktakingById(id);
     }
 

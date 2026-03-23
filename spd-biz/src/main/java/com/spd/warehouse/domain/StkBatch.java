@@ -101,6 +101,21 @@ public class StkBatch extends BaseEntity {
     private String financeCategoryName;
     /** 批次产生方式：采购入库/仓库盘盈/科室盘盈等 */
     private String batchSource;
+
+    /** 来源单据类型（stk_io_bill.bill_type） */
+    private Integer originBillType;
+
+    /** 来源流水 lx（如 RK/ZR/PY/QC 等） */
+    private String originFlowLx;
+
+    /** 来源业务类型中文（便于追溯展示） */
+    private String originBusinessType;
+
+    /** 来源仓库ID（调拨等场景用） */
+    private Long originFromWarehouseId;
+
+    /** 目标仓库ID/科室仓库ID（调拨等场景用） */
+    private Long originToWarehouseId;
     /** 单据主表ID */
     private Long billId;
     /** 单据号 */
@@ -125,6 +140,8 @@ public class StkBatch extends BaseEntity {
     private Date delTime;
     /** 删除人 */
     private String delBy;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -204,6 +221,21 @@ public class StkBatch extends BaseEntity {
     public void setFinanceCategoryName(String financeCategoryName) { this.financeCategoryName = financeCategoryName; }
     public String getBatchSource() { return batchSource; }
     public void setBatchSource(String batchSource) { this.batchSource = batchSource; }
+
+    public Integer getOriginBillType() { return originBillType; }
+    public void setOriginBillType(Integer originBillType) { this.originBillType = originBillType; }
+
+    public String getOriginFlowLx() { return originFlowLx; }
+    public void setOriginFlowLx(String originFlowLx) { this.originFlowLx = originFlowLx; }
+
+    public String getOriginBusinessType() { return originBusinessType; }
+    public void setOriginBusinessType(String originBusinessType) { this.originBusinessType = originBusinessType; }
+
+    public Long getOriginFromWarehouseId() { return originFromWarehouseId; }
+    public void setOriginFromWarehouseId(Long originFromWarehouseId) { this.originFromWarehouseId = originFromWarehouseId; }
+
+    public Long getOriginToWarehouseId() { return originToWarehouseId; }
+    public void setOriginToWarehouseId(Long originToWarehouseId) { this.originToWarehouseId = originToWarehouseId; }
     public Long getBillId() { return billId; }
     public void setBillId(Long billId) { this.billId = billId; }
     public String getBillNo() { return billNo; }
@@ -226,4 +258,6 @@ public class StkBatch extends BaseEntity {
     public void setDelTime(Date delTime) { this.delTime = delTime; }
     public String getDelBy() { return delBy; }
     public void setDelBy(String delBy) { this.delBy = delBy; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 }

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import com.spd.common.core.domain.entity.SysRole;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysRoleService;
@@ -47,10 +48,12 @@ public class SysPermissionService
     }
 
     /**
-     * 获取菜单数据权限
-     * 
+     * 获取菜单及按钮权限：非管理员统一从 {@code sys_user_menu} 关联 {@code sys_menu.perms} 读取（含 F 按钮）；
+     * 租户（有 customerId）时额外排除 {@code is_platform=1} 的菜单权限，与 {@code getRouters} 菜单树数据源一致。
+     * 设备端 sb 权限由 SbPermissionService#getMenuPermission 在登录/getInfo 时与上述结果合并进 LoginUser。
+     *
      * @param user 用户信息
-     * @return 菜单权限信息
+     * @return 菜单权限信息（供 v-hasPermi、@PreAuthorize 等使用）
      */
     public Set<String> getMenuPermission(SysUser user)
     {
@@ -62,22 +65,19 @@ public class SysPermissionService
         }
         else
         {
-            // 先获取角色关联的菜单权限（用于设置role.setPermissions）
+            // 耗材：仅从用户权限表 sys_user_menu 读取；租户时排除平台管理菜单
+            boolean forTenant = StringUtils.isNotEmpty(user.getCustomerId());
+            Set<String> userPerms = menuService.selectMenuPermsByUserId(user.getUserId(), forTenant);
+            perms.addAll(userPerms);
+            // 仍为角色设置 permissions，供数据权限等逻辑使用
             List<SysRole> roles = user.getRoles();
             if (!CollectionUtils.isEmpty(roles))
             {
-                // 多角色设置permissions属性，以便数据权限匹配权限
                 for (SysRole role : roles)
                 {
-                    Set<String> rolePerms = menuService.selectMenuPermsByRoleId(role.getRoleId());
-                    role.setPermissions(rolePerms);
-                    perms.addAll(rolePerms);
+                    role.setPermissions(menuService.selectMenuPermsByRoleId(role.getRoleId()));
                 }
             }
-            // 获取用户直接关联的菜单权限并合并（selectMenuPermsByUserId已包含角色和用户直接权限）
-            // 这里调用它会自动包含角色权限和用户直接权限，Set会自动去重
-            Set<String> allUserPerms = menuService.selectMenuPermsByUserId(user.getUserId());
-            perms.addAll(allUserPerms);
         }
         return perms;
     }

@@ -39,7 +39,7 @@ public class SbMenuController extends BaseController {
     /**
      * 获取设备菜单列表
      */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:list')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:list') or @ss.hasPermi('system:menu:list')")
     @GetMapping("/list")
     public AjaxResult list(SbMenu menu)
     {
@@ -47,14 +47,56 @@ public class SbMenuController extends BaseController {
         return success(list);
     }
 
+    /**
+     * 根据菜单ID获取设备菜单详情（修改时回显）
+     */
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit') or @ss.hasPermi('system:menu:query')")
+    @GetMapping("/{menuId}")
+    public AjaxResult getInfo(@PathVariable String menuId)
+    {
+        return success(sbMenuService.selectSbMenuById(menuId));
+    }
+
   /**
-   * 根据用户获取设备菜单树（menuId/parentId 为 UUID7 字符串）
+   * 设备菜单树（含默认对客户开放），用于批量设置
+   */
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:query') or @ss.hasPermi('system:menu:query')")
+    @GetMapping("/defaultOpen/tree")
+    public AjaxResult defaultOpenTree()
+    {
+        return success(sbMenuService.selectSbMenuTreeForDefaultOpenBatch());
+    }
+
+  /**
+   * 批量设置设备菜单「默认对客户开放」
+   */
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit') or @ss.hasPermi('system:menu:edit')")
+    @Log(title = "设备菜单管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/defaultOpen/batch")
+    public AjaxResult batchDefaultOpen(@RequestBody List<String> menuIds)
+    {
+        sbMenuService.batchSetDefaultOpenToCustomer(menuIds);
+        return success();
+    }
+
+  /**
+   * 获取设备菜单树
+   *
+   * - 平台模式：按当前用户已有设备菜单构建树（selectSbMenuTreeByUserId）
+   * - 租户模式：按当前客户已开启的菜单构建树（selectSbMenuTreeByCustomerIdEnabling），用于
+   *   用户管理 / 岗位管理授权时「列出客户包含的所有权限」。
    */
     @GetMapping("/treeselect")
     public AjaxResult treeselect(SbMenu menu)
     {
-        Long userId = SecurityUtils.getUserId();
-        List<SbMenu> sbMenus = sbMenuService.selectSbMenuTreeByUserId(userId);
+        String customerId = SecurityUtils.getCustomerId();
+        List<SbMenu> sbMenus;
+        if (StringUtils.isNotEmpty(customerId)) {
+            sbMenus = sbMenuService.selectSbMenuTreeByCustomerIdEnabling(customerId);
+        } else {
+            Long userId = SecurityUtils.getUserId();
+            sbMenus = sbMenuService.selectSbMenuTreeByUserId(userId);
+        }
         return success(sbMenus);
     }
 
@@ -72,7 +114,7 @@ public class SbMenuController extends BaseController {
   /**
    * 新增设备菜单
    */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:add')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:add') or @ss.hasPermi('system:menu:add')")
     @Log(title = "设备菜单管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SbMenu menu)
@@ -86,16 +128,16 @@ public class SbMenuController extends BaseController {
         {
             return error("新增菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setCreateBy(SecurityUtils.getUsername());
+        menu.setCreateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbMenuService.insertSbMenu(menu));
     }
 
   /**
    * 修改设备菜单
    */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:edit')")
-    @Log(title = "设备菜单管理", businessType = BusinessType.UPDATE)
-    @PutMapping
+@PreAuthorize("@ss.hasPermi('sb:system:menu:edit') or @ss.hasPermi('system:menu:edit')")
+  @Log(title = "设备菜单管理", businessType = BusinessType.UPDATE)
+  @PutMapping
     public AjaxResult edit(@Validated @RequestBody SbMenu menu)
     {
         if (!sbMenuService.checkSbMenuNameUnique(menu))
@@ -107,14 +149,14 @@ public class SbMenuController extends BaseController {
         {
             return error("修改菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setUpdateBy(SecurityUtils.getUsername());
+        menu.setUpdateBy(SecurityUtils.getUserIdStr());
         return toAjax(sbMenuService.updateSbMenu(menu));
     }
 
   /**
    * 删除设备菜单
    */
-    @PreAuthorize("@ss.hasPermi('sb:system:menu:remove')")
+    @PreAuthorize("@ss.hasPermi('sb:system:menu:remove') or @ss.hasPermi('system:menu:remove')")
     @Log(title = "设备菜单管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{menuId}")
     public AjaxResult remove(@PathVariable String menuId)

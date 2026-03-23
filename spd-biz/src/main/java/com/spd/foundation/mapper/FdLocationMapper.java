@@ -32,7 +32,7 @@ public interface FdLocationMapper
      *
      * @return 货位集合
      */
-    public List<FdLocation> selectFdLocationTree();
+    public List<FdLocation> selectFdLocationTree(FdLocation fdLocation);
 
     /**
      * 新增货位

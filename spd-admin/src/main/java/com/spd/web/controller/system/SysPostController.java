@@ -1,5 +1,6 @@
 package com.spd.web.controller.system;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.system.domain.SysPost;
+import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysPostService;
 import com.spd.system.service.impl.SysPostServiceImpl;
 
@@ -34,6 +36,9 @@ public class SysPostController extends BaseController
 {
     @Autowired
     private ISysPostService postService;
+
+    @Autowired
+    private ISysMenuService sysMenuService;
 
     /**
      * 获取岗位列表
@@ -57,9 +62,39 @@ public class SysPostController extends BaseController
         util.exportExcel(response, list, "岗位数据");
     }
 
+    @PreAuthorize("@ss.hasPermi('system:post:query')")
+    @GetMapping("/menuTreeselect")
+    public AjaxResult menuTreeselect(String tenantId)
+    {
+        return success(sysMenuService.selectMenuTreeForPostAssign(tenantId));
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:post:query')")
+    @GetMapping(value = "/roleMenuTreeselect/{postId}")
+    public AjaxResult roleMenuTreeselect(@PathVariable Long postId)
+    {
+        SysPost post = postService.selectPostById(postId);
+        AjaxResult ajax = AjaxResult.success();
+        String tenantId = post != null ? post.getTenantId() : null;
+        ajax.put("menus", sysMenuService.selectMenuTreeForPostAssign(tenantId));
+        List<Long> menuIds = ((SysPostServiceImpl) postService).selectMenuListByPostId(postId);
+        ajax.put("checkedKeys", menuIds != null ? menuIds : new ArrayList<>());
+        return ajax;
+    }
+
     /**
      * 根据岗位编号获取详细信息
      */
+    /**
+     * 耗材工作组关联用户 ID（sys_user_post），供「同步仓库/科室/菜单」按组批量更新用户权限
+     */
+    @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query') or @ss.hasPermi('system:post:edit')")
+    @GetMapping("/{postId}/userIds")
+    public AjaxResult userIdsByPost(@PathVariable Long postId)
+    {
+        return success(postService.selectUserIdsByPostId(postId));
+    }
+
     @PreAuthorize("@ss.hasPermi('system:post:query')")
     @GetMapping(value = "/{postId}")
     public AjaxResult getInfo(@PathVariable Long postId)
@@ -94,7 +129,7 @@ public class SysPostController extends BaseController
         {
             return error("新增岗位'" + post.getPostName() + "'失败，岗位编码已存在");
         }
-        post.setCreateBy(getUsername());
+        post.setCreateBy(getUserIdStr());
         return toAjax(postService.insertPost(post));
     }
 
@@ -114,7 +149,7 @@ public class SysPostController extends BaseController
         {
             return error("修改岗位'" + post.getPostName() + "'失败，岗位编码已存在");
         }
-        post.setUpdateBy(getUsername());
+        post.setUpdateBy(getUserIdStr());
         return toAjax(postService.updatePost(post));
     }
 

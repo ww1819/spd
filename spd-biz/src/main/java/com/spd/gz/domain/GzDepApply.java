@@ -47,6 +47,9 @@ public class GzDepApply extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 高值科室申领明细信息 */
     private List<GzDepApplyEntry> gzDepApplyEntryList;
 
@@ -119,6 +122,9 @@ public class GzDepApply extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     public List<GzDepApplyEntry> getGzDepApplyEntryList()
     {

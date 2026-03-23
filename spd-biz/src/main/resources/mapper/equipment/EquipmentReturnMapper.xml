@@ -39,8 +39,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentReturnList" parameterType="EquipmentReturn" resultMap="EquipmentReturnResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentReturnVo"/>
         <where>  
+            and r.tenant_id = #{scopedTenantId}
             <if test="returnNo != null  and returnNo != ''"> and r.return_no like concat('%', #{returnNo}, '%')</if>
             <if test="warehouseId != null "> and r.warehouse_id = #{warehouseId}</if>
             <if test="returnStatus != null  and returnStatus != ''"> and r.return_status = #{returnStatus}</if>
@@ -56,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and exists (
                     select 1 from equipment_return_detail d 
                     where d.return_id = r.return_id 
+                    and d.tenant_id = #{scopedTenantId}
                     and d.equipment_name like concat('%', #{equipmentName}, '%')
                 )
             </if>
@@ -64,11 +67,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentReturnById" parameterType="Long" resultMap="EquipmentReturnResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         <include refid="selectEquipmentReturnVo"/>
-        where r.return_id = #{returnId}
+        where r.return_id = #{returnId} and r.tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertEquipmentReturn" parameterType="EquipmentReturn" useGeneratedKeys="true" keyProperty="returnId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into equipment_return
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="returnId != null">return_id,</if>
@@ -84,6 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="returnId != null">#{returnId},</if>
@@ -99,10 +105,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateEquipmentReturn" parameterType="EquipmentReturn">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update equipment_return
         <trim prefix="SET" suffixOverrides=",">
             <if test="returnNo != null">return_no = #{returnNo},</if>
@@ -116,21 +124,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where return_id = #{returnId}
+        where return_id = #{returnId} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteEquipmentReturnById" parameterType="Long">
-        update equipment_return set del_flag = 1, update_time = now() where return_id = #{returnId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_return set del_flag = 1, update_time = now() where return_id = #{returnId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentReturnByIds" parameterType="String">
-        update equipment_return set del_flag = 1, update_time = now() where return_id in 
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update equipment_return set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and return_id in 
         <foreach item="returnId" collection="array" open="(" separator="," close=")">
             #{returnId}
         </foreach>
     </delete>
 
     <update id="auditEquipmentReturn" parameterType="EquipmentReturn">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update equipment_return
         <trim prefix="SET" suffixOverrides=",">
             <if test="returnStatus != null">return_status = #{returnStatus},</if>
@@ -139,6 +150,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where return_id = #{returnId}
+        where return_id = #{returnId} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

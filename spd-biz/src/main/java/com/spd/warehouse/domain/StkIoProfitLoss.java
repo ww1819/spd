@@ -37,6 +37,8 @@ public class StkIoProfitLoss extends BaseEntity {
     private Date auditDate;
     /** 删除标志 */
     private Integer delFlag;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
     /** 盈亏单明细 */
     private List<StkIoProfitLossEntry> entryList;
     /** 仓库对象 */
@@ -76,4 +78,6 @@ public class StkIoProfitLoss extends BaseEntity {
     public void setBeginDate(String beginDate) { this.beginDate = beginDate; }
     public String getEndDate() { return endDate; }
     public void setEndDate(String endDate) { this.endDate = endDate; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 }

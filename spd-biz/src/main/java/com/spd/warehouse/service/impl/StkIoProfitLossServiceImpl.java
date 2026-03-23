@@ -32,6 +32,7 @@ import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.warehouse.domain.HcCkFlow;
+import com.spd.warehouse.domain.StkProfitLossPending;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoProfitLoss;
@@ -41,6 +42,7 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.mapper.HcCkFlowMapper;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.mapper.StkProfitLossPendingMapper;
 import com.spd.warehouse.mapper.StkIoProfitLossMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoProfitLossService;
@@ -56,7 +58,8 @@ import com.spd.warehouse.vo.StkProfitLossEntryVo;
 public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
 
     private static final Logger log = LoggerFactory.getLogger(StkIoProfitLossServiceImpl.class);
-    private static final String BATCH_SOURCE_PROFIT = "仓库盘盈";
+    // 批次来源 lx：盘盈 => PY
+    private static final String BATCH_SOURCE_PROFIT = "PY";
 
     @Autowired
     private StkIoProfitLossMapper stkIoProfitLossMapper;
@@ -68,6 +71,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
     private HcCkFlowMapper hcCkFlowMapper;
     @Autowired
     private StkBatchMapper stkBatchMapper;
+    @Autowired
+    private StkProfitLossPendingMapper stkProfitLossPendingMapper;
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
     @Autowired
@@ -85,11 +90,18 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
 
     @Override
     public StkIoProfitLoss selectStkIoProfitLossById(Long id) {
-        return stkIoProfitLossMapper.selectStkIoProfitLossById(id);
+        StkIoProfitLoss bill = stkIoProfitLossMapper.selectStkIoProfitLossById(id);
+        if (bill != null) {
+            SecurityUtils.ensureTenantAccess(bill.getTenantId());
+        }
+        return bill;
     }
 
     @Override
     public List<StkIoProfitLoss> selectStkIoProfitLossList(StkIoProfitLoss stkIoProfitLoss) {
+        if (stkIoProfitLoss != null && StringUtils.isEmpty(stkIoProfitLoss.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoProfitLoss.setTenantId(SecurityUtils.getCustomerId());
+        }
         return stkIoProfitLossMapper.selectStkIoProfitLossList(stkIoProfitLoss);
     }
 
@@ -133,6 +145,9 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             entry.setBeginTime(e.getBeginTime());
             entry.setEndTime(e.getEndTime());
             entry.setMaterial(e.getMaterial());
+            entry.setSupplerId(e.getSupplierId() != null ? String.valueOf(e.getSupplierId()) : null);
+            entry.setMainBarcode(e.getMainBarcode());
+            entry.setSubBarcode(e.getSubBarcode());
             entry.setDelFlag(0);
             entryList.add(entry);
         }
@@ -153,7 +168,10 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         stkIoProfitLoss.setBillStatus(1);
         stkIoProfitLoss.setDelFlag(0);
         stkIoProfitLoss.setCreateTime(DateUtils.getNowDate());
-        stkIoProfitLoss.setCreateBy(SecurityUtils.getUsername());
+        stkIoProfitLoss.setCreateBy(SecurityUtils.getUserIdStr());
+        if (StringUtils.isEmpty(stkIoProfitLoss.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoProfitLoss.setTenantId(SecurityUtils.getCustomerId());
+        }
         int rows = stkIoProfitLossMapper.insertStkIoProfitLoss(stkIoProfitLoss);
         insertEntries(stkIoProfitLoss);
         return rows;
@@ -170,8 +188,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             throw new ServiceException("已审核的盈亏单不可修改");
         }
         stkIoProfitLoss.setUpdateTime(DateUtils.getNowDate());
-        stkIoProfitLoss.setUpdateBy(SecurityUtils.getUsername());
-        stkIoProfitLossMapper.deleteStkIoProfitLossEntryByParenId(stkIoProfitLoss.getId());
+        stkIoProfitLoss.setUpdateBy(SecurityUtils.getUserIdStr());
+        stkIoProfitLossMapper.deleteStkIoProfitLossEntryByParenId(stkIoProfitLoss.getId(), SecurityUtils.getUserIdStr());
         insertEntries(stkIoProfitLoss);
         return stkIoProfitLossMapper.updateStkIoProfitLoss(stkIoProfitLoss);
     }
@@ -180,10 +198,14 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
     @Override
     public int deleteStkIoProfitLossById(Long id) {
         StkIoProfitLoss existing = stkIoProfitLossMapper.selectStkIoProfitLossById(id);
-        if (existing != null && existing.getBillStatus() != null && existing.getBillStatus() == 2) {
+        if (existing == null) {
+            throw new ServiceException("盈亏单不存在");
+        }
+        SecurityUtils.ensureTenantAccess(existing.getTenantId());
+        if (existing.getBillStatus() != null && existing.getBillStatus() == 2) {
             throw new ServiceException("已审核的盈亏单不可删除");
         }
-        stkIoProfitLossMapper.deleteStkIoProfitLossEntryByParenId(id);
+        stkIoProfitLossMapper.deleteStkIoProfitLossEntryByParenId(id, SecurityUtils.getUserIdStr());
         return stkIoProfitLossMapper.deleteStkIoProfitLossById(id);
     }
 
@@ -202,7 +224,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             throw new ServiceException("盈亏单无明细，无法审核");
         }
         Long warehouseId = bill.getWarehouseId();
-        String username = SecurityUtils.getUsername();
+        String username = SecurityUtils.getUserIdStr();
         Date now = new Date();
 
         for (StkIoProfitLossEntry entry : entryList) {
@@ -262,7 +284,12 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setAmt(entry.getProfitAmount() != null ? entry.getProfitAmount().abs() : null);
                 flow.setBeginTime(entry.getBeginTime());
                 flow.setEndTime(entry.getEndTime());
+                flow.setMainBarcode(entry.getMainBarcode() != null ? entry.getMainBarcode() : inventory.getMainBarcode());
+                flow.setSubBarcode(entry.getSubBarcode() != null ? entry.getSubBarcode() : inventory.getSubBarcode());
+                flow.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId() : parseSupplierIdLong(entry.getSupplerId()));
                 flow.setLx("PK");
+                flow.setBatchId(inventory.getBatchId());
+                flow.setOriginBusinessType("仓库盘亏");
                 flow.setKcNo(inventory.getId());
                 flow.setFlowTime(now);
                 flow.setDelFlag(0);
@@ -286,53 +313,42 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                     stkBatch = buildStkBatchForProfit(bill, entry);
                     stkBatchMapper.insertStkBatch(stkBatch);
                 }
+                stkIoProfitLossMapper.updateStkIoProfitLossEntryBatchNo(entry.getId(), batchNo);
                 BigDecimal addQty = profitQty;
                 BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : BigDecimal.ZERO;
                 BigDecimal addAmt = addQty.multiply(unitPrice);
-                if (inventory == null) {
-                    inventory = new StkInventory();
-                    inventory.setBatchNo(batchNo);
-                    inventory.setBatchId(stkBatch.getId());
-                    inventory.setMaterialId(entry.getMaterialId());
-                    inventory.setWarehouseId(warehouseId);
-                    inventory.setQty(addQty);
-                    inventory.setUnitPrice(unitPrice);
-                    inventory.setAmt(addAmt);
-                    inventory.setMaterialDate(now);
-                    inventory.setWarehouseDate(now);
-                    inventory.setBeginTime(entry.getBeginTime());
-                    inventory.setEndTime(entry.getEndTime());
-                    inventory.setCreateTime(now);
-                    inventory.setCreateBy(username);
-                    stkInventoryMapper.insertStkInventory(inventory);
-                } else {
-                    BigDecimal newQty = inventory.getQty().add(addQty);
-                    inventory.setQty(newQty);
-                    inventory.setAmt(newQty.multiply(unitPrice));
-                    inventory.setUpdateTime(now);
-                    inventory.setUpdateBy(username);
-                    stkInventoryMapper.updateStkInventory(inventory);
-                }
 
-                HcCkFlow flow = new HcCkFlow();
-                flow.setBillId(bill.getId());
-                flow.setEntryId(entry.getId());
-                flow.setWarehouseId(warehouseId);
-                flow.setMaterialId(entry.getMaterialId());
-                flow.setBatchNo(batchNo);
-                flow.setBatchNumber(entry.getBatchNumber());
-                flow.setQty(addQty);
-                flow.setUnitPrice(unitPrice);
-                flow.setAmt(addAmt);
-                flow.setBeginTime(entry.getBeginTime());
-                flow.setEndTime(entry.getEndTime());
-                flow.setLx("PY");
-                flow.setKcNo(inventory.getId());
-                flow.setFlowTime(now);
-                flow.setDelFlag(0);
-                flow.setCreateTime(now);
-                flow.setCreateBy(username);
-                hcCkFlowMapper.insertHcCkFlow(flow);
+                // 盘盈：只生成“待入账”明细，不直接更新 stk_inventory/stk_dep_inventory，避免污染结算数据
+                StkProfitLossPending pending = new StkProfitLossPending();
+                pending.setBillId(bill.getId());
+                pending.setEntryId(entry.getId());
+                pending.setWarehouseId(warehouseId);
+                pending.setMaterialId(entry.getMaterialId());
+                pending.setSupplierId(parseSupplierIdLong(entry.getSupplerId()));
+
+                pending.setBatchNo(batchNo);
+                pending.setBatchId(stkBatch.getId());
+                pending.setBatchNumber(entry.getBatchNumber());
+
+                pending.setQty(addQty);
+                pending.setUnitPrice(unitPrice);
+                pending.setAmt(addAmt);
+                pending.setBeginTime(entry.getBeginTime());
+                pending.setEndTime(entry.getEndTime());
+                pending.setMainBarcode(entry.getMainBarcode());
+                pending.setSubBarcode(entry.getSubBarcode());
+
+                pending.setApplyStatus("待入账");
+                pending.setSettlementEffectStatus("仅追溯用");
+                pending.setTenantId(bill.getTenantId());
+
+                pending.setDelFlag(0);
+                pending.setCreateTime(now);
+                pending.setCreateBy(username);
+                pending.setUpdateTime(now);
+                pending.setUpdateBy(username);
+
+                stkProfitLossPendingMapper.insertStkProfitLossPending(pending);
             }
         }
 
@@ -350,7 +366,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             return;
         }
         Date now = DateUtils.getNowDate();
-        String user = SecurityUtils.getUsername();
+        String user = SecurityUtils.getUserIdStr();
         for (StkIoProfitLossEntry e : list) {
             e.setParenId(stkIoProfitLoss.getId());
             e.setDelFlag(0);
@@ -382,26 +398,58 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         return "PC" + FillRuleUtil.createBatchNo();
     }
 
+    /** 将明细中的 supplerId（String）解析为 Long，用于写库存/流水 */
+    private Long parseSupplierIdLong(String supplerId) {
+        if (StringUtils.isEmpty(supplerId)) return null;
+        try {
+            return Long.valueOf(supplerId.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private StkBatch buildStkBatchForProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry) {
         StkBatch b = new StkBatch();
         b.setBatchNo(entry.getBatchNo());
         b.setMaterialId(entry.getMaterialId());
         b.setBatchNumber(entry.getBatchNumber());
+        b.setMainBarcode(entry.getMainBarcode());
+        b.setSubBarcode(entry.getSubBarcode());
         b.setBeginTime(entry.getBeginTime());
         b.setEndTime(entry.getEndTime());
         b.setUnitPrice(entry.getUnitPrice());
         b.setBillId(bill.getId());
         b.setBillNo(bill.getBillNo());
         b.setEntryId(entry.getId());
+        // 批次来源：盘盈对应流水 lx=PY（批次追溯展示用）
         b.setBatchSource(BATCH_SOURCE_PROFIT);
+        b.setOriginBillType(null);
+        b.setOriginFlowLx("PY");
+        b.setOriginBusinessType("仓库盘盈");
+        if (bill.getWarehouseId() != null) {
+            b.setOriginFromWarehouseId(bill.getWarehouseId());
+            b.setOriginToWarehouseId(bill.getWarehouseId());
+        }
         Date now = new Date();
-        String username = SecurityUtils.getUsername();
+        String username = SecurityUtils.getUserIdStr();
         b.setAuditTime(now);
         b.setAuditBy(username);
         b.setCreateTime(now);
         b.setCreateBy(username);
         b.setDelFlag(0);
-
+        b.setTenantId(bill.getTenantId());
+        if (StringUtils.isNotEmpty(entry.getSupplerId())) {
+            try {
+                Long supplierId = Long.valueOf(entry.getSupplerId().trim());
+                FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplierId);
+                if (sup != null) {
+                    b.setSupplierId(sup.getId());
+                    b.setSupplierCode(sup.getCode());
+                    b.setSupplierName(sup.getName());
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
         if (entry.getMaterialId() != null) {
             FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
             if (m != null) {

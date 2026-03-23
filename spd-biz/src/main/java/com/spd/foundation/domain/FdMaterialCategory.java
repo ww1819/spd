@@ -37,6 +37,9 @@ public class FdMaterialCategory extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     public void setMaterialCategoryId(Long materialCategoryId) 
     {
         this.materialCategoryId = materialCategoryId;
@@ -87,10 +90,13 @@ public class FdMaterialCategory extends BaseEntity
         this.delFlag = delFlag;
     }
 
-    public Integer getDelFlag() 
+    public Integer getDelFlag()
     {
         return delFlag;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

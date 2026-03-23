@@ -37,8 +37,9 @@ public class SbPermissionService {
   private ISbMenuService sbMenuService;
 
   /**
-   * 获取设备菜单数据权限（基于 sb_menu.perms）
-   * 租户时仅返回该客户已开启且未暂停的菜单权限（sb_customer_menu.is_enabled=1 且 status=0）
+   * 获取设备菜单及按钮权限（sb_menu.perms，含 F 类型按钮权限，供 v-hasPermi 等使用）
+   * 用户登录后按钮权限从 sb_user_permission_menu（用户直接授权）或 sb_role_menu（角色菜单）读取，满足其一即包含
+   * 租户时仅对角色菜单校验 sb_customer_menu；用户直接授权不校验客户菜单
    */
   public Set<String> getMenuPermission(SysUser user) {
     Set<String> perms = new HashSet<>();

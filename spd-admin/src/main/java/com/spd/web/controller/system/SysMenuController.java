@@ -55,6 +55,28 @@ public class SysMenuController extends BaseController
     }
 
     /**
+     * 耗材菜单树（含默认对客户开放），用于批量设置
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:query')")
+    @GetMapping("/defaultOpen/tree")
+    public AjaxResult defaultOpenTree()
+    {
+        return success(menuService.selectMenuTreeForDefaultOpenBatch());
+    }
+
+    /**
+     * 批量设置耗材菜单「默认对客户开放」
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @Log(title = "菜单管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/defaultOpen/batch")
+    public AjaxResult batchDefaultOpen(@RequestBody List<Long> menuIds)
+    {
+        menuService.batchSetDefaultOpenToCustomer(menuIds);
+        return success();
+    }
+
+    /**
      * 获取菜单下拉树列表
      */
     @GetMapping("/treeselect")
@@ -93,7 +115,7 @@ public class SysMenuController extends BaseController
         {
             return error("新增菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
         }
-        menu.setCreateBy(getUsername());
+        menu.setCreateBy(getUserIdStr());
         return toAjax(menuService.insertMenu(menu));
     }
 
@@ -117,7 +139,7 @@ public class SysMenuController extends BaseController
         {
             return error("修改菜单'" + menu.getMenuName() + "'失败，上级菜单不能选择自己");
         }
-        menu.setUpdateBy(getUsername());
+        menu.setUpdateBy(getUserIdStr());
         return toAjax(menuService.updateMenu(menu));
     }
 

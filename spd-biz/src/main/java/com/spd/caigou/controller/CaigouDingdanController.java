@@ -112,7 +112,7 @@ public class CaigouDingdanController extends BaseController
     public AjaxResult audit(@RequestBody Map<String, Object> params)
     {
         Long id = Long.valueOf(params.get("id").toString());
-        String auditBy = params.get("auditBy").toString();
+        String auditBy = getUserIdStr();
         String auditOpinion = params.get("auditOpinion") != null ? params.get("auditOpinion").toString() : "";
         
         return toAjax(purchaseOrderService.auditPurchaseOrder(id, auditBy, auditOpinion));

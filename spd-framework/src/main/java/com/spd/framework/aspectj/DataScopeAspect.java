@@ -90,6 +90,21 @@ public class DataScopeAspect
      */
     public static void dataScopeFilter(JoinPoint joinPoint, SysUser user, String deptAlias, String userAlias, String permission)
     {
+        Object arg0 = joinPoint.getArgs().length > 0 ? joinPoint.getArgs()[0] : null;
+        if (arg0 instanceof SysUser)
+        {
+            SysUser queryUser = (SysUser) arg0;
+            // 按工作组筛选时不再叠加部门数据范围
+            if (StringUtils.isNotEmpty(queryUser.getWorkgroupPostId()))
+                return;
+            // 按租户 customerId 查询时不再叠加部门数据范围，仅按「同客户」展示该租户下所有用户
+            if (StringUtils.isNotEmpty(queryUser.getCustomerId()))
+                return;
+            // 耗材/租户：有效租户 ID 在 Service.selectUserList 内才写入查询对象，切面先于 Service 执行，
+            // 若此处不跳过，会误叠加「仅本人/本部门」等数据范围，导致租户用户管理列表为空。
+            if (StringUtils.isNotEmpty(SecurityUtils.resolveEffectiveTenantId(null)))
+                return;
+        }
         StringBuilder sqlString = new StringBuilder();
         List<String> conditions = new ArrayList<String>();
 

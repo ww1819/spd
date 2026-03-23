@@ -48,7 +48,7 @@ public class SbCustomerMenuManageServiceImpl implements ISbCustomerMenuManageSer
     if (sbCustomerMenuMapper.countByCustomerIdAndMenuId(customerId, menuId) == 0) {
       return 0;
     }
-    String operateBy = SecurityUtils.getUsername();
+    String operateBy = SecurityUtils.getUserIdStr();
     Date now = new Date();
 
     SbCustomerMenuStatusLog statusLog = new SbCustomerMenuStatusLog();

@@ -42,4 +42,9 @@ public interface SysUserWarehouseMapper
      * @return 结果
      */
     public int batchUserWarehouse(List<SysUserWarehouse> userWarehouseList);
+
+    /**
+     * 用户已授权的仓库 ID（sys_user_warehouse）
+     */
+    public List<Long> selectWarehouseIdsByUserId(Long userId);
 }

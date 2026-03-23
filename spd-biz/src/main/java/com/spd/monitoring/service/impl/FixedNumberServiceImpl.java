@@ -1,5 +1,7 @@
 package com.spd.monitoring.service.impl;
 
+import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.monitoring.domain.DeptFixedNumber;
 import com.spd.monitoring.domain.FixedNumberSaveRequest;
@@ -23,11 +25,17 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
 
     @Override
     public List<WhFixedNumber> selectWhFixedNumberList(WhFixedNumber query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return whFixedNumberMapper.selectWhFixedNumberList(query);
     }
 
     @Override
     public List<DeptFixedNumber> selectDeptFixedNumberList(DeptFixedNumber query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
         return deptFixedNumberMapper.selectDeptFixedNumberList(query);
     }
 
@@ -52,22 +60,27 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setId(UUID7.generateUUID7());
                     entity.setWarehouseId(warehouseId);
                     entity.setMaterialId(d.getMaterialId());
-                    entity.setUpperLimit(d.getUpperLimit());
-                    entity.setLowerLimit(d.getLowerLimit());
+                    entity.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    entity.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     entity.setExpiryReminder(d.getExpiryReminder());
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
+                    entity.setRemark(d.getRemark());
                     entity.setDelFlag(0);
+                    if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                        entity.setTenantId(SecurityUtils.getCustomerId());
+                    }
                     entity.setCreateBy(operator);
                     whFixedNumberMapper.insertWhFixedNumber(entity);
                 } else {
-                    existing.setUpperLimit(d.getUpperLimit());
-                    existing.setLowerLimit(d.getLowerLimit());
+                    existing.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    existing.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     existing.setExpiryReminder(d.getExpiryReminder());
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());
                     existing.setLocationId(d.getLocationId());
+                    existing.setRemark(d.getRemark());
                     existing.setUpdateBy(operator);
                     whFixedNumberMapper.updateWhFixedNumber(existing);
                 }
@@ -87,22 +100,27 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setId(UUID7.generateUUID7());
                     entity.setDepartmentId(departmentId);
                     entity.setMaterialId(d.getMaterialId());
-                    entity.setUpperLimit(d.getUpperLimit());
-                    entity.setLowerLimit(d.getLowerLimit());
+                    entity.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    entity.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     entity.setExpiryReminder(d.getExpiryReminder());
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
+                    entity.setRemark(d.getRemark());
                     entity.setDelFlag(0);
+                    if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                        entity.setTenantId(SecurityUtils.getCustomerId());
+                    }
                     entity.setCreateBy(operator);
                     deptFixedNumberMapper.insertDeptFixedNumber(entity);
                 } else {
-                    existing.setUpperLimit(d.getUpperLimit());
-                    existing.setLowerLimit(d.getLowerLimit());
+                    existing.setUpperLimit(d.getUpperLimit() != null ? d.getUpperLimit() : 0);
+                    existing.setLowerLimit(d.getLowerLimit() != null ? d.getLowerLimit() : 0);
                     existing.setExpiryReminder(d.getExpiryReminder());
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());
                     existing.setLocationId(d.getLocationId());
+                    existing.setRemark(d.getRemark());
                     existing.setUpdateBy(operator);
                     deptFixedNumberMapper.updateDeptFixedNumber(existing);
                 }
@@ -112,11 +130,13 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
 
     @Override
     public int deleteFixedNumberById(String id) {
-        // 先尝试删除仓库定数
-        int rows = whFixedNumberMapper.deleteWhFixedNumberById(id);
+        String operator = SecurityUtils.getUsername();
+        if (operator == null) {
+            operator = "";
+        }
+        int rows = whFixedNumberMapper.deleteWhFixedNumberById(id, operator);
         if (rows == 0) {
-            // 如果仓库表中没有，再尝试删除科室定数
-            rows = deptFixedNumberMapper.deleteDeptFixedNumberById(id);
+            rows = deptFixedNumberMapper.deleteDeptFixedNumberById(id, operator);
         }
         return rows;
     }

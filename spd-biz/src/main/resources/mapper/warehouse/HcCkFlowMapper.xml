@@ -5,6 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.warehouse.mapper.HcCkFlowMapper">
 
     <insert id="insertHcCkFlow" parameterType="HcCkFlow" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         insert into t_hc_ck_flow
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billId != null">bill_id,</if>
@@ -15,18 +16,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialId != null">material_id,</if>
             <if test="batchNo != null">batch_no,</if>
             <if test="batchNumber != null">batch_number,</if>
+            <if test="batchId != null">batch_id,</if>
+            <if test="mainBarcode != null">main_barcode,</if>
+            <if test="subBarcode != null">sub_barcode,</if>
             <if test="qty != null">qty,</if>
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
             <if test="beginTime != null">begin_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="factoryId != null">factory_id,</if>
             <if test="kcNo != null">kc_no,</if>
             <if test="lx != null">lx,</if>
             <if test="flowTime != null">flow_time,</if>
+            <if test="originBusinessType != null">origin_business_type,</if>
             <if test="delFlag != null">del_flag,</if>
+            tenant_id,
+            <if test="deleteBy != null">delete_by,</if>
+            <if test="deleteTime != null">delete_time,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billId != null">#{billId},</if>
@@ -37,22 +48,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialId != null">#{materialId},</if>
             <if test="batchNo != null">#{batchNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="batchId != null">#{batchId},</if>
+            <if test="mainBarcode != null">#{mainBarcode},</if>
+            <if test="subBarcode != null">#{subBarcode},</if>
             <if test="qty != null">#{qty},</if>
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
             <if test="beginTime != null">#{beginTime},</if>
             <if test="endTime != null">#{endTime},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="factoryId != null">#{factoryId},</if>
             <if test="kcNo != null">#{kcNo},</if>
             <if test="lx != null">#{lx},</if>
             <if test="flowTime != null">#{flowTime},</if>
+            <if test="originBusinessType != null">#{originBusinessType},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            #{scopedTenantId},
+            <if test="deleteBy != null">#{deleteBy},</if>
+            <if test="deleteTime != null">#{deleteTime},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
         </trim>
     </insert>
 
     <update id="updateKcNoByEntryId">
-        update t_hc_ck_flow set kc_no = #{kcNo}, update_time = now() where entry_id = #{entryId} and (del_flag = 0 or del_flag is null)
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        update t_hc_ck_flow set kc_no = #{kcNo}, update_time = now() where entry_id = #{entryId} and tenant_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null)
     </update>
 </mapper>

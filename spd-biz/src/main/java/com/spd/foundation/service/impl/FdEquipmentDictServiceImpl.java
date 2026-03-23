@@ -102,7 +102,7 @@ public class FdEquipmentDictServiceImpl implements IFdEquipmentDictService
         }
         fdEquipmentDict.setUpdateTime(DateUtils.getNowDate());
         fdEquipmentDict.setDelFlag(1);//1:已删除
-        fdEquipmentDict.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdEquipmentDict.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdEquipmentDictMapper.updateFdEquipmentDict(fdEquipmentDict);
     }
 

@@ -66,20 +66,20 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     if (StringUtils.isEmpty(group.getGroupId())) {
       group.setGroupId(UUID7.generateUUID7());
     }
-    group.setCreateBy(SecurityUtils.getUsername());
+    group.setCreateBy(SecurityUtils.getUserIdStr());
     return sbWorkGroupMapper.insertSbWorkGroup(group);
   }
 
   @Override
   public int updateSbWorkGroup(SbWorkGroup group) {
-    group.setUpdateBy(SecurityUtils.getUsername());
+    group.setUpdateBy(SecurityUtils.getUserIdStr());
     return sbWorkGroupMapper.updateSbWorkGroup(group);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int deleteByGroupId(String groupId) {
-    String deleteBy = SecurityUtils.getUsername();
+    String deleteBy = SecurityUtils.getUserIdStr();
     sbWorkGroupMenuMapper.deleteByGroupId(groupId, deleteBy);
     sbWorkGroupWarehouseMapper.deleteByGroupId(groupId, deleteBy);
     sbWorkGroupDeptMapper.deleteByGroupId(groupId, deleteBy);
@@ -97,7 +97,7 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     if (userIds == null || userIds.length == 0) return 0;
     SbWorkGroup group = sbWorkGroupMapper.selectByGroupId(groupId);
     if (group == null) return 0;
-    String createBy = SecurityUtils.getUsername();
+    String createBy = SecurityUtils.getUserIdStr();
     int n = 0;
     for (Long userId : userIds) {
       if (sbWorkGroupUserMapper.countByGroupIdAndUserId(groupId, userId) > 0) continue;
@@ -114,23 +114,53 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
 
   @Override
   public int removeUserFromGroup(String groupId, Long userId) {
-    return sbWorkGroupUserMapper.deleteByGroupIdAndUserId(groupId, userId, SecurityUtils.getUsername());
+    return sbWorkGroupUserMapper.deleteByGroupIdAndUserId(groupId, userId, SecurityUtils.getUserIdStr());
+  }
+
+  @Override
+  public List<String> selectGroupIdsByUserId(Long userId, String customerId) {
+    return sbWorkGroupUserMapper.selectGroupIdsByUserId(userId, customerId);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void setUserWorkGroups(Long userId, String customerId, String[] groupIds) {
+    String createBy = SecurityUtils.getUserIdStr();
+    sbWorkGroupUserMapper.deleteByUserIdAndCustomerId(userId, customerId, createBy);
+    if (groupIds == null || groupIds.length == 0) return;
+    java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+    for (String groupId : groupIds) {
+      if (StringUtils.isEmpty(groupId)) continue;
+      if (!seen.add(groupId)) continue;
+      SbWorkGroupUser wgu = new SbWorkGroupUser();
+      wgu.setGroupId(groupId);
+      wgu.setUserId(userId);
+      wgu.setCustomerId(customerId);
+      wgu.setCreateBy(createBy);
+      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
+    }
   }
 
   @Override
   public List<String> selectMenuIdsByGroupId(String groupId) {
+    SbWorkGroup group = sbWorkGroupMapper.selectByGroupId(groupId);
+    if (group != null && StringUtils.isNotEmpty(group.getCustomerId())) {
+      return sbWorkGroupMenuMapper.selectMenuIdsByGroupIdAndCustomerId(groupId, group.getCustomerId());
+    }
     return sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int saveGroupMenus(String groupId, String customerId, String[] menuIds) {
-    String createBy = SecurityUtils.getUsername();
+    String createBy = SecurityUtils.getUserIdStr();
     sbWorkGroupMenuMapper.deleteByGroupId(groupId, createBy);
     if (menuIds == null || menuIds.length == 0) return 0;
     List<SbWorkGroupMenu> list = new ArrayList<>();
+    java.util.Set<String> seen = new java.util.LinkedHashSet<>();
     for (String menuId : menuIds) {
       if (StringUtils.isEmpty(menuId)) continue;
+      if (!seen.add(menuId)) continue;
       SbWorkGroupMenu m = new SbWorkGroupMenu();
       m.setId(UUID7.generateUUID7());
       m.setGroupId(groupId);
@@ -151,7 +181,7 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int saveGroupWarehouses(String groupId, String customerId, Long[] warehouseIds) {
-    String createBy = SecurityUtils.getUsername();
+    String createBy = SecurityUtils.getUserIdStr();
     sbWorkGroupWarehouseMapper.deleteByGroupId(groupId, createBy);
     if (warehouseIds == null || warehouseIds.length == 0) return 0;
     List<SbWorkGroupWarehouse> list = new ArrayList<>();
@@ -177,7 +207,7 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public int saveGroupDepts(String groupId, String customerId, Long[] deptIds) {
-    String createBy = SecurityUtils.getUsername();
+    String createBy = SecurityUtils.getUserIdStr();
     sbWorkGroupDeptMapper.deleteByGroupId(groupId, createBy);
     if (deptIds == null || deptIds.length == 0) return 0;
     List<SbWorkGroupDept> list = new ArrayList<>();
@@ -203,9 +233,11 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     String customerId = group.getCustomerId();
     List<Long> userIds = sbWorkGroupUserMapper.selectUserIdsByGroupId(groupId);
     if (userIds == null || userIds.isEmpty()) return 0;
-    String createBy = SecurityUtils.getUsername();
+    String createBy = SecurityUtils.getUserIdStr();
 
-    List<String> menuIds = sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
+    List<String> menuIds = StringUtils.isNotEmpty(customerId)
+        ? sbWorkGroupMenuMapper.selectMenuIdsByGroupIdAndCustomerId(groupId, customerId)
+        : sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
     List<Long> warehouseIds = sbWorkGroupWarehouseMapper.selectWarehouseIdsByGroupId(groupId);
     List<Long> deptIds = sbWorkGroupDeptMapper.selectDeptIdsByGroupId(groupId);
 
@@ -264,5 +296,22 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
       }
     }
     return count;
+  }
+
+  private static final String GROUP_KEY_SUPER = "super";
+
+  @Override
+  public boolean isUserInSuperGroup(Long userId, String customerId) {
+    if (userId == null || StringUtils.isEmpty(customerId)) {
+      return false;
+    }
+    List<SbWorkGroup> groups = sbWorkGroupMapper.selectListByCustomerId(customerId);
+    if (groups == null) return false;
+    SbWorkGroup superGroup = groups.stream()
+        .filter(g -> GROUP_KEY_SUPER.equals(g.getGroupKey()))
+        .findFirst()
+        .orElse(null);
+    if (superGroup == null) return false;
+    return sbWorkGroupUserMapper.countByGroupIdAndUserId(superGroup.getGroupId(), userId) > 0;
   }
 }

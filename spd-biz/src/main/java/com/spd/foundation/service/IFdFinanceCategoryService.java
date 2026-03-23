@@ -1,6 +1,8 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+import java.util.Map;
+
 import com.spd.foundation.domain.FdFinanceCategory;
 
 /**
@@ -65,4 +67,14 @@ public interface IFdFinanceCategoryService
      * @param ids 财务分类主键集合
      */
     void updateReferred(List<Long> ids);
+
+    /**
+     * 财务分类 Excel 导入：仅校验
+     */
+    Map<String, Object> validateFinanceCategoryImport(List<FdFinanceCategory> list, Boolean isUpdateSupport);
+
+    /**
+     * 财务分类 Excel 导入：确认后落库
+     */
+    String importFinanceCategory(List<FdFinanceCategory> list, Boolean isUpdateSupport, String operName, boolean confirmed);
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -36,11 +37,16 @@ public class GzDepotInventoryController extends BaseController
 
     /**
      * 查询高值备货库存明细列表
+     * @param filterBySupplier 是否按供应商过滤，为 false 时忽略 supplierId 条件（与前端“按供应商过滤”取消时一致）
      */
     @PreAuthorize("@ss.hasPermi('gz:depotInventory:list')")
     @GetMapping("/list")
-    public TableDataInfo list(GzDepotInventory gzDepotInventory)
+    public TableDataInfo list(GzDepotInventory gzDepotInventory,
+            @RequestParam(value = "filterBySupplier", required = false) Boolean filterBySupplier)
     {
+        if (Boolean.FALSE.equals(filterBySupplier)) {
+            gzDepotInventory.setSupplierId(null);
+        }
         startPage();
         List<GzDepotInventory> list = gzDepotInventoryService.selectGzDepotInventoryList(gzDepotInventory);
         return getDataTable(list);
@@ -48,12 +54,17 @@ public class GzDepotInventoryController extends BaseController
 
     /**
      * 导出高值备货库存明细列表
+     * @param filterBySupplier 是否按供应商过滤，为 false 时忽略 supplierId 条件
      */
     @PreAuthorize("@ss.hasPermi('gz:depotInventory:export')")
     @Log(title = "高值备货库存明细", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, GzDepotInventory gzDepotInventory)
+    public void export(HttpServletResponse response, GzDepotInventory gzDepotInventory,
+            @RequestParam(value = "filterBySupplier", required = false) Boolean filterBySupplier)
     {
+        if (Boolean.FALSE.equals(filterBySupplier)) {
+            gzDepotInventory.setSupplierId(null);
+        }
         List<GzDepotInventory> list = gzDepotInventoryService.selectGzDepotInventoryList(gzDepotInventory);
         ExcelUtil<GzDepotInventory> util = new ExcelUtil<GzDepotInventory>(GzDepotInventory.class);
         util.exportExcel(response, list, "高值备货库存明细数据");

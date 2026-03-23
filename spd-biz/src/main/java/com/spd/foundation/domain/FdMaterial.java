@@ -1,7 +1,10 @@
 package com.spd.foundation.domain;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -26,27 +29,27 @@ public class FdMaterial extends BaseEntity
     private Long id;
 
     /** 耗材编码 */
-    @Excel(name = "耗材编码*")
+    @Excel(name = "耗材编码")
     private String code;
 
     /** 耗材名称 */
-    @Excel(name = "耗材名称*")
+    @Excel(name = "耗材名称*", nameAliases = { "耗材名称", "名称" })
     private String name;
 
     /** 供应商ID */
-    @Excel(name = "供应商*")
+    @Excel(name = "供应商")
     private Long supplierId;
 
     /** 规格 */
-    @Excel(name = "规格*")
+    @Excel(name = "规格")
     private String speci;
 
     /** 型号 */
-    @Excel(name = "型号*")
+    @Excel(name = "型号")
     private String model;
 
     /** 价格 */
-    @Excel(name = "价格*")
+    @Excel(name = "价格")
     private BigDecimal price;
 
     /** 供应商对象 */
@@ -54,6 +57,9 @@ public class FdMaterial extends BaseEntity
 
     /** 删除标识 */
     private Integer delFlag;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
 
     /** 名称简码 */
     @Excel(name = "名称简码")
@@ -64,19 +70,23 @@ public class FdMaterial extends BaseEntity
     private String useName;
 
     /** 生产厂家ID */
-    @Excel(name = "生产厂家*")
+    @Excel(name = "生产厂家")
     private Long factoryId;
 
     /** 库房分类ID */
-    @Excel(name = "库房分类*")
+    @Excel(name = "库房分类")
     private Long storeroomId;
 
+    /** 产品档案默认所属仓库ID（用于科室盘盈可退库仓库） */
+    @Excel(name = "默认所属仓库ID")
+    private Long defaultWarehouseId;
+
     /** 财务分类ID */
-    @Excel(name = "财务分类*")
+    @Excel(name = "财务分类")
     private Long financeCategoryId;
 
     /** 单位分类ID */
-    @Excel(name = "单位*")
+    @Excel(name = "单位")
     private Long unitId;
 
     /** 注册证名称 */
@@ -238,15 +248,30 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：名称搜索（首字母） */
     private String nameSearch;
 
+    /** 查询参数：排除的物料ID，逗号分隔（用于定数监测新增明细：排除已有+未保存的） */
+    private String excludeMaterialIds;
+
+    /** 查询参数：仅包含的物料ID，逗号分隔（用于入库新增明细：只查该仓库定数产品档案） */
+    private String includeMaterialIds;
+
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
+    @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "选填；与 HIS 等产品编码对接时使用")
     private String hisId;
 
     /** 入选原因 */
-    @Excel(name = "入选原因")
+    @Excel(name = "入选原因", prompt = "选填")
     private String selectionReason;
 
     /** 状态变更原因（仅用于启用/停用时传参，不持久化） */
     private transient String statusChangeReason;
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
 
     public String getStatusChangeReason() {
         return statusChangeReason;
@@ -254,5 +279,49 @@ public class FdMaterial extends BaseEntity
 
     public void setStatusChangeReason(String statusChangeReason) {
         this.statusChangeReason = statusChangeReason;
+    }
+
+    /**
+     * 解析 excludeMaterialIds 为 List，供 MyBatis 使用（排除指定 ID 后再分页）
+     */
+    public List<Long> getExcludeMaterialIdList() {
+        if (excludeMaterialIds == null || excludeMaterialIds.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(excludeMaterialIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public String getIncludeMaterialIds() {
+        return includeMaterialIds;
+    }
+
+    public void setIncludeMaterialIds(String includeMaterialIds) {
+        this.includeMaterialIds = includeMaterialIds;
+    }
+
+    /**
+     * 解析 includeMaterialIds 为 List，供 MyBatis 使用（只查指定 ID）
+     */
+    public List<Long> getIncludeMaterialIdList() {
+        if (includeMaterialIds == null || includeMaterialIds.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(includeMaterialIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

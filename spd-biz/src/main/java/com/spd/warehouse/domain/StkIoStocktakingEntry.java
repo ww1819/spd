@@ -92,6 +92,20 @@ public class StkIoStocktakingEntry extends BaseEntity
 
     /** 耗材对象 */
     private FdMaterial material;
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
+
+    /** 明细对应供应商ID（盘盈时必填） */
+    @Excel(name = "供应商ID")
+    private Long supplierId;
+
+    /** 盘盈明细的可退库仓库ID（用于科室退库锁定目标仓库） */
+    @Excel(name = "可退库仓库ID")
+    private Long returnWarehouseId;
 
     public void setId(Long id)
     {
@@ -253,6 +267,16 @@ public class StkIoStocktakingEntry extends BaseEntity
         this.material = material;
     }
 
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+
+    public Long getReturnWarehouseId() { return returnWarehouseId; }
+    public void setReturnWarehouseId(Long returnWarehouseId) { this.returnWarehouseId = returnWarehouseId; }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -275,6 +299,8 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("profitQty", getProfitQty())
             .append("stockAmount", getStockAmount())
             .append("profitAmount", getProfitAmount())
+            .append("returnWarehouseId", getReturnWarehouseId())
+            .append("supplierId", getSupplierId())
             .toString();
     }
 }

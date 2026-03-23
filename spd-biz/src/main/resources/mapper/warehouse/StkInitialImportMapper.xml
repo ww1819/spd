@@ -18,6 +18,9 @@
         <result property="updateTime" column="update_time"/>
         <result property="auditBy" column="audit_by"/>
         <result property="auditTime" column="audit_time"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="tenantId" column="tenant_id"/>
         <association property="warehouse" column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult"/>
     </resultMap>
 
@@ -29,21 +32,24 @@
 
     <sql id="selectVo">
         select m.id, m.bill_no, m.warehouse_id, m.import_operator, m.import_time, m.stock_gen_time,
-               m.bill_status, m.remark, m.del_flag, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time,
+               m.bill_status, m.remark, m.del_flag, m.tenant_id, m.create_by, m.create_time, m.update_by, m.update_time, m.audit_by, m.audit_time, m.delete_by, m.delete_time,
                w.id wId, w.code warehouseCode, w.name warehouseName
         from stk_initial_import m
         left join fd_warehouse w on m.warehouse_id = w.id
     </sql>
 
     <select id="selectById" resultMap="StkInitialImportResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null)
+        where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectList" resultMap="StkInitialImportResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
         <include refid="selectVo"/>
         <where>
             (m.del_flag = 0 or m.del_flag is null)
+            and (m.tenant_id = #{scopedTenantId})
             <if test="billNo != null and billNo != ''">and m.bill_no like concat('%', #{billNo}, '%')</if>
             <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
             <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
@@ -53,15 +59,21 @@
         order by m.import_time desc, m.id desc
     </select>
 
+    <!-- 单号 uk 为 bill_no 全局唯一：取号不可按 tenant 过滤；流水用数值排序避免 max(字符串) 在 00009/00010 时字典序错误 -->
     <select id="selectMaxBillNo" resultType="java.lang.String">
-        select max(bill_no) from stk_initial_import where bill_no like concat(#{datePrefix}, '%')
+        select bill_no from stk_initial_import
+        where bill_no like concat(#{datePrefix}, '%')
+          and char_length(bill_no) &gt;= 15
+        order by cast(substring(bill_no, 11) as unsigned) desc
+        limit 1
     </select>
 
     <insert id="insert" parameterType="com.spd.warehouse.domain.StkInitialImport">
-        insert into stk_initial_import (id, bill_no, warehouse_id, import_operator, import_time, stock_gen_time, bill_status, remark, del_flag, create_by, create_time, audit_by, audit_time)
-        values (#{id}, #{billNo}, #{warehouseId}, #{importOperator}, #{importTime}, #{stockGenTime}, #{billStatus}, #{remark}, 0, #{createBy}, #{createTime}, #{auditBy}, #{auditTime})
+        insert into stk_initial_import (id, bill_no, warehouse_id, import_operator, import_time, stock_gen_time, bill_status, remark, del_flag, tenant_id, create_by, create_time, audit_by, audit_time)
+        values (#{id}, #{billNo}, #{warehouseId}, #{importOperator}, #{importTime}, #{stockGenTime}, #{billStatus}, #{remark}, 0, #{tenantId}, #{createBy}, #{createTime}, #{auditBy}, #{auditTime})
     </insert>
 
+    <!-- 审核/更新：必须用主单自身 tenant_id；仅用 getCustomerId 时平台账号 customer_id 为空会导致 where 不匹配、Updates=0、接口报 500 -->
     <update id="update" parameterType="com.spd.warehouse.domain.StkInitialImport">
         update stk_initial_import
         <set>
@@ -72,6 +84,12 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = now()
         </set>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{tenantId}
+    </update>
+
+    <!-- 逻辑删除：设置 del_flag=1, delete_by, delete_time -->
+    <update id="logicalDeleteById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

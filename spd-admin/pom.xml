@@ -81,6 +81,12 @@
             <artifactId>spd-biz</artifactId>
         </dependency>
 
+        <!-- 系统/客户菜单管理（SbCustomerMenuManageController 依赖）-->
+        <dependency>
+            <groupId>com.spd</groupId>
+            <artifactId>spd-system</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

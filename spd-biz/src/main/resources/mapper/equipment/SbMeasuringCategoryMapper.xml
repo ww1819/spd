@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbMeasuringCategoryMapper">
+    <resultMap type="com.spd.equipment.domain.SbMeasuringCategory" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="categoryCode" column="category_code"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="categoryPinyin" column="category_pinyin"/>
+        <result property="calibrationCycleDays" column="calibration_cycle_days"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">select id, customer_id, category_code, category_name, category_pinyin, calibration_cycle_days, del_flag, del_by, del_time, create_by, create_time, update_by, update_time from sb_measuring_category</sql>
+    <select id="selectList" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            and customer_id = #{scopedTenantId}
+            <if test="categoryName != null and categoryName != ''"> and (category_name like concat('%', #{categoryName}, '%') or category_pinyin like concat('%', #{categoryName}, '%'))</if>
+            <if test="categoryCode != null and categoryCode != ''"> and category_code like concat('%', #{categoryCode}, '%')</if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="selectById" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
+    </select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbMeasuringCategory">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into sb_measuring_category (id, customer_id, category_code, category_name, category_pinyin, calibration_cycle_days, del_flag, create_by, create_time, update_by, update_time)
+        values (#{id}, #{tenantId}, #{categoryCode}, #{categoryName}, #{categoryPinyin}, #{calibrationCycleDays}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+    <update id="update" parameterType="com.spd.equipment.domain.SbMeasuringCategory">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_measuring_category
+        <set>
+            <if test="categoryCode != null">category_code = #{categoryCode},</if>
+            <if test="categoryName != null">category_name = #{categoryName},</if>
+            <if test="categoryPinyin != null">category_pinyin = #{categoryPinyin},</if>
+            <if test="calibrationCycleDays != null">calibration_cycle_days = #{calibrationCycleDays},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="delBy != null">del_by = #{delBy},</if>
+            <if test="delTime != null">del_time = #{delTime},</if>
+        </set>
+        where id = #{id} and customer_id = #{scopedTenantId}
+    </update>
+</mapper>

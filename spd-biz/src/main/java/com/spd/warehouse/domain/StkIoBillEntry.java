@@ -27,6 +27,10 @@ public class StkIoBillEntry extends BaseEntity
     @Excel(name = "父类ID")
     private Long parenId;
 
+    /** 出入库单号（冗余主表，便于明细直接展示/筛选） */
+    @Excel(name = "单号")
+    private String billNo;
+
     /** 商品ID */
     @Excel(name = "商品ID")
     private Long commodityId;
@@ -75,6 +79,9 @@ public class StkIoBillEntry extends BaseEntity
     /** 耗材对象 */
     private FdMaterial material;
 
+    /** 仓库ID（用于科室退库锁定可退库仓库） */
+    private Long warehouseId;
+
     /** 查询参数：仓库名称 */
     private String warehouseName;
 
@@ -83,6 +90,23 @@ public class StkIoBillEntry extends BaseEntity
 
     /** 科室库存明细id（反写） */
     private Long kcNo;
+
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
+    /** 供应商ID（出退库单明细内的供应商id） */
+    @Excel(name = "供应商ID")
+    private String supplerId;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    private Date deleteTime;
 
     public void setId(Long id)
     {
@@ -102,6 +126,17 @@ public class StkIoBillEntry extends BaseEntity
     {
         return parenId;
     }
+
+    public String getBillNo()
+    {
+        return billNo;
+    }
+
+    public void setBillNo(String billNo)
+    {
+        this.billNo = billNo;
+    }
+
     public void setCommodityId(Long commodityId)
     {
         this.commodityId = commodityId;
@@ -206,6 +241,14 @@ public class StkIoBillEntry extends BaseEntity
         this.material = material;
     }
 
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
+    }
+
     public String getWarehouseName() {
         return warehouseName;
     }
@@ -230,11 +273,25 @@ public class StkIoBillEntry extends BaseEntity
         this.kcNo = kcNo;
     }
 
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+    public String getSupplerId() { return supplerId; }
+    public void setSupplerId(String supplerId) { this.supplerId = supplerId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("parenId", getParenId())
+            .append("billNo", getBillNo())
             .append("commodityId", getCommodityId())
             .append("materialId", getMaterialId())
             .append("unitPrice", getUnitPrice())

@@ -2,6 +2,7 @@ package com.spd.foundation.mapper;
 
 import java.util.List;
 import com.spd.foundation.domain.FdMaterialCategory;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 耗材分类维护Mapper接口
@@ -43,19 +44,9 @@ public interface FdMaterialCategoryMapper
      */
     public int updateFdMaterialCategory(FdMaterialCategory fdMaterialCategory);
 
-    /**
-     * 删除耗材分类维护
-     * 
-     * @param materialCategoryId 耗材分类维护主键
-     * @return 结果
-     */
-    public int deleteFdMaterialCategoryByMaterialCategoryId(Long materialCategoryId);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteFdMaterialCategoryByMaterialCategoryId(@Param("materialCategoryId") Long materialCategoryId, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除耗材分类维护
-     * 
-     * @param materialCategoryIds 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteFdMaterialCategoryByMaterialCategoryIds(Long[] materialCategoryIds);
+    /** 批量逻辑删除 */
+    public int deleteFdMaterialCategoryByMaterialCategoryIds(@Param("materialCategoryIds") Long[] materialCategoryIds, @Param("deleteBy") String deleteBy);
 }

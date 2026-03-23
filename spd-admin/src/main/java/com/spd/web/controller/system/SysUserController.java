@@ -2,6 +2,7 @@ package com.spd.web.controller.system;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
@@ -29,11 +31,18 @@ import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.poi.ImportRowErrorCollector;
+import com.spd.system.dto.UserImportUpdateDto;
+import com.spd.system.service.ISbUserPermissionService;
+import com.spd.system.service.ISbWorkGroupService;
+import com.spd.system.service.ITenantScopeService;
 import com.spd.system.service.ISysDeptService;
 import com.spd.system.service.ISysPostService;
 import com.spd.system.service.ISysRoleService;
+import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,13 +75,56 @@ public class SysUserController extends BaseController
     @Autowired
     private IFdDepartmentService fdDepartmentService;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    @Autowired
+    private ISbWorkGroupService sbWorkGroupService;
+
+    @Autowired
+    private ISbUserPermissionService sbUserPermissionService;
+
+    @Autowired
+    private ISysMenuService sysMenuService;
+
     /**
-     * 获取用户列表
+     * 耗材租户用户授权：菜单树 = 本客户 hc_customer_menu 已开通的全部功能；checkedKeys = 该用户已分配的 sys_user_menu
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:query')")
+    @GetMapping("/roleMenuTreeselect/{userId}")
+    public AjaxResult roleMenuTreeselect(@PathVariable Long userId)
+    {
+        userService.checkUserDataScope(userId);
+        SysUser u = userService.selectUserById(userId);
+        AjaxResult ajax = AjaxResult.success();
+        String tenantId = u != null ? u.getCustomerId() : null;
+        if (StringUtils.isEmpty(tenantId))
+        {
+            ajax.put("menus", new ArrayList<>());
+            ajax.put("checkedKeys", new ArrayList<>());
+            return ajax;
+        }
+        ajax.put("menus", sysMenuService.selectMenuTreeForPostAssign(tenantId));
+        List<Long> checked = userService.selectMenuListByUserId(userId);
+        ajax.put("checkedKeys", checked != null ? checked : new ArrayList<>());
+        return ajax;
+    }
+
+    /**
+     * 获取用户列表（workgroupPostId：设备工作组 sb_work_group_user；sysPostId：耗材工作组 sys_user_post）
      */
     @PreAuthorize("@ss.hasPermi('system:user:list')")
     @GetMapping("/list")
-    public TableDataInfo list(SysUser user)
+    public TableDataInfo list(SysUser user,
+        @RequestParam(value = "workgroupPostId", required = false) String workgroupPostId,
+        @RequestParam(value = "sysPostId", required = false) Long sysPostId)
     {
+        if (StringUtils.isNotEmpty(workgroupPostId)) {
+            user.setWorkgroupPostId(workgroupPostId);
+        }
+        if (sysPostId != null) {
+            user.setSysPostId(sysPostId);
+        }
         startPage();
         List<SysUser> list = userService.selectUserList(user);
         return getDataTable(list);
@@ -105,7 +157,7 @@ public class SysUserController extends BaseController
     {
         ExcelUtil<SysUser> util = new ExcelUtil<SysUser>(SysUser.class);
         List<SysUser> userList = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = userService.importUser(userList, updateSupport, operName);
         return success(message);
     }
@@ -117,30 +169,252 @@ public class SysUserController extends BaseController
         util.importTemplateExcel(response, "用户数据");
     }
 
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importAddValidate")
+    public AjaxResult importAddValidate(MultipartFile file) throws Exception
+    {
+        return AjaxResult.success("用户新增导入无需单独校验接口，请直接确认导入");
+    }
+
+    @Log(title = "用户新增导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importAddData")
+    public AjaxResult importAddData(MultipartFile file) throws Exception
+    {
+        return importData(file, false);
+    }
+
+    @PostMapping("/importAddTemplate")
+    public void importAddTemplate(HttpServletResponse response)
+    {
+        importTemplate(response);
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importUpdateValidate")
+    public AjaxResult importUpdateValidate(MultipartFile file) throws Exception
+    {
+        ExcelUtil<UserImportUpdateDto> util = new ExcelUtil<UserImportUpdateDto>(UserImportUpdateDto.class);
+        List<UserImportUpdateDto> list = util.importExcel(file.getInputStream());
+        java.util.Map<String, Object> data = validateUserImportUpdateRows(list);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.success("校验未通过", data);
+        }
+        return AjaxResult.success("校验通过，请确认后导入", data);
+    }
+
+    @Log(title = "用户更新导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('system:user:import')")
+    @PostMapping("/importUpdateData")
+    public AjaxResult importUpdateData(MultipartFile file) throws Exception
+    {
+        ExcelUtil<UserImportUpdateDto> util = new ExcelUtil<UserImportUpdateDto>(UserImportUpdateDto.class);
+        List<UserImportUpdateDto> list = util.importExcel(file.getInputStream());
+        java.util.Map<String, Object> data = validateUserImportUpdateRows(list);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.error("数据校验未通过：" + String.valueOf(data.get("errors")));
+        }
+        int successNum = 0;
+        for (UserImportUpdateDto row : list)
+        {
+            if (row == null || row.getUserId() == null)
+            {
+                continue;
+            }
+            SysUser existing = userService.selectUserById(row.getUserId());
+            if (StringUtils.isNotEmpty(row.getNickName()))
+            {
+                existing.setNickName(row.getNickName().trim());
+            }
+            String name = StringUtils.isNotEmpty(existing.getNickName()) ? existing.getNickName() : existing.getUserName();
+            if (StringUtils.isNotEmpty(name))
+            {
+                existing.setReferredName(PinyinUtils.getPinyinInitials(name));
+            }
+            existing.setUpdateBy(getUserIdStr());
+            userService.updateUser(existing);
+            successNum++;
+        }
+        String shortMsg = "更新导入完成，共成功 " + successNum + " 条";
+        return AjaxResult.success(shortMsg, ExcelUtil.buildImportCommitSummaryMap(successNum));
+    }
+
+    @PostMapping("/importUpdateTemplate")
+    public void importUpdateTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<UserImportUpdateDto> util = new ExcelUtil<UserImportUpdateDto>(UserImportUpdateDto.class);
+        util.importTemplateExcel(response, "用户更新导入模板");
+    }
+
+    private java.util.Map<String, Object> validateUserImportUpdateRows(List<UserImportUpdateDto> list)
+    {
+        clearUserImportUpdateDtoValidation(list);
+        java.util.Map<String, Object> result = new LinkedHashMap<>();
+        ImportRowErrorCollector c = new ImportRowErrorCollector();
+        if (list == null || list.isEmpty())
+        {
+            c.addGlobal("导入数据不能为空");
+        }
+        else
+        {
+            String customerId = SecurityUtils.getCustomerId();
+            for (int i = 0; i < list.size(); i++)
+            {
+                UserImportUpdateDto row = list.get(i);
+                int excelRow = i + 2;
+                if (row == null || row.getUserId() == null)
+                {
+                    c.addRow(excelRow, "主键用户ID不能为空");
+                    continue;
+                }
+                SysUser existing = userService.selectUserById(row.getUserId());
+                if (existing == null || (StringUtils.isNotEmpty(customerId) && !customerId.equals(existing.getCustomerId())))
+                {
+                    c.addRow(excelRow, "主键用户ID=" + row.getUserId() + " 在当前租户下不存在");
+                    continue;
+                }
+                if (StringUtils.isEmpty(row.getNickName()) || StringUtils.isEmpty(row.getNickName().trim()))
+                {
+                    c.addRow(excelRow, "用户姓名不能为空");
+                }
+            }
+        }
+        List<String> errors = c.getAllErrors();
+        boolean valid = errors.isEmpty();
+        result.put("valid", valid);
+        result.put("errors", errors);
+        result.put("totalRows", list == null ? 0 : list.size());
+        fillUserImportUpdateValidationTexts(list, c, valid);
+        result.put("previewRows", ExcelUtil.buildImportPreviewMaps(UserImportUpdateDto.class, list));
+        return result;
+    }
+
+    private void clearUserImportUpdateDtoValidation(List<UserImportUpdateDto> list)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (UserImportUpdateDto row : list)
+        {
+            if (row != null)
+            {
+                row.setValidationResult(null);
+            }
+        }
+    }
+
+    private void fillUserImportUpdateValidationTexts(List<UserImportUpdateDto> list, ImportRowErrorCollector c, boolean fileValid)
+    {
+        if (list == null)
+        {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++)
+        {
+            int excelRow = i + 2;
+            UserImportUpdateDto row = list.get(i);
+            if (row == null)
+            {
+                continue;
+            }
+            if (row.getUserId() == null && StringUtils.isEmpty(row.getNickName()))
+            {
+                row.setValidationResult("空行（已跳过）");
+                continue;
+            }
+            java.util.List<String> msgs = c.getRowMessages(excelRow);
+            if (!msgs.isEmpty())
+            {
+                row.setValidationResult(String.join("；", msgs));
+            }
+            else if (fileValid)
+            {
+                row.setValidationResult("校验通过");
+            }
+            else
+            {
+                row.setValidationResult("本行未单独报错；文件因其他数据未通过校验");
+            }
+        }
+    }
+
     /**
      * 根据用户编号获取详细信息
      */
     @PreAuthorize("@ss.hasPermi('system:user:query')")
     @GetMapping(value = { "/", "/{userId}" })
-    public AjaxResult getInfo(@PathVariable(value = "userId", required = false) Long userId)
+    public AjaxResult getInfo(@PathVariable(value = "userId", required = false) Long userId,
+        @RequestParam(value = "systemType", required = false) String systemType)
     {
         userService.checkUserDataScope(userId);
         AjaxResult ajax = AjaxResult.success();
         List<SysRole> roles = roleService.selectRoleAll();
         ajax.put("roles", SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
         ajax.put("posts", postService.selectPostAll());
-        ajax.put("warehouses", fdWarehouseService.selectwarehouseAll());
-        ajax.put("departments", fdDepartmentService.selectdepartmenAll());
+        // 科室/仓库：客户名下；非超级管理员仅见本人权限（设备 sb_user_permission_* 与耗材 sys_user_* 并集，见 TenantScopeService）
+        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        List<com.spd.foundation.domain.FdDepartment> allDepts = fdDepartmentService.selectdepartmenAll();
+        List<com.spd.foundation.domain.FdWarehouse> allWarehouses = fdWarehouseService.selectwarehouseAll();
+        if (StringUtils.isNotEmpty(customerId)) {
+            Long currentUserId = SecurityUtils.getUserId();
+            if (!tenantScopeService.isTenantSuper(currentUserId, customerId)) {
+                List<Long> allowedDeptIds = tenantScopeService.resolveDepartmentScope(currentUserId, customerId);
+                List<Long> allowedWarehouseIds = tenantScopeService.resolveWarehouseScope(currentUserId, customerId);
+                if (allowedDeptIds != null && !allowedDeptIds.isEmpty() && allDepts != null)
+                    allDepts = allDepts.stream().filter(d -> d.getId() != null && allowedDeptIds.contains(d.getId())).collect(Collectors.toList());
+                else if (allowedDeptIds == null || allowedDeptIds.isEmpty())
+                    allDepts = new ArrayList<>();
+                if (allowedWarehouseIds != null && !allowedWarehouseIds.isEmpty() && allWarehouses != null)
+                    allWarehouses = allWarehouses.stream().filter(w -> w.getId() != null && allowedWarehouseIds.contains(w.getId())).collect(Collectors.toList());
+                else if (allowedWarehouseIds == null || allowedWarehouseIds.isEmpty())
+                    allWarehouses = new ArrayList<>();
+            }
+        }
+        ajax.put("warehouses", allWarehouses);
+        ajax.put("departments", allDepts);
         if (StringUtils.isNotNull(userId))
         {
             SysUser sysUser = userService.selectUserById(userId);
             ajax.put(AjaxResult.DATA_TAG, sysUser);
             ajax.put("postIds", postService.selectPostListByUserId(userId));
             ajax.put("roleIds", sysUser.getRoles().stream().map(SysRole::getRoleId).collect(Collectors.toList()));
-            ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
-            ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
-            List<Long> menuIds = userService.selectMenuListByUserId(userId);
-            ajax.put("menuIds", menuIds != null ? menuIds : new ArrayList<>());
+            // 租户：耗材端 systemType=hc 读 sys_user_*；设备端读 sb_user_permission_* 与工作组
+            String userCustomerId = sysUser.getCustomerId();
+            if (StringUtils.isNotEmpty(userCustomerId)) {
+                if ("hc".equalsIgnoreCase(systemType)) {
+                    ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
+                    ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
+                    ajax.put("workGroupIds", new ArrayList<>());
+                    List<Long> midLongs = userService.selectMenuListByUserId(userId);
+                    List<String> menuStr = new ArrayList<>();
+                    if (midLongs != null) {
+                        for (Long m : midLongs) {
+                            if (m != null) {
+                                menuStr.add(m.toString());
+                            }
+                        }
+                    }
+                    ajax.put("menuIds", menuStr);
+                } else {
+                    List<Long> whIds = sbUserPermissionService.selectWarehouseIdsByUserId(userId, userCustomerId);
+                    List<Long> deptIds = sbUserPermissionService.selectDeptIdsByUserId(userId, userCustomerId);
+                    ajax.put("warehouseIds", whIds != null ? whIds : new ArrayList<>());
+                    ajax.put("departmentIds", deptIds != null ? deptIds : new ArrayList<>());
+                    List<String> wgIds = sbWorkGroupService.selectGroupIdsByUserId(userId, userCustomerId);
+                    ajax.put("workGroupIds", wgIds != null ? wgIds : new ArrayList<>());
+                    List<String> menuIds = sbUserPermissionService.selectMenuIdsByUserId(userId, userCustomerId);
+                    ajax.put("menuIds", menuIds != null ? menuIds : new ArrayList<>());
+                }
+            } else {
+                ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
+                ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
+                List<Long> menuIdLongs = userService.selectMenuListByUserId(userId);
+                List<String> menuIds = menuIdLongs != null ? menuIdLongs.stream().map(Object::toString).collect(Collectors.toList()) : new ArrayList<>();
+                ajax.put("menuIds", menuIds);
+            }
         }
         return ajax;
     }
@@ -165,8 +439,12 @@ public class SysUserController extends BaseController
         {
             return error("新增用户'" + user.getUserName() + "'失败，邮箱账号已存在");
         }
-        user.setCreateBy(getUsername());
+        user.setCreateBy(getUserIdStr());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+        // 租户用户创建的用户继承当前租户ID（前端通常不传 customerId）
+        if (StringUtils.isEmpty(user.getCustomerId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            user.setCustomerId(SecurityUtils.getCustomerId());
+        }
         return toAjax(userService.insertUser(user));
     }
 
@@ -194,7 +472,7 @@ public class SysUserController extends BaseController
         {
             return error("修改用户'" + user.getUserName() + "'失败，邮箱账号已存在");
         }
-        user.setUpdateBy(getUsername());
+        user.setUpdateBy(getUserIdStr());
         return toAjax(userService.updateUser(user));
     }
 
@@ -224,7 +502,7 @@ public class SysUserController extends BaseController
         userService.checkUserAllowed(user);
         userService.checkUserDataScope(user.getUserId());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
-        user.setUpdateBy(getUsername());
+        user.setUpdateBy(getUserIdStr());
         return toAjax(userService.resetPwd(user));
     }
 
@@ -238,7 +516,7 @@ public class SysUserController extends BaseController
     {
         userService.checkUserAllowed(user);
         userService.checkUserDataScope(user.getUserId());
-        user.setUpdateBy(getUsername());
+        user.setUpdateBy(getUserIdStr());
         return toAjax(userService.updateUserStatus(user));
     }
 

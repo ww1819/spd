@@ -84,6 +84,10 @@ CALL add_table_column('sys_user', 'customer_id', 'char(36)', '客户ID(UUID7)，
 CALL add_table_column('sb_customer', 'planned_disable_time', 'datetime', '计划停用时间，到达后租户无法使用', NULL);
 /
 
+-- sb_customer 租户枚举键，与代码内 TenantEnum 关联，用于条件分支
+CALL add_table_column('sb_customer', 'tenant_key', 'varchar(64)', '租户枚举键(TenantEnum.name)，与代码内租户列表关联', NULL);
+/
+
 -- 客户启停用时间段：end_time 允许 NULL，表示当前未结束的时段
 CALL add_table_column('sb_customer_period_log', 'end_time', 'datetime', '结束时间，NULL表示当前未结束', NULL);
 /
@@ -97,7 +101,117 @@ CALL add_table_column('sb_customer_menu', 'is_enabled', 'char(1)', '是否开启
 -- 设备菜单表：是否仅平台管理功能（1则客户分配/工作组/用户权限中不展示）
 CALL add_table_column('sb_menu', 'is_platform_only', 'char(1)', '是否仅平台管理功能（1是，客户分配/工作组/用户权限中不展示）', '0');
 /
+-- 设备菜单表：是否默认对客户开放、逻辑删除标志
+CALL add_table_column('sb_menu', 'default_open_to_customer', 'char(1)', '是否默认对客户开放（1是，设备功能重置时授权给客户、管理员组、管理员用户）', '0');
+/
+CALL add_table_column('sb_menu', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
 
 -- 设备角色与菜单关联表：客户ID（归属租户，平台角色可为空）
 CALL add_table_column('sb_role_menu', 'customer_id', 'char(36)', '客户ID(UUID7)，归属客户/租户', NULL);
+/
+
+-- sb_work_group_menu 逻辑删除标志（已有表若缺列可执行）
+CALL add_table_column('sb_work_group_menu', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('sb_work_group_menu', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('sb_work_group_menu', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+
+-- sb_work_group_user 逻辑删除标志
+CALL add_table_column('sb_work_group_user', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+-- 已有数据：将曾通过 delete_time 标记删除的记录同步为 del_flag='1'
+UPDATE sb_work_group_user SET del_flag = '1' WHERE delete_time IS NOT NULL AND (del_flag IS NULL OR del_flag = '0');
+/
+
+-- sb_user_permission_* 三表：逻辑删除标志 del_flag（与 delete_by/delete_time 一并使用）
+CALL add_table_column('sb_user_permission_menu', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+CALL add_table_column('sb_user_permission_warehouse', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+CALL add_table_column('sb_user_permission_dept', 'del_flag', 'char(1)', '删除标志（0正常 1删除）', '0');
+/
+-- 已有数据：将曾通过 delete_time 标记删除的记录同步为 del_flag='1'
+UPDATE sb_user_permission_menu SET del_flag = '1' WHERE delete_time IS NOT NULL;
+/
+UPDATE sb_user_permission_warehouse SET del_flag = '1' WHERE delete_time IS NOT NULL;
+/
+UPDATE sb_user_permission_dept SET del_flag = '1' WHERE delete_time IS NOT NULL;
+/
+
+-- 数据：将客户 hengsui-third-001 名下在 sb_customer_menu 中的菜单全部设为「默认对客户开放」
+UPDATE sb_menu SET default_open_to_customer = '1'
+WHERE menu_id IN (
+  SELECT menu_id FROM sb_customer_menu
+  WHERE customer_id = (SELECT customer_id FROM sb_customer WHERE customer_code = 'hengsui-third-001' AND delete_time IS NULL LIMIT 1)
+    AND delete_time IS NULL
+);
+/
+
+-- 客户68分类表：名称拼音简码（用于检索、资产台账68分类按简码过滤）
+CALL add_table_column('sb_customer_category68', 'name_pinyin', 'varchar(200)', '名称拼音简码', NULL);
+/
+
+-- 客户资产台账表：财务系统唯一标识、HIS系统唯一标识（与第三方系统对接）
+CALL add_table_column('sb_customer_asset_ledger', 'financial_system_unique_id', 'varchar(100)', '财务系统唯一标识(与第三方财务系统对接)', NULL);
+/
+CALL add_table_column('sb_customer_asset_ledger', 'his_system_unique_id', 'varchar(100)', 'HIS系统唯一标识(与第三方HIS系统对接)', NULL);
+/
+
+-- 资产盘点单主表：68分类ID/编码（按68分类盘点时）、存放地点（按存放地点盘点时）
+CALL add_table_column('sb_asset_inventory', 'inventory_category68_id', 'char(36)', '盘点68分类ID(按68分类盘点时)', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'inventory_category68_code', 'varchar(64)', '盘点68分类编码', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'storage_place', 'varchar(200)', '盘点存放地点(按存放地点盘点时)', NULL);
+/
+
+-- 资产盘点单明细与标签打印关联表：打印任务单号
+CALL add_table_column('sb_asset_inventory_item_print', 'print_task_no', 'varchar(64)', '打印任务单号', NULL);
+/
+
+-- 客户68分类表 parent_id 改为本表主键id（仅当表中 parent_id 当前为 bigint 时执行以下一段）
+-- 若表是按新 table.sql 建的（parent_id 已是 char(36)），请跳过下面三条语句
+-- ALTER TABLE sb_customer_category68 ADD COLUMN parent_id_new CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键)';
+-- UPDATE sb_customer_category68 c1 INNER JOIN sb_customer_category68 c2 ON c2.customer_id = c1.customer_id AND c2.ref_category68_id = c1.parent_id SET c1.parent_id_new = c2.id WHERE c1.parent_id IS NOT NULL AND c1.parent_id != 0;
+-- ALTER TABLE sb_customer_category68 DROP COLUMN parent_id, CHANGE parent_id_new parent_id CHAR(36) DEFAULT NULL COMMENT '父分类ID(本表主键id，对应父记录)';
+/
+
+/* fd_department：删除历史误加列 his_dept_id（保留 his_id：HIS系统科室ID，与耗材 material/column.sql 一致） */
+SET @__db_eq := DATABASE();
+/
+SET @__exist_his_dept_eq := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db_eq AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'his_dept_id'
+);
+/
+SET @__drop_his_dept_eq := IF(@__exist_his_dept_eq > 0,
+  'ALTER TABLE fd_department DROP COLUMN `his_dept_id`',
+  'SELECT ''skip_fd_department_his_dept_id_eq'' AS msg'
+);
+/
+PREPARE __stmt_his_dept_eq FROM @__drop_his_dept_eq;
+/
+EXECUTE __stmt_his_dept_eq;
+/
+DEALLOCATE PREPARE __stmt_his_dept_eq;
+/
+CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
+/
+
+CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_dept_log_dept` (`department_id`),
+  KEY `idx_fd_dept_log_time` (`change_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
 /

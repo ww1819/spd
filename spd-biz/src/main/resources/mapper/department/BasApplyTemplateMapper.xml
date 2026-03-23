@@ -8,8 +8,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="id" column="id"/>
         <result property="templateName" column="template_name"/>
         <result property="warehouseId" column="warehouse_id"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -36,6 +39,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="code" column="material_code"/>
         <result property="name" column="material_name"/>
         <result property="speci" column="material_speci"/>
+        <result property="model" column="material_model"/>
+        <result property="price" column="material_price"/>
+        <result property="registerNo" column="material_register_no"/>
+        <result property="periodDate" column="material_period_date"/>
+        <association property="fdUnit" javaType="com.spd.foundation.domain.FdUnit" resultMap="templateFdUnitResult"/>
+        <association property="fdFactory" javaType="com.spd.foundation.domain.FdFactory" resultMap="templateFdFactoryResult"/>
+        <association property="supplier" javaType="com.spd.foundation.domain.FdSupplier" resultMap="templateSupplierResult"/>
+        <association property="fdWarehouseCategory" javaType="com.spd.foundation.domain.FdWarehouseCategory" resultMap="templateWarehouseCategoryResult"/>
+        <association property="fdFinanceCategory" javaType="com.spd.foundation.domain.FdFinanceCategory" resultMap="templateFinanceCategoryResult"/>
+    </resultMap>
+    <resultMap id="templateFdUnitResult" type="com.spd.foundation.domain.FdUnit">
+        <result property="unitId" column="mat_unit_id"/>
+        <result property="unitName" column="mat_unit_name"/>
+    </resultMap>
+    <resultMap id="templateFdFactoryResult" type="com.spd.foundation.domain.FdFactory">
+        <result property="factoryId" column="mat_factory_id"/>
+        <result property="factoryName" column="mat_factory_name"/>
+    </resultMap>
+    <resultMap id="templateSupplierResult" type="com.spd.foundation.domain.FdSupplier">
+        <result property="id" column="mat_supplier_id"/>
+        <result property="name" column="mat_supplier_name"/>
+    </resultMap>
+    <resultMap id="templateWarehouseCategoryResult" type="com.spd.foundation.domain.FdWarehouseCategory">
+        <result property="warehouseCategoryId" column="mat_warehouse_id"/>
+        <result property="warehouseCategoryName" column="mat_warehouse_name"/>
+    </resultMap>
+    <resultMap id="templateFinanceCategoryResult" type="com.spd.foundation.domain.FdFinanceCategory">
+        <result property="financeCategoryId" column="mat_finance_id"/>
+        <result property="financeCategoryName" column="mat_finance_name"/>
     </resultMap>
 
     <resultMap type="com.spd.department.domain.BasApplyTemplate" id="BasApplyTemplateWithEntryResult" extends="BasApplyTemplateResult">
@@ -43,39 +75,55 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTemplateVo">
-        select id, template_name, warehouse_id, remark, del_flag, create_by, create_time, update_by, update_time
+        select id, template_name, warehouse_id, tenant_id, remark, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time
         from bas_apply_template
     </sql>
 
     <select id="selectBasApplyTemplateList" resultMap="BasApplyTemplateResult">
-        select t.id, t.template_name, t.warehouse_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
         <where>
             and (t.del_flag = 0 or t.del_flag is null)
+            and t.tenant_id = #{scopedTenantId}
             <if test="templateName != null and templateName != ''">and t.template_name like concat('%', #{templateName}, '%')</if>
         </where>
         order by t.create_time desc
     </select>
 
     <select id="selectBasApplyTemplateById" resultMap="BasApplyTemplateWithEntryResult">
-        select t.id, t.template_name, t.warehouse_id, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName,
                e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
-               m.code as material_code, m.name as material_name, m.speci as material_speci
+               m.code as material_code, m.name as material_name, m.speci as material_speci, m.model as material_model, m.price as material_price,
+               m.register_no as material_register_no, m.period_date as material_period_date,
+               u.unit_id as mat_unit_id, u.unit_name as mat_unit_name,
+               f.factory_id as mat_factory_id, f.factory_name as mat_factory_name,
+               s.id as mat_supplier_id, s.name as mat_supplier_name,
+               wc.warehouse_category_id as mat_warehouse_id, wc.warehouse_category_name as mat_warehouse_name,
+               fc.finance_category_id as mat_finance_id, fc.finance_category_name as mat_finance_name
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
-        left join bas_apply_template_entry e on e.paren_id = t.id
+        left join bas_apply_template_entry e on e.paren_id = t.id and e.tenant_id = #{scopedTenantId} and (e.delete_time is null)
         left join fd_material m on e.material_id = m.id
-        where t.id = #{id}
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on m.supplier_id = s.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        where t.id = #{id} and t.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertBasApplyTemplate" parameterType="com.spd.department.domain.BasApplyTemplate" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into bas_apply_template
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            tenant_id,
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -86,6 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">#{templateName},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            #{scopedTenantId},
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -96,30 +145,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateBasApplyTemplate" parameterType="com.spd.department.domain.BasApplyTemplate">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update bas_apply_template
         <trim prefix="SET" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <delete id="deleteBasApplyTemplateById">
-        update bas_apply_template set del_flag = 1, update_time = now() where id = #{id}
-    </delete>
+    <update id="deleteBasApplyTemplateById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
 
-    <delete id="deleteEntryByParenId">
-        delete from bas_apply_template_entry where paren_id = #{parenId}
-    </delete>
+    <!-- 逻辑删除：表有 delete_by、delete_time，使用更新代替物理删除 -->
+    <update id="deleteEntryByParenId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update bas_apply_template_entry set delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (delete_time is null)
+    </update>
 
     <insert id="batchInsertEntry">
-        insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order) values
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order, tenant_id) values
         <foreach item="item" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder})
+            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder}, #{tenantId})
         </foreach>
     </insert>
 </mapper>

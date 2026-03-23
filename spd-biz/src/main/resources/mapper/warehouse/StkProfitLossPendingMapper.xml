@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkProfitLossPendingMapper">
+
+    <resultMap id="StkProfitLossPendingResult" type="com.spd.warehouse.domain.StkProfitLossPending">
+        <id property="id" column="id"/>
+        <result property="billId" column="bill_id"/>
+        <result property="entryId" column="entry_id"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="batchId" column="batch_id"/>
+        <result property="batchNumber" column="batch_number"/>
+        <result property="qty" column="qty"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="amt" column="amt"/>
+        <result property="beginTime" column="begin_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="mainBarcode" column="main_barcode"/>
+        <result property="subBarcode" column="sub_barcode"/>
+        <result property="applyStatus" column="apply_status"/>
+        <result property="settlementEffectStatus" column="settlement_effect_status"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <insert id="insertStkProfitLossPending" parameterType="com.spd.warehouse.domain.StkProfitLossPending"
+            useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into stk_profit_loss_pending
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="billId != null">bill_id,</if>
+            <if test="entryId != null">entry_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="batchId != null">batch_id,</if>
+            <if test="batchNumber != null">batch_number,</if>
+            <if test="qty != null">qty,</if>
+            <if test="unitPrice != null">unit_price,</if>
+            <if test="amt != null">amt,</if>
+            <if test="beginTime != null">begin_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="mainBarcode != null">main_barcode,</if>
+            <if test="subBarcode != null">sub_barcode,</if>
+            <if test="applyStatus != null">apply_status,</if>
+            <if test="settlementEffectStatus != null">settlement_effect_status,</if>
+            tenant_id,
+            <if test="delFlag != null">del_flag,</if>
+            <if test="deleteBy != null">delete_by,</if>
+            <if test="deleteTime != null">delete_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="billId != null">#{billId},</if>
+            <if test="entryId != null">#{entryId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="batchId != null">#{batchId},</if>
+            <if test="batchNumber != null">#{batchNumber},</if>
+            <if test="qty != null">#{qty},</if>
+            <if test="unitPrice != null">#{unitPrice},</if>
+            <if test="amt != null">#{amt},</if>
+            <if test="beginTime != null">#{beginTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="mainBarcode != null">#{mainBarcode},</if>
+            <if test="subBarcode != null">#{subBarcode},</if>
+            <if test="applyStatus != null">#{applyStatus},</if>
+            <if test="settlementEffectStatus != null">#{settlementEffectStatus},</if>
+            #{scopedTenantId},
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="deleteBy != null">#{deleteBy},</if>
+            <if test="deleteTime != null">#{deleteTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <select id="selectStkProfitLossPendingById" resultMap="StkProfitLossPendingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select id, bill_id, entry_id, warehouse_id, department_id, material_id, supplier_id,
+               batch_no, batch_id, batch_number, qty, unit_price, amt, begin_time, end_time,
+               main_barcode, sub_barcode, apply_status, settlement_effect_status, tenant_id,
+               del_flag, delete_by, delete_time, create_by, create_time, update_by, update_time
+        from stk_profit_loss_pending
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+        limit 1
+    </select>
+
+    <select id="selectStkProfitLossPendingList" parameterType="com.spd.warehouse.domain.StkProfitLossPending" resultMap="StkProfitLossPendingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        select id, bill_id, entry_id, warehouse_id, department_id, material_id, supplier_id,
+               batch_no, batch_id, batch_number, qty, unit_price, amt, begin_time, end_time,
+               main_barcode, sub_barcode, apply_status, settlement_effect_status, tenant_id,
+               del_flag, delete_by, delete_time, create_by, create_time, update_by, update_time
+        from stk_profit_loss_pending
+        <where>
+            tenant_id = #{scopedTenantId}
+            and (del_flag = 0 or del_flag is null)
+            <if test="id != null">and id = #{id}</if>
+            <if test="billId != null">and bill_id = #{billId}</if>
+            <if test="entryId != null">and entry_id = #{entryId}</if>
+            <if test="warehouseId != null">and warehouse_id = #{warehouseId}</if>
+            <if test="materialId != null">and material_id = #{materialId}</if>
+            <if test="batchNo != null and batchNo != ''">and batch_no like concat('%', #{batchNo}, '%')</if>
+            <if test="applyStatus != null and applyStatus != ''">and apply_status = #{applyStatus}</if>
+            <if test="settlementEffectStatus != null and settlementEffectStatus != ''">and settlement_effect_status = #{settlementEffectStatus}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <update id="updatePendingStatusById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update stk_profit_loss_pending
+        set apply_status = #{applyStatus},
+            settlement_effect_status = #{settlementEffectStatus},
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+    </update>
+
+</mapper>
+

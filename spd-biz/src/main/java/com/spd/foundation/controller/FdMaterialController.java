@@ -1,5 +1,6 @@
 package com.spd.foundation.controller;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,12 +12,17 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
+import com.github.pagehelper.PageHelper;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdMaterialListRequest;
+import com.spd.foundation.dto.MaterialImportAddDto;
+import com.spd.foundation.dto.MaterialImportUpdateDto;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -43,7 +49,7 @@ public class FdMaterialController extends BaseController
     private String interfaceUrl;
 
     /**
-     * 查询耗材产品列表
+     * 查询耗材产品列表（GET）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:list')")
     @GetMapping("/list")
@@ -51,6 +57,21 @@ public class FdMaterialController extends BaseController
     {
         startPage();
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
+        return getDataTable(list);
+    }
+
+    /**
+     * 查询耗材产品列表（POST，请求体传参，避免 excludeMaterialIds 等过长导致 400/414）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:list')")
+    @PostMapping("/list")
+    public TableDataInfo listPost(@RequestBody FdMaterialListRequest request)
+    {
+        Integer pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
+        Integer pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
+        FdMaterial query = request.getQuery() != null ? request.getQuery() : new FdMaterial();
+        PageHelper.startPage(pageNum, pageSize);
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         return getDataTable(list);
     }
 
@@ -94,6 +115,15 @@ public class FdMaterialController extends BaseController
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
         util.exportExcel(response, list, "耗材产品数据");
+    }
+
+    /**
+     * 根据主条码(udi_no)或耗材编码查询产品档案（用于入库单扫码带出产品）
+     */
+    @GetMapping("/getByMainBarcode")
+    public AjaxResult getByMainBarcode(@RequestParam String mainBarcode)
+    {
+        return success(fdMaterialService.getByMainBarcode(mainBarcode));
     }
 
     /**
@@ -158,6 +188,82 @@ public class FdMaterialController extends BaseController
         // 设置文件名响应头
         FileUtils.setAttachmentResponseHeader(response, "耗材产品档案基础字典导入.xlsx");
         util.importTemplateExcel(response, "耗材数据");
+    }
+
+    /** 耗材档案新增导入模板（不含 SPD 主键；含数据校验结果列供回填） */
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importAddTemplate")
+    public void importAddTemplate(HttpServletResponse response) throws Exception
+    {
+        ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
+        FileUtils.setAttachmentResponseHeader(response, "耗材档案新增导入模板.xlsx");
+        util.importTemplateExcel(response, "耗材档案新增导入");
+    }
+
+    /** 耗材档案更新导入模板 */
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importUpdateTemplate")
+    public void importUpdateTemplate(HttpServletResponse response) throws Exception
+    {
+        ExcelUtil<MaterialImportUpdateDto> util = new ExcelUtil<>(MaterialImportUpdateDto.class);
+        FileUtils.setAttachmentResponseHeader(response, "耗材档案更新导入模板.xlsx");
+        util.importTemplateExcel(response, "耗材档案更新导入");
+    }
+
+    /** 耗材档案新增导入：仅校验 */
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importAddValidate")
+    public AjaxResult importAddValidate(MultipartFile file) throws Exception
+    {
+        ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
+        List<MaterialImportAddDto> list = util.importExcel(file.getInputStream());
+        Map<String, Object> data = fdMaterialService.validateMaterialImportAdd(list);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.success("校验未通过", data);
+        }
+        return AjaxResult.success("校验通过，请确认后导入", data);
+    }
+
+    /** 耗材档案更新导入：仅校验 */
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importUpdateValidate")
+    public AjaxResult importUpdateValidate(MultipartFile file) throws Exception
+    {
+        ExcelUtil<MaterialImportUpdateDto> util = new ExcelUtil<>(MaterialImportUpdateDto.class);
+        List<MaterialImportUpdateDto> list = util.importExcel(file.getInputStream());
+        Map<String, Object> data = fdMaterialService.validateMaterialImportUpdate(list);
+        if (!Boolean.TRUE.equals(data.get("valid")))
+        {
+            return AjaxResult.success("校验未通过", data);
+        }
+        return AjaxResult.success("校验通过，请确认后导入", data);
+    }
+
+    @Log(title = "耗材档案新增导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importAddData")
+    public AjaxResult importAddData(MultipartFile file,
+        @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
+    {
+        ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
+        List<MaterialImportAddDto> list = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        String message = fdMaterialService.importMaterialImportAdd(list, operName, confirm);
+        return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
+    }
+
+    @Log(title = "耗材档案更新导入", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @PostMapping("/importUpdateData")
+    public AjaxResult importUpdateData(MultipartFile file,
+        @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
+    {
+        ExcelUtil<MaterialImportUpdateDto> util = new ExcelUtil<>(MaterialImportUpdateDto.class);
+        List<MaterialImportUpdateDto> list = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        String message = fdMaterialService.importMaterialImportUpdate(list, operName, confirm);
+        return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
 
     /**

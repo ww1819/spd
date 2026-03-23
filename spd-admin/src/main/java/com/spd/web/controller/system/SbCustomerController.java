@@ -22,9 +22,12 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
+import com.spd.common.enums.TenantEnum;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerMenuService;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ITenantDataPurgeService;
 
 /**
  * 设备系统客户（SaaS租户）管理
@@ -41,6 +44,8 @@ public class SbCustomerController extends BaseController {
 
   @Autowired
   private ISbCustomerMenuService sbCustomerMenuService;
+  @Autowired
+  private ITenantDataPurgeService tenantDataPurgeService;
 
   @PreAuthorize("@ss.hasPermi('sb:system:customer:list')")
   @GetMapping("/list")
@@ -56,14 +61,26 @@ public class SbCustomerController extends BaseController {
     return success(sbCustomerService.selectSbCustomerById(customerId));
   }
 
+  /**
+   * 代码内租户列表（TenantEnum），新增客户时从此列表选择以关联租户表与枚举
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:list')")
+  @GetMapping("/tenantEnumList")
+  public AjaxResult tenantEnumList() {
+    return success(TenantEnum.toVoList());
+  }
+
   @PreAuthorize("@ss.hasPermi('sb:system:customer:add')")
   @Log(title = "设备客户", businessType = BusinessType.INSERT)
   @PostMapping
   public AjaxResult add(@Validated @RequestBody SbCustomer customer) {
+    if (StringUtils.isEmpty(customer.getTenantKey())) {
+      return error("请从代码内租户列表选择租户类型（tenantKey）");
+    }
     if (UserConstants.NOT_UNIQUE == (sbCustomerService.checkSbCustomerCodeUnique(customer))) {
       return error("新增客户'" + customer.getCustomerName() + "'失败，客户编码已存在");
     }
-    customer.setCreateBy(SecurityUtils.getUsername());
+    customer.setCreateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.insertSbCustomer(customer));
   }
 
@@ -74,7 +91,7 @@ public class SbCustomerController extends BaseController {
     if (UserConstants.NOT_UNIQUE == (sbCustomerService.checkSbCustomerCodeUnique(customer))) {
       return error("修改客户'" + customer.getCustomerName() + "'失败，客户编码已存在");
     }
-    customer.setUpdateBy(SecurityUtils.getUsername());
+    customer.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(customer));
   }
 
@@ -160,5 +177,60 @@ public class SbCustomerController extends BaseController {
   @GetMapping("/periodLog/{customerId}")
   public AjaxResult getPeriodLogs(@PathVariable String customerId) {
     return success(sbCustomerService.selectPeriodLogList(customerId));
+  }
+
+  /**
+   * 设备功能重置：若 super 组和 super_01 不存在则创建；将默认对客户开放的权限开放给客户、super 组、super_01 用户。
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:edit')")
+  @Log(title = "设备功能重置", businessType = BusinessType.UPDATE)
+  @PutMapping("/resetEquipment/{customerId}")
+  public AjaxResult resetEquipment(@PathVariable String customerId) {
+    sbCustomerService.resetEquipmentFunctions(customerId);
+    return success();
+  }
+
+  /**
+   * 耗材功能重置：若 super 组（岗位）和 super_01 不存在则创建；重置耗材客户菜单权限、super 岗位菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:edit')")
+  @Log(title = "耗材功能重置", businessType = BusinessType.UPDATE)
+  @PutMapping("/resetMaterial/{customerId}")
+  public AjaxResult resetMaterial(@PathVariable String customerId) {
+    sbCustomerService.resetMaterialFunctions(customerId);
+    return success();
+  }
+
+  /**
+   * 按客户物理删除设备侧数据（customer_id）；不删除 sb_customer 行；删除该客户下 sys_user。
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:purgeEq')")
+  @Log(title = "清理设备租户数据", businessType = BusinessType.DELETE)
+  @PostMapping("/{customerId}/purgeEquipmentData")
+  public AjaxResult purgeEquipmentData(@PathVariable String customerId,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String c = body != null ? body.get("confirm") : null;
+    if (!"PURGE_EQ".equals(c)) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_EQ\"} 以确认清理设备数据");
+    }
+    int n = tenantDataPurgeService.purgeEquipmentDataForCustomer(customerId);
+    return success("已清理设备数据，影响行数约 " + n);
+  }
+
+  /**
+   * 与耗材客户管理并列：在设备客户列表行内可触发清理该租户耗材数据（逻辑同
+   * {@code POST /material/system/customer/{id}/purgeConsumablesData}）。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:purgeHc')")
+  @Log(title = "清理耗材租户数据", businessType = BusinessType.DELETE)
+  @PostMapping("/{customerId}/purgeConsumablesData")
+  public AjaxResult purgeConsumablesDataFromEquipmentUi(@PathVariable String customerId,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String c = body != null ? body.get("confirm") : null;
+    if (!"PURGE_HC".equals(c)) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_HC\"} 以确认清理耗材数据");
+    }
+    int n = tenantDataPurgeService.purgeConsumablesDataForTenant(customerId);
+    return success("已清理耗材数据，影响行数约 " + n);
   }
 }

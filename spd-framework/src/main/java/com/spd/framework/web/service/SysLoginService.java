@@ -60,18 +60,21 @@ public class SysLoginService
      * @param code 验证码
      * @param uuid 唯一标识
      * @param customerId 客户ID
+     * @param systemType 登录入口：hc=耗材系统（校验 hc_status/hc_planned_disable_time），否则设备系统
      * @return 结果
      */
-    public String login(String username, String password, String code, String uuid, String customerId)
+    public String login(String username, String password, String code, String uuid, String customerId, String systemType)
     {
         // 验证码校验
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password, customerId);
-        // 设备系统：有客户ID时拼成「id:customerId|username」，供 loadUserByUsername 按客户+用户名唯一定位
-        String effectiveUsername = StringUtils.isNotEmpty(customerId)
-            ? "id:" + customerId.trim() + "|" + username
-            : username;
+        // 有客户ID时拼成「id:customerId|username」或「hc:customerId|username」，供 loadUserByUsername 按客户+用户名唯一定位并区分耗材/设备校验
+        String effectiveUsername = username;
+        if (StringUtils.isNotEmpty(customerId)) {
+            String prefix = "hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc:" : "id:";
+            effectiveUsername = prefix + customerId.trim() + "|" + username;
+        }
         // 用户验证
         Authentication authentication = null;
         try
@@ -100,6 +103,14 @@ public class SysLoginService
         }
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        if (StringUtils.isNotEmpty(customerId))
+        {
+            loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        }
+        else
+        {
+            loginUser.setLoginChannel(null);
+        }
         recordLoginInfo(loginUser.getUserId());
         // 生成token
         return tokenService.createToken(loginUser);

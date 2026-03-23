@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbAssetInventoryItemMapper">
+    <resultMap type="com.spd.equipment.domain.SbAssetInventoryItem" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="inventoryId" column="inventory_id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="name" column="name"/>
+        <result property="spec" column="spec"/>
+        <result property="model" column="model"/>
+        <result property="originalValue" column="original_value"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="storagePlace" column="storage_place"/>
+        <result property="equipmentSerialNo" column="equipment_serial_no"/>
+        <result property="category68Id" column="category68_id"/>
+        <result property="category68Name" column="category68_name"/>
+        <result property="manufacturerName" column="manufacturer_name"/>
+        <result property="needReprintLabel" column="need_reprint_label"/>
+        <result property="printCount" column="print_count"/>
+        <result property="lastPrintTime" column="last_print_time"/>
+        <result property="printStatus" column="print_status"/>
+        <result property="checkStatus" column="check_status"/>
+        <result property="checkTime" column="check_time"/>
+        <result property="checkBy" column="check_by"/>
+        <result property="realStoragePlace" column="real_storage_place"/>
+        <result property="differenceRemark" column="difference_remark"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">
+        select id, customer_id, inventory_id, order_no, asset_id, name, spec, model, original_value, dept_id, dept_name, storage_place, equipment_serial_no, category68_id, category68_name, manufacturer_name, need_reprint_label, print_count, last_print_time, print_status, check_status, check_time, check_by, real_storage_place, difference_remark, sort_order, del_flag, del_by, del_time, create_by, create_time, update_by, update_time from sb_asset_inventory_item
+    </sql>
+    <select id="selectList" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            and customer_id = #{scopedTenantId}
+            <if test="inventoryId != null and inventoryId != ''"> and inventory_id = #{inventoryId}</if>
+            <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
+            <if test="orderNo != null and orderNo != ''"> and order_no like concat('%', #{orderNo}, '%')</if>
+            <if test="name != null and name != ''"> and (name like concat('%', #{name}, '%'))</if>
+            <if test="checkStatus != null and checkStatus != ''"> and check_status = #{checkStatus}</if>
+            <if test="printStatus != null and printStatus != ''"> and print_status = #{printStatus}</if>
+        </where>
+        order by sort_order asc, create_time asc
+    </select>
+    <select id="selectByInventoryId" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where inventory_id = #{inventoryId} and customer_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null) order by sort_order asc, create_time asc
+    </select>
+    <select id="selectById" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
+    </select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetInventoryItem">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into sb_asset_inventory_item (id, customer_id, inventory_id, order_no, asset_id, name, spec, model, original_value, dept_id, dept_name, storage_place, equipment_serial_no, category68_id, category68_name, manufacturer_name, need_reprint_label, print_count, print_status, check_status, sort_order, del_flag, create_by, create_time, update_by, update_time)
+        values (#{id}, #{tenantId}, #{inventoryId}, #{orderNo}, #{assetId}, #{name}, #{spec}, #{model}, #{originalValue}, #{deptId}, #{deptName}, #{storagePlace}, #{equipmentSerialNo}, #{category68Id}, #{category68Name}, #{manufacturerName}, #{needReprintLabel}, #{printCount}, #{printStatus}, #{checkStatus}, #{sortOrder}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+    <insert id="insertBatch">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into sb_asset_inventory_item (id, customer_id, inventory_id, order_no, asset_id, name, spec, model, original_value, dept_id, dept_name, storage_place, equipment_serial_no, category68_id, category68_name, manufacturer_name, need_reprint_label, print_count, print_status, check_status, sort_order, del_flag, create_by, create_time, update_by, update_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{tenantId}, #{item.inventoryId}, #{item.orderNo}, #{item.assetId}, #{item.name}, #{item.spec}, #{item.model}, #{item.originalValue}, #{item.deptId}, #{item.deptName}, #{item.storagePlace}, #{item.equipmentSerialNo}, #{item.category68Id}, #{item.category68Name}, #{item.manufacturerName}, #{item.needReprintLabel}, #{item.printCount}, #{item.printStatus}, #{item.checkStatus}, #{item.sortOrder}, 0, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+        </foreach>
+    </insert>
+    <update id="update" parameterType="com.spd.equipment.domain.SbAssetInventoryItem">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_inventory_item
+        <set>
+            <if test="needReprintLabel != null">need_reprint_label = #{needReprintLabel},</if>
+            <if test="printCount != null">print_count = #{printCount},</if>
+            <if test="lastPrintTime != null">last_print_time = #{lastPrintTime},</if>
+            <if test="printStatus != null">print_status = #{printStatus},</if>
+            <if test="checkStatus != null">check_status = #{checkStatus},</if>
+            <if test="checkTime != null">check_time = #{checkTime},</if>
+            <if test="checkBy != null">check_by = #{checkBy},</if>
+            <if test="realStoragePlace != null">real_storage_place = #{realStoragePlace},</if>
+            <if test="differenceRemark != null">difference_remark = #{differenceRemark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id} and customer_id = #{scopedTenantId}
+    </update>
+    <update id="deleteById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_inventory_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{scopedTenantId}
+    </update>
+    <update id="deleteByInventoryId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_inventory_item set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where inventory_id = #{inventoryId} and customer_id = #{scopedTenantId}
+    </update>
+</mapper>

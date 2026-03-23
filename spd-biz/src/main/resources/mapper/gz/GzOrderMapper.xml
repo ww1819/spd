@@ -14,6 +14,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="orderStatus"    column="order_status"    />
         <result property="orderType"    column="order_type"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="isFollowFlag"    column="is_follow_flag"    />
         <result property="createBy"    column="create_by"    />
@@ -62,6 +63,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="endTime"    column="sub_end_time"    />
         <result property="delFlag"    column="sub_del_flag"    />
         <result property="remark"    column="sub_remark"    />
+        <result property="masterBarcode"    column="sub_master_barcode"    />
+        <result property="secondaryBarcode"    column="sub_secondary_barcode"    />
     </resultMap>
 
     <sql id="selectGzOrderVo">
@@ -79,7 +82,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
-				d.id dId,d.code departmentCode,d.name departmentName
+				d.id dId,d.code departmentCode,d.name departmentName,
+				gz.tenant_id
         from gz_order gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
@@ -93,6 +97,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				NULL as is_follow_flag,
 				gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
+				gz.tenant_id,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
@@ -103,6 +108,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on NULL = d.id
         left join gz_order_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
+        <if test="tenantId != null and tenantId != ''"> and gz.tenant_id = #{tenantId}</if>
         <if test="orderNo != null  and orderNo != ''"> and gz.order_no like concat('%', #{orderNo}, '%')</if>
         <if test="supplerId != null "> and gz.suppler_id = #{supplerId}</if>
         <if test="orderDate != null "> and gz.order_date = #{orderDate}</if>
@@ -121,7 +127,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
+				gz.order_status, gz.order_type, gz.del_flag, gz.tenant_id, gz.audit_date, 
 				gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id, s.code, s.name,
 				w.id, w.code, w.name,
@@ -130,6 +136,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzOrderById" parameterType="Long" resultMap="GzOrderGzOrderEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, 
 				<!-- 注意：如果执行 SQL 后仍然报错，请先验证字段是否真的存在 -->
 				<!-- 验证 SQL: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_order' AND COLUMN_NAME = 'department_id'; -->
@@ -141,16 +148,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				<!-- 临时注释：等执行 SQL 添加 is_follow_flag 字段后，取消下面的注释，并删除 NULL as is_follow_flag -->
 				NULL as is_follow_flag,
 				<!-- a.is_follow_flag, -->
-				a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+				a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.tenant_id,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
                 b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
-                b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
+                b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark,
+                b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode
         from gz_order a
         left join gz_order_entry b on b.paren_id = a.id
-        where a.id = #{id}
+        where a.id = #{id} and a.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzOrder" parameterType="GzOrder" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="orderNo != null">order_no,</if>
@@ -162,6 +171,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">order_status,</if>
             <if test="orderType != null">order_type,</if>
             <if test="delFlag != null">del_flag,</if>
+            tenant_id,
             <if test="auditDate != null">audit_date,</if>
             <if test="isFollowFlag != null and isFollowFlag != ''">is_follow_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -180,6 +190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="orderType != null">#{orderType},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            #{scopedTenantId},
             <if test="auditDate != null">#{auditDate},</if>
             <if test="isFollowFlag != null and isFollowFlag != ''">#{isFollowFlag},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -191,6 +202,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateGzOrder" parameterType="GzOrder">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_order
         <trim prefix="SET" suffixOverrides=",">
             <if test="orderNo != null">order_no = #{orderNo},</if>
@@ -202,6 +214,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="orderType != null">order_type = #{orderType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="isFollowFlag != null">is_follow_flag = #{isFollowFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
@@ -210,45 +223,53 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <delete id="deleteGzOrderById" parameterType="Long">
-        update gz_order set del_flag = 1, update_time = now() where id = #{id}
+    <delete id="deleteGzOrderById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_order set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
-    <delete id="deleteGzOrderEntryByParenId" parameterType="Long">
-        update gz_order_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+    <delete id="deleteGzOrderEntryByParenId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_order_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <insert id="batchGzOrderEntry">
-        insert into gz_order_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark) values
+        insert into gz_order_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, master_barcode, secondary_barcode, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.masterBarcode}, #{item.secondaryBarcode},
+              (select t.tenant_id from gz_order t where t.id = #{item.parenId} limit 1))
         </foreach>
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(order_no) from gz_order
         where order_no like concat(#{prefix},'%')
         and order_no like concat('%',#{date},'%')
+        and tenant_id = #{scopedTenantId}
     </select>
 
     <update id="updateGzOrderEntry" parameterType="GzOrderEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_order_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where paren_id = #{parenId}
+        where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <!-- 根据院内码查询是否有未出库的出库单 -->
     <select id="selectOutboundOrderNosByInHospitalCode" parameterType="String" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select distinct go.order_no
         from gz_order go
         inner join gz_order_entry goe on go.id = goe.paren_id
         inner join gz_depot_inventory gdi on goe.batch_no = gdi.batch_no
         where gdi.in_hospital_code = #{inHospitalCode}
+        and go.tenant_id = #{scopedTenantId}
         and go.order_type = 102
         and go.order_status = 1
         and go.del_flag != 1

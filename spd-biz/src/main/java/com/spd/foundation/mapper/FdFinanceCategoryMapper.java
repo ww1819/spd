@@ -1,6 +1,9 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
 import com.spd.foundation.domain.FdFinanceCategory;
 
 /**
@@ -42,6 +45,21 @@ public interface FdFinanceCategoryMapper
      * @return 结果
      */
     public int updateFdFinanceCategory(FdFinanceCategory fdFinanceCategory);
+
+    /**
+     * 按编码与租户查询财务分类（未删除）
+     */
+    FdFinanceCategory selectFdFinanceCategoryByCodeAndTenantId(@Param("code") String code, @Param("tenantId") String tenantId);
+
+    /**
+     * 租户下 HIS 财务分类 ID 出现次数（可排除某主键）
+     */
+    int countFinanceCategoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeId") Long excludeId);
+
+    /**
+     * 按租户 + HIS 财务分类 ID 查一条（未删除）
+     */
+    FdFinanceCategory selectFdFinanceCategoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
 
     /**
      * 删除财务分类维护

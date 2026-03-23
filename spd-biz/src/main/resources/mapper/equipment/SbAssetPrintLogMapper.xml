@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.SbAssetPrintLogMapper">
+    <resultMap type="com.spd.equipment.domain.SbAssetPrintLog" id="Result">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="taskNo" column="task_no"/>
+        <result property="itemId" column="item_id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="printTime" column="print_time"/>
+        <result property="printResult" column="print_result"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="printerName" column="printer_name"/>
+        <result property="printerIp" column="printer_ip"/>
+        <result property="printUserId" column="print_user_id"/>
+        <result property="printUserName" column="print_user_name"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="delBy" column="del_by"/>
+        <result property="delTime" column="del_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="selectVo">
+        select id, customer_id, task_id, task_no, item_id, asset_id, print_time, print_result, error_message, source_type, printer_name, printer_ip, print_user_id, print_user_name,
+        del_flag, del_by, del_time, create_by, create_time, update_by, update_time
+        from sb_asset_print_log
+    </sql>
+    <select id="selectList" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/>
+        <where>
+            (del_flag = 0 or del_flag is null)
+            and customer_id = #{scopedTenantId}
+            <if test="taskId != null and taskId != ''"> and task_id = #{taskId}</if>
+            <if test="itemId != null and itemId != ''"> and item_id = #{itemId}</if>
+            <if test="assetId != null and assetId != ''"> and asset_id = #{assetId}</if>
+            <if test="printResult != null and printResult != ''"> and print_result = #{printResult}</if>
+            <if test="sourceType != null and sourceType != ''"> and source_type = #{sourceType}</if>
+        </where>
+        order by print_time desc
+    </select>
+    <select id="selectById" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
+    </select>
+    <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetPrintLog">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into sb_asset_print_log (id, customer_id, task_id, task_no, item_id, asset_id, print_time, print_result, error_message, source_type, printer_name, printer_ip, print_user_id, print_user_name, del_flag, create_by, create_time, update_by, update_time)
+        values (#{id}, #{tenantId}, #{taskId}, #{taskNo}, #{itemId}, #{assetId}, #{printTime}, #{printResult}, #{errorMessage}, #{sourceType}, #{printerName}, #{printerIp}, #{printUserId}, #{printUserName}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+    <update id="deleteById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update sb_asset_print_log set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{scopedTenantId}
+    </update>
+</mapper>

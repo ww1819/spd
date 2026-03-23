@@ -19,5 +19,8 @@ public interface SbWorkGroupUserMapper {
 
   int deleteByGroupIdAndUserId(@Param("groupId") String groupId, @Param("userId") Long userId, @Param("deleteBy") String deleteBy);
 
+  /** 按用户及客户软删该用户在该客户下的所有工作组关联 */
+  int deleteByUserIdAndCustomerId(@Param("userId") Long userId, @Param("customerId") String customerId, @Param("deleteBy") String deleteBy);
+
   int countByGroupIdAndUserId(@Param("groupId") String groupId, @Param("userId") Long userId);
 }

@@ -3,6 +3,7 @@ package com.spd.department.service.impl;
 import java.util.List;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,9 @@ public class NewProductAuditServiceImpl implements INewProductAuditService
     @Override
     public List<NewProductApply> selectNewProductAuditList(NewProductApply newProductApply)
     {
+        if (newProductApply != null && StringUtils.isEmpty(newProductApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            newProductApply.setTenantId(SecurityUtils.getCustomerId());
+        }
         return newProductApplyMapper.selectNewProductApplyList(newProductApply);
     }
 
@@ -61,7 +65,7 @@ public class NewProductAuditServiceImpl implements INewProductAuditService
         newProductApply.setApplyStatus(2); // 2-已审核
         newProductApply.setAuditDate(DateUtils.getNowDate());
         newProductApply.setUpdateTime(DateUtils.getNowDate());
-        newProductApply.setUpdateBy(SecurityUtils.getUsername());
+        newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
         return newProductApplyMapper.updateNewProductApply(newProductApply);
     }
 
@@ -79,7 +83,7 @@ public class NewProductAuditServiceImpl implements INewProductAuditService
         // 驳回原因存储在remark字段中
         newProductApply.setApplyStatus(2); // 2-已拒绝
         newProductApply.setUpdateTime(DateUtils.getNowDate());
-        newProductApply.setUpdateBy(SecurityUtils.getUsername());
+        newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
         // 驳回原因通过前端传入的rejectReason字段，设置到remark中
         // 前端传入的数据结构：{ id: xxx, rejectReason: "驳回原因" }
         // 这里rejectReason会映射到remark字段

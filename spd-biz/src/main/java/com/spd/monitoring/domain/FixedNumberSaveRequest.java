@@ -80,6 +80,9 @@ public class FixedNumberSaveRequest implements Serializable {
         /** 货位ID */
         private Long locationId;
 
+        /** 备注 */
+        private String remark;
+
         public Long getMaterialId() {
             return materialId;
         }
@@ -134,6 +137,14 @@ public class FixedNumberSaveRequest implements Serializable {
 
         public void setLocationId(Long locationId) {
             this.locationId = locationId;
+        }
+
+        public String getRemark() {
+            return remark;
+        }
+
+        public void setRemark(String remark) {
+            this.remark = remark;
         }
     }
 }

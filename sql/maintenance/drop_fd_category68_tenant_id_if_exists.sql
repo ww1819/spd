@@ -1,0 +1,4 @@
+-- fd_category68 为系统字典模板表，不应包含 tenant_id。
+-- 若历史上曾误加该列，在确认无业务依赖后执行（MySQL 8+ 可先查 information_schema）：
+--
+-- ALTER TABLE fd_category68 DROP COLUMN tenant_id;

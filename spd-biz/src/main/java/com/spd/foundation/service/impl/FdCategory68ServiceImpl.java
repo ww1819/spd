@@ -13,7 +13,7 @@ import com.spd.foundation.domain.FdCategory68;
 import com.spd.foundation.service.IFdCategory68Service;
 
 /**
- * 68分类Service业务层处理
+ * 系统 68 分类标准（fd_category68）业务层：全库共用参照模板，不按 tenant 隔离。
  *
  * @author spd
  */
@@ -99,7 +99,7 @@ public class FdCategory68ServiceImpl implements IFdCategory68Service
         }
         fdCategory68.setDelFlag(1);
         fdCategory68.setUpdateTime(new Date());
-        fdCategory68.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
+        fdCategory68.setUpdateBy(SecurityUtils.getUserIdStr());
         return fdCategory68Mapper.updateFdCategory68(fdCategory68);
     }
 }

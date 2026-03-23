@@ -6,6 +6,7 @@ import java.util.Map;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -36,6 +37,11 @@ public interface StkIoBillMapper
      */
     public List<StkIoBill> selectStkIoBillList(StkIoBill stkIoBill);
 
+    /**
+     * 出库单按单导出：扁平行（bill_type=201）
+     * @param billIds 非空时仅导出这些主键；空时按 q 条件筛选
+     */
+    List<StkOutBillExportFlatRow> selectOutBillGroupedExportRows(@Param("q") StkIoBill q, @Param("billIds") List<Long> billIds);
 
     /**
      * 查询出入库汇总
@@ -85,12 +91,14 @@ public interface StkIoBillMapper
 //    public int deleteStkIoBillByIds(Long[] ids);
 
     /**
-     * 批量删除出入库明细
+     * 批量逻辑删除出入库明细（设置 del_flag=1, delete_by, delete_time）
      *
-     * @param ids 需要删除的数据主键集合
+     * @param parenIds 主表ID集合
+     * @param deleteBy 删除者
+     * @param deleteTime 删除时间
      * @return 结果
      */
-    public int deleteStkIoBillEntryByParenIds(Long[] ids);
+    public int deleteStkIoBillEntryByParenIds(@Param("parenIds") Long[] parenIds, @Param("deleteBy") String deleteBy, @Param("deleteTime") java.util.Date deleteTime);
 
     /**
      * 批量新增出入库明细
@@ -102,12 +110,14 @@ public interface StkIoBillMapper
 
 
     /**
-     * 通过出入库主键删除出入库明细信息
+     * 通过出入库主键逻辑删除出入库明细信息（设置 del_flag=1, delete_by, delete_time）
      *
-     * @param id 出入库ID
+     * @param parenId 出入库ID
+     * @param deleteBy 删除者
+     * @param deleteTime 删除时间
      * @return 结果
      */
-    public int deleteStkIoBillEntryByParenId(Long id);
+    public int deleteStkIoBillEntryByParenId(@Param("parenId") Long parenId, @Param("deleteBy") String deleteBy, @Param("deleteTime") java.util.Date deleteTime);
 
     /**
      * 查询出入库表当天最大的单号

@@ -71,6 +71,12 @@ public class LoginUser implements UserDetails
      */
     private SysUser user;
 
+    /**
+     * 租户登录入口：hc=耗材系统，equipment=设备系统；平台用户（无租户）为 null。
+     * 用于科室/仓库数据范围仅加载对应系统的权限表。
+     */
+    private String loginChannel;
+
     public LoginUser()
     {
     }
@@ -256,6 +262,16 @@ public class LoginUser implements UserDetails
     public void setUser(SysUser user)
     {
         this.user = user;
+    }
+
+    public String getLoginChannel()
+    {
+        return loginChannel;
+    }
+
+    public void setLoginChannel(String loginChannel)
+    {
+        this.loginChannel = loginChannel;
     }
 
     @Override

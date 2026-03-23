@@ -37,11 +37,18 @@ public class StkInitialImport extends BaseEntity {
     private Integer billStatus;
     /** 删除标志 */
     private Integer delFlag;
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
     /** 审核人 */
     private String auditBy;
     /** 审核时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
+    /** 删除者 */
+    private String deleteBy;
+    /** 删除时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date deleteTime;
 
     /** 仓库对象 */
     private FdWarehouse warehouse;

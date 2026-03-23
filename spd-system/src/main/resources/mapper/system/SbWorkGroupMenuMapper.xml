@@ -3,24 +3,32 @@
 <mapper namespace="com.spd.system.mapper.SbWorkGroupMenuMapper">
 
   <select id="selectMenuIdsByGroupId" resultType="string">
-    select menu_id from sb_work_group_menu where group_id = #{groupId} and delete_time is null
+    select menu_id from sb_work_group_menu
+    where group_id = #{groupId} and ifnull(del_flag,'0') = '0'
+  </select>
+
+  <select id="selectMenuIdsByGroupIdAndCustomerId" resultType="string">
+    select menu_id from sb_work_group_menu
+    where group_id = #{groupId} and (customer_id = #{customerId} or (customer_id is null and #{customerId} is null))
+    and ifnull(del_flag,'0') = '0'
   </select>
 
   <update id="deleteByGroupId">
-    update sb_work_group_menu set delete_by = #{deleteBy}, delete_time = sysdate() where group_id = #{groupId}
+    update sb_work_group_menu set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1' where group_id = #{groupId}
   </update>
 
   <insert id="insert" parameterType="com.spd.system.domain.SbWorkGroupMenu">
-    insert into sb_work_group_menu (id, group_id, menu_id, customer_id, create_by, create_time)
-    values (#{id}, #{groupId}, #{menuId}, #{customerId}, #{createBy}, sysdate())
+    insert into sb_work_group_menu (id, group_id, menu_id, customer_id, create_by, create_time, del_flag)
+    values (#{id}, #{groupId}, #{menuId}, #{customerId}, #{createBy}, sysdate(), ifnull(#{delFlag},'0'))
   </insert>
 
   <insert id="batchInsert">
-    insert into sb_work_group_menu (id, group_id, menu_id, customer_id, create_by, create_time)
+    insert into sb_work_group_menu (id, group_id, menu_id, customer_id, create_by, create_time, del_flag)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.id}, #{item.groupId}, #{item.menuId}, #{item.customerId}, #{item.createBy}, sysdate())
+      (#{item.id}, #{item.groupId}, #{item.menuId}, #{item.customerId}, #{item.createBy}, sysdate(), ifnull(#{item.delFlag},'0'))
     </foreach>
+    on duplicate key update delete_by = null, delete_time = null, del_flag = '0'
   </insert>
 
 </mapper>

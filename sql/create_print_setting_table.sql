@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS sys_print_setting;
 CREATE TABLE sys_print_setting (
   id BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   template_name VARCHAR(100) NOT NULL COMMENT '模板名称',
+  tenant_id VARCHAR(64) NULL DEFAULT NULL COMMENT '租户/客户ID，NULL表示全库默认模板',
   bill_type INT(4) COMMENT '入库单类型（101普通入库，501调拨等，NULL表示通用）',
   page_width DECIMAL(10,2) DEFAULT 210 COMMENT '页面宽度（mm）',
   page_height DECIMAL(10,2) DEFAULT 297 COMMENT '页面高度（mm）',
@@ -34,5 +35,6 @@ CREATE TABLE sys_print_setting (
   remark VARCHAR(500) DEFAULT '' COMMENT '备注',
   PRIMARY KEY (id),
   KEY idx_bill_type (bill_type),
-  KEY idx_status (status)
+  KEY idx_status (status),
+  KEY idx_tenant_bill (tenant_id, bill_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='打印设置表';

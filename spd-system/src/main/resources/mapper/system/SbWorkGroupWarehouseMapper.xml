@@ -21,6 +21,7 @@
     <foreach collection="list" item="item" separator=",">
       (#{item.id}, #{item.groupId}, #{item.warehouseId}, #{item.customerId}, #{item.createBy}, sysdate())
     </foreach>
+    on duplicate key update delete_by = null, delete_time = null
   </insert>
 
 </mapper>

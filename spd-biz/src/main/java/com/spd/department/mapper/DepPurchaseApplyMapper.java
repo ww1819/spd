@@ -3,6 +3,7 @@ package com.spd.department.mapper;
 import java.util.List;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.DepPurchaseApplyEntry;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 科室申购Mapper接口
@@ -44,29 +45,14 @@ public interface DepPurchaseApplyMapper
      */
     public int updateDepPurchaseApply(DepPurchaseApply depPurchaseApply);
 
-    /**
-     * 删除科室申购
-     * 
-     * @param id 科室申购主键
-     * @return 结果
-     */
-    public int deleteDepPurchaseApplyById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteDepPurchaseApplyById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除科室申购
-     * 
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteDepPurchaseApplyByIds(Long[] ids);
+    /** 批量逻辑删除 */
+    public int deleteDepPurchaseApplyByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除科室申购明细
-     * 
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteDepPurchaseApplyEntryByParentIds(Long[] ids);
+    /** 批量逻辑删除科室申购明细 */
+    public int deleteDepPurchaseApplyEntryByParentIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
     
     /**
      * 批量新增科室申购明细
@@ -83,5 +69,5 @@ public interface DepPurchaseApplyMapper
      * @param id 科室申购ID
      * @return 结果
      */
-    public int deleteDepPurchaseApplyEntryByParentId(Long id);
+    public int deleteDepPurchaseApplyEntryByParentId(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 }

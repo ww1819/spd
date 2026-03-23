@@ -3,6 +3,11 @@ spring:
   profiles:
     active: dev
 
+# Tomcat 请求头限制（避免 Request header is too large），各环境可覆盖
+server:
+  tomcat:
+    max-http-header-size: 524288  # 512KB
+
 # SQL 启动脚本（按 table → column → view → trigger → procedure 顺序执行）
 spd:
   sql:

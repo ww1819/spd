@@ -69,6 +69,9 @@ public class StkInventory extends BaseEntity
     @Excel(name = "供应商ID")
     private Long supplierId;
 
+    /** 生产厂家ID（冗余，与批次/耗材档案一致） */
+    private Long factoryId;
+
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "生产日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -89,6 +92,12 @@ public class StkInventory extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
+    /** 结算方式（来自入库单：1入库结算 2出库结算 3消耗结算） */
+    private String settlementType;
+
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
@@ -101,14 +110,26 @@ public class StkInventory extends BaseEntity
     /** 查询参数：仓库名称 */
     private String warehouseName;
 
-    /** 查询参数：耗材名称 */
+    /** 查询参数：耗材名称/编码/拼音简码（模糊：品名、编码、referred_name） */
     private String materialName;
+
+    /** 查询参数：规格（模糊） */
+    private String materialSpeci;
+    /** 查询参数：型号（模糊） */
+    private String materialModel;
 
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
     @Excel(name = "批号")
     private String batchNumber;
+
+    /** 高值耗材主条码 */
+    @Excel(name = "高值耗材主条码")
+    private String mainBarcode;
+    /** 高值耗材辅条码 */
+    @Excel(name = "高值耗材辅条码")
+    private String subBarcode;
 
     public void setId(Long id)
     {
@@ -231,6 +252,14 @@ public class StkInventory extends BaseEntity
         this.supplierId = supplierId;
     }
 
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
+    }
+
     public Date getBeginTime() {
         return beginTime;
     }
@@ -279,6 +308,22 @@ public class StkInventory extends BaseEntity
         this.supplier = supplier;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
+    }
+
     public String getWarehouseName() {
         return warehouseName;
     }
@@ -293,6 +338,22 @@ public class StkInventory extends BaseEntity
 
     public void setMaterialName(String materialName) {
         this.materialName = materialName;
+    }
+
+    public String getMaterialSpeci() {
+        return materialSpeci;
+    }
+
+    public void setMaterialSpeci(String materialSpeci) {
+        this.materialSpeci = materialSpeci;
+    }
+
+    public String getMaterialModel() {
+        return materialModel;
+    }
+
+    public void setMaterialModel(String materialModel) {
+        this.materialModel = materialModel;
     }
 
     public Integer getDaysToExpiry() {
@@ -328,6 +389,7 @@ public class StkInventory extends BaseEntity
             .append("endTime", getEndTime())
             .append("receiptOrderNo", getReceiptOrderNo())
             .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
             .toString();
     }
 
@@ -338,4 +400,9 @@ public class StkInventory extends BaseEntity
     public void setBatchNumber(String batchNumber) {
         this.batchNumber = batchNumber;
     }
+
+    public String getMainBarcode() { return mainBarcode; }
+    public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
+    public String getSubBarcode() { return subBarcode; }
+    public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
 }

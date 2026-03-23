@@ -69,6 +69,14 @@ public class BasApply extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 删除人（逻辑删除时填充） */
+    private String delBy;
+    /** 删除时间（逻辑删除时填充） */
+    private Date delTime;
+
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     /** 科室申领明细信息 */
     private List<BasApplyEntry> basApplyEntryList;
 
@@ -150,6 +158,30 @@ public class BasApply extends BaseEntity
         return delFlag;
     }
 
+    public String getDelBy() {
+        return delBy;
+    }
+
+    public void setDelBy(String delBy) {
+        this.delBy = delBy;
+    }
+
+    public Date getDelTime() {
+        return delTime;
+    }
+
+    public void setDelTime(Date delTime) {
+        this.delTime = delTime;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public List<BasApplyEntry> getBasApplyEntryList()
     {
         return basApplyEntryList;
@@ -186,6 +218,7 @@ public class BasApply extends BaseEntity
             .append("userId", getUserId())
             .append("applyBillStatus", getApplyBillStatus())
             .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

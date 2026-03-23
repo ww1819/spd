@@ -20,6 +20,7 @@ import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.core.page.TableSupport;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.PageUtils;
+import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.sql.SqlUtil;
@@ -211,6 +212,53 @@ public class BaseController
         return getLoginUser().getUsername();
     }
 
+    /**
+     * 当前用户ID字符串（用于 createBy/updateBy/deleteBy 等字段，存 sys_user.user_id）
+     */
+    public String getUserIdStr()
+    {
+        return String.valueOf(getUserId());
+    }
+
+    /**
+     * 租户登录（sys_user.customer_id 非空）时，用户列表/导出仅查本租户。
+     */
+    protected void applyCustomerIdIfLoginTenant(SysUser user)
+    {
+        if (user == null)
+        {
+            return;
+        }
+        String cid = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(cid))
+        {
+            user.setCustomerId(cid);
+        }
+    }
+
+    /**
+     * 租户登录时，为带 setTenantId(String) 的查询对象写入当前租户，与业务表 tenant_id 对齐；平台用户不写则不加条件。
+     */
+    protected void applyTenantIdIfLoginTenant(Object queryBean)
+    {
+        if (queryBean == null)
+        {
+            return;
+        }
+        String cid = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(cid))
+        {
+            return;
+        }
+        try
+        {
+            queryBean.getClass().getMethod("setTenantId", String.class).invoke(queryBean, cid);
+        }
+        catch (ReflectiveOperationException ignored)
+        {
+            // 无 tenantId 的查询由具体接口处理
+        }
+    }
 
     /**
      * 处理非MyBatis查询数据分页问题

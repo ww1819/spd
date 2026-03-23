@@ -15,6 +15,9 @@ public interface SbUserPermissionMenuMapper {
 
   int deleteByUserId(@Param("userId") Long userId, @Param("deleteBy") String deleteBy);
 
+  /** 按用户与客户逻辑删除（设备功能重置时仅清该租户下 super_01 的菜单） */
+  int deleteByUserIdAndCustomerId(@Param("userId") Long userId, @Param("customerId") String customerId, @Param("deleteBy") String deleteBy);
+
   int insert(SbUserPermissionMenu row);
 
   int batchInsert(List<SbUserPermissionMenu> list);

@@ -2,14 +2,19 @@ package com.spd.system.service.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.constant.Constants;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.TreeSelect;
@@ -86,9 +91,9 @@ public class SysMenuServiceImpl implements ISysMenuService
      * @return 权限列表
      */
     @Override
-    public Set<String> selectMenuPermsByUserId(Long userId)
+    public Set<String> selectMenuPermsByUserId(Long userId, Boolean forTenant)
     {
-        List<String> perms = menuMapper.selectMenuPermsByUserId(userId);
+        List<String> perms = menuMapper.selectMenuPermsByUserId(userId, forTenant);
         Set<String> permsSet = new HashSet<>();
         for (String perm : perms)
         {
@@ -128,7 +133,7 @@ public class SysMenuServiceImpl implements ISysMenuService
      * @return 菜单列表
      */
     @Override
-    public List<SysMenu> selectMenuTreeByUserId(Long userId)
+    public List<SysMenu> selectMenuTreeByUserId(Long userId, Boolean forTenant)
     {
         List<SysMenu> menus = null;
         if (SecurityUtils.isAdmin(userId))
@@ -137,7 +142,7 @@ public class SysMenuServiceImpl implements ISysMenuService
         }
         else
         {
-            menus = menuMapper.selectMenuTreeByUserId(userId);
+            menus = menuMapper.selectMenuTreeByUserId(userId, forTenant);
         }
         return getChildPerms(menus, 0);
     }
@@ -164,22 +169,34 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public List<RouterVo> buildMenus(List<SysMenu> menus)
     {
+        return buildMenus(menus, null);
+    }
+
+    @Override
+    public List<RouterVo> buildMenus(List<SysMenu> menus, java.util.Set<Long> pausedMenuIds)
+    {
+        boolean markPaused = pausedMenuIds != null && !pausedMenuIds.isEmpty();
         List<RouterVo> routers = new LinkedList<RouterVo>();
         for (SysMenu menu : menus)
         {
+            boolean paused = markPaused && pausedMenuIds.contains(menu.getMenuId());
             RouterVo router = new RouterVo();
             router.setHidden("1".equals(menu.getVisible()));
             router.setName(getRouteName(menu));
             router.setPath(getRouterPath(menu));
             router.setComponent(getComponent(menu));
             router.setQuery(menu.getQuery());
-            router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+            MetaVo meta = new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath());
+            if (markPaused) {
+                meta.setPaused(paused);
+            }
+            router.setMeta(meta);
             List<SysMenu> cMenus = menu.getChildren();
             if (StringUtils.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType()))
             {
                 router.setAlwaysShow(true);
                 router.setRedirect("noRedirect");
-                router.setChildren(buildMenus(cMenus));
+                router.setChildren(buildMenus(cMenus, markPaused ? pausedMenuIds : null));
             }
             else if (isMenuFrame(menu))
             {
@@ -189,14 +206,22 @@ public class SysMenuServiceImpl implements ISysMenuService
                 children.setPath(menu.getPath());
                 children.setComponent(menu.getComponent());
                 children.setName(StringUtils.capitalize(menu.getPath()));
-                children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath()));
+                MetaVo childMeta = new MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals("1", menu.getIsCache()), menu.getPath());
+                if (markPaused) {
+                    childMeta.setPaused(paused);
+                }
+                children.setMeta(childMeta);
                 children.setQuery(menu.getQuery());
                 childrenList.add(children);
                 router.setChildren(childrenList);
             }
             else if (menu.getParentId().intValue() == 0 && isInnerLink(menu))
             {
-                router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon()));
+                MetaVo innerMeta = new MetaVo(menu.getMenuName(), menu.getIcon());
+                if (markPaused) {
+                    innerMeta.setPaused(paused);
+                }
+                router.setMeta(innerMeta);
                 router.setPath("/");
                 List<RouterVo> childrenList = new ArrayList<RouterVo>();
                 RouterVo children = new RouterVo();
@@ -204,7 +229,11 @@ public class SysMenuServiceImpl implements ISysMenuService
                 children.setPath(routerPath);
                 children.setComponent(UserConstants.INNER_LINK);
                 children.setName(StringUtils.capitalize(routerPath));
-                children.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath()));
+                MetaVo innerChildMeta = new MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath());
+                if (markPaused) {
+                    innerChildMeta.setPaused(paused);
+                }
+                children.setMeta(innerChildMeta);
                 childrenList.add(children);
                 router.setChildren(childrenList);
             }
@@ -301,6 +330,7 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public int insertMenu(SysMenu menu)
     {
+        sanitizeHcMenuFlags(menu);
         return menuMapper.insertMenu(menu);
     }
 
@@ -313,7 +343,35 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public int updateMenu(SysMenu menu)
     {
+        sanitizeHcMenuFlags(menu);
         return menuMapper.updateMenu(menu);
+    }
+
+    /**
+     * 耗材菜单扩展字段：仅允许 0/1；平台独占菜单不可「默认对客户开放」（与功能重置 SQL 一致）。
+     */
+    private void sanitizeHcMenuFlags(SysMenu menu)
+    {
+        if (menu == null)
+        {
+            return;
+        }
+        String ip = StringUtils.trimToEmpty(menu.getIsPlatform());
+        if (!"1".equals(ip))
+        {
+            ip = "0";
+        }
+        menu.setIsPlatform(ip);
+        String open = StringUtils.trimToEmpty(menu.getDefaultOpenToCustomer());
+        if (!"1".equals(open))
+        {
+            open = "0";
+        }
+        if ("1".equals(ip))
+        {
+            open = "0";
+        }
+        menu.setDefaultOpenToCustomer(open);
     }
 
     /**
@@ -365,6 +423,228 @@ public class SysMenuServiceImpl implements ISysMenuService
             menus = menuMapper.selectSbMenuTreeByUserId(userId);
         }
         return getChildPerms(menus, 0);
+    }
+
+    @Override
+    public List<TreeSelect> selectMenuTreeForHcCustomerAssign()
+    {
+        List<SysMenu> menus = menuMapper.selectMenuTreeForHcCustomerAssign();
+        return buildMenuTreeSelect(menus);
+    }
+
+    @Override
+    public List<TreeSelect> selectMenuTreeForPostAssign(String tenantId)
+    {
+        if (StringUtils.isEmpty(tenantId)) {
+            return new ArrayList<>();
+        }
+        List<SysMenu> menus = menuMapper.selectMenuTreeForPostAssign(tenantId);
+        // 客户 hc_customer_menu 中可能只登记了父目录，未登记子菜单「收货确认」等，需向下补齐才能在授权树中展示
+        menus = appendDescendantMenusForHcAssignTree(menus);
+        menus = appendAncestorMenusForHcAssignTree(menus);
+        return buildMenuTreeSelect(menus);
+    }
+
+    @Override
+    public List<Long> expandMenuIdsWithAncestorsForTenant(List<Long> menuIds)
+    {
+        if (menuIds == null || menuIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        Set<Long> have = new LinkedHashSet<>();
+        for (Long id : menuIds)
+        {
+            if (id == null || id <= 0)
+            {
+                continue;
+            }
+            Long cur = id;
+            while (cur != null && cur > 0)
+            {
+                if (!have.add(cur))
+                {
+                    break;
+                }
+                SysMenu m = menuMapper.selectMenuById(cur);
+                if (m == null)
+                {
+                    break;
+                }
+                Long pid = m.getParentId();
+                if (pid == null || pid <= 0)
+                {
+                    break;
+                }
+                SysMenu parent = menuMapper.selectMenuById(pid);
+                if (parent != null && "1".equals(String.valueOf(parent.getIsPlatform()).trim()))
+                {
+                    break;
+                }
+                cur = pid;
+            }
+        }
+        return new ArrayList<>(have);
+    }
+
+    @Override
+    public List<Long> expandMenuIdsWithDescendants(List<Long> menuIds)
+    {
+        if (menuIds == null || menuIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        Set<Long> have = new LinkedHashSet<>();
+        for (Long id : menuIds)
+        {
+            if (id != null && id > 0)
+            {
+                have.add(id);
+            }
+        }
+        List<Long> frontier = new ArrayList<>(have);
+        while (!frontier.isEmpty())
+        {
+            List<SysMenu> children = menuMapper.selectMenuListChildrenOfParents(frontier);
+            frontier = new ArrayList<>();
+            if (children == null)
+            {
+                break;
+            }
+            for (SysMenu ch : children)
+            {
+                if (ch == null || ch.getMenuId() == null)
+                {
+                    continue;
+                }
+                if (have.add(ch.getMenuId()))
+                {
+                    frontier.add(ch.getMenuId());
+                }
+            }
+        }
+        return new ArrayList<>(have);
+    }
+
+    /**
+     * 向下补齐：任意 hc_customer_menu 中存在的节点，其下所有非平台 M/C/F 子孙均纳入授权树
+     */
+    private List<SysMenu> appendDescendantMenusForHcAssignTree(List<SysMenu> menus)
+    {
+        if (menus == null || menus.isEmpty())
+        {
+            return menus;
+        }
+        Map<Long, SysMenu> byId = new LinkedHashMap<>();
+        for (SysMenu m : menus)
+        {
+            if (m != null && m.getMenuId() != null)
+            {
+                byId.put(m.getMenuId(), m);
+            }
+        }
+        List<Long> frontier = new ArrayList<>(byId.keySet());
+        while (!frontier.isEmpty())
+        {
+            List<SysMenu> children = menuMapper.selectMenuListChildrenOfParents(frontier);
+            frontier = new ArrayList<>();
+            if (children == null)
+            {
+                break;
+            }
+            for (SysMenu ch : children)
+            {
+                if (ch == null || ch.getMenuId() == null)
+                {
+                    continue;
+                }
+                if (!byId.containsKey(ch.getMenuId()))
+                {
+                    byId.put(ch.getMenuId(), ch);
+                    frontier.add(ch.getMenuId());
+                }
+            }
+        }
+        List<SysMenu> merged = new ArrayList<>(byId.values());
+        merged.sort(Comparator
+            .comparing((SysMenu x) -> x.getParentId() != null ? x.getParentId() : 0L)
+            .thenComparing(x -> x.getOrderNum() != null ? x.getOrderNum() : 0));
+        return merged;
+    }
+
+    /**
+     * 客户可分配菜单可能未包含目录(M)节点，仅含子菜单/按钮时无法建树；向上补齐 sys_menu 中的父级（至根），便于「全功能展示、按需勾选」。
+     */
+    private List<SysMenu> appendAncestorMenusForHcAssignTree(List<SysMenu> menus)
+    {
+        if (menus == null || menus.isEmpty())
+        {
+            return menus;
+        }
+        Map<Long, SysMenu> byId = new LinkedHashMap<>();
+        for (SysMenu m : menus)
+        {
+            if (m != null && m.getMenuId() != null)
+            {
+                byId.put(m.getMenuId(), m);
+            }
+        }
+        Set<Long> pending = new HashSet<>(byId.keySet());
+        while (!pending.isEmpty())
+        {
+            java.util.Iterator<Long> it = pending.iterator();
+            Long mid = it.next();
+            it.remove();
+            SysMenu cur = byId.get(mid);
+            if (cur == null)
+            {
+                continue;
+            }
+            Long pid = cur.getParentId();
+            if (pid == null || pid <= 0)
+            {
+                continue;
+            }
+            if (byId.containsKey(pid))
+            {
+                continue;
+            }
+            SysMenu parent = menuMapper.selectMenuById(pid);
+            // 不向上挂平台管理目录，避免在租户授权树中露出平台节点
+            if (parent != null && (parent.getIsPlatform() == null || !"1".equals(String.valueOf(parent.getIsPlatform()).trim())))
+            {
+                byId.put(pid, parent);
+                pending.add(pid);
+            }
+        }
+        List<SysMenu> merged = new ArrayList<>(byId.values());
+        merged.sort(Comparator
+            .comparing((SysMenu x) -> x.getParentId() != null ? x.getParentId() : 0L)
+            .thenComparing(x -> x.getOrderNum() != null ? x.getOrderNum() : 0));
+        return merged;
+    }
+
+    @Override
+    public List<SysMenu> selectMenuTreeForDefaultOpenBatch()
+    {
+        List<SysMenu> menus = menuMapper.selectMenuTreeAll();
+        if (menus == null)
+        {
+            return new ArrayList<>();
+        }
+        return getChildPerms(menus, 0);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchSetDefaultOpenToCustomer(List<Long> menuIds)
+    {
+        String updateBy = SecurityUtils.getUserIdStr();
+        menuMapper.resetAllDefaultOpenToCustomer(updateBy);
+        if (menuIds != null && !menuIds.isEmpty())
+        {
+            menuMapper.batchSetDefaultOpenToCustomer(menuIds, updateBy);
+        }
     }
 
     /**

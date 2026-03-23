@@ -39,6 +39,16 @@ public class FdWarehouseCategory extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
+    /** HIS系统库房分类ID */
+    @Excel(name = "HIS系统ID", width = 22, prompt = "与 HIS 库房分类主键对接时使用")
+    private String hisId;
+
+    @Excel(name = "数据校验结果", width = 40, sort = 99999)
+    private String validationResult;
+
     public void setWarehouseCategoryId(Long warehouseCategoryId) 
     {
         this.warehouseCategoryId = warehouseCategoryId;
@@ -80,11 +90,21 @@ public class FdWarehouseCategory extends BaseEntity
         this.delFlag = delFlag;
     }
 
-    public Integer getDelFlag() 
+    public Integer getDelFlag()
     {
         return delFlag;
     }
-    public void setParentId(Long parentId) 
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getHisId() { return hisId; }
+    public void setHisId(String hisId) { this.hisId = hisId; }
+
+    public String getValidationResult() { return validationResult; }
+    public void setValidationResult(String validationResult) { this.validationResult = validationResult; }
+
+    public void setParentId(Long parentId)
     {
         this.parentId = parentId;
     }
@@ -111,6 +131,10 @@ public class FdWarehouseCategory extends BaseEntity
             .append("warehouseCategoryCode", getWarehouseCategoryCode())
             .append("warehouseCategoryName", getWarehouseCategoryName())
             .append("referredName", getReferredName())
+            .append("remark", getRemark())
+            .append("tenantId", getTenantId())
+            .append("hisId", getHisId())
+            .append("validationResult", getValidationResult())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())

@@ -6,9 +6,11 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysMenu;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbMenu;
@@ -48,6 +50,11 @@ public class SbMenuServiceImpl implements ISbMenuService {
   }
 
   @Override
+  public SbMenu selectSbMenuById(String menuId) {
+    return sbMenuMapper.selectSbMenuById(menuId);
+  }
+
+  @Override
   public List<SbMenu> selectSbMenuTreeByUserId(Long userId) {
     List<SbMenu> menus = sbMenuMapper.selectSbMenuTreeByUserId(userId);
     return getChildPerms(menus, "0");
@@ -72,6 +79,25 @@ public class SbMenuServiceImpl implements ISbMenuService {
     if (StringUtils.isEmpty(customerId)) return new ArrayList<>();
     List<SbMenu> list = sbMenuMapper.selectSbMenuTreeByCustomerIdEnabling(customerId);
     return list == null ? new ArrayList<>() : getChildPerms(list, "0");
+  }
+
+  @Override
+  public List<SbMenu> selectSbMenuTreeForDefaultOpenBatch() {
+    List<SbMenu> list = sbMenuMapper.selectSbMenuTreeAll();
+    if (list == null) {
+      return new ArrayList<>();
+    }
+    return getChildPerms(list, "0");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void batchSetDefaultOpenToCustomer(List<String> menuIds) {
+    String updateBy = SecurityUtils.getUserIdStr();
+    sbMenuMapper.resetAllDefaultOpenToCustomerSb(updateBy);
+    if (menuIds != null && !menuIds.isEmpty()) {
+      sbMenuMapper.batchSetDefaultOpenToCustomerSb(menuIds, updateBy);
+    }
   }
 
   @Override
@@ -116,7 +142,7 @@ public class SbMenuServiceImpl implements ISbMenuService {
 
   @Override
   public int deleteSbMenuById(String menuId) {
-    return sbMenuMapper.deleteSbMenuById(menuId);
+    return sbMenuMapper.deleteSbMenuById(menuId, SecurityUtils.getUserIdStr());
   }
 
   @Override

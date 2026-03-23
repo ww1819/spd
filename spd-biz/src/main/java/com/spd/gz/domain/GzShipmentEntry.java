@@ -71,6 +71,9 @@ public class GzShipmentEntry extends BaseEntity
     /** 院内码 */
     private String inHospitalCode;
 
+    /** 租户ID */
+    private String tenantId;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -194,6 +197,9 @@ public class GzShipmentEntry extends BaseEntity
     public void setInHospitalCode(String inHospitalCode) {
         this.inHospitalCode = inHospitalCode;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

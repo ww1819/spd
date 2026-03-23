@@ -3,6 +3,7 @@ package com.spd.department.mapper;
 import java.util.List;
 import com.spd.department.domain.DepInventoryWarning;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -47,20 +48,10 @@ public interface DepInventoryWarningMapper
      */
     public int updateDepInventoryWarning(DepInventoryWarning depInventoryWarning);
 
-    /**
-     * 删除科室库存预警设置
-     *
-     * @param id 科室库存预警设置主键
-     * @return 结果
-     */
-    public int deleteDepInventoryWarningById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteDepInventoryWarningById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除科室库存预警设置
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteDepInventoryWarningByIds(Long[] ids);
+    /** 批量逻辑删除 */
+    public int deleteDepInventoryWarningByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 }
 

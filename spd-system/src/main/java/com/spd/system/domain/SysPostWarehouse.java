@@ -14,6 +14,9 @@ public class SysPostWarehouse {
     /** 仓库ID */
     private Long warehouseId;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     public Long getPostId() {
         return postId;
     }
@@ -30,11 +33,20 @@ public class SysPostWarehouse {
         this.warehouseId = warehouseId;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
                 .append("postId", getPostId())
                 .append("warehouseId", getWarehouseId())
+                .append("tenantId", getTenantId())
                 .toString();
     }
 }

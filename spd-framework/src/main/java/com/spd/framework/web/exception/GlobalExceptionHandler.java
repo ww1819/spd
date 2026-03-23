@@ -1,6 +1,7 @@
 package com.spd.framework.web.exception;
 
 import javax.servlet.http.HttpServletRequest;
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -106,6 +107,16 @@ public class GlobalExceptionHandler
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
         String errorMessage = e.getMessage() != null ? e.getMessage() : "系统运行时异常";
         return AjaxResult.error(errorMessage);
+    }
+
+    /**
+     * 客户端已断开或读响应超时（常见于响应体过大、网络慢），无需再写 JSON 错误体。
+     */
+    @ExceptionHandler(ClientAbortException.class)
+    public void handleClientAbort(ClientAbortException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.warn("客户端中止或响应写入超时(可忽略): {}", requestURI);
     }
 
     /**

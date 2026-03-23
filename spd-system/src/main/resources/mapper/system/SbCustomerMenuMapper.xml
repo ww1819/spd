@@ -26,7 +26,7 @@
   <select id="selectListWithMenuNameByCustomerId" resultType="com.spd.system.domain.vo.SbCustomerMenuManageVo">
     select cm.customer_id as customerId, cm.menu_id as menuId, m.menu_name as menuName, ifnull(cm.status,'0') as status
     from sb_customer_menu cm
-    inner join sb_menu m on m.menu_id = cm.menu_id and m.menu_type in ('M','C')
+    inner join sb_menu m on m.menu_id = cm.menu_id and m.menu_type in ('M','C','F')
     where cm.customer_id = #{customerId} and cm.delete_time is null and ifnull(cm.is_enabled,'1') = '1'
     order by m.parent_id, m.order_num
   </select>

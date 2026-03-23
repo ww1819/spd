@@ -55,16 +55,29 @@ public class GzOrderServiceImpl implements IGzOrderService
     public GzOrder selectGzOrderById(Long id)
     {
         GzOrder gzOrder = gzOrderMapper.selectGzOrderById(id);
+        if (gzOrder != null) {
+            SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        }
         if(gzOrder == null){
             return null;
         }
 
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
         List<FdMaterial> materialList = new ArrayList<FdMaterial>();
-        for(GzOrderEntry entry : gzOrderEntryList){
-            Long materialId = entry.getMaterialId();
-            FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-            materialList.add(fdMaterial);
+        if (gzOrderEntryList != null) {
+            for(GzOrderEntry entry : gzOrderEntryList){
+                if (entry == null) {
+                    continue;
+                }
+                Long materialId = entry.getMaterialId();
+                if (materialId == null) {
+                    continue;
+                }
+                FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
+                if (fdMaterial != null) {
+                    materialList.add(fdMaterial);
+                }
+            }
         }
         gzOrder.setMaterialList(materialList);
         return gzOrder;
@@ -79,6 +92,9 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public List<GzOrder> selectGzOrderList(GzOrder gzOrder)
     {
+        if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         return gzOrderMapper.selectGzOrderList(gzOrder);
     }
 
@@ -92,6 +108,9 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public int insertGzOrder(GzOrder gzOrder)
     {
+        if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzOrder.setTenantId(SecurityUtils.getCustomerId());
+        }
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
         int rows = gzOrderMapper.insertGzOrder(gzOrder);
@@ -132,7 +151,7 @@ public class GzOrderServiceImpl implements IGzOrderService
     public int updateGzOrder(GzOrder gzOrder)
     {
         gzOrder.setUpdateTime(DateUtils.getNowDate());
-        gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId());
+        gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId(), SecurityUtils.getUserIdStr());
         insertGzOrderEntry(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);
     }
@@ -151,29 +170,29 @@ public class GzOrderServiceImpl implements IGzOrderService
         if(gzOrder == null){
             throw new ServiceException(String.format("高值入库业务：%s，不存在!", id));
         }
-
-        gzOrder.setDelFlag(1);
-        gzOrder.setUpdateBy(SecurityUtils.getLoginUser().getUsername());
-        gzOrder.setUpdateTime(new Date());
-
-        List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
-        for(GzOrderEntry entry : gzOrderEntryList){
-            entry.setDelFlag(1);
-            entry.setParenId(id);
-            gzOrderMapper.updateGzOrderEntry(entry);
-        }
-
-        return gzOrderMapper.updateGzOrder(gzOrder);
+        SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        String deleteBy = SecurityUtils.getUserIdStr();
+        gzOrderMapper.deleteGzOrderEntryByParenId(id, deleteBy);
+        return gzOrderMapper.deleteGzOrderById(id, deleteBy);
     }
 
     @Override
     @Transactional
     public int auditGzOrder(String id) {
-        GzOrder gzOrder = gzOrderMapper.selectGzOrderById(Long.parseLong(id));
+        Long billId;
+        try {
+            billId = Long.parseLong(id);
+        } catch (Exception e) {
+            throw new ServiceException(String.format("高值入库业务ID：%s 非法", id));
+        }
+        GzOrder gzOrder = gzOrderMapper.selectGzOrderById(billId);
         if(gzOrder == null){
             throw new ServiceException(String.format("高值入库业务ID：%s，不存在!", id));
         }
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
+        if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
+            throw new ServiceException(String.format("高值入库单 %s 无明细，无法审核", id));
+        }
 
         //更新高值仓库库存
         updateDepotInventory(gzOrder,gzOrderEntryList);
@@ -188,8 +207,17 @@ public class GzOrderServiceImpl implements IGzOrderService
         // 获取或初始化序列号
         Long sheetId = getOrInitSheetId();
         
+        if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
+            return;
+        }
         for(GzOrderEntry orderEntry : gzOrderEntryList){
+            if (orderEntry == null) {
+                continue;
+            }
             if(orderEntry.getQty() != null && BigDecimal.ZERO.compareTo(orderEntry.getQty()) != 0){
+                if (orderEntry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ServiceException(String.format("高值入库明细数量必须大于0，物料ID：%s", orderEntry.getMaterialId()));
+                }
                 // 根据数量循环生成多条库存记录，每条数量为1，并生成一个院内码
                 int qty = orderEntry.getQty().intValue();
                 for(int i = 0; i < qty; i++){
@@ -209,6 +237,11 @@ public class GzOrderServiceImpl implements IGzOrderService
                     gzDepotInventory.setSupplierId(gzOrder.getSupplerId());
                     gzDepotInventory.setInHospitalCode(inHospitalCode);
                     gzDepotInventory.setEndTime(orderEntry.getEndTime()); // 保存有效期
+                    if (StringUtils.isEmpty(gzDepotInventory.getTenantId())) {
+                        gzDepotInventory.setTenantId(StringUtils.isNotEmpty(gzOrder.getTenantId()) ? gzOrder.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    gzDepotInventory.setMasterBarcode(orderEntry.getMasterBarcode());
+                    gzDepotInventory.setSecondaryBarcode(orderEntry.getSecondaryBarcode());
 
                     gzDepotInventoryMapper.insertGzDepotInventory(gzDepotInventory);
                 }

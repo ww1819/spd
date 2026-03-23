@@ -1,7 +1,10 @@
 package com.spd.warehouse.service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
 
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoBill;
@@ -241,5 +244,10 @@ public interface IStkIoBillService
      * @return 结果
      */
     int confirmReceipt(String ids, String confirmBy);
+
+    /**
+     * 出库单导出：按单据隔离，每单标题（单据号、科室名称）+ 明细（名称、规格、型号、单位、数量、批号、有效期）
+     */
+    void exportOutWarehouseGroupedByBill(StkIoBill stkIoBill, HttpServletResponse response) throws IOException;
 
 }

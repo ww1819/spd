@@ -1,6 +1,7 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.foundation.domain.FdFactory;
 
 /**
@@ -44,20 +45,22 @@ public interface FdFactoryMapper
     public int updateFdFactory(FdFactory fdFactory);
 
     /**
-     * 删除厂家维护
+     * 逻辑删除厂家维护（设置 del_flag=1, delete_by, delete_time）
      *
      * @param factoryId 厂家维护主键
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteFdFactoryByFactoryId(Long factoryId);
+    public int deleteFdFactoryByFactoryId(@Param("factoryId") Long factoryId, @Param("deleteBy") String deleteBy);
 
     /**
-     * 批量删除厂家维护
+     * 批量逻辑删除厂家维护
      *
      * @param factoryIds 需要删除的数据主键集合
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteFdFactoryByFactoryIds(Long[] factoryIds);
+    public int deleteFdFactoryByFactoryIds(@Param("factoryIds") Long[] factoryIds, @Param("deleteBy") String deleteBy);
 
     /**
      * 校验厂家是否已存在出入库业务
@@ -65,4 +68,19 @@ public interface FdFactoryMapper
      * @return
      */
     int selectFdFactoryIsExist(Long id);
+
+    /**
+     * 按厂家编码与租户查询（未删除）
+     */
+    FdFactory selectFdFactoryByCodeAndTenantId(@Param("factoryCode") String factoryCode, @Param("tenantId") String tenantId);
+
+    /**
+     * 租户下 HIS 生产厂家 ID 出现次数（可排除某 factory_id）
+     */
+    int countFactoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeFactoryId") Long excludeFactoryId);
+
+    /**
+     * 按租户 + HIS 生产厂家 ID 查一条（未删除）
+     */
+    FdFactory selectFdFactoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
 }

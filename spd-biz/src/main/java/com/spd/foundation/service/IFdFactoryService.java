@@ -1,7 +1,10 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+import java.util.Map;
+
 import com.spd.foundation.domain.FdFactory;
+import com.spd.foundation.domain.FdFactoryChangeLog;
 
 /**
  * 厂家维护Service接口
@@ -11,58 +14,21 @@ import com.spd.foundation.domain.FdFactory;
  */
 public interface IFdFactoryService
 {
-    /**
-     * 查询厂家维护
-     *
-     * @param factoryId 厂家维护主键
-     * @return 厂家维护
-     */
-    public FdFactory selectFdFactoryByFactoryId(Long factoryId);
+    FdFactory selectFdFactoryByFactoryId(Long factoryId);
 
-    /**
-     * 查询厂家维护列表
-     *
-     * @param fdFactory 厂家维护
-     * @return 厂家维护集合
-     */
-    public List<FdFactory> selectFdFactoryList(FdFactory fdFactory);
+    List<FdFactory> selectFdFactoryList(FdFactory fdFactory);
 
-    /**
-     * 新增厂家维护
-     *
-     * @param fdFactory 厂家维护
-     * @return 结果
-     */
-    public int insertFdFactory(FdFactory fdFactory);
+    int insertFdFactory(FdFactory fdFactory);
 
-    /**
-     * 修改厂家维护
-     *
-     * @param fdFactory 厂家维护
-     * @return 结果
-     */
-    public int updateFdFactory(FdFactory fdFactory);
+    int updateFdFactory(FdFactory fdFactory);
 
-//    /**
-//     * 批量删除厂家维护
-//     *
-//     * @param factoryIds 需要删除的厂家维护主键集合
-//     * @return 结果
-//     */
-//    public int deleteFdFactoryByFactoryIds(Long[] factoryIds);
+    int deleteFdFactoryByFactoryId(Long factoryId);
 
-    /**
-     * 删除厂家维护信息
-     *
-     * @param factoryId 厂家维护主键
-     * @return 结果
-     */
-    public int deleteFdFactoryByFactoryId(Long factoryId);
-
-    /**
-     * 批量更新厂家简码
-     *
-     * @param ids 厂家ID列表
-     */
     void updateReferred(java.util.List<Long> ids);
+
+    List<FdFactoryChangeLog> selectFactoryChangeLog(Long factoryId);
+
+    Map<String, Object> validateFdFactoryImport(List<FdFactory> list, Boolean isUpdateSupport);
+
+    String importFdFactory(List<FdFactory> list, Boolean isUpdateSupport, String operName, boolean confirmed);
 }

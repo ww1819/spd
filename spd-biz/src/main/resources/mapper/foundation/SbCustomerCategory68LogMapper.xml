@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SbCustomerCategory68LogMapper">
+
+    <resultMap type="com.spd.foundation.domain.SbCustomerCategory68Log" id="SbCustomerCategory68LogResult">
+        <id     property="id"               column="id"               />
+        <result property="customerId"       column="customer_id"      />
+        <result property="targetId"        column="target_id"       />
+        <result property="refCategory68Id" column="ref_category68_id" />
+        <result property="operationType"  column="operation_type"  />
+        <result property="contentOld"      column="content_old"     />
+        <result property="contentNew"      column="content_new"     />
+        <result property="operateBy"       column="operate_by"     />
+        <result property="operateTime"     column="operate_time"   />
+    </resultMap>
+
+    <sql id="selectVo">
+        select id, customer_id, target_id, ref_category68_id, operation_type, content_old, content_new, operate_by, operate_time
+        from sb_customer_category68_log
+    </sql>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.SbCustomerCategory68Log">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        insert into sb_customer_category68_log (id, customer_id, target_id, ref_category68_id, operation_type, content_old, content_new, operate_by, operate_time)
+        values (#{id}, #{tenantId}, #{targetId}, #{refCategory68Id}, #{operationType}, #{contentOld}, #{contentNew}, #{operateBy}, #{operateTime})
+    </insert>
+
+    <select id="selectByCustomerId" resultMap="SbCustomerCategory68LogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/>
+        where customer_id = #{scopedTenantId} order by operate_time desc
+    </select>
+
+    <select id="selectByTargetId" resultMap="SbCustomerCategory68LogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <include refid="selectVo"/>
+        where target_id = #{targetId} and customer_id = #{scopedTenantId} order by operate_time desc
+    </select>
+</mapper>

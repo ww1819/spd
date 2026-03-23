@@ -1,5 +1,6 @@
 package com.spd.web.controller.system;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -16,13 +17,17 @@ import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.core.domain.model.LoginBody;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.core.domain.model.LoginUser;
 import com.spd.framework.web.service.SbPermissionService;
 import com.spd.framework.web.service.SysLoginService;
 import com.spd.framework.web.service.SysPermissionService;
+import com.spd.framework.web.service.TokenService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.domain.SbMenu;
+import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbMenuService;
+import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 
 /**
@@ -51,6 +56,15 @@ public class SysLoginController
     @Autowired
     private ISbCustomerService sbCustomerService;
 
+    @Autowired
+    private HcCustomerMenuMapper hcCustomerMenuMapper;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private ISysConfigService configService;
+
     /**
      * 登录方法
      *
@@ -63,20 +77,31 @@ public class SysLoginController
         AjaxResult ajax = AjaxResult.success();
         String username = loginBody.getUsername();
         String customerId = loginBody.getCustomerId();
-        String token = loginService.login(username, loginBody.getPassword(), loginBody.getCode(), loginBody.getUuid(), customerId);
+        String systemType = loginBody.getSystemType();
+        String token = loginService.login(username, loginBody.getPassword(), loginBody.getCode(), loginBody.getUuid(), customerId, systemType);
         ajax.put(Constants.TOKEN, token);
+        if (StringUtils.isNotEmpty(customerId)) {
+            putTenantIfPresent(ajax, customerId);
+        }
         return ajax;
     }
 
     /**
-     * 登录页客户下拉选项（未登录可访问，需在安全配置中放行）
+     * 登录页租户下拉选项（未登录可访问，需在安全配置中放行）
+     * 仿照设备系统：耗材登录传 systemType=hc 仅返回耗材启用租户（hc_status=0），设备登录不传或传其他仅返回设备启用租户（status=0）
+     *
+     * @param systemType 可选，hc=耗材系统（只返回 hc_status=0 的租户），不传或其它=设备系统（只返回 status=0 的租户）
      */
     @GetMapping("/getCustomerOptions")
-    public AjaxResult getCustomerOptions()
+    public AjaxResult getCustomerOptions(String systemType)
     {
-        SbCustomer query = new SbCustomer();
-        query.setStatus("0");
-        List<SbCustomer> list = sbCustomerService.selectSbCustomerList(query);
+        SbCustomer q = new SbCustomer();
+        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
+            q.setHcStatus("0");
+        } else {
+            q.setStatus("0");
+        }
+        List<SbCustomer> list = sbCustomerService.selectSbCustomerList(q);
         List<java.util.Map<String, String>> options = new java.util.ArrayList<>();
         for (SbCustomer c : list) {
             if (c.getDeleteTime() == null && c.getCustomerId() != null) {
@@ -87,7 +112,14 @@ public class SysLoginController
                 options.add(m);
             }
         }
-        return AjaxResult.success(options);
+        AjaxResult ajax = AjaxResult.success(options);
+        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
+            String def = StringUtils.trimToEmpty(configService.selectConfigByKey("hc.login.defaultCustomerId"));
+            if (StringUtils.isNotEmpty(def)) {
+                ajax.put("defaultCustomerId", def);
+            }
+        }
+        return ajax;
     }
 
     /**
@@ -98,11 +130,16 @@ public class SysLoginController
     @GetMapping("getInfo")
     public AjaxResult getInfo()
     {
-        SysUser user = SecurityUtils.getLoginUser().getUser();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser user = loginUser.getUser();
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
-        // 权限集合
-        Set<String> permissions = permissionService.getMenuPermission(user);
+        // 权限集合：与 UserDetailsServiceImpl.createLoginUser 一致（sys_user_menu 耗材权限 + 设备 sb 权限）
+        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
+        permissions.addAll(sbPermissionService.getMenuPermission(user));
+        // 与 @PreAuthorize 一致：必须写回 LoginUser 并刷新 Redis，否则仅前端 getInfo 有最新权限、接口仍用登录时旧权限 → 403
+        loginUser.setPermissions(permissions);
+        tokenService.setLoginUser(loginUser);
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
@@ -120,11 +157,16 @@ public class SysLoginController
     @GetMapping("getEquipmentInfo")
     public AjaxResult getEquipmentInfo()
     {
-        SysUser user = SecurityUtils.getLoginUser().getUser();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser user = loginUser.getUser();
         // 设备角色集合
         Set<String> roles = sbPermissionService.getRolePermission(user);
-        // 设备菜单权限集合
-        Set<String> permissions = sbPermissionService.getMenuPermission(user);
+        // 设备菜单权限集合（与登录时一致：平台 + 设备，供前端 v-hasPermi 使用）
+        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
+        permissions.addAll(sbPermissionService.getMenuPermission(user));
+        // 同步到 Redis 中 LoginUser，避免「能看到按钮但点击 403」
+        loginUser.setPermissions(permissions);
+        tokenService.setLoginUser(loginUser);
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
@@ -149,6 +191,7 @@ public class SysLoginController
         tenant.put("customerName", customer.getCustomerName());
         tenant.put("customerId", customer.getCustomerId());
         tenant.put("customerCode", customer.getCustomerCode());
+        tenant.put("tenantKey", StringUtils.isNotEmpty(customer.getTenantKey()) ? customer.getTenantKey() : null);
         ajax.put("tenant", tenant);
     }
 
@@ -161,8 +204,17 @@ public class SysLoginController
     public AjaxResult getRouters()
     {
         Long userId = SecurityUtils.getUserId();
-        List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
-        return AjaxResult.success(menuService.buildMenus(menus));
+        SysUser user = SecurityUtils.getLoginUser() != null ? SecurityUtils.getLoginUser().getUser() : null;
+        boolean forTenant = user != null && StringUtils.isNotEmpty(user.getCustomerId());
+        List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId, forTenant);
+        Set<Long> pausedMenuIds = null;
+        if (user != null && StringUtils.isNotEmpty(user.getCustomerId())) {
+            List<Long> list = hcCustomerMenuMapper.selectPausedMenuIdsByTenantId(user.getCustomerId());
+            if (list != null && !list.isEmpty()) {
+                pausedMenuIds = new HashSet<>(list);
+            }
+        }
+        return AjaxResult.success(menuService.buildMenus(menus, pausedMenuIds));
     }
 
     /**

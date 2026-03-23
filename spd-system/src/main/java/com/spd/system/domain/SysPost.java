@@ -50,6 +50,9 @@ public class SysPost extends BaseEntity
     /** 仓库权限ID数组 */
     private Long[] warehouseIds;
 
+    /** 租户ID(同sb_customer.customer_id)，耗材工作组按租户隔离 */
+    private String tenantId;
+
     public Long getPostId()
     {
         return postId;
@@ -143,6 +146,14 @@ public class SysPost extends BaseEntity
     public void setWarehouseIds(Long[] warehouseIds)
     {
         this.warehouseIds = warehouseIds;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
     
     @Override

@@ -45,13 +45,8 @@ public interface GzOrderMapper
      */
     public int updateGzOrder(GzOrder gzOrder);
 
-    /**
-     * 删除高值入库
-     *
-     * @param id 高值入库主键
-     * @return 结果
-     */
-    public int deleteGzOrderById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteGzOrderById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量新增高值退货明细
@@ -62,13 +57,8 @@ public interface GzOrderMapper
     public int batchGzOrderEntry(List<GzOrderEntry> gzOrderEntryList);
 
 
-    /**
-     * 通过高值入库主键删除高值退货明细信息
-     *
-     * @param id 高值入库ID
-     * @return 结果
-     */
-    public int deleteGzOrderEntryByParenId(Long id);
+    /** 逻辑删除高值入库明细 */
+    public int deleteGzOrderEntryByParenId(@Param("parenId") Long parenId, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询当天最大的单号

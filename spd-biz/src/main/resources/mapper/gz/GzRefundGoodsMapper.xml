@@ -79,6 +79,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzRefundGoodsList" parameterType="GzRefundGoods" resultMap="GzRefundGoodsResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id, gz.department_id,
 				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.audit_by, gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
@@ -92,6 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on gz.department_id = d.id
         left join gz_refund_goods_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
+        and gz.tenant_id = #{scopedTenantId}
         <if test="goodsNo != null  and goodsNo != ''"> and gz.goods_no like concat('%', #{goodsNo}, '%')</if>
         <if test="supplerId != null "> and gz.suppler_id = #{supplerId}</if>
         <if test="goodsDate != null "> and gz.goods_date = #{goodsDate}</if>
@@ -109,6 +111,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzRefundGoodsById" parameterType="Long" resultMap="GzRefundGoodsGzRefundGoodsEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select a.id, a.goods_no, a.suppler_id, a.goods_date, a.warehouse_id, a.department_id, a.goods_status, a.goods_type, a.del_flag,
         a.audit_date, a.audit_by, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
         b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
@@ -116,10 +119,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
         from gz_refund_goods a
         left join gz_refund_goods_entry b on b.paren_id = a.id
-        where a.id = #{id}
+        where a.id = #{id} and a.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzRefundGoods" parameterType="GzRefundGoods" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         insert into gz_refund_goods
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="goodsNo != null">goods_no,</if>
@@ -137,6 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="goodsNo != null">#{goodsNo},</if>
@@ -154,10 +159,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateGzRefundGoods" parameterType="GzRefundGoods">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_refund_goods
         <trim prefix="SET" suffixOverrides=",">
             <if test="goodsNo != null">goods_no = #{goodsNo},</if>
@@ -175,42 +182,48 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteGzRefundGoodsById" parameterType="Long">
-        update gz_refund_goods set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_refund_goods set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzRefundGoodsEntryByParenIds" parameterType="String">
-        update gz_refund_goods_entry set del_flag = 1, update_time = now() where paren_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_refund_goods_entry set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </delete>
 
     <delete id="deleteGzRefundGoodsEntryByParenId" parameterType="Long">
-        update gz_refund_goods_entry set del_flag = 1, update_time = now() where paren_id = #{parenId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        update gz_refund_goods_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">
-        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code, begin_time, end_time, del_flag, remark) values
+        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code, begin_time, end_time, del_flag, remark, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.tenantId})
         </foreach>
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         select max(goods_no) from gz_refund_goods
-        where goods_no like concat('%',#{date},'%')
+        where goods_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
     </select>
 
     <update id="updateGzRefundGoodsEntry" parameterType="GzRefundGoodsEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
         update gz_refund_goods_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where paren_id = #{parenId}
+        where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

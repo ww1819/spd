@@ -96,4 +96,9 @@ public interface ISysPostService
      * @return 结果
      */
     public int updatePost(SysPost post);
+
+    /**
+     * 耗材工作组：关联用户 ID 列表（sys_user_post）
+     */
+    List<Long> selectUserIdsByPostId(Long postId);
 }

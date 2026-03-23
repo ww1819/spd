@@ -2,6 +2,10 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  表 fd_category68：系统级「医疗器械 68 分类」标准字典/参照模板，全库一套，不按租户隔离，无 tenant_id。
+  客户侧自建数据见 sb_customer_category68（通过 ref_category68_id 与本表对应）。
+-->
 <mapper namespace="com.spd.foundation.mapper.FdCategory68Mapper">
 
     <resultMap type="FdCategory68" id="FdCategory68Result">
@@ -80,4 +84,3 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
 </mapper>
-

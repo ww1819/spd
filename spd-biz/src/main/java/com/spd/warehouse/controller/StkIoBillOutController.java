@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -87,7 +88,7 @@ public class StkIoBillOutController extends BaseController {
     @PutMapping("/auditOutWarehouse")
     public AjaxResult auditOutWarehouse(@RequestBody JSONObject json)
     {
-        int result = stkIoBillService.auditStkIoBill(json.getString("id"), json.getString("auditBy"));
+        int result = stkIoBillService.auditStkIoBill(json.getString("id"), getUserIdStr());
         return toAjax(result);
     }
 
@@ -103,7 +104,7 @@ public class StkIoBillOutController extends BaseController {
     }
 
     /**
-     * 导出入库列表
+     * 导出出库单主表（旧）
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:export')")
     @Log(title = "出入库", businessType = BusinessType.EXPORT)
@@ -113,6 +114,26 @@ public class StkIoBillOutController extends BaseController {
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
         ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
         util.exportExcel(response, list, "出入库数据");
+    }
+
+    /**
+     * 出库单导出：按单据隔离（单据号、科室名称 + 明细：名称、规格、型号、单位、数量、批号、有效期）
+     * 参数与列表查询一致；可选 exportBillIds=1,2,3 仅导出勾选单据
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:export')")
+    @Log(title = "出库单按单导出", businessType = BusinessType.EXPORT)
+    @PostMapping("/exportGroupedByBill")
+    public void exportGroupedByBill(HttpServletResponse response, StkIoBill stkIoBill) throws IOException
+    {
+        stkIoBillService.exportOutWarehouseGroupedByBill(stkIoBill, response);
+    }
+
+    @PreAuthorize("@ss.hasPermi('outWarehouse:audit:export')")
+    @Log(title = "出库单按单导出", businessType = BusinessType.EXPORT)
+    @PostMapping("/auditExportGroupedByBill")
+    public void auditExportGroupedByBill(HttpServletResponse response, StkIoBill stkIoBill) throws IOException
+    {
+        stkIoBillService.exportOutWarehouseGroupedByBill(stkIoBill, response);
     }
 
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")

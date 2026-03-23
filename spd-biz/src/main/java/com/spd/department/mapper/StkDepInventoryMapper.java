@@ -6,6 +6,7 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -54,31 +55,34 @@ public interface StkDepInventoryMapper
      * 删除科室库存
      *
      * @param id 科室库存主键
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteStkDepInventoryById(Long id);
+    public int deleteStkDepInventoryById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除科室库存
      *
      * @param ids 需要删除的数据主键集合
+     * @param deleteBy 删除者
      * @return 结果
      */
-    public int deleteStkDepInventoryByIds(Long[] ids);
+    public int deleteStkDepInventoryByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 按批次号查询科室库存
      * @param batchNo 批次号
      * @return 科室库存
      */
-    StkDepInventory selectStkDepInventoryOne(String batchNo);
+    StkDepInventory selectStkDepInventoryOne(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 根据批次号查询科室库存实际数量
      * @param batchNo
+     * @param warehouseId
      * @return
      */
-    BigDecimal selectTKStkInvntoryByBatchNo(String batchNo);
+    BigDecimal selectTKStkInvntoryByBatchNo(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 查询库存汇总列表

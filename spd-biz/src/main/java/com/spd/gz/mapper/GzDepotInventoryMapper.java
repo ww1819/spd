@@ -3,6 +3,7 @@ package com.spd.gz.mapper;
 import java.math.BigDecimal;
 import java.util.List;
 import com.spd.gz.domain.GzDepotInventory;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 高值备货库存明细Mapper接口
@@ -44,21 +45,11 @@ public interface GzDepotInventoryMapper
      */
     public int updateGzDepotInventory(GzDepotInventory gzDepotInventory);
 
-    /**
-     * 删除高值备货库存明细
-     *
-     * @param id 高值备货库存明细主键
-     * @return 结果
-     */
-    public int deleteGzDepotInventoryById(Long id);
+    /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
+    public int deleteGzDepotInventoryById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    /**
-     * 批量删除高值备货库存明细
-     *
-     * @param ids 需要删除的数据主键集合
-     * @return 结果
-     */
-    public int deleteGzDepotInventoryByIds(Long[] ids);
+    /** 批量逻辑删除 */
+    public int deleteGzDepotInventoryByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 按批次查询库存实际数量

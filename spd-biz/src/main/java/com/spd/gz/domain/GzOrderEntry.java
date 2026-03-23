@@ -62,6 +62,11 @@ public class GzOrderEntry extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 主条码 */
+    private String masterBarcode;
+    /** 辅条码 */
+    private String secondaryBarcode;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -161,6 +166,11 @@ public class GzOrderEntry extends BaseEntity
     {
         return delFlag;
     }
+
+    public String getMasterBarcode() { return masterBarcode; }
+    public void setMasterBarcode(String masterBarcode) { this.masterBarcode = masterBarcode; }
+    public String getSecondaryBarcode() { return secondaryBarcode; }
+    public void setSecondaryBarcode(String secondaryBarcode) { this.secondaryBarcode = secondaryBarcode; }
 
     @Override
     public String toString() {
