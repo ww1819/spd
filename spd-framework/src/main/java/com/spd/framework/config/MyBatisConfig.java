@@ -11,12 +11,16 @@ import org.apache.ibatis.io.VFS;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.boot.autoconfigure.SpringBootVFS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
@@ -31,10 +35,23 @@ import com.spd.common.utils.StringUtils;
  * @author spd
  */
 @Configuration
-public class MyBatisConfig
+public class MyBatisConfig implements ResourceLoaderAware
 {
+    private static final Logger log = LoggerFactory.getLogger(MyBatisConfig.class);
+
+    /** 与各环境 application-*.yml 保持一致；若未配置则使用此默认，避免 XML 未加载导致 Invalid bound statement */
+    private static final String DEFAULT_MAPPER_LOCATIONS = "classpath*:mapper/**/*Mapper.xml";
+
     @Autowired
     private Environment env;
+
+    private ResourceLoader resourceLoader;
+
+    @Override
+    public void setResourceLoader(ResourceLoader resourceLoader)
+    {
+        this.resourceLoader = resourceLoader;
+    }
 
     static final String DEFAULT_RESOURCE_PATTERN = "**/*.class";
 
@@ -94,20 +111,25 @@ public class MyBatisConfig
 
     public Resource[] resolveMapperLocations(String[] mapperLocations)
     {
-        ResourcePatternResolver resourceResolver = new PathMatchingResourcePatternResolver();
+        ResourceLoader loader = resourceLoader != null ? resourceLoader : new DefaultResourceLoader();
+        ResourcePatternResolver resourceResolver = new PathMatchingResourcePatternResolver(loader);
         List<Resource> resources = new ArrayList<Resource>();
         if (mapperLocations != null)
         {
             for (String mapperLocation : mapperLocations)
             {
+                if (StringUtils.isEmpty(mapperLocation))
+                {
+                    continue;
+                }
                 try
                 {
-                    Resource[] mappers = resourceResolver.getResources(mapperLocation);
+                    Resource[] mappers = resourceResolver.getResources(mapperLocation.trim());
                     resources.addAll(Arrays.asList(mappers));
                 }
                 catch (IOException e)
                 {
-                    // ignore
+                    log.warn("解析 MyBatis mapper 路径失败: {}, {}", mapperLocation, e.getMessage());
                 }
             }
         }
@@ -119,6 +141,15 @@ public class MyBatisConfig
     {
         String typeAliasesPackage = env.getProperty("mybatis.typeAliasesPackage");
         String mapperLocations = env.getProperty("mybatis.mapperLocations");
+        if (StringUtils.isEmpty(mapperLocations))
+        {
+            mapperLocations = env.getProperty("mybatis.mapper-locations");
+        }
+        if (StringUtils.isEmpty(mapperLocations))
+        {
+            mapperLocations = DEFAULT_MAPPER_LOCATIONS;
+            log.warn("未读取到 mybatis.mapperLocations，已使用默认: {}", DEFAULT_MAPPER_LOCATIONS);
+        }
         String configLocation = env.getProperty("mybatis.configLocation");
         typeAliasesPackage = setTypeAliasesPackage(typeAliasesPackage);
         VFS.addImplClass(SpringBootVFS.class);
@@ -126,7 +157,16 @@ public class MyBatisConfig
         final SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);
         sessionFactory.setTypeAliasesPackage(typeAliasesPackage);
-        sessionFactory.setMapperLocations(resolveMapperLocations(StringUtils.split(mapperLocations, ",")));
+        Resource[] mapperResources = resolveMapperLocations(StringUtils.split(mapperLocations, ","));
+        if (mapperResources.length == 0)
+        {
+            log.error("MyBatis 未解析到任何 mapper XML，请检查 mybatis.mapperLocations 与依赖模块资源是否已打包进 classpath");
+        }
+        else
+        {
+            log.info("MyBatis 已加载 mapper XML 数量: {}", mapperResources.length);
+        }
+        sessionFactory.setMapperLocations(mapperResources);
         if (StringUtils.isNotEmpty(configLocation))
         {
             sessionFactory.setConfigLocation(new DefaultResourceLoader().getResource(Objects.requireNonNull(configLocation)));

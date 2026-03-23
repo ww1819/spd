@@ -714,6 +714,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         stkDepInventory.setSettlementType(stkIoBill.getSettlementType());
                     }
                     InventoryMaterialSnapshotHelper.fillDepRow(stkDepInventory, entry, inventory, fdMaterialMapper, stkIoBill.getTenantId());
+                    // 科室库存 kc_no = 来源仓库库存 id（与出库仓库流水 CK 的 kc_no 一致）
+                    if (inventory.getId() != null) {
+                        stkDepInventory.setKcNo(inventory.getId());
+                    }
                     stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
                     if (entry.getId() != null) {
                         stkIoBillMapper.updateStkIoBillEntryKcNo(entry.getId(), stkDepInventory.getId());
@@ -1220,12 +1224,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (stkIoBill != null && StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
                 stkDepInventory.setSettlementType(stkIoBill.getSettlementType());
             }
+            if (inventory.getId() != null) {
+                stkDepInventory.setKcNo(inventory.getId());
+            }
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
             BigDecimal oldQty = stkDepInventory.getQty();
             BigDecimal qty = entry.getQty();
 
             stkDepInventory.setQty(oldQty.add(qty));//数量
+            if (stkDepInventory.getKcNo() == null && inventory.getId() != null) {
+                stkDepInventory.setKcNo(inventory.getId());
+            }
             stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
         }
     }
@@ -1981,6 +1991,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     }
                     if (inventory == null) {
                         inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                    }
+                    // 历史数据科室库存未写 kc_no 时补写为来源仓库库存 id
+                    if (stkDepInventory.getKcNo() == null && inventory != null && inventory.getId() != null) {
+                        stkDepInventory.setKcNo(inventory.getId());
+                        stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
                     }
                     HcKsFlow ksFlow = new HcKsFlow();
                     ksFlow.setBillId(stkIoBill.getId());

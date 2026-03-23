@@ -428,6 +428,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
                 stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
             }
+            if (inventory.getId() != null) {
+                stkDepInventory.setKcNo(inventory.getId());
+            }
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
             BigDecimal oldQty = stkDepInventory.getQty();
@@ -436,6 +439,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             stkDepInventory.setQty(oldQty.add(qty));//数量
             if (stkDepInventory.getBatchNumber() == null) {
                 stkDepInventory.setBatchNumber(entry.getBatchNumber());
+            }
+            if (stkDepInventory.getKcNo() == null && inventory.getId() != null) {
+                stkDepInventory.setKcNo(inventory.getId());
             }
             stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
         }

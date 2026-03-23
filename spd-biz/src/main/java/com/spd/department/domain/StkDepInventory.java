@@ -112,7 +112,7 @@ public class StkDepInventory extends BaseEntity
     /** 删除标识（0正常 1已删除） */
     private Integer delFlag;
 
-    /** 科室库存明细id（反写） */
+    /** 关联仓库库存主键 stk_inventory.id（出库审核扣减的来源库存行，与仓库流水 HcCkFlow.kc_no 含义一致） */
     private Long kcNo;
 
     /** 耗材对象 */

@@ -28,7 +28,7 @@ public interface StkDepInventoryMapper
     public StkDepInventory selectStkDepInventoryById(Long id);
 
     /**
-     * 按出库单主表与明细定位科室库存（出库审核生成，收货确认时 kc_no 可能未反写）
+     * 按出库单主表与明细定位科室库存（出库审核生成；出库单明细 kc_no 存科室库存 id，本表 kc_no 存来源 stk_inventory.id）
      */
     StkDepInventory selectStkDepInventoryByBillEntry(@Param("billId") Long billId, @Param("billEntryId") Long billEntryId, @Param("tenantId") String tenantId);
 

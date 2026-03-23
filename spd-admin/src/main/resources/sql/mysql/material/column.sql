@@ -1413,15 +1413,20 @@ CREATE TABLE IF NOT EXISTS `stk_profit_loss_pending` (
 -- ========== sys_print_setting：存量表补 tenant_id 与索引（新库已在 table.sql 全量建表含 idx_tenant_bill）==========
 CALL add_table_column('sys_print_setting', 'tenant_id', 'varchar(64)', '租户/客户ID，NULL表示全库默认模板', NULL);
 /
+-- SqlInitRunner 每条片段单独 execute，须拆成多段（同连接会话变量仍有效）；勿在同一段内写多条分号语句
 SET @idx_ps_exists := (
   SELECT COUNT(*) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'sys_print_setting' AND index_name = 'idx_tenant_bill'
 );
+/
 SET @sql_ps_idx := IF(@idx_ps_exists = 0,
   'CREATE INDEX idx_tenant_bill ON sys_print_setting (tenant_id, bill_type)',
   'SELECT 1');
+/
 PREPARE stmt_ps_idx FROM @sql_ps_idx;
+/
 EXECUTE stmt_ps_idx;
+/
 DEALLOCATE PREPARE stmt_ps_idx;
 /
 

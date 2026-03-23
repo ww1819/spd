@@ -152,10 +152,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		where u.user_name = #{userName} and u.del_flag = '0'
 	</select>
 
-	<select id="selectUserByUserNameAndCustomerId" resultMap="SysUserResult">
-	    <include refid="selectUserVo"/>
-		where u.user_name = #{userName} and u.del_flag = '0' and (u.customer_id = #{customerId} or (#{customerId} is null and u.customer_id is null))
-	</select>
+	<!-- selectUserByUserNameAndCustomerId 已在 SysUserMapper.java 使用 @Select/@ResultMap 声明，避免 bound statement 丢失 -->
 
 	<select id="selectUserByUserNameNoCustomer" parameterType="String" resultMap="SysUserResult">
 	    <include refid="selectUserVo"/>
