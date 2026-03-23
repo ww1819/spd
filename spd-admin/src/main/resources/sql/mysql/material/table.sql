@@ -1,6 +1,6 @@
 -- ========== 耗材模块 建表脚本 ==========
 -- 执行顺序建议：1.table.sql 2.column.sql(含存储过程与增量字段) 3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
--- 本脚本已含：出入库/库存/批次/仓库与科室流水、盘点单、盈亏单、科室批量消耗、期初导入、结算与 SaaS 权限等（与 column.sql 增量对齐）；存量库若已建表可跳过对应 CREATE IF NOT EXISTS
+-- 本脚本已含：出入库/库存/批次/仓库与科室流水、盘点单、盈亏单、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置 sys_print_setting 等（与 column.sql 增量对齐）；存量库若已建表可跳过对应 CREATE IF NOT EXISTS
 -- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；增量字段见 material/column.sql
 -- 按「/」分段，每段一条语句执行
 /
@@ -1290,6 +1290,45 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry` (
   KEY `idx_hc_ks_xh_e_paren` (`paren_id`),
   KEY `idx_hc_ks_xh_e_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室批量消耗明细表';
+/
+
+-- 打印设置（耗材入库/出库等单据打印模板；tenant_id 为空=全库默认，与后端 SysPrintSetting / 前端 orderPrint、outOrderPrint 一致）
+CREATE TABLE IF NOT EXISTS `sys_print_setting` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `template_name` varchar(100) NOT NULL COMMENT '模板名称',
+  `tenant_id` varchar(64) DEFAULT NULL COMMENT '租户/客户ID，NULL表示全库默认模板',
+  `bill_type` int(4) DEFAULT NULL COMMENT '单据类型（101入库 201出库等，NULL表示通用）',
+  `page_width` decimal(10,2) DEFAULT 210.00 COMMENT '页面宽度（mm）',
+  `page_height` decimal(10,2) DEFAULT 297.00 COMMENT '页面高度（mm）',
+  `orientation` varchar(20) DEFAULT 'portrait' COMMENT '页面方向（portrait纵向，landscape横向）',
+  `margin_top` decimal(10,2) DEFAULT 0.00 COMMENT '上边距（mm）',
+  `margin_bottom` decimal(10,2) DEFAULT 0.00 COMMENT '下边距（mm）',
+  `margin_left` decimal(10,2) DEFAULT 0.00 COMMENT '左边距（mm）',
+  `margin_right` decimal(10,2) DEFAULT 0.00 COMMENT '右边距（mm）',
+  `font_size` int(4) DEFAULT 14 COMMENT '字体大小（px）',
+  `table_font_size` int(4) DEFAULT 12 COMMENT '表格字体大小（px）',
+  `column_spacing` decimal(10,2) DEFAULT 0.00 COMMENT '列间距（mm）',
+  `show_purchaser` tinyint(1) DEFAULT 0 COMMENT '显示采购人（0否，1是）',
+  `show_creator` tinyint(1) DEFAULT 1 COMMENT '显示制单人（0否，1是）',
+  `show_auditor` tinyint(1) DEFAULT 1 COMMENT '显示复核人（0否，1是）',
+  `show_receiver` tinyint(1) DEFAULT 0 COMMENT '显示验收人（0否，1是）',
+  `purchaser_label` varchar(50) DEFAULT '采购人' COMMENT '采购人标签',
+  `creator_label` varchar(50) DEFAULT '制单人' COMMENT '制单人标签',
+  `auditor_label` varchar(50) DEFAULT '复核人' COMMENT '复核人标签',
+  `receiver_label` varchar(50) DEFAULT '验收人' COMMENT '验收人标签',
+  `column_config` text COMMENT '列配置（JSON）',
+  `is_default` tinyint(1) DEFAULT 0 COMMENT '是否默认模板（0否，1是）',
+  `status` char(1) DEFAULT '0' COMMENT '状态（0正常，1停用）',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT '' COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_bill_type` (`bill_type`),
+  KEY `idx_status` (`status`),
+  KEY `idx_tenant_bill` (`tenant_id`,`bill_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='打印设置表';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

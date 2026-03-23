@@ -27,6 +27,7 @@ import com.spd.system.domain.SbMenu;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbMenuService;
+import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 
 /**
@@ -60,6 +61,9 @@ public class SysLoginController
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private ISysConfigService configService;
 
     /**
      * 登录方法
@@ -108,7 +112,14 @@ public class SysLoginController
                 options.add(m);
             }
         }
-        return AjaxResult.success(options);
+        AjaxResult ajax = AjaxResult.success(options);
+        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
+            String def = StringUtils.trimToEmpty(configService.selectConfigByKey("hc.login.defaultCustomerId"));
+            if (StringUtils.isNotEmpty(def)) {
+                ajax.put("defaultCustomerId", def);
+            }
+        }
+        return ajax;
     }
 
     /**

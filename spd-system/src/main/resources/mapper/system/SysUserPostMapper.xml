@@ -48,5 +48,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		  and u.customer_id = #{tenantId}
 		  and (up.tenant_id is null or up.tenant_id = '')
 	</update>
-	
+
+	<select id="selectUserIdsByPostId" resultType="long">
+		select user_id from sys_user_post where post_id = #{postId}
+	</select>
+
 </mapper> 

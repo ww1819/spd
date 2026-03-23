@@ -1,6 +1,8 @@
 -- ========== 耗材模块 数据完整性 ==========
 -- 建议在 table.sql、column.sql、menu.sql 之后执行；按「/」分段执行
 -- 数据完整性检查，为有默认值的字段赋值
+-- 文末含：hc.login.defaultCustomerId、岗位 system:post:sync（与 spd/sql/maintenance/add_hc_default_customer_config_and_post_sync_menu.sql 一致）
+-- 文末含：sys_print_setting 全库默认 + 衡水三院打印模板（与 spd/sql/maintenance/add_print_setting_tenant_id_and_seed_hs_receipt.sql 一致，已合并至本文件）
 -- 物料表 是否启用
 update fd_material fm set fm.is_use = '2' where fm.is_use is null;
 /
@@ -518,4 +520,167 @@ SELECT 4, '已执行', '3', 'plan_status', '0', NOW() FROM DUAL WHERE NOT EXISTS
 /
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time)
 SELECT 5, '已取消', '4', 'plan_status', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '4');
+/
+
+-- ========== 耗材登录默认客户 + 岗位「同步仓库/科室/菜单」按钮（与 maintenance/add_hc_default_customer_config_and_post_sync_menu.sql 一致）==========
+-- 参数 hc.login.defaultCustomerId：登录页默认组织机构（sb_customer.customer_id）；空=不默认。修改后请在参数设置刷新缓存
+/
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT
+  '耗材登录默认客户',
+  'hc.login.defaultCustomerId',
+  '',
+  'N',
+  'admin',
+  NOW(),
+  '登录页组织机构默认值，填写 sb_customer.customer_id；空表示不默认。可在参数设置中通过下拉选择（键名为 hc.login.defaultCustomerId 时）。'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'hc.login.defaultCustomerId');
+/
+
+SET @post_list_menu_id := (
+  SELECT menu_id FROM sys_menu
+  WHERE perms = 'system:post:list' AND menu_type = 'C'
+  ORDER BY menu_id
+  LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2310,
+  '工作组同步权限',
+  @post_list_menu_id,
+  90,
+  '#',
+  '',
+  NULL,
+  1, 0, 'F', '0', '0', 'system:post:sync', '#',
+  'admin', NOW(), '1', NOW(),
+  '将岗位已授权的仓库/科室/菜单批量写入组内用户（耗材端与设备端岗位页按钮一致）',
+  '0', '1'
+FROM DUAL
+WHERE @post_list_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 2310 OR perms = 'system:post:sync')
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  update_time = NOW();
+/
+
+-- admin 角色授予「工作组同步权限」按钮（menu_id=2310）
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2310 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2310);
+/
+
+-- ========== 打印模板 sys_print_setting：全库默认 + 衡水市第三人民医院（hengsui-third-001）==========
+-- tenant_id 为空=全库默认；未单独配置客户打印时回落全库默认（与后端 selectEffectiveDefault 一致）
+/
+INSERT INTO sys_print_setting (
+  template_name, tenant_id, bill_type, page_width, page_height, orientation,
+  margin_top, margin_bottom, margin_left, margin_right,
+  font_size, table_font_size, column_spacing,
+  show_purchaser, show_creator, show_auditor, show_receiver,
+  is_default, status, create_time, remark
+)
+SELECT
+  '耗材入库单-全库默认', NULL, 101, 210.00, 297.00, 'portrait',
+  0, 0, 0, 0,
+  22, 12, 0,
+  0, 1, 1, 0,
+  1, '0', NOW(), '全库默认；与 orderPrint.vue 默认样式一致'
+FROM DUAL
+WHERE NOT EXISTS (
+  SELECT 1 FROM sys_print_setting s
+  WHERE s.bill_type = 101 AND s.is_default = 1 AND s.status = '0'
+    AND (s.tenant_id IS NULL OR s.tenant_id = '')
+);
+/
+INSERT INTO sys_print_setting (
+  template_name, tenant_id, bill_type, page_width, page_height, orientation,
+  margin_top, margin_bottom, margin_left, margin_right,
+  font_size, table_font_size, column_spacing,
+  show_purchaser, show_creator, show_auditor, show_receiver,
+  is_default, status, create_time, remark
+)
+SELECT
+  '耗材出库单-全库默认', NULL, 201, 210.00, 297.00, 'portrait',
+  0, 0, 0, 0,
+  16, 11, 0,
+  0, 1, 1, 0,
+  1, '0', NOW(), '全库默认耗材出库：宋体紧凑；标题约15px/表体11px；与 outOrderPrint.vue 一致'
+FROM DUAL
+WHERE NOT EXISTS (
+  SELECT 1 FROM sys_print_setting s
+  WHERE s.bill_type = 201 AND s.is_default = 1 AND s.status = '0'
+    AND (s.tenant_id IS NULL OR s.tenant_id = '')
+);
+/
+INSERT INTO sys_print_setting (
+  template_name, tenant_id, bill_type, page_width, page_height, orientation,
+  margin_top, margin_bottom, margin_left, margin_right,
+  font_size, table_font_size, column_spacing,
+  show_purchaser, show_creator, show_auditor, show_receiver,
+  is_default, status, create_time, remark
+)
+SELECT
+  '耗材入库单-衡水市第三人民医院', 'hengsui-third-001', 101, 210.00, 297.00, 'portrait',
+  0, 0, 0, 0,
+  22, 12, 0,
+  0, 1, 1, 0,
+  1, '0', NOW(), '衡水三院专属；参数与全库默认一致，便于后续单独调版'
+FROM DUAL
+WHERE NOT EXISTS (
+  SELECT 1 FROM sys_print_setting s
+  WHERE s.bill_type = 101 AND s.is_default = 1 AND s.status = '0'
+    AND s.tenant_id = 'hengsui-third-001'
+);
+/
+INSERT INTO sys_print_setting (
+  template_name, tenant_id, bill_type, page_width, page_height, orientation,
+  margin_top, margin_bottom, margin_left, margin_right,
+  font_size, table_font_size, column_spacing,
+  show_purchaser, show_creator, show_auditor, show_receiver,
+  is_default, status, create_time, remark
+)
+SELECT
+  '耗材出库单-衡水市第三人民医院', 'hengsui-third-001', 201, 210.00, 297.00, 'portrait',
+  0, 0, 0, 0,
+  16, 11, 0,
+  0, 1, 1, 0,
+  1, '0', NOW(), '衡水三院耗材出库：宋体紧凑；标题约15px/表体11px；与 outOrderPrint.vue 一致'
+FROM DUAL
+WHERE NOT EXISTS (
+  SELECT 1 FROM sys_print_setting s
+  WHERE s.bill_type = 201 AND s.is_default = 1 AND s.status = '0'
+    AND s.tenant_id = 'hengsui-third-001'
+);
+/
+-- 已存在库：刷新耗材出库单模板字号（与上表 INSERT 一致）
+/
+UPDATE sys_print_setting
+SET font_size = 16,
+    table_font_size = 11,
+    remark = '耗材出库 receipt：宋体紧凑；正文16/表11；与 outOrderPrint.vue 一致'
+WHERE bill_type = 201
+  AND is_default = 1
+  AND status = '0'
+  AND (tenant_id IS NULL OR tenant_id = '');
+/
+UPDATE sys_print_setting
+SET font_size = 16,
+    table_font_size = 11,
+    remark = '衡水三院耗材出库：宋体紧凑；正文16/表11；与 outOrderPrint.vue 一致'
+WHERE bill_type = 201
+  AND is_default = 1
+  AND status = '0'
+  AND tenant_id = 'hengsui-third-001';
 /

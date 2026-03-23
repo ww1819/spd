@@ -55,4 +55,9 @@ public interface SysUserPostMapper
      * 将该客户下所有关联指定 super 岗位的用户行的 tenant_id 回填
      */
     public int updateTenantIdIfBlankForCustomerSuperPost(@Param("tenantId") String tenantId, @Param("postId") Long postId);
+
+    /**
+     * 耗材工作组：查询关联该岗位的用户主键列表
+     */
+    List<Long> selectUserIdsByPostId(@Param("postId") Long postId);
 }

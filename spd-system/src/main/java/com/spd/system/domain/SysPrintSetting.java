@@ -26,6 +26,10 @@ public class SysPrintSetting extends BaseEntity
     @Excel(name = "模板名称")
     private String templateName;
 
+    /** 租户/客户ID（NULL 或空表示全库默认模板，供未单独配置的客户使用） */
+    @Excel(name = "租户ID")
+    private String tenantId;
+
     /** 入库单类型（101普通入库，501调拨等，NULL表示通用） */
     @Excel(name = "入库单类型", cellType = ColumnType.NUMERIC)
     private Integer billType;
@@ -133,6 +137,16 @@ public class SysPrintSetting extends BaseEntity
     public void setTemplateName(String templateName)
     {
         this.templateName = templateName;
+    }
+
+    public String getTenantId()
+    {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId)
+    {
+        this.tenantId = tenantId;
     }
 
     public Integer getBillType()
@@ -360,6 +374,7 @@ public class SysPrintSetting extends BaseEntity
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("templateName", getTemplateName())
+            .append("tenantId", getTenantId())
             .append("billType", getBillType())
             .append("pageWidth", getPageWidth())
             .append("pageHeight", getPageHeight())

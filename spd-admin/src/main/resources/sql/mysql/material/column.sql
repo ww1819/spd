@@ -1386,6 +1386,21 @@ CREATE TABLE IF NOT EXISTS `stk_profit_loss_pending` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盘盈新增明细/待入账表（不直接影响结算）';
 /
 
+-- ========== sys_print_setting：存量表补 tenant_id 与索引（新库已在 table.sql 全量建表含 idx_tenant_bill）==========
+CALL add_table_column('sys_print_setting', 'tenant_id', 'varchar(64)', '租户/客户ID，NULL表示全库默认模板', NULL);
+/
+SET @idx_ps_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'sys_print_setting' AND index_name = 'idx_tenant_bill'
+);
+SET @sql_ps_idx := IF(@idx_ps_exists = 0,
+  'CREATE INDEX idx_tenant_bill ON sys_print_setting (tenant_id, bill_type)',
+  'SELECT 1');
+PREPARE stmt_ps_idx FROM @sql_ps_idx;
+EXECUTE stmt_ps_idx;
+DEALLOCATE PREPARE stmt_ps_idx;
+/
+
 -- ========== 基础资料等「导入」按钮：默认对客户开放 ==========
 -- 1) sys_menu：保证 default_open_to_customer=1（新租户/功能重置会按此字段下发 hc_customer_menu）
 UPDATE sys_menu

@@ -27,12 +27,14 @@ public interface ISysPrintSettingService
     public List<SysPrintSetting> selectSysPrintSettingList(SysPrintSetting sysPrintSetting);
 
     /**
-     * 根据入库单类型查询默认模板
-     * 
-     * @param billType 入库单类型
-     * @return 打印设置信息
+     * 根据单据类型查询默认模板（兼容：按当前登录用户 customerId 先查租户默认，再回落全库默认）
      */
     public SysPrintSetting selectDefaultByBillType(Integer billType);
+
+    /**
+     * 按单据类型 + 租户解析生效的默认模板：先租户专属，若无则全库默认（tenant_id 为空）
+     */
+    public SysPrintSetting selectEffectiveDefault(Integer billType, String tenantId);
 
     /**
      * 新增打印设置

@@ -426,4 +426,15 @@ public class SysPostServiceImpl implements ISysPostService
         }
         return false;
     }
+
+    @Override
+    public List<Long> selectUserIdsByPostId(Long postId)
+    {
+        if (postId == null)
+        {
+            return new ArrayList<>();
+        }
+        List<Long> ids = userPostMapper.selectUserIdsByPostId(postId);
+        return ids != null ? ids : new ArrayList<>();
+    }
 }
