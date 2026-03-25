@@ -215,7 +215,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     public List<FdMaterial> selectFdMaterialList(FdMaterial fdMaterial)
     {
         if (fdMaterial != null && StringUtils.isEmpty(fdMaterial.getTenantId())) {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid)) {
                 fdMaterial.setTenantId(tid);
             }
@@ -238,7 +238,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
         }
         if (StringUtils.isEmpty(fdMaterial.getTenantId())) {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid)) {
                 fdMaterial.setTenantId(tid);
             }
@@ -912,7 +912,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     {
         clearMaterialAddImportValidation(list);
         ImportRowErrorCollector c = new ImportRowErrorCollector();
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isEmpty(tenantId))
         {
             c.addGlobal("无法解析当前租户，请重新登录后重试");
@@ -1107,7 +1107,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     {
         clearMaterialUpdateImportValidation(list);
         ImportRowErrorCollector c = new ImportRowErrorCollector();
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isEmpty(tenantId))
         {
             c.addGlobal("无法解析当前租户，请重新登录后重试");
@@ -1178,7 +1178,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         int ok = 0;
         StringBuilder msg = new StringBuilder();
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         java.util.Map<String, Long> unitNameToIdCache = new LinkedHashMap<>();
         for (MaterialImportAddDto row : list)
         {
@@ -1248,7 +1248,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         int ok = 0;
         StringBuilder msg = new StringBuilder();
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         for (MaterialImportUpdateDto row : list)
         {
             if (row == null || isMaterialImportUpdateRowBlank(row))

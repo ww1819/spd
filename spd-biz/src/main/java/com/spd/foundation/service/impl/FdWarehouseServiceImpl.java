@@ -50,7 +50,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     public List<FdWarehouse> selectFdWarehouseList(FdWarehouse fdWarehouse)
     {
         if (fdWarehouse != null && StringUtils.isEmpty(fdWarehouse.getTenantId())) {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid)) {
                 fdWarehouse.setTenantId(tid);
             }
@@ -78,7 +78,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
         fdWarehouse.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdWarehouse.getTenantId()))
         {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid))
             {
                 fdWarehouse.setTenantId(tid);
@@ -142,7 +142,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 
     @Override
     public List<FdWarehouse> selectwarehouseAll() {
-        String tid = SecurityUtils.resolveEffectiveTenantId(null);
+        String tid = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(tid)) {
             FdWarehouse q = new FdWarehouse();
             q.setTenantId(tid);
@@ -153,7 +153,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 
     @Override
     public List<FdWarehouse> selectUserWarehouseAll(Long userId) {
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         return fdWarehouseMapper.selectUserWarehouseAll(userId, tenantId);
     }
 

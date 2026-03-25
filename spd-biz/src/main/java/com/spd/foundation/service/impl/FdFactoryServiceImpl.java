@@ -1,6 +1,5 @@
 package com.spd.foundation.service.impl;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -63,7 +62,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     {
         if (fdFactory != null && StringUtils.isEmpty(fdFactory.getTenantId()))
         {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid))
             {
                 fdFactory.setTenantId(tid);
@@ -77,7 +76,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     {
         if (StringUtils.isEmpty(fdFactory.getTenantId()))
         {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid))
             {
                 fdFactory.setTenantId(tid);
@@ -205,7 +204,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         result.put("totalRows", list != null ? list.size() : 0);
         if (valid && list != null && !list.isEmpty())
         {
-            String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+            String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
             int insertCount = 0;
             int updateCount = 0;
             for (FdFactory row : list)
@@ -264,7 +263,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
         }
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         int successNum = 0;
         StringBuilder successMsg = new StringBuilder();
         for (FdFactory row : list)
@@ -323,7 +322,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
 
     private static boolean importRequiresMandatoryHisId()
     {
-        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null));
+        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
     }
 
     private static String normalizeHisId(String raw)
@@ -385,7 +384,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             c.addGlobal("导入生产厂家数据不能为空");
             return c;
         }
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         Map<String, Integer> codeFirstRow = new LinkedHashMap<>();
         Map<String, Integer> hisFirstRow = new LinkedHashMap<>();
         for (int i = 0; i < list.size(); i++)

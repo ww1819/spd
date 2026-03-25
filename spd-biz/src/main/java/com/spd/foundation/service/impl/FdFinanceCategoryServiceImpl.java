@@ -1,6 +1,5 @@
 package com.spd.foundation.service.impl;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +65,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     {
         if (fdFinanceCategory != null && StringUtils.isEmpty(fdFinanceCategory.getTenantId()))
         {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid))
             {
                 fdFinanceCategory.setTenantId(tid);
@@ -91,7 +90,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         }
         if (StringUtils.isEmpty(fdFinanceCategory.getTenantId()))
         {
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid))
             {
                 fdFinanceCategory.setTenantId(tid);
@@ -225,7 +224,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         result.put("totalRows", list != null ? list.size() : 0);
         if (valid && list != null && !list.isEmpty())
         {
-            String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+            String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
             int insertCount = 0;
             int updateCount = 0;
             for (FdFinanceCategory row : list)
@@ -285,7 +284,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         {
             throw new ServiceException("数据已变更或校验未通过，请重新校验后再导入。详情：" + String.join("；", errors));
         }
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         int successNum = 0;
         StringBuilder successMsg = new StringBuilder();
         for (FdFinanceCategory row : list)
@@ -359,7 +358,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
 
     private static boolean importRequiresMandatoryHisId()
     {
-        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null));
+        return TenantEnum.HS_003 == TenantEnum.fromCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
     }
 
     private static String normalizeHisId(String raw)
@@ -421,7 +420,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
             c.addGlobal("导入财务分类数据不能为空");
             return c;
         }
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         Map<String, Integer> codeFirstRow = new LinkedHashMap<>();
         Map<String, Integer> hisFirstRow = new LinkedHashMap<>();
         for (int i = 0; i < list.size(); i++)

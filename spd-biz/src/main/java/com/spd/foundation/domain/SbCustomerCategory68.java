@@ -61,6 +61,8 @@ public class SbCustomerCategory68 extends BaseEntity {
 
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
 
     public Long getRefCategory68Id() { return refCategory68Id; }
     public void setRefCategory68Id(Long refCategory68Id) { this.refCategory68Id = refCategory68Id; }

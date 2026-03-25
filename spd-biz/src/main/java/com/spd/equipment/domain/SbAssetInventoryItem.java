@@ -55,6 +55,8 @@ public class SbAssetInventoryItem extends BaseEntity {
     public void setId(String id) { this.id = id; }
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
     public String getInventoryId() { return inventoryId; }
     public void setInventoryId(String inventoryId) { this.inventoryId = inventoryId; }
     public String getOrderNo() { return orderNo; }

@@ -116,7 +116,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
     @Override
     public int insertGzShipment(GzShipment gzShipment)
     {
-        if (gzShipment != null && StringUtils.isEmpty(gzShipment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        if (gzShipment == null) {
+            throw new ServiceException("高值出库单不能为空");
+        }
+        if (StringUtils.isEmpty(gzShipment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
         gzShipment.setShipmentNo(getShipmentNo());
@@ -424,10 +427,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if (StringUtils.isNotNull(gzShipmentEntryList))
         {
             List<GzShipmentEntry> list = new ArrayList<GzShipmentEntry>();
-            String tenantId = gzShipment.getTenantId();
-            if (StringUtils.isEmpty(tenantId) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-                tenantId = SecurityUtils.getCustomerId();
-            }
+            // tenant_id 在 mapper 批量写入时依赖 entry.tenantId，必须严格解析且不允许为空
+            String tenantId = StringUtils.isNotEmpty(gzShipment.getTenantId())
+                ? gzShipment.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
             for (GzShipmentEntry gzShipmentEntry : gzShipmentEntryList)
             {
                 if (gzShipmentEntry == null) {
@@ -441,9 +444,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     ", inHospitalCode: " + gzShipmentEntry.getInHospitalCode());
                 
                 gzShipmentEntry.setParenId(id);
-                if (StringUtils.isNotEmpty(tenantId)) {
-                    gzShipmentEntry.setTenantId(tenantId);
-                }
+                gzShipmentEntry.setTenantId(tenantId);
                 // 只有在 batchNo 为空时才生成新的批次号，避免覆盖已有的批次号
                 if (gzShipmentEntry.getBatchNo() == null || gzShipmentEntry.getBatchNo().isEmpty()) {
                     gzShipmentEntry.setBatchNo(getBatchNumber());

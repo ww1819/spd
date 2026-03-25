@@ -57,7 +57,7 @@ public class FdDepartmentController extends BaseController
     /** 租户与科室数据权限（与列表一致） */
     private void applyTenantDepartmentListScope(FdDepartment fdDepartment)
     {
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId))
         {
             fdDepartment.setTenantId(customerId);
@@ -110,7 +110,7 @@ public class FdDepartmentController extends BaseController
     @GetMapping("/listAll/{userId}")
     public List<FdDepartment> listAll(@PathVariable(value = "userId") Long userId)
     {
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         List<FdDepartment> list;
         if (StringUtils.isNotEmpty(customerId)) {
             list = fdDepartmentService.selectdepartmenAll();
@@ -151,7 +151,7 @@ public class FdDepartmentController extends BaseController
         if (dept == null) {
             return error("科室不存在");
         }
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
             return error("无权查看非本客户的科室");
         }
@@ -174,7 +174,7 @@ public class FdDepartmentController extends BaseController
     public AjaxResult add(@RequestBody FdDepartment fdDepartment)
     {
         // 非衡水租户：手工新增不接收第三方科室 ID（仅导入等场景由服务层写入）；衡水市第三人民医院手工新增须填 HIS/第三方科室 ID
-        if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.resolveEffectiveTenantId(null))) {
+        if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.requiredScopedTenantIdForSql())) {
             fdDepartment.setHisId(null);
         }
         return toAjax(fdDepartmentService.insertFdDepartment(fdDepartment));
@@ -220,7 +220,7 @@ public class FdDepartmentController extends BaseController
     public AjaxResult optionselect()
     {
         List<FdDepartment> fdDepartmentList = fdDepartmentService.selectdepartmenAll();
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
             List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds == null || allowedIds.isEmpty()) fdDepartmentList = new ArrayList<>();
@@ -243,7 +243,7 @@ public class FdDepartmentController extends BaseController
         if (dept == null) {
             return error("科室不存在");
         }
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId) && !customerId.equals(dept.getTenantId())) {
             return error("无权查看非本客户的科室");
         }
@@ -406,7 +406,7 @@ public class FdDepartmentController extends BaseController
         }
         else
         {
-            String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+            String customerId = SecurityUtils.requiredScopedTenantIdForSql();
             for (int i = 0; i < list.size(); i++)
             {
                 DepartmentImportUpdateDto row = list.get(i);

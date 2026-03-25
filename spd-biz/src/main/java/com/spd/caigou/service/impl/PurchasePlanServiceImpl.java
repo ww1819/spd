@@ -313,6 +313,10 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if (id == null) {
             return;
         }
+        // 批量写入 mapper 依赖 item.tenantId，必须严格解析且不允许为空
+        String tenantId = StringUtils.isNotEmpty(purchasePlan.getTenantId())
+            ? purchasePlan.getTenantId()
+            : SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotNull(purchasePlanEntryList) && !purchasePlanEntryList.isEmpty())
         {
             List<PurchasePlanEntry> list = new ArrayList<PurchasePlanEntry>();
@@ -322,9 +326,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                     continue;
                 }
                 purchasePlanEntry.setParentId(id);
-                if (StringUtils.isEmpty(purchasePlanEntry.getTenantId()) && StringUtils.isNotEmpty(purchasePlan.getTenantId())) {
-                    purchasePlanEntry.setTenantId(purchasePlan.getTenantId());
-                }
+                purchasePlanEntry.setTenantId(tenantId);
                 purchasePlanEntry.setDelFlag("0");
                 purchasePlanEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 purchasePlanEntry.setCreateTime(new Date());
@@ -337,7 +339,6 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             boolean hasDepRefs = list.stream().anyMatch(e -> e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty());
             boolean hasRefs = hasBasRefs || hasDepRefs;
             String createBy = SecurityUtils.getUserIdStr();
-            String tenantId = SecurityUtils.getCustomerId();
             Date now = new Date();
             if (hasRefs) {
                 for (PurchasePlanEntry e : list) {

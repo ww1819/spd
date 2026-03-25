@@ -1259,7 +1259,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
-            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
@@ -1269,7 +1269,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setDelFlag(0);
                 // 将表头仓库ID反写到明细，保证退库按仓库锁定
                 stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
-                if (StringUtils.isNotEmpty(tenantId)) stkIoBillEntry.setTenantId(tenantId);
+                // tenant_id 在 mapper 批量写入时直接依赖 item.tenantId，必须严格兜底并确保不为空
+                stkIoBillEntry.setTenantId(tenantId);
                 fillEntryMaterialSnapshot(stkIoBillEntry, tenantId);
                 list.add(stkIoBillEntry);
             }
@@ -1292,7 +1293,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
-            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
@@ -1303,7 +1304,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }
                 // 将表头仓库ID反写到明细，保证退库按仓库锁定
                 stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
-                if (StringUtils.isNotEmpty(tenantId)) stkIoBillEntry.setTenantId(tenantId);
+                // tenant_id 在 mapper 批量写入时直接依赖 item.tenantId，必须严格兜底并确保不为空
+                stkIoBillEntry.setTenantId(tenantId);
                 fillEntryMaterialSnapshot(stkIoBillEntry, tenantId);
                 list.add(stkIoBillEntry);
             }
@@ -1324,8 +1326,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int insertOutStkIoBill(StkIoBill stkIoBill)
     {
-        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(stkIoBill.getTenantId())) {
+            stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         stkIoBill.setBillNo(getBillNumber("CK"));
         // 如果制单日期为空，自动设置为当前日期
@@ -1364,8 +1366,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int insertTkStkIoBill(StkIoBill stkIoBill) {
-        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(stkIoBill.getTenantId())) {
+            stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         stkIoBill.setBillNo(getTKNumber("TK"));
         // 如果制单日期为空，自动设置为当前日期
@@ -1407,8 +1409,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int insertTHStkIoBill(StkIoBill stkIoBill) {
-        if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(stkIoBill.getTenantId())) {
+            stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         // 如果退货日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -1521,6 +1523,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
+            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
@@ -1531,7 +1534,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, stkIoBillEntry);
-                fillEntryMaterialSnapshot(stkIoBillEntry, stkIoBill.getTenantId());
+                stkIoBillEntry.setTenantId(tenantId);
+                fillEntryMaterialSnapshot(stkIoBillEntry, tenantId);
                 list.add(stkIoBillEntry);
             }
             if (list.size() > 0)
@@ -1590,6 +1594,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
+            String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
@@ -1599,11 +1604,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
-                if (StringUtils.isEmpty(stkIoBillEntry.getTenantId()) && StringUtils.isNotEmpty(stkIoBill.getTenantId())) {
-                    stkIoBillEntry.setTenantId(stkIoBill.getTenantId());
-                }
                 fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, stkIoBillEntry);
-                fillEntryMaterialSnapshot(stkIoBillEntry, stkIoBill.getTenantId());
+                stkIoBillEntry.setTenantId(tenantId);
+                fillEntryMaterialSnapshot(stkIoBillEntry, tenantId);
                 list.add(stkIoBillEntry);
             }
             if (list.size() > 0)

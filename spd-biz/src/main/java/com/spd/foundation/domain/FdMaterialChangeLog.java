@@ -36,6 +36,8 @@ public class FdMaterialChangeLog {
     /** 新值 */
     private String newValue;
 
+    private String tenantId;
+
     public String getId() {
         return id;
     }
@@ -98,5 +100,13 @@ public class FdMaterialChangeLog {
 
     public void setNewValue(String newValue) {
         this.newValue = newValue;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

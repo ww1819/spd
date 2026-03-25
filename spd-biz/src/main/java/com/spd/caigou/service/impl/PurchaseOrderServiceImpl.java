@@ -266,6 +266,10 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         Long id = purchaseOrder.getId();
         if (StringUtils.isNotNull(purchaseOrderEntryList))
         {
+            // 批量写入 mapper 依赖 item.tenantId，必须严格解析且不允许为空
+            String tenantId = StringUtils.isNotEmpty(purchaseOrder.getTenantId())
+                ? purchaseOrder.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
             List<PurchaseOrderEntry> list = new ArrayList<PurchaseOrderEntry>();
             for (PurchaseOrderEntry purchaseOrderEntry : purchaseOrderEntryList)
             {
@@ -292,9 +296,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 }
                 
                 purchaseOrderEntry.setParentId(id);
-                if (StringUtils.isEmpty(purchaseOrderEntry.getTenantId()) && StringUtils.isNotEmpty(purchaseOrder.getTenantId())) {
-                    purchaseOrderEntry.setTenantId(purchaseOrder.getTenantId());
-                }
+                purchaseOrderEntry.setTenantId(tenantId);
                 list.add(purchaseOrderEntry);
             }
             if (list.size() > 0)
@@ -369,8 +371,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setDelFlag("0");
             purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
             purchaseOrder.setCreateTime(new Date());
-            if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-                purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
+            if (StringUtils.isEmpty(purchaseOrder.getTenantId())) {
+                purchaseOrder.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
             }
             purchaseOrder.setRemark("从采购计划" + purchasePlan.getPlanNo() + "生成");
 
@@ -399,9 +401,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderEntry.setPlanId(planId);
                 orderEntry.setPlanNo(purchasePlan.getPlanNo());
                 orderEntry.setPlanEntryId(planEntry.getId());
-                if (StringUtils.isNotEmpty(purchaseOrder.getTenantId())) {
-                    orderEntry.setTenantId(purchaseOrder.getTenantId());
-                }
+                orderEntry.setTenantId(purchaseOrder.getTenantId());
                 orderEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 orderEntry.setCreateTime(new Date());
                 

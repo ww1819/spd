@@ -96,7 +96,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Override
     public int insertGzRefundGoods(GzRefundGoods gzRefundGoods)
     {
-        if (gzRefundGoods != null && StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        if (gzRefundGoods == null) {
+            throw new ServiceException("高值退货单不能为空");
+        }
+        if (StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
         }
         gzRefundGoods.setGoodsNo(getOrderNo());
@@ -257,10 +260,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if (StringUtils.isNotNull(gzRefundGoodsEntryList))
         {
             List<GzRefundGoodsEntry> list = new ArrayList<GzRefundGoodsEntry>();
-            String tenantId = gzRefundGoods.getTenantId();
-            if (StringUtils.isEmpty(tenantId) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-                tenantId = SecurityUtils.getCustomerId();
-            }
+            // tenant_id 在 mapper 批量写入时依赖 entry.tenantId，必须严格解析且不允许为空
+            String tenantId = StringUtils.isNotEmpty(gzRefundGoods.getTenantId())
+                ? gzRefundGoods.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
             for (GzRefundGoodsEntry gzRefundGoodsEntry : gzRefundGoodsEntryList)
             {
                 if (gzRefundGoodsEntry == null) {
@@ -269,9 +272,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 validateGzDepotInventory(gzRefundGoodsEntry.getBatchNo(),gzRefundGoodsEntryList);
                 gzRefundGoodsEntry.setParenId(id);
                 gzRefundGoodsEntry.setDelFlag(0);
-                if (StringUtils.isNotEmpty(tenantId)) {
-                    gzRefundGoodsEntry.setTenantId(tenantId);
-                }
+                gzRefundGoodsEntry.setTenantId(tenantId);
                 list.add(gzRefundGoodsEntry);
             }
             if (list.size() > 0)

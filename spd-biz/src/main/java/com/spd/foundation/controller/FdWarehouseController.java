@@ -51,7 +51,7 @@ public class FdWarehouseController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(FdWarehouse fdWarehouse)
     {
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId)) {
             fdWarehouse.setTenantId(customerId);
             if (!tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
@@ -74,7 +74,7 @@ public class FdWarehouseController extends BaseController
     @GetMapping("/listAll/{userId}")
     public List<FdWarehouse> listAll(@PathVariable(value = "userId") Long userId)
     {
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         List<FdWarehouse> list;
         if (StringUtils.isNotEmpty(customerId)) {
             list = fdWarehouseService.selectwarehouseAll();
@@ -98,7 +98,7 @@ public class FdWarehouseController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, FdWarehouse fdWarehouse)
     {
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId)) {
             fdWarehouse.setTenantId(customerId);
             if (!tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
@@ -165,7 +165,7 @@ public class FdWarehouseController extends BaseController
     public AjaxResult optionselect()
     {
         List<FdWarehouse> fdWarehouseList = fdWarehouseService.selectwarehouseAll();
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId) && fdWarehouseList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
             List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
             if (allowedIds == null || allowedIds.isEmpty()) fdWarehouseList = new ArrayList<>();

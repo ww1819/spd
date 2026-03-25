@@ -32,6 +32,8 @@ public class SbAssetPrintTask extends BaseEntity {
     public void setId(String id) { this.id = id; }
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
     public String getTaskNo() { return taskNo; }
     public void setTaskNo(String taskNo) { this.taskNo = taskNo; }
     public String getSourceType() { return sourceType; }

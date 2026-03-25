@@ -168,6 +168,10 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (id == null) {
             return;
         }
+        // 批量写入 mapper 依赖 item.tenantId，必须严格解析且不允许为空
+        String tenantId = StringUtils.isNotEmpty(depPurchaseApply.getTenantId())
+            ? depPurchaseApply.getTenantId()
+            : SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotNull(depPurchaseApplyEntryList) && !depPurchaseApplyEntryList.isEmpty())
         {
             List<DepPurchaseApplyEntry> list = new ArrayList<DepPurchaseApplyEntry>();
@@ -177,9 +181,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
                     continue;
                 }
                 depPurchaseApplyEntry.setParentId(id);
-                if (StringUtils.isEmpty(depPurchaseApplyEntry.getTenantId()) && StringUtils.isNotEmpty(depPurchaseApply.getTenantId())) {
-                    depPurchaseApplyEntry.setTenantId(depPurchaseApply.getTenantId());
-                }
+                depPurchaseApplyEntry.setTenantId(tenantId);
                 depPurchaseApplyEntry.setCreateTime(DateUtils.getNowDate());
                 depPurchaseApplyEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 list.add(depPurchaseApplyEntry);

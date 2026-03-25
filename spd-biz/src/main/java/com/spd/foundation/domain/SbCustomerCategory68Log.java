@@ -50,6 +50,8 @@ public class SbCustomerCategory68Log extends BaseEntity {
 
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
 
     public String getTargetId() { return targetId; }
     public void setTargetId(String targetId) { this.targetId = targetId; }

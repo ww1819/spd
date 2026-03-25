@@ -111,6 +111,8 @@ public class SbCustomerAssetLedger extends BaseEntity {
     public void setId(String id) { this.id = id; }
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
     public String getEquipmentSerialNo() { return equipmentSerialNo; }
     public void setEquipmentSerialNo(String equipmentSerialNo) { this.equipmentSerialNo = equipmentSerialNo; }
     public String getFinancialSystemUniqueId() { return financialSystemUniqueId; }
