@@ -48,7 +48,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdSupplierList" parameterType="FdSupplier" resultMap="FdSupplierResult">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         <include refid="selectFdSupplierVo"/>
         where del_flag != 1
@@ -62,7 +62,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdSupplierById" parameterType="Long" resultMap="FdSupplierResult">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         <include refid="selectFdSupplierVo"/>
         where id = #{id} and (del_flag = 0 or del_flag is null) and tenant_id = #{scopedTenantId}
@@ -88,7 +88,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertFdSupplier" parameterType="FdSupplier" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         insert into fd_supplier
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -158,7 +158,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdSupplier" parameterType="FdSupplier">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         update fd_supplier
         <trim prefix="SET" suffixOverrides=",">
@@ -197,13 +197,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdSupplierById">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdSupplierByIds">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         update fd_supplier set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
@@ -212,7 +212,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectSupplierIsExist" parameterType="Long" resultType="int">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         select count(*) from stk_io_bill
         where del_flag !=1

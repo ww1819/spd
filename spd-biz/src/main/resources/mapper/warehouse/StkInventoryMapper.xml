@@ -319,7 +319,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkInventoryById" parameterType="Long" resultMap="StkInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectStkInventoryVo"/>
         where stk.id = #{id}
           and stk.tenant_id = #{scopedTenantId}
@@ -418,7 +418,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteStkInventoryById" parameterType="map">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
@@ -427,7 +427,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteStkInventoryByIds" parameterType="map">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
@@ -439,7 +439,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0))
         from stk_inventory
         where batch_no = #{batchNo}
@@ -448,7 +448,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkInventoryOne" parameterType="java.lang.String" resultMap="StkInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select *
         from stk_inventory
         where batch_no = #{batchNo}
@@ -459,7 +459,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkInventoryByBatchNoAndWarehouse" resultMap="StkInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select *
         from stk_inventory
         where batch_no = #{batchNo}
@@ -471,7 +471,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkInventoryByBatchNoAndMaterialIdAndWarehouse" resultMap="StkInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select *
         from stk_inventory
         where batch_no = #{batchNo}
@@ -539,7 +539,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectSumQtyByMaterialAndWarehouse" resultType="java.math.BigDecimal">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select COALESCE(SUM(stk.qty), 0) from stk_inventory stk
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{scopedTenantId}

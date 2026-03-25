@@ -20,7 +20,7 @@
     </resultMap>
 
     <insert id="insertFdMaterialImport" parameterType="com.spd.foundation.domain.FdMaterialImport">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         INSERT INTO fd_material_import
         (
             id,

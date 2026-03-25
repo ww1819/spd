@@ -60,7 +60,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzPatientInfoList" parameterType="GzPatientInfo" resultMap="GzPatientInfoResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzPatientInfoVo"/>
         <where>
             p.del_flag = '0'
@@ -74,20 +74,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzPatientInfoById" parameterType="Long" resultMap="GzPatientInfoResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzPatientInfoVo"/>
         where p.id = #{id} and p.del_flag = '0' and p.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectGzPatientInfoByMedicalRecordNo" parameterType="String" resultMap="GzPatientInfoResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzPatientInfoVo"/>
         where p.medical_record_no = #{medicalRecordNo} and p.del_flag = '0' and p.tenant_id = #{scopedTenantId}
         limit 1
     </select>
 
     <insert id="insertGzPatientInfo" parameterType="GzPatientInfo" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into gz_patient_info
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="medicalRecordNo != null and medicalRecordNo != ''">medical_record_no,</if>
@@ -146,7 +146,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateGzPatientInfo" parameterType="GzPatientInfo">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_patient_info
         <trim prefix="SET" suffixOverrides=",">
             <if test="medicalRecordNo != null and medicalRecordNo != ''">medical_record_no = #{medicalRecordNo},</if>
@@ -175,12 +175,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzPatientInfoById" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_patient_info set del_flag = '2' where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzPatientInfoByIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_patient_info set del_flag = '2' where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

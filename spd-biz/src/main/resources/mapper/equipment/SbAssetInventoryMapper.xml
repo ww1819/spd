@@ -31,7 +31,7 @@
         select id, customer_id, order_no, create_by, create_time, status, audit_by, audit_time, inventory_type, inventory_dept_id, inventory_dept_name, inventory_category68_id, inventory_category68_code, storage_place, plan_date, finish_time, total_count, checked_count, remark, del_flag, del_by, del_time, update_by, update_time from sb_asset_inventory
     </sql>
     <select id="selectList" resultMap="Result">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
         <where>
             (del_flag = 0 or del_flag is null)
@@ -44,25 +44,25 @@
         order by create_time desc
     </select>
     <select id="selectById" resultMap="Result">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
     </select>
     <select id="selectByOrderNo" resultMap="Result">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/> where customer_id = #{scopedTenantId} and order_no = #{orderNo} and (del_flag = 0 or del_flag is null) limit 1
     </select>
     <select id="selectMaxOrderNoSeqToday" resultType="int">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select ifnull(max(cast(substring(order_no, length(#{datePrefix}) + 1) as unsigned)), 0) from sb_asset_inventory
         where customer_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null) and order_no like concat(#{datePrefix}, '%') and length(order_no) = length(#{datePrefix}) + 4
     </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbAssetInventory">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into sb_asset_inventory (id, customer_id, order_no, create_by, create_time, status, inventory_type, inventory_dept_id, inventory_dept_name, inventory_category68_id, inventory_category68_code, storage_place, plan_date, total_count, checked_count, remark, del_flag, update_by, update_time)
         values (#{id}, #{tenantId}, #{orderNo}, #{createBy}, #{createTime}, #{status}, #{inventoryType}, #{inventoryDeptId}, #{inventoryDeptName}, #{inventoryCategory68Id}, #{inventoryCategory68Code}, #{storagePlace}, #{planDate}, #{totalCount}, #{checkedCount}, #{remark}, 0, #{updateBy}, #{updateTime})
     </insert>
     <update id="update" parameterType="com.spd.equipment.domain.SbAssetInventory">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update sb_asset_inventory
         <set>
             <if test="status != null">status = #{status},</if>
@@ -85,7 +85,7 @@
         where id = #{id} and customer_id = #{scopedTenantId}
     </update>
     <update id="deleteById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update sb_asset_inventory set del_flag = 1, del_by = #{delBy}, del_time = now(), update_by = #{delBy}, update_time = now() where id = #{id} and customer_id = #{scopedTenantId}
     </update>
 </mapper>

@@ -25,7 +25,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentFileList" parameterType="EquipmentFile" resultMap="EquipmentFileResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentFileVo"/>
         <where>  
             and tenant_id = #{scopedTenantId}
@@ -38,13 +38,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentFileByFileId" parameterType="String" resultMap="EquipmentFileResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentFileVo"/>
         where file_id = #{fileId} and tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertEquipmentFile" parameterType="EquipmentFile">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_file
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="fileId != null">file_id,</if>
@@ -81,7 +81,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateEquipmentFile" parameterType="EquipmentFile">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_file
         <trim prefix="SET" suffixOverrides=",">
             <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
@@ -99,12 +99,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentFileByFileId" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_file set del_flag = 1, update_time = now() where file_id = #{fileId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentFileByFileIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_file set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and file_id in 
         <foreach item="fileId" collection="array" open="(" separator="," close=")">
             #{fileId}

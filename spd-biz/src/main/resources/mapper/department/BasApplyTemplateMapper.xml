@@ -80,7 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectBasApplyTemplateList" resultMap="BasApplyTemplateResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName
         from bas_apply_template t
@@ -94,7 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectBasApplyTemplateById" resultMap="BasApplyTemplateWithEntryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName,
                e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
@@ -118,7 +118,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertBasApplyTemplate" parameterType="com.spd.department.domain.BasApplyTemplate" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into bas_apply_template
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name,</if>
@@ -145,7 +145,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateBasApplyTemplate" parameterType="com.spd.department.domain.BasApplyTemplate">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update bas_apply_template
         <trim prefix="SET" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
@@ -160,18 +160,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="deleteBasApplyTemplateById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <!-- 逻辑删除：表有 delete_by、delete_time，使用更新代替物理删除 -->
     <update id="deleteEntryByParenId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update bas_apply_template_entry set delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (delete_time is null)
     </update>
 
     <insert id="batchInsertEntry">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order, tenant_id) values
         <foreach item="item" collection="list" separator=",">
             (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder}, #{tenantId})

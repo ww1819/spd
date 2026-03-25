@@ -91,7 +91,7 @@
     </sql>
 
     <select id="selectDeptFixedNumberList" parameterType="DeptFixedNumber" resultMap="DeptFixedNumberResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectDeptFixedNumberVo"/>
         and (f.tenant_id = #{scopedTenantId})
         <if test="departmentId != null">
@@ -117,7 +117,7 @@
     </insert>
 
     <update id="updateDeptFixedNumber" parameterType="DeptFixedNumber">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dept_fixed_number
         set
             upper_limit = #{upperLimit},
@@ -134,7 +134,7 @@
     </update>
 
     <update id="deleteDeptFixedNumberById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dept_fixed_number
         set del_flag = 1,
             delete_by = #{deleteBy},
@@ -144,7 +144,7 @@
     </update>
 
     <select id="selectByDepartmentAndMaterial" parameterType="map" resultMap="DeptFixedNumberResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectDeptFixedNumberVo"/>
         and f.tenant_id = #{scopedTenantId}
         and f.department_id = #{departmentId}

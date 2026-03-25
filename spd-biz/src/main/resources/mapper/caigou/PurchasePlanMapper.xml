@@ -134,7 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectPurchasePlanList" parameterType="PurchasePlan" resultMap="PurchasePlanResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectPurchasePlanVo"/>
         <where>
             and (pp.del_flag = '0' or pp.del_flag is null)
@@ -157,19 +157,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectPurchasePlanById" parameterType="Long" resultMap="PurchasePlanResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectPurchasePlanVo"/>
         where pp.id = #{id} and (pp.del_flag = '0' or pp.del_flag is null) and pp.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectPurchasePlanEntryByParentId" parameterType="Long" resultMap="PurchasePlanEntryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectPurchasePlanEntryVo"/>
         where ppe.parent_id = #{parentId} and (ppe.del_flag = '0' or ppe.del_flag is null) and ppe.tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertPurchasePlan" parameterType="PurchasePlan" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into purchase_plan
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">plan_no,</if>
@@ -218,7 +218,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="insertPurchasePlanEntry" parameterType="PurchasePlanEntry" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into purchase_plan_entry
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -269,7 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updatePurchasePlan" parameterType="PurchasePlan">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan
         <trim prefix="SET" suffixOverrides=",">
             <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
@@ -297,7 +297,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="updatePurchasePlanEntry" parameterType="PurchasePlanEntry">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -322,7 +322,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="auditPurchasePlan" parameterType="PurchasePlan">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan
         <trim prefix="SET" suffixOverrides=",">
             <if test="planStatus != null">plan_status = #{planStatus},</if>
@@ -336,12 +336,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deletePurchasePlanById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deletePurchasePlanByIds">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
@@ -349,12 +349,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deletePurchasePlanEntryByParentId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deletePurchasePlanEntryByParentIds">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
         <foreach item="parentId" collection="parentIds" open="(" separator="," close=")">
             #{parentId}
@@ -362,7 +362,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectMaxPlanNo" parameterType="String" resultType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(plan_no) from purchase_plan where plan_no like concat('JH', #{date}, '%') and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

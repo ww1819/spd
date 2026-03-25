@@ -127,7 +127,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectStkIoStocktakingList" parameterType="StkIoStocktaking" resultMap="StkIoStocktakingResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectStkIoStocktakingVo"/>
         where stk.del_flag != 1
         and (stk.tenant_id = #{scopedTenantId})
@@ -142,7 +142,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkIoStocktakingById" parameterType="Long" resultMap="StkIoStocktakingStkIoStocktakingEntryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
                 a.stock_type, a.del_flag, a.tenant_id, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
@@ -175,7 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertStkIoStocktaking" parameterType="StkIoStocktaking" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into stk_io_stocktaking
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="stockNo != null">stock_no,</if>
@@ -218,7 +218,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateStkIoStocktaking" parameterType="StkIoStocktaking">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking
         <trim prefix="SET" suffixOverrides=",">
             <if test="stockNo != null">stock_no = #{stockNo},</if>
@@ -243,12 +243,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteStkIoStocktakingById" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteStkIoStocktakingByIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
@@ -256,7 +256,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteStkIoStocktakingEntryByParenIds">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="ids" open="(" separator="," close=")">
             #{parenId}
@@ -264,12 +264,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteStkIoStocktakingEntryByParenId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <update id="updateStkIoStocktakingEntry" parameterType="StkIoStocktakingEntry">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking_entry
         set paren_id = #{parenId}, commodity_id = #{commodityId}, material_id = #{materialId}, unit_price = #{unitPrice},
             qty = #{qty}, price = #{price}, amt = #{amt}, batch_no = #{batchNo}, kc_no = #{kcNo}, batch_number = #{batchNumber},
@@ -286,7 +286,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="deleteStkIoStocktakingEntryByParenIdExceptIds">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking_entry set del_flag = 1 where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (del_flag is null or del_flag != 1)
         <if test="keepIds != null and keepIds.size() > 0">
             and id not in
@@ -303,13 +303,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(stock_no) from stk_io_stocktaking
         where stock_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="getMonthHandleDataList" resultMap="StkIoStocktakingResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select * from stk_io_stocktaking
         where stock_date &gt;= #{beginDate} and stock_date &lt;= #{endDate} and tenant_id = #{scopedTenantId}
     </select>

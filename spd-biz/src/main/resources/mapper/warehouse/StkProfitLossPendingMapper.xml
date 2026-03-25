@@ -36,7 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertStkProfitLossPending" parameterType="com.spd.warehouse.domain.StkProfitLossPending"
             useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into stk_profit_loss_pending
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="billId != null">bill_id,</if>
@@ -97,7 +97,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectStkProfitLossPendingById" resultMap="StkProfitLossPendingResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, bill_id, entry_id, warehouse_id, department_id, material_id, supplier_id,
                batch_no, batch_id, batch_number, qty, unit_price, amt, begin_time, end_time,
                main_barcode, sub_barcode, apply_status, settlement_effect_status, tenant_id,
@@ -110,7 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkProfitLossPendingList" parameterType="com.spd.warehouse.domain.StkProfitLossPending" resultMap="StkProfitLossPendingResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, bill_id, entry_id, warehouse_id, department_id, material_id, supplier_id,
                batch_no, batch_id, batch_number, qty, unit_price, amt, begin_time, end_time,
                main_barcode, sub_barcode, apply_status, settlement_effect_status, tenant_id,
@@ -132,7 +132,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <update id="updatePendingStatusById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_profit_loss_pending
         set apply_status = #{applyStatus},
             settlement_effect_status = #{settlementEffectStatus},

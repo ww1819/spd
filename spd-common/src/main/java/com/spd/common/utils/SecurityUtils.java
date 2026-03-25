@@ -48,9 +48,9 @@ public class SecurityUtils
     }
 
     /**
-     * 获取当前登录用户的租户 ID（SaaS 多租户，平台管理员可为 null）
-     **/
-    public static String getCustomerId()
+     * 获取当前登录态中的租户 ID（仅 LoginUser 快照值，不做任何兜底）
+     */
+    public static String getLoginCustomerId()
     {
         try
         {
@@ -64,6 +64,16 @@ public class SecurityUtils
     }
 
     /**
+     * 获取当前请求的有效租户 ID。
+     * 兼容历史调用方：优先登录态，其次 TenantContext，最后请求头 X-Tenant-Id。
+     * 说明：保留方法名不变，以覆盖历史 Mapper 中大量直接调用 getCustomerId() 的场景。
+     **/
+    public static String getCustomerId()
+    {
+        return resolveEffectiveTenantId(null);
+    }
+
+    /**
      * 写入租户字段时解析有效客户 ID：优先实体上已带有的 tenantId，其次登录用户 customerId，再次 {@link TenantContext}（请求线程内），
      * 最后读当前请求头 {@link #X_TENANT_ID_HEADER}（与前端工作台一致，避免仅依赖 Filter 写入 ThreadLocal 的时机差异）。
      * <p>说明：MyBatis 中 {@code #{tenantId}} 会与实体属性同名绑定冲突，应使用本方法结果写入独立变量名。</p>
@@ -74,7 +84,7 @@ public class SecurityUtils
         {
             return entityTenantId.trim();
         }
-        String c = getCustomerId();
+        String c = getLoginCustomerId();
         if (StringUtils.isNotEmpty(c))
         {
             return c;
@@ -112,6 +122,20 @@ public class SecurityUtils
     public static String scopedTenantIdForSql()
     {
         return resolveEffectiveTenantId(null);
+    }
+
+    /**
+     * 严格模式：要求当前请求必须能解析到租户，否则抛出业务异常。
+     * 可用于需要强租户隔离的 SQL 绑定点逐步替换。
+     */
+    public static String requiredScopedTenantIdForSql()
+    {
+        String tenantId = resolveEffectiveTenantId(null);
+        if (StringUtils.isEmpty(tenantId))
+        {
+            throw new ServiceException("无法解析当前租户，请重新登录后重试");
+        }
+        return tenantId;
     }
 
     /**

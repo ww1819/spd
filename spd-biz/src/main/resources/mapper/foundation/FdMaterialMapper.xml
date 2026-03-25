@@ -134,7 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialVo"/>
         where m.del_flag != 1
         and m.tenant_id = #{scopedTenantId}
@@ -160,7 +160,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialVo"/>
         where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
@@ -173,12 +173,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
     <select id="selectFdMaterialByCode" parameterType="String" resultMap="FdMaterialResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialVo"/>
         where m.code = #{code} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
     <select id="selectFdMaterialByHisId" parameterType="String" resultMap="FdMaterialResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialVo"/>
         where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId} limit 1
     </select>
@@ -196,12 +196,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     <!-- 根据主条码(udi_no)或耗材编码查询产品档案，用于入库扫码带出产品 -->
     <select id="selectFdMaterialByMainBarcode" parameterType="String" resultMap="FdMaterialResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialVo"/>
         where (m.udi_no = #{mainBarcode} or m.code = #{mainBarcode}) and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId} limit 1
     </select>
     <insert id="insertFdMaterial" parameterType="FdMaterial" useGeneratedKeys="true" keyProperty="id">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         insert into fd_material
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -319,7 +319,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdMaterial" parameterType="FdMaterial">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : (tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId())" />
         update fd_material
         <trim prefix="SET" suffixOverrides=",">
@@ -383,13 +383,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdMaterialById">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdMaterialByIds">
-        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
         update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">

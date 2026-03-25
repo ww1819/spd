@@ -24,7 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentCategoryList" parameterType="EquipmentCategory" resultMap="EquipmentCategoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentCategoryVo"/>
         where del_flag != 1
         and tenant_id = #{scopedTenantId}
@@ -36,20 +36,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectEquipmentCategoryTree" resultMap="EquipmentCategoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentCategoryVo"/>
         where del_flag != 1 and status = '0' and tenant_id = #{scopedTenantId}
         order by parent_id, order_num, category_id
     </select>
 
     <select id="selectEquipmentCategoryByCategoryId" parameterType="Long" resultMap="EquipmentCategoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentCategoryVo"/>
         where category_id = #{categoryId} and tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertEquipmentCategory" parameterType="EquipmentCategory" useGeneratedKeys="true" keyProperty="categoryId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_equipment_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -82,7 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateEquipmentCategory" parameterType="EquipmentCategory">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_equipment_category
         <trim prefix="SET" suffixOverrides=",">
             <if test="parentId != null">parent_id = #{parentId},</if>
@@ -101,12 +101,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentCategoryByCategoryId" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_equipment_category set del_flag = 1, update_time = now() where category_id = #{categoryId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentCategoryByCategoryIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_equipment_category set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and category_id in 
         <foreach item="categoryId" collection="array" open="(" separator="," close=")">
             #{categoryId}

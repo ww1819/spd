@@ -70,7 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzShipmentList" parameterType="GzShipment" resultMap="GzShipmentResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
 				gs.create_time, gs.update_by, gs.update_time, gs.remark,
@@ -98,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzShipmentById" parameterType="Long" resultMap="GzShipmentGzShipmentEntryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.shipment_no, a.department_id, a.shipment_date, a.warehouse_id, 
 				a.shipment_status, a.shipment_type, a.del_flag,
                 a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
@@ -112,7 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertGzShipment" parameterType="GzShipment" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into gz_shipment
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="shipmentNo != null">shipment_no,</if>
@@ -149,7 +149,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateGzShipment" parameterType="GzShipment">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_shipment
         <trim prefix="SET" suffixOverrides=",">
             <if test="shipmentNo != null">shipment_no = #{shipmentNo},</if>
@@ -171,12 +171,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzShipmentById" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_shipment set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzShipmentEntryByParenId" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_shipment_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
@@ -188,7 +188,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(shipment_no) from gz_shipment
         where shipment_no like concat(#{prefix},'%')
         and shipment_no like concat('%',#{date},'%')
@@ -196,7 +196,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <update id="updateGzShipmentEntry" parameterType="GzShipmentEntry">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_shipment_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>

@@ -56,14 +56,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentStorageDetailList" parameterType="Long" resultMap="EquipmentStorageDetailResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentStorageDetailVo"/>
         where storage_id = #{storageId} and tenant_id = #{scopedTenantId}
         order by detail_id
     </select>
         
     <insert id="insertEquipmentStorageDetail" parameterType="EquipmentStorageDetail" useGeneratedKeys="true" keyProperty="detailId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_storage_detail
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="detailId != null">detail_id,</if>
@@ -169,12 +169,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <delete id="deleteEquipmentStorageDetailByStorageId" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_storage_detail set del_flag = 1, update_time = now() where storage_id = #{storageId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentStorageDetailByStorageIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_storage_detail set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and storage_id in 
         <foreach item="storageId" collection="array" open="(" separator="," close=")">
             #{storageId}

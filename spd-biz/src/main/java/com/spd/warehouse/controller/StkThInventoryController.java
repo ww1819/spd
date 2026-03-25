@@ -114,7 +114,8 @@ public class StkThInventoryController extends BaseController {
         util.exportExcel(response, list, "退货数据");
     }
 
-    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:createThEntriesByRkApply')")
+    /** 引用入库单生成退货明细：与新增退货同一权限，避免未单独配置按钮权限时 403 */
+    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:add')")
     @GetMapping("/createThEntriesByRkApply")
     public AjaxResult createThEntriesByRkApply(@RequestParam String rkApplyId) {
         if (rkApplyId == null) {
@@ -124,7 +125,7 @@ public class StkThInventoryController extends BaseController {
         return success(stkIoBill1);
     }
 
-    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:createThEntriesByTkApply')")
+    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:add')")
     @GetMapping("/createThEntriesByTkApply")
     public AjaxResult createThEntriesByTkApply(@RequestParam String tkApplyId) {
         if (tkApplyId == null) {

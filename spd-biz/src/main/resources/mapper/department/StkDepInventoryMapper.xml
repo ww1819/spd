@@ -146,7 +146,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkDepInventoryById" parameterType="Long" resultMap="StkDepInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectStkDepInventoryVo"/>
         where stk.id = #{id}
           and stk.tenant_id = #{scopedTenantId}
@@ -163,7 +163,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertStkDepInventory" parameterType="StkDepInventory" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into stk_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
@@ -234,7 +234,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateStkDepInventory" parameterType="StkDepInventory">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialId != null">material_id = #{materialId},</if>
@@ -274,7 +274,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteStkDepInventoryById" parameterType="map">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
@@ -283,7 +283,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteStkDepInventoryByIds" parameterType="map">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
@@ -296,7 +296,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 退库用：只查已收货确认的科室库存 -->
     <select id="selectStkDepInventoryOne" parameterType="map" resultMap="StkDepInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select * from stk_dep_inventory
         where batch_no = #{batchNo}
           and warehouse_id = #{warehouseId}
@@ -309,7 +309,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 退库校验可用数量：只统计已收货确认的科室库存 -->
     <select id="selectTKStkInvntoryByBatchNo" parameterType="map" resultType="java.math.BigDecimal">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from stk_dep_inventory
         where batch_no = #{batchNo}
           and warehouse_id = #{warehouseId}
@@ -346,7 +346,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 科室进销存明细查询 -->
     <select id="selectDepartmentInOutDetailList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentInOutDetailVo">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select 
             bill.id,
             bill.bill_no as billNo,

@@ -61,13 +61,13 @@
     </sql>
 
     <select id="selectById" resultMap="SuppSettlementBillResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectSuppSettlementBillVo"/>
         where s.id = #{id} and (s.del_flag = 0 or s.del_flag is null) and s.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectList" resultMap="SuppSettlementBillResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectSuppSettlementBillVo"/>
         <where>
             (s.del_flag = 0 or s.del_flag is null)
@@ -88,7 +88,7 @@
     </insert>
 
     <update id="update" parameterType="com.spd.finance.domain.SuppSettlementBill">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update supp_settlement_bill
         <set>
             <if test="remark != null">remark = #{remark},</if>
@@ -115,20 +115,20 @@
     </insert>
 
     <select id="selectEntriesByParenId" resultMap="SuppSettlementBillEntryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, tenant_id, paren_id, bill_no, wh_settlement_id, wh_settlement_bill_no, wh_settlement_entry_id, material_id, material_name, speci, model, unit, unit_price, qty, amt,
                batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_time, sort_order
         from supp_settlement_bill_entry where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null) order by sort_order, id
     </select>
 
     <update id="updateAuditStatus">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update supp_settlement_bill set audit_status = 1, audit_by = #{auditBy}, audit_time = #{auditTime}, update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId} and (audit_status = 0 or audit_status is null)
     </update>
 
     <select id="selectMaxBillNo" resultType="string">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from supp_settlement_bill where bill_no like concat(#{prefix}, '%') and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

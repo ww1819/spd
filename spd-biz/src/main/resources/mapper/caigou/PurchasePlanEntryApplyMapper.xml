@@ -30,14 +30,14 @@
     </insert>
 
     <update id="logicDeleteByPurchasePlanEntryId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_apply
         set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now()
         where purchase_plan_entry_id = #{purchasePlanEntryId} and tenant_id = #{scopedTenantId} and (del_flag = '0' or del_flag is null)
     </update>
 
     <update id="logicDeleteByPlanId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
         set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
@@ -45,7 +45,7 @@
     </update>
 
     <select id="selectApplyDetailsByEntryId" resultType="com.spd.caigou.domain.vo.ApplyDetailVO">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.apply_bill_no as applyBillNo,
                d.name as departmentName,
                e.qty as qty,
@@ -64,7 +64,7 @@
     </select>
 
     <select id="selectBillNoListByPlanId" resultType="java.lang.String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select distinct a.apply_bill_no
         from purchase_plan_entry_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}

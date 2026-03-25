@@ -334,10 +334,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
     public List<StkInitialImport> list(StkInitialImport query) {
         if (query != null && StringUtils.isEmpty(query.getTenantId())) {
             // 与 Mapper 中 scopedTenantIdForSql 一致：用户 customerId → TenantContext → 请求头 X-Tenant-Id
-            String tid = SecurityUtils.resolveEffectiveTenantId(null);
-            if (StringUtils.isNotEmpty(tid)) {
-                query.setTenantId(tid);
-            }
+            query.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         return stkInitialImportMapper.selectList(query);
     }
@@ -591,13 +588,11 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         if (wh == null) {
             return;
         }
-        String ctx = SecurityUtils.resolveEffectiveTenantId(null);
-        if (StringUtils.isEmpty(ctx)) {
-            return;
-        }
+        // 严格模式：无法解析到租户时直接失败，避免后续逻辑在 tenantId 为空情况下继续跑
+        String ctx = SecurityUtils.requiredScopedTenantIdForSql();
         String wt = wh.getTenantId();
         if (StringUtils.isEmpty(wt)) {
-            return;
+            throw new ServiceException("无法解析该仓库所属租户，期初导入失败");
         }
         if (!ctx.trim().equals(wt.trim())) {
             throw new ServiceException("无权操作该仓库（非本租户仓库）");
@@ -609,7 +604,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         if (wh != null && StringUtils.isNotEmpty(wh.getTenantId())) {
             return wh.getTenantId();
         }
-        return SecurityUtils.resolveEffectiveTenantId(null);
+        return SecurityUtils.requiredScopedTenantIdForSql();
     }
 
     /**
@@ -617,11 +612,13 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
      */
     private String resolveTenantIdForInitialStock(StkInitialImport main) {
         if (main == null) {
-            return SecurityUtils.resolveEffectiveTenantId(null);
+            return SecurityUtils.requiredScopedTenantIdForSql();
         }
         if (StringUtils.isNotEmpty(main.getTenantId())) {
             return main.getTenantId().trim();
         }
+        // main 没带 tenant，则直接按当前请求上下文解析（缺失则抛异常）
+        // （避免 tenant 为空导致 stk_inventory 按 tenant 查不到）
         if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             return SecurityUtils.getCustomerId();
         }
@@ -631,7 +628,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 return wh.getTenantId();
             }
         }
-        return SecurityUtils.resolveEffectiveTenantId(null);
+        return SecurityUtils.requiredScopedTenantIdForSql();
     }
 
     /** 预览：用于按租户校验 HIS 生产厂家/供应商 id */
@@ -650,7 +647,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 return list.get(0).getTenantId();
             }
         }
-        return SecurityUtils.resolveEffectiveTenantId(null);
+        return SecurityUtils.requiredScopedTenantIdForSql();
     }
 
     private boolean factoryExistsByHisId(String tenantId, String hisId) {

@@ -162,13 +162,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzDepotInventoryById" parameterType="Long" resultMap="GzDepotInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepotInventoryVo"/>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepotInventory" parameterType="GzDepotInventory" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into gz_depot_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="qty != null">qty,</if>
@@ -205,7 +205,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateGzDepotInventory" parameterType="GzDepotInventory">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_depot_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="qty != null">qty = #{qty},</if>
@@ -227,12 +227,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzDepotInventoryById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzDepotInventoryByIds">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
@@ -240,18 +240,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectGzDepotInventoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_depot_inventory
         where batch_no = #{batchNo} and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectGzDepotInventoryOne" parameterType="java.lang.String" resultMap="GzDepotInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select * from gz_depot_inventory where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} order by id desc limit 1
     </select>
 
     <select id="selectGzDepotInventoryByBatchNoAndWarehouse" resultType="java.math.BigDecimal">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_depot_inventory
         where batch_no = #{batchNo} and warehouse_id = #{warehouseId} and qty > 0 and tenant_id = #{scopedTenantId}
     </select>

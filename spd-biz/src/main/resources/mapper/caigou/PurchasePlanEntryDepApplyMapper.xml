@@ -12,7 +12,7 @@
 
     <!-- 根据关联的明细从主表回填申购单主表id和申购单号；并回填采购计划主表id和单号 -->
     <update id="updateFillApplyInfo">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_dep_apply r
         inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and e.tenant_id = #{scopedTenantId}
         inner join dep_purchase_apply a on e.parent_id = a.id and a.tenant_id = #{scopedTenantId}
@@ -24,7 +24,7 @@
     </update>
 
     <update id="logicDeleteByPlanId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_dep_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
         set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
@@ -32,7 +32,7 @@
     </update>
 
     <select id="selectApplyDetailsByEntryId" resultType="com.spd.caigou.domain.vo.ApplyDetailVO">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select dpa.purchase_bill_no as applyBillNo,
                d.name as departmentName,
                e.qty as qty,
@@ -51,7 +51,7 @@
     </select>
 
     <select id="selectBillNoListByPlanId" resultType="java.lang.String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select distinct coalesce(nullif(trim(r.purchase_bill_no), ''), dpa.purchase_bill_no) as purchase_bill_no
         from purchase_plan_entry_dep_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
@@ -64,7 +64,7 @@
 
     <!-- 根据采购计划ID查询关联的申购单表头列表（科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间） -->
     <select id="selectApplyBillHeaderListByPlanId" resultType="com.spd.caigou.domain.vo.ApplyBillHeaderVO">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select distinct dpa.purchase_bill_no as applyBillNo,
                w.name as warehouseName,
                coalesce(cu.nick_name, cu.user_name) as createByName,
@@ -86,7 +86,7 @@
     </select>
 
     <select id="selectEntryBillNosByPlanId" resultType="com.spd.caigou.domain.vo.EntryBillNoVO">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select r.purchase_plan_entry_id as entryId, r.purchase_bill_no as purchaseBillNo
         from purchase_plan_entry_dep_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
@@ -95,7 +95,7 @@
     </select>
 
     <select id="selectDepApplyEntryIdsByEntryId" resultType="java.lang.Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select r.dep_purchase_apply_entry_id
         from purchase_plan_entry_dep_apply r
         where r.purchase_plan_entry_id = #{entryId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)

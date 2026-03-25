@@ -4,7 +4,7 @@
 
 - **数据库** `sys_user.customer_id` 可能晚于登录被补全；
 - **Redis** 中的 `LoginUser` 是**登录时快照**，不会自动随库更新；
-- **请求头** `X-Tenant-Id` 由前端工作台传递，与 `getCustomerId()`（读缓存里的用户）不是同一条链路。
+- **请求头** `X-Tenant-Id` 由前端工作台传递，历史代码中若直接用 `getCustomerId()`（旧逻辑只读缓存用户）会出现链路不一致。
 
 因此会出现「库里有租户、Header 也有，但 `getCustomerId()` 仍为空」的现象。
 
@@ -22,7 +22,8 @@
 
 统一按顺序取有效租户（实体字段 → 登录用户 `customerId` → `TenantContext` → 请求头 `X-Tenant-Id`）。
 
-业务 SQL 的 `<bind>` 应使用 **`SecurityUtils.scopedTenantIdForSql()`**，避免在 XML 中写 `resolveEffectiveTenantId(null)` 的 OGNL `null` 兼容问题。
+业务 SQL 的 `<bind>` 应使用 **`SecurityUtils.scopedTenantIdForSql()`**，避免在 XML 中写 `resolveEffectiveTenantId(null)` 的 OGNL `null` 兼容问题。  
+同时，`getCustomerId()` 已升级为“有效租户解析”语义（登录态 → TenantContext → Header），用于兼容历史 Mapper。
 
 ### 3. 租户线程上下文：`TenantContextFilter`
 

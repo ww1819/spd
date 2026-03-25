@@ -68,7 +68,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdWarehouseList" parameterType="FdWarehouse" resultMap="FdWarehouseResult">
-        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdWarehouseVo"/>
         where del_flag != 1
         and <include refid="fdWarehouseTenantMatch"/>
@@ -83,7 +83,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">
-        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select w.id,w.code,w.name
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
@@ -94,7 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdWarehouseVo"/>
         where id = #{id} and (del_flag = 0 or del_flag is null) and <include refid="fdWarehouseTenantMatch"/>
     </select>
@@ -106,13 +106,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectwarehouseAll" resultMap="FdWarehouseResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdWarehouseVo"/>
         where del_flag != 1 and <include refid="fdWarehouseTenantMatch"/>
     </select>
 
     <select id="selectWarehouseListByUserId" parameterType="Long" resultType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select w.id
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
@@ -122,7 +122,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 
     <insert id="insertFdWarehouse" parameterType="FdWarehouse" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-        <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_warehouse
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -159,7 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateFdWarehouse" parameterType="FdWarehouse">
-        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_warehouse
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -180,12 +180,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteFdWarehouseById" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_warehouse set del_flag = 1, update_time = now() where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </delete>
 
     <delete id="deleteFdWarehouseByIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_warehouse set del_flag = 1, update_time = now() where <include refid="fdWarehouseTenantMatch"/> and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
@@ -210,7 +210,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectWarehouseIsExist" parameterType="Long" resultType="int">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@resolveEffectiveTenantId(null)" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select count(*) from stk_io_bill
         where del_flag !=1
         and warehouse_id = #{id}

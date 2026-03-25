@@ -51,7 +51,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentPurchaseApplicationList" parameterType="EquipmentPurchaseApplication" resultMap="EquipmentPurchaseApplicationResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentPurchaseApplicationVo"/>
         <where>  
             <if test="applicationNo != null  and applicationNo != ''"> and application_no like concat('%', #{applicationNo}, '%')</if>
@@ -84,13 +84,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentPurchaseApplicationById" parameterType="String" resultMap="EquipmentPurchaseApplicationResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentPurchaseApplicationVo"/>
         where id = #{id} and tenant_id = #{scopedTenantId} and del_flag = '0'
     </select>
         
     <insert id="insertEquipmentPurchaseApplication" parameterType="EquipmentPurchaseApplication" useGeneratedKeys="false">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_purchase_application
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -179,7 +179,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateEquipmentPurchaseApplication" parameterType="EquipmentPurchaseApplication">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_purchase_application
         <trim prefix="SET" suffixOverrides=",">
             <if test="applicationNo != null">application_no = #{applicationNo},</if>
@@ -225,12 +225,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentPurchaseApplicationById" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_purchase_application set del_flag = '2' where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentPurchaseApplicationByIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_purchase_application set del_flag = '2' where tenant_id = #{scopedTenantId} and id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

@@ -39,13 +39,13 @@
     </sql>
 
     <select id="selectById" resultMap="StkInitialImportResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
         where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectList" resultMap="StkInitialImportResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
         <where>
             (m.del_flag = 0 or m.del_flag is null)
@@ -89,7 +89,7 @@
 
     <!-- 逻辑删除：设置 del_flag=1, delete_by, delete_time -->
     <update id="logicalDeleteById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_initial_import set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

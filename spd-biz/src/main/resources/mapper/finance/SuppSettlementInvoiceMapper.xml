@@ -18,13 +18,13 @@
     </insert>
 
     <update id="logicalDeleteBySuppSettlementAndInvoice">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update supp_settlement_invoice set delete_by = #{deleteBy}, delete_time = now()
         where supp_settlement_id = #{suppSettlementId} and invoice_id = #{invoiceId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '')
     </update>
 
     <select id="selectBySuppSettlementId" resultMap="SuppSettlementInvoiceResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_time
         from supp_settlement_invoice where supp_settlement_id = #{suppSettlementId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '') order by create_time
     </select>

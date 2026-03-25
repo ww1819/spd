@@ -35,7 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
             <select id="selectDepartmentInventoryList" parameterType="com.spd.warehouse.domain.DepartmentInventoryQuery" resultMap="DepartmentInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         SELECT
             A.KS_NO AS KS_NO,
             B.CODE AS KS_CODE,

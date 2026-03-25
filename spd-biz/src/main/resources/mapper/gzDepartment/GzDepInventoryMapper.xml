@@ -101,7 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzDepInventoryList" parameterType="GzDepInventory" resultMap="GzDepInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepInventoryVo"/>
         where 1=1
         and gz.tenant_id = #{scopedTenantId}
@@ -125,13 +125,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzDepInventoryById" parameterType="Long" resultMap="GzDepInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepInventoryVo"/>
         where gz.id = #{id} and gz.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into gz_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
@@ -162,7 +162,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateGzDepInventory" parameterType="GzDepInventory">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_dep_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialId != null">material_id = #{materialId},</if>
@@ -179,12 +179,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteGzDepInventoryById" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_dep_inventory set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzDepInventoryByIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_dep_inventory set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
@@ -192,18 +192,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectGzDepInventoryOne" parameterType="java.lang.String" resultMap="GzDepInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select * from gz_dep_inventory where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} order by id desc limit 1
     </select>
 
     <select id="selectTKDepInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_dep_inventory
         where batch_no = #{batchNo} and tenant_id = #{scopedTenantId}
     </select>
     
     <select id="selectGzDepInventoryByCodeAndDept" resultMap="GzDepInventoryResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepInventoryVo"/>
         where gz.in_hospital_code = #{inHospitalCode}
         and gz.department_id = #{departmentId}

@@ -91,7 +91,7 @@
     </sql>
 
     <select id="selectWhFixedNumberList" parameterType="WhFixedNumber" resultMap="WhFixedNumberResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectWhFixedNumberVo"/>
         and (f.tenant_id = #{scopedTenantId})
         <if test="warehouseId != null">
@@ -132,7 +132,7 @@
     </insert>
 
     <update id="updateWhFixedNumber" parameterType="WhFixedNumber">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update wh_fixed_number
         set
             upper_limit = #{upperLimit},
@@ -149,7 +149,7 @@
     </update>
 
     <update id="deleteWhFixedNumberById">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update wh_fixed_number
         set del_flag = 1,
             delete_by = #{deleteBy},
@@ -159,7 +159,7 @@
     </update>
 
     <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectWhFixedNumberVo"/>
         and f.tenant_id = #{scopedTenantId}
         and f.warehouse_id = #{warehouseId}

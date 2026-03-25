@@ -14,13 +14,13 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdFactoryChangeLog">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         INSERT INTO fd_factory_change_log (id, factory_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id)
         VALUES (#{id}, #{factoryId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{tenantId})
     </insert>
 
     <select id="selectByFactoryId" resultMap="FdFactoryChangeLogResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         SELECT id, factory_id, change_time, operator, field_name, field_label, old_value, new_value
         FROM fd_factory_change_log
         WHERE factory_id = #{factoryId} and tenant_id = #{scopedTenantId}

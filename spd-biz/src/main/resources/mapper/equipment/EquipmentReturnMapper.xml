@@ -39,7 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentReturnList" parameterType="EquipmentReturn" resultMap="EquipmentReturnResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentReturnVo"/>
         <where>  
             and r.tenant_id = #{scopedTenantId}
@@ -67,13 +67,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentReturnById" parameterType="Long" resultMap="EquipmentReturnResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentReturnVo"/>
         where r.return_id = #{returnId} and r.tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertEquipmentReturn" parameterType="EquipmentReturn" useGeneratedKeys="true" keyProperty="returnId">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_return
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="returnId != null">return_id,</if>
@@ -110,7 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="updateEquipmentReturn" parameterType="EquipmentReturn">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_return
         <trim prefix="SET" suffixOverrides=",">
             <if test="returnNo != null">return_no = #{returnNo},</if>
@@ -128,12 +128,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteEquipmentReturnById" parameterType="Long">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_return set del_flag = 1, update_time = now() where return_id = #{returnId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentReturnByIds" parameterType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_return set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and return_id in 
         <foreach item="returnId" collection="array" open="(" separator="," close=")">
             #{returnId}
@@ -141,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <update id="auditEquipmentReturn" parameterType="EquipmentReturn">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_return
         <trim prefix="SET" suffixOverrides=",">
             <if test="returnStatus != null">return_status = #{returnStatus},</if>

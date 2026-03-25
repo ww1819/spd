@@ -96,7 +96,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectByBatchNo" resultMap="StkBatchResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@scopedTenantIdForSql()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, batch_no, material_id, material_code, material_name, speci, model,
                unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
                sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
@@ -114,7 +114,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkBatchById" resultMap="StkBatchResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, batch_no, material_id, material_code, material_name, speci, model,
                unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
                sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
@@ -131,7 +131,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectStkBatchList" parameterType="com.spd.warehouse.domain.StkBatch" resultMap="StkBatchResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@getCustomerId()" />
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, batch_no, material_id, material_code, material_name, speci, model,
                unit_id, unit_name, unit_price, batch_number, end_time, begin_time,
                sterilize_batch_no, sterilize_end_time, use_times, main_barcode, sub_barcode,
