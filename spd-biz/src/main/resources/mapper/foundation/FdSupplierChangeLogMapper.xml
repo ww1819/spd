@@ -11,6 +11,7 @@
         <result property="fieldLabel" column="field_label"/>
         <result property="oldValue" column="old_value"/>
         <result property="newValue" column="new_value"/>
+        <result property="tenantId" column="tenant_id"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdSupplierChangeLog">
@@ -21,7 +22,7 @@
 
     <select id="selectBySupplierId" resultMap="FdSupplierChangeLogResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT id, supplier_id, change_time, operator, field_name, field_label, old_value, new_value
+        SELECT id, supplier_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id
         FROM fd_supplier_change_log
         WHERE supplier_id = #{supplierId} and tenant_id = #{scopedTenantId}
         ORDER BY change_time DESC

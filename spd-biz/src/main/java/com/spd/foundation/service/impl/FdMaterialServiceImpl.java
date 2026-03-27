@@ -528,6 +528,23 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return list;
     }
 
+    @Override
+    public List<Map<String, Object>> listInboundSuppliers(Long materialId) {
+        if (materialId == null) {
+            return new ArrayList<>();
+        }
+        return stkIoBillMapper.selectMaterialInboundSuppliers(materialId);
+    }
+
+    @Override
+    public List<Map<String, Object>> listInboundRecords(Long materialId, Long supplierId, String orderMode) {
+        if (materialId == null) {
+            return new ArrayList<>();
+        }
+        String mode = StringUtils.isNotEmpty(orderMode) ? orderMode.trim() : "AUDIT_DESC";
+        return stkIoBillMapper.selectMaterialInboundRecords(materialId, supplierId, mode);
+    }
+
     /**
      * 比较新旧档案，将变更写入 fd_material_change_log
      */

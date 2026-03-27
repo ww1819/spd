@@ -242,7 +242,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     // 优先使用 unitPrice，如果为空则使用 price
                     BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
                     stkDepInventory.setUnitPrice(unitPrice);
-                    stkDepInventory.setAmt(entry.getAmt());
+                    stkDepInventory.setAmt(unitPrice != null ? entry.getQty().multiply(unitPrice) : BigDecimal.ZERO);
                     stkDepInventory.setMaterialDate(new Date());
                     stkDepInventory.setWarehouseDate(new Date());
                     stkDepInventory.setMaterialNo(entry.getBatchNumber());

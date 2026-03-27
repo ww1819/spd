@@ -1,5 +1,6 @@
 package com.spd.department.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.spd.common.utils.SecurityUtils;
@@ -91,6 +92,14 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     @Override
     public int updateStkDepInventory(StkDepInventory stkDepInventory)
     {
+        if (stkDepInventory == null) {
+            return 0;
+        }
+        if (stkDepInventory.getQty() != null && stkDepInventory.getUnitPrice() != null) {
+            stkDepInventory.setAmt(stkDepInventory.getQty().multiply(stkDepInventory.getUnitPrice()));
+        } else if (stkDepInventory.getQty() != null && stkDepInventory.getAmt() == null) {
+            stkDepInventory.setAmt(BigDecimal.ZERO);
+        }
         if (StringUtils.isEmpty(stkDepInventory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
         }

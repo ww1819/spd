@@ -36,9 +36,11 @@ CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
   `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   KEY `idx_fd_dept_log_dept` (`department_id`),
-  KEY `idx_fd_dept_log_time` (`change_time`)
+  KEY `idx_fd_dept_log_time` (`change_time`),
+  KEY `idx_fd_dept_log_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
 /
 
@@ -93,9 +95,11 @@ CREATE TABLE IF NOT EXISTS `fd_supplier_change_log` (
   `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   KEY `idx_fd_supplier_log_supp` (`supplier_id`),
-  KEY `idx_fd_supplier_log_time` (`change_time`)
+  KEY `idx_fd_supplier_log_time` (`change_time`),
+  KEY `idx_fd_supplier_log_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商档案变更记录';
 /
 
@@ -133,9 +137,11 @@ CREATE TABLE IF NOT EXISTS `fd_factory_change_log` (
   `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   KEY `idx_fd_factory_log_fid` (`factory_id`),
-  KEY `idx_fd_factory_log_time` (`change_time`)
+  KEY `idx_fd_factory_log_time` (`change_time`),
+  KEY `idx_fd_factory_log_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生产厂家档案变更记录';
 /
 
@@ -413,9 +419,11 @@ CREATE TABLE IF NOT EXISTS `fd_material_status_log` (
   `action_time` datetime NOT NULL COMMENT '启用/停用时间',
   `operator` varchar(64) NOT NULL COMMENT '操作人',
   `reason` varchar(512) DEFAULT NULL COMMENT '启用/停用原因',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   KEY `idx_material_id` (`material_id`),
-  KEY `idx_action_time` (`action_time`)
+  KEY `idx_action_time` (`action_time`),
+  KEY `idx_fd_material_status_log_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材档案启用停用记录表';
 /
 
@@ -429,9 +437,11 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
   `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
   KEY `idx_material_id` (`material_id`),
-  KEY `idx_change_time` (`change_time`)
+  KEY `idx_change_time` (`change_time`),
+  KEY `idx_fd_material_change_log_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='产品档案变更记录表';
 /
 

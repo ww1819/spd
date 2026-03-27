@@ -9,17 +9,18 @@
         <result property="actionTime"  column="action_time"/>
         <result property="operator"   column="operator"/>
         <result property="reason"     column="reason"/>
+        <result property="tenantId"   column="tenant_id"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdMaterialStatusLog">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         INSERT INTO fd_material_status_log (id, material_id, action, action_time, operator, reason, tenant_id)
-        VALUES (#{id}, #{materialId}, #{action}, #{actionTime}, #{operator}, #{reason}, #{tenantId})
+        VALUES (#{id}, #{materialId}, #{action}, #{actionTime}, #{operator}, #{reason}, #{scopedTenantId})
     </insert>
 
     <select id="selectByMaterialId" resultMap="FdMaterialStatusLogResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT id, material_id, action, action_time, operator, reason
+        SELECT id, material_id, action, action_time, operator, reason, tenant_id
         FROM fd_material_status_log
         WHERE material_id = #{materialId} and tenant_id = #{scopedTenantId}
         ORDER BY action_time DESC

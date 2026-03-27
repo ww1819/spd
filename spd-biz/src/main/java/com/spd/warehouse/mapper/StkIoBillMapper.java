@@ -275,4 +275,16 @@ public interface StkIoBillMapper
      * @return
      */
     List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill);
+
+    /**
+     * 查询产品档案入库供应商列表（仅已审核入库单 bill_type=101）
+     */
+    List<Map<String, Object>> selectMaterialInboundSuppliers(@Param("materialId") Long materialId);
+
+    /**
+     * 查询产品档案入库记录（仅已审核入库单 bill_type=101）
+     */
+    List<Map<String, Object>> selectMaterialInboundRecords(@Param("materialId") Long materialId,
+                                                           @Param("supplierId") Long supplierId,
+                                                           @Param("orderMode") String orderMode);
 }

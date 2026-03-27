@@ -558,7 +558,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     // 优先使用 unitPrice，如果为空则使用 price
                     BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
                     stkInventory.setUnitPrice(unitPrice);
-                    stkInventory.setAmt(entry.getAmt());
+                    BigDecimal rkAmt = unitPrice != null ? entry.getQty().multiply(unitPrice) : BigDecimal.ZERO;
+                    stkInventory.setAmt(rkAmt);
                     stkInventory.setMaterialDate(new Date());
                     stkInventory.setWarehouseDate(new Date());
                     stkInventory.setSupplierId(lineSupplerId);
@@ -588,7 +589,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     rkFlow.setBatchNumber(entry.getBatchNumber());
                     rkFlow.setQty(entry.getQty());
                     rkFlow.setUnitPrice(stkInventory.getUnitPrice());
-                    rkFlow.setAmt(entry.getAmt());
+                    rkFlow.setAmt(rkAmt);
                     rkFlow.setBeginTime(entry.getBeginTime());
                     rkFlow.setEndTime(entry.getEndTime());
                     rkFlow.setMainBarcode(entry.getMainBarcode());
@@ -685,8 +686,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkDepInventory.setMaterialNo(inventory.getMaterialNo());
                     stkDepInventory.setDepartmentId(stkIoBill.getDepartmentId());
                     stkDepInventory.setQty(entry.getQty());
-                    stkDepInventory.setUnitPrice(entry.getUnitPrice());
-                    stkDepInventory.setAmt(entry.getAmt());
+                    BigDecimal depUnitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : inventory.getUnitPrice();
+                    stkDepInventory.setUnitPrice(depUnitPrice);
+                    stkDepInventory.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : BigDecimal.ZERO);
                     stkDepInventory.setBatchNo(entry.getBatchNo());
                     stkDepInventory.setBatchId(inventory.getBatchId());
                     stkDepInventory.setMaterialDate(inventory.getMaterialDate());
@@ -1025,7 +1027,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inInventory.setQty(qty);
                         BigDecimal inUnitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
                         inInventory.setUnitPrice(inUnitPrice);
-                        inInventory.setAmt(entry.getAmt());
+                        BigDecimal zrAmt = inUnitPrice != null ? qty.multiply(inUnitPrice) : BigDecimal.ZERO;
+                        inInventory.setAmt(zrAmt);
                         inInventory.setMaterialDate(new Date());
                         inInventory.setWarehouseDate(new Date());
                         inInventory.setSupplierId(transferSup);
@@ -1050,7 +1053,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setBatchNumber(entry.getBatchNumber());
                         zrFlow.setQty(entry.getQty());
                         zrFlow.setUnitPrice(inInventory.getUnitPrice());
-                        zrFlow.setAmt(entry.getAmt());
+                        zrFlow.setAmt(zrAmt);
                         zrFlow.setBeginTime(entry.getBeginTime());
                         zrFlow.setEndTime(entry.getEndTime());
                         zrFlow.setSupplierId(transferSup);
@@ -1085,7 +1088,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setBatchNumber(entry.getBatchNumber());
                         zrFlow.setQty(entry.getQty());
                         zrFlow.setUnitPrice(inInventory.getUnitPrice());
-                        zrFlow.setAmt(entry.getAmt());
+                        BigDecimal zrAmt = inInventory.getUnitPrice() != null
+                                ? entry.getQty().multiply(inInventory.getUnitPrice())
+                                : BigDecimal.ZERO;
+                        zrFlow.setAmt(zrAmt);
                         zrFlow.setBeginTime(entry.getBeginTime());
                         zrFlow.setEndTime(entry.getEndTime());
                         zrFlow.setSupplierId(inInventory.getSupplierId());
@@ -1239,8 +1245,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setMaterialNo(entry.getBatchNumber());
             stkDepInventory.setDepartmentId(stkIoBill.getDepartmentId());
             stkDepInventory.setQty(entry.getQty());
-            stkDepInventory.setUnitPrice(entry.getUnitPrice());
-            stkDepInventory.setAmt(entry.getAmt());
+            BigDecimal depUnitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            stkDepInventory.setUnitPrice(depUnitPrice);
+            stkDepInventory.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : BigDecimal.ZERO);
             stkDepInventory.setBatchNo(entry.getBatchNo());
             stkDepInventory.setMaterialNo(inventory.getMaterialNo());
             stkDepInventory.setMaterialDate(inventory.getMaterialDate());

@@ -1,5 +1,6 @@
 package com.spd.warehouse.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -104,6 +105,11 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     {
         if (stkInventory == null) {
             return 0;
+        }
+        if (stkInventory.getQty() != null && stkInventory.getUnitPrice() != null) {
+            stkInventory.setAmt(stkInventory.getQty().multiply(stkInventory.getUnitPrice()));
+        } else if (stkInventory.getQty() != null && stkInventory.getAmt() == null) {
+            stkInventory.setAmt(BigDecimal.ZERO);
         }
         if (StringUtils.isEmpty(stkInventory.getTenantId())) {
             stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());

@@ -1,6 +1,5 @@
 package com.spd.foundation.controller;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -346,6 +345,26 @@ public class FdMaterialController extends BaseController
     @GetMapping("/{id}/timeline")
     public AjaxResult getTimeline(@PathVariable("id") Long id) {
         return success(fdMaterialService.getMaterialTimeline(id));
+    }
+
+    /**
+     * 查询产品档案入库记录-供应商树
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/{id}/inboundSuppliers")
+    public AjaxResult listInboundSuppliers(@PathVariable("id") Long id) {
+        return success(fdMaterialService.listInboundSuppliers(id));
+    }
+
+    /**
+     * 查询产品档案入库记录
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/{id}/inboundRecords")
+    public AjaxResult listInboundRecords(@PathVariable("id") Long id,
+                                         @RequestParam(value = "supplierId", required = false) Long supplierId,
+                                         @RequestParam(value = "orderMode", required = false) String orderMode) {
+        return success(fdMaterialService.listInboundRecords(id, supplierId, orderMode));
     }
 
     /**

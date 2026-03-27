@@ -196,6 +196,21 @@ public class SysLoginController
     }
 
     /**
+     * 实时获取当前用户租户信息（避免前端仅依赖登录态缓存）。
+     */
+    @GetMapping("getCurrentTenant")
+    public AjaxResult getCurrentTenant()
+    {
+        AjaxResult ajax = AjaxResult.success();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null) {
+            return ajax;
+        }
+        putTenantIfPresent(ajax, loginUser.getUser().getCustomerId());
+        return ajax;
+    }
+
+    /**
      * 获取路由信息
      *
      * @return 路由信息

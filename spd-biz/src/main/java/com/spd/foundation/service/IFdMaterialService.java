@@ -126,6 +126,16 @@ public interface IFdMaterialService
     List<MaterialTimelineVo> getMaterialTimeline(Long materialId);
 
     /**
+     * 产品档案详情页：入库记录-左侧供应商树数据
+     */
+    List<Map<String, Object>> listInboundSuppliers(Long materialId);
+
+    /**
+     * 产品档案详情页：入库记录-右侧明细数据
+     */
+    List<Map<String, Object>> listInboundRecords(Long materialId, Long supplierId, String orderMode);
+
+    /**
      * 耗材档案新增导入：整单校验（HIS 已存在则整单拒绝等）
      */
     Map<String, Object> validateMaterialImportAdd(List<MaterialImportAddDto> list);

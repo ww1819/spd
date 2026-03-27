@@ -20,6 +20,7 @@ public class FdDepartmentChangeLog {
     private String fieldLabel;
     private String oldValue;
     private String newValue;
+    private String tenantId;
 
     public String getId() {
         return id;
@@ -83,5 +84,13 @@ public class FdDepartmentChangeLog {
 
     public void setNewValue(String newValue) {
         this.newValue = newValue;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }
