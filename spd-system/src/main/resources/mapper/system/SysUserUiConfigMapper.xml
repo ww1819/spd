@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SysUserUiConfigMapper">
+
+    <resultMap type="com.spd.system.domain.SysUserUiConfig" id="SysUserUiConfigResult">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="configKey" column="config_key"/>
+        <result property="configValue" column="config_value"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="selectByUserAndKey" resultMap="SysUserUiConfigResult">
+        SELECT id, user_id, config_key, config_value, create_time, update_time
+        FROM sys_user_ui_config
+        WHERE user_id = #{userId} AND config_key = #{configKey}
+        LIMIT 1
+    </select>
+
+    <insert id="insertOrUpdate" parameterType="com.spd.system.domain.SysUserUiConfig">
+        INSERT INTO sys_user_ui_config (user_id, config_key, config_value, create_time)
+        VALUES (#{userId}, #{configKey}, #{configValue}, NOW())
+        ON DUPLICATE KEY UPDATE
+            config_value = #{configValue},
+            update_time = NOW()
+    </insert>
+</mapper>
