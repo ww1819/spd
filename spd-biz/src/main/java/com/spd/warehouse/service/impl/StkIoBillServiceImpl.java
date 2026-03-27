@@ -805,7 +805,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if(qty.compareTo(stkDepInventoryQty) > 0){
                         throw new ServiceException(String.format("科室库存不足！退库数量：%s，实际库存：%s", qty,stkDepInventoryQty));
                     }
-                    stkDepInventory.setQty(stkDepInventoryQty.subtract(qty));
+                    BigDecimal depNewQty = stkDepInventoryQty.subtract(qty);
+                    BigDecimal depUnitPrice = stkDepInventory.getUnitPrice() != null
+                            ? stkDepInventory.getUnitPrice()
+                            : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+                    BigDecimal depNewAmt = depUnitPrice != null ? depNewQty.multiply(depUnitPrice) : BigDecimal.ZERO;
+                    stkDepInventory.setQty(depNewQty);
+                    stkDepInventory.setAmt(depNewAmt);
                     stkDepInventory.setUpdateTime(new Date());
                     stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
@@ -896,6 +902,36 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(tkFlow.getTenantId())) tkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(tkFlow);
+
+                    // 插科室流水（lx=TK，kc_no=科室库存id）
+                    HcKsFlow ksTkFlow = new HcKsFlow();
+                    ksTkFlow.setBillId(stkIoBill.getId());
+                    ksTkFlow.setEntryId(entry.getId());
+                    ksTkFlow.setDepartmentId(stkIoBill.getDepartmentId());
+                    ksTkFlow.setWarehouseId(returnWarehouseId);
+                    ksTkFlow.setMaterialId(entry.getMaterialId());
+                    ksTkFlow.setBatchNo(entry.getBatchNo());
+                    ksTkFlow.setBatchNumber(entry.getBatchNumber());
+                    ksTkFlow.setBatchId(inventory.getBatchId());
+                    ksTkFlow.setQty(entry.getQty());
+                    ksTkFlow.setUnitPrice(depUnitPrice);
+                    ksTkFlow.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : returnAmt);
+                    ksTkFlow.setBeginTime(entry.getBeginTime());
+                    ksTkFlow.setEndTime(entry.getEndTime());
+                    Long ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
+                    ksTkFlow.setSupplierId(ksSupplierId != null ? String.valueOf(ksSupplierId) : null);
+                    ksTkFlow.setFactoryId(resolveFactoryId(inventory));
+                    ksTkFlow.setMainBarcode(inventory.getMainBarcode());
+                    ksTkFlow.setSubBarcode(inventory.getSubBarcode());
+                    ksTkFlow.setKcNo(stkDepInventory.getId());
+                    ksTkFlow.setLx("TK");
+                    ksTkFlow.setOriginBusinessType("退库结算");
+                    ksTkFlow.setFlowTime(new Date());
+                    ksTkFlow.setDelFlag(0);
+                    ksTkFlow.setCreateTime(new Date());
+                    ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+                    if (StringUtils.isEmpty(ksTkFlow.getTenantId())) ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
                 } else if (billType == 501) {// 调拨：转出仓库扣减+流水ZC，转入仓库增加+流水ZR
                     Long outWarehouseId = stkIoBill.getWarehouseId();  // 转出仓库
                     Long inWarehouseId = stkIoBill.getDepartmentId(); // 调拨单中 department_id 存调入仓库id
@@ -1233,6 +1269,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             BigDecimal qty = entry.getQty();
 
             stkDepInventory.setQty(oldQty.add(qty));//数量
+            BigDecimal unitPrice = stkDepInventory.getUnitPrice() != null
+                    ? stkDepInventory.getUnitPrice()
+                    : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+            stkDepInventory.setAmt(unitPrice != null ? oldQty.add(qty).multiply(unitPrice) : BigDecimal.ZERO);
             if (stkDepInventory.getKcNo() == null && inventory.getId() != null) {
                 stkDepInventory.setKcNo(inventory.getId());
             }

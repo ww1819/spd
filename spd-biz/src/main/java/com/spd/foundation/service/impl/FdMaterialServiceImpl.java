@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import com.alibaba.fastjson2.JSON;
 import com.spd.common.annotation.DataSource;
 import com.spd.common.enums.DataSourceType;
+import com.spd.common.enums.TenantEnum;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -62,6 +63,10 @@ import javax.validation.Validator;
 @Service
 public class FdMaterialServiceImpl implements IFdMaterialService
 {
+    private static final String HS_THIRD_CUSTOMER_ID = TenantEnum.HS_003.getCustomerId();
+    private static final String HS_PREFIX_GZ = "GZ";
+    private static final String HS_PREFIX_DZ = "DZ";
+    private static final String HS_PREFIX_SJ = "SJ";
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
 
@@ -233,17 +238,129 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     public int insertFdMaterial(FdMaterial fdMaterial)
     {
         validateMaterialForInsert(fdMaterial);
-        fdMaterial.setCreateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
-            fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
-        }
         if (StringUtils.isEmpty(fdMaterial.getTenantId())) {
             String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid)) {
                 fdMaterial.setTenantId(tid);
             }
         }
+        validateHsThirdHighValueRule(fdMaterial.getTenantId(), fdMaterial.getFinanceCategoryId(), fdMaterial.getIsGz());
+        applyHsThirdMaterialRulesOnInsert(fdMaterial);
+        if (StringUtils.isNotEmpty(fdMaterial.getCode()))
+        {
+            FdMaterial exist = fdMaterialMapper.selectFdMaterialByTenantAndCode(fdMaterial.getTenantId(), fdMaterial.getCode());
+            if (exist != null)
+            {
+                throw new ServiceException("耗材编码已存在：" + fdMaterial.getCode());
+            }
+        }
+        fdMaterial.setCreateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+            fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
+        }
         return fdMaterialMapper.insertFdMaterial(fdMaterial);
+    }
+
+    /**
+     * 衡水市第三人民医院：新增产品档案时必须选择库房分类，且特定分类使用前缀编码规则。
+     */
+    private void applyHsThirdMaterialRulesOnInsert(FdMaterial m)
+    {
+        if (m == null || !HS_THIRD_CUSTOMER_ID.equals(m.getTenantId()))
+        {
+            return;
+        }
+        if (m.getStoreroomId() == null)
+        {
+            throw new ServiceException("新增产品档案必须选择库房分类");
+        }
+        FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(m.getStoreroomId());
+        if (wc == null)
+        {
+            throw new ServiceException("库房分类不存在或无权限访问");
+        }
+        String prefix = resolveHsCodePrefix(wc.getWarehouseCategoryName());
+        if (StringUtils.isEmpty(prefix))
+        {
+            // 衡水三院：耗材编码一律系统生成；未命中特殊分类时回退通用6位编码规则
+            m.setCode(generateMaterialCode());
+            return;
+        }
+        // 衡水三院：耗材编码不允许手工编辑，始终由系统按分类自动生成
+        m.setCode(generateHsCodeByPrefix(prefix, m.getTenantId()));
+    }
+
+    private String resolveHsCodePrefix(String warehouseCategoryName)
+    {
+        if (StringUtils.isEmpty(warehouseCategoryName))
+        {
+            return null;
+        }
+        String n = warehouseCategoryName.trim();
+        if (n.contains("高值耗材"))
+        {
+            return HS_PREFIX_GZ;
+        }
+        if (n.contains("低值耗材"))
+        {
+            return HS_PREFIX_DZ;
+        }
+        if (n.contains("检验试剂"))
+        {
+            return HS_PREFIX_SJ;
+        }
+        return null;
+    }
+
+    private String generateHsCodeByPrefix(String prefix, String tenantId)
+    {
+        FdMaterial q = new FdMaterial();
+        q.setTenantId(tenantId);
+        List<FdMaterial> list = fdMaterialMapper.selectFdMaterialList(q);
+        int max = 0;
+        String regex = "^" + prefix + "(\\d{5})$";
+        for (FdMaterial item : list)
+        {
+            if (item == null || StringUtils.isEmpty(item.getCode()))
+            {
+                continue;
+            }
+            String c = item.getCode().trim().toUpperCase();
+            if (c.matches(regex))
+            {
+                try
+                {
+                    int n = Integer.parseInt(c.substring(2));
+                    if (n > max)
+                    {
+                        max = n;
+                    }
+                }
+                catch (NumberFormatException ignored)
+                {
+                }
+            }
+        }
+        int next = max + 1;
+        if (next > 99999)
+        {
+            throw new ServiceException("编码已达上限，无法继续生成：" + prefix);
+        }
+        String candidate = prefix + String.format("%05d", next);
+        for (int i = 0; i < 30; i++)
+        {
+            if (fdMaterialMapper.selectFdMaterialByTenantAndCode(tenantId, candidate) == null)
+            {
+                return candidate;
+            }
+            next++;
+            if (next > 99999)
+            {
+                throw new ServiceException("编码已达上限，无法继续生成：" + prefix);
+            }
+            candidate = prefix + String.format("%05d", next);
+        }
+        throw new ServiceException("自动生成耗材编码失败，请稍后重试");
     }
 
     /**
@@ -264,6 +381,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         FdMaterial oldMaterial = fdMaterialMapper.selectFdMaterialById(fdMaterial.getId());
         if (oldMaterial != null) {
+            Long effectiveFinanceCategoryId = fdMaterial.getFinanceCategoryId() != null ? fdMaterial.getFinanceCategoryId() : oldMaterial.getFinanceCategoryId();
+            String effectiveIsGz = StringUtils.isNotEmpty(fdMaterial.getIsGz()) ? fdMaterial.getIsGz() : oldMaterial.getIsGz();
+            validateHsThirdHighValueRule(oldMaterial.getTenantId(), effectiveFinanceCategoryId, effectiveIsGz);
             // 使用状态变更：记录启用/停用流水
             if (fdMaterial.getIsUse() != null && !fdMaterial.getIsUse().equals(oldMaterial.getIsUse())
                     && StringUtils.isNotEmpty(fdMaterial.getStatusChangeReason())) {
@@ -280,6 +400,26 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             saveChangeLogs(fdMaterial.getId(), oldMaterial, fdMaterial, now, operator);
         }
         return fdMaterialMapper.updateFdMaterial(fdMaterial);
+    }
+
+    /**
+     * 衡水三院：财务分类为高值耗材时，必须勾选高值标志。
+     */
+    private void validateHsThirdHighValueRule(String tenantId, Long financeCategoryId, String isGz)
+    {
+        if (!HS_THIRD_CUSTOMER_ID.equals(tenantId) || financeCategoryId == null)
+        {
+            return;
+        }
+        FdFinanceCategory fc = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(financeCategoryId);
+        if (fc == null || StringUtils.isEmpty(fc.getFinanceCategoryName()))
+        {
+            return;
+        }
+        if (fc.getFinanceCategoryName().contains("高值耗材") && !"1".equals(String.valueOf(isGz)))
+        {
+            throw new ServiceException("财务分类为高值耗材时，必须勾选高值标志");
+        }
     }
 
     /**

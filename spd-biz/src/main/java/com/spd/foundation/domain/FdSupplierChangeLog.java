@@ -11,6 +11,7 @@ public class FdSupplierChangeLog {
 
     private String id;
     private Long supplierId;
+    private String tenantId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date changeTime;
@@ -83,5 +84,13 @@ public class FdSupplierChangeLog {
 
     public void setNewValue(String newValue) {
         this.newValue = newValue;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

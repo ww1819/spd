@@ -75,6 +75,15 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     @Override
     public int insertFdSupplier(FdSupplier fdSupplier)
     {
+        if (fdSupplier.getCode() != null)
+        {
+            fdSupplier.setCode(fdSupplier.getCode().trim());
+        }
+        if (StringUtils.isEmpty(fdSupplier.getCode()))
+        {
+            String tenantId = StringUtils.isNotEmpty(fdSupplier.getTenantId()) ? fdSupplier.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+            fdSupplier.setCode(generateSupplierCode(tenantId));
+        }
         fdSupplier.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdSupplier.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
@@ -89,17 +98,13 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             }
         }
         fdSupplier.setHisId(normalizeHisId(fdSupplier.getHisId()));
-        if (importRequiresMandatoryHisId())
-        {
-            if (isHisIdBlank(fdSupplier.getHisId()))
-            {
-                throw new ServiceException("衡水市第三人民医院新增供应商时必须填写HIS供应商ID");
-            }
-            assertHisIdUnique(fdSupplier.getTenantId(), fdSupplier.getHisId(), null);
-        }
-        else if (isHisIdBlank(fdSupplier.getHisId()))
+        if (isHisIdBlank(fdSupplier.getHisId()))
         {
             fdSupplier.setHisId(null);
+        }
+        else
+        {
+            assertHisIdUnique(fdSupplier.getTenantId(), fdSupplier.getHisId(), null);
         }
         return fdSupplierMapper.insertFdSupplier(fdSupplier);
     }
@@ -367,6 +372,56 @@ public class FdSupplierServiceImpl implements IFdSupplierService
     private static boolean isHisIdBlank(String v)
     {
         return v == null || v.trim().isEmpty();
+    }
+
+    /**
+     * 自动生成供应商编码：6位数字（100000-999999），按当前租户递增。
+     */
+    private String generateSupplierCode(String tenantId)
+    {
+        FdSupplier query = new FdSupplier();
+        query.setTenantId(tenantId);
+        List<FdSupplier> allSuppliers = fdSupplierMapper.selectFdSupplierList(query);
+        int maxCode = 99999;
+        for (FdSupplier s : allSuppliers)
+        {
+            String code = s.getCode();
+            if (StringUtils.isNotEmpty(code) && code.matches("^\\d{6}$"))
+            {
+                try
+                {
+                    int val = Integer.parseInt(code);
+                    if (val >= 100000 && val <= 999999 && val > maxCode)
+                    {
+                        maxCode = val;
+                    }
+                }
+                catch (NumberFormatException ignored)
+                {
+                }
+            }
+        }
+        int nextCode = maxCode + 1;
+        if (nextCode > 999999)
+        {
+            nextCode = 100000;
+        }
+        String candidate = String.format("%06d", nextCode);
+        // 并发兜底：若被抢占，则顺延重试
+        for (int i = 0; i < 20; i++)
+        {
+            if (fdSupplierMapper.selectFdSupplierByCodeAndTenantId(candidate, tenantId) == null)
+            {
+                return candidate;
+            }
+            nextCode++;
+            if (nextCode > 999999)
+            {
+                nextCode = 100000;
+            }
+            candidate = String.format("%06d", nextCode);
+        }
+        throw new ServiceException("自动生成供应商编码失败，请稍后重试");
     }
 
     private void assertHisIdUnique(String tenantId, String hisId, Long excludeId)

@@ -5,7 +5,7 @@
   <select id="selectListWithMenuNameByTenantId" resultType="com.spd.system.domain.vo.HcCustomerMenuManageVo">
     select cm.tenant_id as tenantId, cm.menu_id as menuId, m.menu_name as menuName, ifnull(cm.status,'0') as status
     from hc_customer_menu cm
-    inner join sys_menu m on m.menu_id = cm.menu_id and m.menu_type in ('M','C','F')
+    inner join sys_menu m on m.menu_id = cm.menu_id and m.menu_type in ('M','C')
     where cm.tenant_id = #{tenantId}
     order by m.parent_id, m.order_num
   </select>

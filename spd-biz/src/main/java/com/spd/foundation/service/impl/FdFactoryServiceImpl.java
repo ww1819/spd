@@ -82,23 +82,27 @@ public class FdFactoryServiceImpl implements IFdFactoryService
                 fdFactory.setTenantId(tid);
             }
         }
+        if (fdFactory.getFactoryCode() != null)
+        {
+            fdFactory.setFactoryCode(fdFactory.getFactoryCode().trim());
+        }
+        if (StringUtils.isEmpty(fdFactory.getFactoryCode()))
+        {
+            fdFactory.setFactoryCode(generateFactoryCode(fdFactory.getTenantId()));
+        }
         fdFactory.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdFactory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdFactory.setCreateBy(SecurityUtils.getUserIdStr());
         }
         fdFactory.setHisId(normalizeHisId(fdFactory.getHisId()));
-        if (importRequiresMandatoryHisId())
-        {
-            if (isHisIdBlank(fdFactory.getHisId()))
-            {
-                throw new ServiceException("衡水市第三人民医院新增生产厂家时必须填写HIS生产厂家ID");
-            }
-            assertHisIdUnique(fdFactory.getTenantId(), fdFactory.getHisId(), null);
-        }
-        else if (isHisIdBlank(fdFactory.getHisId()))
+        if (isHisIdBlank(fdFactory.getHisId()))
         {
             fdFactory.setHisId(null);
+        }
+        else
+        {
+            assertHisIdUnique(fdFactory.getTenantId(), fdFactory.getHisId(), null);
         }
         return fdFactoryMapper.insertFdFactory(fdFactory);
     }
@@ -346,6 +350,56 @@ public class FdFactoryServiceImpl implements IFdFactoryService
     private static boolean isHisIdBlank(String v)
     {
         return v == null || v.trim().isEmpty();
+    }
+
+    /**
+     * 自动生成厂家编码：6位数字（100000-999999），按当前租户递增。
+     */
+    private String generateFactoryCode(String tenantId)
+    {
+        FdFactory query = new FdFactory();
+        query.setTenantId(tenantId);
+        List<FdFactory> allFactories = fdFactoryMapper.selectFdFactoryList(query);
+        int maxCode = 99999;
+        for (FdFactory f : allFactories)
+        {
+            String code = f.getFactoryCode();
+            if (StringUtils.isNotEmpty(code) && code.matches("^\\d{6}$"))
+            {
+                try
+                {
+                    int val = Integer.parseInt(code);
+                    if (val >= 100000 && val <= 999999 && val > maxCode)
+                    {
+                        maxCode = val;
+                    }
+                }
+                catch (NumberFormatException ignored)
+                {
+                }
+            }
+        }
+        int nextCode = maxCode + 1;
+        if (nextCode > 999999)
+        {
+            nextCode = 100000;
+        }
+        String candidate = String.format("%06d", nextCode);
+        // 并发兜底：若被抢占，则顺延重试
+        for (int i = 0; i < 20; i++)
+        {
+            if (fdFactoryMapper.selectFdFactoryByCodeAndTenantId(candidate, tenantId) == null)
+            {
+                return candidate;
+            }
+            nextCode++;
+            if (nextCode > 999999)
+            {
+                nextCode = 100000;
+            }
+            candidate = String.format("%06d", nextCode);
+        }
+        throw new ServiceException("自动生成厂家编码失败，请稍后重试");
     }
 
     private void assertHisIdUnique(String tenantId, String hisId, Long excludeFactoryId)

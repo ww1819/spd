@@ -36,8 +36,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdFactoryVo"/>
         where del_flag != 1
         and tenant_id = #{scopedTenantId}
-        <if test="factoryCode != null  and factoryCode != ''"> and factory_code = #{factoryCode}</if>
-        <if test="factoryName != null  and factoryName != ''"> and factory_name like concat('%', #{factoryName}, '%')</if>
+        <if test="factoryCode != null  and factoryCode != ''"> and factory_code like concat('%', #{factoryCode}, '%')</if>
+        <if test="factoryName != null  and factoryName != ''">
+            and (factory_code like concat('%', #{factoryName}, '%')
+                 or factory_referred_code like concat('%', #{factoryName}, '%')
+                 or factory_name like concat('%', #{factoryName}, '%'))
+        </if>
         <if test="factoryAddress != null  and factoryAddress != ''"> and factory_address = #{factoryAddress}</if>
         <if test="factoryContact != null  and factoryContact != ''"> and factory_contact = #{factoryContact}</if>
     </select>

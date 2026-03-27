@@ -1010,7 +1010,9 @@ public class ExcelUtil<T>
             {
                 CellStyle style = wb.createCellStyle();
                 style.setAlignment(excel.align());
-                style.setVerticalAlignment(VerticalAlignment.CENTER);
+                // 支持文本左上角显示与自动换行（适配多字段“加宽/换行”导出需求）
+                style.setVerticalAlignment(VerticalAlignment.TOP);
+                style.setWrapText(true);
                 style.setBorderRight(BorderStyle.THIN);
                 style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
                 style.setBorderLeft(BorderStyle.THIN);

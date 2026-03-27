@@ -334,7 +334,12 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if(qty.compareTo(stkDepInventoryQty) > 0){
                         throw new ServiceException(String.format("科室库存不足！退库数量：%s，实际库存：%s", qty,stkDepInventoryQty));
                     }
-                    stkDepInventory.setQty(stkDepInventoryQty.subtract(qty));
+                    BigDecimal depNewQty = stkDepInventoryQty.subtract(qty);
+                    BigDecimal depUnitPrice = stkDepInventory.getUnitPrice() != null
+                            ? stkDepInventory.getUnitPrice()
+                            : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+                    stkDepInventory.setQty(depNewQty);
+                    stkDepInventory.setAmt(depUnitPrice != null ? depNewQty.multiply(depUnitPrice) : BigDecimal.ZERO);
                     stkDepInventory.setUpdateTime(new Date());
                     stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
@@ -437,6 +442,10 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             BigDecimal qty = entry.getQty();
 
             stkDepInventory.setQty(oldQty.add(qty));//数量
+            BigDecimal unitPrice = stkDepInventory.getUnitPrice() != null
+                    ? stkDepInventory.getUnitPrice()
+                    : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+            stkDepInventory.setAmt(unitPrice != null ? oldQty.add(qty).multiply(unitPrice) : BigDecimal.ZERO);
             if (stkDepInventory.getBatchNumber() == null) {
                 stkDepInventory.setBatchNumber(entry.getBatchNumber());
             }

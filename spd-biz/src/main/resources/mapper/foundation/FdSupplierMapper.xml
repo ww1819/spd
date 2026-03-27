@@ -53,8 +53,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdSupplierVo"/>
         where del_flag != 1
         and tenant_id = #{scopedTenantId}
-        <if test="code != null  and code != ''"> and code = #{code}</if>
-        <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+        <if test="code != null  and code != ''"> and code like concat('%', #{code}, '%')</if>
+        <if test="name != null  and name != ''">
+            and (code like concat('%', #{name}, '%')
+                 or referred_code like concat('%', #{name}, '%')
+                 or name like concat('%', #{name}, '%'))
+        </if>
         <if test="referredCode != null and referredCode != ''"> and referred_code like concat('%', #{referredCode}, '%')</if>
         <if test="taxNumber != null and taxNumber != ''"> and tax_number like concat('%', #{taxNumber}, '%')</if>
         <if test="supplierStatus != null and supplierStatus != ''"> and supplier_status = #{supplierStatus}</if>
