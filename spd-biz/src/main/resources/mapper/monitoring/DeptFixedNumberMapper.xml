@@ -16,6 +16,9 @@
         <result property="locationId" column="location_id"/>
         <result property="delFlag" column="del_flag"/>
         <result property="tenantId" column="tenant_id"/>
+        <result property="remark" column="remark"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -57,6 +60,9 @@
             f.location_id,
             f.del_flag,
             f.tenant_id,
+            f.remark,
+            f.delete_by,
+            f.delete_time,
             f.create_by,
             f.create_time,
             f.update_by,
@@ -85,8 +91,9 @@
     </sql>
 
     <select id="selectDeptFixedNumberList" parameterType="DeptFixedNumber" resultMap="DeptFixedNumberResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectDeptFixedNumberVo"/>
-        <if test="tenantId != null and tenantId != ''"> and (f.tenant_id = #{tenantId} or f.tenant_id is null)</if>
+        and (f.tenant_id = #{scopedTenantId})
         <if test="departmentId != null">
             and f.department_id = #{departmentId}
         </if>
@@ -110,6 +117,7 @@
     </insert>
 
     <update id="updateDeptFixedNumber" parameterType="DeptFixedNumber">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dept_fixed_number
         set
             upper_limit = #{upperLimit},
@@ -118,20 +126,27 @@
             monitoring = #{monitoring},
             location = #{location},
             location_id = #{locationId},
+            remark = #{remark},
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             update_by = #{updateBy},
             update_time = now()
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <delete id="deleteDeptFixedNumberById" parameterType="String">
+    <update id="deleteDeptFixedNumberById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dept_fixed_number
-        set del_flag = 1, update_time = now()
-        where id = #{id}
-    </delete>
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
 
     <select id="selectByDepartmentAndMaterial" parameterType="map" resultMap="DeptFixedNumberResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectDeptFixedNumberVo"/>
+        and f.tenant_id = #{scopedTenantId}
         and f.department_id = #{departmentId}
         and f.material_id = #{materialId}
     </select>

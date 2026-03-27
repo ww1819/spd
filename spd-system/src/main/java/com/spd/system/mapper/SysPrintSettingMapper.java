@@ -1,6 +1,7 @@
 package com.spd.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.system.domain.SysPrintSetting;
 
 /**
@@ -27,12 +28,10 @@ public interface SysPrintSettingMapper
     public List<SysPrintSetting> selectSysPrintSettingList(SysPrintSetting sysPrintSetting);
 
     /**
-     * 根据入库单类型查询默认模板
-     * 
-     * @param billType 入库单类型
-     * @return 打印设置信息
+     * 按单据类型 + 租户查询默认模板（is_default=1、status=0）。
+     * tenantId 为空时仅匹配全库默认（tenant_id IS NULL 或空串）。
      */
-    public SysPrintSetting selectDefaultByBillType(Integer billType);
+    public SysPrintSetting selectDefaultByBillTypeAndTenant(@Param("billType") Integer billType, @Param("tenantId") String tenantId);
 
     /**
      * 新增打印设置

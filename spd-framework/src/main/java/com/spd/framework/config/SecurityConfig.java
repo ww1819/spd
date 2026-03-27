@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.filter.CorsFilter;
 import com.spd.framework.config.properties.PermitAllUrlProperties;
 import com.spd.framework.security.filter.JwtAuthenticationTokenFilter;
+import com.spd.framework.security.filter.LoginUserTenantSyncFilter;
 import com.spd.framework.security.filter.TenantContextFilter;
 import com.spd.framework.security.handle.AuthenticationEntryPointImpl;
 import com.spd.framework.security.handle.LogoutSuccessHandlerImpl;
@@ -58,6 +59,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
      */
     @Autowired
     private TenantContextFilter tenantContextFilter;
+
+    /**
+     * 登录态 customer_id 与库轻量同步（须在 JWT 之后、TenantContext 之前）
+     */
+    @Autowired
+    private LoginUserTenantSyncFilter loginUserTenantSyncFilter;
     
     /**
      * 跨域过滤器
@@ -130,8 +137,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
         httpSecurity.logout().logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler);
         // 添加JWT filter
         httpSecurity.addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
-        // SaaS 租户上下文（须在 JWT 之后，以便使用 LoginUser）
-        httpSecurity.addFilterAfter(tenantContextFilter, JwtAuthenticationTokenFilter.class);
+        // 登录态 customer_id 与库同步（须在 JWT 之后，以便 SecurityContext 中已有 LoginUser）
+        httpSecurity.addFilterAfter(loginUserTenantSyncFilter, JwtAuthenticationTokenFilter.class);
+        // SaaS 租户上下文（须在 JWT 与租户同步之后，以便使用已补全的 LoginUser）
+        httpSecurity.addFilterAfter(tenantContextFilter, LoginUserTenantSyncFilter.class);
         // 添加CORS filter
         httpSecurity.addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class);
         httpSecurity.addFilterBefore(corsFilter, LogoutFilter.class);

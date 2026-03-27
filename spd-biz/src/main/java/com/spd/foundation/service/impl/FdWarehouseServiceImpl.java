@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.service.IFdWarehouseService;
+import com.spd.system.service.ITenantFoundationAutoGrantService;
 
 /**
  * 仓库Service业务层处理
@@ -23,6 +24,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 {
     @Autowired
     private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private ITenantFoundationAutoGrantService tenantFoundationAutoGrantService;
 
     /**
      * 查询仓库
@@ -45,8 +49,11 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public List<FdWarehouse> selectFdWarehouseList(FdWarehouse fdWarehouse)
     {
-        if (fdWarehouse != null && StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
+        if (fdWarehouse != null && StringUtils.isEmpty(fdWarehouse.getTenantId())) {
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
+            if (StringUtils.isNotEmpty(tid)) {
+                fdWarehouse.setTenantId(tid);
+            }
         }
         return fdWarehouseMapper.selectFdWarehouseList(fdWarehouse);
     }
@@ -69,10 +76,19 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
             throw new ServiceException("仓库创建时必须选择结算方式（入库结算/出库结算/消耗结算）");
         }
         fdWarehouse.setCreateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(fdWarehouse.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            fdWarehouse.setTenantId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(fdWarehouse.getTenantId()))
+        {
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
+            if (StringUtils.isNotEmpty(tid))
+            {
+                fdWarehouse.setTenantId(tid);
+            }
         }
-        return fdWarehouseMapper.insertFdWarehouse(fdWarehouse);
+        int n = fdWarehouseMapper.insertFdWarehouse(fdWarehouse);
+        if (n > 0 && StringUtils.isNotEmpty(fdWarehouse.getTenantId()) && fdWarehouse.getId() != null) {
+            tenantFoundationAutoGrantService.grantWarehouseToTenantAdmins(fdWarehouse.getTenantId(), fdWarehouse.getId());
+        }
+        return n;
     }
 
     /**
@@ -126,9 +142,10 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 
     @Override
     public List<FdWarehouse> selectwarehouseAll() {
-        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        String tid = SecurityUtils.requiredScopedTenantIdForSql();
+        if (StringUtils.isNotEmpty(tid)) {
             FdWarehouse q = new FdWarehouse();
-            q.setTenantId(SecurityUtils.getCustomerId());
+            q.setTenantId(tid);
             return fdWarehouseMapper.selectFdWarehouseList(q);
         }
         return fdWarehouseMapper.selectwarehouseAll();
@@ -136,7 +153,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 
     @Override
     public List<FdWarehouse> selectUserWarehouseAll(Long userId) {
-        String tenantId = SecurityUtils.getCustomerId();
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         return fdWarehouseMapper.selectUserWarehouseAll(userId, tenantId);
     }
 

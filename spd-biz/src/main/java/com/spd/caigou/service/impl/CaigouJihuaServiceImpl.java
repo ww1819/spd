@@ -10,10 +10,13 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,23 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private StkBatchMapper stkBatchMapper;
+
+    /**
+     * supplerId 字符串转 Long
+     */
+    private Long parseSupplerIdString(String s) {
+        if (StringUtils.isEmpty(s)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(s.trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     /**
      * 查询出入库
@@ -162,15 +182,23 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             throw new ServiceException(String.format("业务：%s，不存在!", id));
         }
 
+        String deleteBy = SecurityUtils.getUserIdStr();
+        Date deleteTime = new Date();
         stkIoBill.setDelFlag(1);
-        stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
-        stkIoBill.setUpdateTime(new Date());
+        stkIoBill.setUpdateBy(deleteBy);
+        stkIoBill.setUpdateTime(deleteTime);
+        stkIoBill.setDeleteBy(deleteBy);
+        stkIoBill.setDeleteTime(deleteTime);
 
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
-        for(StkIoBillEntry entry : stkIoBillEntryList){
-            entry.setDelFlag(1);
-            entry.setParenId(id);
-            stkIoBillMapper.updatestkIobillEntry(entry);
+        if (stkIoBillEntryList != null) {
+            for (StkIoBillEntry entry : stkIoBillEntryList) {
+                entry.setDelFlag(1);
+                entry.setParenId(id);
+                entry.setDeleteBy(deleteBy);
+                entry.setDeleteTime(deleteTime);
+                stkIoBillMapper.updatestkIobillEntry(entry);
+            }
         }
 
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
@@ -230,6 +258,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if (StringUtils.isEmpty(stkInventory.getTenantId())) {
                         stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    InventoryMaterialSnapshotHelper.fillWarehouseRow(stkInventory, entry, fdMaterialMapper, stkIoBill.getTenantId());
                     stkInventoryMapper.insertStkInventory(stkInventory);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
@@ -287,7 +316,13 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     String batchNo = entry.getBatchNo();//退库批次号
                     BigDecimal qty = entry.getQty();//退库数量
 
-                    StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo);
+                    Long returnWarehouseId = entry.getWarehouseId() != null ? entry.getWarehouseId() : stkIoBill.getWarehouseId();
+                    if (returnWarehouseId == null) {
+                        throw new ServiceException("退库目标仓库ID不能为空");
+                    }
+
+                    // 限定退库目标仓库：仅允许退向科室库存明细中记录的 warehouse_id
+                    StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo, returnWarehouseId);
                     if(stkDepInventory == null){
                         throw new ServiceException(String.format("退库-批次号：%s，未收货确认或不存在，不能退库!", batchNo));
                     }
@@ -299,22 +334,62 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if(qty.compareTo(stkDepInventoryQty) > 0){
                         throw new ServiceException(String.format("科室库存不足！退库数量：%s，实际库存：%s", qty,stkDepInventoryQty));
                     }
-                    stkDepInventory.setQty(stkDepInventoryQty.subtract(qty));
+                    BigDecimal depNewQty = stkDepInventoryQty.subtract(qty);
+                    BigDecimal depUnitPrice = stkDepInventory.getUnitPrice() != null
+                            ? stkDepInventory.getUnitPrice()
+                            : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+                    stkDepInventory.setQty(depNewQty);
+                    stkDepInventory.setAmt(depUnitPrice != null ? depNewQty.multiply(depUnitPrice) : BigDecimal.ZERO);
                     stkDepInventory.setUpdateTime(new Date());
                     stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
 
                     //更新库存数量
-                    StkInventory inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                    StkInventory inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, returnWarehouseId);
+                    if (inventory == null) {
+                        // 仓库库存不存在时：根据批次字典创建一条 qty=0 的库存明细，用于追溯来源
+                        StkBatch stkBatch = stkBatchMapper.selectByBatchNo(batchNo);
+                        if (stkBatch == null || stkBatch.getId() == null) {
+                            throw new ServiceException(String.format("退库-批次字典不存在：%s", batchNo));
+                        }
+                        inventory = new StkInventory();
+                        inventory.setBatchNo(entry.getBatchNo());
+                        inventory.setBatchId(stkBatch.getId());
+                        inventory.setMaterialNo(entry.getBatchNumber());
+                        inventory.setMaterialId(entry.getMaterialId());
+                        inventory.setWarehouseId(returnWarehouseId);
+                        inventory.setQty(BigDecimal.ZERO);
 
-                    if(inventory == null){
-                        throw new ServiceException(String.format("退库-批次号：%s，不存在!", batchNo));
+                        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                        inventory.setUnitPrice(unitPrice);
+                        inventory.setAmt(BigDecimal.ZERO);
+
+                        inventory.setMaterialDate(new Date());
+                        inventory.setWarehouseDate(new Date());
+                        inventory.setSupplierId(parseSupplerIdString(stkDepInventory.getSupplierId()));
+                        inventory.setMainBarcode(entry.getMainBarcode());
+                        inventory.setSubBarcode(entry.getSubBarcode());
+                        inventory.setBeginTime(entry.getBeginTime());
+                        inventory.setEndTime(entry.getEndTime());
+                        inventory.setReceiptOrderNo(stkIoBill.getBillNo());
+                        inventory.setBatchNumber(entry.getBatchNumber());
+                        inventory.setCreateTime(new Date());
+                        inventory.setCreateBy(SecurityUtils.getUserIdStr());
+                        if (StringUtils.isEmpty(inventory.getTenantId())) {
+                            inventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                        }
+                        if (StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
+                            inventory.setSettlementType(stkIoBill.getSettlementType());
+                        }
+                        stkInventoryMapper.insertStkInventory(inventory);
                     }
+
                     BigDecimal inventoryQty = inventory.getQty();
                     inventoryQty = inventoryQty.add(qty);
 
                     inventory.setQty(inventoryQty);
-                    inventory.setAmt(inventoryQty.multiply(inventory.getUnitPrice()));
+                    BigDecimal unitPrice = inventory.getUnitPrice() != null ? inventory.getUnitPrice() : BigDecimal.ZERO;
+                    inventory.setAmt(inventoryQty.multiply(unitPrice));
                     inventory.setUpdateTime(new Date());
                     inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(inventory);
@@ -332,7 +407,11 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     private void updateDepInventory(StkInventory inventory,StkIoBill stkIoBill,StkIoBillEntry entry){
 
         String batchNo = entry.getBatchNo();
-        StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo);
+        Long warehouseId = entry.getWarehouseId() != null ? entry.getWarehouseId() : stkIoBill.getWarehouseId();
+        if (warehouseId == null) {
+            throw new ServiceException("warehouseId不能为空");
+        }
+        StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo, warehouseId);
 
         if(stkDepInventory == null){
             //更新科室库存明细表
@@ -340,15 +419,22 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             stkDepInventory.setMaterialId(entry.getMaterialId());
             stkDepInventory.setMaterialNo(entry.getBatchNumber());
             stkDepInventory.setDepartmentId(stkIoBill.getDepartmentId());
+            stkDepInventory.setWarehouseId(warehouseId);
             stkDepInventory.setQty(entry.getQty());
             stkDepInventory.setUnitPrice(entry.getUnitPrice());
             stkDepInventory.setAmt(entry.getAmt());
             stkDepInventory.setBatchNo(entry.getBatchNo());
+            // batch_number 为产品生产批号；batch_no 为系统追溯批次号
+            stkDepInventory.setBatchNumber(entry.getBatchNumber());
             stkDepInventory.setMaterialNo(inventory.getMaterialNo());
+            stkDepInventory.setBatchId(inventory.getBatchId());
             stkDepInventory.setMaterialDate(inventory.getMaterialDate());
             stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
             if (StringUtils.isEmpty(stkDepInventory.getTenantId())) {
                 stkDepInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+            }
+            if (inventory.getId() != null) {
+                stkDepInventory.setKcNo(inventory.getId());
             }
             stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         }else{
@@ -356,6 +442,16 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             BigDecimal qty = entry.getQty();
 
             stkDepInventory.setQty(oldQty.add(qty));//数量
+            BigDecimal unitPrice = stkDepInventory.getUnitPrice() != null
+                    ? stkDepInventory.getUnitPrice()
+                    : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+            stkDepInventory.setAmt(unitPrice != null ? oldQty.add(qty).multiply(unitPrice) : BigDecimal.ZERO);
+            if (stkDepInventory.getBatchNumber() == null) {
+                stkDepInventory.setBatchNumber(entry.getBatchNumber());
+            }
+            if (stkDepInventory.getKcNo() == null && inventory.getId() != null) {
+                stkDepInventory.setKcNo(inventory.getId());
+            }
             stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
         }
     }
@@ -382,6 +478,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setBatchNo(getBatchNumber());
                 stkIoBillEntry.setDelFlag(0);
                 list.add(stkIoBillEntry);
@@ -408,6 +505,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 if(StringUtils.isEmpty(stkIoBillEntry.getBatchNo())){
                     stkIoBillEntry.setBatchNo(getBatchNumber());
                 }
@@ -558,8 +656,11 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
+                // 将表头仓库ID反写到明细，保证退库按仓库锁定
+                stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
                 validateTKInventory(stkIoBillEntry.getBatchNo(),stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 list.add(stkIoBillEntry);
             }
@@ -584,7 +685,11 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             }
 
             //当前批次实际数量
-            BigDecimal inventoryQty = stkDepInventoryMapper.selectTKStkInvntoryByBatchNo(batchNo);
+            Long warehouseId = entry.getWarehouseId();
+            if (warehouseId == null) {
+                throw new ServiceException("warehouseId不能为空，无法按仓库校验科室库存");
+            }
+            BigDecimal inventoryQty = stkDepInventoryMapper.selectTKStkInvntoryByBatchNo(batchNo, warehouseId);
 
             if(qty.compareTo(inventoryQty) > 0){
                 throw new ServiceException(String.format("科室库存不足！退库数量：%s，实际库存：%s", qty,inventoryQty));
@@ -609,6 +714,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             {
                 validateInventory(stkIoBillEntry.getBatchNo(),stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
+                stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
                 list.add(stkIoBillEntry);
             }

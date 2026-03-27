@@ -1,6 +1,5 @@
 package com.spd.foundation.service.impl;
 
-import java.util.Date;
 import java.util.List;
 
 import com.spd.common.exception.ServiceException;
@@ -26,40 +25,42 @@ public class FdUnitServiceImpl implements IFdUnitService
     @Autowired
     private FdUnitMapper fdUnitMapper;
 
-    /**
-     * 查询单位明细
-     *
-     * @param unitId 单位明细主键
-     * @return 单位明细
-     */
     @Override
     public FdUnit selectFdUnitByUnitId(Long unitId)
     {
-        return fdUnitMapper.selectFdUnitByUnitId(unitId);
+        FdUnit u = fdUnitMapper.selectFdUnitByUnitId(unitId);
+        if (u != null)
+        {
+            SecurityUtils.ensureTenantAccess(u.getTenantId());
+        }
+        return u;
     }
 
-    /**
-     * 查询单位明细列表
-     *
-     * @param fdUnit 单位明细
-     * @return 单位明细
-     */
     @Override
     public List<FdUnit> selectFdUnitList(FdUnit fdUnit)
     {
+        if (fdUnit != null && StringUtils.isEmpty(fdUnit.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            fdUnit.setTenantId(SecurityUtils.getCustomerId());
+        }
         return fdUnitMapper.selectFdUnitList(fdUnit);
     }
 
-    /**
-     * 新增单位明细
-     *
-     * @param fdUnit 单位明细
-     * @return 结果
-     */
     @Override
     public int insertFdUnit(FdUnit fdUnit)
     {
-        // 如果单位编码为空，自动生成D开头的编码
+        if (StringUtils.isEmpty(fdUnit.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            fdUnit.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (StringUtils.isEmpty(fdUnit.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
+        {
+            fdUnit.setCreateBy(SecurityUtils.getUserIdStr());
+        }
+        if (fdUnit.getDelFlag() == null)
+        {
+            fdUnit.setDelFlag(0);
+        }
         if (StringUtils.isEmpty(fdUnit.getUnitCode()))
         {
             fdUnit.setUnitCode(generateUnitCode());
@@ -68,78 +69,70 @@ public class FdUnitServiceImpl implements IFdUnitService
         return fdUnitMapper.insertFdUnit(fdUnit);
     }
 
-    /**
-     * 自动生成单位编码（D开头+7位数字）
-     *
-     * @return 单位编码
-     */
     private String generateUnitCode()
     {
-        String maxCode = fdUnitMapper.selectMaxUnitCode();
-        int nextNum = 1000024; // 默认起始编号（对应D0100024）
-        
+        String tid = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(tid))
+        {
+            tid = null;
+        }
+        String maxCode = fdUnitMapper.selectMaxUnitCode(tid);
+        int nextNum = 1000024;
+
         if (StringUtils.isNotEmpty(maxCode) && maxCode.startsWith("D") && maxCode.length() > 1)
         {
             try
             {
-                // 提取D后面的数字部分（去掉前导0后转换为整数）
                 String numStr = maxCode.substring(1);
                 int maxNum = Integer.parseInt(numStr);
                 nextNum = maxNum + 1;
             }
             catch (NumberFormatException e)
             {
-                // 如果解析失败，使用默认值
                 nextNum = 1000024;
             }
         }
-        
-        // 格式化为7位数字，前面补0
+
         DecimalFormat df = new DecimalFormat("0000000");
         return "D" + df.format(nextNum);
     }
 
-    /**
-     * 修改单位明细
-     *
-     * @param fdUnit 单位明细
-     * @return 结果
-     */
     @Override
     public int updateFdUnit(FdUnit fdUnit)
     {
+        if (fdUnit.getUnitId() == null)
+        {
+            throw new ServiceException("单位主键不能为空");
+        }
+        FdUnit before = fdUnitMapper.selectFdUnitByUnitId(fdUnit.getUnitId());
+        if (before == null)
+        {
+            throw new ServiceException("单位不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(before.getTenantId());
+        fdUnit.setTenantId(before.getTenantId());
         fdUnit.setUpdateTime(DateUtils.getNowDate());
+        if (StringUtils.isEmpty(fdUnit.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
+        {
+            fdUnit.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
         return fdUnitMapper.updateFdUnit(fdUnit);
     }
 
-    /**
-     * 批量删除单位明细
-     *
-     * @param unitIds 需要删除的单位明细主键
-     * @return 结果
-     */
     @Override
     public int deleteFdUnitByUnitIds(Long unitIds)
     {
         FdUnit fdUnit = fdUnitMapper.selectFdUnitByUnitId(unitIds);
-        if(fdUnit == null){
+        if (fdUnit == null)
+        {
             throw new ServiceException(String.format("单位明细：%s，不存在!", unitIds));
         }
+        SecurityUtils.ensureTenantAccess(fdUnit.getTenantId());
         fdUnit.setDelFlag(1);
+        fdUnit.setDeleteBy(SecurityUtils.getUserIdStr());
+        fdUnit.setDeleteTime(DateUtils.getNowDate());
         fdUnit.setUpdateBy(SecurityUtils.getUserIdStr());
-        fdUnit.setUpdateTime(new Date());
+        fdUnit.setUpdateTime(DateUtils.getNowDate());
         return fdUnitMapper.updateFdUnit(fdUnit);
     }
-
-//    /**
-//     * 删除单位明细信息
-//     *
-//     * @param unitId 单位明细主键
-//     * @return 结果
-//     */
-//    @Override
-//    public int deleteFdUnitByUnitId(Long unitId)
-//    {
-//        return fdUnitMapper.deleteFdUnitByUnitId(unitId);
-//    }
 }

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -24,7 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 客户68分类 Service 实现：初始化、同步、增删改查及操作记录
+ * 客户 68 分类（sb_customer_category68）实现：初始化/同步时以系统标准表 {@code fd_category68} 为蓝本
+ * （该表为全库共用字典模板，无 tenant_id）；本服务内数据按 {@code customerId} 隔离。
  *
  * @author spd
  */
@@ -67,6 +69,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
             row.setParentId(parentIdStr);
             row.setCategory68Code(std.getCategory68Code());
             row.setCategory68Name(std.getCategory68Name());
+            row.setNamePinyin(PinyinUtils.getPinyinInitials(std.getCategory68Name()));
             row.setDelFlag(0);
             row.setCreateBy(createBy);
             row.setCreateTime(now);
@@ -107,6 +110,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
                 existing.setParentId(parentIdStr);
                 existing.setCategory68Code(std.getCategory68Code());
                 existing.setCategory68Name(std.getCategory68Name());
+                existing.setNamePinyin(PinyinUtils.getPinyinInitials(std.getCategory68Name()));
                 existing.setUpdateBy(operateBy);
                 existing.setUpdateTime(now);
                 sbCustomerCategory68Mapper.update(existing);
@@ -118,6 +122,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
                 row.setParentId(parentIdStr);
                 row.setCategory68Code(std.getCategory68Code());
                 row.setCategory68Name(std.getCategory68Name());
+                row.setNamePinyin(PinyinUtils.getPinyinInitials(std.getCategory68Name()));
                 row.setDelFlag(0);
                 row.setCreateBy(operateBy);
                 row.setCreateTime(now);
@@ -192,6 +197,9 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
         if (old == null) {
             throw new ServiceException("客户68分类记录不存在");
         }
+        if (StringUtils.isEmpty(row.getCustomerId())) {
+            row.setCustomerId(old.getCustomerId());
+        }
         String summaryOld = toSummary(old);
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) row.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -227,6 +235,23 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
     @Override
     public List<SbCustomerCategory68Log> selectLogByTargetId(String targetId) {
         return sbCustomerCategory68LogMapper.selectByTargetId(targetId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePinyinForCustomer(String customerId) {
+        if (StringUtils.isEmpty(customerId)) return;
+        List<SbCustomerCategory68> list = sbCustomerCategory68Mapper.selectTreeByCustomerId(customerId);
+        if (list == null || list.isEmpty()) return;
+        String updateBy = SecurityUtils.getUserIdStr();
+        Date updateTime = DateUtils.getNowDate();
+        for (SbCustomerCategory68 row : list) {
+            String pinyin = PinyinUtils.getPinyinInitials(row.getCategory68Name());
+            row.setNamePinyin(pinyin);
+            row.setUpdateBy(updateBy);
+            row.setUpdateTime(updateTime);
+            sbCustomerCategory68Mapper.updatePinyinById(row);
+        }
     }
 
     private void saveLog(String customerId, String targetId, Long refCategory68Id, String operationType, String contentOld, String contentNew) {

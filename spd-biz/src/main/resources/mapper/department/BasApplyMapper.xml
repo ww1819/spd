@@ -112,6 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectBasApplyList" parameterType="BasApply" resultMap="BasApplyResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectBasApplyVo"/>
         <where>
             <if test="applyBillNo != null  and applyBillNo != ''"> and a.apply_bill_no = #{applyBillNo}</if>
@@ -121,7 +122,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
             <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
-            <if test="tenantId != null and tenantId != ''"> and (a.tenant_id = #{tenantId} or a.tenant_id is null)</if>
+            and a.tenant_id = #{scopedTenantId}
             and (a.del_flag = 0 or a.del_flag is null)
         </where>
     </select>
@@ -133,10 +134,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
                 b.batch_numer as sub_batch_numer, b.remark as sub_remark, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.tenant_id as sub_tenant_id,
+               d.id as dId, d.code as departmentCode, d.name as departmentName,
                au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
         from bas_apply a
         left join bas_apply_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_department d on a.department_id = d.id
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
         left join fd_material m on b.material_id = m.id
@@ -144,6 +147,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertBasApply" parameterType="BasApply" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into bas_apply
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="applyBillNo != null">apply_bill_no,</if>
@@ -162,7 +166,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">audit_by,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="rejectReason != null">reject_reason,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="applyBillNo != null">#{applyBillNo},</if>
@@ -181,11 +185,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="rejectReason != null">#{rejectReason},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateBasApply" parameterType="BasApply">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update bas_apply
         <trim prefix="SET" suffixOverrides=",">
             <if test="applyBillNo != null">apply_bill_no = #{applyBillNo},</if>
@@ -206,16 +211,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <!-- 逻辑删除：bas_apply 表使用 del_flag、del_by、del_time -->
     <delete id="deleteBasApplyById">
-        update bas_apply set del_flag = 1, del_by = #{deleteBy}, del_time = now(), update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update bas_apply set del_flag = 1, del_by = #{deleteBy}, del_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteBasApplyByIds">
-        update bas_apply set del_flag = 1, del_by = #{deleteBy}, del_time = now(), update_time = now() where id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update bas_apply set del_flag = 1, del_by = #{deleteBy}, del_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -223,14 +230,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 逻辑删除明细：bas_apply_entry 表使用 del_flag、delete_by、delete_time -->
     <delete id="deleteBasApplyEntryByParenIds">
-        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteBasApplyEntryByParenId">
-        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <insert id="batchBasApplyEntry">
@@ -241,7 +250,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(apply_bill_no) from bas_apply
-        where apply_bill_no like concat('%',#{date},'%')
+        where apply_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

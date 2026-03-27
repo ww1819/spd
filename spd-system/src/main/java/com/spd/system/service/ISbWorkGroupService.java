@@ -25,6 +25,13 @@ public interface ISbWorkGroupService {
 
   int removeUserFromGroup(String groupId, Long userId);
 
+  /** 查询用户在某客户下所属的工作组ID列表（用于用户编辑回显） */
+  List<String> selectGroupIdsByUserId(Long userId, String customerId);
+
+  /** 设置用户在某客户下的工作组归属（先删后插，写入 sb_work_group_user） */
+  void setUserWorkGroups(Long userId, String customerId, String[] groupIds);
+
+
   List<String> selectMenuIdsByGroupId(String groupId);
 
   int saveGroupMenus(String groupId, String customerId, String[] menuIds);
@@ -39,4 +46,12 @@ public interface ISbWorkGroupService {
 
   /** 将工作组的菜单、仓库、科室权限同步到组内所有用户（写入用户权限表） */
   int syncToGroupUsers(String groupId);
+
+  /**
+   * 判断用户是否属于指定客户下的 super 组（super 组用户不受科室/仓库权限限制，可看客户下全部）
+   * @param userId 用户ID
+   * @param customerId 客户ID，为空则返回 false
+   * @return 是否在 super 组
+   */
+  boolean isUserInSuperGroup(Long userId, String customerId);
 }

@@ -11,6 +11,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
+import com.spd.common.utils.poi.FixedDecimalExcelHandler;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 
 
 /**
@@ -29,30 +31,31 @@ public class FdMaterial extends BaseEntity
     private Long id;
 
     /** 耗材编码 */
-    @Excel(name = "耗材编码*")
+    @Excel(name = "耗材编码", width = 24, align = HorizontalAlignment.LEFT)
     private String code;
 
     /** 耗材名称 */
-    @Excel(name = "耗材名称*")
+    @Excel(name = "耗材名称*", nameAliases = { "耗材名称", "名称" }, width = 32, align = HorizontalAlignment.LEFT)
     private String name;
 
     /** 供应商ID */
-    @Excel(name = "供应商*")
+    @Excel(name = "供应商", type = Excel.Type.IMPORT)
     private Long supplierId;
 
     /** 规格 */
-    @Excel(name = "规格*")
+    @Excel(name = "规格", width = 24, align = HorizontalAlignment.LEFT)
     private String speci;
 
     /** 型号 */
-    @Excel(name = "型号*")
+    @Excel(name = "型号", width = 24, align = HorizontalAlignment.LEFT)
     private String model;
 
     /** 价格 */
-    @Excel(name = "价格*")
+    @Excel(name = "价格", width = 18, align = HorizontalAlignment.RIGHT, handler = FixedDecimalExcelHandler.class, args = { "4" })
     private BigDecimal price;
 
     /** 供应商对象 */
+    @Excel(name = "供应商", width = 28, align = HorizontalAlignment.LEFT, targetAttr = "name", type = Excel.Type.EXPORT)
     private FdSupplier supplier;
 
     /** 删除标识 */
@@ -70,19 +73,23 @@ public class FdMaterial extends BaseEntity
     private String useName;
 
     /** 生产厂家ID */
-    @Excel(name = "生产厂家*")
+    @Excel(name = "生产厂家", type = Excel.Type.IMPORT)
     private Long factoryId;
 
     /** 库房分类ID */
-    @Excel(name = "库房分类*")
+    @Excel(name = "库房分类")
     private Long storeroomId;
 
+    /** 产品档案默认所属仓库ID（用于科室盘盈可退库仓库） */
+    @Excel(name = "默认所属仓库ID")
+    private Long defaultWarehouseId;
+
     /** 财务分类ID */
-    @Excel(name = "财务分类*")
+    @Excel(name = "财务分类", type = Excel.Type.IMPORT)
     private Long financeCategoryId;
 
     /** 单位分类ID */
-    @Excel(name = "单位*")
+    @Excel(name = "单位")
     private Long unitId;
 
     /** 注册证名称 */
@@ -90,7 +97,7 @@ public class FdMaterial extends BaseEntity
     private String registerName;
 
     /** 注册证件号 */
-    @Excel(name = "注册证件号")
+    @Excel(name = "注册证号", nameAliases = { "注册证件号" }, width = 22, align = HorizontalAlignment.LEFT)
     private String registerNo;
 
     /** 医保名称 */
@@ -98,7 +105,7 @@ public class FdMaterial extends BaseEntity
     private String medicalName;
 
     /** 医保编码 */
-    @Excel(name = "医保编码")
+    @Excel(name = "医保编码", width = 27, align = HorizontalAlignment.LEFT)
     private String medicalNo;
 
     /** 有效期 */
@@ -203,12 +210,14 @@ public class FdMaterial extends BaseEntity
     private String isMonitor;
 
     /** 厂家对象 */
+    @Excel(name = "生产厂家", width = 28, align = HorizontalAlignment.LEFT, targetAttr = "factoryName", type = Excel.Type.EXPORT)
     private FdFactory fdFactory;
 
     /** 库房分类对象 */
     private FdWarehouseCategory fdWarehouseCategory;
 
     /** 财务分类对象 */
+    @Excel(name = "财务分类", width = 22, align = HorizontalAlignment.LEFT, targetAttr = "financeCategoryName", type = Excel.Type.EXPORT)
     private FdFinanceCategory fdFinanceCategory;
 
     /** 单位分类对象 */
@@ -251,10 +260,11 @@ public class FdMaterial extends BaseEntity
     private String includeMaterialIds;
 
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
+    @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "选填；与 HIS 等产品编码对接时使用")
     private String hisId;
 
     /** 入选原因 */
-    @Excel(name = "入选原因")
+    @Excel(name = "入选原因", prompt = "选填")
     private String selectionReason;
 
     /** 状态变更原因（仅用于启用/停用时传参，不持久化） */

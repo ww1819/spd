@@ -66,6 +66,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
+                    entity.setRemark(d.getRemark());
                     entity.setDelFlag(0);
                     if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
                         entity.setTenantId(SecurityUtils.getCustomerId());
@@ -79,6 +80,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());
                     existing.setLocationId(d.getLocationId());
+                    existing.setRemark(d.getRemark());
                     existing.setUpdateBy(operator);
                     whFixedNumberMapper.updateWhFixedNumber(existing);
                 }
@@ -104,6 +106,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     entity.setMonitoring(d.getMonitoring());
                     entity.setLocation(d.getLocation());
                     entity.setLocationId(d.getLocationId());
+                    entity.setRemark(d.getRemark());
                     entity.setDelFlag(0);
                     if (StringUtils.isEmpty(entity.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
                         entity.setTenantId(SecurityUtils.getCustomerId());
@@ -117,6 +120,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     existing.setMonitoring(d.getMonitoring());
                     existing.setLocation(d.getLocation());
                     existing.setLocationId(d.getLocationId());
+                    existing.setRemark(d.getRemark());
                     existing.setUpdateBy(operator);
                     deptFixedNumberMapper.updateDeptFixedNumber(existing);
                 }
@@ -126,11 +130,13 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
 
     @Override
     public int deleteFixedNumberById(String id) {
-        // 先尝试删除仓库定数
-        int rows = whFixedNumberMapper.deleteWhFixedNumberById(id);
+        String operator = SecurityUtils.getUsername();
+        if (operator == null) {
+            operator = "";
+        }
+        int rows = whFixedNumberMapper.deleteWhFixedNumberById(id, operator);
         if (rows == 0) {
-            // 如果仓库表中没有，再尝试删除科室定数
-            rows = deptFixedNumberMapper.deleteDeptFixedNumberById(id);
+            rows = deptFixedNumberMapper.deleteDeptFixedNumberById(id, operator);
         }
         return rows;
     }

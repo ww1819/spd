@@ -118,7 +118,35 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
   }
 
   @Override
+  public List<String> selectGroupIdsByUserId(Long userId, String customerId) {
+    return sbWorkGroupUserMapper.selectGroupIdsByUserId(userId, customerId);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void setUserWorkGroups(Long userId, String customerId, String[] groupIds) {
+    String createBy = SecurityUtils.getUserIdStr();
+    sbWorkGroupUserMapper.deleteByUserIdAndCustomerId(userId, customerId, createBy);
+    if (groupIds == null || groupIds.length == 0) return;
+    java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+    for (String groupId : groupIds) {
+      if (StringUtils.isEmpty(groupId)) continue;
+      if (!seen.add(groupId)) continue;
+      SbWorkGroupUser wgu = new SbWorkGroupUser();
+      wgu.setGroupId(groupId);
+      wgu.setUserId(userId);
+      wgu.setCustomerId(customerId);
+      wgu.setCreateBy(createBy);
+      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
+    }
+  }
+
+  @Override
   public List<String> selectMenuIdsByGroupId(String groupId) {
+    SbWorkGroup group = sbWorkGroupMapper.selectByGroupId(groupId);
+    if (group != null && StringUtils.isNotEmpty(group.getCustomerId())) {
+      return sbWorkGroupMenuMapper.selectMenuIdsByGroupIdAndCustomerId(groupId, group.getCustomerId());
+    }
     return sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
   }
 
@@ -207,7 +235,9 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
     if (userIds == null || userIds.isEmpty()) return 0;
     String createBy = SecurityUtils.getUserIdStr();
 
-    List<String> menuIds = sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
+    List<String> menuIds = StringUtils.isNotEmpty(customerId)
+        ? sbWorkGroupMenuMapper.selectMenuIdsByGroupIdAndCustomerId(groupId, customerId)
+        : sbWorkGroupMenuMapper.selectMenuIdsByGroupId(groupId);
     List<Long> warehouseIds = sbWorkGroupWarehouseMapper.selectWarehouseIdsByGroupId(groupId);
     List<Long> deptIds = sbWorkGroupDeptMapper.selectDeptIdsByGroupId(groupId);
 
@@ -266,5 +296,22 @@ public class SbWorkGroupServiceImpl implements ISbWorkGroupService {
       }
     }
     return count;
+  }
+
+  private static final String GROUP_KEY_SUPER = "super";
+
+  @Override
+  public boolean isUserInSuperGroup(Long userId, String customerId) {
+    if (userId == null || StringUtils.isEmpty(customerId)) {
+      return false;
+    }
+    List<SbWorkGroup> groups = sbWorkGroupMapper.selectListByCustomerId(customerId);
+    if (groups == null) return false;
+    SbWorkGroup superGroup = groups.stream()
+        .filter(g -> GROUP_KEY_SUPER.equals(g.getGroupKey()))
+        .findFirst()
+        .orElse(null);
+    if (superGroup == null) return false;
+    return sbWorkGroupUserMapper.countByGroupIdAndUserId(superGroup.getGroupId(), userId) > 0;
   }
 }

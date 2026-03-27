@@ -29,6 +29,8 @@ public class FdMaterialStatusLog {
 
     /** 启用/停用原因 */
     private String reason;
+    /** 租户ID */
+    private String tenantId;
 
     public String getId() {
         return id;
@@ -76,5 +78,13 @@ public class FdMaterialStatusLog {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

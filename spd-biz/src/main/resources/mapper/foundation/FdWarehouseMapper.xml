@@ -33,44 +33,96 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark,tenant_id from fd_warehouse
     </sql>
 
+    <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id，而登录已用 TenantEnum 新 ID） -->
+    <sql id="fdWarehouseTenantMatch">
+        (
+        fd_warehouse.tenant_id = #{scopedTenantId}
+        or (
+        #{scopedTenantId} != null and #{scopedTenantId} != ''
+        and exists (
+        select 1 from sb_customer sc_me
+        inner join sb_customer sc_alt on sc_me.tenant_key is not null
+        and trim(sc_me.tenant_key) != ''
+        and sc_me.tenant_key = sc_alt.tenant_key
+        where sc_me.customer_id = #{scopedTenantId}
+        and fd_warehouse.tenant_id = sc_alt.customer_id
+        )
+        )
+        )
+    </sql>
+    <sql id="fdWarehouseTenantMatchW">
+        (
+        w.tenant_id = #{scopedTenantId}
+        or (
+        #{scopedTenantId} != null and #{scopedTenantId} != ''
+        and exists (
+        select 1 from sb_customer sc_me
+        inner join sb_customer sc_alt on sc_me.tenant_key is not null
+        and trim(sc_me.tenant_key) != ''
+        and sc_me.tenant_key = sc_alt.tenant_key
+        where sc_me.customer_id = #{scopedTenantId}
+        and w.tenant_id = sc_alt.customer_id
+        )
+        )
+        )
+    </sql>
+
     <select id="selectFdWarehouseList" parameterType="FdWarehouse" resultMap="FdWarehouseResult">
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdWarehouseVo"/>
         where del_flag != 1
+        and <include refid="fdWarehouseTenantMatch"/>
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        <if test="params != null and params.allowedWarehouseIds != null">
+            <choose>
+                <when test="params.allowedWarehouseIds.size() > 0"> and id in <foreach collection="params.allowedWarehouseIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
+                <otherwise> and 1=0</otherwise>
+            </choose>
+        </if>
     </select>
 
     <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select w.id,w.code,w.name
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
         left join sys_user u on u.user_id = uw.user_id
         where w.del_flag != 1
         <if test="userId != null"> and u.user_id = #{userId}</if>
-        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
+        and <include refid="fdWarehouseTenantMatchW"/>
     </select>
 
     <select id="selectFdWarehouseById" parameterType="String" resultMap="FdWarehouseResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectFdWarehouseVo"/>
+        where id = #{id} and (del_flag = 0 or del_flag is null) and <include refid="fdWarehouseTenantMatch"/>
+    </select>
+
+    <select id="selectFdWarehouseByIdIgnoreTenant" resultMap="FdWarehouseResult">
         <include refid="selectFdWarehouseVo"/>
         where id = #{id} and (del_flag = 0 or del_flag is null)
+        limit 1
     </select>
 
     <select id="selectwarehouseAll" resultMap="FdWarehouseResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdWarehouseVo"/>
-        where del_flag != 1
+        where del_flag != 1 and <include refid="fdWarehouseTenantMatch"/>
     </select>
 
     <select id="selectWarehouseListByUserId" parameterType="Long" resultType="Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select w.id
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
         left join sys_user u on u.user_id = uw.user_id
-        where w.del_flag != 1
+        where w.del_flag != 1 and <include refid="fdWarehouseTenantMatchW"/>
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
 	</select>
 
-    <insert id="insertFdWarehouse" parameterType="FdWarehouse">
+    <insert id="insertFdWarehouse" parameterType="FdWarehouse" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_warehouse
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -86,7 +138,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type,</if>
             <if test="settlementType != null and settlementType != ''">settlement_type,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -102,11 +154,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">#{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{insertTenantId},
          </trim>
     </insert>
 
     <update id="updateFdWarehouse" parameterType="FdWarehouse">
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_warehouse
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -122,25 +175,45 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type = #{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="remark != null">remark = #{remark},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </update>
 
     <delete id="deleteFdWarehouseById" parameterType="String">
-        update fd_warehouse set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_warehouse set del_flag = 1, update_time = now() where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </delete>
 
     <delete id="deleteFdWarehouseByIds" parameterType="String">
-        update fd_warehouse set del_flag = 1, update_time = now() where id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_warehouse set del_flag = 1, update_time = now() where <include refid="fdWarehouseTenantMatch"/> and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
+    <sql id="stkIoBillTenantMatch">
+        (
+        stk_io_bill.tenant_id = #{scopedTenantId}
+        or (
+        #{scopedTenantId} != null and #{scopedTenantId} != ''
+        and exists (
+        select 1 from sb_customer sc_me
+        inner join sb_customer sc_alt on sc_me.tenant_key is not null
+        and trim(sc_me.tenant_key) != ''
+        and sc_me.tenant_key = sc_alt.tenant_key
+        where sc_me.customer_id = #{scopedTenantId}
+        and stk_io_bill.tenant_id = sc_alt.customer_id
+        )
+        )
+        )
+    </sql>
+
     <select id="selectWarehouseIsExist" parameterType="Long" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select count(*) from stk_io_bill
         where del_flag !=1
         and warehouse_id = #{id}
+        and <include refid="stkIoBillTenantMatch"/>
     </select>
 </mapper>

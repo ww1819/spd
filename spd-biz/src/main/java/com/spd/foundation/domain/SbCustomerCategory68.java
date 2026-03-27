@@ -39,6 +39,10 @@ public class SbCustomerCategory68 extends BaseEntity {
     @Excel(name = "68分类名称")
     private String category68Name;
 
+    /** 名称拼音简码 */
+    @Excel(name = "拼音简码")
+    private String namePinyin;
+
     /** 删除标志(0正常 1已删除) */
     private Integer delFlag;
 
@@ -57,6 +61,8 @@ public class SbCustomerCategory68 extends BaseEntity {
 
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
 
     public Long getRefCategory68Id() { return refCategory68Id; }
     public void setRefCategory68Id(Long refCategory68Id) { this.refCategory68Id = refCategory68Id; }
@@ -69,6 +75,9 @@ public class SbCustomerCategory68 extends BaseEntity {
 
     public String getCategory68Name() { return category68Name; }
     public void setCategory68Name(String category68Name) { this.category68Name = category68Name; }
+
+    public String getNamePinyin() { return namePinyin; }
+    public void setNamePinyin(String namePinyin) { this.namePinyin = namePinyin; }
 
     public Integer getDelFlag() { return delFlag; }
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
@@ -91,6 +100,7 @@ public class SbCustomerCategory68 extends BaseEntity {
             .append("parentId", parentId)
             .append("category68Code", category68Code)
             .append("category68Name", category68Name)
+            .append("namePinyin", namePinyin)
             .append("delFlag", delFlag)
             .append("delBy", delBy)
             .append("delTime", delTime)

@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdWarehouse;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -28,6 +30,15 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "耗材ID")
     private Long materialId;
 
+    /** 产品名称（表 material_name，快照） */
+    private String snapMaterialName;
+    /** 规格（表 material_speci） */
+    private String snapMaterialSpeci;
+    /** 型号（表 material_model） */
+    private String snapMaterialModel;
+    /** 生产厂家ID快照（表 material_factory_id） */
+    private Long snapMaterialFactoryId;
+
     /** 科室ID */
     @Excel(name = "科室ID")
     private Long departmentId;
@@ -48,6 +59,9 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
+    /** 批次对象表ID（stk_batch.id） */
+    private Long batchId;
+
     /** 耗材批次号 */
     @Excel(name = "耗材批次号")
     private String materialNo;
@@ -64,6 +78,9 @@ public class StkDepInventory extends BaseEntity
 
     /** 仓库ID */
     private Long warehouseId;
+
+    /** 生产厂家ID（fd_factory.factory_id） */
+    private Long factoryId;
 
     /** 单据类型 */
     private Integer billType;
@@ -92,7 +109,10 @@ public class StkDepInventory extends BaseEntity
     /** 单据号 */
     private String billNo;
 
-    /** 科室库存明细id（反写） */
+    /** 删除标识（0正常 1已删除） */
+    private Integer delFlag;
+
+    /** 关联仓库库存主键 stk_inventory.id（出库审核扣减的来源库存行，与仓库流水 HcCkFlow.kc_no 含义一致） */
     private Long kcNo;
 
     /** 耗材对象 */
@@ -103,6 +123,12 @@ public class StkDepInventory extends BaseEntity
 
     /** 供应商对象 */
     private FdSupplier supplier;
+
+    /** 归属仓库（出库来源仓库） */
+    private FdWarehouse warehouse;
+
+    /** 生产厂家（优先库存行 factory_id，否则耗材档案） */
+    private FdFactory fdFactory;
 
     @Excel(name = "批号")
     private String batchNumber;
@@ -142,6 +168,39 @@ public class StkDepInventory extends BaseEntity
     {
         return materialId;
     }
+
+    public String getSnapMaterialName() {
+        return snapMaterialName;
+    }
+
+    public void setSnapMaterialName(String snapMaterialName) {
+        this.snapMaterialName = snapMaterialName;
+    }
+
+    public String getSnapMaterialSpeci() {
+        return snapMaterialSpeci;
+    }
+
+    public void setSnapMaterialSpeci(String snapMaterialSpeci) {
+        this.snapMaterialSpeci = snapMaterialSpeci;
+    }
+
+    public String getSnapMaterialModel() {
+        return snapMaterialModel;
+    }
+
+    public void setSnapMaterialModel(String snapMaterialModel) {
+        this.snapMaterialModel = snapMaterialModel;
+    }
+
+    public Long getSnapMaterialFactoryId() {
+        return snapMaterialFactoryId;
+    }
+
+    public void setSnapMaterialFactoryId(Long snapMaterialFactoryId) {
+        this.snapMaterialFactoryId = snapMaterialFactoryId;
+    }
+
     public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
@@ -187,6 +246,16 @@ public class StkDepInventory extends BaseEntity
     {
         return batchNo;
     }
+
+    public Long getBatchId()
+    {
+        return batchId;
+    }
+
+    public void setBatchId(Long batchId)
+    {
+        this.batchId = batchId;
+    }
     public void setMaterialNo(String materialNo)
     {
         this.materialNo = materialNo;
@@ -221,6 +290,14 @@ public class StkDepInventory extends BaseEntity
 
     public void setWarehouseId(Long warehouseId) {
         this.warehouseId = warehouseId;
+    }
+
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
     }
 
     public Integer getBillType() {
@@ -276,6 +353,10 @@ public class StkDepInventory extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("materialId", getMaterialId())
+            .append("snapMaterialName", getSnapMaterialName())
+            .append("snapMaterialSpeci", getSnapMaterialSpeci())
+            .append("snapMaterialModel", getSnapMaterialModel())
+            .append("snapMaterialFactoryId", getSnapMaterialFactoryId())
             .append("departmentId", getDepartmentId())
             .append("qty", getQty())
             .append("unitPrice", getUnitPrice())
@@ -306,6 +387,22 @@ public class StkDepInventory extends BaseEntity
         this.supplier = supplier;
     }
 
+    public FdWarehouse getWarehouse() {
+        return warehouse;
+    }
+
+    public void setWarehouse(FdWarehouse warehouse) {
+        this.warehouse = warehouse;
+    }
+
+    public FdFactory getFdFactory() {
+        return fdFactory;
+    }
+
+    public void setFdFactory(FdFactory fdFactory) {
+        this.fdFactory = fdFactory;
+    }
+
     public String getOutOrderNo() {
         return outOrderNo;
     }
@@ -320,6 +417,14 @@ public class StkDepInventory extends BaseEntity
 
     public void setKcNo(Long kcNo) {
         this.kcNo = kcNo;
+    }
+
+    public Integer getDelFlag() {
+        return delFlag;
+    }
+
+    public void setDelFlag(Integer delFlag) {
+        this.delFlag = delFlag;
     }
 
     public String getBatchNumber() {

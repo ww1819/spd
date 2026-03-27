@@ -32,6 +32,10 @@ public class SysUser extends BaseEntity
     /** 客户ID（SaaS租户，归属客户） */
     private String customerId;
 
+    /** HIS 系统用户ID（对接 HIS 等） */
+    @Excel(name = "HIS系统ID", width = 22, prompt = "与 HIS 用户主键对接时使用")
+    private String hisId;
+
     /** 用户账号 */
     @Excel(name = "登录名称")
     private String userName;
@@ -90,8 +94,11 @@ public class SysUser extends BaseEntity
     /** 角色组 */
     private Long[] roleIds;
 
-    /** 岗位组 */
+    /** 岗位组（sys_post 岗位 ID，Long） */
     private Long[] postIds;
+
+    /** 工作组ID（设备系统，对应 sb_work_group_user.group_id，String UUID） */
+    private String[] workGroupIds;
 
     /** 角色ID */
     private Long roleId;
@@ -102,14 +109,17 @@ public class SysUser extends BaseEntity
     /** 科室组 */
     private Long[] departmentIds;
 
-    /** 菜单组 */
-    private Long[] menuIds;
+    /** 菜单组（平台为数字字符串，设备系统为 UUID 字符串） */
+    private String[] menuIds;
 
     /** 岗位名称（用于列表显示） */
     private String postName;
 
     /** 工作组ID（设备系统，列表筛选：仅显示该工作组下的用户，对应 sb_work_group_user.group_id） */
     private String workgroupPostId;
+
+    /** 耗材岗位/工作组ID（列表筛选：对应 sys_user_post.post_id） */
+    private Long sysPostId;
 
     public SysUser()
     {
@@ -159,6 +169,16 @@ public class SysUser extends BaseEntity
     public void setCustomerId(String customerId)
     {
         this.customerId = customerId;
+    }
+
+    public String getHisId()
+    {
+        return hisId;
+    }
+
+    public void setHisId(String hisId)
+    {
+        this.hisId = hisId;
     }
 
     @Xss(message = "用户昵称不能包含脚本字符")
@@ -327,6 +347,14 @@ public class SysUser extends BaseEntity
         this.postIds = postIds;
     }
 
+    public String[] getWorkGroupIds() {
+        return workGroupIds;
+    }
+
+    public void setWorkGroupIds(String[] workGroupIds) {
+        this.workGroupIds = workGroupIds;
+    }
+
     public Long getRoleId()
     {
         return roleId;
@@ -353,11 +381,11 @@ public class SysUser extends BaseEntity
         this.departmentIds = departmentIds;
     }
 
-    public Long[] getMenuIds() {
+    public String[] getMenuIds() {
         return menuIds;
     }
 
-    public void setMenuIds(Long[] menuIds) {
+    public void setMenuIds(String[] menuIds) {
         this.menuIds = menuIds;
     }
 
@@ -377,11 +405,20 @@ public class SysUser extends BaseEntity
         this.workgroupPostId = workgroupPostId;
     }
 
+    public Long getSysPostId() {
+        return sysPostId;
+    }
+
+    public void setSysPostId(Long sysPostId) {
+        this.sysPostId = sysPostId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("userId", getUserId())
             .append("deptId", getDeptId())
+            .append("hisId", getHisId())
             .append("userName", getUserName())
             .append("nickName", getNickName())
             .append("referredName", getReferredName())

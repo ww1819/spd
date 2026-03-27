@@ -126,9 +126,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdEquipmentDictList" parameterType="FdEquipmentDict" resultMap="FdEquipmentDictResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdEquipmentDictVo"/>
         <where>
             e.del_flag != 1
+            and e.tenant_id = #{scopedTenantId}
             <if test="code != null  and code != ''"> and e.code = #{code}</if>
             <if test="name != null  and name != ''"> and e.name like concat('%', #{name}, '%')</if>
             <if test="supplierId != null "> and e.supplier_id = #{supplierId}</if>
@@ -142,16 +144,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdEquipmentDictById" parameterType="Long" resultMap="FdEquipmentDictResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdEquipmentDictVo"/>
-        where e.id = #{id} and (e.del_flag = 0 or e.del_flag is null)
+        where e.id = #{id} and (e.del_flag = 0 or e.del_flag is null) and e.tenant_id = #{scopedTenantId}
     </select>
     
     <select id="selectFdEquipmentDictByCode" parameterType="String" resultMap="FdEquipmentDictResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdEquipmentDictVo"/>
-        where e.code = #{code}
+        where e.code = #{code} and e.tenant_id = #{scopedTenantId}
     </select>
     
     <insert id="insertFdEquipmentDict" parameterType="FdEquipmentDict" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_equipment_dict
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">code,</if>
@@ -205,6 +210,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="imageUrl != null">image_url,</if>
             <if test="sunshineCode != null">sunshine_code,</if>
             <if test="isBilling != null">is_billing,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">#{code},</if>
@@ -258,10 +264,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="imageUrl != null">#{imageUrl},</if>
             <if test="sunshineCode != null">#{sunshineCode},</if>
             <if test="isBilling != null">#{isBilling},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateFdEquipmentDict" parameterType="FdEquipmentDict">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_equipment_dict
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -317,15 +325,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sunshineCode != null">sunshine_code = #{sunshineCode},</if>
             <if test="isBilling != null">is_billing = #{isBilling},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteFdEquipmentDictById" parameterType="Long">
-        update fd_equipment_dict set del_flag = 1, update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_equipment_dict set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdEquipmentDictByIds" parameterType="String">
-        update fd_equipment_dict set del_flag = 1, update_time = now() where id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_equipment_dict set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

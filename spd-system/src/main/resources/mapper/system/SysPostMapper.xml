@@ -36,7 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				AND post_name like concat('%', #{postName}, '%')
 			</if>
 			<if test="tenantId != null and tenantId != ''">
-				AND (tenant_id = #{tenantId} OR tenant_id IS NULL)
+				AND tenant_id = #{tenantId}
 			</if>
 		</where>
 	</select>
@@ -56,6 +56,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	        left join sys_user_post up on up.post_id = p.post_id
 	        left join sys_user u on u.user_id = up.user_id
 	    where u.user_id = #{userId}
+	</select>
+
+	<!--
+	  耗材端「租户管理员」判定：用户关联岗位 post_code=super。
+	  租户归属只看 sys_user.customer_id 或 sys_user_post.tenant_id（与 fd_* 一致即可）。
+	  不再用 sys_post.tenant_id 参与判定：若岗位表 tenant_id 与库中其它表不一致，会导致 isTenantSuper 恒为 false，仓库/科室列表 allowed* 为空 → SQL 中 1=0。
+	-->
+	<select id="countUserSuperPostInTenant" resultType="int">
+		select count(1)
+		from sys_user_post up
+		inner join sys_post p on p.post_id = up.post_id
+		inner join sys_user u on u.user_id = up.user_id
+		where up.user_id = #{userId}
+		  and p.post_code = 'super'
+		  and p.status = '0'
+		  and (
+		    trim(ifnull(u.customer_id,'')) = trim(ifnull(#{tenantId},''))
+		    or trim(ifnull(up.tenant_id,'')) = trim(ifnull(#{tenantId},''))
+		  )
 	</select>
 	
 	<select id="selectPostsByUserName" parameterType="String" resultMap="SysPostResult">
@@ -125,5 +144,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			#{postId}
         </foreach> 
  	</delete>
+
+	<select id="selectHcSuperPostLinkedToCustomer" resultMap="SysPostResult">
+		select p.post_id, p.post_code, p.post_name, p.post_sort, p.status, p.create_by, p.create_time, p.remark, p.tenant_id
+		from sys_post p
+		inner join sys_user_post up on up.post_id = p.post_id
+		inner join sys_user u on u.user_id = up.user_id
+		where p.post_code = 'super'
+		  and p.status = '0'
+		  and u.customer_id = #{tenantId}
+		order by p.post_id asc
+		limit 1
+	</select>
+
+	<update id="updatePostTenantIdIfBlank">
+		update sys_post
+		set tenant_id = #{tenantId}
+		where post_id = #{postId}
+		  and (tenant_id is null or tenant_id = '')
+	</update>
 
 </mapper> 

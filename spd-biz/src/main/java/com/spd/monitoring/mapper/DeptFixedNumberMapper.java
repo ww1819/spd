@@ -34,6 +34,6 @@ public interface DeptFixedNumberMapper {
     /**
      * 根据主键软删除科室定数监测
      */
-    int deleteDeptFixedNumberById(String id);
+    int deleteDeptFixedNumberById(@Param("id") String id, @Param("deleteBy") String deleteBy);
 }
 

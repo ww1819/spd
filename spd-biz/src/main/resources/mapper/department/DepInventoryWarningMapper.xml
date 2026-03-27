@@ -91,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDepInventoryWarningList" parameterType="DepInventoryWarning" resultMap="DepInventoryWarningResult">
         <include refid="selectDepInventoryWarningVo"/>
         where w.del_flag = 0
-        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId} or w.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId})</if>
         <if test="departmentId != null "> and w.department_id = #{departmentId}</if>
         <if test="materialId != null "> and w.material_id = #{materialId}</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
@@ -100,11 +100,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectDepInventoryWarningById" parameterType="Long" resultMap="DepInventoryWarningResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectDepInventoryWarningVo"/>
-        where w.id = #{id} and w.del_flag = 0
+        where w.id = #{id} and w.tenant_id = #{scopedTenantId} and w.del_flag = 0
     </select>
 
     <insert id="insertDepInventoryWarning" parameterType="DepInventoryWarning" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into dep_inventory_warning
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="departmentId != null">department_id,</if>
@@ -117,7 +119,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="departmentId != null">#{departmentId},</if>
@@ -130,11 +132,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateDepInventoryWarning" parameterType="DepInventoryWarning">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dep_inventory_warning
         <trim prefix="SET" suffixOverrides=",">
             <if test="departmentId != null">department_id = #{departmentId},</if>
@@ -148,15 +151,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteDepInventoryWarningById">
-        update dep_inventory_warning set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update dep_inventory_warning set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteDepInventoryWarningByIds">
-        update dep_inventory_warning set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update dep_inventory_warning set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>

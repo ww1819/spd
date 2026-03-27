@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import java.math.BigDecimal;
@@ -72,7 +73,10 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Override
     public int insertGzTraceability(GzTraceability gzTraceability)
     {
-        if (gzTraceability != null && StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        if (gzTraceability == null) {
+            throw new ServiceException("高值追溯单不能为空");
+        }
+        if (StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzTraceability.setTenantId(SecurityUtils.getCustomerId());
         }
         // 生成追溯单号
@@ -129,6 +133,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Transactional
     public int deleteGzTraceabilityByIds(Long[] ids)
     {
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
         // 恢复库存
         for (Long id : ids) {
             restoreDepartmentInventory(id);
@@ -198,17 +205,18 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         Long id = gzTraceability.getId();
         if (StringUtils.isNotNull(traceabilityEntryList))
         {
-            String tenantId = gzTraceability.getTenantId();
-            if (StringUtils.isEmpty(tenantId) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-                tenantId = SecurityUtils.getCustomerId();
-            }
+            // tenant_id 在 mapper 批量写入时依赖 entry.tenantId，必须严格解析且不允许为空
+            String tenantId = StringUtils.isNotEmpty(gzTraceability.getTenantId())
+                ? gzTraceability.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
             List<GzTraceabilityEntry> list = new ArrayList<GzTraceabilityEntry>();
             for (GzTraceabilityEntry entry : traceabilityEntryList)
             {
-                entry.setParentId(id);
-                if (StringUtils.isNotEmpty(tenantId)) {
-                    entry.setTenantId(tenantId);
+                if (entry == null) {
+                    continue;
                 }
+                entry.setParentId(id);
+                entry.setTenantId(tenantId);
                 entry.setDelFlag("0");
                 entry.setCreateTime(DateUtils.getNowDate());
                 entry.setCreateBy(SecurityUtils.getUserIdStr());
@@ -273,6 +281,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         
         for (GzTraceabilityEntry entry : gzTraceability.getTraceabilityEntryList()) {
+            if (entry == null) {
+                continue;
+            }
             if (entry.getInventoryId() != null) {
                 // 根据inventoryId扣减库存
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
@@ -317,6 +328,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
      * @param traceabilityId 追溯单ID
      */
     private void restoreDepartmentInventory(Long traceabilityId) {
+        if (traceabilityId == null) {
+            return;
+        }
         // 查询旧的明细数据
         GzTraceability oldTraceability = gzTraceabilityMapper.selectGzTraceabilityById(traceabilityId);
         if (oldTraceability == null || oldTraceability.getTraceabilityEntryList() == null || oldTraceability.getTraceabilityEntryList().isEmpty()) {
@@ -329,6 +343,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         
         for (GzTraceabilityEntry entry : oldTraceability.getTraceabilityEntryList()) {
+            if (entry == null) {
+                continue;
+            }
             if (entry.getInventoryId() != null) {
                 // 根据inventoryId恢复库存
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());

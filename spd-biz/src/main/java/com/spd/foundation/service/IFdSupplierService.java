@@ -1,7 +1,10 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+import java.util.Map;
+
 import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdSupplierChangeLog;
 
 /**
  * 供应商Service接口
@@ -65,4 +68,19 @@ public interface IFdSupplierService
      * @param ids 供应商ID列表
      */
     void updateReferred(List<Long> ids);
+
+    /**
+     * 供应商字段变更记录
+     */
+    List<FdSupplierChangeLog> selectSupplierChangeLog(Long supplierId);
+
+    /**
+     * 导入校验（不落库）
+     */
+    Map<String, Object> validateFdSupplierImport(List<FdSupplier> list, Boolean isUpdateSupport);
+
+    /**
+     * 导入供应商（须先校验且 confirm=true）
+     */
+    String importFdSupplier(List<FdSupplier> list, Boolean isUpdateSupport, String operName, boolean confirmed);
 }

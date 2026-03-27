@@ -230,7 +230,6 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setUpdateBy(SecurityUtils.getUserIdStr());
         basApply.setAuditBy(String.valueOf(SecurityUtils.getUserId()));
         basApply.setAuditDate(new Date());
-        basApply.setUpdateBy(SecurityUtils.getUsername());
         basApply.setUpdateTime(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
         return res;
@@ -248,6 +247,10 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (id == null) {
             return;
         }
+        // 批量写入 mapper 依赖 item.tenantId，必须严格解析且不允许为空
+        String tenantId = StringUtils.isNotEmpty(basApply.getTenantId())
+            ? basApply.getTenantId()
+            : SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotNull(basApplyEntryList) && !basApplyEntryList.isEmpty())
         {
             List<BasApplyEntry> list = new ArrayList<BasApplyEntry>();
@@ -257,9 +260,7 @@ public class BasApplyServiceImpl implements IBasApplyService
                     continue;
                 }
                 basApplyEntry.setParenId(id);
-                if (StringUtils.isEmpty(basApplyEntry.getTenantId()) && StringUtils.isNotEmpty(basApply.getTenantId())) {
-                    basApplyEntry.setTenantId(basApply.getTenantId());
-                }
+                basApplyEntry.setTenantId(tenantId);
                 list.add(basApplyEntry);
             }
             if (!list.isEmpty())

@@ -62,6 +62,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if (gzShipmentEntryList != null) {
             System.out.println("查询出库单明细，院内码信息:");
             for (GzShipmentEntry entry : gzShipmentEntryList) {
+                if (entry == null) {
+                    continue;
+                }
                 System.out.println("  - id: " + entry.getId() + 
                     ", materialId: " + entry.getMaterialId() + 
                     ", batchNo: " + entry.getBatchNo() + 
@@ -71,9 +74,17 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         List<FdMaterial> materialList = new ArrayList<FdMaterial>();
         if (gzShipmentEntryList != null) {
             for(GzShipmentEntry entry : gzShipmentEntryList){
+                if (entry == null) {
+                    continue;
+                }
                 Long materialId = entry.getMaterialId();
+                if (materialId == null) {
+                    continue;
+                }
                 FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-                materialList.add(fdMaterial);
+                if (fdMaterial != null) {
+                    materialList.add(fdMaterial);
+                }
             }
         }
         gzShipment.setMaterialList(materialList);
@@ -105,7 +116,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
     @Override
     public int insertGzShipment(GzShipment gzShipment)
     {
-        if (gzShipment != null && StringUtils.isEmpty(gzShipment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        if (gzShipment == null) {
+            throw new ServiceException("高值出库单不能为空");
+        }
+        if (StringUtils.isEmpty(gzShipment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
         gzShipment.setShipmentNo(getShipmentNo());
@@ -165,10 +179,15 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setUpdateTime(new Date());
 
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
-        for(GzShipmentEntry entry : gzShipmentEntryList){
-            entry.setDelFlag(1);
-            entry.setParenId(id);
-            gzShipmentMapper.updateGzShipmentEntry(entry);
+        if (gzShipmentEntryList != null) {
+            for(GzShipmentEntry entry : gzShipmentEntryList){
+                if (entry == null) {
+                    continue;
+                }
+                entry.setDelFlag(1);
+                entry.setParenId(id);
+                gzShipmentMapper.updateGzShipmentEntry(entry);
+            }
         }
 
         return gzShipmentMapper.updateGzShipment(gzShipment);
@@ -177,11 +196,20 @@ public class GzShipmentServiceImpl implements IGzShipmentService
     @Override
     @Transactional
     public int auditGzShipment(String id) {
-        GzShipment gzShipment = gzShipmentMapper.selectGzShipmentById(Long.parseLong(id));
+        Long billId;
+        try {
+            billId = Long.parseLong(id);
+        } catch (Exception e) {
+            throw new ServiceException(String.format("高值出库业务ID：%s 非法", id));
+        }
+        GzShipment gzShipment = gzShipmentMapper.selectGzShipmentById(billId);
         if(gzShipment == null){
             throw new ServiceException(String.format("高值出库业务ID：%s，不存在!", id));
         }
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
+        if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
+            throw new ServiceException(String.format("高值出库单 %s 无明细，无法审核", id));
+        }
 
         //更新高值仓库库存（减少库存）
         updateDepotInventory(gzShipment, gzShipmentEntryList);
@@ -200,9 +228,21 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
     private void updateDepotInventory(GzShipment gzShipment, List<GzShipmentEntry> gzShipmentEntryList){
         // 出库时减少库存，根据批次号和物料ID匹配库存记录
+        if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
+            return;
+        }
         for(GzShipmentEntry shipmentEntry : gzShipmentEntryList){
+            if (shipmentEntry == null) {
+                continue;
+            }
             if(shipmentEntry.getQty() != null && BigDecimal.ZERO.compareTo(shipmentEntry.getQty()) != 0){
                 int qty = shipmentEntry.getQty().intValue();
+                if (StringUtils.isEmpty(shipmentEntry.getBatchNo())) {
+                    throw new ServiceException(String.format("出库明细批次号不能为空，出库单ID：%s", gzShipment.getId()));
+                }
+                if (shipmentEntry.getMaterialId() == null) {
+                    throw new ServiceException(String.format("出库明细物料ID不能为空，出库单ID：%s", gzShipment.getId()));
+                }
                 
                 // 查询库存记录，按批次号和物料ID匹配
                 GzDepotInventory queryInventory = new GzDepotInventory();
@@ -211,12 +251,18 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 queryInventory.setWarehouseId(gzShipment.getWarehouseId());
                 
                 List<GzDepotInventory> inventoryList = gzDepotInventoryMapper.selectGzDepotInventoryList(queryInventory);
+                if (inventoryList == null) {
+                    inventoryList = new ArrayList<>();
+                }
                 
                 // 按数量减少库存，优先减少数量为1的记录
                 int remainingQty = qty;
                 for(GzDepotInventory inventory : inventoryList){
                     if(remainingQty <= 0){
                         break;
+                    }
+                    if (inventory == null || inventory.getQty() == null) {
+                        continue;
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) == 0 && remainingQty > 0){
                         // 删除数量为1的记录
@@ -229,6 +275,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 for(GzDepotInventory inventory : inventoryList){
                     if(remainingQty <= 0){
                         break;
+                    }
+                    if (inventory == null || inventory.getQty() == null) {
+                        continue;
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) > 0){
                         BigDecimal reduceQty = BigDecimal.valueOf(Math.min(remainingQty, inventory.getQty().intValue()));
@@ -257,7 +306,13 @@ public class GzShipmentServiceImpl implements IGzShipmentService
      */
     private void updateDepInventory(GzShipment gzShipment, List<GzShipmentEntry> gzShipmentEntryList){
         // 每个出库明细对应一个院内码，应该创建一条独立的科室库存记录
+        if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
+            return;
+        }
         for(GzShipmentEntry shipmentEntry : gzShipmentEntryList){
+            if (shipmentEntry == null) {
+                continue;
+            }
             if(shipmentEntry.getQty() != null && BigDecimal.ZERO.compareTo(shipmentEntry.getQty()) != 0){
                 // 优先使用出库明细中的院内码
                 String inHospitalCode = shipmentEntry.getInHospitalCode();
@@ -372,12 +427,15 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if (StringUtils.isNotNull(gzShipmentEntryList))
         {
             List<GzShipmentEntry> list = new ArrayList<GzShipmentEntry>();
-            String tenantId = gzShipment.getTenantId();
-            if (StringUtils.isEmpty(tenantId) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-                tenantId = SecurityUtils.getCustomerId();
-            }
+            // tenant_id 在 mapper 批量写入时依赖 entry.tenantId，必须严格解析且不允许为空
+            String tenantId = StringUtils.isNotEmpty(gzShipment.getTenantId())
+                ? gzShipment.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
             for (GzShipmentEntry gzShipmentEntry : gzShipmentEntryList)
             {
+                if (gzShipmentEntry == null) {
+                    continue;
+                }
                 // 调试：打印保存前的数据，特别是院内码
                 System.out.println("保存出库明细 - materialId: " + gzShipmentEntry.getMaterialId() + 
                     ", qty: " + gzShipmentEntry.getQty() + 
@@ -386,9 +444,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     ", inHospitalCode: " + gzShipmentEntry.getInHospitalCode());
                 
                 gzShipmentEntry.setParenId(id);
-                if (StringUtils.isNotEmpty(tenantId)) {
-                    gzShipmentEntry.setTenantId(tenantId);
-                }
+                gzShipmentEntry.setTenantId(tenantId);
                 // 只有在 batchNo 为空时才生成新的批次号，避免覆盖已有的批次号
                 if (gzShipmentEntry.getBatchNo() == null || gzShipmentEntry.getBatchNo().isEmpty()) {
                     gzShipmentEntry.setBatchNo(getBatchNumber());

@@ -29,6 +29,11 @@ public @interface Excel
     public String name() default "";
 
     /**
+     * 导入时表头别名（与 {@link #name()} 择一匹配即可），用于兼容历史模板列名
+     */
+    public String[] nameAliases() default {};
+
+    /**
      * 日期格式, 如: yyyy-MM-dd
      */
     public String dateFormat() default "";

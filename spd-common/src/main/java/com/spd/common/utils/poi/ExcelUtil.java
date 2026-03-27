@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -224,12 +225,130 @@ public class ExcelUtil<T>
         }
         this.list = list;
         this.sheetName = sheetName;
-        this.type = type;
         this.title = title;
+        this.type = type;
         createExcelField();
         createWorkbook();
         createTitle();
         createSubHead();
+    }
+
+    /**
+     * 导入校验/预览时单行回传上限，避免 JSON 过大导致客户端或网关读响应超时（如 {@link org.apache.catalina.connector.ClientAbortException}）。
+     */
+    public static final int IMPORT_PREVIEW_MAX_ROWS = 200;
+
+    /**
+     * 按导入模板列（{@link com.spd.common.annotation.Excel.Type#IMPORT}）将数据转为「表头中文名 -&gt; 单元格文本」行列表，用于导入解析预览与导出解析结果。
+     * <p>默认最多回传 {@link #IMPORT_PREVIEW_MAX_ROWS} 行，需全量请使用 {@link #buildImportPreviewMaps(Class, List, int)} 并传入 {@code maxRows &lt;= 0}。</p>
+     */
+    public static <T> List<LinkedHashMap<String, Object>> buildImportPreviewMaps(Class<T> clazz, List<T> data)
+    {
+        return buildImportPreviewMaps(clazz, data, IMPORT_PREVIEW_MAX_ROWS);
+    }
+
+    /**
+     * @param maxRows 最大行数；{@code &lt;= 0} 表示不截断（与历史行为一致，慎用大文件）
+     */
+    public static <T> List<LinkedHashMap<String, Object>> buildImportPreviewMaps(Class<T> clazz, List<T> data, int maxRows)
+    {
+        if (data == null || data.isEmpty())
+        {
+            return new ExcelUtil<>(clazz).buildImportPreviewMaps(data);
+        }
+        if (maxRows <= 0 || data.size() <= maxRows)
+        {
+            return new ExcelUtil<>(clazz).buildImportPreviewMaps(data);
+        }
+        List<T> sub = data.subList(0, maxRows);
+        return new ExcelUtil<>(clazz).buildImportPreviewMaps(sub);
+    }
+
+    /**
+     * 确认导入（commit）成功后的响应体：不回传逐行预览，仅行数摘要，避免大文件响应体过大。
+     */
+    public static Map<String, Object> buildImportCommitSummaryMap(int totalRows)
+    {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("totalRows", totalRows);
+        return m;
+    }
+
+    /**
+     * 实例方法：生成导入预览行（不创建工作簿）。
+     */
+    public List<LinkedHashMap<String, Object>> buildImportPreviewMaps(List<T> data)
+    {
+        this.type = Type.IMPORT;
+        this.list = data != null ? data : new ArrayList<>();
+        createExcelField();
+        List<LinkedHashMap<String, Object>> rows = new ArrayList<>();
+        for (T vo : this.list)
+        {
+            LinkedHashMap<String, Object> row = new LinkedHashMap<>();
+            for (Object[] os : this.fields)
+            {
+                Field field = (Field) os[0];
+                Excel attr = (Excel) os[1];
+                String header = attr.name();
+                if (StringUtils.isEmpty(header))
+                {
+                    continue;
+                }
+                Object cellVal = "";
+                try
+                {
+                    if (vo != null && attr.isExport())
+                    {
+                        Object value = getTargetValue(vo, field, attr);
+                        cellVal = formatAttributeForPreview(value, attr);
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.warn("导入预览单元格取值失败: {}", e.getMessage());
+                    cellVal = "";
+                }
+                row.put(header, cellVal);
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /**
+     * 与导出单元格一致的文本化规则（用于预览/再导出）。
+     */
+    private Object formatAttributeForPreview(Object value, Excel attr)
+    {
+        if (value == null)
+        {
+            return "";
+        }
+        String dateFormat = attr.dateFormat();
+        if (StringUtils.isNotEmpty(dateFormat))
+        {
+            return parseDateToStr(dateFormat, value);
+        }
+        String readConverterExp = attr.readConverterExp();
+        if (StringUtils.isNotEmpty(readConverterExp))
+        {
+            return convertByExp(Convert.toStr(value), readConverterExp, attr.separator());
+        }
+        String dictType = attr.dictType();
+        if (StringUtils.isNotEmpty(dictType))
+        {
+            return convertDictByExp(Convert.toStr(value), dictType, attr.separator());
+        }
+        if (value instanceof BigDecimal && -1 != attr.scale())
+        {
+            return ((BigDecimal) value).setScale(attr.scale(), attr.roundingMode()).stripTrailingZeros().toPlainString();
+        }
+        if (!attr.handler().equals(ExcelHandlerAdapter.class))
+        {
+            return Convert.toStr(dataFormatHandlerAdapter(value, attr));
+        }
+        return Convert.toStr(value);
     }
 
     /**
@@ -318,10 +437,12 @@ public class ExcelUtil<T>
     public List<T> importExcel(String sheetName, InputStream is, int titleNum) throws Exception
     {
         this.type = Type.IMPORT;
-        this.wb = WorkbookFactory.create(is);
         List<T> list = new ArrayList<T>();
-        // 如果指定sheet名,则取指定sheet中的内容 否则默认指向第1个sheet
-        Sheet sheet = StringUtils.isNotEmpty(sheetName) ? wb.getSheet(sheetName) : wb.getSheetAt(0);
+        try
+        {
+            this.wb = WorkbookFactory.create(is);
+            // 如果指定sheet名,则取指定sheet中的内容 否则默认指向第1个sheet
+            Sheet sheet = StringUtils.isNotEmpty(sheetName) ? wb.getSheet(sheetName) : wb.getSheetAt(0);
         if (sheet == null)
         {
             throw new IOException("文件sheet不存在");
@@ -365,6 +486,20 @@ public class ExcelUtil<T>
             {
                 Excel attr = (Excel) objects[1];
                 Integer column = cellMap.get(attr.name());
+                if (column == null && attr.nameAliases() != null)
+                {
+                    for (String alias : attr.nameAliases())
+                    {
+                        if (StringUtils.isNotEmpty(alias))
+                        {
+                            column = cellMap.get(alias);
+                            if (column != null)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
                 if (column != null)
                 {
                     fieldsMap.put(column, objects);
@@ -485,6 +620,23 @@ public class ExcelUtil<T>
             }
         }
         return list;
+        }
+        finally
+        {
+            if (this.wb != null)
+            {
+                try
+                {
+                    this.wb.close();
+                }
+                catch (IOException e)
+                {
+                    log.warn("关闭导入用工作簿失败", e);
+                }
+                this.wb = null;
+            }
+            IOUtils.closeQuietly(is);
+        }
     }
 
     /**
@@ -858,7 +1010,9 @@ public class ExcelUtil<T>
             {
                 CellStyle style = wb.createCellStyle();
                 style.setAlignment(excel.align());
-                style.setVerticalAlignment(VerticalAlignment.CENTER);
+                // 支持文本左上角显示与自动换行（适配多字段“加宽/换行”导出需求）
+                style.setVerticalAlignment(VerticalAlignment.TOP);
+                style.setWrapText(true);
                 style.setBorderRight(BorderStyle.THIN);
                 style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
                 style.setBorderLeft(BorderStyle.THIN);
@@ -1209,6 +1363,10 @@ public class ExcelUtil<T>
         for (String item : convertSource)
         {
             String[] itemArray = item.split("=");
+            if (itemArray.length < 2)
+            {
+                continue;
+            }
             if (StringUtils.containsAny(propertyValue, separator))
             {
                 for (String value : propertyValue.split(separator))
@@ -1246,6 +1404,10 @@ public class ExcelUtil<T>
         for (String item : convertSource)
         {
             String[] itemArray = item.split("=");
+            if (itemArray.length < 2)
+            {
+                continue;
+            }
             if (StringUtils.containsAny(propertyValue, separator))
             {
                 for (String value : propertyValue.split(separator))

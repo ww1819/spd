@@ -34,6 +34,16 @@ public interface FdMaterialMapper
     public FdMaterial selectFdMaterialByHisId(String hisId);
 
     /**
+     * 按租户 + HIS 产品档案 ID 查一条（未删除）
+     */
+    FdMaterial selectFdMaterialByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
+
+    /**
+     * 按租户 + 耗材编码查一条（未删除）
+     */
+    FdMaterial selectFdMaterialByTenantAndCode(@Param("tenantId") String tenantId, @Param("code") String code);
+
+    /**
      * 根据主条码或耗材编码查询耗材产品（用于扫码匹配产品档案）
      *
      * @param mainBarcode 主条码或耗材编码
@@ -48,6 +58,11 @@ public interface FdMaterialMapper
      * @return 耗材产品
      */
     public FdMaterial selectFdMaterialById(Long id);
+
+    /**
+     * 按主键 + 租户查产品档案（与单据 tenant 一致，避免仅用 getCustomerId() 导致查不到）
+     */
+    FdMaterial selectFdMaterialByIdAndTenant(@Param("id") Long id, @Param("tenantId") String tenantId);
 
     /**
      * 查询耗材产品列表

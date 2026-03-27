@@ -7,6 +7,7 @@
   <insert id="insertSbWorkGroupUser" parameterType="com.spd.system.domain.SbWorkGroupUser">
     insert into sb_work_group_user (group_id, user_id, customer_id, create_by, create_time, del_flag)
     values (#{groupId}, #{userId}, #{customerId}, #{createBy}, sysdate(), ifnull(#{delFlag}, '0'))
+    on duplicate key update del_flag = '0', delete_by = null, delete_time = null
   </insert>
 
   <select id="selectUserIdsByGroupId" resultType="long">
@@ -19,6 +20,11 @@
 
   <update id="deleteByGroupIdAndUserId">
     update sb_work_group_user set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1' where group_id = #{groupId} and user_id = #{userId} and ifnull(del_flag, '0') = '0'
+  </update>
+
+  <update id="deleteByUserIdAndCustomerId">
+    update sb_work_group_user set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1'
+    where user_id = #{userId} and (customer_id = #{customerId} or (#{customerId} is null and customer_id is null)) and ifnull(del_flag, '0') = '0'
   </update>
 
   <select id="countByGroupIdAndUserId" resultType="int">

@@ -2,6 +2,8 @@ package com.spd.system.mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.ResultMap;
+import org.apache.ibatis.annotations.Select;
 import com.spd.common.core.domain.entity.SysUser;
 
 /**
@@ -45,8 +47,18 @@ public interface SysUserMapper
 
     /**
      * 通过用户名与客户ID查询用户（租户登录）
+     * 使用注解绑定，避免仅依赖 XML 时部分运行环境未加载 mapper 片段导致 Invalid bound statement
      */
-    public SysUser selectUserByUserNameAndCustomerId(@Param("userName") String userName, @Param("customerId") String customerId);
+    @ResultMap("SysUserResult")
+    @Select("select u.user_id, u.dept_id, u.customer_id, u.his_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, "
+            + "d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.status as dept_status, "
+            + "r.role_id, r.role_name, r.role_key, r.role_sort, r.data_scope, r.status as role_status "
+            + "from sys_user u "
+            + "left join sys_dept d on u.dept_id = d.dept_id "
+            + "left join sys_user_role ur on u.user_id = ur.user_id "
+            + "left join sys_role r on r.role_id = ur.role_id "
+            + "where u.user_name = #{userName} and u.del_flag = '0' and (u.customer_id = #{customerId} or (#{customerId} is null and u.customer_id is null))")
+    SysUser selectUserByUserNameAndCustomerId(@Param("userName") String userName, @Param("customerId") String customerId);
 
     /**
      * 通过用户名查询用户（仅限无客户归属的平台用户）
@@ -60,6 +72,11 @@ public interface SysUserMapper
      * @return 用户对象信息
      */
     public SysUser selectUserById(Long userId);
+
+    /**
+     * 仅查询 customer_id（按主键），用于修正 Redis 中 LoginUser 与库不一致。
+     */
+    String selectCustomerIdByUserId(Long userId);
 
     /**
      * 新增用户信息

@@ -18,6 +18,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	    select count(1) from sys_user_department where department_id=#{departmentId}
 	</select>
 
+	<select id="selectDepartmentIdsByUserId" parameterType="Long" resultType="Long">
+		select department_id from sys_user_department where user_id = #{userId}
+	</select>
+
 	<delete id="deleteUserDepartment" parameterType="Long">
  		delete from sys_user_department where user_id in
  		<foreach collection="array" item="userId" open="(" separator="," close=")">

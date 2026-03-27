@@ -81,7 +81,7 @@ public class SbCustomerCategory68Controller extends BaseController {
      * 新增客户68分类（与标准一一对应场景下一般通过同步产生，此处供特殊新增）
      */
     @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:add')")
-    @Log(title = "客户68分类", businessType = BusinessType.INSERT)
+    @Log(title = "医疗器械68分类", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody SbCustomerCategory68 row) {
         row.setCustomerId(requireCustomerId());
@@ -92,7 +92,7 @@ public class SbCustomerCategory68Controller extends BaseController {
      * 修改客户68分类
      */
     @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:edit')")
-    @Log(title = "客户68分类", businessType = BusinessType.UPDATE)
+    @Log(title = "医疗器械68分类", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody SbCustomerCategory68 row) {
         return toAjax(sbCustomerCategory68Service.update(row));
@@ -102,7 +102,7 @@ public class SbCustomerCategory68Controller extends BaseController {
      * 删除客户68分类（逻辑删除）
      */
     @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:remove')")
-    @Log(title = "客户68分类", businessType = BusinessType.DELETE)
+    @Log(title = "医疗器械68分类", businessType = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     public AjaxResult remove(@PathVariable String id) {
         return toAjax(sbCustomerCategory68Service.deleteById(id));
@@ -112,11 +112,23 @@ public class SbCustomerCategory68Controller extends BaseController {
      * 同步：以 fd_category68 为蓝本，更新已有、新增没有
      */
     @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:sync')")
-    @Log(title = "客户68分类同步", businessType = BusinessType.UPDATE)
+    @Log(title = "医疗器械68分类同步", businessType = BusinessType.UPDATE)
     @PostMapping("/sync")
     public AjaxResult sync() {
         String customerId = requireCustomerId();
         sbCustomerCategory68Service.syncFromStandard(customerId);
+        return success();
+    }
+
+    /**
+     * 更新简码：根据分类名称批量更新当前客户下68分类的拼音简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:customerCategory68:edit')")
+    @Log(title = "医疗器械68分类更新简码", businessType = BusinessType.UPDATE)
+    @PostMapping("/updatePinyin")
+    public AjaxResult updatePinyin() {
+        String customerId = requireCustomerId();
+        sbCustomerCategory68Service.updatePinyinForCustomer(customerId);
         return success();
     }
 

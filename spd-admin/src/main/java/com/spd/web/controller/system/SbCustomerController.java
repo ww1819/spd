@@ -27,6 +27,7 @@ import com.spd.common.enums.TenantEnum;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerMenuService;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ITenantDataPurgeService;
 
 /**
  * 设备系统客户（SaaS租户）管理
@@ -43,6 +44,8 @@ public class SbCustomerController extends BaseController {
 
   @Autowired
   private ISbCustomerMenuService sbCustomerMenuService;
+  @Autowired
+  private ITenantDataPurgeService tenantDataPurgeService;
 
   @PreAuthorize("@ss.hasPermi('sb:system:customer:list')")
   @GetMapping("/list")
@@ -177,7 +180,7 @@ public class SbCustomerController extends BaseController {
   }
 
   /**
-   * 设备功能重置：若 super 组和 super_01 不存在则创建；重置客户菜单权限、super 工作组菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
+   * 设备功能重置：若 super 组和 super_01 不存在则创建；将默认对客户开放的权限开放给客户、super 组、super_01 用户。
    */
   @PreAuthorize("@ss.hasPermi('sb:system:customer:edit')")
   @Log(title = "设备功能重置", businessType = BusinessType.UPDATE)
@@ -196,5 +199,38 @@ public class SbCustomerController extends BaseController {
   public AjaxResult resetMaterial(@PathVariable String customerId) {
     sbCustomerService.resetMaterialFunctions(customerId);
     return success();
+  }
+
+  /**
+   * 按客户物理删除设备侧数据（customer_id）；不删除 sb_customer 行；删除该客户下 sys_user。
+   */
+  @PreAuthorize("@ss.hasPermi('sb:system:customer:purgeEq')")
+  @Log(title = "清理设备租户数据", businessType = BusinessType.DELETE)
+  @PostMapping("/{customerId}/purgeEquipmentData")
+  public AjaxResult purgeEquipmentData(@PathVariable String customerId,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String c = body != null ? body.get("confirm") : null;
+    if (!"PURGE_EQ".equals(c)) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_EQ\"} 以确认清理设备数据");
+    }
+    int n = tenantDataPurgeService.purgeEquipmentDataForCustomer(customerId);
+    return success("已清理设备数据，影响行数约 " + n);
+  }
+
+  /**
+   * 与耗材客户管理并列：在设备客户列表行内可触发清理该租户耗材数据（逻辑同
+   * {@code POST /material/system/customer/{id}/purgeConsumablesData}）。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:purgeHc')")
+  @Log(title = "清理耗材租户数据", businessType = BusinessType.DELETE)
+  @PostMapping("/{customerId}/purgeConsumablesData")
+  public AjaxResult purgeConsumablesDataFromEquipmentUi(@PathVariable String customerId,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String c = body != null ? body.get("confirm") : null;
+    if (!"PURGE_HC".equals(c)) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_HC\"} 以确认清理耗材数据");
+    }
+    int n = tenantDataPurgeService.purgeConsumablesDataForTenant(customerId);
+    return success("已清理耗材数据，影响行数约 " + n);
   }
 }

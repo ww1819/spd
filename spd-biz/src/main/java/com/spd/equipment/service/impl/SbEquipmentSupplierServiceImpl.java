@@ -2,6 +2,7 @@ package com.spd.equipment.service.impl;
 
 import java.util.List;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -31,8 +32,30 @@ public class SbEquipmentSupplierServiceImpl implements ISbEquipmentSupplierServi
     }
 
     @Override
+    public SbEquipmentSupplier getOrCreateByName(String name) {
+        if (StringUtils.isEmpty(name)) return null;
+        String customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(customerId)) return null;
+        SbEquipmentSupplier q = new SbEquipmentSupplier();
+        q.setCustomerId(customerId);
+        q.setName(name.trim());
+        List<SbEquipmentSupplier> list = mapper.selectList(q);
+        if (list != null) {
+            for (SbEquipmentSupplier s : list) {
+                if (name.trim().equals(s.getName())) return s;
+            }
+        }
+        SbEquipmentSupplier row = new SbEquipmentSupplier();
+        row.setName(name.trim());
+        row.setCustomerId(customerId);
+        insert(row);
+        return row;
+    }
+
+    @Override
     public int insert(SbEquipmentSupplier row) {
         if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
+        if (StringUtils.isNotEmpty(row.getName())) row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));
         row.setId(UUID7.generateUUID7());
         row.setDelFlag(0);
         row.setCreateTime(DateUtils.getNowDate());
@@ -42,6 +65,7 @@ public class SbEquipmentSupplierServiceImpl implements ISbEquipmentSupplierServi
 
     @Override
     public int update(SbEquipmentSupplier row) {
+        if (StringUtils.isNotEmpty(row.getName())) row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) row.setUpdateBy(SecurityUtils.getUserIdStr());
         return mapper.update(row);

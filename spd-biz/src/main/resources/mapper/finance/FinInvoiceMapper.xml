@@ -40,15 +40,17 @@
     </sql>
 
     <select id="selectById" resultMap="FinInvoiceResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where f.id = #{id} and (f.del_flag = 0 or f.del_flag is null)
+        where f.id = #{id} and (f.del_flag = 0 or f.del_flag is null) and f.tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectList" resultMap="FinInvoiceResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
         <where>
             (f.del_flag = 0 or f.del_flag is null)
-            <if test="tenantId != null and tenantId != ''">and f.tenant_id = #{tenantId}</if>
+            and f.tenant_id = #{scopedTenantId}
             <if test="invoiceNo != null and invoiceNo != ''">and f.invoice_no like concat('%', #{invoiceNo}, '%')</if>
             <if test="invoiceCode != null and invoiceCode != ''">and f.invoice_code like concat('%', #{invoiceCode}, '%')</if>
             <if test="supplierId != null">and f.supplier_id = #{supplierId}</if>
@@ -70,6 +72,7 @@
     </insert>
 
     <update id="update" parameterType="com.spd.finance.domain.FinInvoice">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fin_invoice
         <set>
             <if test="invoiceNo != null">invoice_no = #{invoiceNo},</if>
@@ -87,15 +90,17 @@
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = now()
         </set>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="updateAuditStatus">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fin_invoice set audit_status = 1, audit_by = #{auditBy}, audit_time = now(), update_time = now()
-        where id = #{id} and (audit_status = 0 or audit_status is null)
+        where id = #{id} and tenant_id = #{scopedTenantId} and (audit_status = 0 or audit_status is null)
     </update>
 
     <update id="deleteById">
-        update fin_invoice set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fin_invoice set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

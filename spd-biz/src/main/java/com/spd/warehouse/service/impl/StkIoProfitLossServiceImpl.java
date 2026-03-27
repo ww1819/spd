@@ -32,6 +32,7 @@ import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.warehouse.domain.HcCkFlow;
+import com.spd.warehouse.domain.StkProfitLossPending;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoProfitLoss;
@@ -41,6 +42,7 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.mapper.HcCkFlowMapper;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.mapper.StkProfitLossPendingMapper;
 import com.spd.warehouse.mapper.StkIoProfitLossMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoProfitLossService;
@@ -56,7 +58,8 @@ import com.spd.warehouse.vo.StkProfitLossEntryVo;
 public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
 
     private static final Logger log = LoggerFactory.getLogger(StkIoProfitLossServiceImpl.class);
-    private static final String BATCH_SOURCE_PROFIT = "仓库盘盈";
+    // 批次来源 lx：盘盈 => PY
+    private static final String BATCH_SOURCE_PROFIT = "PY";
 
     @Autowired
     private StkIoProfitLossMapper stkIoProfitLossMapper;
@@ -68,6 +71,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
     private HcCkFlowMapper hcCkFlowMapper;
     @Autowired
     private StkBatchMapper stkBatchMapper;
+    @Autowired
+    private StkProfitLossPendingMapper stkProfitLossPendingMapper;
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
     @Autowired
@@ -283,6 +288,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setSubBarcode(entry.getSubBarcode() != null ? entry.getSubBarcode() : inventory.getSubBarcode());
                 flow.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId() : parseSupplierIdLong(entry.getSupplerId()));
                 flow.setLx("PK");
+                flow.setBatchId(inventory.getBatchId());
+                flow.setOriginBusinessType("仓库盘亏");
                 flow.setKcNo(inventory.getId());
                 flow.setFlowTime(now);
                 flow.setDelFlag(0);
@@ -310,56 +317,38 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 BigDecimal addQty = profitQty;
                 BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : BigDecimal.ZERO;
                 BigDecimal addAmt = addQty.multiply(unitPrice);
-                if (inventory == null) {
-                    inventory = new StkInventory();
-                    inventory.setBatchNo(batchNo);
-                    inventory.setBatchId(stkBatch.getId());
-                    inventory.setMaterialId(entry.getMaterialId());
-                    inventory.setWarehouseId(warehouseId);
-                    inventory.setQty(addQty);
-                    inventory.setUnitPrice(unitPrice);
-                    inventory.setAmt(addAmt);
-                    inventory.setMaterialDate(now);
-                    inventory.setWarehouseDate(now);
-                    inventory.setBeginTime(entry.getBeginTime());
-                    inventory.setEndTime(entry.getEndTime());
-                    inventory.setMainBarcode(entry.getMainBarcode());
-                    inventory.setSubBarcode(entry.getSubBarcode());
-                    inventory.setSupplierId(parseSupplierIdLong(entry.getSupplerId()));
-                    inventory.setCreateTime(now);
-                    inventory.setCreateBy(username);
-                    stkInventoryMapper.insertStkInventory(inventory);
-                } else {
-                    BigDecimal newQty = inventory.getQty().add(addQty);
-                    inventory.setQty(newQty);
-                    inventory.setAmt(newQty.multiply(unitPrice));
-                    inventory.setUpdateTime(now);
-                    inventory.setUpdateBy(username);
-                    stkInventoryMapper.updateStkInventory(inventory);
-                }
 
-                HcCkFlow flow = new HcCkFlow();
-                flow.setBillId(bill.getId());
-                flow.setEntryId(entry.getId());
-                flow.setWarehouseId(warehouseId);
-                flow.setMaterialId(entry.getMaterialId());
-                flow.setBatchNo(batchNo);
-                flow.setBatchNumber(entry.getBatchNumber());
-                flow.setQty(addQty);
-                flow.setUnitPrice(unitPrice);
-                flow.setAmt(addAmt);
-                flow.setBeginTime(entry.getBeginTime());
-                flow.setEndTime(entry.getEndTime());
-                flow.setMainBarcode(entry.getMainBarcode());
-                flow.setSubBarcode(entry.getSubBarcode());
-                flow.setSupplierId(parseSupplierIdLong(entry.getSupplerId()));
-                flow.setLx("PY");
-                flow.setKcNo(inventory.getId());
-                flow.setFlowTime(now);
-                flow.setDelFlag(0);
-                flow.setCreateTime(now);
-                flow.setCreateBy(username);
-                hcCkFlowMapper.insertHcCkFlow(flow);
+                // 盘盈：只生成“待入账”明细，不直接更新 stk_inventory/stk_dep_inventory，避免污染结算数据
+                StkProfitLossPending pending = new StkProfitLossPending();
+                pending.setBillId(bill.getId());
+                pending.setEntryId(entry.getId());
+                pending.setWarehouseId(warehouseId);
+                pending.setMaterialId(entry.getMaterialId());
+                pending.setSupplierId(parseSupplierIdLong(entry.getSupplerId()));
+
+                pending.setBatchNo(batchNo);
+                pending.setBatchId(stkBatch.getId());
+                pending.setBatchNumber(entry.getBatchNumber());
+
+                pending.setQty(addQty);
+                pending.setUnitPrice(unitPrice);
+                pending.setAmt(addAmt);
+                pending.setBeginTime(entry.getBeginTime());
+                pending.setEndTime(entry.getEndTime());
+                pending.setMainBarcode(entry.getMainBarcode());
+                pending.setSubBarcode(entry.getSubBarcode());
+
+                pending.setApplyStatus("待入账");
+                pending.setSettlementEffectStatus("仅追溯用");
+                pending.setTenantId(bill.getTenantId());
+
+                pending.setDelFlag(0);
+                pending.setCreateTime(now);
+                pending.setCreateBy(username);
+                pending.setUpdateTime(now);
+                pending.setUpdateBy(username);
+
+                stkProfitLossPendingMapper.insertStkProfitLossPending(pending);
             }
         }
 
@@ -432,7 +421,15 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         b.setBillId(bill.getId());
         b.setBillNo(bill.getBillNo());
         b.setEntryId(entry.getId());
+        // 批次来源：盘盈对应流水 lx=PY（批次追溯展示用）
         b.setBatchSource(BATCH_SOURCE_PROFIT);
+        b.setOriginBillType(null);
+        b.setOriginFlowLx("PY");
+        b.setOriginBusinessType("仓库盘盈");
+        if (bill.getWarehouseId() != null) {
+            b.setOriginFromWarehouseId(bill.getWarehouseId());
+            b.setOriginToWarehouseId(bill.getWarehouseId());
+        }
         Date now = new Date();
         String username = SecurityUtils.getUserIdStr();
         b.setAuditTime(now);
@@ -440,6 +437,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         b.setCreateTime(now);
         b.setCreateBy(username);
         b.setDelFlag(0);
+        b.setTenantId(bill.getTenantId());
         if (StringUtils.isNotEmpty(entry.getSupplerId())) {
             try {
                 Long supplierId = Long.valueOf(entry.getSupplerId().trim());

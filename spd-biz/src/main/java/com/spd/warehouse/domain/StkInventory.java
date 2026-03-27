@@ -32,6 +32,15 @@ public class StkInventory extends BaseEntity
     @Excel(name = "耗材ID")
     private Long materialId;
 
+    /** 产品名称（表 material_name，入库时快照） */
+    private String snapMaterialName;
+    /** 规格（表 material_speci） */
+    private String snapMaterialSpeci;
+    /** 型号（表 material_model） */
+    private String snapMaterialModel;
+    /** 生产厂家ID快照（表 material_factory_id） */
+    private Long snapMaterialFactoryId;
+
     /** 仓库ID */
     @Excel(name = "仓库ID")
     private Long warehouseId;
@@ -68,6 +77,9 @@ public class StkInventory extends BaseEntity
     /** 供应商ID */
     @Excel(name = "供应商ID")
     private Long supplierId;
+
+    /** 生产厂家ID（冗余，与批次/耗材档案一致） */
+    private Long factoryId;
 
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -156,6 +168,39 @@ public class StkInventory extends BaseEntity
     {
         return materialId;
     }
+
+    public String getSnapMaterialName() {
+        return snapMaterialName;
+    }
+
+    public void setSnapMaterialName(String snapMaterialName) {
+        this.snapMaterialName = snapMaterialName;
+    }
+
+    public String getSnapMaterialSpeci() {
+        return snapMaterialSpeci;
+    }
+
+    public void setSnapMaterialSpeci(String snapMaterialSpeci) {
+        this.snapMaterialSpeci = snapMaterialSpeci;
+    }
+
+    public String getSnapMaterialModel() {
+        return snapMaterialModel;
+    }
+
+    public void setSnapMaterialModel(String snapMaterialModel) {
+        this.snapMaterialModel = snapMaterialModel;
+    }
+
+    public Long getSnapMaterialFactoryId() {
+        return snapMaterialFactoryId;
+    }
+
+    public void setSnapMaterialFactoryId(Long snapMaterialFactoryId) {
+        this.snapMaterialFactoryId = snapMaterialFactoryId;
+    }
+
     public void setWarehouseId(Long warehouseId)
     {
         this.warehouseId = warehouseId;
@@ -247,6 +292,14 @@ public class StkInventory extends BaseEntity
 
     public void setSupplierId(Long supplierId) {
         this.supplierId = supplierId;
+    }
+
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
     }
 
     public Date getBeginTime() {
@@ -359,6 +412,10 @@ public class StkInventory extends BaseEntity
             .append("id", getId())
             .append("qty", getQty())
             .append("materialId", getMaterialId())
+            .append("snapMaterialName", getSnapMaterialName())
+            .append("snapMaterialSpeci", getSnapMaterialSpeci())
+            .append("snapMaterialModel", getSnapMaterialModel())
+            .append("snapMaterialFactoryId", getSnapMaterialFactoryId())
             .append("warehouseId", getWarehouseId())
             .append("unitPrice", getUnitPrice())
             .append("amt", getAmt())

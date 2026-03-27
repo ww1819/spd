@@ -103,6 +103,10 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "供应商ID")
     private Long supplierId;
 
+    /** 盘盈明细的可退库仓库ID（用于科室退库锁定目标仓库） */
+    @Excel(name = "可退库仓库ID")
+    private Long returnWarehouseId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -270,6 +274,9 @@ public class StkIoStocktakingEntry extends BaseEntity
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
 
+    public Long getReturnWarehouseId() { return returnWarehouseId; }
+    public void setReturnWarehouseId(Long returnWarehouseId) { this.returnWarehouseId = returnWarehouseId; }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -292,6 +299,7 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("profitQty", getProfitQty())
             .append("stockAmount", getStockAmount())
             .append("profitAmount", getProfitAmount())
+            .append("returnWarehouseId", getReturnWarehouseId())
             .append("supplierId", getSupplierId())
             .toString();
     }

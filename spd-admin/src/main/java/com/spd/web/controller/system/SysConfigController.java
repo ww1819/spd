@@ -23,8 +23,10 @@ import com.spd.system.domain.SysConfig;
 import com.spd.system.service.ISysConfigService;
 
 /**
- * 参数配置 信息操作处理
- * 
+ * 参数配置 信息操作处理。
+ * 列表：平台需权限；租户可访问（与 getConfigKey 一致，供导航栏/打印等读取展示参数）。
+ * 增删改/导出/详情/刷新缓存：仅平台用户。
+ *
  * @author spd
  */
 @RestController
@@ -35,9 +37,9 @@ public class SysConfigController extends BaseController
     private ISysConfigService configService;
 
     /**
-     * 获取参数配置列表
+     * 获取参数配置列表（平台：需 system:config:list；租户：已登录即可，用于前端机构名称/医院名称等）
      */
-    @PreAuthorize("@ss.hasPermi('system:config:list')")
+    @PreAuthorize("(@ss.isPlatformUser() and @ss.hasPermi('system:config:list')) or @ss.isTenantUser()")
     @GetMapping("/list")
     public TableDataInfo list(SysConfig config)
     {
@@ -47,7 +49,7 @@ public class SysConfigController extends BaseController
     }
 
     @Log(title = "参数管理", businessType = BusinessType.EXPORT)
-    @PreAuthorize("@ss.hasPermi('system:config:export')")
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:export')")
     @PostMapping("/export")
     public void export(HttpServletResponse response, SysConfig config)
     {
@@ -57,9 +59,9 @@ public class SysConfigController extends BaseController
     }
 
     /**
-     * 根据参数编号获取详细信息
+     * 根据参数编号获取详细信息（仅平台用户）
      */
-    @PreAuthorize("@ss.hasPermi('system:config:query')")
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:query')")
     @GetMapping(value = "/{configId}")
     public AjaxResult getInfo(@PathVariable Long configId)
     {
@@ -76,9 +78,9 @@ public class SysConfigController extends BaseController
     }
 
     /**
-     * 新增参数配置
+     * 新增参数配置（仅平台用户）
      */
-    @PreAuthorize("@ss.hasPermi('system:config:add')")
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:add')")
     @Log(title = "参数管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SysConfig config)
@@ -92,9 +94,9 @@ public class SysConfigController extends BaseController
     }
 
     /**
-     * 修改参数配置
+     * 修改参数配置（仅平台用户）
      */
-    @PreAuthorize("@ss.hasPermi('system:config:edit')")
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:edit')")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody SysConfig config)
@@ -108,9 +110,9 @@ public class SysConfigController extends BaseController
     }
 
     /**
-     * 删除参数配置
+     * 删除参数配置（仅平台用户）
      */
-    @PreAuthorize("@ss.hasPermi('system:config:remove')")
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:remove')")
     @Log(title = "参数管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{configIds}")
     public AjaxResult remove(@PathVariable Long[] configIds)
@@ -120,9 +122,9 @@ public class SysConfigController extends BaseController
     }
 
     /**
-     * 刷新参数缓存
+     * 刷新参数缓存（仅平台用户）
      */
-    @PreAuthorize("@ss.hasPermi('system:config:remove')")
+    @PreAuthorize("@ss.isPlatformUser() and @ss.hasPermi('system:config:remove')")
     @Log(title = "参数管理", businessType = BusinessType.CLEAN)
     @DeleteMapping("/refreshCache")
     public AjaxResult refreshCache()

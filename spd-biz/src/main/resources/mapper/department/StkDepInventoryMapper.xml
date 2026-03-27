@@ -7,22 +7,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="StkDepInventory" id="StkDepInventoryResult">
         <result property="id"    column="id"    />
         <result property="materialId"    column="material_id"    />
+        <result property="snapMaterialName"    column="snap_material_name"    />
+        <result property="snapMaterialSpeci"    column="snap_material_speci"    />
+        <result property="snapMaterialModel"    column="snap_material_model"    />
+        <result property="snapMaterialFactoryId"    column="snap_material_factory_id"    />
         <result property="departmentId"    column="department_id"    />
+        <result property="warehouseId"    column="warehouse_id"    />
         <result property="qty"    column="qty"    />
         <result property="unitPrice"    column="unit_price"    />
         <result property="amt"    column="amt"    />
         <result property="batchNo"    column="batch_no"    />
+        <result property="batchId"    column="batch_id"    />
         <result property="materialNo"    column="material_no"    />
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
         <result property="beginDate"    column="begin_time"    />
         <result property="endDate"    column="end_time"    />
         <result property="supplierId"    column="supplier_id"    />
+        <result property="factoryId"    column="factory_id"    />
         <result property="outOrderNo"    column="out_order_no"    />
         <result property="billId"    column="bill_id"    />
         <result property="billEntryId"    column="bill_entry_id"    />
         <result property="billNo"    column="bill_no"    />
         <result property="billType"    column="bill_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="kcNo"    column="kc_no"    />
         <result property="batchNumber"    column="batch_number"    />
         <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
@@ -34,6 +44,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
+        <association property="warehouse" javaType="FdWarehouse" resultMap="depInvWhResult" />
+        <association property="fdFactory" javaType="FdFactory" resultMap="depInvFactoryResult" />
+    </resultMap>
+
+    <resultMap id="depInvWhResult" type="FdWarehouse">
+        <id     property="id"    column="whId"     />
+        <result property="code"  column="whCode"   />
+        <result property="name"  column="warehouseName"   />
+    </resultMap>
+    <resultMap id="depInvFactoryResult" type="FdFactory">
+        <id     property="factoryId"    column="ff_id"     />
+        <result property="factoryName"  column="ff_name"   />
     </resultMap>
 
     <resultMap id="departmentResult" type="FdDepartment">
@@ -46,6 +68,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="mId"     />
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
+        <result property="speci" column="m_speci" />
+        <result property="model" column="m_model" />
+        <result property="registerNo" column="m_registerNo" />
+        <association property="fdUnit" javaType="FdUnit" resultMap="depInvFdUnitResult" />
+    </resultMap>
+    <resultMap id="depInvFdUnitResult" type="FdUnit">
+        <id property="unitId" column="u_id" />
+        <result property="unitCode" column="u_code" />
+        <result property="unitName" column="u_name" />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -55,32 +86,42 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectStkDepInventoryVo">
-        select stk.id, stk.material_id, stk.department_id, stk.qty, stk.unit_price, stk.amt,
-			stk.batch_no, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
+        select stk.id, stk.material_id,
+			stk.material_name as snap_material_name, stk.material_speci as snap_material_speci, stk.material_model as snap_material_model, stk.material_factory_id as snap_material_factory_id,
+			stk.department_id, stk.qty, stk.unit_price, stk.amt,
+			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
 			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
-			stk.main_barcode, stk.sub_barcode,
+			stk.del_flag, stk.delete_by, stk.delete_time,
+			stk.main_barcode, stk.sub_barcode, stk.factory_id,
+			wh.id whId, wh.code whCode, wh.name warehouseName,
+			ff.factory_id ff_id, ff.factory_name ff_name,
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
+			m.speci m_speci, m.model m_model, m.register_no m_registerNo,
+			u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
                s.id sId,s.code supplierCode,s.name supplierName,
-               (select entry.begin_time from stk_io_bill_entry entry 
+               coalesce(stk.begin_time, (select entry.begin_time from stk_io_bill_entry entry 
                 inner join stk_io_bill bill on bill.id = entry.paren_id 
                 where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id 
                 and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0 
-                order by bill.id desc limit 1) as begin_time,
-               (select entry.end_time from stk_io_bill_entry entry 
+                order by bill.id desc limit 1)) as begin_time,
+               coalesce(stk.end_time, (select entry.end_time from stk_io_bill_entry entry 
                 inner join stk_io_bill bill on bill.id = entry.paren_id 
                 where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id 
                 and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0 
-                order by bill.id desc limit 1) as end_time,
-               (select bill.bill_no from stk_io_bill_entry entry 
+                order by bill.id desc limit 1)) as end_time,
+               coalesce(stk.bill_no, (select bill.bill_no from stk_io_bill_entry entry 
                 inner join stk_io_bill bill on bill.id = entry.paren_id 
                 where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id 
                 and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0 
-                order by bill.id desc limit 1) as out_order_no
+                order by bill.id desc limit 1)) as out_order_no
         from stk_dep_inventory stk
+        left join fd_warehouse wh on stk.warehouse_id = wh.id
         left join fd_department d on stk.department_id = d.id
         left join fd_material m on stk.material_id = m.id
-        left join fd_supplier s on stk.supplier_id = s.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory ff on ff.factory_id = COALESCE(stk.factory_id, m.factory_id)
+        left join fd_supplier s on stk.supplier_id = CONVERT(s.id, CHAR)
     </sql>
 
     <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
@@ -93,33 +134,57 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
         <if test="amt != null "> and stk.amt = #{amt}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
+        <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="supplierId != null and supplierId != ''"> and (stk.supplier_id = #{supplierId} or stk.supplier_id = cast(#{supplierId} as char))</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         order by stk.warehouse_date desc
     </select>
 
     <select id="selectStkDepInventoryById" parameterType="Long" resultMap="StkDepInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectStkDepInventoryVo"/>
         where stk.id = #{id}
+          and stk.tenant_id = #{scopedTenantId}
           and (stk.del_flag = 0 or stk.del_flag is null)
     </select>
 
+    <select id="selectStkDepInventoryByBillEntry" resultMap="StkDepInventoryResult">
+        <include refid="selectStkDepInventoryVo"/>
+        where stk.bill_id = #{billId}
+          and stk.bill_entry_id = #{billEntryId}
+          and stk.tenant_id = #{tenantId}
+          and (stk.del_flag = 0 or stk.del_flag is null)
+        limit 1
+    </select>
+
     <insert id="insertStkDepInventory" parameterType="StkDepInventory" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into stk_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
+            <if test="snapMaterialName != null and snapMaterialName != ''">material_name,</if>
+            <if test="snapMaterialSpeci != null and snapMaterialSpeci != ''">material_speci,</if>
+            <if test="snapMaterialModel != null and snapMaterialModel != ''">material_model,</if>
+            <if test="snapMaterialFactoryId != null">material_factory_id,</if>
             <if test="departmentId != null">department_id,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
             <if test="qty != null">qty,</if>
             <if test="unitPrice != null">unit_price,</if>
             <if test="amt != null">amt,</if>
             <if test="batchNo != null">batch_no,</if>
+            <if test="batchId != null">batch_id,</if>
             <if test="materialNo != null">material_no,</if>
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
+            <if test="beginDate != null">begin_time,</if>
+            <if test="endDate != null">end_time,</if>
+            <if test="factoryId != null">factory_id,</if>
             <if test="kcNo != null">kc_no,</if>
             <if test="batchNumber != null">batch_number,</if>
             <if test="mainBarcode != null">main_barcode,</if>
@@ -130,20 +195,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billNo != null">bill_no,</if>
             <if test="billType != null">bill_type,</if>
             <if test="remark != null">remark,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="settlementType != null">settlement_type,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialId != null">#{materialId},</if>
+            <if test="snapMaterialName != null and snapMaterialName != ''">#{snapMaterialName},</if>
+            <if test="snapMaterialSpeci != null and snapMaterialSpeci != ''">#{snapMaterialSpeci},</if>
+            <if test="snapMaterialModel != null and snapMaterialModel != ''">#{snapMaterialModel},</if>
+            <if test="snapMaterialFactoryId != null">#{snapMaterialFactoryId},</if>
             <if test="departmentId != null">#{departmentId},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
             <if test="qty != null">#{qty},</if>
             <if test="unitPrice != null">#{unitPrice},</if>
             <if test="amt != null">#{amt},</if>
             <if test="batchNo != null">#{batchNo},</if>
+            <if test="batchId != null">#{batchId},</if>
             <if test="materialNo != null">#{materialNo},</if>
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
+            <if test="beginDate != null">#{beginDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="factoryId != null">#{factoryId},</if>
             <if test="kcNo != null">#{kcNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>
             <if test="mainBarcode != null">#{mainBarcode},</if>
@@ -154,24 +228,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billNo != null">#{billNo},</if>
             <if test="billType != null">#{billType},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{scopedTenantId},
             <if test="settlementType != null">#{settlementType},</if>
          </trim>
     </insert>
 
     <update id="updateStkDepInventory" parameterType="StkDepInventory">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="snapMaterialName != null">material_name = #{snapMaterialName},</if>
+            <if test="snapMaterialSpeci != null">material_speci = #{snapMaterialSpeci},</if>
+            <if test="snapMaterialModel != null">material_model = #{snapMaterialModel},</if>
+            <if test="snapMaterialFactoryId != null">material_factory_id = #{snapMaterialFactoryId},</if>
             <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="qty != null">qty = #{qty},</if>
             <if test="unitPrice != null">unit_price = #{unitPrice},</if>
             <if test="amt != null">amt = #{amt},</if>
             <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
             <if test="materialNo != null">material_no = #{materialNo},</if>
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="beginDate != null">begin_time = #{beginDate},</if>
+            <if test="endDate != null">end_time = #{endDate},</if>
+            <if test="factoryId != null">factory_id = #{factoryId},</if>
             <if test="kcNo != null">kc_no = #{kcNo},</if>
             <if test="batchNumber != null">batch_number = #{batchNumber},</if>
             <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>
@@ -183,33 +267,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">bill_type = #{billType},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteStkDepInventoryById" parameterType="map">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now()
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteStkDepInventoryByIds" parameterType="map">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
             delete_by = #{deleteBy},
             delete_time = now()
-        where id in
+        where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <!-- 退库用：只查已收货确认的科室库存 -->
-    <select id="selectStkDepInventoryOne" parameterType="java.lang.String" resultMap="StkDepInventoryResult">
+    <select id="selectStkDepInventoryOne" parameterType="map" resultMap="StkDepInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select * from stk_dep_inventory
         where batch_no = #{batchNo}
+          and warehouse_id = #{warehouseId}
+          and tenant_id = #{scopedTenantId}
           and (receipt_confirm_status = 1 or receipt_confirm_status is null)
           and (del_flag = 0 or del_flag is null)
         order by id desc
@@ -217,9 +308,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 退库校验可用数量：只统计已收货确认的科室库存 -->
-    <select id="selectTKStkInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
+    <select id="selectTKStkInvntoryByBatchNo" parameterType="map" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from stk_dep_inventory
         where batch_no = #{batchNo}
+          and warehouse_id = #{warehouseId}
+          and tenant_id = #{scopedTenantId}
           and (receipt_confirm_status = 1 or receipt_confirm_status is null)
           and (del_flag = 0 or del_flag is null)
     </select>
@@ -245,13 +339,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (stk.del_flag = 0 or stk.del_flag is null)
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId} or stk.tenant_id is null)</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
         order by m.code, d.name
     </select>
 
     <!-- 科室进销存明细查询 -->
     <select id="selectDepartmentInOutDetailList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentInOutDetailVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select 
             bill.id,
             bill.bill_no as billNo,
@@ -276,6 +371,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on entry.material_id = m.id
         left join fd_warehouse w on bill.warehouse_id = w.id
         where bill.del_flag = 0
+          and bill.tenant_id = #{scopedTenantId}
           and (entry.del_flag = 0 or entry.del_flag is null)
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>

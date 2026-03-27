@@ -1,6 +1,8 @@
 package com.spd.framework.web.service;
 
 import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -13,6 +15,7 @@ import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.core.domain.model.LoginUser;
 import com.spd.common.core.redis.RedisCache;
+import com.spd.common.enums.UserStatus;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.exception.user.BlackListException;
 import com.spd.common.exception.user.CaptchaException;
@@ -26,6 +29,8 @@ import com.spd.common.utils.ip.IpUtils;
 import com.spd.framework.manager.AsyncManager;
 import com.spd.framework.manager.factory.AsyncFactory;
 import com.spd.framework.security.context.AuthenticationContextHolder;
+import com.spd.system.domain.SbCustomer;
+import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysUserService;
 
@@ -37,6 +42,9 @@ import com.spd.system.service.ISysUserService;
 @Component
 public class SysLoginService
 {
+    private static final String PLATFORM_ADMIN_USERNAME = "admin";
+    private static final String TENANT_SUPER_USERNAME = "super_01";
+
     @Autowired
     private TokenService tokenService;
 
@@ -48,6 +56,15 @@ public class SysLoginService
 
     @Autowired
     private ISysUserService userService;
+
+    @Autowired
+    private ISbCustomerService sbCustomerService;
+
+    @Autowired
+    private SysPermissionService permissionService;
+
+    @Autowired
+    private SbPermissionService sbPermissionService;
 
     @Autowired
     private ISysConfigService configService;
@@ -69,6 +86,11 @@ public class SysLoginService
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password, customerId);
+        // 平台管理员选租户后，自动以租户 super_01 身份登录，保证后续数据操作主体与租户一致
+        if (isPlatformAdminTenantSwitch(username, customerId)) {
+            return loginAsTenantSuperUser(password, customerId, systemType);
+        }
+
         // 有客户ID时拼成「id:customerId|username」或「hc:customerId|username」，供 loadUserByUsername 按客户+用户名唯一定位并区分耗材/设备校验
         String effectiveUsername = username;
         if (StringUtils.isNotEmpty(customerId)) {
@@ -103,9 +125,107 @@ public class SysLoginService
         }
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        if (StringUtils.isNotEmpty(customerId))
+        {
+            loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        }
+        else
+        {
+            loginUser.setLoginChannel(null);
+        }
         recordLoginInfo(loginUser.getUserId());
         // 生成token
         return tokenService.createToken(loginUser);
+    }
+
+    private boolean isPlatformAdminTenantSwitch(String username, String customerId) {
+        return StringUtils.isNotEmpty(customerId) && PLATFORM_ADMIN_USERNAME.equalsIgnoreCase(StringUtils.trim(username));
+    }
+
+    private String loginAsTenantSuperUser(String password, String customerId, String systemType) {
+        String tenantId = StringUtils.trim(customerId);
+        LoginUser platformAdmin = authenticatePlatformAdmin(password);
+        SysUser platformUser = platformAdmin != null ? platformAdmin.getUser() : null;
+        if (platformUser == null || !platformUser.isAdmin() || StringUtils.isNotEmpty(platformUser.getCustomerId())) {
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(PLATFORM_ADMIN_USERNAME, Constants.LOGIN_FAIL, "平台管理员身份校验失败"));
+            throw new ServiceException("仅平台管理员可执行租户切换登录");
+        }
+
+        validateCustomerForTenantSwitch(tenantId, systemType);
+        SysUser tenantSuperUser = userService.selectUserByUserNameAndCustomerId(TENANT_SUPER_USERNAME, tenantId);
+        if (tenantSuperUser == null) {
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_FAIL, "租户管理员不存在"));
+            throw new ServiceException("所选租户未初始化 super_01 用户");
+        }
+        if (UserStatus.DELETED.getCode().equals(tenantSuperUser.getDelFlag())) {
+            throw new ServiceException("所选租户 super_01 用户已删除");
+        }
+        if (UserStatus.DISABLE.getCode().equals(tenantSuperUser.getStatus())) {
+            throw new ServiceException("所选租户 super_01 用户已停用");
+        }
+        tenantSuperUser.setCustomerId(tenantId);
+
+        LoginUser loginUser = createLoginUser(tenantSuperUser);
+        loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        recordLoginInfo(loginUser.getUserId());
+        AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_SUCCESS, "平台管理员租户切换登录成功"));
+        return tokenService.createToken(loginUser);
+    }
+
+    private LoginUser authenticatePlatformAdmin(String password) {
+        Authentication authentication = null;
+        try {
+            UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(PLATFORM_ADMIN_USERNAME, password);
+            AuthenticationContextHolder.setContext(authenticationToken);
+            authentication = authenticationManager.authenticate(authenticationToken);
+            return (LoginUser) authentication.getPrincipal();
+        } catch (Exception e) {
+            if (e instanceof BadCredentialsException) {
+                AsyncManager.me().execute(AsyncFactory.recordLogininfor(PLATFORM_ADMIN_USERNAME, Constants.LOGIN_FAIL, MessageUtils.message("user.password.not.match")));
+                throw new UserPasswordNotMatchException();
+            }
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(PLATFORM_ADMIN_USERNAME, Constants.LOGIN_FAIL, e.getMessage()));
+            throw new ServiceException(e.getMessage());
+        } finally {
+            AuthenticationContextHolder.clearContext();
+        }
+    }
+
+    private void validateCustomerForTenantSwitch(String customerId, String systemType) {
+        SbCustomer customer = sbCustomerService.selectSbCustomerById(customerId);
+        if (customer == null) {
+            throw new ServiceException("客户不存在或已删除");
+        }
+        boolean forHc = "hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType));
+        if (forHc) {
+            if ("1".equals(customer.getHcStatus())) {
+                throw new ServiceException("耗材系统已经被停用");
+            }
+            if (customer.getHcPlannedDisableTime() != null) {
+                long now = java.util.Calendar.getInstance().getTime().getTime();
+                if (now >= customer.getHcPlannedDisableTime().getTime()) {
+                    throw new ServiceException("耗材系统已经被停用");
+                }
+            }
+        } else {
+            if ("1".equals(customer.getStatus())) {
+                throw new ServiceException("客户已被停用，无法使用功能");
+            }
+            if (customer.getPlannedDisableTime() != null) {
+                long now = java.util.Calendar.getInstance().getTime().getTime();
+                if (now >= customer.getPlannedDisableTime().getTime()) {
+                    sbCustomerService.autoDisableByPlannedTime(customer.getCustomerId());
+                    throw new ServiceException("客户已到计划停用时间，无法使用功能");
+                }
+            }
+        }
+    }
+
+    private LoginUser createLoginUser(SysUser user) {
+        Set<String> perms = new HashSet<>(permissionService.getMenuPermission(user));
+        perms.addAll(sbPermissionService.getMenuPermission(user));
+        return new LoginUser(user.getUserId(), user.getDeptId(), user, perms);
     }
 
     /**

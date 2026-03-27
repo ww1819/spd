@@ -15,40 +15,62 @@ public class SbCustomerAssetLedger extends BaseEntity {
 
     private String id;
     private String customerId;
+    @Excel(name = "设备流水号")
     private String equipmentSerialNo;
+    @Excel(name = "财务系统唯一标识")
+    private String financialSystemUniqueId;
+    @Excel(name = "HIS系统唯一标识")
+    private String hisSystemUniqueId;
     private String category68Id;
     private String category68Code;
     private String category68ArchiveNo;
     @Excel(name = "名称")
     private String name;
     private String namePinyin;
+    @Excel(name = "规格")
     private String spec;
+    @Excel(name = "型号")
     private String model;
+    @Excel(name = "注册证号")
     private String registerCertNo;
     private String brandId;
     private String brandName;
     private String manufacturerId;
+    @Excel(name = "生产厂家")
     private String manufacturerName;
     private String supplierId;
+    @Excel(name = "供应商")
     private String supplierName;
+    @Excel(name = "机身序列号")
     private String serialNumber;
+    @Excel(name = "单位")
     private String unit;
+    @Excel(name = "原值")
     private BigDecimal originalValue;
+    @Excel(name = "净值")
     private BigDecimal netValue;
     private String deptId;
+    @Excel(name = "所属科室")
     private String deptName;
+    @Excel(name = "存放地点")
     private String storagePlace;
+    @Excel(name = "验收日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date acceptanceDate;
+    @Excel(name = "入库日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date storageDate;
+    @Excel(name = "出厂日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date manufactureDate;
+    @Excel(name = "报废日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date scrapDate;
+    @Excel(name = "预计报废日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date expectedScrapDate;
     private String assetCategoryId;
+    @Excel(name = "资产分类")
     private String assetCategoryName;
     private String measuringCategoryId;
     private String measuringCategoryName;
@@ -57,13 +79,16 @@ public class SbCustomerAssetLedger extends BaseEntity {
     private Date lastCalibrationDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date nextCalibrationDate;
+    @Excel(name = "使用状态")
     private String useStatus;
     private String useStatusName;
     private String labelPrintStatus;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date labelPrintTime;
+    @Excel(name = "维修状态")
     private String repairStatus;
     private String repairStatusName;
+    @Excel(name = "保修期限(天)")
     private Integer warrantyDays;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date warrantyStartTime;
@@ -75,12 +100,25 @@ public class SbCustomerAssetLedger extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date delTime;
 
+    /** 查询用：品牌关键词（名称/拼音简码模糊，非表字段） */
+    private String brandKeyword;
+    /** 查询用：生产厂家关键词（名称/拼音简码模糊，非表字段） */
+    private String manufacturerKeyword;
+    /** 查询用：供应商关键词（名称/拼音简码模糊，非表字段） */
+    private String supplierKeyword;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getTenantId() { return customerId; }
+    public void setTenantId(String tenantId) { this.customerId = tenantId; }
     public String getEquipmentSerialNo() { return equipmentSerialNo; }
     public void setEquipmentSerialNo(String equipmentSerialNo) { this.equipmentSerialNo = equipmentSerialNo; }
+    public String getFinancialSystemUniqueId() { return financialSystemUniqueId; }
+    public void setFinancialSystemUniqueId(String financialSystemUniqueId) { this.financialSystemUniqueId = financialSystemUniqueId; }
+    public String getHisSystemUniqueId() { return hisSystemUniqueId; }
+    public void setHisSystemUniqueId(String hisSystemUniqueId) { this.hisSystemUniqueId = hisSystemUniqueId; }
     public String getCategory68Id() { return category68Id; }
     public void setCategory68Id(String category68Id) { this.category68Id = category68Id; }
     public String getCategory68Code() { return category68Code; }
@@ -173,4 +211,10 @@ public class SbCustomerAssetLedger extends BaseEntity {
     public void setDelBy(String delBy) { this.delBy = delBy; }
     public Date getDelTime() { return delTime; }
     public void setDelTime(Date delTime) { this.delTime = delTime; }
+    public String getBrandKeyword() { return brandKeyword; }
+    public void setBrandKeyword(String brandKeyword) { this.brandKeyword = brandKeyword; }
+    public String getManufacturerKeyword() { return manufacturerKeyword; }
+    public void setManufacturerKeyword(String manufacturerKeyword) { this.manufacturerKeyword = manufacturerKeyword; }
+    public String getSupplierKeyword() { return supplierKeyword; }
+    public void setSupplierKeyword(String supplierKeyword) { this.supplierKeyword = supplierKeyword; }
 }

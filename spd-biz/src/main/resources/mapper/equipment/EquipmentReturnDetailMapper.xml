@@ -56,12 +56,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentReturnDetailList" parameterType="Long" resultMap="EquipmentReturnDetailResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentReturnDetailVo"/>
-        where return_id = #{returnId}
+        where return_id = #{returnId} and tenant_id = #{scopedTenantId}
         order by detail_id
     </select>
         
     <insert id="insertEquipmentReturnDetail" parameterType="EquipmentReturnDetail" useGeneratedKeys="true" keyProperty="detailId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_return_detail
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="detailId != null">detail_id,</if>
@@ -101,6 +103,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="acceptanceResult != null">acceptance_result,</if>
             <if test="acceptanceDate != null">acceptance_date,</if>
             <if test="remark != null">remark,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="detailId != null">#{detailId},</if>
@@ -140,6 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="acceptanceResult != null">#{acceptanceResult},</if>
             <if test="acceptanceDate != null">#{acceptanceDate},</if>
             <if test="remark != null">#{remark},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
@@ -150,7 +154,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                manufacturer, manufacturer_contact, dealer, dealer_contact,
                packaging_type, packaging_status, packaging_damage, appearance, accessories,
                tech_param_match, manual_count, certificate_count, packing_list_count, acceptance_form_count,
-               acceptance_result, acceptance_date, remark)
+               acceptance_result, acceptance_date, remark, tenant_id)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.returnId}, #{item.equipmentCode}, #{item.equipmentName}, #{item.categoryCode}, #{item.specification}, #{item.model}, 
@@ -159,16 +163,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
              #{item.manufacturer}, #{item.manufacturerContact}, #{item.dealer}, #{item.dealerContact},
              #{item.packagingType}, #{item.packagingStatus}, #{item.packagingDamage}, #{item.appearance}, #{item.accessories},
              #{item.techParamMatch}, #{item.manualCount}, #{item.certificateCount}, #{item.packingListCount}, #{item.acceptanceFormCount},
-             #{item.acceptanceResult}, #{item.acceptanceDate}, #{item.remark})
+             #{item.acceptanceResult}, #{item.acceptanceDate}, #{item.remark},
+             (select r.tenant_id from equipment_return r where r.return_id = #{item.returnId} limit 1))
         </foreach>
     </insert>
 
     <delete id="deleteEquipmentReturnDetailByReturnId" parameterType="Long">
-        update equipment_return_detail set del_flag = 1, update_time = now() where return_id = #{returnId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update equipment_return_detail set del_flag = 1, update_time = now() where return_id = #{returnId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentReturnDetailByReturnIds" parameterType="String">
-        update equipment_return_detail set del_flag = 1, update_time = now() where return_id in 
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update equipment_return_detail set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and return_id in 
         <foreach item="returnId" collection="array" open="(" separator="," close=")">
             #{returnId}
         </foreach>

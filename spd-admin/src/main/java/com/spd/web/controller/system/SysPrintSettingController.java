@@ -1,6 +1,7 @@
 package com.spd.web.controller.system;
 
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -10,12 +11,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.system.domain.SysPrintSetting;
 import com.spd.system.service.ISysPrintSettingService;
 
@@ -54,12 +57,15 @@ public class SysPrintSettingController extends BaseController
     }
 
     /**
-     * 根据入库单类型获取默认模板
+     * 根据单据类型获取生效的默认模板（先租户专属，再全库默认）。
+     * 可选 tenantId 覆盖（如运维指定客户）；否则使用请求头/登录态解析的租户。
      */
     @GetMapping(value = "/getDefault/{billType}")
-    public AjaxResult getDefault(@PathVariable("billType") Integer billType)
+    public AjaxResult getDefault(@PathVariable("billType") Integer billType,
+            @RequestParam(value = "tenantId", required = false) String tenantId)
     {
-        SysPrintSetting setting = sysPrintSettingService.selectDefaultByBillType(billType);
+        String tid = StringUtils.isNotEmpty(tenantId) ? tenantId.trim() : SecurityUtils.resolveEffectiveTenantId(null);
+        SysPrintSetting setting = sysPrintSettingService.selectEffectiveDefault(billType, tid);
         return success(setting);
     }
 

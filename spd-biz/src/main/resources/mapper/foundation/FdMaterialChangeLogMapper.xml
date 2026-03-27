@@ -11,17 +11,20 @@
         <result property="fieldLabel" column="field_label"/>
         <result property="oldValue"  column="old_value"/>
         <result property="newValue"  column="new_value"/>
+        <result property="tenantId"  column="tenant_id"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdMaterialChangeLog">
-        INSERT INTO fd_material_change_log (id, material_id, change_time, operator, field_name, field_label, old_value, new_value)
-        VALUES (#{id}, #{materialId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue})
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        INSERT INTO fd_material_change_log (id, material_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id)
+        VALUES (#{id}, #{materialId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId})
     </insert>
 
     <select id="selectByMaterialId" resultMap="FdMaterialChangeLogResult">
-        SELECT id, material_id, change_time, operator, field_name, field_label, old_value, new_value
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT id, material_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id
         FROM fd_material_change_log
-        WHERE material_id = #{materialId}
+        WHERE material_id = #{materialId} and tenant_id = #{scopedTenantId}
         ORDER BY change_time DESC
     </select>
 </mapper>

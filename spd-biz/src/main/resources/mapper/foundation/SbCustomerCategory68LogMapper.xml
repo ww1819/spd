@@ -22,17 +22,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.SbCustomerCategory68Log">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into sb_customer_category68_log (id, customer_id, target_id, ref_category68_id, operation_type, content_old, content_new, operate_by, operate_time)
-        values (#{id}, #{customerId}, #{targetId}, #{refCategory68Id}, #{operationType}, #{contentOld}, #{contentNew}, #{operateBy}, #{operateTime})
+        values (#{id}, #{tenantId}, #{targetId}, #{refCategory68Id}, #{operationType}, #{contentOld}, #{contentNew}, #{operateBy}, #{operateTime})
     </insert>
 
     <select id="selectByCustomerId" resultMap="SbCustomerCategory68LogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where customer_id = #{customerId} order by operate_time desc
+        where customer_id = #{scopedTenantId} order by operate_time desc
     </select>
 
     <select id="selectByTargetId" resultMap="SbCustomerCategory68LogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where target_id = #{targetId} order by operate_time desc
+        where target_id = #{targetId} and customer_id = #{scopedTenantId} order by operate_time desc
     </select>
 </mapper>

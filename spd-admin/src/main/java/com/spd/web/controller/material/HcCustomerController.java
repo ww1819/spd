@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +28,7 @@ import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.HcCustomerPeriodLogMapper;
 import com.spd.system.mapper.HcCustomerStatusLogMapper;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ITenantDataPurgeService;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.exception.ServiceException;
 import com.spd.system.service.ISysMenuService;
@@ -49,6 +51,8 @@ public class HcCustomerController extends BaseController {
   private HcCustomerMenuMapper hcCustomerMenuMapper;
   @Autowired
   private ISbCustomerService sbCustomerService;
+  @Autowired
+  private ITenantDataPurgeService tenantDataPurgeService;
 
   /** 耗材侧客户列表（供客户菜单功能管理下拉等使用，与设备共用 sb_customer） */
   @PreAuthorize("@ss.hasPermi('hc:system:customerMenuManage:list')")
@@ -70,7 +74,7 @@ public class HcCustomerController extends BaseController {
     return customer != null ? success(customer) : error("客户不存在");
   }
 
-  /** 耗材侧客户更新（仅允许更新客户名称、备注、耗材状态、耗材计划停用时间，不修改设备侧 status/planned_disable_time） */
+  /** 耗材侧客户更新：客户名称、备注、耗材状态、耗材/设备系统计划停用时间（不修改设备侧 status） */
   @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
   @PutMapping
   public AjaxResult update(@RequestBody SbCustomer body) {
@@ -85,6 +89,7 @@ public class HcCustomerController extends BaseController {
     existing.setRemark(body.getRemark());
     existing.setHcStatus(body.getHcStatus());
     existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
+    existing.setPlannedDisableTime(body.getPlannedDisableTime());
     existing.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(existing));
   }
@@ -165,6 +170,8 @@ public class HcCustomerController extends BaseController {
         throw new ServiceException("不能将平台管理菜单分配给客户，请从可分配菜单中选择");
       }
     }
+    // 勾选父目录时一并写入全部子孙菜单 ID，避免 hc_customer_menu 仅有父节点导致工作组/用户授权树缺少「收货确认」等子功能
+    menuIds = sysMenuService.expandMenuIdsWithDescendants(menuIds);
     String username = SecurityUtils.getUserIdStr();
     hcCustomerMenuMapper.deleteByTenantId(customerId);
     if (!menuIds.isEmpty()) {
@@ -190,7 +197,7 @@ public class HcCustomerController extends BaseController {
   }
 
   /**
-   * 设备功能重置：若 super 组和 super_01 不存在则创建；重置客户菜单权限、super 工作组菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
+   * 设备功能重置：若 super 组和 super_01 不存在则创建；将默认对客户开放的权限开放给客户、super 组、super_01 用户。
    */
   @PreAuthorize("@ss.hasPermi('hc:system:customerMenuManage:edit')")
   @PutMapping("/resetEquipment/{customerId}")
@@ -207,6 +214,45 @@ public class HcCustomerController extends BaseController {
   public AjaxResult resetMaterial(@PathVariable String customerId) {
     sbCustomerService.resetMaterialFunctions(customerId);
     return success();
+  }
+
+  /**
+   * 平台级：清空全部租户与业务数据，保留菜单/字典/参数/角色菜单定义等；仅保留 user_name=admin。
+   * 请求体 confirmToken 须为 {@link ITenantDataPurgeService#FULL_RESET_CONFIRM_TOKEN} 的常量值。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:initDb')")
+  @PostMapping("/initFullDatabase")
+  public AjaxResult initFullDatabase(@RequestBody FullDbInitBody body) {
+    if (body == null || StringUtils.isEmpty(body.getConfirmToken())) {
+      return error("缺少确认口令");
+    }
+    tenantDataPurgeService.purgeAllDataKeepPlatform(body.getConfirmToken());
+    return success("已执行全库初始化（租户数据已清空，请重新登录验证）");
+  }
+
+  /**
+   * 按租户物理删除耗材侧数据（含该租户 sys_user）；不删除 sb_customer 行。
+   */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:purgeHc')")
+  @PostMapping("/{customerId}/purgeConsumablesData")
+  public AjaxResult purgeConsumablesData(@PathVariable String customerId, @RequestBody(required = false) PurgeConfirmBody body) {
+    if (body == null || !"PURGE_HC".equals(body.getConfirm())) {
+      return error("请在请求体中传入 {\"confirm\":\"PURGE_HC\"} 以确认清理耗材数据");
+    }
+    int n = tenantDataPurgeService.purgeConsumablesDataForTenant(customerId);
+    return success("已清理耗材数据，影响行数约 " + n);
+  }
+
+  public static class FullDbInitBody {
+    private String confirmToken;
+    public String getConfirmToken() { return confirmToken; }
+    public void setConfirmToken(String confirmToken) { this.confirmToken = confirmToken; }
+  }
+
+  public static class PurgeConfirmBody {
+    private String confirm;
+    public String getConfirm() { return confirm; }
+    public void setConfirm(String confirm) { this.confirm = confirm; }
   }
 
   public static class ChangeHcStatusBody {

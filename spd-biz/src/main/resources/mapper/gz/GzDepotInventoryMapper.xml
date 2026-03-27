@@ -162,11 +162,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectGzDepotInventoryById" parameterType="Long" resultMap="GzDepotInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepotInventoryVo"/>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepotInventory" parameterType="GzDepotInventory" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into gz_depot_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="qty != null">qty,</if>
@@ -180,7 +182,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="inHospitalCode != null">in_hospital_code,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
             <if test="masterBarcode != null">master_barcode,</if>
             <if test="secondaryBarcode != null">secondary_barcode,</if>
          </trim>
@@ -196,13 +198,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{scopedTenantId},
             <if test="masterBarcode != null">#{masterBarcode},</if>
             <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
          </trim>
     </insert>
 
     <update id="updateGzDepotInventory" parameterType="GzDepotInventory">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_depot_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="qty != null">qty = #{qty},</if>
@@ -220,31 +223,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="masterBarcode != null">master_barcode = #{masterBarcode},</if>
             <if test="secondaryBarcode != null">secondary_barcode = #{secondaryBarcode},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteGzDepotInventoryById">
-        update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzDepotInventoryByIds">
-        update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_depot_inventory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectGzDepotInventoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_depot_inventory
-        where batch_no = #{batchNo}
+        where batch_no = #{batchNo} and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectGzDepotInventoryOne" parameterType="java.lang.String" resultMap="GzDepotInventoryResult">
-        select * from gz_depot_inventory where batch_no = #{batchNo} order by id desc limit 1
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select * from gz_depot_inventory where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} order by id desc limit 1
     </select>
 
     <select id="selectGzDepotInventoryByBatchNoAndWarehouse" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_depot_inventory
-        where batch_no = #{batchNo} and warehouse_id = #{warehouseId} and qty > 0
+        where batch_no = #{batchNo} and warehouse_id = #{warehouseId} and qty > 0 and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

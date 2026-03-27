@@ -132,9 +132,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectNewProductApplyList" parameterType="NewProductApply" resultMap="NewProductApplyResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectNewProductApplyVo"/>
         <where>  
-            <if test="tenantId != null and tenantId != ''"> and (npa.tenant_id = #{tenantId} or npa.tenant_id is null)</if>
+            and npa.tenant_id = #{scopedTenantId}
             <if test="applyNo != null  and applyNo != ''"> and npa.apply_no like concat('%', #{applyNo}, '%')</if>
             <if test="applyDate != null "> and npa.apply_date = #{applyDate}</if>
             <if test="departmentId != null "> and npa.department_id = #{departmentId}</if>
@@ -151,6 +152,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectNewProductApplyById" parameterType="Long" resultMap="NewProductApplyNewProductApplyEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select 
             npa.id, 
             npa.apply_no, 
@@ -220,17 +222,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from new_product_apply npa
         left join fd_department d on npa.department_id = d.id
         left join sys_user u on npa.create_by = u.user_name
-        left join new_product_apply_entry npae on npa.id = npae.parent_id
+        left join new_product_apply_entry npae on npa.id = npae.parent_id and npae.tenant_id = #{scopedTenantId}
         left join fd_material m on npae.material_id = m.id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_unit mu on m.unit_id = mu.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
-        left join new_product_apply_detail npad on npa.id = npad.parent_id
-        where npa.id = #{id} and npa.del_flag = 0
+        left join new_product_apply_detail npad on npa.id = npad.parent_id and npad.tenant_id = #{scopedTenantId}
+        where npa.id = #{id} and npa.tenant_id = #{scopedTenantId} and npa.del_flag = 0
     </select>
         
     <insert id="insertNewProductApply" parameterType="NewProductApply" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into new_product_apply
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="applyNo != null and applyNo != ''">apply_no,</if>
@@ -250,7 +253,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="centralizedProcurement != null and centralizedProcurement != ''">centralized_procurement,</if>
             <if test="procurementForm != null and procurementForm != ''">procurement_form,</if>
             <if test="platformPrice != null">platform_price,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="applyNo != null and applyNo != ''">#{applyNo},</if>
@@ -270,11 +273,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="centralizedProcurement != null and centralizedProcurement != ''">#{centralizedProcurement},</if>
             <if test="procurementForm != null and procurementForm != ''">#{procurementForm},</if>
             <if test="platformPrice != null">#{platformPrice},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateNewProductApply" parameterType="NewProductApply">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update new_product_apply
         <trim prefix="SET" suffixOverrides=",">
             <if test="applyNo != null and applyNo != ''">apply_no = #{applyNo},</if>
@@ -295,47 +299,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="procurementForm != null and procurementForm != ''">procurement_form = #{procurementForm},</if>
             <if test="platformPrice != null">platform_price = #{platformPrice},</if>
         </trim>
-        where id = #{id}
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteNewProductApplyById">
-        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteNewProductApplyByIds">
-        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteNewProductApplyEntryByParentId">
-        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteNewProductApplyEntryByParentIds">
-        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
         <foreach item="parentId" collection="ids" open="(" separator="," close=")">
             #{parentId}
         </foreach>
     </delete>
 
     <insert id="batchNewProductApplyEntry">
-        insert into new_product_apply_entry(parent_id, material_id, material_name, speci, model, unit_name, price, qty, amt, factory_name, supplier_name, remark, brand_requirement, special_note, case_fee_category, create_by, create_time) values
+        insert into new_product_apply_entry(parent_id, material_id, material_name, speci, model, unit_name, price, qty, amt, factory_name, supplier_name, remark, brand_requirement, special_note, case_fee_category, create_by, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.price}, #{item.qty}, #{item.amt}, #{item.factoryName}, #{item.supplierName}, #{item.remark}, #{item.brandRequirement}, #{item.specialNote}, #{item.caseFeeCategory}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.price}, #{item.qty}, #{item.amt}, #{item.factoryName}, #{item.supplierName}, #{item.remark}, #{item.brandRequirement}, #{item.specialNote}, #{item.caseFeeCategory}, #{item.createBy}, #{item.createTime},
+             (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
         </foreach>
     </insert>
 
     <insert id="batchNewProductApplyDetail">
-        insert into new_product_apply_detail(parent_id, similar_product, speci, model, create_by, create_time) values
+        insert into new_product_apply_detail(parent_id, similar_product, speci, model, create_by, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parentId}, #{item.similarProduct}, #{item.speci}, #{item.model}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.similarProduct}, #{item.speci}, #{item.model}, #{item.createBy}, #{item.createTime},
+             (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
         </foreach>
     </insert>
 
     <delete id="deleteNewProductApplyDetailByParentId">
-        update new_product_apply_detail set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update new_product_apply_detail set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
 </mapper>

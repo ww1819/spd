@@ -85,6 +85,16 @@ public class SysPostController extends BaseController
     /**
      * 根据岗位编号获取详细信息
      */
+    /**
+     * 耗材工作组关联用户 ID（sys_user_post），供「同步仓库/科室/菜单」按组批量更新用户权限
+     */
+    @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query') or @ss.hasPermi('system:post:edit')")
+    @GetMapping("/{postId}/userIds")
+    public AjaxResult userIdsByPost(@PathVariable Long postId)
+    {
+        return success(postService.selectUserIdsByPostId(postId));
+    }
+
     @PreAuthorize("@ss.hasPermi('system:post:query')")
     @GetMapping(value = "/{postId}")
     public AjaxResult getInfo(@PathVariable Long postId)

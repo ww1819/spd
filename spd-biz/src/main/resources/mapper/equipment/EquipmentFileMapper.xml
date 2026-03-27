@@ -25,8 +25,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectEquipmentFileList" parameterType="EquipmentFile" resultMap="EquipmentFileResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentFileVo"/>
         <where>  
+            and tenant_id = #{scopedTenantId}
             <if test="equipmentId != null  and equipmentId != ''"> and equipment_id = #{equipmentId}</if>
             <if test="fileName != null  and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
             <if test="fileType != null  and fileType != ''"> and file_type = #{fileType}</if>
@@ -36,11 +38,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     
     <select id="selectEquipmentFileByFileId" parameterType="String" resultMap="EquipmentFileResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentFileVo"/>
-        where file_id = #{fileId}
+        where file_id = #{fileId} and tenant_id = #{scopedTenantId}
     </select>
         
     <insert id="insertEquipmentFile" parameterType="EquipmentFile">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_file
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="fileId != null">file_id,</if>
@@ -56,6 +60,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="fileId != null">#{fileId},</if>
@@ -71,10 +76,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateEquipmentFile" parameterType="EquipmentFile">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_file
         <trim prefix="SET" suffixOverrides=",">
             <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
@@ -88,15 +95,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where file_id = #{fileId}
+        where file_id = #{fileId} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteEquipmentFileByFileId" parameterType="String">
-        update equipment_file set del_flag = 1, update_time = now() where file_id = #{fileId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update equipment_file set del_flag = 1, update_time = now() where file_id = #{fileId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteEquipmentFileByFileIds" parameterType="String">
-        update equipment_file set del_flag = 1, update_time = now() where file_id in 
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update equipment_file set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and file_id in 
         <foreach item="fileId" collection="array" open="(" separator="," close=")">
             #{fileId}
         </foreach>

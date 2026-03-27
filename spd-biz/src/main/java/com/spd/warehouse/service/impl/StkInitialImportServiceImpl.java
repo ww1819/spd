@@ -31,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
+import com.spd.warehouse.util.InitialImportDateParser;
 
 /**
  * 期初库存导入 Service 实现
@@ -92,25 +94,58 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 whId = list.get(0).getId();
             }
         }
+        String tenantPreview = resolveTenantIdForPreview(whId, rows);
         List<Map<String, Object>> result = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) {
             InitialImportExcelRow row = rows.get(i);
             Map<String, Object> item = new HashMap<>();
             item.put("rowIndex", i + 1);
             item.put("data", row);
-            boolean hasThird = StringUtils.isNotEmpty(row.getThirdPartyMaterialId());
-            boolean hasCode = StringUtils.isNotEmpty(row.getMaterialCode());
+            // trimToNull：纯空格视为未填，此时走耗材编码匹配
+            boolean hasThird = StringUtils.isNotEmpty(StringUtils.trimToNull(row.getThirdPartyMaterialId()));
+            boolean hasCode = StringUtils.isNotEmpty(StringUtils.trimToNull(row.getMaterialCode()));
+            String err = null;
             if (!hasThird && !hasCode) {
-                item.put("error", "第三方系统产品档案ID与耗材编码至少填一项");
+                err = "HIS系统产品档案id为空时请填写耗材编码；或至少填写其一";
             } else if (row.getQty() == null || row.getQty().compareTo(BigDecimal.ZERO) <= 0) {
-                item.put("error", "数量必须大于0");
+                err = "数量必须大于0";
             } else if (whId == null && (StringUtils.isEmpty(row.getWarehouseCode()))) {
-                item.put("error", "请指定仓库或提供仓库编码");
-            } else if (StringUtils.isNotEmpty(row.getSupplierName()) && !supplierExistsByName(row.getSupplierName().trim())) {
-                item.put("error", "供应商「" + row.getSupplierName().trim() + "」在系统中不存在，请先在基础数据中创建该供应商");
-            } else {
-                item.put("error", null);
+                err = "请指定仓库或提供仓库编码";
+            } else if (StringUtils.isNotEmpty(row.getHisFactoryId())) {
+                if (StringUtils.isEmpty(tenantPreview)) {
+                    err = "填写了HIS系统生产厂家id时请先指定仓库或保证仓库编码可解析，以便按租户校验";
+                } else if (!factoryExistsByHisId(tenantPreview, row.getHisFactoryId().trim())) {
+                    err = "HIS系统生产厂家id「" + row.getHisFactoryId().trim() + "」在系统中不存在";
+                }
             }
+            if (err == null && StringUtils.isNotEmpty(row.getHisSupplierId())) {
+                if (StringUtils.isEmpty(tenantPreview)) {
+                    err = "填写了HIS系统供应商id时请先指定仓库或保证仓库编码可解析，以便按租户校验";
+                } else if (!supplierExistsByHisId(tenantPreview, row.getHisSupplierId().trim())) {
+                    err = "HIS系统供应商id「" + row.getHisSupplierId().trim() + "」在系统中不存在";
+                }
+            }
+            if (err == null && StringUtils.isEmpty(row.getHisSupplierId())
+                && StringUtils.isNotEmpty(row.getSupplierName()) && !supplierExistsByName(row.getSupplierName().trim())) {
+                err = "供应商「" + row.getSupplierName().trim() + "」在系统中不存在，请先在基础数据中创建该供应商";
+            }
+            if (err == null)
+            {
+                String e1 = InitialImportDateParser.validateOrError(row.getBeginDateRaw(), "生产日期");
+                if (e1 != null)
+                {
+                    err = e1;
+                }
+            }
+            if (err == null)
+            {
+                String e2 = InitialImportDateParser.validateOrError(row.getEndDateRaw(), "效期");
+                if (e2 != null)
+                {
+                    err = e2;
+                }
+            }
+            item.put("error", err);
             result.add(item);
         }
         Map<String, Object> data = new HashMap<>();
@@ -128,10 +163,12 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         if (rows == null || rows.isEmpty()) {
             throw new ServiceException("导入数据不能为空");
         }
-        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(warehouseId));
+        // 不按 Mapper 内 tenant 条件查，避免 Token/上下文租户与 fd_warehouse.tenant_id 瞬时一致性问题导致误报「仓库不存在」
+        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(String.valueOf(warehouseId));
         if (wh == null) {
             throw new ServiceException("仓库不存在");
         }
+        assertInitialImportWarehouseTenant(wh);
         String username = SecurityUtils.getUserIdStr();
         Date now = new Date();
 
@@ -153,33 +190,60 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         }
         stkInitialImportMapper.insert(main);
 
+        String tenantId = resolveTenantIdForInitial(wh);
         List<StkInitialImportEntry> entries = new ArrayList<>();
         int sortOrder = 0;
-        for (InitialImportExcelRow row : rows) {
+        for (int idx = 0; idx < rows.size(); idx++) {
+            InitialImportExcelRow row = rows.get(idx);
+            int rowNum = idx + 1;
             if (row.getQty() == null || row.getQty().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            boolean hasThirdPartyMaterialId = StringUtils.isNotEmpty(row.getThirdPartyMaterialId());
-            boolean hasMaterialCode = StringUtils.isNotEmpty(row.getMaterialCode());
+            // HIS 非空（trim 后）则优先按 his_id 匹配；为空则按耗材编码匹配产品档案（租户内编码优先）
+            boolean hasThirdPartyMaterialId = StringUtils.isNotEmpty(StringUtils.trimToNull(row.getThirdPartyMaterialId()));
+            boolean hasMaterialCode = StringUtils.isNotEmpty(StringUtils.trimToNull(row.getMaterialCode()));
             if (!hasThirdPartyMaterialId && !hasMaterialCode) {
-                throw new ServiceException("第" + (sortOrder + 1) + "行：第三方系统产品档案ID与耗材编码至少填一项");
+                throw new ServiceException("第" + rowNum + "行：HIS系统产品档案id为空时请填写耗材编码；或至少填写其一");
             }
             FdMaterial material = null;
             if (hasThirdPartyMaterialId) {
-                material = fdMaterialMapper.selectFdMaterialByHisId(row.getThirdPartyMaterialId().trim());
+                String hisMid = StringUtils.trim(row.getThirdPartyMaterialId());
+                if (StringUtils.isNotEmpty(tenantId)) {
+                    material = fdMaterialMapper.selectFdMaterialByTenantAndHisId(tenantId, hisMid);
+                }
                 if (material == null) {
-                    material = createNewMaterialFromRow(row, true);
+                    material = fdMaterialMapper.selectFdMaterialByHisId(hisMid);
+                }
+                if (material == null) {
+                    material = createNewMaterialFromRow(row, true, tenantId);
                     fdMaterialMapper.insertFdMaterial(material);
                 }
             } else {
-                material = fdMaterialMapper.selectFdMaterialByCode(row.getMaterialCode().trim());
+                // HIS 为空：按耗材编码匹配 SPD 产品档案 id（material_id）
+                String code = StringUtils.trim(row.getMaterialCode());
+                if (StringUtils.isNotEmpty(tenantId)) {
+                    material = fdMaterialMapper.selectFdMaterialByTenantAndCode(tenantId, code);
+                }
                 if (material == null) {
-                    material = createNewMaterialFromRow(row, false);
+                    material = fdMaterialMapper.selectFdMaterialByCode(code);
+                }
+                if (material == null) {
+                    material = createNewMaterialFromRow(row, false, tenantId);
                     fdMaterialMapper.insertFdMaterial(material);
                 }
             }
             Long factoryId = null;
-            if (StringUtils.isNotEmpty(row.getFactoryName())) {
+            if (StringUtils.isNotEmpty(row.getHisFactoryId())) {
+                String hid = row.getHisFactoryId().trim();
+                if (StringUtils.isEmpty(tenantId)) {
+                    throw new ServiceException("第" + rowNum + "行：无法解析租户，无法按HIS系统生产厂家id匹配");
+                }
+                FdFactory ff = fdFactoryMapper.selectFdFactoryByTenantAndHisId(tenantId, hid);
+                if (ff == null) {
+                    throw new ServiceException("第" + rowNum + "行：HIS系统生产厂家id「" + hid + "」在系统中不存在");
+                }
+                factoryId = ff.getFactoryId();
+            } else if (StringUtils.isNotEmpty(row.getFactoryName())) {
                 FdFactory fq = new FdFactory();
                 fq.setFactoryName(row.getFactoryName());
                 List<FdFactory> fl = fdFactoryMapper.selectFdFactoryList(fq);
@@ -188,7 +252,17 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 }
             }
             Long supplierId = null;
-            if (StringUtils.isNotEmpty(row.getSupplierName())) {
+            if (StringUtils.isNotEmpty(row.getHisSupplierId())) {
+                String hid = row.getHisSupplierId().trim();
+                if (StringUtils.isEmpty(tenantId)) {
+                    throw new ServiceException("第" + rowNum + "行：无法解析租户，无法按HIS系统供应商id匹配");
+                }
+                FdSupplier sup = fdSupplierMapper.selectFdSupplierByTenantAndHisId(tenantId, hid);
+                if (sup == null) {
+                    throw new ServiceException("第" + rowNum + "行：HIS系统供应商id「" + hid + "」在系统中不存在");
+                }
+                supplierId = sup.getId();
+            } else if (StringUtils.isNotEmpty(row.getSupplierName())) {
                 String supplierName = row.getSupplierName().trim();
                 FdSupplier sq = new FdSupplier();
                 sq.setName(supplierName);
@@ -202,12 +276,26 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                     }
                 }
                 if (supplierId == null) {
-                    throw new ServiceException("第" + (sortOrder + 1) + "行：供应商「" + supplierName + "」在系统中不存在，请先在基础数据中创建该供应商后再导入");
+                    throw new ServiceException("第" + rowNum + "行：供应商「" + supplierName + "」在系统中不存在，请先在基础数据中创建该供应商后再导入");
                 }
             }
-            BigDecimal unitPrice = row.getUnitPrice() != null ? row.getUnitPrice() : BigDecimal.ZERO;
-            BigDecimal qty = row.getQty();
-            BigDecimal amt = unitPrice.multiply(qty);
+            // 通过 HIS 匹配到的 SPD 生产厂家/供应商 ID：回写到产品档案（仅当档案中尚未维护时），便于后续业务使用
+            syncMaterialFactorySupplierFromHisMatch(material, factoryId, supplierId, tenantId);
+
+            BigDecimal unitPrice = scaleInitialMoney(row.getUnitPrice() != null ? row.getUnitPrice() : BigDecimal.ZERO);
+            BigDecimal qty = scaleInitialMoney(row.getQty());
+            BigDecimal amt = scaleInitialMoney(unitPrice.multiply(qty));
+
+            Date beginDt = InitialImportDateParser.parseToSqlDate(row.getBeginDateRaw());
+            Date endDt = InitialImportDateParser.parseToSqlDate(row.getEndDateRaw());
+            if (StringUtils.isNotEmpty(StringUtils.trim(row.getBeginDateRaw())) && beginDt == null)
+            {
+                throw new ServiceException("第" + rowNum + "行：生产日期格式无效，请使用 YYYYMMDD 或 yyyy-MM-dd");
+            }
+            if (StringUtils.isNotEmpty(StringUtils.trim(row.getEndDateRaw())) && endDt == null)
+            {
+                throw new ServiceException("第" + rowNum + "行：效期格式无效，请使用 YYYYMMDD 或 yyyy-MM-dd");
+            }
 
             StkInitialImportEntry entry = new StkInitialImportEntry();
             entry.setId(UUID7.generateUUID7());
@@ -219,12 +307,12 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             entry.setAmt(amt);
             entry.setBatchNo(FillRuleUtil.createBatchNo());
             entry.setBatchNumber(row.getBatchNumber());
-            entry.setBeginTime(row.getBeginTime());
-            entry.setEndTime(row.getEndTime());
+            entry.setBeginTime(beginDt);
+            entry.setEndTime(endDt);
             entry.setFactoryId(factoryId);
             entry.setSupplierId(supplierId);
             entry.setSortOrder(++sortOrder);
-            entry.setThirdPartyDetailId(StringUtils.isNotEmpty(row.getThirdPartyDetailId()) ? row.getThirdPartyDetailId().trim() : null);
+            entry.setHisId(StringUtils.isNotEmpty(row.getHisId()) ? row.getHisId().trim() : null);
             entry.setThirdPartyMaterialId(StringUtils.isNotEmpty(row.getThirdPartyMaterialId()) ? row.getThirdPartyMaterialId().trim() : null);
             entry.setMaterialCode(trimToNull(row.getMaterialCode()));
             entry.setSpeci(trimToNull(row.getSpeci()));
@@ -244,8 +332,9 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
 
     @Override
     public List<StkInitialImport> list(StkInitialImport query) {
-        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            query.setTenantId(SecurityUtils.getCustomerId());
+        if (query != null && StringUtils.isEmpty(query.getTenantId())) {
+            // 与 Mapper 中 scopedTenantIdForSql 一致：用户 customerId → TenantContext → 请求头 X-Tenant-Id
+            query.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         return stkInitialImportMapper.selectList(query);
     }
@@ -303,6 +392,10 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             inv.setMaterialDate(auditTime);
             inv.setWarehouseDate(auditTime);
             inv.setSupplierId(entry.getSupplierId());
+            // 生产厂家：与批次一致；批次无则回退明细上的 factory_id
+            Long factoryIdForStock = stkBatch.getFactoryId() != null ? stkBatch.getFactoryId() : entry.getFactoryId();
+            inv.setFactoryId(factoryIdForStock);
+            // 生产日期、效期（有效期）
             inv.setBeginTime(entry.getBeginTime());
             inv.setEndTime(entry.getEndTime());
             inv.setReceiptOrderNo(main.getBillNo());
@@ -310,6 +403,8 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             inv.setCreateBy(username);
             inv.setBatchNumber(entry.getBatchNumber());
             inv.setDelFlag(0);
+            // 租户：与期初主单/仓库一致，避免 stk_inventory.tenant_id 为空导致按租户查不到库存
+            inv.setTenantId(resolveTenantIdForInitialStock(main));
             stkInventoryMapper.insertStkInventory(inv);
 
             HcCkFlow flow = new HcCkFlow();
@@ -325,7 +420,10 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             flow.setBeginTime(entry.getBeginTime());
             flow.setEndTime(entry.getEndTime());
             flow.setSupplierId(entry.getSupplierId());
+            flow.setFactoryId(factoryIdForStock);
             flow.setLx("QC");
+            flow.setBatchId(inv.getBatchId());
+            flow.setOriginBusinessType("期初导入");
             flow.setKcNo(inv.getId());
             flow.setFlowTime(auditTime);
             flow.setDelFlag(0);
@@ -339,7 +437,20 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         main.setAuditBy(username);
         main.setAuditTime(auditTime);
         main.setUpdateBy(username);
+        if (StringUtils.isEmpty(main.getTenantId())) {
+            main.setTenantId(resolveTenantIdForInitialStock(main));
+        }
         return stkInitialImportMapper.update(main);
+    }
+
+    /** 期初导入：单价/数量/金额统一保留 6 位小数，与明细表 decimal(18,6) 一致 */
+    private static BigDecimal scaleInitialMoney(BigDecimal v)
+    {
+        if (v == null)
+        {
+            return null;
+        }
+        return v.setScale(6, RoundingMode.HALF_UP);
     }
 
     private String getQcBillNo() {
@@ -361,6 +472,13 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         b.setBillNo(main.getBillNo());
         b.setRefEntryId(entry.getId());
         b.setBatchSource(BATCH_SOURCE_QC);
+        b.setOriginBillType(null);
+        b.setOriginFlowLx(BATCH_SOURCE_QC);
+        b.setOriginBusinessType("期初导入");
+        if (main.getWarehouseId() != null) {
+            b.setOriginFromWarehouseId(main.getWarehouseId());
+            b.setOriginToWarehouseId(main.getWarehouseId());
+        }
         Date now = new Date();
         String username = SecurityUtils.getUserIdStr();
         b.setAuditTime(now);
@@ -425,17 +543,25 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
                 b.setWarehouseName(wh.getName());
             }
         }
+        b.setTenantId(StringUtils.isNotEmpty(main.getTenantId()) ? main.getTenantId() : SecurityUtils.getCustomerId());
         return b;
     }
 
-    /** 根据导入行创建新产品档案：byHisId=true 时按第三方档案ID匹配（生成编码），否则按耗材编码（使用模板编码） */
-    private FdMaterial createNewMaterialFromRow(InitialImportExcelRow row, boolean byHisId) {
+    /**
+     * 根据导入行创建新产品档案：byHisId=true 时按 HIS/第三方档案ID（写入 his_id），否则按耗材编码（使用模板编码）。
+     *
+     * @param tenantId 租户ID，写入 fd_material.tenant_id
+     */
+    private FdMaterial createNewMaterialFromRow(InitialImportExcelRow row, boolean byHisId, String tenantId) {
         FdMaterial m = new FdMaterial();
         String name = StringUtils.isNotEmpty(row.getMaterialName()) ? row.getMaterialName().trim() : row.getMaterialCode();
         if (StringUtils.isEmpty(name)) {
             name = "期初导入-" + (row.getThirdPartyMaterialId() != null ? row.getThirdPartyMaterialId() : row.getMaterialCode());
         }
         m.setName(name);
+        if (StringUtils.isNotEmpty(tenantId)) {
+            m.setTenantId(tenantId);
+        }
         if (byHisId) {
             m.setHisId(row.getThirdPartyMaterialId().trim());
             m.setCode(generateUniqueMaterialCode());
@@ -453,6 +579,122 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         m.setCreateBy(SecurityUtils.getUserIdStr());
         m.setCreateTime(new Date());
         return m;
+    }
+
+    /**
+     * 当前用户带租户上下文时，期初导入所选仓库必须属于该租户（防止跨租户传 ID）。
+     */
+    private void assertInitialImportWarehouseTenant(FdWarehouse wh) {
+        if (wh == null) {
+            return;
+        }
+        // 严格模式：无法解析到租户时直接失败，避免后续逻辑在 tenantId 为空情况下继续跑
+        String ctx = SecurityUtils.requiredScopedTenantIdForSql();
+        String wt = wh.getTenantId();
+        if (StringUtils.isEmpty(wt)) {
+            throw new ServiceException("无法解析该仓库所属租户，期初导入失败");
+        }
+        if (!ctx.trim().equals(wt.trim())) {
+            throw new ServiceException("无权操作该仓库（非本租户仓库）");
+        }
+    }
+
+    /** 期初导入：优先仓库所属租户，其次当前登录/请求租户 */
+    private String resolveTenantIdForInitial(FdWarehouse wh) {
+        if (wh != null && StringUtils.isNotEmpty(wh.getTenantId())) {
+            return wh.getTenantId();
+        }
+        return SecurityUtils.requiredScopedTenantIdForSql();
+    }
+
+    /**
+     * 审核生成库存行时的租户：主表 tenant_id → 当前客户 → 仓库 tenant_id（与批次 buildStkBatchForInitial 逻辑一致）
+     */
+    private String resolveTenantIdForInitialStock(StkInitialImport main) {
+        if (main == null) {
+            return SecurityUtils.requiredScopedTenantIdForSql();
+        }
+        if (StringUtils.isNotEmpty(main.getTenantId())) {
+            return main.getTenantId().trim();
+        }
+        // main 没带 tenant，则直接按当前请求上下文解析（缺失则抛异常）
+        // （避免 tenant 为空导致 stk_inventory 按 tenant 查不到）
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            return SecurityUtils.getCustomerId();
+        }
+        if (main.getWarehouseId() != null) {
+            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(main.getWarehouseId()));
+            if (wh != null && StringUtils.isNotEmpty(wh.getTenantId())) {
+                return wh.getTenantId();
+            }
+        }
+        return SecurityUtils.requiredScopedTenantIdForSql();
+    }
+
+    /** 预览：用于按租户校验 HIS 生产厂家/供应商 id */
+    private String resolveTenantIdForPreview(Long warehouseId, List<InitialImportExcelRow> rows) {
+        if (warehouseId != null) {
+            FdWarehouse w = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(String.valueOf(warehouseId));
+            if (w != null && StringUtils.isNotEmpty(w.getTenantId())) {
+                return w.getTenantId();
+            }
+        }
+        if (rows != null && !rows.isEmpty() && StringUtils.isNotEmpty(rows.get(0).getWarehouseCode())) {
+            FdWarehouse q = new FdWarehouse();
+            q.setCode(rows.get(0).getWarehouseCode());
+            List<FdWarehouse> list = fdWarehouseMapper.selectFdWarehouseList(q);
+            if (list != null && !list.isEmpty() && StringUtils.isNotEmpty(list.get(0).getTenantId())) {
+                return list.get(0).getTenantId();
+            }
+        }
+        return SecurityUtils.requiredScopedTenantIdForSql();
+    }
+
+    private boolean factoryExistsByHisId(String tenantId, String hisId) {
+        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(hisId)) {
+            return false;
+        }
+        return fdFactoryMapper.selectFdFactoryByTenantAndHisId(tenantId, hisId.trim()) != null;
+    }
+
+    private boolean supplierExistsByHisId(String tenantId, String hisId) {
+        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(hisId)) {
+            return false;
+        }
+        return fdSupplierMapper.selectFdSupplierByTenantAndHisId(tenantId, hisId.trim()) != null;
+    }
+
+    /**
+     * 将 HIS 匹配得到的 SPD 生产厂家 ID、供应商 ID 赋到产品档案（fd_material）上，仅补空不覆盖已有值。
+     * 期初明细上的 material_id / factory_id / supplier_id 仍由下面 {@link StkInitialImportEntry} 落库。
+     */
+    private void syncMaterialFactorySupplierFromHisMatch(FdMaterial material, Long factoryId, Long supplierId, String tenantId) {
+        if (material == null || material.getId() == null) {
+            return;
+        }
+        boolean need = false;
+        FdMaterial patch = new FdMaterial();
+        patch.setId(material.getId());
+        if (StringUtils.isNotEmpty(tenantId)) {
+            patch.setTenantId(tenantId);
+        } else if (StringUtils.isNotEmpty(material.getTenantId())) {
+            patch.setTenantId(material.getTenantId());
+        }
+        if (factoryId != null && material.getFactoryId() == null) {
+            patch.setFactoryId(factoryId);
+            need = true;
+            material.setFactoryId(factoryId);
+        }
+        if (supplierId != null && material.getSupplierId() == null) {
+            patch.setSupplierId(supplierId);
+            need = true;
+            material.setSupplierId(supplierId);
+        }
+        if (need) {
+            patch.setUpdateBy(SecurityUtils.getUserIdStr());
+            patch.setUpdateTime(new Date());
+            fdMaterialMapper.updateFdMaterial(patch);
+        }
     }
 
     private boolean supplierExistsByName(String name) {

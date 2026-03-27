@@ -3,26 +3,28 @@
 <mapper namespace="com.spd.system.mapper.SbUserPermissionWarehouseMapper">
 
   <select id="selectWarehouseIdsByUserId" resultType="long">
-    select warehouse_id from sb_user_permission_warehouse where user_id = #{userId} and delete_time is null
+    select warehouse_id from sb_user_permission_warehouse
+    where user_id = #{userId} and ifnull(del_flag, '0') = '0'
     <if test="customerId != null and customerId != ''">and customer_id = #{customerId}</if>
   </select>
 
   <update id="deleteByUserId">
-    update sb_user_permission_warehouse set delete_by = #{deleteBy}, delete_time = sysdate() where user_id = #{userId}
+    update sb_user_permission_warehouse set delete_by = #{deleteBy}, delete_time = sysdate(), del_flag = '1'
+    where user_id = #{userId} and ifnull(del_flag, '0') = '0'
   </update>
 
   <insert id="insert" parameterType="com.spd.system.domain.SbUserPermissionWarehouse">
-    insert into sb_user_permission_warehouse (id, user_id, customer_id, warehouse_id, create_by, create_time)
-    values (#{id}, #{userId}, #{customerId}, #{warehouseId}, #{createBy}, sysdate())
+    insert into sb_user_permission_warehouse (id, user_id, customer_id, warehouse_id, create_by, create_time, del_flag)
+    values (#{id}, #{userId}, #{customerId}, #{warehouseId}, #{createBy}, sysdate(), ifnull(#{delFlag}, '0'))
   </insert>
 
   <insert id="batchInsert">
-    insert into sb_user_permission_warehouse (id, user_id, customer_id, warehouse_id, create_by, create_time)
+    insert into sb_user_permission_warehouse (id, user_id, customer_id, warehouse_id, create_by, create_time, del_flag)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.id}, #{item.userId}, #{item.customerId}, #{item.warehouseId}, #{item.createBy}, sysdate())
+      (#{item.id}, #{item.userId}, #{item.customerId}, #{item.warehouseId}, #{item.createBy}, sysdate(), ifnull(#{item.delFlag}, '0'))
     </foreach>
-    on duplicate key update delete_by = null, delete_time = null
+    on duplicate key update delete_by = null, delete_time = null, del_flag = '0'
   </insert>
 
 </mapper>

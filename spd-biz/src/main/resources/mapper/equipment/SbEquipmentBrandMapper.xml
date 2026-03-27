@@ -16,20 +16,26 @@
     </resultMap>
     <sql id="selectVo">select id, customer_id, name, name_pinyin, del_flag, del_by, del_time, create_by, create_time, update_by, update_time from sb_equipment_brand</sql>
     <select id="selectList" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
         <where>
             (del_flag = 0 or del_flag is null)
-            <if test="customerId != null and customerId != ''"> and customer_id = #{customerId}</if>
+            and customer_id = #{scopedTenantId}
             <if test="name != null and name != ''"> and (name like concat('%', #{name}, '%') or name_pinyin like concat('%', #{name}, '%'))</if>
         </where>
         order by create_time desc
     </select>
-    <select id="selectById" resultMap="Result"><include refid="selectVo"/> where id = #{id}</select>
+    <select id="selectById" resultMap="Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectVo"/> where id = #{id} and customer_id = #{scopedTenantId}
+    </select>
     <insert id="insert" parameterType="com.spd.equipment.domain.SbEquipmentBrand">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into sb_equipment_brand (id, customer_id, name, name_pinyin, del_flag, create_by, create_time, update_by, update_time)
-        values (#{id}, #{customerId}, #{name}, #{namePinyin}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+        values (#{id}, #{tenantId}, #{name}, #{namePinyin}, 0, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
     <update id="update" parameterType="com.spd.equipment.domain.SbEquipmentBrand">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update sb_equipment_brand
         <set>
             <if test="name != null">name = #{name},</if>
@@ -40,6 +46,6 @@
             <if test="delBy != null">del_by = #{delBy},</if>
             <if test="delTime != null">del_time = #{delTime},</if>
         </set>
-        where id = #{id}
+        where id = #{id} and customer_id = #{scopedTenantId}
     </update>
 </mapper>

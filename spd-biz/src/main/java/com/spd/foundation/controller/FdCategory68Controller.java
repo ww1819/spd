@@ -22,7 +22,7 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
 /**
- * 68分类Controller
+ * 系统 68 分类标准（fd_category68）接口：字典/参照模板，供初始化与展示；客户侧数据见 sb_customer_category68。
  *
  * @author spd
  * @date 2024-04-12

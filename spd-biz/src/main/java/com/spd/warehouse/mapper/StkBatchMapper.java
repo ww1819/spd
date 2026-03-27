@@ -37,4 +37,12 @@ public interface StkBatchMapper {
      * @return 批次
      */
     StkBatch selectStkBatchById(Long id);
+
+    /**
+     * 查询批次列表
+     *
+     * @param stkBatch 批次筛选条件
+     * @return 批次列表
+     */
+    java.util.List<StkBatch> selectStkBatchList(StkBatch stkBatch);
 }

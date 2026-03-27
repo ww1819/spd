@@ -2,6 +2,7 @@ package com.spd.equipment.service.impl;
 
 import java.util.List;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -33,6 +34,7 @@ public class SbEquipmentBrandServiceImpl implements ISbEquipmentBrandService {
     @Override
     public int insert(SbEquipmentBrand row) {
         if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
+        if (StringUtils.isNotEmpty(row.getName())) row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));
         row.setId(UUID7.generateUUID7());
         row.setDelFlag(0);
         row.setCreateTime(DateUtils.getNowDate());
@@ -42,6 +44,7 @@ public class SbEquipmentBrandServiceImpl implements ISbEquipmentBrandService {
 
     @Override
     public int update(SbEquipmentBrand row) {
+        if (StringUtils.isNotEmpty(row.getName())) row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) row.setUpdateBy(SecurityUtils.getUserIdStr());
         return mapper.update(row);

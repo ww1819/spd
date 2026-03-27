@@ -40,7 +40,7 @@ public class SbUserPermissionServiceImpl implements ISbUserPermissionService {
   @Transactional(rollbackFor = Exception.class)
   public int saveUserMenus(Long userId, String customerId, String[] menuIds) {
     String deleteBy = SecurityUtils.getUserIdStr();
-    sbUserPermissionMenuMapper.deleteByUserId(userId, deleteBy);
+    sbUserPermissionMenuMapper.deleteByUserIdAndCustomerId(userId, customerId, deleteBy);
     if (menuIds == null || menuIds.length == 0) return 0;
     List<SbUserPermissionMenu> list = new ArrayList<>();
     String createBy = deleteBy;

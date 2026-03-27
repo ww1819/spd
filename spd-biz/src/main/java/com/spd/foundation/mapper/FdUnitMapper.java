@@ -1,6 +1,7 @@
 package com.spd.foundation.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.foundation.domain.FdUnit;
 
 /**
@@ -44,11 +45,14 @@ public interface FdUnitMapper
     public int updateFdUnit(FdUnit fdUnit);
 
     /**
-     * 查询最大的D开头的单位编码
-     *
-     * @return 最大编码
+     * 当前租户（或平台空租户）下 D 开头单位编码的最大一条
      */
-    public String selectMaxUnitCode();
+    String selectMaxUnitCode(@Param("tenantId") String tenantId);
+
+    /**
+     * 按租户 + 单位名称（精确匹配，不含模糊）查一条（未删除）
+     */
+    FdUnit selectFdUnitByTenantAndUnitName(@Param("tenantId") String tenantId, @Param("unitName") String unitName);
 
 //    /**
 //     * 删除单位明细

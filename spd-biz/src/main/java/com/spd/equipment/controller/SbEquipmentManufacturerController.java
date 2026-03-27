@@ -33,6 +33,13 @@ public class SbEquipmentManufacturerController extends BaseController {
         return success(service.selectById(id));
     }
 
+    /** 按名称查找或创建生产厂家（当前客户下），用于表单可输入新厂家名时自动新增 */
+    @PreAuthorize("@ss.hasPermi('equipment:manufacturer:list')")
+    @PostMapping("/getOrCreate")
+    public AjaxResult getOrCreate(@RequestParam String name) {
+        return success(service.getOrCreateByName(name));
+    }
+
     @PreAuthorize("@ss.hasPermi('equipment:manufacturer:add')")
     @Log(title = "设备生产厂家", businessType = BusinessType.INSERT)
     @PostMapping

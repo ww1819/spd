@@ -12,24 +12,27 @@
 
     <!-- 根据关联的明细从主表回填申购单主表id和申购单号；并回填采购计划主表id和单号 -->
     <update id="updateFillApplyInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_dep_apply r
-        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id
-        inner join dep_purchase_apply a on e.parent_id = a.id
-        inner join purchase_plan_entry pe on r.purchase_plan_entry_id = pe.id
-        inner join purchase_plan pp on pe.parent_id = pp.id
+        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        inner join dep_purchase_apply a on e.parent_id = a.id and a.tenant_id = #{scopedTenantId}
+        inner join purchase_plan_entry pe on r.purchase_plan_entry_id = pe.id and pe.tenant_id = #{scopedTenantId}
+        inner join purchase_plan pp on pe.parent_id = pp.id and pp.tenant_id = #{scopedTenantId}
         set r.dep_purchase_apply_id = a.id, r.purchase_bill_no = a.purchase_bill_no,
             r.purchase_plan_id = pp.id, r.plan_no = pp.plan_no
-        where r.purchase_plan_entry_id = #{purchasePlanEntryId} and (r.del_flag = '0' or r.del_flag is null)
+        where r.purchase_plan_entry_id = #{purchasePlanEntryId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
     </update>
 
     <update id="logicDeleteByPlanId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_dep_apply r
-        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
         set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
-        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null)
+        where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
     </update>
 
     <select id="selectApplyDetailsByEntryId" resultType="com.spd.caigou.domain.vo.ApplyDetailVO">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select dpa.purchase_bill_no as applyBillNo,
                d.name as departmentName,
                e.qty as qty,
@@ -38,28 +41,30 @@
                coalesce(au.nick_name, au.user_name) as auditByName,
                dpa.update_time as auditTime
         from purchase_plan_entry_dep_apply r
-        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and (e.del_flag is null or e.del_flag != 1)
-        inner join dep_purchase_apply dpa on e.parent_id = dpa.id and (dpa.del_flag = 0 or dpa.del_flag is null)
+        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
+        inner join dep_purchase_apply dpa on e.parent_id = dpa.id and dpa.tenant_id = #{scopedTenantId} and (dpa.del_flag = 0 or dpa.del_flag is null)
         left join fd_department d on dpa.department_id = d.id
         left join sys_user cu on dpa.create_by = cu.user_id
         left join sys_user au on dpa.update_by = au.user_id
-        where r.purchase_plan_entry_id = #{entryId} and (r.del_flag = '0' or r.del_flag is null)
+        where r.purchase_plan_entry_id = #{entryId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
         order by dpa.purchase_bill_no, e.id
     </select>
 
     <select id="selectBillNoListByPlanId" resultType="java.lang.String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select distinct coalesce(nullif(trim(r.purchase_bill_no), ''), dpa.purchase_bill_no) as purchase_bill_no
         from purchase_plan_entry_dep_apply r
-        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
-        left join dep_purchase_apply_entry e2 on r.dep_purchase_apply_entry_id = e2.id and (e2.del_flag is null or e2.del_flag != 1)
-        left join dep_purchase_apply dpa on e2.parent_id = dpa.id and (dpa.del_flag = 0 or dpa.del_flag is null)
-        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null)
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        left join dep_purchase_apply_entry e2 on r.dep_purchase_apply_entry_id = e2.id and e2.tenant_id = #{scopedTenantId} and (e2.del_flag is null or e2.del_flag != 1)
+        left join dep_purchase_apply dpa on e2.parent_id = dpa.id and dpa.tenant_id = #{scopedTenantId} and (dpa.del_flag = 0 or dpa.del_flag is null)
+        where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
         having purchase_bill_no is not null and purchase_bill_no != ''
         order by purchase_bill_no
     </select>
 
     <!-- 根据采购计划ID查询关联的申购单表头列表（科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间） -->
     <select id="selectApplyBillHeaderListByPlanId" resultType="com.spd.caigou.domain.vo.ApplyBillHeaderVO">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select distinct dpa.purchase_bill_no as applyBillNo,
                w.name as warehouseName,
                coalesce(cu.nick_name, cu.user_name) as createByName,
@@ -69,29 +74,31 @@
                coalesce(uu.nick_name, uu.user_name) as auditByName,
                dpa.update_time as auditTime
         from purchase_plan_entry_dep_apply r
-        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
-        inner join dep_purchase_apply_entry e2 on r.dep_purchase_apply_entry_id = e2.id and (e2.del_flag is null or e2.del_flag != 1)
-        inner join dep_purchase_apply dpa on e2.parent_id = dpa.id and (dpa.del_flag = 0 or dpa.del_flag is null)
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        inner join dep_purchase_apply_entry e2 on r.dep_purchase_apply_entry_id = e2.id and e2.tenant_id = #{scopedTenantId} and (e2.del_flag is null or e2.del_flag != 1)
+        inner join dep_purchase_apply dpa on e2.parent_id = dpa.id and dpa.tenant_id = #{scopedTenantId} and (dpa.del_flag = 0 or dpa.del_flag is null)
         left join fd_warehouse w on dpa.warehouse_id = w.id
         left join sys_user cu on dpa.create_by = cu.user_id
         left join sys_user uu on dpa.update_by = uu.user_id
-        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null)
+        where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
           and dpa.purchase_bill_no is not null and trim(dpa.purchase_bill_no) != ''
         order by dpa.purchase_bill_no
     </select>
 
     <select id="selectEntryBillNosByPlanId" resultType="com.spd.caigou.domain.vo.EntryBillNoVO">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select r.purchase_plan_entry_id as entryId, r.purchase_bill_no as purchaseBillNo
         from purchase_plan_entry_dep_apply r
-        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id
-        where e.parent_id = #{planId} and (r.del_flag = '0' or r.del_flag is null) and r.purchase_bill_no is not null
+        inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null) and r.purchase_bill_no is not null
         order by r.purchase_plan_entry_id, r.purchase_bill_no
     </select>
 
     <select id="selectDepApplyEntryIdsByEntryId" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select r.dep_purchase_apply_entry_id
         from purchase_plan_entry_dep_apply r
-        where r.purchase_plan_entry_id = #{entryId} and (r.del_flag = '0' or r.del_flag is null)
+        where r.purchase_plan_entry_id = #{entryId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
         order by r.id
     </select>
 </mapper>

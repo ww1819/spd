@@ -61,6 +61,11 @@ public interface ISysUserService
     public SysUser selectUserById(Long userId);
 
     /**
+     * 仅查询租户 customer_id，用于修正 Redis 登录态与库不一致（见 LoginUserTenantSyncFilter）。
+     */
+    String selectCustomerIdByUserId(Long userId);
+
+    /**
      * 根据用户ID查询用户所属角色组
      * 
      * @param userName 用户名

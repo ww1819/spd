@@ -35,6 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
             <select id="selectDepartmentInventoryList" parameterType="com.spd.warehouse.domain.DepartmentInventoryQuery" resultMap="DepartmentInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         SELECT
             A.KS_NO AS KS_NO,
             B.CODE AS KS_CODE,
@@ -179,6 +180,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             VIEW_ZS_HC_KS_ALL_DETAIL A
             LEFT JOIN T_BI_KS B ON A.KS_NO = B.ID
             LEFT JOIN T_HC_INFO C ON A.HC_NO = C.ID
+            INNER JOIN fd_department fd_tenant ON fd_tenant.code = B.CODE AND fd_tenant.tenant_id = #{scopedTenantId}
         WHERE
             1 = 1
             <if test="ksName != null and ksName != ''">

@@ -200,7 +200,8 @@ public class StkIoBill extends BaseEntity
     /** 查询参数：批号 */
     private String batchNo;
 
-
+    /** 出库按单导出：勾选的主键 id，逗号分隔；不传则按其它条件导出全部匹配单据 */
+    private String exportBillIds;
 
     private List<FdMaterial> materialList;
 
@@ -486,6 +487,14 @@ public class StkIoBill extends BaseEntity
 
     public void setBatchNo(String batchNo) {
         this.batchNo = batchNo;
+    }
+
+    public String getExportBillIds() {
+        return exportBillIds;
+    }
+
+    public void setExportBillIds(String exportBillIds) {
+        this.exportBillIds = exportBillIds;
     }
 
     public List<FdMaterial> getMaterialList() {

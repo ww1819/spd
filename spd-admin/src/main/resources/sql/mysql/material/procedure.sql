@@ -47,3 +47,63 @@ BEGIN
     SET @dynamic_sql = '';
 END;
 /
+
+-- =============================================================================
+-- sp_hc_merge_sys_menu：合并重复 sys_menu（将 drop 侧关联迁移到 keep 后删除 drop）
+-- 使用说明与示例见：spd/sql/maintenance/dedupe_hc_material_sys_menu.sql
+-- =============================================================================
+DROP PROCEDURE IF EXISTS `sp_hc_merge_sys_menu`;
+/
+CREATE PROCEDURE `sp_hc_merge_sys_menu`(
+    IN p_keep BIGINT,
+    IN p_drop BIGINT
+)
+proc_label:
+BEGIN
+    DECLARE v_child_cnt INT DEFAULT 0;
+
+    IF p_keep IS NULL OR p_drop IS NULL OR p_keep = p_drop THEN
+        LEAVE proc_label;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = p_keep) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'sp_hc_merge_sys_menu: keep menu_id 不存在';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = p_drop) THEN
+        LEAVE proc_label;
+    END IF;
+
+    INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+    SELECT role_id, p_keep FROM sys_role_menu WHERE menu_id = p_drop;
+    DELETE FROM sys_role_menu WHERE menu_id = p_drop;
+
+    INSERT IGNORE INTO sys_user_menu (user_id, menu_id, tenant_id)
+    SELECT user_id, p_keep, tenant_id FROM sys_user_menu WHERE menu_id = p_drop;
+    DELETE FROM sys_user_menu WHERE menu_id = p_drop;
+
+    INSERT IGNORE INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+    SELECT tenant_id, p_keep, status, is_enabled, create_by, create_time
+    FROM hc_customer_menu WHERE menu_id = p_drop;
+    DELETE FROM hc_customer_menu WHERE menu_id = p_drop;
+
+    INSERT IGNORE INTO sys_post_menu (post_id, menu_id, tenant_id)
+    SELECT post_id, p_keep, tenant_id FROM sys_post_menu WHERE menu_id = p_drop;
+    DELETE FROM sys_post_menu WHERE menu_id = p_drop;
+
+    DELETE dup FROM hc_user_permission_menu dup
+    INNER JOIN hc_user_permission_menu k
+        ON dup.user_id = k.user_id AND dup.tenant_id = k.tenant_id AND k.menu_id = p_keep
+    WHERE dup.menu_id = p_drop;
+    UPDATE hc_user_permission_menu SET menu_id = p_keep WHERE menu_id = p_drop;
+
+    UPDATE hc_customer_menu_status_log SET menu_id = p_keep WHERE menu_id = p_drop;
+    UPDATE hc_customer_menu_period_log SET menu_id = p_keep WHERE menu_id = p_drop;
+
+    SELECT COUNT(*) INTO v_child_cnt FROM sys_menu WHERE parent_id = p_drop;
+    IF v_child_cnt > 0 THEN
+        UPDATE sys_menu SET parent_id = p_keep WHERE parent_id = p_drop;
+    END IF;
+
+    DELETE FROM sys_menu WHERE menu_id = p_drop;
+END;
+/

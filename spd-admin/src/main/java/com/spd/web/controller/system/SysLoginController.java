@@ -17,14 +17,17 @@ import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.core.domain.model.LoginBody;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.core.domain.model.LoginUser;
 import com.spd.framework.web.service.SbPermissionService;
 import com.spd.framework.web.service.SysLoginService;
 import com.spd.framework.web.service.SysPermissionService;
+import com.spd.framework.web.service.TokenService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.domain.SbMenu;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbMenuService;
+import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 
 /**
@@ -55,6 +58,12 @@ public class SysLoginController
 
     @Autowired
     private HcCustomerMenuMapper hcCustomerMenuMapper;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private ISysConfigService configService;
 
     /**
      * 登录方法
@@ -103,7 +112,14 @@ public class SysLoginController
                 options.add(m);
             }
         }
-        return AjaxResult.success(options);
+        AjaxResult ajax = AjaxResult.success(options);
+        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
+            String def = StringUtils.trimToEmpty(configService.selectConfigByKey("hc.login.defaultCustomerId"));
+            if (StringUtils.isNotEmpty(def)) {
+                ajax.put("defaultCustomerId", def);
+            }
+        }
+        return ajax;
     }
 
     /**
@@ -114,11 +130,16 @@ public class SysLoginController
     @GetMapping("getInfo")
     public AjaxResult getInfo()
     {
-        SysUser user = SecurityUtils.getLoginUser().getUser();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser user = loginUser.getUser();
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
-        // 权限集合
-        Set<String> permissions = permissionService.getMenuPermission(user);
+        // 权限集合：与 UserDetailsServiceImpl.createLoginUser 一致（sys_user_menu 耗材权限 + 设备 sb 权限）
+        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
+        permissions.addAll(sbPermissionService.getMenuPermission(user));
+        // 与 @PreAuthorize 一致：必须写回 LoginUser 并刷新 Redis，否则仅前端 getInfo 有最新权限、接口仍用登录时旧权限 → 403
+        loginUser.setPermissions(permissions);
+        tokenService.setLoginUser(loginUser);
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
@@ -136,11 +157,16 @@ public class SysLoginController
     @GetMapping("getEquipmentInfo")
     public AjaxResult getEquipmentInfo()
     {
-        SysUser user = SecurityUtils.getLoginUser().getUser();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser user = loginUser.getUser();
         // 设备角色集合
         Set<String> roles = sbPermissionService.getRolePermission(user);
-        // 设备菜单权限集合
-        Set<String> permissions = sbPermissionService.getMenuPermission(user);
+        // 设备菜单权限集合（与登录时一致：平台 + 设备，供前端 v-hasPermi 使用）
+        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
+        permissions.addAll(sbPermissionService.getMenuPermission(user));
+        // 同步到 Redis 中 LoginUser，避免「能看到按钮但点击 403」
+        loginUser.setPermissions(permissions);
+        tokenService.setLoginUser(loginUser);
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
@@ -165,7 +191,23 @@ public class SysLoginController
         tenant.put("customerName", customer.getCustomerName());
         tenant.put("customerId", customer.getCustomerId());
         tenant.put("customerCode", customer.getCustomerCode());
+        tenant.put("tenantKey", StringUtils.isNotEmpty(customer.getTenantKey()) ? customer.getTenantKey() : null);
         ajax.put("tenant", tenant);
+    }
+
+    /**
+     * 实时获取当前用户租户信息（避免前端仅依赖登录态缓存）。
+     */
+    @GetMapping("getCurrentTenant")
+    public AjaxResult getCurrentTenant()
+    {
+        AjaxResult ajax = AjaxResult.success();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getUser() == null) {
+            return ajax;
+        }
+        putTenantIfPresent(ajax, loginUser.getUser().getCustomerId());
+        return ajax;
     }
 
     /**

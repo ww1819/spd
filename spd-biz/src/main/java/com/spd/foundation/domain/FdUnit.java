@@ -28,6 +28,9 @@ public class FdUnit extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 租户ID(同sb_customer.customer_id) */
+    private String tenantId;
+
     public void setUnitId(Long unitId)
     {
         this.unitId = unitId;
@@ -65,6 +68,16 @@ public class FdUnit extends BaseEntity
         return delFlag;
     }
 
+    public String getTenantId()
+    {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId)
+    {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -72,10 +85,14 @@ public class FdUnit extends BaseEntity
             .append("unitCode", getUnitCode())
             .append("unitName", getUnitName())
             .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
+            .append("remark", getRemark())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
+            .append("deleteBy", getDeleteBy())
+            .append("deleteTime", getDeleteTime())
             .toString();
     }
 }

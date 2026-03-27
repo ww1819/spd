@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.spd.common.core.domain.model.LoginUser;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.TenantContext;
 
@@ -26,8 +27,6 @@ import com.spd.common.utils.TenantContext;
 public class TenantContextFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(TenantContextFilter.class);
-    public static final String HEADER_TENANT_ID = "X-Tenant-Id";
-
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
@@ -40,9 +39,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
             if (principal instanceof LoginUser) {
                 LoginUser loginUser = (LoginUser) principal;
                 String userCustomerId = loginUser.getUser() != null ? loginUser.getUser().getCustomerId() : null;
+                String headerTenantId = request.getHeader(SecurityUtils.X_TENANT_ID_HEADER);
                 if (StringUtils.isNotEmpty(userCustomerId)) {
                     TenantContext.setTenantId(userCustomerId);
-                    String headerTenantId = request.getHeader(HEADER_TENANT_ID);
                     if (StringUtils.isNotEmpty(headerTenantId) && !headerTenantId.equals(userCustomerId)) {
                         log.warn("租户校验失败: 请求头 X-Tenant-Id={} 与当前用户租户 {} 不一致", headerTenantId, userCustomerId);
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -50,6 +49,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
                         response.getWriter().write("{\"code\":403,\"msg\":\"租户标识与登录用户不一致\"}");
                         return;
                     }
+                } else if (StringUtils.isNotEmpty(headerTenantId)) {
+                    // 用户未绑定 customer_id 时（如部分 super 账号），工作台仍通过 X-Tenant-Id 传递所选租户，供 resolveEffectiveTenantId 使用
+                    TenantContext.setTenantId(headerTenantId.trim());
                 }
             }
         } catch (Exception e) {

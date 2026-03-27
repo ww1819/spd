@@ -26,6 +26,10 @@ public class FdFactory extends BaseEntity
     @Excel(name = "厂家名称")
     private String factoryName;
 
+    /** HIS 生产厂家 ID（衡水市第三人民医院租户内必填且唯一，保存后不可通过维护接口修改） */
+    @Excel(name = "HIS生产厂家ID", width = 22, prompt = "衡水市第三人民医院新增与导入时必填，租户内唯一；保存后不可修改")
+    private String hisId;
+
     /** 厂家地址 */
     @Excel(name = "厂家地址")
     private String factoryAddress;
@@ -44,9 +48,12 @@ public class FdFactory extends BaseEntity
     @Excel(name = "厂家简码")
     private String factoryReferredCode;
 
-    /** 厂家状态 */
-    @Excel(name = "厂家状态", readConverterExp = "启用/停用")
+    /** 厂家状态（启用/停用，存库 0/1） */
+    @Excel(name = "厂家状态", readConverterExp = "0=启用,1=停用")
     private String factoryStatus;
+
+    @Excel(name = "数据校验结果", width = 40, sort = 99999)
+    private String validationResult;
 
     public void setFactoryId(Long factoryId)
     {
@@ -75,6 +82,17 @@ public class FdFactory extends BaseEntity
     {
         return factoryName;
     }
+
+    public String getHisId()
+    {
+        return hisId;
+    }
+
+    public void setHisId(String hisId)
+    {
+        this.hisId = hisId;
+    }
+
     public void setFactoryAddress(String factoryAddress)
     {
         this.factoryAddress = factoryAddress;
@@ -121,12 +139,21 @@ public class FdFactory extends BaseEntity
         this.factoryStatus = factoryStatus;
     }
 
+    public String getValidationResult() {
+        return validationResult;
+    }
+
+    public void setValidationResult(String validationResult) {
+        this.validationResult = validationResult;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("factoryId", getFactoryId())
             .append("factoryCode", getFactoryCode())
             .append("factoryName", getFactoryName())
+            .append("hisId", getHisId())
             .append("factoryAddress", getFactoryAddress())
             .append("factoryContact", getFactoryContact())
             .append("delFlag", getDelFlag())
@@ -136,6 +163,7 @@ public class FdFactory extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("factoryReferredCode", getFactoryReferredCode())
             .append("factoryStatus", getFactoryStatus())
+            .append("validationResult", getValidationResult())
             .toString();
     }
 }

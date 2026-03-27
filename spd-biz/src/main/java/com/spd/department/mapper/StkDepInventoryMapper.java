@@ -28,6 +28,11 @@ public interface StkDepInventoryMapper
     public StkDepInventory selectStkDepInventoryById(Long id);
 
     /**
+     * 按出库单主表与明细定位科室库存（出库审核生成；出库单明细 kc_no 存科室库存 id，本表 kc_no 存来源 stk_inventory.id）
+     */
+    StkDepInventory selectStkDepInventoryByBillEntry(@Param("billId") Long billId, @Param("billEntryId") Long billEntryId, @Param("tenantId") String tenantId);
+
+    /**
      * 查询科室库存列表
      *
      * @param stkDepInventory 科室库存
@@ -74,14 +79,15 @@ public interface StkDepInventoryMapper
      * @param batchNo 批次号
      * @return 科室库存
      */
-    StkDepInventory selectStkDepInventoryOne(String batchNo);
+    StkDepInventory selectStkDepInventoryOne(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 根据批次号查询科室库存实际数量
      * @param batchNo
+     * @param warehouseId
      * @return
      */
-    BigDecimal selectTKStkInvntoryByBatchNo(String batchNo);
+    BigDecimal selectTKStkInvntoryByBatchNo(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
      * 查询库存汇总列表

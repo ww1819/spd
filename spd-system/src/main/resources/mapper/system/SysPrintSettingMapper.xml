@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="SysPrintSetting" id="SysPrintSettingResult">
         <id     property="id"            column="id"            />
         <result property="templateName" column="template_name" />
+        <result property="tenantId"     column="tenant_id"     />
         <result property="billType"     column="bill_type"     />
         <result property="pageWidth"    column="page_width"    />
         <result property="pageHeight"   column="page_height"   />
@@ -37,7 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
     
     <sql id="selectSysPrintSettingVo">
-        select id, template_name, bill_type, page_width, page_height, orientation,
+        select id, template_name, tenant_id, bill_type, page_width, page_height, orientation,
                margin_top, margin_bottom, margin_left, margin_right,
                font_size, table_font_size, column_spacing,
                show_purchaser, show_creator, show_auditor, show_receiver,
@@ -52,6 +53,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             <if test="templateName != null and templateName != ''">
                 AND template_name like concat('%', #{templateName}, '%')
+            </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
             </if>
             <if test="billType != null">
                 AND bill_type = #{billType}
@@ -68,16 +72,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
     
-    <select id="selectDefaultByBillType" parameterType="Integer" resultMap="SysPrintSettingResult">
+    <select id="selectDefaultByBillTypeAndTenant" resultMap="SysPrintSettingResult">
         <include refid="selectSysPrintSettingVo"/>
         where status = '0'
-        <if test="billType != null">
-            AND bill_type = #{billType}
-        </if>
-        <if test="billType == null">
-            AND bill_type IS NULL
-        </if>
+        <choose>
+            <when test="billType != null">
+                AND bill_type = #{billType}
+            </when>
+            <otherwise>
+                AND bill_type IS NULL
+            </otherwise>
+        </choose>
         AND is_default = 1
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                AND (tenant_id IS NULL OR tenant_id = '')
+            </otherwise>
+        </choose>
         limit 1
     </select>
     
@@ -85,6 +99,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into sys_print_setting
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name,</if>
+            <if test="tenantId != null">tenant_id,</if>
             <if test="billType != null">bill_type,</if>
             <if test="pageWidth != null">page_width,</if>
             <if test="pageHeight != null">page_height,</if>
@@ -113,6 +128,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">#{templateName},</if>
+            <if test="tenantId != null">#{tenantId},</if>
             <if test="billType != null">#{billType},</if>
             <if test="pageWidth != null">#{pageWidth},</if>
             <if test="pageHeight != null">#{pageHeight},</if>
@@ -145,6 +161,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update sys_print_setting
         <trim prefix="SET" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="billType != null">bill_type = #{billType},</if>
             <if test="pageWidth != null">page_width = #{pageWidth},</if>
             <if test="pageHeight != null">page_height = #{pageHeight},</if>
@@ -195,6 +212,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billType == null">
             AND bill_type IS NULL
         </if>
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                AND (tenant_id IS NULL OR tenant_id = '')
+            </otherwise>
+        </choose>
         <if test="id != null">
             AND id != #{id}
         </if>

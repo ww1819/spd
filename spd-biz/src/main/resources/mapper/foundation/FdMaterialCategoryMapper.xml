@@ -25,9 +25,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectFdMaterialCategoryList" parameterType="FdMaterialCategory" resultMap="FdMaterialCategoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialCategoryVo"/>
         where del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and (tenant_id = #{tenantId} or tenant_id is null)</if>
+        and tenant_id = #{scopedTenantId}
         <if test="materialCategoryCode != null  and materialCategoryCode != ''"> and material_category_code = #{materialCategoryCode}</if>
         <if test="materialCategoryName != null  and materialCategoryName != ''"> and material_category_name like concat('%', #{materialCategoryName}, '%')</if>
         <if test="materialCategoryAddress != null  and materialCategoryAddress != ''"> and material_category_address = #{materialCategoryAddress}</if>
@@ -35,11 +36,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectFdMaterialCategoryByMaterialCategoryId" parameterType="Long" resultMap="FdMaterialCategoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialCategoryVo"/>
-        where material_category_id = #{materialCategoryId}
+        where material_category_id = #{materialCategoryId} and tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertFdMaterialCategory" parameterType="FdMaterialCategory" useGeneratedKeys="true" keyProperty="materialCategoryId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_material_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialCategoryCode != null and materialCategoryCode != ''">material_category_code,</if>
@@ -51,7 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            <if test="tenantId != null">tenant_id,</if>
+            tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="materialCategoryCode != null and materialCategoryCode != ''">#{materialCategoryCode},</if>
@@ -63,11 +66,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            <if test="tenantId != null">#{tenantId},</if>
+            #{scopedTenantId},
          </trim>
     </insert>
 
     <update id="updateFdMaterialCategory" parameterType="FdMaterialCategory">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_material_category
         <trim prefix="SET" suffixOverrides=",">
             <if test="materialCategoryCode != null and materialCategoryCode != ''">material_category_code = #{materialCategoryCode},</if>
@@ -81,17 +85,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
-        where material_category_id = #{materialCategoryId}
+        where material_category_id = #{materialCategoryId} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteFdMaterialCategoryByMaterialCategoryId">
-        update fd_material_category set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where material_category_id = #{materialCategoryId}
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_material_category set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where material_category_id = #{materialCategoryId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdMaterialCategoryByMaterialCategoryIds">
-        update fd_material_category set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where material_category_id in
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_material_category set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and material_category_id in
         <foreach item="materialCategoryId" collection="materialCategoryIds" open="(" separator="," close=")">
             #{materialCategoryId}
         </foreach>

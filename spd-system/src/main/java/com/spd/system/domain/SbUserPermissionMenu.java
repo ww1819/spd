@@ -19,6 +19,8 @@ public class SbUserPermissionMenu {
   private String deleteBy;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date deleteTime;
+  /** 删除标志（0正常 1删除） */
+  private String delFlag;
 
   public String getId() { return id; }
   public void setId(String id) { this.id = id; }
@@ -36,4 +38,6 @@ public class SbUserPermissionMenu {
   public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
   public Date getDeleteTime() { return deleteTime; }
   public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+  public String getDelFlag() { return delFlag; }
+  public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
 }

@@ -172,4 +172,24 @@ public interface ISysMenuService
    * @return 下拉树结构列表
    */
   List<TreeSelect> selectMenuTreeForPostAssign(String tenantId);
+
+  /**
+   * 将菜单 ID 扩展为包含其下全部非平台子孙（M/C/F），用于客户保存 hc_customer_menu 与业务含义「开通父即含子」一致
+   */
+  List<Long> expandMenuIdsWithDescendants(List<Long> menuIds);
+
+  /**
+   * 租户用户保存 sys_user_menu 时：将勾选的菜单扩展为包含所有非平台父级目录，否则 getRouters 仅从根组树时缺少父节点会导致侧栏不显示子菜单（如「收货确认」）。
+   */
+  List<Long> expandMenuIdsWithAncestorsForTenant(List<Long> menuIds);
+
+  /**
+   * 耗材菜单树（含 default_open_to_customer），用于批量设置默认对客户开放
+   */
+  List<SysMenu> selectMenuTreeForDefaultOpenBatch();
+
+  /**
+   * 批量设置耗材菜单「默认对客户开放」：先全部置否，再对 menuIds 置是（平台管理菜单始终为否）
+   */
+  void batchSetDefaultOpenToCustomer(List<Long> menuIds);
 }

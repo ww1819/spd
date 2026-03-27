@@ -1,8 +1,11 @@
 package com.spd.foundation.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.dto.MaterialImportAddDto;
+import com.spd.foundation.dto.MaterialImportUpdateDto;
 import com.spd.foundation.domain.FdMaterialChangeLog;
 import com.spd.foundation.domain.FdMaterialStatusLog;
 import com.spd.foundation.vo.MaterialTimelineVo;
@@ -122,6 +125,35 @@ public interface IFdMaterialService
      */
     List<MaterialTimelineVo> getMaterialTimeline(Long materialId);
 
+    /**
+     * 产品档案详情页：入库记录-左侧供应商树数据
+     */
+    List<Map<String, Object>> listInboundSuppliers(Long materialId);
+
+    /**
+     * 产品档案详情页：入库记录-右侧明细数据
+     */
+    List<Map<String, Object>> listInboundRecords(Long materialId, Long supplierId, String orderMode);
+
+    /**
+     * 耗材档案新增导入：整单校验（HIS 已存在则整单拒绝等）
+     */
+    Map<String, Object> validateMaterialImportAdd(List<MaterialImportAddDto> list);
+
+    /**
+     * 耗材档案更新导入：整单校验
+     */
+    Map<String, Object> validateMaterialImportUpdate(List<MaterialImportUpdateDto> list);
+
+    /**
+     * 耗材档案新增导入落库（须先校验通过且 confirm=true）
+     */
+    String importMaterialImportAdd(List<MaterialImportAddDto> list, String operName, boolean confirm);
+
+    /**
+     * 耗材档案更新导入落库（须先校验通过且 confirm=true）
+     */
+    String importMaterialImportUpdate(List<MaterialImportUpdateDto> list, String operName, boolean confirm);
 
 //    /**
 //     * 批量删除耗材产品
