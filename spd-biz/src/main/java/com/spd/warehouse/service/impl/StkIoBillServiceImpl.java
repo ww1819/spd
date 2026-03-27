@@ -823,6 +823,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         throw new ServiceException("退库目标仓库ID不能为空");
                     }
 
+                    Date flowBeginTime = entry.getBeginTime() != null ? entry.getBeginTime() : stkDepInventory.getBeginDate();
+                    Date flowEndTime = entry.getEndTime() != null ? entry.getEndTime() : stkDepInventory.getEndDate();
+
                     // 更新仓库库存数量（必须按仓库精确锁定）
                     StkInventory inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, returnWarehouseId);
 
@@ -851,8 +854,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         inventory.setFactoryId(stkBatch.getFactoryId());
                         inventory.setMainBarcode(entry.getMainBarcode());
                         inventory.setSubBarcode(entry.getSubBarcode());
-                        inventory.setBeginTime(entry.getBeginTime());
-                        inventory.setEndTime(entry.getEndTime());
+                        inventory.setBeginTime(flowBeginTime);
+                        inventory.setEndTime(flowEndTime);
                         inventory.setReceiptOrderNo(stkIoBill.getBillNo());
                         inventory.setBatchNumber(entry.getBatchNumber());
                         inventory.setCreateTime(new Date());
@@ -888,8 +891,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setQty(entry.getQty());
                     tkFlow.setUnitPrice(unitPrice);
                     tkFlow.setAmt(returnAmt);
-                    tkFlow.setBeginTime(entry.getBeginTime());
-                    tkFlow.setEndTime(entry.getEndTime());
+                    tkFlow.setBeginTime(flowBeginTime);
+                    tkFlow.setEndTime(flowEndTime);
                     tkFlow.setSupplierId(resolveStockFlowSupplierId(stkIoBill, entry, inventory));
                     tkFlow.setFactoryId(resolveFactoryId(inventory));
                     tkFlow.setMainBarcode(inventory.getMainBarcode());
@@ -918,8 +921,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksTkFlow.setQty(entry.getQty());
                     ksTkFlow.setUnitPrice(depUnitPrice);
                     ksTkFlow.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : returnAmt);
-                    ksTkFlow.setBeginTime(entry.getBeginTime());
-                    ksTkFlow.setEndTime(entry.getEndTime());
+                    ksTkFlow.setBeginTime(flowBeginTime);
+                    ksTkFlow.setEndTime(flowEndTime);
                     Long ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
                     ksTkFlow.setSupplierId(ksSupplierId != null ? String.valueOf(ksSupplierId) : null);
                     ksTkFlow.setFactoryId(resolveFactoryId(inventory));

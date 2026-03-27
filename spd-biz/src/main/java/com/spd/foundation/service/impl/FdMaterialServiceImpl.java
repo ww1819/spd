@@ -119,6 +119,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             throw new ServiceException("耗材名称不能为空");
         }
+        if (m.getStoreroomId() == null)
+        {
+            throw new ServiceException("新增产品档案必须选择库房分类");
+        }
+        if (m.getFinanceCategoryId() == null)
+        {
+            throw new ServiceException("新增产品档案必须选择财务分类");
+        }
     }
 
     /** 修改：仅耗材名称必填 */
