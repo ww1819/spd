@@ -233,7 +233,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
         <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_bill_entry e inner join fd_material m on e.material_id = m.id where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%')))</if>
-        order by stk.bill_date desc
+        <choose>
+            <when test="sortScene != null and sortScene == 'audit'">
+                order by
+                    case when stk.bill_status = 2 then 1 else 0 end asc,
+                    case
+                        when stk.bill_status = 2 then ifnull(stk.audit_date, ifnull(stk.create_time, stk.bill_date))
+                        else ifnull(stk.create_time, stk.bill_date)
+                    end desc,
+                    stk.id desc
+            </when>
+            <otherwise>
+                order by ifnull(stk.create_time, stk.bill_date) desc, stk.id desc
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 出库单按单导出（bill_type=201），扁平行 -->
@@ -1249,7 +1262,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select
             stk.id as billId,
             stk.bill_no as billNo,
-            w.warehouse_code as warehouseCode,
+            w.code as warehouseCode,
             w.name as warehouseName,
             s.code as supplierCode,
             s.name as supplierName,

@@ -200,6 +200,9 @@ public class StkIoBill extends BaseEntity
     /** 查询参数：批号 */
     private String batchNo;
 
+    /** 列表排序场景：apply=申请页，audit=审核页 */
+    private String sortScene;
+
     /** 出库按单导出：勾选的主键 id，逗号分隔；不传则按其它条件导出全部匹配单据 */
     private String exportBillIds;
 
@@ -489,6 +492,14 @@ public class StkIoBill extends BaseEntity
         this.batchNo = batchNo;
     }
 
+    public String getSortScene() {
+        return sortScene;
+    }
+
+    public void setSortScene(String sortScene) {
+        this.sortScene = sortScene;
+    }
+
     public String getExportBillIds() {
         return exportBillIds;
     }
@@ -619,6 +630,7 @@ public class StkIoBill extends BaseEntity
             .append("ennDate", getEndDate())
             .append("materialName", getMaterialName())
             .append("warehouseName", getWarehouseName())
+            .append("sortScene", getSortScene())
             .append("materialList", getMaterialList())
             .append("delPerson", getDelPerson())
             .append("telephone", getTelephone())
