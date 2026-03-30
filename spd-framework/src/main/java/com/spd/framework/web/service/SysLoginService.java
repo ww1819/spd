@@ -24,6 +24,7 @@ import com.spd.common.exception.user.UserNotExistsException;
 import com.spd.common.exception.user.UserPasswordNotMatchException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.MessageUtils;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.ip.IpUtils;
 import com.spd.framework.manager.AsyncManager;
@@ -169,6 +170,38 @@ public class SysLoginService
         loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
         recordLoginInfo(loginUser.getUserId());
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_SUCCESS, "平台管理员租户切换登录成功"));
+        return tokenService.createToken(loginUser);
+    }
+
+    /**
+     * 已登录平台管理员切换租户：直接签发目标租户 super_01 token
+     */
+    public String switchTenantAsSuper(String customerId, String systemType) {
+        LoginUser current = SecurityUtils.getLoginUser();
+        SysUser currentUser = current != null ? current.getUser() : null;
+        if (currentUser == null || !currentUser.isAdmin() || StringUtils.isNotEmpty(currentUser.getCustomerId())) {
+            throw new ServiceException("仅平台管理员可切换租户");
+        }
+        String tenantId = StringUtils.trim(customerId);
+        if (StringUtils.isEmpty(tenantId)) {
+            throw new ServiceException("租户不能为空");
+        }
+        validateCustomerForTenantSwitch(tenantId, systemType);
+        SysUser tenantSuperUser = userService.selectUserByUserNameAndCustomerId(TENANT_SUPER_USERNAME, tenantId);
+        if (tenantSuperUser == null) {
+            throw new ServiceException("所选租户未初始化 super_01 用户");
+        }
+        if (UserStatus.DELETED.getCode().equals(tenantSuperUser.getDelFlag())) {
+            throw new ServiceException("所选租户 super_01 用户已删除");
+        }
+        if (UserStatus.DISABLE.getCode().equals(tenantSuperUser.getStatus())) {
+            throw new ServiceException("所选租户 super_01 用户已停用");
+        }
+        tenantSuperUser.setCustomerId(tenantId);
+        LoginUser loginUser = createLoginUser(tenantSuperUser);
+        loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        recordLoginInfo(loginUser.getUserId());
+        AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_SUCCESS, "平台管理员租户切换接口登录成功"));
         return tokenService.createToken(loginUser);
     }
 

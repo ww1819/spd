@@ -87,6 +87,23 @@ public class SysLoginController
     }
 
     /**
+     * 已登录平台管理员切换租户：重新签发所选租户 super_01 token
+     */
+    @PostMapping("/switchTenant")
+    public AjaxResult switchTenant(@RequestBody LoginBody loginBody)
+    {
+        String customerId = loginBody.getCustomerId();
+        String systemType = loginBody.getSystemType();
+        String token = loginService.switchTenantAsSuper(customerId, systemType);
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put(Constants.TOKEN, token);
+        if (StringUtils.isNotEmpty(customerId)) {
+            putTenantIfPresent(ajax, customerId);
+        }
+        return ajax;
+    }
+
+    /**
      * 登录页租户下拉选项（未登录可访问，需在安全配置中放行）
      * 仿照设备系统：耗材登录传 systemType=hc 仅返回耗材启用租户（hc_status=0），设备登录不传或传其他仅返回设备启用租户（status=0）
      *
