@@ -87,14 +87,20 @@ public class SysLoginService
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password, customerId);
-        // 平台管理员选租户后，自动以租户 super_01 身份登录，保证后续数据操作主体与租户一致
-        if (isPlatformAdminTenantSwitch(username, customerId)) {
-            return loginAsTenantSuperUser(password, customerId, systemType);
+        // 非平台管理员用户：若未传入租户 customerId，则使用系统设置的默认租户id（防止走 NoCustomer 查询）
+        if (!PLATFORM_ADMIN_USERNAME.equalsIgnoreCase(StringUtils.trimToEmpty(username))
+            && StringUtils.isEmpty(customerId)) {
+            String def = StringUtils.trimToEmpty(configService.selectConfigByKey("hc.login.defaultCustomerId"));
+            if (StringUtils.isNotEmpty(def)) {
+                customerId = def;
+            }
         }
-
-        // 有客户ID时拼成「id:customerId|username」或「hc:customerId|username」，供 loadUserByUsername 按客户+用户名唯一定位并区分耗材/设备校验
+        // 平台管理员：无论是否传了 customerId，登录校验都按「平台管理员」账号本身处理，
+        // 后续由前端“模式选择”决定是否调用 /switchTenant 重签 super_01 token。
         String effectiveUsername = username;
-        if (StringUtils.isNotEmpty(customerId)) {
+        if (!PLATFORM_ADMIN_USERNAME.equalsIgnoreCase(StringUtils.trimToEmpty(username))
+            && StringUtils.isNotEmpty(customerId)) {
+            // 有客户ID时拼成「id:customerId|username」或「hc:customerId|username」，供 loadUserByUsername 按客户+用户名唯一定位并区分耗材/设备校验
             String prefix = "hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc:" : "id:";
             effectiveUsername = prefix + customerId.trim() + "|" + username;
         }
@@ -139,40 +145,6 @@ public class SysLoginService
         return tokenService.createToken(loginUser);
     }
 
-    private boolean isPlatformAdminTenantSwitch(String username, String customerId) {
-        return StringUtils.isNotEmpty(customerId) && PLATFORM_ADMIN_USERNAME.equalsIgnoreCase(StringUtils.trim(username));
-    }
-
-    private String loginAsTenantSuperUser(String password, String customerId, String systemType) {
-        String tenantId = StringUtils.trim(customerId);
-        LoginUser platformAdmin = authenticatePlatformAdmin(password);
-        SysUser platformUser = platformAdmin != null ? platformAdmin.getUser() : null;
-        if (platformUser == null || !platformUser.isAdmin() || StringUtils.isNotEmpty(platformUser.getCustomerId())) {
-            AsyncManager.me().execute(AsyncFactory.recordLogininfor(PLATFORM_ADMIN_USERNAME, Constants.LOGIN_FAIL, "平台管理员身份校验失败"));
-            throw new ServiceException("仅平台管理员可执行租户切换登录");
-        }
-
-        validateCustomerForTenantSwitch(tenantId, systemType);
-        SysUser tenantSuperUser = userService.selectUserByUserNameAndCustomerId(TENANT_SUPER_USERNAME, tenantId);
-        if (tenantSuperUser == null) {
-            AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_FAIL, "租户管理员不存在"));
-            throw new ServiceException("所选租户未初始化 super_01 用户");
-        }
-        if (UserStatus.DELETED.getCode().equals(tenantSuperUser.getDelFlag())) {
-            throw new ServiceException("所选租户 super_01 用户已删除");
-        }
-        if (UserStatus.DISABLE.getCode().equals(tenantSuperUser.getStatus())) {
-            throw new ServiceException("所选租户 super_01 用户已停用");
-        }
-        tenantSuperUser.setCustomerId(tenantId);
-
-        LoginUser loginUser = createLoginUser(tenantSuperUser);
-        loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
-        recordLoginInfo(loginUser.getUserId());
-        AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_SUCCESS, "平台管理员租户切换登录成功"));
-        return tokenService.createToken(loginUser);
-    }
-
     /**
      * 已登录平台管理员切换租户：直接签发目标租户 super_01 token
      */
@@ -203,26 +175,6 @@ public class SysLoginService
         recordLoginInfo(loginUser.getUserId());
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_SUCCESS, "平台管理员租户切换接口登录成功"));
         return tokenService.createToken(loginUser);
-    }
-
-    private LoginUser authenticatePlatformAdmin(String password) {
-        Authentication authentication = null;
-        try {
-            UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(PLATFORM_ADMIN_USERNAME, password);
-            AuthenticationContextHolder.setContext(authenticationToken);
-            authentication = authenticationManager.authenticate(authenticationToken);
-            return (LoginUser) authentication.getPrincipal();
-        } catch (Exception e) {
-            if (e instanceof BadCredentialsException) {
-                AsyncManager.me().execute(AsyncFactory.recordLogininfor(PLATFORM_ADMIN_USERNAME, Constants.LOGIN_FAIL, MessageUtils.message("user.password.not.match")));
-                throw new UserPasswordNotMatchException();
-            }
-            AsyncManager.me().execute(AsyncFactory.recordLogininfor(PLATFORM_ADMIN_USERNAME, Constants.LOGIN_FAIL, e.getMessage()));
-            throw new ServiceException(e.getMessage());
-        } finally {
-            AuthenticationContextHolder.clearContext();
-        }
     }
 
     private void validateCustomerForTenantSwitch(String customerId, String systemType) {
