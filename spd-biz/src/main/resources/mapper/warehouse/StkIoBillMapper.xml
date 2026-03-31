@@ -774,14 +774,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id,materialCode,materialName,billNo,billDate,billType,materialQty,price,materialAmt,
                 batchNo,batchNumber,beginTime,endTime,materialSpeci,materialModel,unitName,factoryName,
-                financeCategoryName,departmentName,warehouseName,supplierName
+                financeCategoryName,departmentName,warehouseName,supplierCode,supplierName
         from (
             select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                     stk.bill_type billType,b.qty materialQty, b.price price,
                     b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id
             left join fd_department d on stk.department_id = d.id
@@ -799,7 +799,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id
             left join fd_department d on stk.department_id = d.id
@@ -818,7 +818,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     -b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id
             left join fd_department d on stk.department_id = d.id
@@ -837,7 +837,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, tw.name warehouseName,s.name supplierName
+                    d.name departmentName, tw.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id
             left join fd_department d on stk.department_id = d.id
@@ -856,7 +856,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_stocktaking a
             left join stk_io_stocktaking_entry b on b.paren_id = a.id
             left join fd_department d on a.department_id = d.id
