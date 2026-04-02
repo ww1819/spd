@@ -45,6 +45,7 @@
         <result property="speci" column="specification"/>
         <result property="model" column="model"/>
         <result property="registerNo" column="registerNo"/>
+        <result property="supplierId" column="materialSupplierId"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -77,6 +78,7 @@
             m.register_no as registerNo,
             u.unit_name as unitName,
             m.price as price,
+            m.supplier_id as materialSupplierId,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName
