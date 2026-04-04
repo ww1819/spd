@@ -1,6 +1,7 @@
 package com.spd.department.service;
 
 import java.util.List;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
@@ -28,6 +29,11 @@ public interface IStkDepInventoryService
      * @return 科室库存集合
      */
     public List<StkDepInventory> selectStkDepInventoryList(StkDepInventory stkDepInventory);
+
+    /**
+     * 科室库存列表筛选条件下的数量、金额合计（全量，非仅当前页）
+     */
+    TotalInfo selectStkDepInventoryListTotal(StkDepInventory stkDepInventory);
 
     /**
      * 新增科室库存

@@ -338,7 +338,28 @@ public class StkIoRThBillController extends BaseController
                 if(map.get("supplierName") != null){
                     stkCTKVo.setSupplierName(map.get("supplierName").toString());
                 }
-                stkCTKVo.setBillType((Integer) map.get("billType"));
+                if (map.get("supplierId") != null) {
+                    Object sid = map.get("supplierId");
+                    if (sid instanceof Number) {
+                        stkCTKVo.setSupplierId(((Number) sid).longValue());
+                    } else {
+                        try {
+                            stkCTKVo.setSupplierId(Long.parseLong(sid.toString()));
+                        } catch (NumberFormatException ignored) { }
+                    }
+                }
+                Object bt = map.get("billType");
+                if (bt != null) {
+                    if (bt instanceof Integer) {
+                        stkCTKVo.setBillType((Integer) bt);
+                    } else if (bt instanceof Number) {
+                        stkCTKVo.setBillType(((Number) bt).intValue());
+                    } else {
+                        try {
+                            stkCTKVo.setBillType(Integer.parseInt(bt.toString()));
+                        } catch (NumberFormatException ignored) { }
+                    }
+                }
                 if(map.get("createTime") != null){
                     try {
                         Date createTime = formatter.parse(map.get("createTime").toString());

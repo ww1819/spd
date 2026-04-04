@@ -3,6 +3,7 @@ package com.spd.department.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.foundation.domain.FdMaterial;
@@ -63,6 +64,15 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
             depInventory.setMaterial(fdMaterial);
         }
         return list;
+    }
+
+    @Override
+    public TotalInfo selectStkDepInventoryListTotal(StkDepInventory stkDepInventory)
+    {
+        if (stkDepInventory != null && StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkDepInventoryMapper.selectStkDepInventoryListTotal(stkDepInventory);
     }
 
     /**

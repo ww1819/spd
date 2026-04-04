@@ -124,8 +124,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on stk.supplier_id = CONVERT(s.id, CHAR)
     </sql>
 
-    <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
-        <include refid="selectStkDepInventoryVo"/>
+    <!-- 与列表查询条件一致，供列表与全量合计共用 -->
+    <sql id="stkDepInventoryListWhere">
         where stk.qty &gt; 0
         and (stk.del_flag = 0 or stk.del_flag is null)
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
@@ -142,7 +142,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="supplierId != null and supplierId != ''"> and (stk.supplier_id = #{supplierId} or stk.supplier_id = cast(#{supplierId} as char))</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
+    </sql>
+
+    <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
+        <include refid="selectStkDepInventoryVo"/>
+        <include refid="stkDepInventoryListWhere"/>
         order by stk.warehouse_date desc
+    </select>
+
+    <select id="selectStkDepInventoryListTotal" parameterType="StkDepInventory" resultType="com.spd.common.core.page.TotalInfo">
+        select SUM(IFNULL(stk.qty, 0)) totalQty, SUM(IFNULL(stk.amt, 0)) totalAmt
+        from stk_dep_inventory stk
+        <include refid="stkDepInventoryListWhere"/>
     </select>
 
     <select id="selectStkDepInventoryById" parameterType="Long" resultMap="StkDepInventoryResult">
