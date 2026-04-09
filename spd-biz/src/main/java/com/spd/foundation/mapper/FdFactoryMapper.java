@@ -29,6 +29,11 @@ public interface FdFactoryMapper
     public List<FdFactory> selectFdFactoryList(FdFactory fdFactory);
 
     /**
+     * 租户下同名厂家数量（未删除；可排除某 factory_id，用于唯一校验）
+     */
+    int countFactoryByTenantAndName(@Param("tenantId") String tenantId, @Param("factoryName") String factoryName, @Param("excludeFactoryId") Long excludeFactoryId);
+
+    /**
      * 新增厂家维护
      *
      * @param fdFactory 厂家维护

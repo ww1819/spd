@@ -45,6 +45,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
+    <select id="countUnitByTenantAndUnitName" resultType="int">
+        select count(1) from fd_unit
+        where del_flag != 1 and tenant_id = #{tenantId} and unit_name = #{unitName}
+        <if test="excludeUnitId != null">
+            and unit_id != #{excludeUnitId}
+        </if>
+    </select>
+
     <insert id="insertFdUnit" parameterType="FdUnit" useGeneratedKeys="true" keyProperty="unitId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <!-- 优先实体上的 tenant_id（如导入时显式传入），避免仅依赖 Security 上下文时漏写租户 -->

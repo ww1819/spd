@@ -171,6 +171,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
     public int insertFdDepartment(FdDepartment fdDepartment)
     {
         fdDepartment.setCreateTime(DateUtils.getNowDate());
+        if (fdDepartment.getName() != null) {
+            fdDepartment.setName(fdDepartment.getName().trim());
+        }
         if (StringUtils.isEmpty(fdDepartment.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdDepartment.setCreateBy(SecurityUtils.getUserIdStr());
         }
@@ -182,6 +185,12 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             if (StringUtils.isNotEmpty(tid)) {
                 fdDepartment.setTenantId(tid);
             }
+        }
+        if (StringUtils.isEmpty(fdDepartment.getName())) {
+            throw new ServiceException("科室名称不能为空");
+        }
+        if (fdDepartmentMapper.countDepartmentByTenantAndName(fdDepartment.getTenantId(), fdDepartment.getName(), null) > 0) {
+            throw new ServiceException("科室名称「" + fdDepartment.getName() + "」已存在，不能重复");
         }
         validateParentAssignment(null, fdDepartment.getParentId(), fdDepartment.getTenantId());
         fdDepartment.setHisId(normalizeExternalId(fdDepartment.getHisId()));
@@ -221,6 +230,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (fdDepartment.getId() == null) {
             throw new ServiceException("科室主键不能为空");
         }
+        if (fdDepartment.getName() != null) {
+            fdDepartment.setName(fdDepartment.getName().trim());
+        }
         FdDepartment before = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(fdDepartment.getId()));
         if (before == null) {
             throw new ServiceException("科室不存在");
@@ -231,6 +243,13 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         // 第三方/HIS 科室 ID 仅展示，禁止通过维护接口修改（仅导入新增时可写入）
         if (before != null) {
             fdDepartment.setHisId(before.getHisId());
+        }
+        if (StringUtils.isNotEmpty(fdDepartment.getName())) {
+            if (fdDepartmentMapper.countDepartmentByTenantAndName(before.getTenantId(), fdDepartment.getName(), fdDepartment.getId()) > 0) {
+                throw new ServiceException("科室名称「" + fdDepartment.getName() + "」已存在，不能重复");
+            }
+            // 名称变更时同步简码
+            fdDepartment.setReferredName(PinyinUtils.getPinyinInitials(fdDepartment.getName()));
         }
         validateParentAssignment(fdDepartment.getId(), fdDepartment.getParentId(), before.getTenantId());
         fdDepartment.setUpdateTime(DateUtils.getNowDate());

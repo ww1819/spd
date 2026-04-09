@@ -84,6 +84,10 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
     public int insertFdFinanceCategory(FdFinanceCategory fdFinanceCategory)
     {
         fdFinanceCategory.setCreateTime(DateUtils.getNowDate());
+        if (fdFinanceCategory.getFinanceCategoryName() != null)
+        {
+            fdFinanceCategory.setFinanceCategoryName(fdFinanceCategory.getFinanceCategoryName().trim());
+        }
         if (StringUtils.isEmpty(fdFinanceCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdFinanceCategory.setCreateBy(SecurityUtils.getUserIdStr());
@@ -104,6 +108,15 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         {
             fdFinanceCategory.setIsUse("1");
         }
+        if (StringUtils.isEmpty(fdFinanceCategory.getFinanceCategoryName()))
+        {
+            throw new ServiceException("财务分类名称不能为空");
+        }
+        if (fdFinanceCategoryMapper.countFinanceCategoryByTenantAndName(fdFinanceCategory.getTenantId(), fdFinanceCategory.getFinanceCategoryName(), null) > 0)
+        {
+            throw new ServiceException("财务分类名称「" + fdFinanceCategory.getFinanceCategoryName() + "」已存在，不能重复");
+        }
+        fdFinanceCategory.setReferredName(PinyinUtils.getPinyinInitials(fdFinanceCategory.getFinanceCategoryName()));
         fdFinanceCategory.setHisId(normalizeHisId(fdFinanceCategory.getHisId()));
         if (importRequiresMandatoryHisId())
         {
@@ -133,12 +146,24 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         {
             throw new ServiceException("财务分类主键不能为空");
         }
+        if (fdFinanceCategory.getFinanceCategoryName() != null)
+        {
+            fdFinanceCategory.setFinanceCategoryName(fdFinanceCategory.getFinanceCategoryName().trim());
+        }
         FdFinanceCategory before = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(fdFinanceCategory.getFinanceCategoryId());
         if (before == null)
         {
             throw new ServiceException("财务分类不存在或已删除");
         }
         SecurityUtils.ensureTenantAccess(before.getTenantId());
+        if (StringUtils.isNotEmpty(fdFinanceCategory.getFinanceCategoryName()))
+        {
+            if (fdFinanceCategoryMapper.countFinanceCategoryByTenantAndName(before.getTenantId(), fdFinanceCategory.getFinanceCategoryName(), fdFinanceCategory.getFinanceCategoryId()) > 0)
+            {
+                throw new ServiceException("财务分类名称「" + fdFinanceCategory.getFinanceCategoryName() + "」已存在，不能重复");
+            }
+            fdFinanceCategory.setReferredName(PinyinUtils.getPinyinInitials(fdFinanceCategory.getFinanceCategoryName()));
+        }
         fdFinanceCategory.setTenantId(before.getTenantId());
         fdFinanceCategory.setHisId(before.getHisId());
         fdFinanceCategory.setUpdateTime(DateUtils.getNowDate());

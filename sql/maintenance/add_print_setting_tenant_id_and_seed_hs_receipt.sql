@@ -1,9 +1,0 @@
--- =============================================================================
--- 【已合并至耗材模块标准脚本，本文件仅作说明】
--- 打印模板 tenant_id + 全库默认 + 衡水三院种子数据 已整合到：
---   spd/spd-admin/src/main/resources/sql/mysql/material/
---     - table.sql      ：CREATE TABLE IF NOT EXISTS sys_print_setting（含 tenant_id、idx_tenant_bill）
---     - column.sql     ：存量库 CALL add_table_column(tenant_id) + 无则 CREATE INDEX idx_tenant_bill
---     - data_integrity.sql ：INSERT … WHERE NOT EXISTS（全库 101/201 + hengsui-third-001）
--- 启动/刷新数据时请按该目录约定顺序执行（见各文件头部说明）。
--- =============================================================================

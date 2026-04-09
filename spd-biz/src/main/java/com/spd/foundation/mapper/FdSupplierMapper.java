@@ -44,6 +44,11 @@ public interface FdSupplierMapper
     public List<FdSupplier> selectFdSupplierList(FdSupplier fdSupplier);
 
     /**
+     * 租户下同名供应商数量（未删除；可排除某 id，用于唯一校验）
+     */
+    int countSupplierByTenantAndName(@Param("tenantId") String tenantId, @Param("name") String name, @Param("excludeId") Long excludeId);
+
+    /**
      * 新增供应商
      *
      * @param fdSupplier 供应商

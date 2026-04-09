@@ -70,6 +70,9 @@ public class DeptFixedNumber extends BaseEntity {
     /** 查询字段：库房分类名称 */
     private String warehouseCategoryName;
 
+    /** 查询字段：财务分类名称 */
+    private String financeCategoryName;
+
     public String getId() {
         return id;
     }
@@ -220,6 +223,14 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setWarehouseCategoryName(String warehouseCategoryName) {
         this.warehouseCategoryName = warehouseCategoryName;
+    }
+
+    public String getFinanceCategoryName() {
+        return financeCategoryName;
+    }
+
+    public void setFinanceCategoryName(String financeCategoryName) {
+        this.financeCategoryName = financeCategoryName;
     }
 
     @Override

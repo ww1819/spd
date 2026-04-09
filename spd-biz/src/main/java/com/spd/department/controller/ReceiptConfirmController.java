@@ -20,6 +20,12 @@ import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.alibaba.fastjson2.JSONObject;
+import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.system.service.ITenantScopeService;
+
+import java.util.List;
+import java.util.Collections;
 
 /**
  * 收货确认Controller
@@ -34,6 +40,23 @@ public class ReceiptConfirmController extends BaseController
     @Autowired
     private IStkIoBillService stkIoBillService;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    private void applyDepartmentScopeOrDeny(StkIoBill stkIoBill) {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        // 统一租户数据范围：耗材端会按 sys_user_department 解析；租户管理员返回 null 表示不限制
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        if (deptIds == null) {
+            return;
+        }
+        if (deptIds.isEmpty()) {
+            deptIds = Collections.emptyList();
+        }
+        stkIoBill.getParams().put("deptIds", deptIds);
+    }
+
     /**
      * 查询收货确认列表（只查询已审核的出库单）
      */
@@ -45,6 +68,7 @@ public class ReceiptConfirmController extends BaseController
         // 只查询出库单（billType=201）且已审核（billStatus=2）
         stkIoBill.setBillType(201);
         stkIoBill.setBillStatus(2);
+        applyDepartmentScopeOrDeny(stkIoBill);
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
         return getDataTable(list);
     }
@@ -59,6 +83,7 @@ public class ReceiptConfirmController extends BaseController
     {
         stkIoBill.setBillType(201);
         stkIoBill.setBillStatus(2);
+        applyDepartmentScopeOrDeny(stkIoBill);
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
         ExcelUtil<StkIoBill> util = new ExcelUtil<StkIoBill>(StkIoBill.class);
         util.exportExcel(response, list, "收货确认数据");
@@ -67,11 +92,23 @@ public class ReceiptConfirmController extends BaseController
     /**
      * 获取收货确认详细信息
      */
-    @PreAuthorize("@ss.hasPermi('department:receiptConfirm:query')")
+    @PreAuthorize("@ss.hasPermi('department:receiptConfirm:list')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(stkIoBillService.selectStkIoBillById(id));
+        StkIoBill bill = stkIoBillService.selectStkIoBillById(id);
+        if (bill == null) {
+            return success(null);
+        }
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        if (deptIds != null) {
+            if (deptIds.isEmpty() || bill.getDepartmentId() == null || !deptIds.contains(bill.getDepartmentId())) {
+                throw new ServiceException("无权查看该科室的单据或单据不存在");
+            }
+        }
+        return success(bill);
     }
 
     /**

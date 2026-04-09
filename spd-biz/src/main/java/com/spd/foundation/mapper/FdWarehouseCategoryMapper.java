@@ -64,6 +64,11 @@ public interface FdWarehouseCategoryMapper
      */
     int countWarehouseCategoryByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId, @Param("excludeId") Long excludeId);
 
+    /**
+     * 租户下同名库房分类数量（未删除；可排除某主键，用于唯一校验）
+     */
+    int countWarehouseCategoryByTenantAndName(@Param("tenantId") String tenantId, @Param("name") String name, @Param("excludeId") Long excludeId);
+
 //    /**
 //     * 删除库房分类
 //     *

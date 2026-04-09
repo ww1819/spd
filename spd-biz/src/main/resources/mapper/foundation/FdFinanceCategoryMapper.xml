@@ -59,6 +59,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="excludeId != null"> and finance_category_id != #{excludeId} </if>
     </select>
 
+    <select id="countFinanceCategoryByTenantAndName" resultType="int">
+        select count(1) from fd_finance_category
+        where tenant_id = #{tenantId} and del_flag != 1
+        and finance_category_name = #{name}
+        <if test="excludeId != null"> and finance_category_id != #{excludeId} </if>
+    </select>
+
     <select id="selectFdFinanceCategoryByTenantAndHisId" resultMap="FdFinanceCategoryResult">
         <include refid="selectFdFinanceCategoryVo"/>
         where del_flag != 1 and tenant_id = #{tenantId} and his_id = #{hisId}

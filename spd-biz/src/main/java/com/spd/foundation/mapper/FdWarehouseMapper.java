@@ -36,6 +36,11 @@ public interface FdWarehouseMapper
     public List<FdWarehouse> selectFdWarehouseList(FdWarehouse fdWarehouse);
 
     /**
+     * 租户下同名仓库数量（未删除；可排除某 id，用于唯一校验）
+     */
+    int countWarehouseByTenantAndName(@Param("tenantId") String tenantId, @Param("name") String name, @Param("excludeId") Long excludeId);
+
+    /**
      * 新增仓库
      *
      * @param fdWarehouse 仓库

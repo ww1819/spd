@@ -2,6 +2,7 @@ package com.spd.department.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 import com.github.pagehelper.PageInfo;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +15,8 @@ import com.spd.warehouse.domain.StkIoBill;
 import com.spd.department.service.IConsumeDetailService;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.core.page.TotalInfo;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 科室领用明细Controller
@@ -28,6 +31,23 @@ public class ConsumeDetailController extends BaseController
     @Autowired
     private IConsumeDetailService consumeDetailService;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    private void applyDepartmentScopeOrDeny(StkIoBill q) {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        // null 表示租户管理员/不限制
+        if (deptIds == null) {
+            return;
+        }
+        if (deptIds.isEmpty()) {
+            deptIds = Collections.emptyList();
+        }
+        q.getParams().put("deptIds", deptIds);
+    }
+
     /**
      * 查询领用明细列表
      */
@@ -36,6 +56,7 @@ public class ConsumeDetailController extends BaseController
     public TableDataInfo list(StkIoBill stkIoBill)
     {
         startPage();
+        applyDepartmentScopeOrDeny(stkIoBill);
         List<Map<String, Object>> list = consumeDetailService.selectConsumeDetailList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -55,6 +76,7 @@ public class ConsumeDetailController extends BaseController
     public TableDataInfo summary(StkIoBill stkIoBill)
     {
         startPage();
+        applyDepartmentScopeOrDeny(stkIoBill);
         List<Map<String, Object>> list = consumeDetailService.selectConsumeSummaryList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -74,6 +96,7 @@ public class ConsumeDetailController extends BaseController
     public TableDataInfo ranking(StkIoBill stkIoBill)
     {
         startPage();
+        applyDepartmentScopeOrDeny(stkIoBill);
         List<Map<String, Object>> list = consumeDetailService.selectConsumeRankingList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -94,6 +117,7 @@ public class ConsumeDetailController extends BaseController
         public TableDataInfo selectWarehousePsiReport(StkIoBill stkIoBill)
     {
         startPage();
+        applyDepartmentScopeOrDeny(stkIoBill);
         List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReport(stkIoBill);
         return getDataTable(list);
     }

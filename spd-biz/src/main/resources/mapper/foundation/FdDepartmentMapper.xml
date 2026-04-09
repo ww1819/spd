@@ -117,6 +117,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select count(*) from fd_department where del_flag != 1 and parent_id = #{parentId} and <include refid="fdDepartmentTenantMatch"/>
     </select>
 
+    <select id="countDepartmentByTenantAndName" resultType="int">
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(*) from fd_department
+        where del_flag != 1
+        and name = #{name}
+        and <include refid="fdDepartmentTenantMatch"/>
+        <if test="excludeId != null">
+            and id != #{excludeId}
+        </if>
+    </select>
+
     <select id="selectUserDepartmenAll" parameterType="Long" resultMap="FdDepartmentResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select d.id,d.code,d.name

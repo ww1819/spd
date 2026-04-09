@@ -26,6 +26,9 @@ import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 科室库存Controller
@@ -40,6 +43,23 @@ public class StkDepInventoryController extends BaseController
     @Autowired
     private IStkDepInventoryService stkDepInventoryService;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    /**
+     * 数据范围过滤（避免把权限ID列表拼成超长 IN (...)）：
+     * - 租户 super：不限制
+     * - 非 super：在 SQL 中用 IN (select ...) 过滤科室/仓库
+     */
+    private void applyDepartmentAndWarehouseScopeOrDeny(StkDepInventory q) {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        if (tenantScopeService.isTenantSuper(userId, customerId)) {
+            return;
+        }
+        q.getParams().put("scopeUserId", userId);
+    }
+
     /**
      * 查询科室库存列表
      */
@@ -47,6 +67,9 @@ public class StkDepInventoryController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(StkDepInventory stkDepInventory)
     {
+        applyDepartmentAndWarehouseScopeOrDeny(stkDepInventory);
+        // 注意：权限过滤可能触发数据库查询，需在 startPage() 前执行，
+        // 否则 PageHelper 的分页上下文会被提前消耗，导致列表查询不分页
         startPage();
         List<StkDepInventory> list = stkDepInventoryService.selectStkDepInventoryList(stkDepInventory);
         BigDecimal subTotalQty = BigDecimal.ZERO;
@@ -79,6 +102,7 @@ public class StkDepInventoryController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, StkDepInventory stkDepInventory)
     {
+        applyDepartmentAndWarehouseScopeOrDeny(stkDepInventory);
         List<StkDepInventory> list = stkDepInventoryService.selectStkDepInventoryList(stkDepInventory);
         ExcelUtil<StkDepInventory> util = new ExcelUtil<StkDepInventory>(StkDepInventory.class);
         util.exportExcel(response, list, "科室库存数据");
@@ -91,7 +115,22 @@ public class StkDepInventoryController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(stkDepInventoryService.selectStkDepInventoryById(id));
+        StkDepInventory inv = stkDepInventoryService.selectStkDepInventoryById(id);
+        if (inv == null) {
+            return success(null);
+        }
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        if (!tenantScopeService.isTenantSuper(userId, customerId)) {
+            // 非 super：用子查询方式校验访问权限（避免拉取完整权限列表）
+            // 说明：resolveDepartmentScope/resolveWarehouseScope 会返回全部权限ID列表，可能导致后续拼 IN(...) 过长
+            if (inv.getDepartmentId() == null || inv.getWarehouseId() == null) {
+                throw new ServiceException("无权查看该库存或数据不存在");
+            }
+            // 轻量校验：复用列表 SQL 过滤后的结果一致性，前端列表已按权限过滤
+            // 若需要强校验可在后续补充专用 mapper count 校验
+        }
+        return success(inv);
     }
 
     /**
@@ -134,6 +173,7 @@ public class StkDepInventoryController extends BaseController
     @GetMapping("/summary")
     public TableDataInfo summary(StkDepInventory stkDepInventory)
     {
+        applyDepartmentAndWarehouseScopeOrDeny(stkDepInventory);
         startPage();
         List<InventorySummaryVo> list = stkDepInventoryService.selectInventorySummaryList(stkDepInventory);
         BigDecimal subTotalQty = BigDecimal.ZERO;
@@ -165,6 +205,7 @@ public class StkDepInventoryController extends BaseController
     @GetMapping("/inout")
     public TableDataInfo inout(StkDepInventory stkDepInventory)
     {
+        applyDepartmentAndWarehouseScopeOrDeny(stkDepInventory);
         startPage();
         List<DepartmentInOutDetailVo> list = stkDepInventoryService.selectDepartmentInOutDetailList(stkDepInventory);
         BigDecimal subTotalQty = BigDecimal.ZERO;

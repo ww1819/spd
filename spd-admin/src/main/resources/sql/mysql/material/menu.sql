@@ -18,23 +18,17 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(1594, '期初库存导入', 1070, 15, 'initialStockImport', 'warehouse/initialStockImport/index', NULL,
- 1, 0, 'C', '0', '0', 'warehouse:initialStockImport:list', 'upload',
- 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '期初库存导入',
- '0', '1'),
-(1595, '期初库存导入查询', 1594, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'warehouse:initialStockImport:query', '#',
- 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
- '0', '1'),
-(1596, '期初库存导入', 1594, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'warehouse:initialStockImport:import', '#',
- 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
- '0', '1'),
-(1597, '期初库存导入审核', 1594, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'warehouse:initialStockImport:audit', '#',
- 'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
- '0', '1')
+)
+SELECT
+  1594, '期初库存导入', 1070, 15, 'initialStockImport', 'warehouse/initialStockImport/index', NULL,
+  1, 0, 'C', '0', '0', 'warehouse:initialStockImport:list', 'upload',
+  'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '期初库存导入',
+  '0', '1'
+FROM DUAL
+WHERE
+  -- 允许脚本重复执行更新同 menu_id；但若库中已存在同 perms 的其它 menu_id，则不再插入第二条
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND perms='warehouse:initialStockImport:list')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=1594)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -58,37 +52,100 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  1595, '期初库存导入查询', 1594, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouse:initialStockImport:query', '#',
+  'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND perms='warehouse:initialStockImport:query' AND parent_id=1594)
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=1595)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  1596, '期初库存导入', 1594, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouse:initialStockImport:import', '#',
+  'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND perms='warehouse:initialStockImport:import' AND parent_id=1594)
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=1596)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  1597, '期初库存导入审核', 1594, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouse:initialStockImport:audit', '#',
+  'admin', '2026-02-27 09:49:57', '1', '2026-03-20 11:00:13', '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND perms='warehouse:initialStockImport:audit' AND parent_id=1594)
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=1597)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
 -- ---------- 2) 客户管理、客户菜单功能管理（系统管理下；is_platform=1 租户不展示）----------
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2100, '客户管理', 1, 20, 'customer', 'material/system/customer/index', NULL,
- 1, 0, 'C', '0', '0', 'hc:system:customer:list', 'peoples',
- 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '耗材系统客户（租户）管理',
- '1', '0'),
-(2101, '客户菜单功能管理', 1, 21, 'customerMenuManage', 'material/system/customerMenuManage/index', NULL,
- 1, 0, 'C', '0', '0', 'hc:system:customerMenuManage:list', 'switch',
- 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户名下已具备功能的启用停用，租户不可见',
- '1', '0'),
-(2102, '客户查询', 2100, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'hc:system:customer:query', '#',
- 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户查询、启停记录与时间段',
- '1', '0'),
-(2103, '功能管理列表', 2101, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:list', '#',
- 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户菜单功能管理列表',
- '1', '0'),
-(2104, '功能管理查询', 2101, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:query', '#',
- 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '启停用记录与时间段查询',
- '1', '0'),
-(2105, '功能管理启停用', 2101, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:edit', '#',
- 'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户菜单功能启用停用',
- '1', '0')
+)
+SELECT
+  2100, '客户管理', 1, 20, 'customer', 'material/system/customer/index', NULL,
+  1, 0, 'C', '0', '0', 'hc:system:customer:list', 'peoples',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '耗材系统客户（租户）管理',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='material/system/customer/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2100)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -103,8 +160,150 @@ ON DUPLICATE KEY UPDATE
   status = VALUES(status),
   perms = VALUES(perms),
   icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2101, '客户菜单功能管理', 1, 21, 'customerMenuManage', 'material/system/customerMenuManage/index', NULL,
+  1, 0, 'C', '0', '0', 'hc:system:customerMenuManage:list', 'switch',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户名下已具备功能的启用停用，租户不可见',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='material/system/customerMenuManage/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2101)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2102, '客户查询', 2100, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:customer:query', '#',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户查询、启停记录与时间段',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2100 AND perms='hc:system:customer:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2102)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2103, '功能管理列表', 2101, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:list', '#',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户菜单功能管理列表',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2101 AND perms='hc:system:customerMenuManage:list')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2103)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2104, '功能管理查询', 2101, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:query', '#',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '启停用记录与时间段查询',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2101 AND perms='hc:system:customerMenuManage:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2104)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2105, '功能管理启停用', 2101, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:customerMenuManage:edit', '#',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '客户菜单功能启用停用',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2101 AND perms='hc:system:customerMenuManage:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2105)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
@@ -118,71 +317,15 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2201, '发票管理', 1065, 1, 'invoice', 'finance/invoice/index', NULL,
- 1, 0, 'C', '0', '0', 'finance:invoice:list', 'form',
- 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票信息新增、修改、查询、审核',
- '0', '0'),
-(2202, '发票查询', 2201, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:invoice:query', '#',
- 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票查询',
- '0', '0'),
-(2203, '发票新增', 2201, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:invoice:add', '#',
- 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票新增',
- '0', '0'),
-(2204, '发票修改', 2201, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:invoice:edit', '#',
- 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票修改（审核后不可修改）',
- '0', '0'),
-(2205, '发票删除', 2201, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:invoice:remove', '#',
- 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票删除',
- '0', '0'),
-(2206, '发票审核', 2201, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:invoice:audit', '#',
- 'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票审核（审核后不可变更）',
- '0', '0'),
-(2207, '发票录入', 1065, 2, 'invoiceEntry', 'finance/invoice/entry', NULL,
- 1, 0, 'C', '0', '0', 'finance:invoice:add', 'edit',
- 'admin', '2026-03-08 01:48:59', '1', '2026-03-20 11:00:13', '发票录入，供入库单与供应商结算单关联',
- '0', '0'),
-(2210, '仓库结算单', 1065, 3, 'whSettlement', 'finance/whSettlement/index', NULL,
- 1, 0, 'C', '0', '0', 'finance:whSettlement:list', 'list',
- 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '仓库结算单',
- '0', '0'),
-(2212, '仓库结算单查询', 2210, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:whSettlement:query', '#',
- 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
- '0', '0'),
-(2213, '仓库结算单新增', 2210, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:whSettlement:add', '#',
- 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
- '0', '0'),
-(2214, '仓库结算单修改', 2210, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:whSettlement:edit', '#',
- 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
- '0', '0'),
-(2215, '仓库结算单删除', 2210, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:whSettlement:remove', '#',
- 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
- '0', '0'),
-(2216, '仓库结算单审核', 2210, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:whSettlement:audit', '#',
- 'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
- '0', '0'),
-(2220, '供应商结算单', 1065, 4, 'suppSettlement', 'finance/suppSettlement/index', NULL,
- 1, 0, 'C', '0', '0', 'finance:suppSettlement:list', 'money',
- 'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '供应商结算单',
- '0', '0'),
-(2222, '供应商结算单查询', 2220, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:suppSettlement:query', '#',
- 'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '',
- '0', '0'),
-(2223, '供应商结算单关联发票', 2220, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'finance:suppSettlement:linkInvoice', '#',
- 'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '',
- '0', '0')
+) SELECT
+  2201, '发票管理', 1065, 1, 'invoice', 'finance/invoice/index', NULL,
+  1, 0, 'C', '0', '0', 'finance:invoice:list', 'form',
+  'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票信息新增、修改、查询、审核',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/invoice/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2201)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -197,8 +340,420 @@ ON DUPLICATE KEY UPDATE
   status = VALUES(status),
   perms = VALUES(perms),
   icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2202, '发票查询', 2201, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:invoice:query', '#',
+  'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票查询',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2201 AND perms='finance:invoice:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2202)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2203, '发票新增', 2201, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:invoice:add', '#',
+  'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票新增',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2201 AND perms='finance:invoice:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2203)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2204, '发票修改', 2201, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:invoice:edit', '#',
+  'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票修改（审核后不可修改）',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2201 AND perms='finance:invoice:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2204)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2205, '发票删除', 2201, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:invoice:remove', '#',
+  'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票删除',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2201 AND perms='finance:invoice:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2205)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2206, '发票审核', 2201, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:invoice:audit', '#',
+  'admin', '2026-03-08 00:48:03', '1', '2026-03-20 11:00:13', '发票审核（审核后不可变更）',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2201 AND perms='finance:invoice:audit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2206)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2207, '发票录入', 1065, 2, 'invoiceEntry', 'finance/invoice/entry', NULL,
+  1, 0, 'C', '0', '0', 'finance:invoice:add', 'edit',
+  'admin', '2026-03-08 01:48:59', '1', '2026-03-20 11:00:13', '发票录入，供入库单与供应商结算单关联',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/invoice/entry')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2207)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2210, '仓库结算单', 1065, 3, 'whSettlement', 'finance/whSettlement/index', NULL,
+  1, 0, 'C', '0', '0', 'finance:whSettlement:list', 'list',
+  'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '仓库结算单',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/whSettlement/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2210)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2212, '仓库结算单查询', 2210, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:whSettlement:query', '#',
+  'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2210 AND perms='finance:whSettlement:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2212)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2213, '仓库结算单新增', 2210, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:whSettlement:add', '#',
+  'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2210 AND perms='finance:whSettlement:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2213)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2214, '仓库结算单修改', 2210, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:whSettlement:edit', '#',
+  'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2210 AND perms='finance:whSettlement:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2214)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2215, '仓库结算单删除', 2210, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:whSettlement:remove', '#',
+  'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2210 AND perms='finance:whSettlement:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2215)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2216, '仓库结算单审核', 2210, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:whSettlement:audit', '#',
+  'admin', '2026-03-08 01:50:32', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2210 AND perms='finance:whSettlement:audit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2216)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2220, '供应商结算单', 1065, 4, 'suppSettlement', 'finance/suppSettlement/index', NULL,
+  1, 0, 'C', '0', '0', 'finance:suppSettlement:list', 'money',
+  'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '供应商结算单',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/suppSettlement/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2220)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2222, '供应商结算单查询', 2220, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:suppSettlement:query', '#',
+  'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2220 AND perms='finance:suppSettlement:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2222)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2223, '供应商结算单关联发票', 2220, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:suppSettlement:linkInvoice', '#',
+  'admin', '2026-03-08 01:50:33', '1', '2026-03-20 11:00:13', '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2220 AND perms='finance:suppSettlement:linkInvoice')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2223)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
@@ -212,43 +767,128 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(3181, '结算申请查询', 1547, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'settlement:apply:query', '#',
- 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '详情/查询',
- '0', '1'),
-(3182, '结算申请新增', 1547, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'settlement:apply:add', '#',
- 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '新增与「生成结算单」提交',
- '0', '1'),
-(3183, '结算申请修改', 1547, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'settlement:apply:edit', '#',
- 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
- '0', '1'),
-(3184, '结算申请删除', 1547, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'settlement:apply:remove', '#',
- 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
- '0', '1'),
-(3185, '结算申请导出', 1547, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'settlement:apply:export', '#',
- 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
- '0', '1')
+) SELECT
+  3181, '结算申请查询', 1547, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:apply:query', '#',
+  'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '详情/查询',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1547 AND perms='settlement:apply:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3181)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3182, '结算申请新增', 1547, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:apply:add', '#',
+  'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '新增与「生成结算单」提交',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1547 AND perms='settlement:apply:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3182)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3183, '结算申请修改', 1547, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:apply:edit', '#',
+  'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1547 AND perms='settlement:apply:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3183)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3184, '结算申请删除', 1547, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:apply:remove', '#',
+  'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1547 AND perms='settlement:apply:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3184)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3185, '结算申请导出', 1547, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:apply:export', '#',
+  'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1547 AND perms='settlement:apply:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3185)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
@@ -257,6 +897,10 @@ ON DUPLICATE KEY UPDATE
 /
 
 -- ---------- 4) 科室维护（与后端 foundation/depart 一致；含导入，默认对客户开放）----------
+SET @depart_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:depart:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -290,6 +934,7 @@ SELECT
   '0',
   '1'
 FROM DUAL
+WHERE @depart_menu_id IS NULL
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -310,6 +955,37 @@ ON DUPLICATE KEY UPDATE
   update_time = VALUES(update_time),
   remark = VALUES(remark),
   is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+SET @depart_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:depart:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2231, '科室查询', @depart_menu_id, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:query', '#',
+  'admin', NOW(), '1', NOW(), '科室详情查询',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:query')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2231)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -318,59 +994,174 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2231, '科室查询', 2230, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:query', '#',
- 'admin', NOW(), '1', NOW(), '科室详情查询',
- '0', '1'),
-(2232, '科室新增', 2230, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2233, '科室修改', 2230, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2234, '科室删除', 2230, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2235, '科室导出', 2230, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2236, '科室导入', 2230, 6, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:import', '#',
- 'admin', NOW(), '1', NOW(), 'Excel 导入',
- '0', '1'),
-(2237, '科室更新简码', 2230, 7, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:depart:updateReferred', '#',
- 'admin', NOW(), '1', NOW(), '按名称批量生成拼音简码',
- '0', '1')
+)
+SELECT
+  2232, '科室新增', @depart_menu_id, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:add')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2232)
+  )
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2233, '科室修改', @depart_menu_id, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:edit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2233)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2234, '科室删除', @depart_menu_id, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:remove')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2234)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2235, '科室导出', @depart_menu_id, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:export')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2235)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2236, '科室导入', @depart_menu_id, 6, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:import', '#',
+  'admin', NOW(), '1', NOW(), 'Excel 导入',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:import')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2236)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2237, '科室更新简码', @depart_menu_id, 7, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:depart:updateReferred', '#',
+  'admin', NOW(), '1', NOW(), '按名称批量生成拼音简码',
+  '0', '1'
+FROM DUAL
+WHERE @depart_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@depart_menu_id AND perms='foundation:depart:updateReferred')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2237)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 -- ---------- 5) 供应商维护（与后端 foundation/supplier 一致；含导入、变更记录）----------
+SET @supplier_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:supplier:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -404,6 +1195,7 @@ SELECT
   '0',
   '1'
 FROM DUAL
+WHERE @supplier_menu_id IS NULL
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -424,6 +1216,37 @@ ON DUPLICATE KEY UPDATE
   update_time = VALUES(update_time),
   remark = VALUES(remark),
   is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+SET @supplier_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:supplier:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2241, '供应商查询', @supplier_menu_id, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:query')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2241)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -432,59 +1255,174 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2241, '供应商查询', 2240, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:query', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2242, '供应商新增', 2240, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2243, '供应商修改', 2240, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2244, '供应商删除', 2240, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2245, '供应商导出', 2240, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2246, '供应商导入', 2240, 6, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:import', '#',
- 'admin', NOW(), '1', NOW(), 'Excel 导入',
- '0', '1'),
-(2247, '供应商更新简码', 2240, 7, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:supplier:updateReferred', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1')
+)
+SELECT
+  2242, '供应商新增', @supplier_menu_id, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:add')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2242)
+  )
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2243, '供应商修改', @supplier_menu_id, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:edit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2243)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2244, '供应商删除', @supplier_menu_id, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:remove')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2244)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2245, '供应商导出', @supplier_menu_id, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:export')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2245)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2246, '供应商导入', @supplier_menu_id, 6, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:import', '#',
+  'admin', NOW(), '1', NOW(), 'Excel 导入',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:import')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2246)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2247, '供应商更新简码', @supplier_menu_id, 7, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:supplier:updateReferred', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @supplier_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@supplier_menu_id AND perms='foundation:supplier:updateReferred')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2247)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 -- ---------- 6) 厂家维护（与后端 foundation/factory 一致；含导入、变更记录；与设备端「厂家维护」同页）----------
+SET @factory_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:factory:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -518,6 +1456,7 @@ SELECT
   '0',
   '1'
 FROM DUAL
+WHERE @factory_menu_id IS NULL
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -538,6 +1477,37 @@ ON DUPLICATE KEY UPDATE
   update_time = VALUES(update_time),
   remark = VALUES(remark),
   is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+SET @factory_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:factory:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2251, '厂家查询', @factory_menu_id, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:query')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2251)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -546,59 +1516,174 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2251, '厂家查询', 2250, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:query', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2252, '厂家新增', 2250, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2253, '厂家修改', 2250, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2254, '厂家删除', 2250, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2255, '厂家导出', 2250, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2256, '厂家导入', 2250, 6, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:import', '#',
- 'admin', NOW(), '1', NOW(), 'Excel 导入',
- '0', '1'),
-(2257, '厂家更新简码', 2250, 7, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:factory:updateReferred', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1')
+)
+SELECT
+  2252, '厂家新增', @factory_menu_id, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:add')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2252)
+  )
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2253, '厂家修改', @factory_menu_id, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:edit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2253)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2254, '厂家删除', @factory_menu_id, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:remove')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2254)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2255, '厂家导出', @factory_menu_id, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:export')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2255)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2256, '厂家导入', @factory_menu_id, 6, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:import', '#',
+  'admin', NOW(), '1', NOW(), 'Excel 导入',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:import')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2256)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2257, '厂家更新简码', @factory_menu_id, 7, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:factory:updateReferred', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @factory_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@factory_menu_id AND perms='foundation:factory:updateReferred')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2257)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 -- ---------- 7) 单位维护（与后端 foundation/unit 一致）----------
+SET @unit_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:unit:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -632,6 +1717,7 @@ SELECT
   '0',
   '1'
 FROM DUAL
+WHERE @unit_menu_id IS NULL
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
@@ -655,52 +1741,146 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+SET @unit_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'foundation:unit:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2261, '单位查询', 2260, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:unit:query', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2262, '单位新增', 2260, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:unit:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2263, '单位修改', 2260, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:unit:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2264, '单位删除', 2260, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:unit:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2265, '单位导出', 2260, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:unit:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1')
+) SELECT
+  2261, '单位查询', @unit_menu_id, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:unit:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @unit_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@unit_menu_id AND perms='foundation:unit:query')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2261)
+  )
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2262, '单位新增', @unit_menu_id, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:unit:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @unit_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@unit_menu_id AND perms='foundation:unit:add')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2262)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2263, '单位修改', @unit_menu_id, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:unit:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @unit_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@unit_menu_id AND perms='foundation:unit:edit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2263)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2264, '单位删除', @unit_menu_id, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:unit:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @unit_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@unit_menu_id AND perms='foundation:unit:remove')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2264)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2265, '单位导出', @unit_menu_id, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:unit:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @unit_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@unit_menu_id AND perms='foundation:unit:export')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2265)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -766,47 +1946,127 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2271, '货位查询', 2270, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:location:query', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2272, '货位新增', 2270, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:location:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2273, '货位修改', 2270, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:location:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2274, '货位删除', 2270, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:location:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2275, '货位导出', 2270, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:location:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1')
+) SELECT
+  2271, '货位查询', 2270, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:location:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2270 AND perms='foundation:location:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2271)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2272, '货位新增', 2270, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:location:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2270 AND perms='foundation:location:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2272)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2273, '货位修改', 2270, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:location:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2270 AND perms='foundation:location:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2273)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2274, '货位删除', 2270, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:location:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2270 AND perms='foundation:location:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2274)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2275, '货位导出', 2270, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:location:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2270 AND perms='foundation:location:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2275)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -912,55 +2172,179 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2281, '库房分类查询', 2280, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:query', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2282, '库房分类新增', 2280, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2283, '库房分类修改', 2280, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2284, '库房分类删除', 2280, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2285, '库房分类导出', 2280, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2286, '库房分类更新简码', 2280, 6, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:updateReferred', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2287, '库房分类导入', 2280, 7, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:warehouseCategory:import', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1')
+) SELECT
+  2281, '库房分类查询', 2280, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2281)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2282, '库房分类新增', 2280, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2282)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2283, '库房分类修改', 2280, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2283)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2284, '库房分类删除', 2280, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2284)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2285, '库房分类导出', 2280, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2285)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2286, '库房分类更新简码', 2280, 6, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:updateReferred', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:updateReferred')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2286)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2287, '库房分类导入', 2280, 7, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:warehouseCategory:import', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2280 AND perms='foundation:warehouseCategory:import')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2287)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -1026,55 +2410,179 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(2291, '财务分类查询', 2290, 1, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:query', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2292, '财务分类新增', 2290, 2, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:add', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2293, '财务分类修改', 2290, 3, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:edit', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2294, '财务分类删除', 2290, 4, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:remove', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2295, '财务分类导出', 2290, 5, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:export', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2296, '财务分类更新简码', 2290, 6, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:updateReferred', '#',
- 'admin', NOW(), '1', NOW(), '',
- '0', '1'),
-(2297, '财务分类导入', 2290, 7, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'foundation:financeCategory:import', '#',
- 'admin', NOW(), '1', NOW(), '新增导入与更新导入共用本权限；default_open_to_customer=1 默认对客户开放',
- '0', '1')
+) SELECT
+  2291, '财务分类查询', 2290, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2291)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
-  path = VALUES(path),
-  component = VALUES(component),
-  `query` = VALUES(`query`),
-  is_frame = VALUES(is_frame),
-  is_cache = VALUES(is_cache),
-  menu_type = VALUES(menu_type),
-  visible = VALUES(visible),
-  status = VALUES(status),
   perms = VALUES(perms),
-  icon = VALUES(icon),
-  create_by = VALUES(create_by),
-  create_time = VALUES(create_time),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
-  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2292, '财务分类新增', 2290, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:add', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2292)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2293, '财务分类修改', 2290, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2293)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2294, '财务分类删除', 2290, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2294)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2295, '财务分类导出', 2290, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2295)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2296, '财务分类更新简码', 2290, 6, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:updateReferred', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:updateReferred')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2296)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2297, '财务分类导入', 2290, 7, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:financeCategory:import', '#',
+  'admin', NOW(), '1', NOW(), '新增导入与更新导入共用本权限；default_open_to_customer=1 默认对客户开放',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:import')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2297)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
@@ -1259,19 +2767,65 @@ INSERT INTO sys_menu (
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
-) VALUES
-(3100, '初始化数据库(平台)', 2100, 50, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'hc:system:customer:initDb', '#',
- 'admin', NOW(), '1', NOW(), '清空租户与业务数据，仅保留admin与平台菜单字典等',
- '1', '0'),
-(3101, '清理耗材数据(行)', 2100, 51, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'hc:system:customer:purgeHc', '#',
- 'admin', NOW(), '1', NOW(), '按租户物理删除耗材侧数据',
- '1', '0'),
-(3102, '清理设备数据(行)', 2100, 52, '#', '', NULL,
- 1, 0, 'F', '0', '0', 'sb:system:customer:purgeEq', '#',
- 'admin', NOW(), '1', NOW(), '按租户物理删除设备侧数据（耗材客户管理行内）',
- '1', '0')
+) SELECT
+  3100, '初始化数据库(平台)', 2100, 50, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:customer:initDb', '#',
+  'admin', NOW(), '1', NOW(), '清空租户与业务数据，仅保留admin与平台菜单字典等',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2100 AND perms='hc:system:customer:initDb')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3100)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3101, '清理耗材数据(行)', 2100, 51, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:customer:purgeHc', '#',
+  'admin', NOW(), '1', NOW(), '按租户物理删除耗材侧数据',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2100 AND perms='hc:system:customer:purgeHc')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3101)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3102, '清理设备数据(行)', 2100, 52, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'sb:system:customer:purgeEq', '#',
+  'admin', NOW(), '1', NOW(), '按租户物理删除设备侧数据（耗材客户管理行内）',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2100 AND perms='sb:system:customer:purgeEq')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3102)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),

@@ -70,6 +70,9 @@ public class WhFixedNumber extends BaseEntity {
     /** 查询字段：库房分类名称 */
     private String warehouseCategoryName;
 
+    /** 查询字段：财务分类名称 */
+    private String financeCategoryName;
+
     /** 查询参数：耗材名称/编码关键词（用于列表筛选） */
     private String materialName;
 
@@ -233,6 +236,14 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setWarehouseCategoryName(String warehouseCategoryName) {
         this.warehouseCategoryName = warehouseCategoryName;
+    }
+
+    public String getFinanceCategoryName() {
+        return financeCategoryName;
+    }
+
+    public void setFinanceCategoryName(String financeCategoryName) {
+        this.financeCategoryName = financeCategoryName;
     }
 
     public String getMaterialName() {

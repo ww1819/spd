@@ -91,6 +91,10 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
     public int insertFdWarehouseCategory(FdWarehouseCategory fdWarehouseCategory)
     {
         fdWarehouseCategory.setCreateTime(DateUtils.getNowDate());
+        if (fdWarehouseCategory.getWarehouseCategoryName() != null)
+        {
+            fdWarehouseCategory.setWarehouseCategoryName(fdWarehouseCategory.getWarehouseCategoryName().trim());
+        }
         if (StringUtils.isEmpty(fdWarehouseCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setCreateBy(SecurityUtils.getUserIdStr());
         }
@@ -113,6 +117,15 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         {
             fdWarehouseCategory.setHisId(null);
         }
+        if (StringUtils.isEmpty(fdWarehouseCategory.getWarehouseCategoryName()))
+        {
+            throw new ServiceException("库房分类名称不能为空");
+        }
+        if (fdWarehouseCategoryMapper.countWarehouseCategoryByTenantAndName(fdWarehouseCategory.getTenantId(), fdWarehouseCategory.getWarehouseCategoryName(), null) > 0)
+        {
+            throw new ServiceException("库房分类名称「" + fdWarehouseCategory.getWarehouseCategoryName() + "」已存在，不能重复");
+        }
+        fdWarehouseCategory.setReferredName(PinyinUtils.getPinyinInitials(fdWarehouseCategory.getWarehouseCategoryName()));
         return fdWarehouseCategoryMapper.insertFdWarehouseCategory(fdWarehouseCategory);
     }
 
@@ -128,11 +141,23 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         if (fdWarehouseCategory.getWarehouseCategoryId() == null) {
             throw new ServiceException("库房分类主键不能为空");
         }
+        if (fdWarehouseCategory.getWarehouseCategoryName() != null)
+        {
+            fdWarehouseCategory.setWarehouseCategoryName(fdWarehouseCategory.getWarehouseCategoryName().trim());
+        }
         FdWarehouseCategory before = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(fdWarehouseCategory.getWarehouseCategoryId());
         if (before == null) {
             throw new ServiceException("库房分类不存在或已删除");
         }
         SecurityUtils.ensureTenantAccess(before.getTenantId());
+        if (StringUtils.isNotEmpty(fdWarehouseCategory.getWarehouseCategoryName()))
+        {
+            if (fdWarehouseCategoryMapper.countWarehouseCategoryByTenantAndName(before.getTenantId(), fdWarehouseCategory.getWarehouseCategoryName(), fdWarehouseCategory.getWarehouseCategoryId()) > 0)
+            {
+                throw new ServiceException("库房分类名称「" + fdWarehouseCategory.getWarehouseCategoryName() + "」已存在，不能重复");
+            }
+            fdWarehouseCategory.setReferredName(PinyinUtils.getPinyinInitials(fdWarehouseCategory.getWarehouseCategoryName()));
+        }
         fdWarehouseCategory.setTenantId(before.getTenantId());
         fdWarehouseCategory.setHisId(before.getHisId());
         fdWarehouseCategory.setUpdateTime(DateUtils.getNowDate());

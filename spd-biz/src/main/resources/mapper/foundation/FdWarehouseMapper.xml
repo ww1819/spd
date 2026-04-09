@@ -121,6 +121,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="userId != null  and userId != 0"> and u.user_id = #{userId}</if>
 	</select>
 
+    <select id="countWarehouseByTenantAndName" resultType="int">
+        <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(*) from fd_warehouse
+        where del_flag != 1
+        and name = #{name}
+        and <include refid="fdWarehouseTenantMatch"/>
+        <if test="excludeId != null">
+            and id != #{excludeId}
+        </if>
+    </select>
+
     <insert id="insertFdWarehouse" parameterType="FdWarehouse" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         <bind name="insertTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_warehouse

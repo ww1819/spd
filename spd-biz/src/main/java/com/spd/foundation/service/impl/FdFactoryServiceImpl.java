@@ -82,6 +82,10 @@ public class FdFactoryServiceImpl implements IFdFactoryService
                 fdFactory.setTenantId(tid);
             }
         }
+        if (fdFactory.getFactoryName() != null)
+        {
+            fdFactory.setFactoryName(fdFactory.getFactoryName().trim());
+        }
         if (fdFactory.getFactoryCode() != null)
         {
             fdFactory.setFactoryCode(fdFactory.getFactoryCode().trim());
@@ -95,6 +99,15 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         {
             fdFactory.setCreateBy(SecurityUtils.getUserIdStr());
         }
+        if (StringUtils.isEmpty(fdFactory.getFactoryName()))
+        {
+            throw new ServiceException("厂家名称不能为空");
+        }
+        if (fdFactoryMapper.countFactoryByTenantAndName(fdFactory.getTenantId(), fdFactory.getFactoryName(), null) > 0)
+        {
+            throw new ServiceException("厂家名称「" + fdFactory.getFactoryName() + "」已存在，不能重复");
+        }
+        fdFactory.setFactoryReferredCode(PinyinUtils.getPinyinInitials(fdFactory.getFactoryName()));
         fdFactory.setHisId(normalizeHisId(fdFactory.getHisId()));
         if (isHisIdBlank(fdFactory.getHisId()))
         {
@@ -114,12 +127,24 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         {
             throw new ServiceException("生产厂家主键不能为空");
         }
+        if (fdFactory.getFactoryName() != null)
+        {
+            fdFactory.setFactoryName(fdFactory.getFactoryName().trim());
+        }
         FdFactory before = fdFactoryMapper.selectFdFactoryByFactoryId(fdFactory.getFactoryId());
         if (before == null)
         {
             throw new ServiceException("生产厂家不存在");
         }
         SecurityUtils.ensureTenantAccess(before.getTenantId());
+        if (StringUtils.isNotEmpty(fdFactory.getFactoryName()))
+        {
+            if (fdFactoryMapper.countFactoryByTenantAndName(before.getTenantId(), fdFactory.getFactoryName(), fdFactory.getFactoryId()) > 0)
+            {
+                throw new ServiceException("厂家名称「" + fdFactory.getFactoryName() + "」已存在，不能重复");
+            }
+            fdFactory.setFactoryReferredCode(PinyinUtils.getPinyinInitials(fdFactory.getFactoryName()));
+        }
         fdFactory.setHisId(before.getHisId());
         fdFactory.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdFactory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))

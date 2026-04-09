@@ -66,6 +66,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
+    <select id="countFactoryByTenantAndName" resultType="int">
+        select count(*) from fd_factory
+        where del_flag != 1
+        and tenant_id = #{tenantId}
+        and factory_name = #{factoryName}
+        <if test="excludeFactoryId != null">
+            and factory_id != #{excludeFactoryId}
+        </if>
+    </select>
+
     <select id="selectFdFactoryByTenantAndHisId" resultMap="FdFactoryResult">
         <include refid="selectFdFactoryVo"/>
         where del_flag != 1 and tenant_id = #{tenantId} and his_id = #{hisId}

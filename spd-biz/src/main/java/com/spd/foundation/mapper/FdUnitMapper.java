@@ -54,6 +54,11 @@ public interface FdUnitMapper
      */
     FdUnit selectFdUnitByTenantAndUnitName(@Param("tenantId") String tenantId, @Param("unitName") String unitName);
 
+    /**
+     * 租户下同名单位数量（未删除；可排除某 unit_id，用于唯一校验）
+     */
+    int countUnitByTenantAndUnitName(@Param("tenantId") String tenantId, @Param("unitName") String unitName, @Param("excludeUnitId") Long excludeUnitId);
+
 //    /**
 //     * 删除单位明细
 //     *
