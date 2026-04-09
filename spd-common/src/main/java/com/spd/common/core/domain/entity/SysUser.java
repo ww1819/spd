@@ -121,6 +121,9 @@ public class SysUser extends BaseEntity
     /** 耗材岗位/工作组ID（列表筛选：对应 sys_user_post.post_id） */
     private Long sysPostId;
 
+    /** 仅列无耗材工作组用户：sys_user_post 无记录（列表筛选） */
+    private Boolean withoutWorkgroup;
+
     public SysUser()
     {
 
@@ -411,6 +414,16 @@ public class SysUser extends BaseEntity
 
     public void setSysPostId(Long sysPostId) {
         this.sysPostId = sysPostId;
+    }
+
+    public Boolean getWithoutWorkgroup()
+    {
+        return withoutWorkgroup;
+    }
+
+    public void setWithoutWorkgroup(Boolean withoutWorkgroup)
+    {
+        this.withoutWorkgroup = withoutWorkgroup;
     }
 
     @Override

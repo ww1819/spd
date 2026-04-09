@@ -36,6 +36,7 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.system.domain.SysPost;
+import com.spd.system.dto.BatchWorkgroupRequest;
 import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISbWorkGroupService;
@@ -118,7 +119,8 @@ public class SysUserController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(SysUser user,
         @RequestParam(value = "workgroupPostId", required = false) String workgroupPostId,
-        @RequestParam(value = "sysPostId", required = false) Long sysPostId)
+        @RequestParam(value = "sysPostId", required = false) Long sysPostId,
+        @RequestParam(value = "withoutWorkgroup", required = false) Boolean withoutWorkgroup)
     {
         if (StringUtils.isNotEmpty(workgroupPostId)) {
             user.setWorkgroupPostId(workgroupPostId);
@@ -126,9 +128,28 @@ public class SysUserController extends BaseController
         if (sysPostId != null) {
             user.setSysPostId(sysPostId);
         }
+        if (Boolean.TRUE.equals(withoutWorkgroup)) {
+            user.setWithoutWorkgroup(true);
+        }
         startPage();
         List<SysUser> list = userService.selectUserList(user);
         return getDataTable(list);
+    }
+
+    /**
+     * 批量设置耗材工作组（sys_user_post）
+     */
+    @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @PostMapping("/batchWorkgroup")
+    public AjaxResult batchWorkgroup(@RequestBody BatchWorkgroupRequest body)
+    {
+        if (body == null || body.getUserIds() == null || body.getPostId() == null)
+        {
+            return error("用户与工作组不能为空");
+        }
+        int n = userService.batchSetUserWorkgroup(body.getUserIds(), body.getPostId());
+        return success("已批量设置工作组，共 " + n + " 人");
     }
 
     /**

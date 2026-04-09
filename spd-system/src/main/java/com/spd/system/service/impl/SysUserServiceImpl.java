@@ -2,6 +2,7 @@ package com.spd.system.service.impl;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.Validator;
@@ -889,5 +890,88 @@ public class SysUserServiceImpl implements ISysUserService
             user.setReferredName(PinyinUtils.getPinyinInitials(name));
             userMapper.updateUser(user);
         }
+    }
+
+    /**
+     * 批量设置耗材工作组（sys_user_post）：先删后插，每人仅保留所选 postId
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchSetUserWorkgroup(List<Long> userIds, Long postId)
+    {
+        if (userIds == null || userIds.isEmpty())
+        {
+            throw new ServiceException("请至少选择一名用户");
+        }
+        if (postId == null)
+        {
+            throw new ServiceException("请选择工作组");
+        }
+        SysPost post = postMapper.selectPostById(postId);
+        if (post == null || !"0".equals(post.getStatus()))
+        {
+            throw new ServiceException("工作组不存在或已停用");
+        }
+        String operatorTenant = StringUtils.trimToNull(SecurityUtils.getCustomerId());
+        if (operatorTenant != null)
+        {
+            String pt = StringUtils.trimToNull(post.getTenantId());
+            if (pt == null || !operatorTenant.equals(pt))
+            {
+                throw new ServiceException("只能选择本租户下的工作组");
+            }
+        }
+        LinkedHashSet<Long> distinct = new LinkedHashSet<>();
+        for (Long uid : userIds)
+        {
+            if (uid == null || uid == 1L)
+            {
+                continue;
+            }
+            distinct.add(uid);
+        }
+        if (distinct.isEmpty())
+        {
+            throw new ServiceException("没有可设置的用户");
+        }
+        List<SysUserPost> toInsert = new ArrayList<>(distinct.size());
+        for (Long uid : distinct)
+        {
+            checkUserDataScope(uid);
+            SysUser u = userMapper.selectUserById(uid);
+            if (u == null || !"0".equals(u.getDelFlag()))
+            {
+                continue;
+            }
+            String uc = StringUtils.trimToNull(u.getCustomerId());
+            if (operatorTenant != null)
+            {
+                if (!operatorTenant.equals(uc))
+                {
+                    throw new ServiceException("只能为本租户用户设置工作组：" + u.getUserName());
+                }
+            }
+            else
+            {
+                String pTenant = StringUtils.trimToNull(post.getTenantId());
+                if (uc != null && (pTenant == null || !uc.equals(pTenant)))
+                {
+                    throw new ServiceException("工作组「" + post.getPostName() + "」与账号「" + u.getUserName() + "」的租户不一致");
+                }
+            }
+            SysUserPost up = new SysUserPost();
+            up.setUserId(uid);
+            up.setPostId(postId);
+            up.setTenantId(uc != null ? uc : operatorTenant);
+            toInsert.add(up);
+        }
+        if (toInsert.isEmpty())
+        {
+            return 0;
+        }
+        Long[] delArr = distinct.toArray(new Long[0]);
+        userPostMapper.deleteUserPost(delArr);
+        userPostMapper.batchUserPost(toInsert);
+        return toInsert.size();
     }
 }

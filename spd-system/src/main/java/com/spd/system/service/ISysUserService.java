@@ -233,4 +233,13 @@ public interface ISysUserService
      * @param userIds 用户ID集合
      */
     void updateReferred(List<Long> userIds);
+
+    /**
+     * 批量设置耗材工作组（sys_user_post）：先删后插，每人仅保留所选 postId
+     *
+     * @param userIds 用户 ID（去重、排除 1）
+     * @param postId  岗位/工作组 ID
+     * @return 成功写入关联条数
+     */
+    int batchSetUserWorkgroup(List<Long> userIds, Long postId);
 }
