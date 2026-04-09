@@ -206,6 +206,56 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+-- ---------- 3.5) 财务管理下：结算申请（settlement/apply；「生成结算单」走新增接口，需 settlement:apply:add）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) VALUES
+(3181, '结算申请查询', 1547, 1, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'settlement:apply:query', '#',
+ 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '详情/查询',
+ '0', '1'),
+(3182, '结算申请新增', 1547, 2, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'settlement:apply:add', '#',
+ 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '新增与「生成结算单」提交',
+ '0', '1'),
+(3183, '结算申请修改', 1547, 3, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'settlement:apply:edit', '#',
+ 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
+ '0', '1'),
+(3184, '结算申请删除', 1547, 4, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'settlement:apply:remove', '#',
+ 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
+ '0', '1'),
+(3185, '结算申请导出', 1547, 5, '#', '', NULL,
+ 1, 0, 'F', '0', '0', 'settlement:apply:export', '#',
+ 'admin', '2026-04-09 00:00:00', '1', '2026-04-09 00:00:00', '',
+ '0', '1')
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  create_by = VALUES(create_by),
+  create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
 -- ---------- 4) 科室维护（与后端 foundation/depart 一致；含导入，默认对客户开放）----------
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,

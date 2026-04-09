@@ -399,7 +399,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (userId == null) {
       return;
     }
-    sysUserMenuMapper.deleteUserMenuByUserId(userId);
+    sysUserMenuMapper.deleteUserMenuByUserId(userId, StringUtils.trimToNull(tenantId));
     if (menuIds == null || menuIds.isEmpty()) {
       return;
     }
