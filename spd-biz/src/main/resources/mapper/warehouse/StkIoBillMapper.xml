@@ -1254,6 +1254,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ,vsadj.warehouse_category_name
         ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_qty else 0 end) as qc_qty
         ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_amt else 0 end) as qc_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('QC') then vsadj.io_qty else 0 end) as qc_import_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('QC') then vsadj.io_amt else 0 end) as qc_import_amt
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_qty else 0 end) as rk_qty
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_amt else 0 end) as rk_amt
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_qty else 0 end) as ck_qty
