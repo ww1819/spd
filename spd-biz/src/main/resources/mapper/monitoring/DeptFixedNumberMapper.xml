@@ -29,6 +29,7 @@
         <result property="unitName" column="unitName"/>
         <result property="price" column="price"/>
         <result property="warehouseCategoryName" column="warehouseCategoryName"/>
+        <result property="financeCategoryName" column="financeCategoryName"/>
         <association property="department" javaType="FdDepartment" resultMap="departmentResult"/>
         <association property="material" javaType="FdMaterial" resultMap="materialResult"/>
     </resultMap>
@@ -79,7 +80,8 @@
             m.price as price,
             s.name as supplierName,
             fac.factory_name as factoryName,
-            wc.warehouse_category_name as warehouseCategoryName
+            wc.warehouse_category_name as warehouseCategoryName,
+            fc.finance_category_name as financeCategoryName
         from dept_fixed_number f
                  left join fd_department d on f.department_id = d.id
                  left join fd_material m on f.material_id = m.id
@@ -87,6 +89,7 @@
                  left join fd_supplier s on m.supplier_id = s.id
                  left join fd_factory fac on m.factory_id = fac.factory_id
                  left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+                 left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where f.del_flag = 0
     </sql>
 

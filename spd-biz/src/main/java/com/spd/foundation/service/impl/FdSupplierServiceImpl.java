@@ -79,6 +79,10 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         {
             fdSupplier.setCode(fdSupplier.getCode().trim());
         }
+        if (fdSupplier.getName() != null)
+        {
+            fdSupplier.setName(fdSupplier.getName().trim());
+        }
         if (StringUtils.isEmpty(fdSupplier.getCode()))
         {
             String tenantId = StringUtils.isNotEmpty(fdSupplier.getTenantId()) ? fdSupplier.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
@@ -96,6 +100,14 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             {
                 fdSupplier.setTenantId(tid);
             }
+        }
+        if (StringUtils.isEmpty(fdSupplier.getName()))
+        {
+            throw new ServiceException("供应商名称不能为空");
+        }
+        if (fdSupplierMapper.countSupplierByTenantAndName(fdSupplier.getTenantId(), fdSupplier.getName(), null) > 0)
+        {
+            throw new ServiceException("供应商名称「" + fdSupplier.getName() + "」已存在，不能重复");
         }
         fdSupplier.setHisId(normalizeHisId(fdSupplier.getHisId()));
         if (isHisIdBlank(fdSupplier.getHisId()))
@@ -116,12 +128,24 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         {
             throw new ServiceException("供应商主键不能为空");
         }
+        if (fdSupplier.getName() != null)
+        {
+            fdSupplier.setName(fdSupplier.getName().trim());
+        }
         FdSupplier before = fdSupplierMapper.selectFdSupplierById(fdSupplier.getId());
         if (before == null)
         {
             throw new ServiceException("供应商不存在");
         }
         SecurityUtils.ensureTenantAccess(before.getTenantId());
+        if (StringUtils.isNotEmpty(fdSupplier.getName()))
+        {
+            if (fdSupplierMapper.countSupplierByTenantAndName(before.getTenantId(), fdSupplier.getName(), fdSupplier.getId()) > 0)
+            {
+                throw new ServiceException("供应商名称「" + fdSupplier.getName() + "」已存在，不能重复");
+            }
+            fdSupplier.setReferredCode(PinyinUtils.getPinyinInitials(fdSupplier.getName()));
+        }
         fdSupplier.setHisId(before.getHisId());
         fdSupplier.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdSupplier.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))

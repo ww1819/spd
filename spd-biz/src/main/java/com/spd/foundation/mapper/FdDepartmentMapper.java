@@ -44,6 +44,11 @@ public interface FdDepartmentMapper
     int countChildrenByParentId(@Param("parentId") Long parentId);
 
     /**
+     * 租户下同名科室数量（未删除；可排除某 id，用于唯一校验）
+     */
+    int countDepartmentByTenantAndName(@Param("tenantId") String tenantId, @Param("name") String name, @Param("excludeId") Long excludeId);
+
+    /**
      * 新增科室
      *
      * @param fdDepartment 科室

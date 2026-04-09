@@ -85,6 +85,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
+    <select id="countSupplierByTenantAndName" resultType="int">
+        select count(*) from fd_supplier
+        where del_flag != 1
+        and tenant_id = #{tenantId}
+        and name = #{name}
+        <if test="excludeId != null">
+            and id != #{excludeId}
+        </if>
+    </select>
+
     <select id="selectFdSupplierByTenantAndHisId" resultMap="FdSupplierResult">
         <include refid="selectFdSupplierVo"/>
         where del_flag != 1 and tenant_id = #{tenantId} and his_id = #{hisId}

@@ -95,6 +95,12 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int insertBasApply(BasApply basApply)
     {
+        if (basApply == null) {
+            throw new ServiceException("科室申领数据不能为空");
+        }
+        if (basApply.getDepartmentId() == null) {
+            throw new ServiceException("科室不能为空，请先选择科室");
+        }
         validateEntryQty(basApply.getBasApplyEntryList());
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
@@ -137,6 +143,12 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Override
     public int updateBasApply(BasApply basApply)
     {
+        if (basApply == null) {
+            throw new ServiceException("科室申领数据不能为空");
+        }
+        if (basApply.getDepartmentId() == null) {
+            throw new ServiceException("科室不能为空，请先选择科室");
+        }
         validateEntryQty(basApply.getBasApplyEntryList());
         basApply.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {

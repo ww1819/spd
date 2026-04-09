@@ -128,7 +128,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="stkDepInventoryListWhere">
         where stk.qty &gt; 0
         and (stk.del_flag = 0 or stk.del_flag is null)
+        <if test="params != null and params.scopeUserId != null">
+            and stk.department_id in (
+                select ud.department_id
+                from sys_user_department ud
+                where ud.user_id = #{params.scopeUserId}
+                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
+            )
+            and stk.warehouse_id in (
+                select uw.warehouse_id
+                from sys_user_warehouse uw
+                where uw.user_id = #{params.scopeUserId}
+                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
+            )
+        </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.name like concat('%', #{materialKeyword}, '%')
+                or m.code like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -153,6 +173,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkDepInventoryListTotal" parameterType="StkDepInventory" resultType="com.spd.common.core.page.TotalInfo">
         select SUM(IFNULL(stk.qty, 0)) totalQty, SUM(IFNULL(stk.amt, 0)) totalAmt
         from stk_dep_inventory stk
+        left join fd_material m on stk.material_id = m.id
         <include refid="stkDepInventoryListWhere"/>
     </select>
 
@@ -333,7 +354,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="inventorySummaryWhere">
         stk.qty &gt; 0
           and (stk.del_flag = 0 or stk.del_flag is null)
+        <if test="params != null and params.scopeUserId != null">
+            and stk.department_id in (
+                select ud.department_id
+                from sys_user_department ud
+                where ud.user_id = #{params.scopeUserId}
+                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
+            )
+            and stk.warehouse_id in (
+                select uw.warehouse_id
+                from sys_user_warehouse uw
+                where uw.user_id = #{params.scopeUserId}
+                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
+            )
+        </if>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.name like concat('%', #{materialKeyword}, '%')
+                or m.code like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
         <if test="supplierId != null and supplierId != ''"> and m.supplier_id = #{supplierId}</if>
@@ -401,7 +442,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where bill.del_flag = 0
           and bill.tenant_id = #{scopedTenantId}
           and (entry.del_flag = 0 or entry.del_flag is null)
+        <if test="params != null and params.scopeUserId != null">
+            and bill.department_id in (
+                select ud.department_id
+                from sys_user_department ud
+                where ud.user_id = #{params.scopeUserId}
+                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
+            )
+            and bill.warehouse_id in (
+                select uw.warehouse_id
+                from sys_user_warehouse uw
+                where uw.user_id = #{params.scopeUserId}
+                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
+            )
+        </if>
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.name like concat('%', #{materialKeyword}, '%')
+                or m.code like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
         <if test="warehouseId != null"> and bill.warehouse_id = #{warehouseId}</if>
         <if test="billType != null"> and bill.bill_type = #{billType}</if>
@@ -436,7 +497,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where bill.del_flag = 0
           and bill.tenant_id = #{scopedTenantId}
           and (entry.del_flag = 0 or entry.del_flag is null)
+        <if test="params != null and params.scopeUserId != null">
+            and bill.department_id in (
+                select ud.department_id
+                from sys_user_department ud
+                where ud.user_id = #{params.scopeUserId}
+                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
+            )
+            and bill.warehouse_id in (
+                select uw.warehouse_id
+                from sys_user_warehouse uw
+                where uw.user_id = #{params.scopeUserId}
+                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
+            )
+        </if>
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.name like concat('%', #{materialKeyword}, '%')
+                or m.code like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
         <if test="warehouseId != null"> and bill.warehouse_id = #{warehouseId}</if>
         <if test="billType != null"> and bill.bill_type = #{billType}</if>

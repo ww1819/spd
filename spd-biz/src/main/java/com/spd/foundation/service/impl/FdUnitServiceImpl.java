@@ -53,6 +53,10 @@ public class FdUnitServiceImpl implements IFdUnitService
         {
             fdUnit.setTenantId(SecurityUtils.getCustomerId());
         }
+        if (fdUnit.getUnitName() != null)
+        {
+            fdUnit.setUnitName(fdUnit.getUnitName().trim());
+        }
         if (StringUtils.isEmpty(fdUnit.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdUnit.setCreateBy(SecurityUtils.getUserIdStr());
@@ -64,6 +68,14 @@ public class FdUnitServiceImpl implements IFdUnitService
         if (StringUtils.isEmpty(fdUnit.getUnitCode()))
         {
             fdUnit.setUnitCode(generateUnitCode());
+        }
+        if (StringUtils.isEmpty(fdUnit.getUnitName()))
+        {
+            throw new ServiceException("单位名称不能为空");
+        }
+        if (fdUnitMapper.countUnitByTenantAndUnitName(fdUnit.getTenantId(), fdUnit.getUnitName(), null) > 0)
+        {
+            throw new ServiceException("单位名称「" + fdUnit.getUnitName() + "」已存在，不能重复");
         }
         fdUnit.setCreateTime(DateUtils.getNowDate());
         return fdUnitMapper.insertFdUnit(fdUnit);
@@ -104,12 +116,23 @@ public class FdUnitServiceImpl implements IFdUnitService
         {
             throw new ServiceException("单位主键不能为空");
         }
+        if (fdUnit.getUnitName() != null)
+        {
+            fdUnit.setUnitName(fdUnit.getUnitName().trim());
+        }
         FdUnit before = fdUnitMapper.selectFdUnitByUnitId(fdUnit.getUnitId());
         if (before == null)
         {
             throw new ServiceException("单位不存在或已删除");
         }
         SecurityUtils.ensureTenantAccess(before.getTenantId());
+        if (StringUtils.isNotEmpty(fdUnit.getUnitName()))
+        {
+            if (fdUnitMapper.countUnitByTenantAndUnitName(before.getTenantId(), fdUnit.getUnitName(), fdUnit.getUnitId()) > 0)
+            {
+                throw new ServiceException("单位名称「" + fdUnit.getUnitName() + "」已存在，不能重复");
+            }
+        }
         fdUnit.setTenantId(before.getTenantId());
         fdUnit.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdUnit.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))

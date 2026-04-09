@@ -64,6 +64,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="excludeId != null"> and warehouse_category_id != #{excludeId} </if>
     </select>
 
+    <select id="countWarehouseCategoryByTenantAndName" resultType="int">
+        select count(1) from fd_warehouse_category
+        where tenant_id = #{tenantId} and del_flag != 1
+        and warehouse_category_name = #{name}
+        <if test="excludeId != null"> and warehouse_category_id != #{excludeId} </if>
+    </select>
+
     <insert id="insertFdWarehouseCategory" parameterType="FdWarehouseCategory" useGeneratedKeys="true" keyProperty="warehouseCategoryId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_warehouse_category

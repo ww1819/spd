@@ -97,6 +97,9 @@ public class FixedNumberController extends BaseController
                 if (item.getWarehouseCategoryName() != null) {
                     map.put("warehouseCategoryName", item.getWarehouseCategoryName());
                 }
+                if (item.getFinanceCategoryName() != null) {
+                    map.put("financeCategoryName", item.getFinanceCategoryName());
+                }
                 if (item.getRegisterNo() != null) {
                     map.put("registerNo", item.getRegisterNo());
                 }
@@ -148,6 +151,9 @@ public class FixedNumberController extends BaseController
                 if (item.getWarehouseCategoryName() != null) {
                     map.put("warehouseCategoryName", item.getWarehouseCategoryName());
                 }
+                if (item.getFinanceCategoryName() != null) {
+                    map.put("financeCategoryName", item.getFinanceCategoryName());
+                }
                 if (item.getRegisterNo() != null) {
                     map.put("registerNo", item.getRegisterNo());
                 }
@@ -190,6 +196,7 @@ public class FixedNumberController extends BaseController
             map.put("supplierName", item.getSupplierName());
             map.put("factoryName", item.getFactoryName());
             map.put("warehouseCategoryName", item.getWarehouseCategoryName());
+            map.put("financeCategoryName", item.getFinanceCategoryName());
             if (item.getUnitName() != null) {
                 map.put("fdUnit", java.util.Collections.singletonMap("unitName", item.getUnitName()));
             }

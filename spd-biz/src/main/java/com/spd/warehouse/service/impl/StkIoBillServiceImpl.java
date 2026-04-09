@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
@@ -77,6 +79,7 @@ import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 出入库Service业务层处理
@@ -134,6 +137,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private ISbCustomerService sbCustomerService;
+
+    @Autowired
+    private ITenantScopeService tenantScopeService;
 
     /**
      * 查询出入库
@@ -1976,6 +1982,22 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isEmpty(ids)) {
             throw new ServiceException("请选择要确认的出库单");
         }
+
+        // 操作人权限：必须拥有单据所属科室权限（管理员放开）
+        Long operatorUserId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        // 确认人字段以当前登录人为准，避免前端/调用方伪造
+        confirmBy = SecurityUtils.getUserIdStr();
+        Set<Long> permittedDeptIdSet = null;
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(operatorUserId, customerId);
+        // null 表示租户管理员/不限制；空集合表示无权限
+        if (deptIds != null) {
+            if (deptIds.isEmpty()) {
+                throw new ServiceException("未配置科室权限，无法进行收货确认");
+            }
+            permittedDeptIdSet = new HashSet<>(deptIds);
+        }
+
         String[] idArray = ids.split(",");
         int successCount = 0;
         for (String idStr : idArray) {
@@ -1983,6 +2005,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             StkIoBill stkIoBill = stkIoBillMapper.selectStkIoBillById(id);
             if (stkIoBill == null) {
                 continue;
+            }
+            if (permittedDeptIdSet != null) {
+                Long depId = stkIoBill.getDepartmentId();
+                if (depId == null || !permittedDeptIdSet.contains(depId)) {
+                    throw new ServiceException(String.format("无权确认该科室单据：出库单号=%s", stkIoBill.getBillNo()));
+                }
             }
             // 只确认已审核的出库单
             if (stkIoBill.getBillStatus() != 2) {

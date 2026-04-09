@@ -30,6 +30,9 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "耗材ID")
     private Long materialId;
 
+    /** 查询参数：耗材关键字（名称/编码模糊） */
+    private String materialKeyword;
+
     /** 产品名称（表 material_name，快照） */
     private String snapMaterialName;
     /** 规格（表 material_speci） */
@@ -167,6 +170,14 @@ public class StkDepInventory extends BaseEntity
     public Long getMaterialId()
     {
         return materialId;
+    }
+
+    public String getMaterialKeyword() {
+        return materialKeyword;
+    }
+
+    public void setMaterialKeyword(String materialKeyword) {
+        this.materialKeyword = materialKeyword;
     }
 
     public String getSnapMaterialName() {

@@ -75,6 +75,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
         if (StringUtils.isEmpty(fdWarehouse.getSettlementType())) {
             throw new ServiceException("仓库创建时必须选择结算方式（入库结算/出库结算/消耗结算）");
         }
+        if (fdWarehouse.getName() != null) {
+            fdWarehouse.setName(fdWarehouse.getName().trim());
+        }
         fdWarehouse.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdWarehouse.getTenantId()))
         {
@@ -83,6 +86,12 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
             {
                 fdWarehouse.setTenantId(tid);
             }
+        }
+        if (StringUtils.isEmpty(fdWarehouse.getName())) {
+            throw new ServiceException("仓库名称不能为空");
+        }
+        if (fdWarehouseMapper.countWarehouseByTenantAndName(fdWarehouse.getTenantId(), fdWarehouse.getName(), null) > 0) {
+            throw new ServiceException("仓库名称「" + fdWarehouse.getName() + "」已存在，不能重复");
         }
         int n = fdWarehouseMapper.insertFdWarehouse(fdWarehouse);
         if (n > 0 && StringUtils.isNotEmpty(fdWarehouse.getTenantId()) && fdWarehouse.getId() != null) {
@@ -100,6 +109,15 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public int updateFdWarehouse(FdWarehouse fdWarehouse)
     {
+        if (fdWarehouse.getName() != null) {
+            fdWarehouse.setName(fdWarehouse.getName().trim());
+        }
+        if (StringUtils.isNotEmpty(fdWarehouse.getName())) {
+            String tenantId = StringUtils.isNotEmpty(fdWarehouse.getTenantId()) ? fdWarehouse.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+            if (fdWarehouseMapper.countWarehouseByTenantAndName(tenantId, fdWarehouse.getName(), fdWarehouse.getId()) > 0) {
+                throw new ServiceException("仓库名称「" + fdWarehouse.getName() + "」已存在，不能重复");
+            }
+        }
         FdWarehouse existing = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(fdWarehouse.getId()));
         if (existing != null && StringUtils.isNotEmpty(existing.getSettlementType())) {
             fdWarehouse.setSettlementType(existing.getSettlementType());

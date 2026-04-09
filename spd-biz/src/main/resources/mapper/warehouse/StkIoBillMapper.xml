@@ -33,7 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isMonthInit"    column="is_month_init"    />
         <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
         <result property="auditBy"    column="audit_by"    />
-        <result property="createrName"    column="createrUserName"    />
+        <result property="createrName"    column="createrNickName"    />
         <result property="auditPersonName"    column="auditUserName"    />
         <result property="updateByUserName"    column="updateByUserName"    />
         <result property="updateByNickName"    column="updateByNickName"    />
@@ -215,6 +215,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkIoBillVo"/>
         where stk.del_flag != 1
         and stk.tenant_id = #{scopedTenantId}
+        <if test="params != null and params.deptIds != null">
+            <choose>
+                <when test="params.deptIds.size() > 0">
+                    and stk.department_id in
+                    <foreach collection="params.deptIds" item="did" open="(" separator="," close=")">
+                        #{did}
+                    </foreach>
+                </when>
+                <otherwise>
+                    and 1 = 0
+                </otherwise>
+            </choose>
+        </if>
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
@@ -1096,6 +1109,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND stk.bill_type = 201
         <if test="billNo != null and billNo != ''"> AND stk.bill_no LIKE CONCAT('%', #{billNo}, '%')</if>
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="params != null and params.deptIds != null">
+            <choose>
+                <when test="params.deptIds.size() > 0">
+                    AND stk.department_id IN
+                    <foreach collection="params.deptIds" item="did" open="(" separator="," close=")">
+                        #{did}
+                    </foreach>
+                </when>
+                <otherwise>
+                    AND 1 = 0
+                </otherwise>
+            </choose>
+        </if>
         <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
         <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
         <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
@@ -1111,6 +1137,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND stk.bill_status = 2
           AND stk.bill_type = 201
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="params != null and params.deptIds != null">
+            <choose>
+                <when test="params.deptIds.size() > 0">
+                    AND stk.department_id IN
+                    <foreach collection="params.deptIds" item="did" open="(" separator="," close=")">
+                        #{did}
+                    </foreach>
+                </when>
+                <otherwise>
+                    AND 1 = 0
+                </otherwise>
+            </choose>
+        </if>
         <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
         <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
         <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
@@ -1125,6 +1164,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND stk.bill_status = 2
           AND stk.bill_type = 201
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="params != null and params.deptIds != null">
+            <choose>
+                <when test="params.deptIds.size() > 0">
+                    AND stk.department_id IN
+                    <foreach collection="params.deptIds" item="did" open="(" separator="," close=")">
+                        #{did}
+                    </foreach>
+                </when>
+                <otherwise>
+                    AND 1 = 0
+                </otherwise>
+            </choose>
+        </if>
         <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
         <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
