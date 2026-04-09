@@ -174,6 +174,11 @@ public interface IStkIoBillService
     List<Map<String, Object>> selectListPurInventory(StkIoBill stkIoBill);
 
     /**
+     * 采购汇总报表（按供应商）
+     */
+    List<Map<String, Object>> selectPurchaseSummaryBySupplier(StkIoBill stkIoBill);
+
+    /**
      * 查询月结初始化列表
      * @return
      */

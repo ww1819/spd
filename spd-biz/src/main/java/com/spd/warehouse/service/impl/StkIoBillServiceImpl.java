@@ -1550,6 +1550,14 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public List<Map<String, Object>> selectPurchaseSummaryBySupplier(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkIoBillMapper.selectPurchaseSummaryBySupplier(stkIoBill);
+    }
+
+    @Override
     public List<Map<String, Object>> selectMonthInitDataList(String beginDate,String endDate,String toStatDate,String toEndDate) {
         return stkIoBillMapper.selectMonthInitDataList(beginDate,endDate,toStatDate,toEndDate);
     }

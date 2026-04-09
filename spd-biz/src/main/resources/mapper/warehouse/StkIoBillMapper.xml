@@ -1285,6 +1285,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ,vsadj.warehouse_category_name
     </select>
 
+    <!-- 采购汇总报表（按供应商）：供应商全集取截止 endDate 的结存数据，再汇总上期/本期入出库 -->
+    <select id="selectPurchaseSummaryBySupplier" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT
+            COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), '未维护供应商') AS supplierName,
+            SUM(CASE WHEN vsadj.audit_date &lt; #{beginDate} THEN vsadj.jc_amt ELSE 0 END) AS lastMonthBalance,
+            SUM(CASE WHEN vsadj.audit_date &gt;= #{beginDate} AND vsadj.io_type = 'RK' THEN vsadj.io_amt ELSE 0 END) AS monthInAmount,
+            SUM(CASE WHEN vsadj.audit_date &gt;= #{beginDate} AND vsadj.io_type = 'CK' THEN vsadj.io_amt ELSE 0 END) AS monthOutAmount,
+            SUM(vsadj.jc_amt) AS spdStockAmount
+        FROM view_stock_all_detail_jxc vsadj
+        LEFT JOIN fd_supplier fs ON fs.id = vsadj.suppler_id
+        WHERE 1 = 1
+          AND vsadj.tenant_id = #{scopedTenantId}
+          AND vsadj.audit_date &lt;= #{endDate}
+          <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
+          <if test="supplerId != null"> AND vsadj.suppler_id = #{supplerId}</if>
+          <if test="supplierKeyword != null and supplierKeyword != ''">
+              AND (
+                  COALESCE(vsadj.suppler_name, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                  OR COALESCE(fs.name, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                  OR COALESCE(fs.code, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                  OR COALESCE(fs.referred_code, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+              )
+          </if>
+        GROUP BY COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), '未维护供应商')
+        <if test="excludeZeroNoBiz != null and excludeZeroNoBiz == 1">
+            HAVING NOT (
+                SUM(CASE WHEN vsadj.audit_date &lt; #{beginDate} THEN vsadj.jc_amt ELSE 0 END) = 0
+                AND SUM(CASE WHEN vsadj.audit_date &gt;= #{beginDate} AND vsadj.io_type = 'RK' THEN vsadj.io_amt ELSE 0 END) = 0
+                AND SUM(CASE WHEN vsadj.audit_date &gt;= #{beginDate} AND vsadj.io_type = 'CK' THEN vsadj.io_amt ELSE 0 END) = 0
+            )
+        </if>
+        ORDER BY spdStockAmount DESC
+    </select>
+
     <select id="selectMaterialInboundSuppliers" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select

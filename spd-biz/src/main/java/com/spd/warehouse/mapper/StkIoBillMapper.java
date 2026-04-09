@@ -294,6 +294,11 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill);
 
     /**
+     * 采购汇总报表（按供应商）
+     */
+    List<Map<String, Object>> selectPurchaseSummaryBySupplier(StkIoBill stkIoBill);
+
+    /**
      * 查询产品档案入库供应商列表（仅已审核入库单 bill_type=101）
      */
     List<Map<String, Object>> selectMaterialInboundSuppliers(@Param("materialId") Long materialId);

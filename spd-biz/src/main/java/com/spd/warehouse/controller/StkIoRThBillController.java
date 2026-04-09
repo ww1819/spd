@@ -427,4 +427,12 @@ public class StkIoRThBillController extends BaseController
         return getDataTable(pageList, totalInfo, total);
     }
 
+    /**
+     * 采购汇总报表（按供应商）
+     */
+    @GetMapping("/purchaseSummaryBySupplier")
+    public List<Map<String, Object>> purchaseSummaryBySupplier(StkIoBill stkIoBill) {
+        return stkIoBillService.selectPurchaseSummaryBySupplier(stkIoBill);
+    }
+
 }

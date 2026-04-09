@@ -197,6 +197,12 @@ public class StkIoBill extends BaseEntity
     /** 查询参数：仓库 */
     private String warehouseName;
 
+    /** 查询参数：供应商关键字（名称/编码/简码） */
+    private String supplierKeyword;
+
+    /** 查询参数：是否过滤“上期=0且本期入出=0”的供应商（1=过滤） */
+    private Integer excludeZeroNoBiz;
+
     /** 查询参数：批号 */
     private String batchNo;
 
@@ -484,6 +490,22 @@ public class StkIoBill extends BaseEntity
         this.warehouseName = warehouseName;
     }
 
+    public String getSupplierKeyword() {
+        return supplierKeyword;
+    }
+
+    public void setSupplierKeyword(String supplierKeyword) {
+        this.supplierKeyword = supplierKeyword;
+    }
+
+    public Integer getExcludeZeroNoBiz() {
+        return excludeZeroNoBiz;
+    }
+
+    public void setExcludeZeroNoBiz(Integer excludeZeroNoBiz) {
+        this.excludeZeroNoBiz = excludeZeroNoBiz;
+    }
+
     public String getBatchNo() {
         return batchNo;
     }
@@ -630,6 +652,8 @@ public class StkIoBill extends BaseEntity
             .append("ennDate", getEndDate())
             .append("materialName", getMaterialName())
             .append("warehouseName", getWarehouseName())
+            .append("supplierKeyword", getSupplierKeyword())
+            .append("excludeZeroNoBiz", getExcludeZeroNoBiz())
             .append("sortScene", getSortScene())
             .append("materialList", getMaterialList())
             .append("delPerson", getDelPerson())
