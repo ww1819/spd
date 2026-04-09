@@ -400,10 +400,10 @@ public class SysUserServiceImpl implements ISysUserService
         userDepartmentMapper.deleteUserDepartmentByUserId(userId);
         // 删除用户与菜单关联：平台用户全量替换；租户用户仅在本次提交包含耗材数字菜单或清空时清理 sys_user_menu，避免设备端只改 UUID 菜单时误删耗材菜单
         if (StringUtils.isEmpty(user.getCustomerId())) {
-            userMenuMapper.deleteUserMenuByUserId(userId);
+            userMenuMapper.deleteUserMenuByUserId(userId, null);
         } else if (user.getMenuIds() != null
             && (user.getMenuIds().length == 0 || containsMaterialMenuId(user.getMenuIds()))) {
-            userMenuMapper.deleteUserMenuByUserId(userId);
+            userMenuMapper.deleteUserMenuByUserId(userId, user.getCustomerId());
         }
         log.info("已处理用户菜单关联清理 - userId: {}", userId);
 
@@ -609,6 +609,9 @@ public class SysUserServiceImpl implements ISysUserService
         Long uid = user.getUserId();
         if (StringUtils.isNotEmpty(user.getCustomerId())) {
             String tenantIdForHc = StringUtils.trimToNull(user.getCustomerId());
+            if (tenantIdForHc == null) {
+                tenantIdForHc = StringUtils.trimToNull(SecurityUtils.getCustomerId());
+            }
             List<String> sbIds = new ArrayList<>();
             List<SysUserMenu> materialRows = new ArrayList<>();
             for (String raw : menuIds) {

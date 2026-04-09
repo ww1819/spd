@@ -1,6 +1,7 @@
 package com.spd.system.mapper;
 
 import com.spd.system.domain.SysUserMenu;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -15,9 +16,10 @@ public interface SysUserMenuMapper
      * 通过用户ID删除用户和菜单关联
      *
      * @param userId 用户ID
+     * @param tenantId 租户客户ID；非空时仅删除该租户（及 tenant_id 为空的脏数据）；空时表示平台用户，删除该用户下全部关联
      * @return 结果
      */
-    public int deleteUserMenuByUserId(Long userId);
+    public int deleteUserMenuByUserId(@Param("userId") Long userId, @Param("tenantId") String tenantId);
 
     /**
      * 通过菜单ID查询菜单使用数量

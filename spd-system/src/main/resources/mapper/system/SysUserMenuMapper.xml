@@ -10,8 +10,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="tenantId"   column="tenant_id"    />
 	</resultMap>
 
-	<delete id="deleteUserMenuByUserId" parameterType="Long">
-		delete from sys_user_menu where user_id=#{userId}
+	<delete id="deleteUserMenuByUserId">
+		delete from sys_user_menu where user_id = #{userId}
+		<choose>
+			<when test="tenantId != null and tenantId != ''">
+				and (tenant_id = #{tenantId} or tenant_id is null)
+			</when>
+		</choose>
 	</delete>
 
 	<select id="countUserMenuById" resultType="Integer">
