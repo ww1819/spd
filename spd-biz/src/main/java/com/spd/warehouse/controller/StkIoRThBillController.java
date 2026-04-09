@@ -175,6 +175,7 @@ public class StkIoRThBillController extends BaseController
         if (map.get("materialRegisterNo") != null) m.setRegisterNo(map.get("materialRegisterNo").toString());
         if (map.get("materialPackageSpeci") != null) m.setPackageSpeci(map.get("materialPackageSpeci").toString());
         if (map.get("materialIsWay") != null) m.setIsWay(map.get("materialIsWay").toString());
+        if (map.get("materialIsGz") != null) m.setIsGz(map.get("materialIsGz").toString());
         if (map.get("materialWarehouseCategoryName") != null) {
             FdWarehouseCategory wc = new FdWarehouseCategory();
             wc.setWarehouseCategoryName(map.get("materialWarehouseCategoryName").toString());
@@ -335,6 +336,7 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"), "").toString());
                 stkCTKVo.setDepartmentName(StringUtils.nvl(map.get("departmentName"), "").toString());
                 stkCTKVo.setFactoryName(StringUtils.nvl(map.get("factoryName"), "").toString());
+                stkCTKVo.setFinanceCategoryName(StringUtils.nvl(map.get("financeCategoryName"), "").toString());
                 if(map.get("supplierName") != null){
                     stkCTKVo.setSupplierName(map.get("supplierName").toString());
                 }

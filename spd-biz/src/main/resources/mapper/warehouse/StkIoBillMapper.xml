@@ -393,6 +393,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                fc.finance_category_name financeCategoryName,
                d.name departmentName, w.name warehouseName, b.material_id materialId,
                m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay,
+               m.is_gz materialIsGz,
                wc.warehouse_category_name materialWarehouseCategoryName,
                stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
                stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
@@ -426,7 +427,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  f.factory_name, s.name,
                  (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end),
                  fc.finance_category_name, d.name, w.name, b.material_id,
-                 m.register_no, m.package_speci, m.is_way, wc.warehouse_category_name,
+                 m.register_no, m.package_speci, m.is_way, m.is_gz, wc.warehouse_category_name,
                  stk.create_time, cu.nick_name, cu.user_name, stk.audit_date, au.nick_name, au.user_name
     </select>
 
