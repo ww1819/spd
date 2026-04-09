@@ -2,8 +2,11 @@ package com.spd.department.service.impl;
 
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.spd.common.core.page.TotalInfo;
 import com.spd.department.service.IConsumeDetailService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.mapper.StkIoBillMapper;
@@ -35,6 +38,14 @@ public class ConsumeDetailServiceImpl implements IConsumeDetailService
         return stkIoBillMapper.selectConsumeDetailList(stkIoBill);
     }
 
+    @Override
+    public TotalInfo selectConsumeDetailListTotal(StkIoBill stkIoBill)
+    {
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(2);
+        return stkIoBillMapper.selectConsumeDetailListTotal(stkIoBill);
+    }
+
     /**
      * 查询领用汇总列表（按耗材汇总）
      * 
@@ -50,6 +61,14 @@ public class ConsumeDetailServiceImpl implements IConsumeDetailService
         return stkIoBillMapper.selectConsumeSummaryList(stkIoBill);
     }
 
+    @Override
+    public TotalInfo selectConsumeSummaryListTotal(StkIoBill stkIoBill)
+    {
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(2);
+        return stkIoBillMapper.selectConsumeSummaryListTotal(stkIoBill);
+    }
+
     /**
      * 查询领用排名列表（按金额降序）
      * 
@@ -63,6 +82,14 @@ public class ConsumeDetailServiceImpl implements IConsumeDetailService
         stkIoBill.setBillType(201);
         stkIoBill.setBillStatus(2);
         return stkIoBillMapper.selectConsumeRankingList(stkIoBill);
+    }
+
+    @Override
+    public TotalInfo selectConsumeRankingListTotal(StkIoBill stkIoBill)
+    {
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(2);
+        return stkIoBillMapper.selectConsumeRankingListTotal(stkIoBill);
     }
 
     /**

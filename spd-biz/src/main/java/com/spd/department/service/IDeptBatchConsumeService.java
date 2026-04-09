@@ -2,6 +2,8 @@ package com.spd.department.service;
 
 import java.util.List;
 import java.util.Map;
+
+import com.spd.common.core.page.TotalInfo;
 import com.spd.department.domain.DeptBatchConsume;
 
 /**
@@ -75,6 +77,14 @@ public interface IDeptBatchConsumeService
      * @return 明细列表
      */
     List<Map<String, Object>> selectAuditedConsumeDetailList(DeptBatchConsume deptBatchConsume);
+
+    /**
+     * 已审核消耗追溯：当前筛选条件下全部明细行的数量、金额合计
+     *
+     * @param deptBatchConsume 查询条件
+     * @return 合计
+     */
+    TotalInfo selectAuditedConsumeReportTotal(DeptBatchConsume deptBatchConsume);
 
     /**
      * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）

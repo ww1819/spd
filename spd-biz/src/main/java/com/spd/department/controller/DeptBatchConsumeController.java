@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.pagehelper.PageInfo;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 
 /**
  * 科室批量消耗Controller
@@ -131,7 +133,13 @@ public class DeptBatchConsumeController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = deptBatchConsumeService.selectAuditedConsumeDetailList(deptBatchConsume);
-        return getDataTable(list);
+        TotalInfo totalInfo = deptBatchConsumeService.selectAuditedConsumeReportTotal(deptBatchConsume);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -143,6 +151,12 @@ public class DeptBatchConsumeController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = deptBatchConsumeService.selectAuditedConsumeSummaryList(deptBatchConsume);
-        return getDataTable(list);
+        TotalInfo totalInfo = deptBatchConsumeService.selectAuditedConsumeReportTotal(deptBatchConsume);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 }

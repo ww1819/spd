@@ -49,6 +49,9 @@ public class StkCTKVo {
     /** 供应商 */
     private String supplierName;
 
+    /** 有效供应商ID（出退库取明细 suppler_id，否则主表） */
+    private Long supplierId;
+
     /** 科室 */
     private String departmentName;
 
@@ -197,6 +200,14 @@ public class StkCTKVo {
 
     public void setSupplierName(String supplierName) {
         this.supplierName = supplierName;
+    }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
     }
 
     public String getDepartmentName() {

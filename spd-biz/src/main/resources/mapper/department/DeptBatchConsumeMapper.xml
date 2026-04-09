@@ -247,6 +247,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where consume_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
     </select>
 
+    <!-- 已审核消耗追溯报表：明细/汇总共用的筛选条件（需已 join a、e、m） -->
+    <sql id="auditedConsumeReportWhere">
+        a.del_flag != 1
+        and a.tenant_id = #{scopedTenantId}
+        and a.consume_bill_status = 2
+        <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
+        <if test="materialId != null"> and e.material_id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''">
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="specification != null and specification != ''"> and m.speci like concat('%', #{specification}, '%')</if>
+        <if test="model != null and model != ''"> and m.model like concat('%', #{model}, '%')</if>
+        <if test="patientId != null and patientId != ''"> and a.remark like concat('%', #{patientId}, '%')</if>
+        <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
+    </sql>
+
+    <!-- 当前筛选条件下明细行数量、金额合计（与分页列表条件一致，不按 group 聚合） -->
+    <select id="selectAuditedConsumeReportTotal" parameterType="DeptBatchConsume" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select COALESCE(SUM(e.qty), 0) as totalQty, COALESCE(SUM(e.amt), 0) as totalAmt
+        from t_hc_ks_xh a
+        inner join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and e.del_flag != 1
+        left join fd_material m on e.material_id = m.id
+        where <include refid="auditedConsumeReportWhere"/>
+    </select>
+
     <!-- 查询已审核的科室批量消耗明细列表（用于消耗追溯报表） -->
     <select id="selectAuditedConsumeDetailList" parameterType="DeptBatchConsume" resultType="java.util.Map">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
@@ -274,20 +301,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
-        where a.del_flag != 1 
-        and a.tenant_id = #{scopedTenantId}
-        and a.consume_bill_status = 2
-        <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
-        <if test="materialId != null"> and e.material_id = #{materialId}</if>
-        <if test="materialName != null and materialName != ''"> 
-            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))
-        </if>
-        <if test="specification != null and specification != ''"> and m.speci like concat('%', #{specification}, '%')</if>
-        <if test="model != null and model != ''"> and m.model like concat('%', #{model}, '%')</if>
-        <!-- hisChargeCode 字段暂不支持查询，fd_material 表中无此字段 -->
-        <if test="patientId != null and patientId != ''"> and a.remark like concat('%', #{patientId}, '%')</if>
-        <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
+        where <include refid="auditedConsumeReportWhere"/>
         order by a.consume_bill_date desc, a.consume_bill_no desc
     </select>
 
@@ -311,20 +325,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on e.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
-        where a.del_flag != 1 
-        and a.tenant_id = #{scopedTenantId}
-        and a.consume_bill_status = 2
-        <if test="departmentId != null"> and a.department_id = #{departmentId}</if>
-        <if test="materialId != null"> and e.material_id = #{materialId}</if>
-        <if test="materialName != null and materialName != ''"> 
-            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))
-        </if>
-        <if test="specification != null and specification != ''"> and m.speci like concat('%', #{specification}, '%')</if>
-        <if test="model != null and model != ''"> and m.model like concat('%', #{model}, '%')</if>
-        <!-- hisChargeCode 字段暂不支持查询，fd_material 表中无此字段 -->
-        <if test="patientId != null and patientId != ''"> and a.remark like concat('%', #{patientId}, '%')</if>
-        <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
+        where <include refid="auditedConsumeReportWhere"/>
         group by d.id, d.name, m.id, m.code, m.name, m.speci, m.model, u.unit_id, u.unit_name, wc.warehouse_category_id, wc.warehouse_category_name
         order by SUM(e.amt) desc
     </select>
