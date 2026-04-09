@@ -3,6 +3,7 @@ package com.spd.department.mapper;
 import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
 import org.apache.ibatis.annotations.Mapper;
@@ -39,6 +40,11 @@ public interface StkDepInventoryMapper
      * @return 科室库存集合
      */
     public List<StkDepInventory> selectStkDepInventoryList(StkDepInventory stkDepInventory);
+
+    /**
+     * 科室库存列表（当前筛选条件下全量数量、金额合计，用于分页条展示）
+     */
+    TotalInfo selectStkDepInventoryListTotal(StkDepInventory stkDepInventory);
 
     /**
      * 新增科室库存
@@ -104,4 +110,8 @@ public interface StkDepInventoryMapper
      * @return 进销存明细集合
      */
     public List<DepartmentInOutDetailVo> selectDepartmentInOutDetailList(StkDepInventory stkDepInventory);
+
+    TotalInfo selectInventorySummaryListTotal(StkDepInventory stkDepInventory);
+
+    TotalInfo selectDepartmentInOutDetailListTotal(StkDepInventory stkDepInventory);
 }

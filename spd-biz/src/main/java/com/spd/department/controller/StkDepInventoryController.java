@@ -1,6 +1,10 @@
 package com.spd.department.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
+
+import com.github.pagehelper.PageInfo;
+import com.spd.common.core.page.TotalInfo;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +49,26 @@ public class StkDepInventoryController extends BaseController
     {
         startPage();
         List<StkDepInventory> list = stkDepInventoryService.selectStkDepInventoryList(stkDepInventory);
-        return getDataTable(list);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (StkDepInventory row : list) {
+                if (row.getQty() != null) {
+                    subTotalQty = subTotalQty.add(row.getQty());
+                }
+                if (row.getAmt() != null) {
+                    subTotalAmt = subTotalAmt.add(row.getAmt());
+                }
+            }
+        }
+        TotalInfo totalInfo = stkDepInventoryService.selectStkDepInventoryListTotal(stkDepInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -113,7 +136,26 @@ public class StkDepInventoryController extends BaseController
     {
         startPage();
         List<InventorySummaryVo> list = stkDepInventoryService.selectInventorySummaryList(stkDepInventory);
-        return getDataTable(list);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (InventorySummaryVo row : list) {
+                if (row.getTotalQty() != null) {
+                    subTotalQty = subTotalQty.add(row.getTotalQty());
+                }
+                if (row.getTotalAmount() != null) {
+                    subTotalAmt = subTotalAmt.add(row.getTotalAmount());
+                }
+            }
+        }
+        TotalInfo totalInfo = stkDepInventoryService.selectInventorySummaryListTotal(stkDepInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -125,6 +167,25 @@ public class StkDepInventoryController extends BaseController
     {
         startPage();
         List<DepartmentInOutDetailVo> list = stkDepInventoryService.selectDepartmentInOutDetailList(stkDepInventory);
-        return getDataTable(list);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (DepartmentInOutDetailVo row : list) {
+                if (row.getQty() != null) {
+                    subTotalQty = subTotalQty.add(row.getQty());
+                }
+                if (row.getAmount() != null) {
+                    subTotalAmt = subTotalAmt.add(row.getAmount());
+                }
+            }
+        }
+        TotalInfo totalInfo = stkDepInventoryService.selectDepartmentInOutDetailListTotal(stkDepInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 }

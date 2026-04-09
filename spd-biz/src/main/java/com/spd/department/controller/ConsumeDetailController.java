@@ -2,6 +2,8 @@ package com.spd.department.controller;
 
 import java.util.List;
 import java.util.Map;
+
+import com.github.pagehelper.PageInfo;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.department.service.IConsumeDetailService;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 
 /**
  * 科室领用明细Controller
@@ -34,7 +37,14 @@ public class ConsumeDetailController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeDetailList(stkIoBill);
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
+        TotalInfo totalInfo = consumeDetailService.selectConsumeDetailListTotal(stkIoBill);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -46,7 +56,14 @@ public class ConsumeDetailController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeSummaryList(stkIoBill);
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
+        TotalInfo totalInfo = consumeDetailService.selectConsumeSummaryListTotal(stkIoBill);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -58,7 +75,14 @@ public class ConsumeDetailController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeRankingList(stkIoBill);
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
+        TotalInfo totalInfo = consumeDetailService.selectConsumeRankingListTotal(stkIoBill);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        return getDataTable(list, totalInfo, total);
     }
 
 

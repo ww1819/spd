@@ -175,6 +175,7 @@ public class StkIoRThBillController extends BaseController
         if (map.get("materialRegisterNo") != null) m.setRegisterNo(map.get("materialRegisterNo").toString());
         if (map.get("materialPackageSpeci") != null) m.setPackageSpeci(map.get("materialPackageSpeci").toString());
         if (map.get("materialIsWay") != null) m.setIsWay(map.get("materialIsWay").toString());
+        if (map.get("materialIsGz") != null) m.setIsGz(map.get("materialIsGz").toString());
         if (map.get("materialWarehouseCategoryName") != null) {
             FdWarehouseCategory wc = new FdWarehouseCategory();
             wc.setWarehouseCategoryName(map.get("materialWarehouseCategoryName").toString());
@@ -335,10 +336,32 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"), "").toString());
                 stkCTKVo.setDepartmentName(StringUtils.nvl(map.get("departmentName"), "").toString());
                 stkCTKVo.setFactoryName(StringUtils.nvl(map.get("factoryName"), "").toString());
+                stkCTKVo.setFinanceCategoryName(StringUtils.nvl(map.get("financeCategoryName"), "").toString());
                 if(map.get("supplierName") != null){
                     stkCTKVo.setSupplierName(map.get("supplierName").toString());
                 }
-                stkCTKVo.setBillType((Integer) map.get("billType"));
+                if (map.get("supplierId") != null) {
+                    Object sid = map.get("supplierId");
+                    if (sid instanceof Number) {
+                        stkCTKVo.setSupplierId(((Number) sid).longValue());
+                    } else {
+                        try {
+                            stkCTKVo.setSupplierId(Long.parseLong(sid.toString()));
+                        } catch (NumberFormatException ignored) { }
+                    }
+                }
+                Object bt = map.get("billType");
+                if (bt != null) {
+                    if (bt instanceof Integer) {
+                        stkCTKVo.setBillType((Integer) bt);
+                    } else if (bt instanceof Number) {
+                        stkCTKVo.setBillType(((Number) bt).intValue());
+                    } else {
+                        try {
+                            stkCTKVo.setBillType(Integer.parseInt(bt.toString()));
+                        } catch (NumberFormatException ignored) { }
+                    }
+                }
                 if(map.get("createTime") != null){
                     try {
                         Date createTime = formatter.parse(map.get("createTime").toString());
