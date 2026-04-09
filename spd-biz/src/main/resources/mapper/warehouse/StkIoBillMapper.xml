@@ -1087,6 +1087,78 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.audit_date desc, stk.id desc, b.id desc
     </select>
 
+    <!-- 领用明细：与列表条件一致（需已关联 stk、b、m） -->
+    <sql id="consumeDetailReportWhere">
+        stk.del_flag != 1
+          AND stk.tenant_id = #{scopedTenantId}
+          AND stk.bill_status = 2
+          AND stk.bill_type = 201
+        <if test="billNo != null and billNo != ''"> AND stk.bill_no LIKE CONCAT('%', #{billNo}, '%')</if>
+        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
+        <if test="batchNo != null and batchNo != ''"> AND b.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+    </sql>
+
+    <!-- 领用汇总：与列表条件一致（无出库单号、批号） -->
+    <sql id="consumeSummaryReportWhere">
+        stk.del_flag != 1
+          AND stk.tenant_id = #{scopedTenantId}
+          AND stk.bill_status = 2
+          AND stk.bill_type = 201
+        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
+        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+    </sql>
+
+    <!-- 领用排名：与列表条件一致 -->
+    <sql id="consumeRankingReportWhere">
+        stk.del_flag != 1
+          AND stk.tenant_id = #{scopedTenantId}
+          AND stk.bill_status = 2
+          AND stk.bill_type = 201
+        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+    </sql>
+
+    <!-- 领用明细：当前筛选下全部分录数量、金额合计 -->
+    <select id="selectConsumeDetailListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COALESCE(SUM(b.qty), 0) AS totalQty, COALESCE(SUM(b.amt), 0) AS totalAmt
+        FROM stk_io_bill stk
+        INNER JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
+        LEFT JOIN fd_material m ON b.material_id = m.id
+        WHERE <include refid="consumeDetailReportWhere"/>
+    </select>
+
+    <!-- 领用汇总：当前筛选下全部分录数量、金额合计（与按耗材分组前一致） -->
+    <select id="selectConsumeSummaryListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COALESCE(SUM(b.qty), 0) AS totalQty, COALESCE(SUM(b.amt), 0) AS totalAmt
+        FROM stk_io_bill stk
+        INNER JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
+        LEFT JOIN fd_material m ON b.material_id = m.id
+        WHERE <include refid="consumeSummaryReportWhere"/>
+    </select>
+
+    <!-- 领用排名：当前筛选下全部分录数量、金额合计 -->
+    <select id="selectConsumeRankingListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COALESCE(SUM(b.qty), 0) AS totalQty, COALESCE(SUM(b.amt), 0) AS totalAmt
+        FROM stk_io_bill stk
+        INNER JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
+        LEFT JOIN fd_material m ON b.material_id = m.id
+        WHERE <include refid="consumeRankingReportWhere"/>
+    </select>
+
     <!-- 查询领用明细列表 -->
     <select id="selectConsumeDetailList" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
@@ -1109,50 +1181,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN sys_user au ON stk.audit_by = au.user_id
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
-        WHERE stk.del_flag != 1 
-          AND stk.tenant_id = #{scopedTenantId}
-          AND stk.bill_status = 2 
-          AND stk.bill_type = 201
-        <if test="billNo != null and billNo != ''"> AND stk.bill_no LIKE CONCAT('%', #{billNo}, '%')</if>
-        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
-        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
-        <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
-        <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
-        <if test="batchNo != null and batchNo != ''"> AND b.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
-        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+        WHERE <include refid="consumeDetailReportWhere"/>
         ORDER BY stk.bill_date DESC, stk.id DESC, b.id DESC
     </select>
 
-    <!-- 查询领用汇总列表（按耗材汇总） -->
+    <!-- 查询领用汇总列表（按科室+耗材+仓库等汇总） -->
     <select id="selectConsumeSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         SELECT 
             m.id materialId, m.code materialCode, m.name materialName, 
+            d.name departmentName,
             m.speci materialSpeci, m.model materialModel,
             u.unit_name unitName, AVG(b.unit_price) unitPrice,
             SUM(b.qty) totalQty, SUM(b.amt) totalAmt,
-            NULL as isBilling, m.register_no registerNo, m.period_date periodDate,
+            MAX(m.is_billing) as isBilling, m.register_no registerNo, m.period_date periodDate,
             w.name warehouseName, f.factory_name factoryName, s.name supplierName
         FROM stk_io_bill stk
         LEFT JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
         LEFT JOIN fd_material m ON b.material_id = m.id
+        LEFT JOIN fd_department d ON stk.department_id = d.id
         LEFT JOIN fd_warehouse w ON stk.warehouse_id = w.id
         LEFT JOIN fd_unit u ON m.unit_id = u.unit_id
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
-        WHERE stk.del_flag != 1 
-          AND stk.tenant_id = #{scopedTenantId}
-          AND stk.bill_status = 2 
-          AND stk.bill_type = 201
-        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
-        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
-        <if test="materialId != null and materialId != ''"> AND m.id = #{materialId}</if>
-        <if test="materialName != null and materialName != ''"> AND (m.name LIKE CONCAT('%', #{materialName}, '%') OR m.code LIKE CONCAT('%', #{materialName}, '%'))</if>
-        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+        WHERE <include refid="consumeSummaryReportWhere"/>
         GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, 
-                 m.register_no, m.period_date, w.name, f.factory_name, s.name
+                 m.register_no, m.period_date, w.name, f.factory_name, s.name,
+                 d.id, d.name
         ORDER BY totalAmt DESC
     </select>
 
@@ -1181,14 +1236,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN fd_unit u ON m.unit_id = u.unit_id
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
-        WHERE stk.del_flag != 1 
-          AND stk.tenant_id = #{scopedTenantId}
-          AND stk.bill_status = 2 
-          AND stk.bill_type = 201
-        <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
-        <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
-        <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
+        WHERE <include refid="consumeRankingReportWhere"/>
         GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, f.factory_name, s.name
         ORDER BY totalAmt DESC
     </select>

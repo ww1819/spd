@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -219,6 +220,12 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     public List<Map<String, Object>> selectAuditedConsumeDetailList(DeptBatchConsume deptBatchConsume)
     {
         return deptBatchConsumeMapper.selectAuditedConsumeDetailList(deptBatchConsume);
+    }
+
+    @Override
+    public TotalInfo selectAuditedConsumeReportTotal(DeptBatchConsume deptBatchConsume)
+    {
+        return deptBatchConsumeMapper.selectAuditedConsumeReportTotal(deptBatchConsume);
     }
 
     /**

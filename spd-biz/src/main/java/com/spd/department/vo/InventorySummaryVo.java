@@ -1,6 +1,9 @@
 package com.spd.department.vo;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * 库存汇总VO
@@ -42,6 +45,22 @@ public class InventorySummaryVo {
     
     /** 批次数量 */
     private Integer batchCount;
+
+    /** 生产厂家 */
+    private String factoryName;
+
+    /** 供应商 */
+    private String supplierName;
+
+    /** 计费（耗材档案 is_billing） */
+    private String isBilling;
+
+    /** 注册证号 */
+    private String registerNo;
+
+    /** 注册证有效期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date periodDate;
 
     public String getMaterialCode() {
         return materialCode;
@@ -129,5 +148,45 @@ public class InventorySummaryVo {
 
     public void setBatchCount(Integer batchCount) {
         this.batchCount = batchCount;
+    }
+
+    public String getFactoryName() {
+        return factoryName;
+    }
+
+    public void setFactoryName(String factoryName) {
+        this.factoryName = factoryName;
+    }
+
+    public String getSupplierName() {
+        return supplierName;
+    }
+
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
+    }
+
+    public String getIsBilling() {
+        return isBilling;
+    }
+
+    public void setIsBilling(String isBilling) {
+        this.isBilling = isBilling;
+    }
+
+    public String getRegisterNo() {
+        return registerNo;
+    }
+
+    public void setRegisterNo(String registerNo) {
+        this.registerNo = registerNo;
+    }
+
+    public Date getPeriodDate() {
+        return periodDate;
+    }
+
+    public void setPeriodDate(Date periodDate) {
+        this.periodDate = periodDate;
     }
 }

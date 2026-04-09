@@ -82,4 +82,8 @@ public interface IStkDepInventoryService
      * @return 进销存明细集合
      */
     public List<DepartmentInOutDetailVo> selectDepartmentInOutDetailList(StkDepInventory stkDepInventory);
+
+    TotalInfo selectInventorySummaryListTotal(StkDepInventory stkDepInventory);
+
+    TotalInfo selectDepartmentInOutDetailListTotal(StkDepInventory stkDepInventory);
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
+
+import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
@@ -256,6 +258,11 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectConsumeDetailList(StkIoBill stkIoBill);
 
     /**
+     * 领用明细：当前筛选下数量、金额合计
+     */
+    TotalInfo selectConsumeDetailListTotal(StkIoBill stkIoBill);
+
+    /**
      * 查询领用汇总列表（按耗材汇总）
      * @param stkIoBill 查询条件
      * @return 领用汇总列表
@@ -263,11 +270,21 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectConsumeSummaryList(StkIoBill stkIoBill);
 
     /**
+     * 领用汇总：当前筛选下数量、金额合计
+     */
+    TotalInfo selectConsumeSummaryListTotal(StkIoBill stkIoBill);
+
+    /**
      * 查询领用排名列表（按金额降序）
      * @param stkIoBill 查询条件
      * @return 领用排名列表
      */
     List<Map<String, Object>> selectConsumeRankingList(StkIoBill stkIoBill);
+
+    /**
+     * 领用排名：当前筛选下数量、金额合计
+     */
+    TotalInfo selectConsumeRankingListTotal(StkIoBill stkIoBill);
 
     /**
      * 查询仓库进销存

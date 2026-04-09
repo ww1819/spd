@@ -173,4 +173,19 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     {
         return stkDepInventoryMapper.selectDepartmentInOutDetailList(stkDepInventory);
     }
+
+    @Override
+    public TotalInfo selectInventorySummaryListTotal(StkDepInventory stkDepInventory)
+    {
+        if (stkDepInventory != null && StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkDepInventoryMapper.selectInventorySummaryListTotal(stkDepInventory);
+    }
+
+    @Override
+    public TotalInfo selectDepartmentInOutDetailListTotal(StkDepInventory stkDepInventory)
+    {
+        return stkDepInventoryMapper.selectDepartmentInOutDetailListTotal(stkDepInventory);
+    }
 }

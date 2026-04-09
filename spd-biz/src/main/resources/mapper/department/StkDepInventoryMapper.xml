@@ -329,6 +329,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (del_flag = 0 or del_flag is null)
     </select>
 
+    <!-- 库存汇总：与列表、合计子查询共用的筛选条件（需已 join fd_material m） -->
+    <sql id="inventorySummaryWhere">
+        stk.qty &gt; 0
+          and (stk.del_flag = 0 or stk.del_flag is null)
+        <if test="materialId != null"> and stk.material_id = #{materialId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
+        <if test="supplierId != null and supplierId != ''"> and m.supplier_id = #{supplierId}</if>
+        <!-- 业务日期：按科室库存行入库日期 warehouse_date 筛选（与明细列表排序字段一致） -->
+        <if test="beginDate != null"> and stk.warehouse_date is not null and DATE(stk.warehouse_date) &gt;= DATE(#{beginDate})</if>
+        <if test="endDate != null"> and stk.warehouse_date is not null and DATE(stk.warehouse_date) &lt;= DATE(#{endDate})</if>
+    </sql>
+
     <!-- 库存汇总查询 -->
     <select id="selectInventorySummaryList" parameterType="StkDepInventory" resultType="com.spd.department.vo.InventorySummaryVo">
         select 
@@ -336,21 +349,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.name as materialName,
             m.speci as specification,
             m.model,
-            '' as unit,
+            MAX(u.unit_name) as unit,
             d.name as departmentName,
             '' as warehouseName,
             SUM(stk.qty) as totalQty,
             AVG(stk.unit_price) as avgUnitPrice,
             SUM(stk.amt) as totalAmount,
-            COUNT(DISTINCT stk.batch_no) as batchCount
+            COUNT(DISTINCT stk.batch_no) as batchCount,
+            MAX(ff.factory_name) as factoryName,
+            MAX(msup.name) as supplierName,
+            MAX(m.is_billing) as isBilling,
+            MAX(m.register_no) as registerNo,
+            MAX(m.period_date) as periodDate
         from stk_dep_inventory stk
         left join fd_department d on stk.department_id = d.id
         left join fd_material m on stk.material_id = m.id
-        where stk.qty &gt; 0
-          and (stk.del_flag = 0 or stk.del_flag is null)
-        <if test="materialId != null"> and stk.material_id = #{materialId}</if>
-        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
-        <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory ff on ff.factory_id = m.factory_id
+        left join fd_supplier msup on msup.id = m.supplier_id
+        where <include refid="inventorySummaryWhere"/>
         group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
         order by m.code, d.name
     </select>
@@ -392,6 +409,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null"> and bill.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and bill.bill_date &lt;= #{endDate}</if>
         order by bill.bill_date desc, bill.bill_no
+    </select>
+
+    <!-- 库存汇总：当前筛选条件下全表数量、金额合计（与分页列表条件一致） -->
+    <select id="selectInventorySummaryListTotal" parameterType="StkDepInventory" resultType="com.spd.common.core.page.TotalInfo">
+        select COALESCE(SUM(x.lineQty), 0) as totalQty, COALESCE(SUM(x.lineAmt), 0) as totalAmt
+        from (
+            select SUM(stk.qty) as lineQty, SUM(stk.amt) as lineAmt
+            from stk_dep_inventory stk
+            left join fd_department d on stk.department_id = d.id
+            left join fd_material m on stk.material_id = m.id
+            where <include refid="inventorySummaryWhere"/>
+            group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
+        ) x
+    </select>
+
+    <!-- 科室进销存明细：当前筛选条件下全表数量、金额合计 -->
+    <select id="selectDepartmentInOutDetailListTotal" parameterType="StkDepInventory" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select COALESCE(SUM(entry.qty), 0) as totalQty, COALESCE(SUM(entry.amt), 0) as totalAmt
+        from stk_io_bill bill
+        left join stk_io_bill_entry entry on bill.id = entry.paren_id
+        left join fd_department d on bill.department_id = d.id
+        left join fd_material m on entry.material_id = m.id
+        left join fd_warehouse w on bill.warehouse_id = w.id
+        where bill.del_flag = 0
+          and bill.tenant_id = #{scopedTenantId}
+          and (entry.del_flag = 0 or entry.del_flag is null)
+        <if test="materialId != null"> and entry.material_id = #{materialId}</if>
+        <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
+        <if test="warehouseId != null"> and bill.warehouse_id = #{warehouseId}</if>
+        <if test="billType != null"> and bill.bill_type = #{billType}</if>
+        <if test="billStatus != null"> and bill.bill_status = #{billStatus}</if>
+        <if test="beginDate != null"> and bill.bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and bill.bill_date &lt;= #{endDate}</if>
     </select>
 
 </mapper>

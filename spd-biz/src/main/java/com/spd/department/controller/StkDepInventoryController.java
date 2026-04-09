@@ -136,7 +136,26 @@ public class StkDepInventoryController extends BaseController
     {
         startPage();
         List<InventorySummaryVo> list = stkDepInventoryService.selectInventorySummaryList(stkDepInventory);
-        return getDataTable(list);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (InventorySummaryVo row : list) {
+                if (row.getTotalQty() != null) {
+                    subTotalQty = subTotalQty.add(row.getTotalQty());
+                }
+                if (row.getTotalAmount() != null) {
+                    subTotalAmt = subTotalAmt.add(row.getTotalAmount());
+                }
+            }
+        }
+        TotalInfo totalInfo = stkDepInventoryService.selectInventorySummaryListTotal(stkDepInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
@@ -148,6 +167,25 @@ public class StkDepInventoryController extends BaseController
     {
         startPage();
         List<DepartmentInOutDetailVo> list = stkDepInventoryService.selectDepartmentInOutDetailList(stkDepInventory);
-        return getDataTable(list);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (DepartmentInOutDetailVo row : list) {
+                if (row.getQty() != null) {
+                    subTotalQty = subTotalQty.add(row.getQty());
+                }
+                if (row.getAmount() != null) {
+                    subTotalAmt = subTotalAmt.add(row.getAmount());
+                }
+            }
+        }
+        TotalInfo totalInfo = stkDepInventoryService.selectDepartmentInOutDetailListTotal(stkDepInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 }
