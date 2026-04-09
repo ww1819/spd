@@ -35,6 +35,7 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
+import com.spd.system.domain.SysPost;
 import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISbWorkGroupService;
@@ -353,7 +354,10 @@ public class SysUserController extends BaseController
         AjaxResult ajax = AjaxResult.success();
         List<SysRole> roles = roleService.selectRoleAll();
         ajax.put("roles", SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
-        ajax.put("posts", postService.selectPostAll());
+        // 全部岗位下拉选项（租户内见本租户岗位）；不是「当前 userId 已关联的岗位」。用户已关联的 post_id 列表见下方 postIds（sys_user_post）
+        List<SysPost> postSelectList = postService.selectPostAll();
+        ajax.put("posts", postSelectList);
+        ajax.put("postOptions", postSelectList);
         // 科室/仓库：客户名下；非超级管理员仅见本人权限（设备 sb_user_permission_* 与耗材 sys_user_* 并集，见 TenantScopeService）
         String customerId = SecurityUtils.resolveEffectiveTenantId(null);
         List<com.spd.foundation.domain.FdDepartment> allDepts = fdDepartmentService.selectdepartmenAll();
