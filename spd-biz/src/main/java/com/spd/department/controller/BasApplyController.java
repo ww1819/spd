@@ -60,6 +60,7 @@ public class BasApplyController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(BasApply basApply)
     {
+        basApplyService.applyDepartmentScopeToQuery(basApply);
         startPage();
         List<BasApply> list = basApplyService.selectBasApplyList(basApply);
         return getDataTable(list);
@@ -74,6 +75,7 @@ public class BasApplyController extends BaseController
     public void export(HttpServletResponse response, BasApply basApply, @RequestParam(required = false) String exportBillIds)
         throws IOException
     {
+        basApplyService.applyDepartmentScopeToQuery(basApply);
         List<Long> billIds = parseBillIds(exportBillIds);
         List<BasApply> bills = new ArrayList<>();
 

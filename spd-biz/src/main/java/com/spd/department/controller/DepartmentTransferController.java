@@ -45,6 +45,7 @@ public class DepartmentTransferController extends BaseController
     {
         // 设置单据类型为转科申请单
         basApply.setBillType(3);
+        basApplyService.applyDepartmentScopeToQuery(basApply);
         startPage();
         List<BasApply> list = basApplyService.selectBasApplyList(basApply);
         return getDataTable(list);
@@ -59,6 +60,7 @@ public class DepartmentTransferController extends BaseController
     public void export(HttpServletResponse response, BasApply basApply)
     {
         basApply.setBillType(3);
+        basApplyService.applyDepartmentScopeToQuery(basApply);
         List<BasApply> list = basApplyService.selectBasApplyList(basApply);
         ExcelUtil<BasApply> util = new ExcelUtil<BasApply>(BasApply.class);
         util.exportExcel(response, list, "转科申请数据");

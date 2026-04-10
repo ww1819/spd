@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+import com.spd.system.service.ITenantScopeService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -33,6 +34,42 @@ public class BasApplyServiceImpl implements IBasApplyService
     private BasApplyMapper basApplyMapper;
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    /** 非租户管理员：仅能访问已授权科室的申领/转科等 bas_apply 单据 */
+    private void assertDepartmentInUserScope(Long departmentId) {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        if (deptIds == null) {
+            return;
+        }
+        if (departmentId == null || deptIds.isEmpty() || !deptIds.contains(departmentId)) {
+            throw new ServiceException("无权操作该科室的申领单");
+        }
+    }
+
+    private void assertBasApplyDepartmentInUserScope(BasApply basApply) {
+        if (basApply == null) {
+            return;
+        }
+        assertDepartmentInUserScope(basApply.getDepartmentId());
+    }
+
+    @Override
+    public void applyDepartmentScopeToQuery(BasApply basApply) {
+        if (basApply == null) {
+            return;
+        }
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        if (deptIds == null) {
+            return;
+        }
+        basApply.getParams().put("deptIds", deptIds);
+    }
 
     /**
      * 查询科室申领
@@ -48,6 +85,7 @@ public class BasApplyServiceImpl implements IBasApplyService
             return null;
         }
         SecurityUtils.ensureTenantAccess(basApply.getTenantId());
+        assertBasApplyDepartmentInUserScope(basApply);
         List<BasApplyEntry> basApplyEntryList = basApply.getBasApplyEntryList();
         if (basApplyEntryList != null) {
             for (BasApplyEntry basApplyEntry : basApplyEntryList) {
@@ -101,6 +139,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply.getDepartmentId() == null) {
             throw new ServiceException("科室不能为空，请先选择科室");
         }
+        assertDepartmentInUserScope(basApply.getDepartmentId());
         validateEntryQty(basApply.getBasApplyEntryList());
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
@@ -149,6 +188,12 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply.getDepartmentId() == null) {
             throw new ServiceException("科室不能为空，请先选择科室");
         }
+        BasApply existing = basApplyMapper.selectBasApplyById(basApply.getId());
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            assertBasApplyDepartmentInUserScope(existing);
+        }
+        assertDepartmentInUserScope(basApply.getDepartmentId());
         validateEntryQty(basApply.getBasApplyEntryList());
         basApply.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
@@ -174,6 +219,7 @@ public class BasApplyServiceImpl implements IBasApplyService
             BasApply existing = basApplyMapper.selectBasApplyById(id);
             if (existing != null) {
                 SecurityUtils.ensureTenantAccess(existing.getTenantId());
+                assertBasApplyDepartmentInUserScope(existing);
             }
         }
         String deleteBy = SecurityUtils.getUserIdStr();
@@ -194,6 +240,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         BasApply existing = basApplyMapper.selectBasApplyById(id);
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            assertBasApplyDepartmentInUserScope(existing);
         }
         String deleteBy = SecurityUtils.getUserIdStr();
         basApplyMapper.deleteBasApplyEntryByParenId(id, deleteBy);
@@ -211,6 +258,8 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply == null) {
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(basApply.getTenantId());
+        assertBasApplyDepartmentInUserScope(basApply);
         if (basApply.getApplyBillStatus() == null || basApply.getApplyBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申领可审核，当前状态：" + basApply.getApplyBillStatus());
         }
@@ -235,6 +284,8 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply == null) {
             throw new ServiceException(String.format("科室申领ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(basApply.getTenantId());
+        assertBasApplyDepartmentInUserScope(basApply);
         if (basApply.getApplyBillStatus() == null || basApply.getApplyBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申领可驳回，当前状态：" + basApply.getApplyBillStatus());
         }

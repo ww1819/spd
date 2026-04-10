@@ -140,6 +140,12 @@ public class StkInventory extends BaseEntity
     @Excel(name = "高值耗材辅条码")
     private String subBarcode;
 
+    /** 制单人昵称（关联入库单制单人 sys_user.nick_name） */
+    private String createrName;
+
+    /** 审核人昵称（关联入库单审核人 sys_user.nick_name） */
+    private String auditPersonName;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -451,4 +457,20 @@ public class StkInventory extends BaseEntity
     public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
     public String getSubBarcode() { return subBarcode; }
     public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+
+    public String getCreaterName() {
+        return createrName;
+    }
+
+    public void setCreaterName(String createrName) {
+        this.createrName = createrName;
+    }
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
+    }
 }

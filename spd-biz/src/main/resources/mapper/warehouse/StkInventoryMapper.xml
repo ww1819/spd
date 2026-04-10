@@ -34,6 +34,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="settlementType"    column="settlement_type"    />
         <result property="mainBarcode"    column="main_barcode"    />
         <result property="subBarcode"    column="sub_barcode"    />
+        <result property="createTime" column="rk_create_time" />
+        <result property="auditDate" column="rk_audit_date" />
+        <result property="createrName" column="rk_creater_nick" />
+        <result property="auditPersonName" column="rk_audit_nick" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -114,7 +118,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				ms.id ms_id, ms.code ms_code, ms.name ms_name,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				wc.warehouse_category_id wc_id, wc.warehouse_category_name wc_name,
-				fc.finance_category_id fc_id, fc.finance_category_name fc_name
+				fc.finance_category_id fc_id, fc.finance_category_name fc_name,
+				rk.create_time rk_create_time,
+				rk.audit_date rk_audit_date,
+				cu.nick_name rk_creater_nick,
+				au.nick_name rk_audit_nick
         from stk_inventory stk
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_supplier s on stk.supplier_id = s.id
@@ -124,6 +132,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        left join stk_io_bill rk on rk.bill_no = stk.receipt_order_no
+            and rk.bill_type = 101
+            and (rk.del_flag = 0 or rk.del_flag is null)
+            and rk.tenant_id = stk.tenant_id
+        left join sys_user cu on rk.create_by = cu.user_id
+        left join sys_user au on rk.audit_by = au.user_id
     </sql>
 
     <sql id="selectStkInventoryTotalVo">

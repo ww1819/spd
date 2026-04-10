@@ -28,6 +28,11 @@ public interface IBasApplyService
     public List<BasApply> selectBasApplyList(BasApply basApply);
 
     /**
+     * 按当前用户科室数据范围写入查询条件（非租户管理员须限制；须在 PageHelper.startPage 之前调用）。
+     */
+    void applyDepartmentScopeToQuery(BasApply basApply);
+
+    /**
      * 新增科室申领
      * 
      * @param basApply 科室申领

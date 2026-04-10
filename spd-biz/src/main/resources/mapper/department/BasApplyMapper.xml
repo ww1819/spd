@@ -122,6 +122,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
             <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
+            <if test="params != null and params.deptIds != null">
+                <choose>
+                    <when test="params.deptIds.size() > 0">
+                        and a.department_id in
+                        <foreach collection="params.deptIds" item="did" open="(" separator="," close=")">
+                            #{did}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        and 1 = 0
+                    </otherwise>
+                </choose>
+            </if>
             and a.tenant_id = #{scopedTenantId}
             and (a.del_flag = 0 or a.del_flag is null)
         </where>
