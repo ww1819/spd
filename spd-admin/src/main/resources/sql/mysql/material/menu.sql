@@ -896,6 +896,137 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+-- ---------- 3.6) 财务管理下：结算审核（父菜单 menu_id=1548；前端 v-hasPermi、审核接口 settlement:audit:audit）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3186, '上传结算单', 1548, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:audit:upload', '#',
+  'admin', '2026-04-10 00:00:00', '1', '2026-04-10 00:00:00', '结算审核页',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1548 AND perms='settlement:audit:upload')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3186)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3187, '发票补录', 1548, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:audit:invoice', '#',
+  'admin', '2026-04-10 00:00:00', '1', '2026-04-10 00:00:00', '结算审核页',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1548 AND perms='settlement:audit:invoice')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3187)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3188, '结算审核修改', 1548, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:audit:edit', '#',
+  'admin', '2026-04-10 00:00:00', '1', '2026-04-10 00:00:00', '结算审核页',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1548 AND perms='settlement:audit:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3188)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3189, '结算审核', 1548, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:audit:audit', '#',
+  'admin', '2026-04-10 00:00:00', '1', '2026-04-10 00:00:00', '与 SettlementController.audit 一致',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1548 AND perms='settlement:audit:audit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3189)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3190, '结算审核删除', 1548, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'settlement:audit:remove', '#',
+  'admin', '2026-04-10 00:00:00', '1', '2026-04-10 00:00:00', '结算审核页删除',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=1548 AND perms='settlement:audit:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3190)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
 -- ---------- 4) 科室维护（与后端 foundation/depart 一致；含导入，默认对客户开放）----------
 SET @depart_menu_id := (
   SELECT menu_id FROM sys_menu WHERE perms = 'foundation:depart:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
