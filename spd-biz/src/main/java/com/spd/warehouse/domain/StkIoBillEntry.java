@@ -103,7 +103,7 @@ public class StkIoBillEntry extends BaseEntity
     /** 查询参数：结算类型 */
     private String settlementType;
 
-    /** 科室库存明细id（反写） */
+    /** 科室退库：科室库存主键 stk_dep_inventory.id；同批次多行时必须填。其它单据含义见各业务实现。 */
     private Long kcNo;
 
     /** 高值耗材主条码 */

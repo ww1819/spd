@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -312,22 +313,48 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         stkInventoryMapper.updateStkInventory(inventory);
                     }
 
-                }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库）
-                    String batchNo = entry.getBatchNo();//退库批次号
+                }else if(billType == 401){//退库（优先按明细 kc_no=科室库存 id；否则按批次号）
                     BigDecimal qty = entry.getQty();//退库数量
+                    if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new ServiceException("退库数量必须大于0");
+                    }
 
                     Long returnWarehouseId = entry.getWarehouseId() != null ? entry.getWarehouseId() : stkIoBill.getWarehouseId();
                     if (returnWarehouseId == null) {
                         throw new ServiceException("退库目标仓库ID不能为空");
                     }
 
-                    // 限定退库目标仓库：仅允许退向科室库存明细中记录的 warehouse_id
-                    StkDepInventory stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo, returnWarehouseId);
-                    if(stkDepInventory == null){
-                        throw new ServiceException(String.format("退库-批次号：%s，未收货确认或不存在，不能退库!", batchNo));
-                    }
-                    if(stkDepInventory.getReceiptConfirmStatus() == null || stkDepInventory.getReceiptConfirmStatus() != 1){
-                        throw new ServiceException(String.format("退库-批次号：%s，科室库存未收货确认，不能退库!", batchNo));
+                    StkDepInventory stkDepInventory;
+                    String batchNo = entry.getBatchNo();
+                    if (entry.getKcNo() != null) {
+                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryById(entry.getKcNo());
+                        if (stkDepInventory == null) {
+                            throw new ServiceException(String.format("退库-科室库存不存在或无权访问，id=%s", entry.getKcNo()));
+                        }
+                        if (!returnWarehouseId.equals(stkDepInventory.getWarehouseId())) {
+                            throw new ServiceException(String.format("退库-科室库存id：%s 与单据仓库不一致", entry.getKcNo()));
+                        }
+                        if (stkDepInventory.getReceiptConfirmStatus() == null || stkDepInventory.getReceiptConfirmStatus() != 1) {
+                            throw new ServiceException(String.format("退库-科室库存id：%s 未收货确认，不能退库", entry.getKcNo()));
+                        }
+                        if (StringUtils.isNotEmpty(batchNo) && !batchNo.equals(stkDepInventory.getBatchNo())) {
+                            throw new ServiceException("退库明细批次号与科室库存不一致，请刷新后重试");
+                        }
+                        if (StringUtils.isEmpty(batchNo)) {
+                            batchNo = stkDepInventory.getBatchNo();
+                            entry.setBatchNo(batchNo);
+                        }
+                    } else {
+                        if (StringUtils.isEmpty(batchNo)) {
+                            throw new ServiceException("退库批次号不能为空（或请指定科室库存id）");
+                        }
+                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo, returnWarehouseId);
+                        if(stkDepInventory == null){
+                            throw new ServiceException(String.format("退库-批次号：%s，未收货确认或不存在，不能退库!", batchNo));
+                        }
+                        if(stkDepInventory.getReceiptConfirmStatus() == null || stkDepInventory.getReceiptConfirmStatus() != 1){
+                            throw new ServiceException(String.format("退库-批次号：%s，科室库存未收货确认，不能退库!", batchNo));
+                        }
                     }
 
                     BigDecimal stkDepInventoryQty = stkDepInventory.getQty();//科室库存实际数量
@@ -653,12 +680,12 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         Long id = stkIoBill.getId();
         if (StringUtils.isNotNull(stkIoBillEntryList))
         {
+            Long whId = stkIoBill.getWarehouseId();
+            validateTKStkIoBillEntries(whId, stkIoBillEntryList);
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
-                // 将表头仓库ID反写到明细，保证退库按仓库锁定
-                stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
-                validateTKInventory(stkIoBillEntry.getBatchNo(),stkIoBillEntryList);
+                stkIoBillEntry.setWarehouseId(whId);
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
@@ -671,30 +698,55 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         }
     }
 
-    /**
-     * 校验科室商品库存
-     * @param stkIoBillEntryList
-     */
-    private void validateTKInventory(String oldBatchNo,List<StkIoBillEntry> stkIoBillEntryList){
-        for(StkIoBillEntry entry : stkIoBillEntryList){
-            String batchNo = entry.getBatchNo();
-            BigDecimal qty = entry.getQty();//退库数量
-
-            if(!oldBatchNo.equals(batchNo)){
+    /** 与 StkIoBillServiceImpl 退库校验一致：有 kc_no 按科室库存行汇总，无则按批次汇总 */
+    private void validateTKStkIoBillEntries(Long warehouseId, List<StkIoBillEntry> stkIoBillEntryList) {
+        if (stkIoBillEntryList == null || warehouseId == null) {
+            return;
+        }
+        Map<Long, BigDecimal> qtyByDepInvId = new HashMap<>();
+        for (StkIoBillEntry e : stkIoBillEntryList) {
+            if (e == null || e.getQty() == null) {
                 continue;
             }
-
-            //当前批次实际数量
-            Long warehouseId = entry.getWarehouseId();
-            if (warehouseId == null) {
-                throw new ServiceException("warehouseId不能为空，无法按仓库校验科室库存");
+            if (e.getKcNo() != null) {
+                qtyByDepInvId.merge(e.getKcNo(), e.getQty(), BigDecimal::add);
             }
-            BigDecimal inventoryQty = stkDepInventoryMapper.selectTKStkInvntoryByBatchNo(batchNo, warehouseId);
-
-            if(qty.compareTo(inventoryQty) > 0){
-                throw new ServiceException(String.format("科室库存不足！退库数量：%s，实际库存：%s", qty,inventoryQty));
+        }
+        for (Map.Entry<Long, BigDecimal> en : qtyByDepInvId.entrySet()) {
+            StkDepInventory di = stkDepInventoryMapper.selectStkDepInventoryById(en.getKey());
+            if (di == null) {
+                throw new ServiceException(String.format("科室库存不存在或无权访问，id=%s", en.getKey()));
             }
-
+            if (!warehouseId.equals(di.getWarehouseId())) {
+                throw new ServiceException(String.format("科室库存id：%s 与退库仓库不一致", en.getKey()));
+            }
+            if (di.getReceiptConfirmStatus() == null || di.getReceiptConfirmStatus() != 1) {
+                throw new ServiceException(String.format("科室库存id：%s 未收货确认，不能退库", en.getKey()));
+            }
+            BigDecimal invQty = di.getQty() != null ? di.getQty() : BigDecimal.ZERO;
+            if (en.getValue().compareTo(invQty) > 0) {
+                throw new ServiceException(String.format("科室库存不足！申请退库数量：%s，科室库存：%s（库存id=%s）", en.getValue(), invQty, en.getKey()));
+            }
+        }
+        Map<String, BigDecimal> qtyByBatch = new HashMap<>();
+        for (StkIoBillEntry e : stkIoBillEntryList) {
+            if (e == null || e.getQty() == null || e.getKcNo() != null) {
+                continue;
+            }
+            String bn = e.getBatchNo();
+            if (StringUtils.isEmpty(bn)) {
+                throw new ServiceException("退库明细缺少科室库存id时，批次号不能为空");
+            }
+            qtyByBatch.merge(bn.trim(), e.getQty(), BigDecimal::add);
+        }
+        for (Map.Entry<String, BigDecimal> en : qtyByBatch.entrySet()) {
+            BigDecimal inventoryQty = stkDepInventoryMapper.selectTKStkInvntoryByBatchNo(en.getKey(), warehouseId);
+            if (inventoryQty == null) {
+                inventoryQty = BigDecimal.ZERO;
+            }
+            if (en.getValue().compareTo(inventoryQty) > 0) {
+                throw new ServiceException(String.format("科室库存不足！退库数量：%s，批次「%s」实际库存：%s", en.getValue(), en.getKey(), inventoryQty));
+            }
         }
     }
 
