@@ -86,7 +86,7 @@ public class SettlementController extends BaseController
     /**
      * 修改结算
      */
-    @PreAuthorize("@ss.hasPermi('settlement:apply:edit')")
+    @PreAuthorize("@ss.hasPermi('settlement:apply:edit') || @ss.hasPermi('settlement:audit:edit')")
     @Log(title = "结算", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody StkIoBill stkIoBill)
@@ -111,7 +111,7 @@ public class SettlementController extends BaseController
     /**
      * 删除结算
      */
-    @PreAuthorize("@ss.hasPermi('settlement:apply:remove')")
+    @PreAuthorize("@ss.hasPermi('settlement:apply:remove') || @ss.hasPermi('settlement:audit:remove')")
     @Log(title = "结算", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long ids)
