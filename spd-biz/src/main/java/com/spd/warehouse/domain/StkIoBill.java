@@ -96,6 +96,9 @@ public class StkIoBill extends BaseEntity
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<HcDocBillRef> docRefList;
 
+    /** 作为源单被下游引用状态：NONE 未引用 / PARTIAL 部分引用 / FULL 全部引用（列表查询计算，不落库） */
+    private String docRefStatus;
+
     /** 供应商对象 */
     private FdSupplier supplier;
 
@@ -766,5 +769,13 @@ public class StkIoBill extends BaseEntity
 
     public void setDocRefList(List<HcDocBillRef> docRefList) {
         this.docRefList = docRefList;
+    }
+
+    public String getDocRefStatus() {
+        return docRefStatus;
+    }
+
+    public void setDocRefStatus(String docRefStatus) {
+        this.docRefStatus = docRefStatus;
     }
 }

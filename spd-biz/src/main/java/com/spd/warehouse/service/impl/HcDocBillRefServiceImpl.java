@@ -1,7 +1,9 @@
 package com.spd.warehouse.service.impl;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -72,10 +74,9 @@ public class HcDocBillRefServiceImpl implements IHcDocBillRefService {
             row.setTgtBillNo(tgtBillNo);
             row.setTgtEntryId(String.valueOf(en.getId()));
             row.setLineNo(r.getLineNo() != null ? r.getLineNo() : Integer.valueOf(i + 1));
-            BigDecimal refQty = r.getRefQty() != null ? r.getRefQty() : en.getQty();
-            row.setRefQty(refQty);
-            BigDecimal refAmt = r.getRefAmt() != null ? r.getRefAmt() : en.getAmt();
-            row.setRefAmt(refAmt);
+            // 数量/金额以目标单保存时的明细为准，避免前端 docRefList 快照与用户改数量不一致
+            row.setRefQty(en.getQty());
+            row.setRefAmt(en.getAmt());
             row.setLockWarehouseId(r.getLockWarehouseId());
             row.setLockSupplierId(r.getLockSupplierId());
             row.setLockDepartmentId(r.getLockDepartmentId());
@@ -83,6 +84,53 @@ public class HcDocBillRefServiceImpl implements IHcDocBillRefService {
             row.setDelFlag(0);
             row.setCreateBy(createBy);
             hcDocBillRefMapper.insertHcDocBillRef(row);
+        }
+    }
+
+    @Override
+    public Map<String, BigDecimal> sumRefQtyBySrcBillId(String tenantId, String srcBillId) {
+        Map<String, BigDecimal> out = new HashMap<>();
+        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(srcBillId)) {
+            return out;
+        }
+        List<Map<String, Object>> rows = hcDocBillRefMapper.selectRefQtySumBySrcBillId(tenantId, srcBillId);
+        if (rows == null) {
+            return out;
+        }
+        for (Map<String, Object> row : rows) {
+            if (row == null || row.isEmpty()) {
+                continue;
+            }
+            Object k = firstKey(row, "srcEntryId", "SRCENTRYID", "src_entry_id");
+            Object v = firstKey(row, "usedQty", "USEDQTY", "used_qty");
+            if (k == null) {
+                continue;
+            }
+            out.put(String.valueOf(k), toBigDecimal(v));
+        }
+        return out;
+    }
+
+    private static Object firstKey(Map<String, Object> row, String... keys) {
+        for (String key : keys) {
+            if (row.containsKey(key) && row.get(key) != null) {
+                return row.get(key);
+            }
+        }
+        return null;
+    }
+
+    private static BigDecimal toBigDecimal(Object v) {
+        if (v == null) {
+            return BigDecimal.ZERO;
+        }
+        if (v instanceof BigDecimal) {
+            return (BigDecimal) v;
+        }
+        try {
+            return new BigDecimal(String.valueOf(v));
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
         }
     }
 }

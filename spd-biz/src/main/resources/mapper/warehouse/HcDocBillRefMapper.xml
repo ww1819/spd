@@ -67,4 +67,13 @@
           and (del_flag = 0 or del_flag is null)
         order by IFNULL(line_no, 999999) asc, create_time asc
     </select>
+
+    <select id="selectRefQtySumBySrcBillId" resultType="java.util.HashMap">
+        select src_entry_id as srcEntryId, IFNULL(SUM(ref_qty), 0) as usedQty
+        from hc_doc_bill_ref
+        where tenant_id = #{tenantId}
+          and src_bill_id = #{srcBillId}
+          and (del_flag = 0 or del_flag is null)
+        group by src_entry_id
+    </select>
 </mapper>

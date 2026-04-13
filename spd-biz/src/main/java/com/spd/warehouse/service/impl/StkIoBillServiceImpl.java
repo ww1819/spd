@@ -2,6 +2,7 @@ package com.spd.warehouse.service.impl;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -72,6 +73,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.spd.warehouse.constants.HcDocBillRefType;
+import com.spd.warehouse.domain.HcDocBillRef;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
@@ -188,6 +191,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             materialList.add(entry.getMaterial());
         }
         stkIoBill.setMaterialList(materialList);
+        fillSrcEntryRefConsumption(stkIoBill);
         return stkIoBill;
     }
 
@@ -1937,30 +1941,57 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("入库单ID：%s，明细不存在!", rkApplyId));
         }
 
+        String tenantId = StringUtils.isNotEmpty(rkBill.getTenantId()) ? rkBill.getTenantId() : SecurityUtils.getCustomerId();
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(rkBill.getId()));
+
         StkIoBill ckBill = new StkIoBill();
         ckBill.setWarehouseId(rkBill.getWarehouseId());
         ckBill.setBillType(201);
-        // 设置引用单号为入库单号
         ckBill.setRefBillNo(rkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
+        List<HcDocBillRef> docRefList = new ArrayList<>();
+        int rkLine = 0;
         for (StkIoBillEntry rkEntry : list) {
+            rkLine++;
+            if (rkEntry == null || (rkEntry.getDelFlag() != null && rkEntry.getDelFlag() == 1)) {
+                continue;
+            }
+            if (rkEntry.getId() == null) {
+                continue;
+            }
+            BigDecimal lineQty = rkEntry.getQty() != null ? rkEntry.getQty() : BigDecimal.ZERO;
+            BigDecimal used = usedMap.getOrDefault(String.valueOf(rkEntry.getId()), BigDecimal.ZERO);
+            BigDecimal refable = lineQty.subtract(used);
+            if (refable.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
             StkIoBillEntry ckEntry = new StkIoBillEntry();
             ckEntry.setMaterialId(rkEntry.getMaterialId());
-            ckEntry.setQty(rkEntry.getQty());
+            ckEntry.setQty(refable);
             ckEntry.setUnitPrice(rkEntry.getUnitPrice());
-            ckEntry.setAmt(rkEntry.getAmt());
+            if (rkEntry.getUnitPrice() != null) {
+                ckEntry.setAmt(rkEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+            } else if (rkEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
+                ckEntry.setAmt(rkEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+            } else {
+                ckEntry.setAmt(BigDecimal.ZERO);
+            }
             ckEntry.setBatchNo(rkEntry.getBatchNo());
             ckEntry.setBatchNumber(rkEntry.getBatchNumber());
             ckEntry.setBeginTime(rkEntry.getBeginTime());
             ckEntry.setEndTime(rkEntry.getEndTime());
-            // 加载完整的material对象
             if (rkEntry.getMaterialId() != null) {
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(rkEntry.getMaterialId());
                 ckEntry.setMaterial(material);
             }
             entryList.add(ckEntry);
+            docRefList.add(newSrcDocRef(HcDocBillRefType.RK_TO_CK, "101", rkBill, rkEntry, rkLine));
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("该入库单已全部被引用或无可再引用的数量");
         }
         ckBill.setStkIoBillEntryList(entryList);
+        ckBill.setDocRefList(docRefList);
         return ckBill;
     }
 
@@ -2014,39 +2045,65 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("入库单ID：%s，不存在!", rkApplyId));
         }
         if (rkBill.getBillStatus() != 2) {
-            throw new ServiceException(String.format("入库单ID：%s，未审核，不能生成出库单!", rkApplyId));
+            throw new ServiceException(String.format("入库单ID：%s，未审核，不能生成退货单!", rkApplyId));
         }
 
         List<StkIoBillEntry> list = rkBill.getStkIoBillEntryList();
         if (list == null || list.size() == 0) {
             throw new ServiceException(String.format("入库单ID：%s，明细不存在!", rkApplyId));
         }
+        String tenantId = StringUtils.isNotEmpty(rkBill.getTenantId()) ? rkBill.getTenantId() : SecurityUtils.getCustomerId();
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(rkBill.getId()));
+
         StkIoBill thBill = new StkIoBill();
         thBill.setWarehouseId(rkBill.getWarehouseId());
         thBill.setSupplerId(rkBill.getSupplerId());
         thBill.setBillType(301);
-        // 设置引用单号为入库单号
         thBill.setRefBillNo(rkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
-        for (StkIoBillEntry stkIoBillEntry : list) {
+        List<HcDocBillRef> docRefList = new ArrayList<>();
+        int rkLine = 0;
+        for (StkIoBillEntry srcEntry : list) {
+            rkLine++;
+            if (srcEntry == null || (srcEntry.getDelFlag() != null && srcEntry.getDelFlag() == 1)) {
+                continue;
+            }
+            if (srcEntry.getId() == null) {
+                continue;
+            }
+            BigDecimal lineQty = srcEntry.getQty() != null ? srcEntry.getQty() : BigDecimal.ZERO;
+            BigDecimal used = usedMap.getOrDefault(String.valueOf(srcEntry.getId()), BigDecimal.ZERO);
+            BigDecimal refable = lineQty.subtract(used);
+            if (refable.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
             StkIoBillEntry thEntry = new StkIoBillEntry();
-            thEntry.setMaterialId(stkIoBillEntry.getMaterialId());
-            thEntry.setQty(stkIoBillEntry.getQty());
-            thEntry.setUnitPrice(stkIoBillEntry.getUnitPrice());
-            thEntry.setAmt(stkIoBillEntry.getAmt());
-            thEntry.setBatchNo(stkIoBillEntry.getBatchNo());
-            thEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
-            thEntry.setBeginTime(stkIoBillEntry.getBeginTime());
-            thEntry.setEndTime(stkIoBillEntry.getEndTime());
-            // 加载耗材详细信息，前端表格需要显示耗材的名称、规格等信息
-            if (stkIoBillEntry.getMaterialId() != null) {
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(stkIoBillEntry.getMaterialId());
+            thEntry.setMaterialId(srcEntry.getMaterialId());
+            thEntry.setQty(refable);
+            thEntry.setUnitPrice(srcEntry.getUnitPrice());
+            if (srcEntry.getUnitPrice() != null) {
+                thEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+            } else if (srcEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
+                thEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+            } else {
+                thEntry.setAmt(BigDecimal.ZERO);
+            }
+            thEntry.setBatchNo(srcEntry.getBatchNo());
+            thEntry.setBatchNumber(srcEntry.getBatchNumber());
+            thEntry.setBeginTime(srcEntry.getBeginTime());
+            thEntry.setEndTime(srcEntry.getEndTime());
+            if (srcEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 thEntry.setMaterial(material);
             }
             entryList.add(thEntry);
+            docRefList.add(newSrcDocRef(HcDocBillRefType.RK_TO_TH, "101", rkBill, srcEntry, rkLine));
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("该入库单已全部被引用或无可再引用的数量");
         }
         thBill.setStkIoBillEntryList(entryList);
-
+        thBill.setDocRefList(docRefList);
         return thBill;
     }
 
@@ -2057,7 +2114,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("出库单ID：%s，不存在!", ckApplyId));
         }
         if (ckBill.getBillStatus() != 2) {
-            throw new ServiceException(String.format("出库单ID：%s，未审核，不能生成出库单!", ckApplyId));
+            throw new ServiceException(String.format("出库单ID：%s，未审核，不能生成退库单!", ckApplyId));
         }
 
         List<StkIoBillEntry> list = ckBill.getStkIoBillEntryList();
@@ -2065,32 +2122,59 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("出库单ID：%s，明细不存在!", ckApplyId));
         }
 
+        String tenantId = StringUtils.isNotEmpty(ckBill.getTenantId()) ? ckBill.getTenantId() : SecurityUtils.getCustomerId();
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(ckBill.getId()));
+
         StkIoBill tkBill = new StkIoBill();
         tkBill.setWarehouseId(ckBill.getWarehouseId());
         tkBill.setDepartmentId(ckBill.getDepartmentId());
         tkBill.setBillType(401);
-        // 设置引用单号为出库单号
         tkBill.setRefBillNo(ckBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
-        for (StkIoBillEntry stkIoBillEntry : list) {
+        List<HcDocBillRef> docRefList = new ArrayList<>();
+        int ckLine = 0;
+        for (StkIoBillEntry srcEntry : list) {
+            ckLine++;
+            if (srcEntry == null || (srcEntry.getDelFlag() != null && srcEntry.getDelFlag() == 1)) {
+                continue;
+            }
+            if (srcEntry.getId() == null) {
+                continue;
+            }
+            BigDecimal lineQty = srcEntry.getQty() != null ? srcEntry.getQty() : BigDecimal.ZERO;
+            BigDecimal used = usedMap.getOrDefault(String.valueOf(srcEntry.getId()), BigDecimal.ZERO);
+            BigDecimal refable = lineQty.subtract(used);
+            if (refable.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
             StkIoBillEntry tkEntry = new StkIoBillEntry();
-            tkEntry.setMaterialId(stkIoBillEntry.getMaterialId());
-            tkEntry.setQty(stkIoBillEntry.getQty());
-            tkEntry.setUnitPrice(stkIoBillEntry.getUnitPrice());
-            tkEntry.setAmt(stkIoBillEntry.getAmt());
-            tkEntry.setBatchNo(stkIoBillEntry.getBatchNo());
-            tkEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
-            tkEntry.setBeginTime(stkIoBillEntry.getBeginTime());
-            tkEntry.setEndTime(stkIoBillEntry.getEndTime());
-            tkEntry.setKcNo(stkIoBillEntry.getKcNo());
-            // 加载完整的material对象
-            if (stkIoBillEntry.getMaterialId() != null) {
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(stkIoBillEntry.getMaterialId());
+            tkEntry.setMaterialId(srcEntry.getMaterialId());
+            tkEntry.setQty(refable);
+            tkEntry.setUnitPrice(srcEntry.getUnitPrice());
+            if (srcEntry.getUnitPrice() != null) {
+                tkEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+            } else if (srcEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
+                tkEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+            } else {
+                tkEntry.setAmt(BigDecimal.ZERO);
+            }
+            tkEntry.setBatchNo(srcEntry.getBatchNo());
+            tkEntry.setBatchNumber(srcEntry.getBatchNumber());
+            tkEntry.setBeginTime(srcEntry.getBeginTime());
+            tkEntry.setEndTime(srcEntry.getEndTime());
+            tkEntry.setKcNo(srcEntry.getKcNo());
+            if (srcEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 tkEntry.setMaterial(material);
             }
             entryList.add(tkEntry);
+            docRefList.add(newSrcDocRef(HcDocBillRefType.CK_TO_TK, "201", ckBill, srcEntry, ckLine));
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("该出库单已全部被引用或无可再引用的数量");
         }
         tkBill.setStkIoBillEntryList(entryList);
+        tkBill.setDocRefList(docRefList);
         return tkBill;
     }
 
@@ -2099,42 +2183,68 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     public StkIoBill createThEntriesByTkApply(String tkApplyId) {
         StkIoBill tkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(tkApplyId));
         if (tkBill == null) {
-            throw new ServiceException(String.format("入库单ID：%s，不存在!", tkApplyId));
+            throw new ServiceException(String.format("科室退库单ID：%s，不存在!", tkApplyId));
         }
         if (tkBill.getBillStatus() != 2) {
-            throw new ServiceException(String.format("入库单ID：%s，未审核，不能生成出库单!", tkApplyId));
+            throw new ServiceException(String.format("科室退库单ID：%s，未审核，不能生成退货单!", tkApplyId));
         }
 
         List<StkIoBillEntry> list = tkBill.getStkIoBillEntryList();
         if (list == null || list.size() == 0) {
-            throw new ServiceException(String.format("入库单ID：%s，明细不存在!", tkApplyId));
+            throw new ServiceException(String.format("科室退库单ID：%s，明细不存在!", tkApplyId));
         }
+        String tenantId = StringUtils.isNotEmpty(tkBill.getTenantId()) ? tkBill.getTenantId() : SecurityUtils.getCustomerId();
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(tkBill.getId()));
+
         StkIoBill thBill = new StkIoBill();
         thBill.setWarehouseId(tkBill.getWarehouseId());
         thBill.setSupplerId(tkBill.getSupplerId());
         thBill.setBillType(301);
-        // 设置引用单号为科室退库单号
         thBill.setRefBillNo(tkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
-        for (StkIoBillEntry stkIoBillEntry : list) {
+        List<HcDocBillRef> docRefList = new ArrayList<>();
+        int tkLine = 0;
+        for (StkIoBillEntry srcEntry : list) {
+            tkLine++;
+            if (srcEntry == null || (srcEntry.getDelFlag() != null && srcEntry.getDelFlag() == 1)) {
+                continue;
+            }
+            if (srcEntry.getId() == null) {
+                continue;
+            }
+            BigDecimal lineQty = srcEntry.getQty() != null ? srcEntry.getQty() : BigDecimal.ZERO;
+            BigDecimal used = usedMap.getOrDefault(String.valueOf(srcEntry.getId()), BigDecimal.ZERO);
+            BigDecimal refable = lineQty.subtract(used);
+            if (refable.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
             StkIoBillEntry thEntry = new StkIoBillEntry();
-            thEntry.setMaterialId(stkIoBillEntry.getMaterialId());
-            thEntry.setQty(stkIoBillEntry.getQty());
-            thEntry.setUnitPrice(stkIoBillEntry.getUnitPrice());
-            thEntry.setAmt(stkIoBillEntry.getAmt());
-            thEntry.setBatchNo(stkIoBillEntry.getBatchNo());
-            thEntry.setBatchNumber(stkIoBillEntry.getBatchNumber());
-            thEntry.setBeginTime(stkIoBillEntry.getBeginTime());
-            thEntry.setEndTime(stkIoBillEntry.getEndTime());
-            // 加载耗材详细信息，前端表格需要显示耗材的名称、规格等信息
-            if (stkIoBillEntry.getMaterialId() != null) {
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(stkIoBillEntry.getMaterialId());
+            thEntry.setMaterialId(srcEntry.getMaterialId());
+            thEntry.setQty(refable);
+            thEntry.setUnitPrice(srcEntry.getUnitPrice());
+            if (srcEntry.getUnitPrice() != null) {
+                thEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+            } else if (srcEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
+                thEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+            } else {
+                thEntry.setAmt(BigDecimal.ZERO);
+            }
+            thEntry.setBatchNo(srcEntry.getBatchNo());
+            thEntry.setBatchNumber(srcEntry.getBatchNumber());
+            thEntry.setBeginTime(srcEntry.getBeginTime());
+            thEntry.setEndTime(srcEntry.getEndTime());
+            if (srcEntry.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 thEntry.setMaterial(material);
             }
             entryList.add(thEntry);
+            docRefList.add(newSrcDocRef(HcDocBillRefType.TK_TO_TH, "401", tkBill, srcEntry, tkLine));
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("该科室退库单已全部被引用或无可再引用的数量");
         }
         thBill.setStkIoBillEntryList(entryList);
-
+        thBill.setDocRefList(docRefList);
         return thBill;
     }
 
@@ -2649,5 +2759,59 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Cell c = row.createCell(col);
         c.setCellValue(val != null ? val : "");
         c.setCellStyle(style);
+    }
+
+    /** 为源单明细填充已被引用量、可引用量（不落库） */
+    private void fillSrcEntryRefConsumption(StkIoBill bill) {
+        if (bill == null || bill.getId() == null) {
+            return;
+        }
+        String tid = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(tid)) {
+            return;
+        }
+        Map<String, BigDecimal> used = hcDocBillRefService.sumRefQtyBySrcBillId(tid, String.valueOf(bill.getId()));
+        List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
+        if (list == null) {
+            return;
+        }
+        for (StkIoBillEntry e : list) {
+            if (e == null || e.getId() == null) {
+                continue;
+            }
+            if (e.getDelFlag() != null && e.getDelFlag() == 1) {
+                continue;
+            }
+            BigDecimal u = used.getOrDefault(String.valueOf(e.getId()), BigDecimal.ZERO);
+            e.setSrcRefedQty(u);
+            BigDecimal q = e.getQty() != null ? e.getQty() : BigDecimal.ZERO;
+            BigDecimal refable = q.subtract(u);
+            if (refable.compareTo(BigDecimal.ZERO) < 0) {
+                refable = BigDecimal.ZERO;
+            }
+            e.setSrcRefableQty(refable);
+        }
+    }
+
+    private HcDocBillRef newSrcDocRef(String refType, String srcBillKind, StkIoBill srcBill, StkIoBillEntry srcEntry,
+        int srcLineOneBased) {
+        HcDocBillRef r = new HcDocBillRef();
+        r.setBizDomain("STK_IO_BILL");
+        r.setRefType(refType);
+        r.setSrcBillKind(srcBillKind);
+        r.setSrcBillId(String.valueOf(srcBill.getId()));
+        r.setSrcBillNo(srcBill.getBillNo());
+        r.setSrcEntryId(String.valueOf(srcEntry.getId()));
+        r.setSrcEntryLineNo(Integer.valueOf(srcLineOneBased));
+        if (srcBill.getWarehouseId() != null) {
+            r.setLockWarehouseId(String.valueOf(srcBill.getWarehouseId()));
+        }
+        if (srcBill.getSupplerId() != null) {
+            r.setLockSupplierId(String.valueOf(srcBill.getSupplerId()));
+        }
+        if (srcBill.getDepartmentId() != null) {
+            r.setLockDepartmentId(String.valueOf(srcBill.getDepartmentId()));
+        }
+        return r;
     }
 }

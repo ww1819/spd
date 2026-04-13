@@ -41,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deleteBy"    column="delete_by"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="settlementType"    column="settlement_type"    />
+        <result property="docRefStatus"    column="doc_ref_status"    />
 
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -170,6 +171,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </association>
     </resultMap>
 
+    <!-- 源单被下游引用聚合状态：NONE 未引用 / PARTIAL 部分 / FULL 全部（按 hc_doc_bill_ref 汇总） -->
+    <sql id="docRefStatusScalarExpr">
+        (SELECT CASE
+            WHEN NOT EXISTS (
+                SELECT 1 FROM stk_io_bill_entry e0
+                WHERE e0.paren_id = stk.id AND (e0.del_flag IS NULL OR e0.del_flag != 1)
+            ) THEN 'NONE'
+            WHEN NOT EXISTS (
+                SELECT 1 FROM hc_doc_bill_ref r0
+                WHERE r0.src_bill_id = CAST(stk.id AS CHAR)
+                  AND r0.tenant_id = stk.tenant_id
+                  AND (r0.del_flag = 0 OR r0.del_flag IS NULL)
+            ) THEN 'NONE'
+            WHEN NOT EXISTS (
+                SELECT 1 FROM stk_io_bill_entry e
+                WHERE e.paren_id = stk.id AND (e.del_flag IS NULL OR e.del_flag != 1)
+                  AND IFNULL(e.qty, 0) &gt; 0
+                  AND IFNULL((
+                      SELECT SUM(r.ref_qty) FROM hc_doc_bill_ref r
+                      WHERE r.src_bill_id = CAST(stk.id AS CHAR)
+                        AND r.src_entry_id = CAST(e.id AS CHAR)
+                        AND r.tenant_id = stk.tenant_id
+                        AND (r.del_flag = 0 OR r.del_flag IS NULL)
+                  ), 0) &lt; IFNULL(e.qty, 0)
+            ) THEN 'FULL'
+            ELSE 'PARTIAL'
+        END)
+    </sql>
 
     <sql id="selectStkIoBillVo">
         select stk.id, stk.bill_no, stk.ref_bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
@@ -183,7 +212,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				u.user_id userId,u.nick_name nickName,u.user_name userName,
                au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,
-               uu.nick_name updateByNickName,uu.user_name updateByUserName
+               uu.nick_name updateByNickName,uu.user_name updateByUserName,
+               <include refid="docRefStatusScalarExpr"/> AS doc_ref_status
         from stk_io_bill stk
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
@@ -246,6 +276,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
         <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_bill_entry e inner join fd_material m on e.material_id = m.id where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%')))</if>
+        <if test="params != null and params.docRefStatus != null and params.docRefStatus != ''">
+            and <include refid="docRefStatusScalarExpr"/> = #{params.docRefStatus}
+        </if>
         order by stk.bill_date desc
     </select>
 

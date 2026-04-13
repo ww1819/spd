@@ -1,6 +1,7 @@
 package com.spd.warehouse.mapper;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -18,4 +19,7 @@ public interface HcDocBillRefMapper {
         @Param("deleteBy") String deleteBy);
 
     List<HcDocBillRef> selectByTgtBillId(@Param("tgtBillId") String tgtBillId);
+
+    List<Map<String, Object>> selectRefQtySumBySrcBillId(@Param("tenantId") String tenantId,
+        @Param("srcBillId") String srcBillId);
 }

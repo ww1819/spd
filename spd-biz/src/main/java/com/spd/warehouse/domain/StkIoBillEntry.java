@@ -123,6 +123,11 @@ public class StkIoBillEntry extends BaseEntity
     /** 删除时间 */
     private Date deleteTime;
 
+    /** 作为源单明细时已被下游引用的累计数量（查询聚合，不落库） */
+    private BigDecimal srcRefedQty;
+    /** 作为源单明细时尚可引用数量（不落库） */
+    private BigDecimal srcRefableQty;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -333,6 +338,22 @@ public class StkIoBillEntry extends BaseEntity
     public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
     public Date getDeleteTime() { return deleteTime; }
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+
+    public BigDecimal getSrcRefedQty() {
+        return srcRefedQty;
+    }
+
+    public void setSrcRefedQty(BigDecimal srcRefedQty) {
+        this.srcRefedQty = srcRefedQty;
+    }
+
+    public BigDecimal getSrcRefableQty() {
+        return srcRefableQty;
+    }
+
+    public void setSrcRefableQty(BigDecimal srcRefableQty) {
+        this.srcRefableQty = srcRefableQty;
+    }
 
     @Override
     public String toString() {
