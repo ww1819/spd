@@ -3,6 +3,7 @@ package com.spd.warehouse.domain;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.foundation.domain.*;
@@ -90,6 +91,10 @@ public class StkIoBill extends BaseEntity
 
     /** 出入库明细信息 */
     private List<StkIoBillEntry> stkIoBillEntryList;
+
+    /** 保存时可传：单据引用关联（不入库 stk_io_bill，写入 hc_doc_bill_ref） */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<HcDocBillRef> docRefList;
 
     /** 供应商对象 */
     private FdSupplier supplier;
@@ -753,5 +758,13 @@ public class StkIoBill extends BaseEntity
 
     public void setWarehouseCategory(FdWarehouseCategory warehouseCategory) {
         this.warehouseCategory = warehouseCategory;
+    }
+
+    public List<HcDocBillRef> getDocRefList() {
+        return docRefList;
+    }
+
+    public void setDocRefList(List<HcDocBillRef> docRefList) {
+        this.docRefList = docRefList;
     }
 }

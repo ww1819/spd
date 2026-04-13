@@ -3,6 +3,7 @@ package com.spd.department.service.impl;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.ArrayList;
 
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.exception.ServiceException;
@@ -13,11 +14,14 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.department.domain.BasApplyEntry;
+import com.spd.department.domain.HcKsFlow;
+import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.BasApplyMapper;
+import com.spd.department.mapper.HcKsFlowMapper;
+import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
 
@@ -37,6 +41,12 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Autowired
     private ITenantScopeService tenantScopeService;
 
+    @Autowired
+    private StkDepInventoryMapper stkDepInventoryMapper;
+
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
+
     /** 非租户管理员：仅能访问已授权科室的申领/转科等 bas_apply 单据 */
     private void assertDepartmentInUserScope(Long departmentId) {
         Long userId = SecurityUtils.getUserId();
@@ -54,7 +64,13 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply == null) {
             return;
         }
-        assertDepartmentInUserScope(basApply.getDepartmentId());
+        // 转科：调出 warehouseId、调入 departmentId 均需授权，防串科室
+        if (basApply.getBillType() != null && basApply.getBillType() == 3) {
+            assertDepartmentInUserScope(basApply.getWarehouseId());
+            assertDepartmentInUserScope(basApply.getDepartmentId());
+        } else {
+            assertDepartmentInUserScope(basApply.getDepartmentId());
+        }
     }
 
     @Override
@@ -268,7 +284,154 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setAuditBy(auditBy);
         basApply.setAuditDate(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
+        if (res > 0 && basApply.getBillType() != null && basApply.getBillType() == 3) {
+            executeDepartmentTransferInventory(basApply);
+        }
         return res;
+    }
+
+    /**
+     * 转科审核通过后：调出科室库存扣减、调入科室库存增加，并写入科室流水（科室转出 / 科室转入）。
+     */
+    private void executeDepartmentTransferInventory(BasApply basApply) {
+        Long outDeptId = basApply.getWarehouseId();
+        Long inDeptId = basApply.getDepartmentId();
+        if (outDeptId == null || inDeptId == null) {
+            throw new ServiceException("转科单调出科室或调入科室不能为空");
+        }
+        if (outDeptId.equals(inDeptId)) {
+            throw new ServiceException("调出科室与调入科室不能相同");
+        }
+        String tenantId = StringUtils.isNotEmpty(basApply.getTenantId())
+            ? basApply.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        List<BasApplyEntry> entries = basApply.getBasApplyEntryList();
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+        String uid = SecurityUtils.getUserIdStr();
+        Date now = new Date();
+        for (BasApplyEntry e : entries) {
+            if (e == null || e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            if (StringUtils.isEmpty(e.getBatchNo()) || e.getMaterialId() == null) {
+                throw new ServiceException("转科明细批次号、耗材不能为空");
+            }
+            BigDecimal need = e.getQty();
+            StkDepInventory q = new StkDepInventory();
+            q.setTenantId(tenantId);
+            q.setDepartmentId(outDeptId);
+            q.setBatchNo(e.getBatchNo());
+            q.setMaterialId(e.getMaterialId());
+            q.setReceiptConfirmStatus(1);
+            List<StkDepInventory> candidates = stkDepInventoryMapper.selectStkDepInventoryList(q);
+            if (candidates == null) {
+                candidates = new ArrayList<>();
+            }
+            StkDepInventory src = null;
+            for (StkDepInventory row : candidates) {
+                if (row.getQty() != null && row.getQty().compareTo(need) >= 0) {
+                    src = row;
+                    break;
+                }
+            }
+            if (src == null) {
+                throw new ServiceException(String.format(
+                    "转科库存不足：批次[%s] 耗材ID[%s] 在调出科室可用量不足 %s",
+                    e.getBatchNo(), e.getMaterialId(), need));
+            }
+            BigDecimal srcQty = src.getQty();
+            BigDecimal newSrcQty = srcQty.subtract(need);
+            BigDecimal unitPrice = src.getUnitPrice() != null ? src.getUnitPrice() : BigDecimal.ZERO;
+            src.setQty(newSrcQty);
+            src.setAmt(unitPrice.multiply(newSrcQty));
+            src.setUpdateTime(now);
+            src.setUpdateBy(uid);
+            stkDepInventoryMapper.updateStkDepInventory(src);
+
+            StkDepInventory tq = new StkDepInventory();
+            tq.setTenantId(tenantId);
+            tq.setDepartmentId(inDeptId);
+            tq.setBatchNo(e.getBatchNo());
+            tq.setMaterialId(e.getMaterialId());
+            List<StkDepInventory> tgtList = stkDepInventoryMapper.selectStkDepInventoryList(tq);
+            StkDepInventory tgtExisting = (tgtList != null && !tgtList.isEmpty()) ? tgtList.get(0) : null;
+
+            if (tgtExisting != null) {
+                BigDecimal tq0 = tgtExisting.getQty() != null ? tgtExisting.getQty() : BigDecimal.ZERO;
+                BigDecimal up = tgtExisting.getUnitPrice() != null ? tgtExisting.getUnitPrice() : unitPrice;
+                tgtExisting.setQty(tq0.add(need));
+                tgtExisting.setAmt(up.multiply(tgtExisting.getQty()));
+                tgtExisting.setUpdateTime(now);
+                tgtExisting.setUpdateBy(uid);
+                stkDepInventoryMapper.updateStkDepInventory(tgtExisting);
+            } else {
+                StkDepInventory ins = new StkDepInventory();
+                ins.setTenantId(tenantId);
+                ins.setMaterialId(src.getMaterialId());
+                ins.setDepartmentId(inDeptId);
+                ins.setWarehouseId(src.getWarehouseId());
+                ins.setQty(need);
+                ins.setUnitPrice(unitPrice);
+                ins.setAmt(unitPrice.multiply(need));
+                ins.setBatchNo(src.getBatchNo());
+                ins.setBatchId(src.getBatchId());
+                ins.setMaterialNo(src.getMaterialNo());
+                ins.setMaterialDate(src.getMaterialDate());
+                ins.setWarehouseDate(now);
+                ins.setSupplierId(src.getSupplierId());
+                ins.setBeginDate(src.getBeginDate());
+                ins.setEndDate(src.getEndDate());
+                ins.setFactoryId(src.getFactoryId());
+                ins.setBatchNumber(src.getBatchNumber());
+                ins.setMainBarcode(src.getMainBarcode());
+                ins.setSubBarcode(src.getSubBarcode());
+                ins.setReceiptConfirmStatus(1);
+                ins.setSnapMaterialName(src.getSnapMaterialName());
+                ins.setSnapMaterialSpeci(src.getSnapMaterialSpeci());
+                ins.setSnapMaterialModel(src.getSnapMaterialModel());
+                ins.setSnapMaterialFactoryId(src.getSnapMaterialFactoryId());
+                ins.setSettlementType(src.getSettlementType());
+                ins.setCreateTime(now);
+                ins.setCreateBy(uid);
+                stkDepInventoryMapper.insertStkDepInventory(ins);
+                tgtExisting = ins;
+            }
+
+            insertKsTransferFlow(basApply, e, src, outDeptId, need, unitPrice, "科室转出", "KSZC");
+            insertKsTransferFlow(basApply, e, tgtExisting, inDeptId, need, unitPrice, "科室转入", "KSZR");
+        }
+    }
+
+    private void insertKsTransferFlow(BasApply basApply, BasApplyEntry entry, StkDepInventory depRow,
+        Long departmentId, BigDecimal qty, BigDecimal unitPrice, String originBiz, String lx) {
+        HcKsFlow flow = new HcKsFlow();
+        flow.setBillId(basApply.getId());
+        flow.setEntryId(entry.getId());
+        flow.setDepartmentId(departmentId);
+        flow.setWarehouseId(depRow != null ? depRow.getWarehouseId() : null);
+        flow.setMaterialId(entry.getMaterialId());
+        flow.setBatchNo(entry.getBatchNo());
+        flow.setBatchNumber(entry.getBatchNumer());
+        flow.setBatchId(depRow != null ? depRow.getBatchId() : null);
+        flow.setQty(qty);
+        flow.setUnitPrice(unitPrice);
+        flow.setAmt(unitPrice != null ? qty.multiply(unitPrice) : null);
+        flow.setBeginTime(depRow != null ? depRow.getBeginDate() : null);
+        flow.setEndTime(depRow != null ? depRow.getEndDate() : null);
+        flow.setSupplierId(depRow != null ? depRow.getSupplierId() : null);
+        flow.setFactoryId(depRow != null ? depRow.getFactoryId() : null);
+        flow.setMainBarcode(depRow != null ? depRow.getMainBarcode() : null);
+        flow.setSubBarcode(depRow != null ? depRow.getSubBarcode() : null);
+        flow.setKcNo(depRow != null ? depRow.getId() : null);
+        flow.setLx(lx);
+        flow.setOriginBusinessType(originBiz);
+        flow.setFlowTime(new Date());
+        flow.setDelFlag(0);
+        flow.setCreateTime(new Date());
+        flow.setCreateBy(SecurityUtils.getUserIdStr());
+        flow.setTenantId(StringUtils.isNotEmpty(basApply.getTenantId()) ? basApply.getTenantId() : SecurityUtils.getCustomerId());
+        hcKsFlowMapper.insertHcKsFlow(flow);
     }
 
     /**

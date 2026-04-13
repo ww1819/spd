@@ -852,6 +852,44 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='出入库明细表';
 /
 
+-- 单据引用/生成关联：从源单（入库/出库/退库/退货等）生成目标单时的明细级追溯；主键为 36 位 UUID7 字符串（与 UUID7.generateUUID7() 一致）
+CREATE TABLE IF NOT EXISTS `hc_doc_bill_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键 UUID7（36位含连字符）',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同 sb_customer.customer_id)',
+  `biz_domain` varchar(32) NOT NULL DEFAULT 'STK_IO_BILL' COMMENT '业务域：STK_IO_BILL 出入库单；可扩展 BAS_APPLY 等',
+  `ref_type` varchar(64) NOT NULL COMMENT '引用类型：RK_TO_CK/CK_TO_TK/TK_TO_CK/TK_TO_TH/RK_TO_TH 等，见 HcDocBillRefType',
+  `src_bill_kind` varchar(32) DEFAULT NULL COMMENT '源单 bill_type 等说明，如 101',
+  `src_bill_id` varchar(64) DEFAULT NULL COMMENT '源单据主表ID',
+  `src_bill_no` varchar(128) DEFAULT NULL COMMENT '源单号',
+  `src_entry_id` varchar(64) DEFAULT NULL COMMENT '源明细ID',
+  `src_entry_line_no` int DEFAULT NULL COMMENT '源明细行序号快照(可选)',
+  `tgt_bill_kind` varchar(32) DEFAULT NULL COMMENT '生成单 bill_type 等说明',
+  `tgt_bill_id` varchar(64) DEFAULT NULL COMMENT '生成后单据主表ID',
+  `tgt_bill_no` varchar(128) DEFAULT NULL COMMENT '生成后单号',
+  `tgt_entry_id` varchar(64) DEFAULT NULL COMMENT '生成后明细ID',
+  `line_no` int DEFAULT NULL COMMENT '本关联行对应目标明细顺序号(从1)，与保存时 docRefList 对齐',
+  `ref_qty` decimal(18,4) DEFAULT NULL COMMENT '本次从源引用数量快照',
+  `ref_amt` decimal(18,2) DEFAULT NULL COMMENT '本次引用金额快照',
+  `lock_warehouse_id` varchar(64) DEFAULT NULL COMMENT '办理时锁定仓库(防串仓)',
+  `lock_supplier_id` varchar(64) DEFAULT NULL COMMENT '办理时锁定供应商(防串供)',
+  `lock_department_id` varchar(64) DEFAULT NULL COMMENT '办理时锁定科室(防串科室)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志 0正常 1作废(被同目标单重新保存时软删)',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者(软删操作人)',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间(软删时间)',
+  PRIMARY KEY (`id`),
+  KEY `idx_hc_ref_tenant_tgt` (`tenant_id`,`tgt_bill_id`),
+  KEY `idx_hc_ref_tenant_src` (`tenant_id`,`src_bill_id`),
+  KEY `idx_hc_ref_tenant_type` (`tenant_id`,`ref_type`),
+  KEY `idx_hc_ref_tgt_entry` (`tenant_id`,`tgt_bill_id`,`tgt_entry_id`),
+  KEY `idx_hc_ref_del` (`tenant_id`,`del_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材单据引用关联';
+/
+
 CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `bill_id` bigint DEFAULT NULL COMMENT '单据主表id',

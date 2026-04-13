@@ -77,6 +77,7 @@ import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import com.spd.warehouse.domain.StkIoBill;
+import com.spd.warehouse.service.IHcDocBillRefService;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
@@ -141,6 +142,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private ITenantScopeService tenantScopeService;
+
+    @Autowired
+    private IHcDocBillRefService hcDocBillRefService;
 
     /**
      * 查询出入库
@@ -250,6 +254,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertStkIoBillEntry(stkIoBill);
+        if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
+            StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+            if (reloaded != null) {
+                hcDocBillRefService.saveRefsAfterStkBillInsert(stkIoBill, reloaded);
+            }
+        }
         return rows;
     }
 
@@ -970,7 +980,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(ksTkFlow.getTenantId())) ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
-                } else if (billType == 501) {// 调拨：转出仓库扣减+流水ZC，转入仓库增加+流水ZR
+                } else if (billType == 501) {// 仓库调拨：审核时已生成 hc_ck_flow 转出(ZC)+转入(ZR)，勿重复补流水
                     Long outWarehouseId = stkIoBill.getWarehouseId();  // 转出仓库
                     Long inWarehouseId = stkIoBill.getDepartmentId(); // 调拨单中 department_id 存调入仓库id
                     if (outWarehouseId == null) {

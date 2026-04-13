@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.HcDocBillRefMapper">
+
+    <insert id="insertHcDocBillRef" parameterType="com.spd.warehouse.domain.HcDocBillRef">
+        insert into hc_doc_bill_ref (
+            id, tenant_id, biz_domain, ref_type, src_bill_kind, src_bill_id, src_bill_no, src_entry_id, src_entry_line_no,
+            tgt_bill_kind, tgt_bill_id, tgt_bill_no, tgt_entry_id, line_no, ref_qty, ref_amt,
+            lock_warehouse_id, lock_supplier_id, lock_department_id, remark,
+            del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{bizDomain}, #{refType}, #{srcBillKind}, #{srcBillId}, #{srcBillNo}, #{srcEntryId}, #{srcEntryLineNo},
+            #{tgtBillKind}, #{tgtBillId}, #{tgtBillNo}, #{tgtEntryId}, #{lineNo}, #{refQty}, #{refAmt},
+            #{lockWarehouseId}, #{lockSupplierId}, #{lockDepartmentId}, #{remark},
+            IFNULL(#{delFlag}, 0), #{createBy}, now()
+        )
+    </insert>
+
+    <!-- 同一目标单重新保存时：软删旧关联行，保留审计痕迹 -->
+    <update id="softDeleteByTgtBillId">
+        update hc_doc_bill_ref
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and tgt_bill_id = #{tgtBillId}
+          and (del_flag = 0 or del_flag is null)
+    </update>
+
+    <resultMap id="HcDocBillRefResult" type="com.spd.warehouse.domain.HcDocBillRef">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="biz_domain" property="bizDomain"/>
+        <result column="ref_type" property="refType"/>
+        <result column="src_bill_kind" property="srcBillKind"/>
+        <result column="src_bill_id" property="srcBillId"/>
+        <result column="src_bill_no" property="srcBillNo"/>
+        <result column="src_entry_id" property="srcEntryId"/>
+        <result column="src_entry_line_no" property="srcEntryLineNo"/>
+        <result column="tgt_bill_kind" property="tgtBillKind"/>
+        <result column="tgt_bill_id" property="tgtBillId"/>
+        <result column="tgt_bill_no" property="tgtBillNo"/>
+        <result column="tgt_entry_id" property="tgtEntryId"/>
+        <result column="line_no" property="lineNo"/>
+        <result column="ref_qty" property="refQty"/>
+        <result column="ref_amt" property="refAmt"/>
+        <result column="lock_warehouse_id" property="lockWarehouseId"/>
+        <result column="lock_supplier_id" property="lockSupplierId"/>
+        <result column="lock_department_id" property="lockDepartmentId"/>
+        <result column="remark" property="remark"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="delete_by" property="deleteBy"/>
+        <result column="delete_time" property="deleteTime"/>
+    </resultMap>
+
+    <select id="selectByTgtBillId" resultMap="HcDocBillRefResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select * from hc_doc_bill_ref
+        where tenant_id = #{scopedTenantId}
+          and tgt_bill_id = #{tgtBillId}
+          and (del_flag = 0 or del_flag is null)
+        order by IFNULL(line_no, 999999) asc, create_time asc
+    </select>
+</mapper>
