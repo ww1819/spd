@@ -38,9 +38,10 @@ public class StkIoBillOutController extends BaseController {
     private IWhWarehouseApplyService whWarehouseApplyService;
 
     /**
-     * 出库引用：分页查询仍有可出库数量的仓库申请单（科室申领按仓拆分后的 CKSQ 单）
+     * 出库引用：分页查询仍有可出库数量的仓库申请单（科室申领按仓拆分后的 CKSQ 单）。
+     * 权限与出库申请页、科室/仓库申请单列表对齐，避免仅有 list/add 而无 createCkEntriesByDApply 按钮权限时 403。
      */
-    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:list') || @ss.hasPermi('outWarehouse:apply:add') || @ss.hasPermi('outWarehouse:apply:edit') || @ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply') || @ss.hasPermi('department:whWarehouseApply:list') || @ss.hasPermi('department:dApply:list')")
     @GetMapping("/whApplyListForCk")
     public TableDataInfo whApplyListForCk(WhWarehouseApply query) {
         startPage();
@@ -152,7 +153,7 @@ public class StkIoBillOutController extends BaseController {
         stkIoBillService.exportOutWarehouseGroupedByBill(stkIoBill, response);
     }
 
-    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:list') || @ss.hasPermi('outWarehouse:apply:add') || @ss.hasPermi('outWarehouse:apply:edit') || @ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply') || @ss.hasPermi('department:whWarehouseApply:list') || @ss.hasPermi('department:dApply:list')")
     @GetMapping("/createCkEntriesByWhApply")
     public AjaxResult createCkEntriesByWhApply(@RequestParam String whWarehouseApplyId) {
         if (whWarehouseApplyId == null) {
