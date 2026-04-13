@@ -158,4 +158,17 @@ public interface StkInventoryMapper
      */
     BigDecimal selectSumQtyByMaterialAndWarehouse(@Param("materialId") Long materialId, @Param("warehouseId") Long warehouseId);
 
+    /**
+     * 科室申领：按耗材跨仓聚合可用库存（排除高值仓、设备仓等，与默认策略一致）
+     */
+    List<Map<String, Object>> selectMaterialAvailableAggForDeptApply(StkInventory stkInventory);
+
+    /**
+     * 科室申领审核按仓拆分：某耗材在租户下 FIFO 库存行
+     */
+    List<StkInventory> selectStkInventoryFifoForDeptApply(
+        @Param("tenantId") String tenantId,
+        @Param("materialId") Long materialId,
+        @Param("warehouseId") Long warehouseId);
+
 }

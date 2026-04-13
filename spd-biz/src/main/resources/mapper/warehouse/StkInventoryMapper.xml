@@ -560,4 +560,63 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
     </select>
+
+    <!-- 科室申领：按「耗材+仓库」聚合可用库存（排除高值/设备仓），明细保存 stock_warehouse_id 后审核仅在该仓拆分 -->
+    <select id="selectMaterialAvailableAggForDeptApply" parameterType="StkInventory" resultType="java.util.HashMap">
+        select stk.material_id materialId,
+               stk.warehouse_id warehouseId,
+               w.code warehouseCode,
+               w.name warehouseName,
+               m.code materialCode,
+               m.name materialName,
+               m.speci materialSpeci,
+               m.model materialModel,
+               u.unit_name unitName,
+               MAX(f.factory_name) factoryName,
+               wc.warehouse_category_name warehouseCategoryName,
+               fc.finance_category_name financeCategoryName,
+               m.package_speci packageSpeci,
+               m.register_no registerNo,
+               m.is_way isWay,
+               SUM(IFNULL(stk.qty, 0)) availableQty,
+               CASE WHEN SUM(IFNULL(stk.qty, 0)) &gt; 0
+                    THEN SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))) / SUM(IFNULL(stk.qty, 0))
+                    ELSE NULL END unitPrice,
+               ROUND(SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))), 2) materialAmt
+        from stk_inventory stk
+        inner join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on stk.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        where stk.qty &gt; 0
+          and (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
+        <if test="materialId != null"> and stk.material_id = #{materialId}</if>
+        <if test="materialName != null and materialName != ''">
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
+        <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
+        GROUP BY stk.material_id, stk.warehouse_id, w.code, w.name,
+                 m.code, m.name, m.speci, m.model, u.unit_name, m.package_speci, m.register_no, m.is_way,
+                 wc.warehouse_category_name, fc.finance_category_name
+        order by w.code, m.code
+    </select>
+
+    <!-- 科室申领审核拆分：指定仓库内按耗材 FIFO（入库日期、id）取可分配库存行 -->
+    <select id="selectStkInventoryFifoForDeptApply" resultMap="StkInventoryResult">
+        <include refid="selectStkInventoryVo"/>
+        where stk.qty &gt; 0
+          and (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and stk.material_id = #{materialId}
+          and stk.warehouse_id = #{warehouseId}
+          and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        order by stk.warehouse_date asc, stk.id asc
+    </select>
 </mapper>

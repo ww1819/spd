@@ -201,6 +201,12 @@ public interface IStkIoBillService
     public StkIoBill createCkEntriesByDApply(String dApplyId);
 
     /**
+     * 引用仓库申请单（科室申领审核按仓拆分）生成出库明细
+     * @param whWarehouseApplyId 仓库申请单主键 UUID7
+     */
+    StkIoBill createCkEntriesByWhApply(String whWarehouseApplyId);
+
+    /**
      * 引用入库单生成出库明细
      * @param rkApplyId 入库单id
      * @return

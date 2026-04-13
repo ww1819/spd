@@ -5,6 +5,7 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdWarehouse;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
@@ -30,6 +31,11 @@ public class BasApplyEntry extends BaseEntity
     /** 耗材ID */
     @Excel(name = "耗材ID")
     private Long materialId;
+
+    /**
+     * 制单时所选「可用库存」所属仓库（fd_warehouse.id），审核生成仓库申请单时仅在该仓内分配，避免串库
+     */
+    private Long stockWarehouseId;
 
     /** 单价 */
     @Excel(name = "单价")
@@ -75,6 +81,20 @@ public class BasApplyEntry extends BaseEntity
     /** 耗材对象 */
     private FdMaterial material;
 
+    /** 可用库存所属仓库（查询展示） */
+    private FdWarehouse stockWarehouse;
+
+    /** 待出库数量（按库房申请明细汇总；未生成库房申请单时等于申请数量） */
+    private BigDecimal pendingOutboundQty;
+    /** 出库待审核数量 */
+    private BigDecimal ckPendingAuditQty;
+    /** 已下推出库合计（关联出库数量，含待审核与已审核） */
+    private BigDecimal linkedCkQty;
+    /** 已审核出库数量 */
+    private BigDecimal ckAuditedQty;
+    /** 已作废数量（库房申请明细行累计作废） */
+    private BigDecimal whLineVoidQty;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -102,6 +122,15 @@ public class BasApplyEntry extends BaseEntity
     {
         return materialId;
     }
+
+    public Long getStockWarehouseId() {
+        return stockWarehouseId;
+    }
+
+    public void setStockWarehouseId(Long stockWarehouseId) {
+        this.stockWarehouseId = stockWarehouseId;
+    }
+
     public void setUnitPrice(BigDecimal unitPrice) 
     {
         this.unitPrice = unitPrice;
@@ -198,5 +227,53 @@ public class BasApplyEntry extends BaseEntity
 
     public void setMaterial(FdMaterial material) {
         this.material = material;
+    }
+
+    public FdWarehouse getStockWarehouse() {
+        return stockWarehouse;
+    }
+
+    public void setStockWarehouse(FdWarehouse stockWarehouse) {
+        this.stockWarehouse = stockWarehouse;
+    }
+
+    public BigDecimal getPendingOutboundQty() {
+        return pendingOutboundQty;
+    }
+
+    public void setPendingOutboundQty(BigDecimal pendingOutboundQty) {
+        this.pendingOutboundQty = pendingOutboundQty;
+    }
+
+    public BigDecimal getCkPendingAuditQty() {
+        return ckPendingAuditQty;
+    }
+
+    public void setCkPendingAuditQty(BigDecimal ckPendingAuditQty) {
+        this.ckPendingAuditQty = ckPendingAuditQty;
+    }
+
+    public BigDecimal getLinkedCkQty() {
+        return linkedCkQty;
+    }
+
+    public void setLinkedCkQty(BigDecimal linkedCkQty) {
+        this.linkedCkQty = linkedCkQty;
+    }
+
+    public BigDecimal getCkAuditedQty() {
+        return ckAuditedQty;
+    }
+
+    public void setCkAuditedQty(BigDecimal ckAuditedQty) {
+        this.ckAuditedQty = ckAuditedQty;
+    }
+
+    public BigDecimal getWhLineVoidQty() {
+        return whLineVoidQty;
+    }
+
+    public void setWhLineVoidQty(BigDecimal whLineVoidQty) {
+        this.whLineVoidQty = whLineVoidQty;
     }
 }

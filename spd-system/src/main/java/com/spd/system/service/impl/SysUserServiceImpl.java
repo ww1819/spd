@@ -1,6 +1,7 @@
 package com.spd.system.service.impl;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -31,6 +32,7 @@ import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysUserService;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 用户 业务层处理
@@ -79,6 +81,9 @@ public class SysUserServiceImpl implements ISysUserService
     private com.spd.system.service.ISbWorkGroupService sbWorkGroupService;
 
     @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    @Autowired
     protected Validator validator;
 
     /**
@@ -103,6 +108,30 @@ public class SysUserServiceImpl implements ISysUserService
         List<SysUser> list = userMapper.selectUserList(user);
         fillHcPostIdsFromUserPost(list);
         return list;
+    }
+
+    @Override
+    public List<SysUser> selectUsersForDeptApplyOperator(Long applyDepartmentId)
+    {
+        Long uid = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
+        boolean unrestricted = tenantScopeService.isTenantSuper(uid, customerId);
+        List<Long> deptScope = unrestricted ? null : tenantScopeService.resolveDepartmentScope(uid, customerId);
+        List<Long> scopeList = deptScope != null ? deptScope : Collections.emptyList();
+
+        if (!unrestricted && applyDepartmentId != null)
+        {
+            if (scopeList.isEmpty() || !scopeList.contains(applyDepartmentId))
+            {
+                return new ArrayList<>();
+            }
+        }
+
+        if (unrestricted)
+        {
+            return userMapper.selectUsersForDeptApplyOperator(customerId, applyDepartmentId, null, true);
+        }
+        return userMapper.selectUsersForDeptApplyOperator(customerId, applyDepartmentId, scopeList, false);
     }
 
     /**

@@ -26,6 +26,8 @@ import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.core.domain.entity.SysUser;
+import com.spd.system.service.ISysUserService;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -52,6 +54,20 @@ public class BasApplyController extends BaseController
 {
     @Autowired
     private IBasApplyService basApplyService;
+
+    @Autowired
+    private ISysUserService sysUserService;
+
+    /**
+     * 科室申领：操作人下拉（科室数据权限 + 选定申请科室时仅列出该科室关联用户）
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:list')")
+    @GetMapping("/operatorOptions")
+    public AjaxResult operatorOptions(@RequestParam(required = false) Long departmentId)
+    {
+        List<SysUser> list = sysUserService.selectUsersForDeptApplyOperator(departmentId);
+        return success(list);
+    }
 
     /**
      * 查询科室申领列表

@@ -1,7 +1,8 @@
 -- ========== 耗材模块 建表脚本 ==========
--- 执行顺序建议：1.table.sql 2.column.sql(含存储过程与增量字段) 3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
--- 本脚本已含：出入库/库存/批次/仓库与科室流水、盘点单、盈亏单、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置 sys_print_setting 等（与 column.sql 增量对齐）；存量库若已建表可跳过对应 CREATE IF NOT EXISTS
--- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；增量字段见 material/column.sql
+-- 执行顺序建议：1.table.sql 2.column.sql（存储过程 add_table_column + 存量库增量字段）3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
+-- 分工：本文件为全量 CREATE TABLE IF NOT EXISTS；column.sql 不再重复建表，仅对存量库已存在的表执行 CALL add_table_column 等增量（字段已存在则跳过）。
+-- 本脚本已含：出入库/库存/批次、仓库与科室流水、盘点/盈亏、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置、档案变更日志（fd_*_change_log）、盘盈待入账（stk_profit_loss_pending）、库房申请单（wh_warehouse_apply / wh_warehouse_apply_entry / wh_wh_apply_ck_entry_ref）等；存量库若已建表可跳过对应 CREATE。
+-- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；历史增量字段仍由 column.sql 补齐。
 -- 按「/」分段，每段一条语句执行
 /
 
@@ -1389,6 +1390,109 @@ CREATE TABLE IF NOT EXISTS `sys_print_setting` (
   KEY `idx_status` (`status`),
   KEY `idx_tenant_bill` (`tenant_id`,`bill_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='打印设置表';
+/
+
+-- 仓库申请单（科室申领审核通过后按仓库拆分；主键 UUID7 36 位）
+CREATE TABLE IF NOT EXISTS `wh_warehouse_apply` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位含连字符）',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `apply_bill_no` varchar(64) DEFAULT NULL COMMENT '仓库申请单号',
+  `bas_apply_id` varchar(32) NOT NULL COMMENT '科室申领主表ID（bas_apply.id，varchar便于与UUID体系一致）',
+  `bas_apply_bill_no` varchar(128) DEFAULT NULL COMMENT '科室申领单号',
+  `warehouse_id` bigint NOT NULL COMMENT '发货仓库ID（fd_warehouse.id）',
+  `department_id` bigint DEFAULT NULL COMMENT '申领目标科室ID',
+  `bill_status` int NOT NULL DEFAULT 2 COMMENT '状态：1待审核 2已生效(已自科室申领审核生成) 3关闭 5整单作废',
+  `void_whole_flag` int NOT NULL DEFAULT 0 COMMENT '整单作废：0否 1是',
+  `void_whole_by` varchar(64) DEFAULT NULL COMMENT '整单作废人',
+  `void_whole_time` datetime DEFAULT NULL COMMENT '整单作废时间',
+  `void_whole_reason` varchar(500) DEFAULT NULL COMMENT '整单作废原因',
+  `total_qty` decimal(18,2) DEFAULT NULL COMMENT '明细数量合计',
+  `total_amt` decimal(18,2) DEFAULT NULL COMMENT '明细金额合计',
+  `source_audit_date` datetime DEFAULT NULL COMMENT '科室申领审核时间（快照）',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_wh_wh_apply_tenant` (`tenant_id`),
+  KEY `idx_wh_wh_apply_bas` (`bas_apply_id`),
+  KEY `idx_wh_wh_apply_wh` (`warehouse_id`),
+  KEY `idx_wh_wh_apply_no` (`apply_bill_no`),
+  KEY `idx_wh_wh_apply_void` (`void_whole_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库申请单主表（由科室申领审核按仓拆分）';
+/
+
+CREATE TABLE IF NOT EXISTS `wh_warehouse_apply_entry` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `paren_id` varchar(36) NOT NULL COMMENT '仓库申请单主表ID',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `bas_apply_id` varchar(32) NOT NULL COMMENT '科室申领主表ID',
+  `bas_apply_bill_no` varchar(128) DEFAULT NULL COMMENT '科室申领单号',
+  `bas_apply_entry_id` varchar(32) NOT NULL COMMENT '科室申领明细ID（bas_apply_entry.id）',
+  `line_no` int DEFAULT NULL COMMENT '行号',
+  `material_id` bigint NOT NULL COMMENT '耗材ID',
+  `warehouse_id` bigint NOT NULL COMMENT '仓库ID（冗余，与主表一致）',
+  `stk_inventory_id` bigint DEFAULT NULL COMMENT '来源库存明细行ID（stk_inventory.id）',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价（按拆分时的库存行）',
+  `qty` decimal(18,2) DEFAULT NULL COMMENT '数量',
+  `price` decimal(18,2) DEFAULT NULL COMMENT '价格',
+  `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '入库批次号',
+  `batch_number` varchar(100) DEFAULT NULL COMMENT '生产批号',
+  `begin_time` date DEFAULT NULL COMMENT '生产日期',
+  `end_time` date DEFAULT NULL COMMENT '有效期',
+  `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
+  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID',
+  `line_void_status` int NOT NULL DEFAULT 0 COMMENT '明细作废状态：0正常 1已作废',
+  `line_void_qty` decimal(18,2) NOT NULL DEFAULT 0.00 COMMENT '累计作废数量',
+  `line_void_by` varchar(64) DEFAULT NULL COMMENT '最近一次明细作废操作人',
+  `line_void_time` datetime DEFAULT NULL COMMENT '最近一次明细作废时间',
+  `line_void_reason` varchar(500) DEFAULT NULL COMMENT '最近一次明细作废原因',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_wh_wh_apply_e_paren` (`paren_id`),
+  KEY `idx_wh_wh_apply_e_bas` (`bas_apply_id`),
+  KEY `idx_wh_wh_apply_e_mat` (`material_id`),
+  KEY `idx_wh_wh_apply_e_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库申请单明细（含科室申领明细追溯）';
+/
+
+-- 库房申请单明细 <-> 出库单明细 关联（主键 UUID7；外键类字段一律 varchar 存字符串）
+CREATE TABLE IF NOT EXISTS `wh_wh_apply_ck_entry_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位）',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `wh_apply_id` varchar(36) NOT NULL COMMENT '库房申请单主表ID',
+  `wh_apply_bill_no` varchar(64) DEFAULT NULL COMMENT '库房申请单号（冗余）',
+  `wh_apply_entry_id` varchar(36) NOT NULL COMMENT '库房申请单明细ID',
+  `ck_bill_id` varchar(32) NOT NULL COMMENT '出库单主表ID（stk_io_bill.id）',
+  `ck_bill_no` varchar(64) DEFAULT NULL COMMENT '出库单号（冗余）',
+  `ck_entry_id` varchar(32) NOT NULL COMMENT '出库单明细ID（stk_io_bill_entry.id）',
+  `ref_qty` decimal(18,2) NOT NULL COMMENT '本行关联数量',
+  `ref_amt` decimal(18,2) DEFAULT NULL COMMENT '关联金额快照',
+  `link_status` tinyint NOT NULL DEFAULT 1 COMMENT '1有效 0已解除',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_wh_ck_pair` (`wh_apply_entry_id`,`ck_entry_id`),
+  KEY `idx_wh_ck_ref_apply` (`wh_apply_id`),
+  KEY `idx_wh_ck_ref_ck` (`ck_bill_id`),
+  KEY `idx_wh_ck_ref_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房申请单明细与出库单明细关联';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

@@ -22,6 +22,15 @@ public interface SysUserMapper
     public List<SysUser> selectUserList(SysUser sysUser);
 
     /**
+     * 科室申领操作人下拉（见 ISysUserService#selectUsersForDeptApplyOperator）
+     */
+    List<SysUser> selectUsersForDeptApplyOperator(
+        @Param("customerId") String customerId,
+        @Param("applyDepartmentId") Long applyDepartmentId,
+        @Param("deptScopeIds") List<Long> deptScopeIds,
+        @Param("unrestricted") boolean unrestricted);
+
+    /**
      * 根据条件分页查询已配用户角色列表
      * 
      * @param user 用户信息

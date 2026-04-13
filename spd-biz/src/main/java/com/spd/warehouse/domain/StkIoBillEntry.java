@@ -128,6 +128,9 @@ public class StkIoBillEntry extends BaseEntity
     /** 作为源单明细时尚可引用数量（不落库） */
     private BigDecimal srcRefableQty;
 
+    /** 库房申请单明细 ID（UUID，不落库；保存出库单后写入 wh_wh_apply_ck_entry_ref） */
+    private String whApplyEntryId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -353,6 +356,14 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setSrcRefableQty(BigDecimal srcRefableQty) {
         this.srcRefableQty = srcRefableQty;
+    }
+
+    public String getWhApplyEntryId() {
+        return whApplyEntryId;
+    }
+
+    public void setWhApplyEntryId(String whApplyEntryId) {
+        this.whApplyEntryId = whApplyEntryId;
     }
 
     @Override

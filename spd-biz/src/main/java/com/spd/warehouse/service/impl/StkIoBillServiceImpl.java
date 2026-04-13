@@ -25,6 +25,9 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
+import com.spd.department.domain.WhWarehouseApply;
+import com.spd.department.domain.WhWarehouseApplyEntry;
+import com.spd.department.service.IWhWarehouseApplyService;
 import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.BasApplyMapper;
@@ -136,6 +139,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private BasApplyMapper basApplyMapper;
+
+    @Autowired
+    private IWhWarehouseApplyService whWarehouseApplyService;
 
     @Autowired
     private PurchaseOrderMapper purchaseOrderMapper;
@@ -258,6 +264,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertStkIoBillEntry(stkIoBill);
+        if (StringUtils.isNotEmpty(stkIoBill.getWhWarehouseApplyId())) {
+            whWarehouseApplyService.saveCkEntryRefsAfterOutboundInsert(stkIoBill);
+        }
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
             StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (reloaded != null) {
@@ -1923,6 +1932,73 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         stkIoBill.setDepartmentId(basApply.getDepartmentId());
+        return stkIoBill;
+    }
+
+    @Override
+    public StkIoBill createCkEntriesByWhApply(String whWarehouseApplyId) {
+        if (StringUtils.isEmpty(whWarehouseApplyId)) {
+            throw new ServiceException("仓库申请单ID不能为空");
+        }
+        WhWarehouseApply wh = whWarehouseApplyService.selectWhWarehouseApplyById(whWarehouseApplyId);
+        if (wh == null) {
+            throw new ServiceException(String.format("仓库申请单ID：%s 不存在", whWarehouseApplyId));
+        }
+        if (wh.getBillStatus() == null || wh.getBillStatus() != 2) {
+            throw new ServiceException("仓库申请单未生效，不能生成出库单");
+        }
+        if (Integer.valueOf(1).equals(wh.getVoidWholeFlag())) {
+            throw new ServiceException("库房申请单已整单作废，不能生成出库单");
+        }
+        StkIoBill stkIoBill = new StkIoBill();
+        stkIoBill.setWarehouseId(wh.getWarehouseId());
+        stkIoBill.setDepartmentId(wh.getDepartmentId());
+        stkIoBill.setBillType(201);
+        stkIoBill.setRefBillNo(wh.getApplyBillNo());
+        stkIoBill.setDApplyId(wh.getBasApplyId());
+        stkIoBill.setWhWarehouseApplyId(wh.getId());
+        stkIoBill.setWhWarehouseApplyBillNo(wh.getApplyBillNo());
+        List<WhWarehouseApplyEntry> list = wh.getEntryList();
+        if (list == null || list.isEmpty()) {
+            throw new ServiceException(String.format("仓库申请单ID：%s 无明细", whWarehouseApplyId));
+        }
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (WhWarehouseApplyEntry we : list) {
+            if (we == null) {
+                continue;
+            }
+            BigDecimal pend = we.getPendingOutboundQty();
+            if (pend == null || pend.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
+            stkIoBillEntry.setMaterialId(we.getMaterialId());
+            stkIoBillEntry.setQty(pend);
+            stkIoBillEntry.setUnitPrice(we.getUnitPrice());
+            if (we.getUnitPrice() != null) {
+                stkIoBillEntry.setAmt(we.getUnitPrice().multiply(pend).setScale(2, RoundingMode.HALF_UP));
+            } else {
+                stkIoBillEntry.setAmt(we.getAmt());
+            }
+            stkIoBillEntry.setBatchNo(we.getBatchNo());
+            stkIoBillEntry.setBatchNumber(we.getBatchNumber());
+            stkIoBillEntry.setBeginTime(we.getBeginTime());
+            stkIoBillEntry.setEndTime(we.getEndTime());
+            stkIoBillEntry.setWarehouseId(we.getWarehouseId());
+            stkIoBillEntry.setWhApplyEntryId(we.getId());
+            if (we.getSupplierId() != null) {
+                stkIoBillEntry.setSupplerId(String.valueOf(we.getSupplierId()));
+            }
+            if (we.getMaterialId() != null) {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(we.getMaterialId());
+                stkIoBillEntry.setMaterial(material);
+            }
+            entryList.add(stkIoBillEntry);
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
+        }
+        stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
     }
 

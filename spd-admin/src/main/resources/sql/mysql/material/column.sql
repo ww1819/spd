@@ -1,5 +1,5 @@
 -- ========== 耗材模块 增量字段（含 add_table_column 存储过程） ==========
--- 建议在 table.sql 之后执行；按「/」分段执行。新环境若已执行 table.sql 完整建表，本脚本中与 table 中已存在字段的 CALL 会跳过。
+-- 建议在 table.sql 之后执行；按「/」分段执行。全量建表仅在 material/table.sql，本脚本不含 CREATE TABLE；新环境执行 table.sql 后，本脚本中 CALL add_table_column 对已存在字段会自动跳过。
 /*
  * 存储过程：add_table_column
  * 功能：安全地为指定数据表添加新字段，避免重复添加
@@ -594,6 +594,7 @@ CALL add_table_column('bas_apply_entry', 'delete_by', 'varchar(64)', '删除者'
 CALL add_table_column('bas_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('bas_apply_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('bas_apply_entry', 'stock_warehouse_id', 'bigint', '科室申领明细可用库存所属仓库(fd_warehouse.id)，审核按该仓拆分避免串库', NULL);
 /
 
 -- bas_apply_template（表已有 create_by 等；补 delete/tenant 若缺）
@@ -694,20 +695,7 @@ CALL add_table_column('fd_supplier', 'tenant_id', 'varchar(36)', '租户ID', NUL
 CALL add_table_column('fd_supplier', 'his_id', 'varchar(128)', 'HIS供应商ID', NULL);
 /
 
-CREATE TABLE IF NOT EXISTS `fd_supplier_change_log` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `supplier_id` bigint NOT NULL COMMENT '供应商ID（fd_supplier.id）',
-  `change_time` datetime NOT NULL COMMENT '变更时间',
-  `operator` varchar(64) NOT NULL COMMENT '操作人',
-  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
-  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
-  `old_value` text COMMENT '原值',
-  `new_value` text COMMENT '新值',
-  PRIMARY KEY (`id`),
-  KEY `idx_fd_supplier_log_supp` (`supplier_id`),
-  KEY `idx_fd_supplier_log_time` (`change_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商档案变更记录';
-/
+-- 供应商档案变更记录表 fd_supplier_change_log：全量建表见 material/table.sql
 
 -- fd_factory 生产厂家
 CALL add_table_column('fd_factory', 'tenant_id', 'varchar(36)', '租户ID', NULL);
@@ -719,20 +707,7 @@ CALL add_table_column('fd_factory', 'delete_time', 'datetime', '删除时间', N
 CALL add_table_column('fd_factory', 'his_id', 'varchar(128)', 'HIS生产厂家ID', NULL);
 /
 
-CREATE TABLE IF NOT EXISTS `fd_factory_change_log` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `factory_id` bigint NOT NULL COMMENT '生产厂家ID（fd_factory.factory_id）',
-  `change_time` datetime NOT NULL COMMENT '变更时间',
-  `operator` varchar(64) NOT NULL COMMENT '操作人',
-  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
-  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
-  `old_value` text COMMENT '原值',
-  `new_value` text COMMENT '新值',
-  PRIMARY KEY (`id`),
-  KEY `idx_fd_factory_log_fid` (`factory_id`),
-  KEY `idx_fd_factory_log_time` (`change_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生产厂家档案变更记录';
-/
+-- 生产厂家档案变更记录表 fd_factory_change_log：全量建表见 material/table.sql
 
 -- fd_unit 计量单位
 CALL add_table_column('fd_unit', 'tenant_id', 'varchar(36)', '租户ID', NULL);
@@ -1354,61 +1329,12 @@ CALL add_table_column('gz_dep_inventory', 'tenant_id', 'varchar(36)', '租户ID(
 CALL add_table_column('t_hc_ks_xh_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
 
-CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
-  `change_time` datetime NOT NULL COMMENT '变更时间',
-  `operator` varchar(64) NOT NULL COMMENT '操作人',
-  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
-  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
-  `old_value` text COMMENT '原值',
-  `new_value` text COMMENT '新值',
-  PRIMARY KEY (`id`),
-  KEY `idx_fd_dept_log_dept` (`department_id`),
-  KEY `idx_fd_dept_log_time` (`change_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
-/
+-- 科室档案变更记录表 fd_department_change_log：全量建表见 material/table.sql
 
 ALTER TABLE purchase_plan MODIFY COLUMN plan_status char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '1' NOT NULL COMMENT '计划状态（0未提交1待审核 2已审核 3已执行 4已取消）';
 /
 
--- ========== 盘盈新增明细/待入账表：stk_profit_loss_pending ==========
-CREATE TABLE IF NOT EXISTS `stk_profit_loss_pending` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `bill_id` bigint DEFAULT NULL COMMENT '盈亏单主表id（stk_io_profit_loss.id）',
-  `entry_id` bigint DEFAULT NULL COMMENT '盈亏单明细id（stk_io_profit_loss_entry.id）',
-  `warehouse_id` bigint DEFAULT NULL COMMENT '来源仓库ID',
-  `department_id` bigint DEFAULT NULL COMMENT '目标科室ID（如适用）',
-  `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
-  `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID（fd_supplier.id）',
-  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
-  `batch_id` bigint DEFAULT NULL COMMENT '批次对象表ID（stk_batch.id）',
-  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
-  `qty` decimal(18,2) DEFAULT NULL COMMENT '待入账数量',
-  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
-  `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
-  `begin_time` date DEFAULT NULL COMMENT '生产日期',
-  `end_time` date DEFAULT NULL COMMENT '有效期',
-  `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值耗材主条码',
-  `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值耗材辅条码',
-  `apply_status` varchar(32) DEFAULT '待入账' COMMENT '入账状态：待入账/已入账/仅追溯用',
-  `settlement_effect_status` varchar(32) DEFAULT '仅追溯用' COMMENT '结算影响：已入账/仅追溯用',
-  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
-  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
-  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
-  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_stk_profit_pending_bill` (`bill_id`,`entry_id`),
-  KEY `idx_stk_profit_pending_batch` (`batch_no`),
-  KEY `idx_stk_profit_pending_batch_id` (`batch_id`),
-  KEY `idx_stk_profit_pending_wh` (`warehouse_id`),
-  KEY `idx_stk_profit_pending_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盘盈新增明细/待入账表（不直接影响结算）';
-/
+-- 盘盈新增明细/待入账表 stk_profit_loss_pending：全量建表见 material/table.sql
 
 -- ========== sys_print_setting：存量表补 tenant_id 与索引（新库已在 table.sql 全量建表含 idx_tenant_bill）==========
 CALL add_table_column('sys_print_setting', 'tenant_id', 'varchar(64)', '租户/客户ID，NULL表示全库默认模板', NULL);
@@ -1471,4 +1397,21 @@ WHERE IFNULL(c.hc_status, '0') = '0'
     WHERE h.tenant_id = c.customer_id
       AND h.menu_id = m.menu_id
   );
+/
+
+-- ========== 库房申请单（科室申领审核按仓拆分）==========
+-- 全量建表：wh_warehouse_apply、wh_warehouse_apply_entry、wh_wh_apply_ck_entry_ref 见 material/table.sql
+-- 存量库若表已存在但缺少作废/关联相关列，下列 CALL 安全补齐（已存在则跳过）
+CALL add_table_column('wh_warehouse_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '整单作废：0否 1是', '0');
+CALL add_table_column('wh_warehouse_apply', 'void_whole_by', 'varchar(64)', '整单作废人', NULL);
+CALL add_table_column('wh_warehouse_apply', 'void_whole_time', 'datetime', '整单作废时间', NULL);
+CALL add_table_column('wh_warehouse_apply', 'void_whole_reason', 'varchar(500)', '整单作废原因', NULL);
+
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '明细作废状态：0正常 1已作废', '0');
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '累计作废数量', '0');
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_by', 'varchar(64)', '明细作废操作人', NULL);
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_time', 'datetime', '明细作废时间', NULL);
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(500)', '明细作废原因', NULL);
+
+-- wh_wh_apply_ck_entry_ref（出库关联表）全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
 /

@@ -19,6 +19,13 @@ public interface ISysUserService
     public List<SysUser> selectUserList(SysUser user);
 
     /**
+     * 科室申领操作人候选：未选申请科室时为「无 sys_user_department 关联 ∪ 当前用户科室权限内科室人员」；选定申请科室后仅该科室下人员。
+     *
+     * @param applyDepartmentId 申请科室 fd_department.id，可为空
+     */
+    List<SysUser> selectUsersForDeptApplyOperator(Long applyDepartmentId);
+
+    /**
      * 根据条件分页查询已分配用户角色列表
      * 
      * @param user 用户信息

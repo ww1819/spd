@@ -227,6 +227,12 @@ public class StkIoBill extends BaseEntity
      */
     private String dApplyId;
 
+    /** 库房申请单主键 UUID7（出库单由库房申请单生成时携带，不落 stk_io_bill 表，仅用于保存后写关联） */
+    private String whWarehouseApplyId;
+
+    /** 库房申请单号（冗余，写关联表） */
+    private String whWarehouseApplyBillNo;
+
     /**
      * 订单ID
      */
@@ -737,6 +743,22 @@ public class StkIoBill extends BaseEntity
 
     public void setDApplyId(String dApplyId) {
         this.dApplyId = dApplyId;
+    }
+
+    public String getWhWarehouseApplyId() {
+        return whWarehouseApplyId;
+    }
+
+    public void setWhWarehouseApplyId(String whWarehouseApplyId) {
+        this.whWarehouseApplyId = whWarehouseApplyId;
+    }
+
+    public String getWhWarehouseApplyBillNo() {
+        return whWarehouseApplyBillNo;
+    }
+
+    public void setWhWarehouseApplyBillNo(String whWarehouseApplyBillNo) {
+        this.whWarehouseApplyBillNo = whWarehouseApplyBillNo;
     }
 
     public String getDingdanId() {

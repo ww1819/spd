@@ -4,6 +4,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.system.mapper.SysUserMapper">
 
+    <resultMap type="SysUser" id="SysUserOptionResult">
+        <id property="userId" column="user_id"/>
+        <result property="nickName" column="nick_name"/>
+        <result property="userName" column="user_name"/>
+    </resultMap>
+
     <resultMap type="SysUser" id="SysUserResult">
         <id     property="userId"       column="user_id"      />
         <result property="deptId"       column="dept_id"      />
@@ -117,6 +123,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
 	</select>
+
+    <select id="selectUsersForDeptApplyOperator" resultMap="SysUserOptionResult">
+        select distinct u.user_id, u.nick_name, u.user_name
+        from sys_user u
+        where u.del_flag = '0'
+          and u.status = '0'
+          and u.customer_id = #{customerId}
+        <if test="applyDepartmentId != null">
+            and exists (
+                select 1 from sys_user_department sud
+                where sud.user_id = u.user_id and sud.department_id = #{applyDepartmentId}
+            )
+        </if>
+        <if test="applyDepartmentId == null">
+            <choose>
+                <when test="unrestricted">
+                </when>
+                <when test="deptScopeIds == null or deptScopeIds.size() == 0">
+                    and not exists (select 1 from sys_user_department sud where sud.user_id = u.user_id)
+                </when>
+                <otherwise>
+                    and (
+                        not exists (select 1 from sys_user_department sud where sud.user_id = u.user_id)
+                        or exists (
+                            select 1 from sys_user_department sud
+                            where sud.user_id = u.user_id
+                              and sud.department_id in
+                            <foreach collection="deptScopeIds" item="did" open="(" separator="," close=")">#{did}</foreach>
+                        )
+                    )
+                </otherwise>
+            </choose>
+        </if>
+        order by u.user_name
+    </select>
 	
 	<select id="selectAllocatedList" parameterType="SysUser" resultMap="SysUserResult">
 	    select distinct u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.phonenumber, u.status, u.create_time

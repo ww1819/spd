@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.exception.ServiceException;
@@ -24,6 +25,8 @@ import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
+import com.spd.department.service.IWhWarehouseApplyService;
+import com.spd.department.vo.BasApplyOutboundRefVo;
 
 /**
  * 科室申领Service业务层处理
@@ -46,6 +49,9 @@ public class BasApplyServiceImpl implements IBasApplyService
 
     @Autowired
     private HcKsFlowMapper hcKsFlowMapper;
+
+    @Autowired
+    private IWhWarehouseApplyService whWarehouseApplyService;
 
     /** 非租户管理员：仅能访问已授权科室的申领/转科等 bas_apply 单据 */
     private void assertDepartmentInUserScope(Long departmentId) {
@@ -111,6 +117,8 @@ public class BasApplyServiceImpl implements IBasApplyService
                 }
             }
         }
+        List<BasApplyOutboundRefVo> outboundRefs = basApplyMapper.selectBasApplyOutboundRefsByBasApplyId(id);
+        basApply.setOutboundRefList(outboundRefs != null ? outboundRefs : Collections.emptyList());
         return basApply;
     }
 
@@ -129,14 +137,36 @@ public class BasApplyServiceImpl implements IBasApplyService
         return basApplyMapper.selectBasApplyList(basApply);
     }
 
-    /** 校验明细数量：有耗材的明细数量不能为空且必须大于0 */
-    private void validateEntryQty(List<BasApplyEntry> list) {
-        if (list == null) return;
+    /**
+     * 校验明细数量；申领单（billType=1）还须填写可用库存所属仓库，供审核按仓拆分、避免串库。
+     */
+    private void validateEntryQty(BasApply basApply) {
+        List<BasApplyEntry> list = basApply == null ? null : basApply.getBasApplyEntryList();
+        if (list == null) {
+            return;
+        }
         for (BasApplyEntry e : list) {
+            if (e == null) {
+                continue;
+            }
             if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
                 throw new ServiceException("科室申领单明细中数量不能为空且必须大于0，请检查后保存。");
             }
+            if (deptApplyConsumableRequiresStockWarehouse(basApply)
+                && e.getMaterialId() != null
+                && e.getStockWarehouseId() == null) {
+                throw new ServiceException("科室申领明细须指定可用库存所属仓库（请从按仓库汇总的可选行添加），保存或审核前请补全。");
+            }
         }
+    }
+
+    /** billType=1：明细绑定 stock_warehouse_id；2 申购、3 转科不要求 */
+    private static boolean deptApplyConsumableRequiresStockWarehouse(BasApply basApply) {
+        if (basApply == null) {
+            return false;
+        }
+        Integer t = basApply.getBillType();
+        return t != null && t == 1;
     }
 
     /**
@@ -156,12 +186,18 @@ public class BasApplyServiceImpl implements IBasApplyService
             throw new ServiceException("科室不能为空，请先选择科室");
         }
         assertDepartmentInUserScope(basApply.getDepartmentId());
-        validateEntryQty(basApply.getBasApplyEntryList());
+        validateEntryQty(basApply);
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
         }
         basApply.setCreateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(basApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
+        if (basApply.getBillType() == null) {
+            basApply.setBillType(1);
+        }
+        if (basApply.getBillType() != null && basApply.getBillType() == 1) {
+            basApply.setWarehouseId(null);
+            basApply.setCreateBy(SecurityUtils.getUserIdStr());
+        } else if (StringUtils.isEmpty(basApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             basApply.setCreateBy(SecurityUtils.getUserIdStr());
         }
         basApply.setApplyBillNo(getNumber(basApply.getBillType()));
@@ -210,7 +246,20 @@ public class BasApplyServiceImpl implements IBasApplyService
             assertBasApplyDepartmentInUserScope(existing);
         }
         assertDepartmentInUserScope(basApply.getDepartmentId());
-        validateEntryQty(basApply.getBasApplyEntryList());
+        if (basApply.getBillType() == null && existing != null) {
+            basApply.setBillType(existing.getBillType());
+        }
+        validateEntryQty(basApply);
+        if (existing != null) {
+            basApply.setCreateBy(existing.getCreateBy());
+            basApply.setCreateTime(existing.getCreateTime());
+        }
+        Integer billType = basApply.getBillType() != null ? basApply.getBillType()
+            : (existing != null ? existing.getBillType() : null);
+        if (billType != null && billType == 1) {
+            basApply.setWarehouseId(null);
+            basApply.getParams().put("clearDeptApplyHeaderWarehouse", Boolean.TRUE);
+        }
         basApply.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             basApply.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -269,6 +318,7 @@ public class BasApplyServiceImpl implements IBasApplyService
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int auditApply(String id, String auditBy) {
         BasApply basApply = basApplyMapper.selectBasApplyById(Long.parseLong(id));
         if (basApply == null) {
@@ -279,13 +329,16 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply.getApplyBillStatus() == null || basApply.getApplyBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申领可审核，当前状态：" + basApply.getApplyBillStatus());
         }
-        validateEntryQty(basApply.getBasApplyEntryList());
+        validateEntryQty(basApply);
         basApply.setApplyBillStatus(2);//已审核状态
         basApply.setAuditBy(auditBy);
         basApply.setAuditDate(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
         if (res > 0 && basApply.getBillType() != null && basApply.getBillType() == 3) {
             executeDepartmentTransferInventory(basApply);
+        }
+        if (res > 0 && basApply.getBillType() != null && basApply.getBillType() == 1) {
+            whWarehouseApplyService.generateFromDeptApplyAfterAudit(basApply);
         }
         return res;
     }

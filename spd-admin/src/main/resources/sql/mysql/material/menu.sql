@@ -3823,6 +3823,103 @@ WHERE @npr_menu IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @npr_menu AND perms = 'department:newProductAudit:reject');
 /
 
+-- ========== 科室：库房申请单（department/whWarehouseApply；WhWarehouseApplyController）==========
+-- 接口：GET /department/whWarehouseApply/list、/{id}；POST voidWhole、voidEntry；perms 与控制器 @PreAuthorize 一致（含 department:dApply / outWarehouse:apply 兼容）
+/
+
+SET @dept_parent_wh := COALESCE(
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'department' ORDER BY m.menu_id LIMIT 1),
+  (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component LIKE 'department/%' ORDER BY m.menu_id LIMIT 1),
+  1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '库房申请单',
+  @dept_parent_wh,
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @dept_parent_wh),
+  'whWarehouseApply',
+  'department/whWarehouseApply/index',
+  NULL,
+  1, 0, 'C', '0', '0', 'department:whWarehouseApply:list', 'list',
+  'admin', NOW(), '1', NOW(), '科室申领审核按仓拆分后的库房申请单',
+  '0', '0'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/whWarehouseApply/index');
+/
+
+SET @wh_apply_menu := (
+  SELECT menu_id FROM sys_menu WHERE component = 'department/whWarehouseApply/index' AND menu_type = 'C' ORDER BY menu_id DESC LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '库房申请单查询',
+  @wh_apply_menu,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'department:whWarehouseApply:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE @wh_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wh_apply_menu AND perms = 'department:whWarehouseApply:query');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '库房申请单整单作废',
+  @wh_apply_menu,
+  2,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'department:whWarehouseApply:voidWhole', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE @wh_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wh_apply_menu AND perms = 'department:whWarehouseApply:voidWhole');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '库房申请单明细作废',
+  @wh_apply_menu,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'department:whWarehouseApply:voidEntry', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE @wh_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wh_apply_menu AND perms = 'department:whWarehouseApply:voidEntry');
+/
+
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()

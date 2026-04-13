@@ -620,6 +620,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user au on a.audit_by = au.user_id
         left join sys_user cu on a.create_by = cu.user_id
         where a.id = #{id} and a.tenant_id = #{scopedTenantId}
+        order by b.id asc
     </select>
 
     <insert id="insertStkIoBill" parameterType="StkIoBill" useGeneratedKeys="true" keyProperty="id">

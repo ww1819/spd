@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.WhWarehouseApplyMapper">
+
+    <resultMap type="WhWarehouseApply" id="WhWarehouseApplyResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="applyBillNo" column="apply_bill_no"/>
+        <result property="basApplyId" column="bas_apply_id"/>
+        <result property="basApplyBillNo" column="bas_apply_bill_no"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="billStatus" column="bill_status"/>
+        <result property="voidWholeFlag" column="void_whole_flag"/>
+        <result property="voidWholeBy" column="void_whole_by"/>
+        <result property="voidWholeTime" column="void_whole_time"/>
+        <result property="voidWholeReason" column="void_whole_reason"/>
+        <result property="totalQty" column="total_qty"/>
+        <result property="totalAmt" column="total_amt"/>
+        <result property="sourceAuditDate" column="source_audit_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <association property="warehouse" javaType="FdWarehouse" resultMap="whRes"/>
+        <association property="department" javaType="FdDepartment" resultMap="deptRes"/>
+    </resultMap>
+
+    <resultMap id="whRes" type="FdWarehouse">
+        <id property="id" column="w_id"/>
+        <result property="name" column="w_name"/>
+        <result property="code" column="w_code"/>
+    </resultMap>
+
+    <resultMap id="deptRes" type="FdDepartment">
+        <id property="id" column="d_id"/>
+        <result property="name" column="d_name"/>
+        <result property="code" column="d_code"/>
+    </resultMap>
+
+    <resultMap type="WhWarehouseApplyEntry" id="WhWarehouseApplyEntryResult">
+        <id property="id" column="e_id"/>
+        <result property="parenId" column="e_paren_id"/>
+        <result property="tenantId" column="e_tenant_id"/>
+        <result property="basApplyId" column="e_bas_apply_id"/>
+        <result property="basApplyBillNo" column="e_bas_apply_bill_no"/>
+        <result property="basApplyEntryId" column="e_bas_apply_entry_id"/>
+        <result property="lineNo" column="e_line_no"/>
+        <result property="materialId" column="e_material_id"/>
+        <result property="warehouseId" column="e_warehouse_id"/>
+        <result property="stkInventoryId" column="e_stk_inventory_id"/>
+        <result property="unitPrice" column="e_unit_price"/>
+        <result property="qty" column="e_qty"/>
+        <result property="price" column="e_price"/>
+        <result property="amt" column="e_amt"/>
+        <result property="batchNo" column="e_batch_no"/>
+        <result property="batchNumber" column="e_batch_number"/>
+        <result property="beginTime" column="e_begin_time"/>
+        <result property="endTime" column="e_end_time"/>
+        <result property="supplierId" column="e_supplier_id"/>
+        <result property="factoryId" column="e_factory_id"/>
+        <result property="lineVoidStatus" column="e_line_void_status"/>
+        <result property="lineVoidQty" column="e_line_void_qty"/>
+        <result property="lineVoidBy" column="e_line_void_by"/>
+        <result property="lineVoidTime" column="e_line_void_time"/>
+        <result property="lineVoidReason" column="e_line_void_reason"/>
+        <result property="delFlag" column="e_del_flag"/>
+        <result property="remark" column="e_remark"/>
+        <result property="linkedCkQty" column="e_linked_ck_qty"/>
+        <result property="ckPendingAuditQty" column="e_ck_pending_audit_qty"/>
+        <result property="ckAuditedQty" column="e_ck_audited_qty"/>
+        <result property="pendingOutboundQty" column="e_pending_outbound_qty"/>
+    </resultMap>
+
+    <select id="countActiveByBasApplyId" resultType="int">
+        select count(*) from wh_warehouse_apply
+        where bas_apply_id = #{basApplyId}
+          and tenant_id = #{tenantId}
+          and (del_flag = 0 or del_flag is null)
+    </select>
+
+    <select id="selectMaxBillNo" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select max(apply_bill_no) from wh_warehouse_apply
+        where apply_bill_no like concat('%', #{date}, '%')
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+    </select>
+
+    <insert id="insertWhWarehouseApply" parameterType="WhWarehouseApply">
+        insert into wh_warehouse_apply (
+            id, tenant_id, apply_bill_no, bas_apply_id, bas_apply_bill_no, warehouse_id, department_id,
+            bill_status, void_whole_flag, total_qty, total_amt, source_audit_date, del_flag,
+            create_by, create_time, remark
+        ) values (
+            #{id}, #{tenantId}, #{applyBillNo}, #{basApplyId}, #{basApplyBillNo}, #{warehouseId}, #{departmentId},
+            #{billStatus},
+            <choose><when test="voidWholeFlag != null">#{voidWholeFlag}</when><otherwise>0</otherwise></choose>,
+            #{totalQty}, #{totalAmt}, #{sourceAuditDate}, #{delFlag},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <insert id="insertWhWarehouseApplyEntry" parameterType="WhWarehouseApplyEntry">
+        insert into wh_warehouse_apply_entry (
+            id, paren_id, tenant_id, bas_apply_id, bas_apply_bill_no, bas_apply_entry_id, line_no,
+            material_id, warehouse_id, stk_inventory_id, unit_price, qty, price, amt,
+            batch_no, batch_number, begin_time, end_time, supplier_id, factory_id,
+            line_void_status, line_void_qty, del_flag,
+            create_by, create_time, remark
+        ) values (
+            #{id}, #{parenId}, #{tenantId}, #{basApplyId}, #{basApplyBillNo}, #{basApplyEntryId}, #{lineNo},
+            #{materialId}, #{warehouseId}, #{stkInventoryId}, #{unitPrice}, #{qty}, #{price}, #{amt},
+            #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{supplierId}, #{factoryId},
+            <choose><when test="lineVoidStatus != null">#{lineVoidStatus}</when><otherwise>0</otherwise></choose>,
+            <choose><when test="lineVoidQty != null">#{lineVoidQty}</when><otherwise>0</otherwise></choose>,
+            #{delFlag},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <select id="selectWhWarehouseApplyById" resultMap="WhWarehouseApplyResult">
+        select m.id, m.tenant_id, m.apply_bill_no, m.bas_apply_id, m.bas_apply_bill_no, m.warehouse_id, m.department_id,
+               m.bill_status, m.void_whole_flag, m.void_whole_by, m.void_whole_time, m.void_whole_reason,
+               m.total_qty, m.total_amt, m.source_audit_date, m.del_flag,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               w.id w_id, w.name w_name, w.code w_code,
+               d.id d_id, d.name d_name, d.code d_code
+        from wh_warehouse_apply m
+        left join fd_warehouse w on m.warehouse_id = w.id
+        left join fd_department d on m.department_id = d.id
+        where m.id = #{id}
+          and (m.del_flag = 0 or m.del_flag is null)
+    </select>
+
+    <select id="selectWhWarehouseApplyEntryListByParenId" resultMap="WhWarehouseApplyEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select e.id e_id, e.paren_id e_paren_id, e.tenant_id e_tenant_id, e.bas_apply_id e_bas_apply_id,
+               e.bas_apply_bill_no e_bas_apply_bill_no, e.bas_apply_entry_id e_bas_apply_entry_id, e.line_no e_line_no,
+               e.material_id e_material_id, e.warehouse_id e_warehouse_id, e.stk_inventory_id e_stk_inventory_id,
+               e.unit_price e_unit_price, e.qty e_qty, e.price e_price, e.amt e_amt,
+               e.batch_no e_batch_no, e.batch_number e_batch_number, e.begin_time e_begin_time, e.end_time e_end_time,
+               e.supplier_id e_supplier_id, e.factory_id e_factory_id,
+               e.line_void_status e_line_void_status, e.line_void_qty e_line_void_qty,
+               e.line_void_by e_line_void_by, e.line_void_time e_line_void_time, e.line_void_reason e_line_void_reason,
+               e.del_flag e_del_flag, e.remark e_remark,
+               coalesce(s.linked_qty, 0) e_linked_ck_qty,
+               coalesce(s.pending_audit_qty, 0) e_ck_pending_audit_qty,
+               coalesce(s.audited_qty, 0) e_ck_audited_qty,
+               (e.qty - coalesce(e.line_void_qty, 0) - coalesce(s.linked_qty, 0)) e_pending_outbound_qty
+        from wh_warehouse_apply_entry e
+        left join (
+            select r.wh_apply_entry_id wid,
+                   sum(case when r.del_flag = 0 and r.link_status = 1
+                             and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
+                        then r.ref_qty else 0 end) linked_qty,
+                   sum(case when r.del_flag = 0 and r.link_status = 1
+                             and b.id is not null and (b.del_flag = 0 or b.del_flag is null)
+                             and b.bill_status = 1 and b.bill_type = 201
+                        then r.ref_qty else 0 end) pending_audit_qty,
+                   sum(case when r.del_flag = 0 and r.link_status = 1
+                             and b.id is not null and (b.del_flag = 0 or b.del_flag is null)
+                             and b.bill_status = 2 and b.bill_type = 201
+                        then r.ref_qty else 0 end) audited_qty
+            from wh_wh_apply_ck_entry_ref r
+            left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+            where r.wh_apply_id = #{parenId} and r.tenant_id = #{scopedTenantId}
+            group by r.wh_apply_entry_id
+        ) s on s.wid = e.id
+        where e.paren_id = #{parenId}
+          and (e.del_flag = 0 or e.del_flag is null)
+        order by e.line_no asc, e.id asc
+    </select>
+
+    <select id="selectWhWarehouseApplyEntryById" resultMap="WhWarehouseApplyEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select e.id e_id, e.paren_id e_paren_id, e.tenant_id e_tenant_id, e.bas_apply_id e_bas_apply_id,
+               e.bas_apply_bill_no e_bas_apply_bill_no, e.bas_apply_entry_id e_bas_apply_entry_id, e.line_no e_line_no,
+               e.material_id e_material_id, e.warehouse_id e_warehouse_id, e.stk_inventory_id e_stk_inventory_id,
+               e.unit_price e_unit_price, e.qty e_qty, e.price e_price, e.amt e_amt,
+               e.batch_no e_batch_no, e.batch_number e_batch_number, e.begin_time e_begin_time, e.end_time e_end_time,
+               e.supplier_id e_supplier_id, e.factory_id e_factory_id,
+               e.line_void_status e_line_void_status, e.line_void_qty e_line_void_qty,
+               e.line_void_by e_line_void_by, e.line_void_time e_line_void_time, e.line_void_reason e_line_void_reason,
+               e.del_flag e_del_flag, e.remark e_remark,
+               0 e_linked_ck_qty, 0 e_ck_pending_audit_qty, 0 e_ck_audited_qty, 0 e_pending_outbound_qty
+        from wh_warehouse_apply_entry e
+        where e.id = #{id} and e.tenant_id = #{scopedTenantId}
+          and (e.del_flag = 0 or e.del_flag is null)
+    </select>
+
+    <update id="updateWhWarehouseApplyVoidWhole">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update wh_warehouse_apply
+        set void_whole_flag = 1, bill_status = 5,
+            void_whole_by = #{voidWholeBy}, void_whole_time = #{voidWholeTime}, void_whole_reason = #{voidWholeReason},
+            update_by = #{voidWholeBy}, update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+          and (void_whole_flag = 0 or void_whole_flag is null)
+          and (del_flag = 0 or del_flag is null)
+    </update>
+
+    <update id="updateWhWarehouseApplyEntryLineVoid">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update wh_warehouse_apply_entry
+        set line_void_status = #{lineVoidStatus}, line_void_qty = #{lineVoidQty},
+            line_void_by = #{lineVoidBy}, line_void_time = #{lineVoidTime}, line_void_reason = #{lineVoidReason},
+            update_by = #{lineVoidBy}, update_time = now()
+        where id = #{id} and paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+    </update>
+
+    <select id="countActiveCkRefsByWhApplyId" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select count(*) from wh_wh_apply_ck_entry_ref
+        where wh_apply_id = #{whApplyId} and tenant_id = #{scopedTenantId}
+          and del_flag = 0 and link_status = 1
+    </select>
+
+    <select id="sumLinkedQtyByWhApplyEntryId" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select coalesce(sum(ref_qty), 0) from wh_wh_apply_ck_entry_ref
+        where wh_apply_entry_id = #{entryId} and tenant_id = #{scopedTenantId}
+          and del_flag = 0 and link_status = 1
+    </select>
+
+    <select id="selectWhWarehouseApplyList" parameterType="WhWarehouseApply" resultMap="WhWarehouseApplyResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select m.id, m.tenant_id, m.apply_bill_no, m.bas_apply_id, m.bas_apply_bill_no, m.warehouse_id, m.department_id,
+               m.bill_status, m.void_whole_flag, m.void_whole_by, m.void_whole_time, m.void_whole_reason,
+               m.total_qty, m.total_amt, m.source_audit_date, m.del_flag,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               w.id w_id, w.name w_name, w.code w_code,
+               d.id d_id, d.name d_name, d.code d_code
+        from wh_warehouse_apply m
+        left join fd_warehouse w on m.warehouse_id = w.id
+        left join fd_department d on m.department_id = d.id
+        <where>
+            m.tenant_id = #{scopedTenantId}
+            and (m.del_flag = 0 or m.del_flag is null)
+            <if test="includeVoidWhole == null or includeVoidWhole == false">
+                and (m.void_whole_flag = 0 or m.void_whole_flag is null)
+            </if>
+            <if test="applyBillNo != null and applyBillNo != ''">and m.apply_bill_no = #{applyBillNo}</if>
+            <if test="basApplyId != null and basApplyId != ''">and m.bas_apply_id = #{basApplyId}</if>
+            <if test="basApplyBillNo != null and basApplyBillNo != ''">and m.bas_apply_bill_no = #{basApplyBillNo}</if>
+            <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null">and m.department_id = #{departmentId}</if>
+            <if test="billStatus != null">and m.bill_status = #{billStatus}</if>
+        </where>
+        order by m.create_time desc, m.id desc
+    </select>
+
+    <insert id="insertWhWhApplyCkEntryRef" parameterType="com.spd.department.domain.WhWhApplyCkEntryRef">
+        insert into wh_wh_apply_ck_entry_ref (
+            id, tenant_id, wh_apply_id, wh_apply_bill_no, wh_apply_entry_id,
+            ck_bill_id, ck_bill_no, ck_entry_id, ref_qty, ref_amt, link_status, del_flag,
+            create_by, create_time, remark
+        ) values (
+            #{id}, #{tenantId}, #{whApplyId}, #{whApplyBillNo}, #{whApplyEntryId},
+            #{ckBillId}, #{ckBillNo}, #{ckEntryId}, #{refQty}, #{refAmt}, #{linkStatus}, #{delFlag},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+</mapper>

@@ -3,6 +3,7 @@ package com.spd.department.mapper;
 import java.util.List;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
+import com.spd.department.vo.BasApplyOutboundRefVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -81,4 +82,9 @@ public interface BasApplyMapper
     public int deleteBasApplyEntryByParenId(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     String selectMaxBillNo(String date);
+
+    /**
+     * 科室申领单关联的出库单明细（经 wh_wh_apply_ck_entry_ref）
+     */
+    List<BasApplyOutboundRefVo> selectBasApplyOutboundRefsByBasApplyId(@Param("basApplyId") Long basApplyId);
 }

@@ -137,6 +137,16 @@ public class StkIoBillOutController extends BaseController {
     }
 
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")
+    @GetMapping("/createCkEntriesByWhApply")
+    public AjaxResult createCkEntriesByWhApply(@RequestParam String whWarehouseApplyId) {
+        if (whWarehouseApplyId == null) {
+            throw new RuntimeException("仓库申请单ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByWhApply(whWarehouseApplyId);
+        return success(stkIoBill1);
+    }
+
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")
     @GetMapping("/createCkEntriesByDApply")
     public AjaxResult createCkEntriesByDApply(@RequestParam String dApplyId) {
 //        if (stkIoBill == null){

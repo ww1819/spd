@@ -10,6 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
+import com.spd.department.vo.BasApplyOutboundRefVo;
 
 /**
  * 科室申领对象 bas_apply
@@ -79,6 +80,9 @@ public class BasApply extends BaseEntity
 
     /** 科室申领明细信息 */
     private List<BasApplyEntry> basApplyEntryList;
+
+    /** 关联出库单明细（查询详情时填充，经库房申请单与出库单关联表） */
+    private List<BasApplyOutboundRefVo> outboundRefList;
 
     /** 仓库对象 */
     private FdWarehouse warehouse;
@@ -190,6 +194,14 @@ public class BasApply extends BaseEntity
     public void setBasApplyEntryList(List<BasApplyEntry> basApplyEntryList)
     {
         this.basApplyEntryList = basApplyEntryList;
+    }
+
+    public List<BasApplyOutboundRefVo> getOutboundRefList() {
+        return outboundRefList;
+    }
+
+    public void setOutboundRefList(List<BasApplyOutboundRefVo> outboundRefList) {
+        this.outboundRefList = outboundRefList;
     }
 
     public FdWarehouse getWarehouse() {

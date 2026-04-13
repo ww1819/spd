@@ -25,6 +25,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.department.availablestock.DepartmentApplyAvailableStockStrategy;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.service.IStkInventoryService;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -44,6 +45,9 @@ public class StkInventoryController extends BaseController
 {
     @Autowired
     private IStkInventoryService stkInventoryService;
+
+    @Autowired
+    private DepartmentApplyAvailableStockStrategy departmentApplyAvailableStockStrategy;
 
     /**
      * 查询库存明细列表
@@ -152,6 +156,21 @@ public class StkInventoryController extends BaseController
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
         return getDataTable(summaryVoList,totalInfo, total);
+    }
+
+    /**
+     * 科室申领：按耗材聚合的全院可用库存（不按仓库过滤；计算策略见 DepartmentApplyAvailableStockStrategy）
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:list') || @ss.hasPermi('department:dApply:add') || @ss.hasPermi('department:dApply:edit')")
+    @GetMapping("/listDeptApplyAvailableStock")
+    public TableDataInfo listDeptApplyAvailableStock(StkInventory stkInventory)
+    {
+        if (stkInventory == null) {
+            stkInventory = new StkInventory();
+        }
+        startPage();
+        List<Map<String, Object>> list = departmentApplyAvailableStockStrategy.listAggregated(stkInventory);
+        return getDataTable(list);
     }
 
     /**
