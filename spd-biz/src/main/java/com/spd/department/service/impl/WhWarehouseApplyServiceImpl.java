@@ -2,7 +2,6 @@ package com.spd.department.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -222,43 +221,52 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveCkEntryRefsAfterOutboundInsert(StkIoBill outboundRequest) {
-        if (outboundRequest == null || outboundRequest.getId() == null) {
+    public void syncWhApplyCkRefsAfterOutboundSave(Long ckBillId) {
+        if (ckBillId == null) {
             return;
         }
-        if (StringUtils.isEmpty(outboundRequest.getWhWarehouseApplyId())) {
+        StkIoBill loaded = stkIoBillMapper.selectStkIoBillById(ckBillId);
+        if (loaded == null) {
             return;
         }
-        List<StkIoBillEntry> reqEntries = outboundRequest.getStkIoBillEntryList();
-        if (reqEntries == null || reqEntries.isEmpty()) {
-            return;
-        }
-        StkIoBill loaded = stkIoBillMapper.selectStkIoBillById(outboundRequest.getId());
-        if (loaded == null || loaded.getStkIoBillEntryList() == null) {
-            return;
-        }
-        List<StkIoBillEntry> dbEntries = new ArrayList<>(loaded.getStkIoBillEntryList());
-        dbEntries.sort(Comparator.comparing(StkIoBillEntry::getId, Comparator.nullsLast(Long::compareTo)));
-        String tenantId = StringUtils.isNotEmpty(loaded.getTenantId()) ? loaded.getTenantId()
-            : SecurityUtils.requiredScopedTenantIdForSql();
+        String tenantId = StringUtils.isNotEmpty(loaded.getTenantId())
+            ? loaded.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
         String uid = SecurityUtils.getUserIdStr();
+        whWarehouseApplyMapper.softDeleteCkEntryRefsByCkBillId(String.valueOf(ckBillId), tenantId, uid);
+        if (StringUtils.isEmpty(loaded.getWhWarehouseApplyId())) {
+            return;
+        }
+        Integer bt = loaded.getBillType();
+        if (bt == null || bt != 201) {
+            return;
+        }
+        WhWarehouseApply wh = whWarehouseApplyMapper.selectWhWarehouseApplyById(loaded.getWhWarehouseApplyId());
+        if (wh == null) {
+            throw new ServiceException("出库单引用的库房申请单不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(wh.getTenantId());
+        if (loaded.getTenantId() != null && wh.getTenantId() != null
+            && !loaded.getTenantId().equals(wh.getTenantId())) {
+            throw new ServiceException("出库单与库房申请单不属于同一租户");
+        }
+        List<StkIoBillEntry> entries = loaded.getStkIoBillEntryList();
+        if (entries == null) {
+            return;
+        }
         Date now = DateUtils.getNowDate();
-        int n = Math.min(reqEntries.size(), dbEntries.size());
-        for (int i = 0; i < n; i++) {
-            StkIoBillEntry req = reqEntries.get(i);
-            StkIoBillEntry db = dbEntries.get(i);
-            if (req == null || db == null || db.getId() == null) {
+        for (StkIoBillEntry db : entries) {
+            if (db == null || db.getId() == null) {
                 continue;
             }
-            if (StringUtils.isEmpty(req.getWhApplyEntryId())) {
+            if (StringUtils.isEmpty(db.getWhApplyEntryId())) {
                 continue;
             }
             WhWhApplyCkEntryRef row = new WhWhApplyCkEntryRef();
             row.setId(UUID7.generateUUID7());
             row.setTenantId(tenantId);
-            row.setWhApplyId(outboundRequest.getWhWarehouseApplyId());
-            row.setWhApplyBillNo(outboundRequest.getWhWarehouseApplyBillNo());
-            row.setWhApplyEntryId(req.getWhApplyEntryId());
+            row.setWhApplyId(loaded.getWhWarehouseApplyId());
+            row.setWhApplyBillNo(loaded.getWhWarehouseApplyBillNo());
+            row.setWhApplyEntryId(db.getWhApplyEntryId());
             row.setCkBillId(String.valueOf(loaded.getId()));
             row.setCkBillNo(loaded.getBillNo());
             row.setCkEntryId(String.valueOf(db.getId()));
@@ -270,6 +278,16 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
             row.setCreateTime(now);
             whWarehouseApplyMapper.insertWhWhApplyCkEntryRef(row);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void releaseWhApplyCkRefsForOutboundBill(Long ckBillId, String tenantId) {
+        if (ckBillId == null || StringUtils.isEmpty(tenantId)) {
+            return;
+        }
+        whWarehouseApplyMapper.softDeleteCkEntryRefsByCkBillId(String.valueOf(ckBillId), tenantId,
+            SecurityUtils.getUserIdStr());
     }
 
     @Override

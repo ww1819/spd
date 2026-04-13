@@ -264,9 +264,6 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertStkIoBillEntry(stkIoBill);
-        if (StringUtils.isNotEmpty(stkIoBill.getWhWarehouseApplyId())) {
-            whWarehouseApplyService.saveCkEntryRefsAfterOutboundInsert(stkIoBill);
-        }
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
             StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (reloaded != null) {
@@ -344,6 +341,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("业务：%s，不存在!", id));
         }
         SecurityUtils.ensureTenantAccess(stkIoBill.getTenantId());
+        if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 201
+            && StringUtils.isNotEmpty(stkIoBill.getTenantId())) {
+            whWarehouseApplyService.releaseWhApplyCkRefsForOutboundBill(id, stkIoBill.getTenantId());
+        }
         stkIoBill.setDelFlag(1);
         stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoBill.setUpdateTime(new Date());
@@ -1443,6 +1444,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertOutStkIoBillEntry(stkIoBill);
+        if (StringUtils.isNotEmpty(stkIoBill.getWhWarehouseApplyId())) {
+            whWarehouseApplyService.syncWhApplyCkRefsAfterOutboundSave(stkIoBill.getId());
+        }
         return rows;
     }
 
@@ -1476,7 +1480,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
         insertOutStkIoBillEntry(stkIoBill);
-        return stkIoBillMapper.updateStkIoBill(stkIoBill);
+        int u = stkIoBillMapper.updateStkIoBill(stkIoBill);
+        if (bt != null && bt == 201) {
+            whWarehouseApplyService.syncWhApplyCkRefsAfterOutboundSave(stkIoBill.getId());
+        }
+        return u;
     }
 
     @Transactional
@@ -1910,6 +1918,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setDepartmentId(basApply.getDepartmentId());
         stkIoBill.setWarehouseId(basApply.getWarehouseId());
         stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(1);
         // 设置引用单号为科室申请单号
         stkIoBill.setRefBillNo(basApply.getApplyBillNo());
         List<BasApplyEntry> list = basApply.getBasApplyEntryList();
@@ -1954,6 +1963,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setWarehouseId(wh.getWarehouseId());
         stkIoBill.setDepartmentId(wh.getDepartmentId());
         stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(1);
         stkIoBill.setRefBillNo(wh.getApplyBillNo());
         stkIoBill.setDApplyId(wh.getBasApplyId());
         stkIoBill.setWhWarehouseApplyId(wh.getId());

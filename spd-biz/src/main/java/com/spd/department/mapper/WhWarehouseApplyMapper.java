@@ -54,4 +54,9 @@ public interface WhWarehouseApplyMapper {
     BigDecimal sumLinkedQtyByWhApplyEntryId(@Param("entryId") String entryId);
 
     int insertWhWhApplyCkEntryRef(WhWhApplyCkEntryRef row);
+
+    /** 按出库单主表解除库房申请关联（逻辑删除 ref 行） */
+    int softDeleteCkEntryRefsByCkBillId(@Param("ckBillId") String ckBillId,
+        @Param("tenantId") String tenantId,
+        @Param("updateBy") String updateBy);
 }

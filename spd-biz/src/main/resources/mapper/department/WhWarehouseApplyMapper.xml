@@ -253,6 +253,14 @@
         order by m.create_time desc, m.id desc
     </select>
 
+    <update id="softDeleteCkEntryRefsByCkBillId">
+        update wh_wh_apply_ck_entry_ref
+        set del_flag = 1, link_status = 0, update_by = #{updateBy}, update_time = now()
+        where ck_bill_id = #{ckBillId}
+          and tenant_id = #{tenantId}
+          and del_flag = 0
+    </update>
+
     <insert id="insertWhWhApplyCkEntryRef" parameterType="com.spd.department.domain.WhWhApplyCkEntryRef">
         insert into wh_wh_apply_ck_entry_ref (
             id, tenant_id, wh_apply_id, wh_apply_bill_no, wh_apply_entry_id,

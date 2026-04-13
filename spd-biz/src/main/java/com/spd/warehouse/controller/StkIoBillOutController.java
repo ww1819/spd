@@ -93,10 +93,10 @@ public class StkIoBillOutController extends BaseController {
     }
 
     /**
-     * 删除入库
+     * 删除出库单（逻辑删除；若引用库房申请单会先解除 wh_wh_apply_ck_entry_ref）
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:remove')")
-    @Log(title = "入库", businessType = BusinessType.DELETE)
+    @Log(title = "出库", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long ids)
     {

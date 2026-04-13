@@ -512,6 +512,12 @@ CALL add_table_column('stk_io_bill_entry', 'material_speci', 'varchar(256)', '�
 CALL add_table_column('stk_io_bill_entry', 'material_model', 'varchar(256)', '型号（快照）', NULL);
 /
 CALL add_table_column('stk_io_bill_entry', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
+
+-- 出库单与科室申领 / 库房申请单追溯（引用库房申请出库、关联 wh_wh_apply_ck_entry_ref）
+CALL add_table_column('stk_io_bill', 'd_apply_id', 'varchar(32)', '科室申领主表ID（bas_apply.id）', NULL);
+CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_id', 'varchar(36)', '库房申请单主键（wh_warehouse_apply.id）', NULL);
+CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_bill_no', 'varchar(64)', '库房申请单号（冗余）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'wh_apply_entry_id', 'varchar(36)', '库房申请单明细ID（引用出库时回填）', NULL);
 /
 CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自入库单）', NULL);
 /
