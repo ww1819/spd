@@ -412,7 +412,9 @@ public class SysUserController extends BaseController
                 if ("hc".equalsIgnoreCase(systemType)) {
                     ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
                     ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
-                    ajax.put("workGroupIds", new ArrayList<>());
+                    // 与设备端 sb_work_group_user 一致：耗材端查询/改权限时仍需带回真实设备工作组 ID，避免合并进 updateUser 时误传空列表清空归属
+                    List<String> hcWgIds = sbWorkGroupService.selectGroupIdsByUserId(userId, userCustomerId);
+                    ajax.put("workGroupIds", hcWgIds != null ? hcWgIds : new ArrayList<>());
                     List<Long> midLongs = userService.selectMenuListByUserId(userId);
                     List<String> menuStr = new ArrayList<>();
                     if (midLongs != null) {

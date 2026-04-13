@@ -53,4 +53,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		select user_id from sys_user_post where post_id = #{postId}
 	</select>
 
+	<select id="selectUserPostsByUserIds" resultMap="SysUserPostResult">
+		select user_id, post_id, tenant_id from sys_user_post
+		where user_id in
+		<foreach collection="userIds" item="uid" open="(" separator="," close=")">
+			#{uid}
+		</foreach>
+	</select>
+
 </mapper> 

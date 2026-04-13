@@ -29,6 +29,7 @@ import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISbMenuService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
+import com.spd.system.service.ISysPostService;
 
 /**
  * 登录验证
@@ -64,6 +65,9 @@ public class SysLoginController
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private ISysPostService postService;
 
     /**
      * 登录方法
@@ -132,6 +136,7 @@ public class SysLoginController
     {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         SysUser user = loginUser.getUser();
+        refreshHcConsumablePostIds(user);
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
         // 权限集合：与 UserDetailsServiceImpl.createLoginUser 一致（sys_user_menu 耗材权限 + 设备 sb 权限）
@@ -149,6 +154,26 @@ public class SysLoginController
     }
 
     /**
+     * 从 sys_user_post 刷新当前用户的耗材工作组（岗位）ID，避免管理员维护后登录态仍缺 postIds 引发前端异常
+     */
+    private void refreshHcConsumablePostIds(SysUser user)
+    {
+        if (user == null || user.getUserId() == null)
+        {
+            return;
+        }
+        java.util.List<Long> ids = postService.selectPostListByUserId(user.getUserId());
+        if (ids != null && !ids.isEmpty())
+        {
+            user.setPostIds(ids.toArray(new Long[0]));
+        }
+        else
+        {
+            user.setPostIds(null);
+        }
+    }
+
+    /**
      * 获取设备前端用户信息（基于 sb_*）
      * 含租户信息 tenant（首页可展示租户名称；customerId、customerCode 供前端请求使用，界面可隐藏不展示）
      *
@@ -159,6 +184,7 @@ public class SysLoginController
     {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         SysUser user = loginUser.getUser();
+        refreshHcConsumablePostIds(user);
         // 设备角色集合
         Set<String> roles = sbPermissionService.getRolePermission(user);
         // 设备菜单权限集合（与登录时一致：平台 + 设备，供前端 v-hasPermi 使用）

@@ -2,8 +2,11 @@ package com.spd.system.service.impl;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.validation.Validator;
 
@@ -97,7 +100,47 @@ public class SysUserServiceImpl implements ISysUserService
             }
             user.setCustomerId(tid);
         }
-        return userMapper.selectUserList(user);
+        List<SysUser> list = userMapper.selectUserList(user);
+        fillHcPostIdsFromUserPost(list);
+        return list;
+    }
+
+    /**
+     * 用户列表 SQL 仅子查询带出 postName；补充 sys_user_post 的 postIds，供耗材前端列表/导出展示与筛选，避免 rows 中 postIds 恒为 null。
+     */
+    private void fillHcPostIdsFromUserPost(List<SysUser> list)
+    {
+        if (list == null || list.isEmpty())
+        {
+            return;
+        }
+        List<Long> userIds = list.stream().map(SysUser::getUserId).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (userIds.isEmpty())
+        {
+            return;
+        }
+        List<SysUserPost> rows = userPostMapper.selectUserPostsByUserIds(userIds);
+        if (rows == null || rows.isEmpty())
+        {
+            return;
+        }
+        Map<Long, List<Long>> uidToPosts = new HashMap<>();
+        for (SysUserPost row : rows)
+        {
+            if (row.getUserId() == null || row.getPostId() == null)
+            {
+                continue;
+            }
+            uidToPosts.computeIfAbsent(row.getUserId(), k -> new ArrayList<>()).add(row.getPostId());
+        }
+        for (SysUser u : list)
+        {
+            List<Long> pids = uidToPosts.get(u.getUserId());
+            if (pids != null && !pids.isEmpty())
+            {
+                u.setPostIds(pids.toArray(new Long[0]));
+            }
+        }
     }
 
     /**
@@ -421,8 +464,10 @@ public class SysUserServiceImpl implements ISysUserService
             sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
             sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
             // 设备系统工作组写入 sb_work_group_user（非 sys_user_post）
-            sbWorkGroupService.setUserWorkGroups(user.getUserId(), user.getCustomerId(),
-                user.getWorkGroupIds() != null ? user.getWorkGroupIds() : new String[0]);
+            // 仅当请求体显式携带 workGroupIds 时同步；为 null 表示未传（如耗材端改权限、导入更新昵称等），保留库中已有归属，避免误清空
+            if (user.getWorkGroupIds() != null) {
+                sbWorkGroupService.setUserWorkGroups(user.getUserId(), user.getCustomerId(), user.getWorkGroupIds());
+            }
         }
         return userMapper.updateUser(user);
     }

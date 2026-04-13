@@ -60,4 +60,9 @@ public interface SysUserPostMapper
      * 耗材工作组：查询关联该岗位的用户主键列表
      */
     List<Long> selectUserIdsByPostId(@Param("postId") Long postId);
+
+    /**
+     * 批量查询用户与耗材岗位（工作组）关联，用于用户列表补充 postIds
+     */
+    List<SysUserPost> selectUserPostsByUserIds(@Param("userIds") List<Long> userIds);
 }
