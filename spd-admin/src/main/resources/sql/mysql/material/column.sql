@@ -512,11 +512,14 @@ CALL add_table_column('stk_io_bill_entry', 'material_speci', 'varchar(256)', '�
 CALL add_table_column('stk_io_bill_entry', 'material_model', 'varchar(256)', '型号（快照）', NULL);
 /
 CALL add_table_column('stk_io_bill_entry', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
-
+/
 -- 出库单与科室申领 / 库房申请单追溯（引用库房申请出库、关联 wh_wh_apply_ck_entry_ref）
 CALL add_table_column('stk_io_bill', 'd_apply_id', 'varchar(32)', '科室申领主表ID（bas_apply.id）', NULL);
+/
 CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_id', 'varchar(36)', '库房申请单主键（wh_warehouse_apply.id）', NULL);
+/
 CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_bill_no', 'varchar(64)', '库房申请单号（冗余）', NULL);
+/
 CALL add_table_column('stk_io_bill_entry', 'wh_apply_entry_id', 'varchar(36)', '库房申请单明细ID（引用出库时回填）', NULL);
 /
 CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自入库单）', NULL);
@@ -600,6 +603,7 @@ CALL add_table_column('bas_apply_entry', 'delete_by', 'varchar(64)', '删除者'
 CALL add_table_column('bas_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('bas_apply_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
 CALL add_table_column('bas_apply_entry', 'stock_warehouse_id', 'bigint', '科室申领明细可用库存所属仓库(fd_warehouse.id)，审核按该仓拆分避免串库', NULL);
 /
 
@@ -1409,15 +1413,24 @@ WHERE IFNULL(c.hc_status, '0') = '0'
 -- 全量建表：wh_warehouse_apply、wh_warehouse_apply_entry、wh_wh_apply_ck_entry_ref 见 material/table.sql
 -- 存量库若表已存在但缺少作废/关联相关列，下列 CALL 安全补齐（已存在则跳过）
 CALL add_table_column('wh_warehouse_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '整单作废：0否 1是', '0');
+/
 CALL add_table_column('wh_warehouse_apply', 'void_whole_by', 'varchar(64)', '整单作废人', NULL);
+/
 CALL add_table_column('wh_warehouse_apply', 'void_whole_time', 'datetime', '整单作废时间', NULL);
+/
 CALL add_table_column('wh_warehouse_apply', 'void_whole_reason', 'varchar(500)', '整单作废原因', NULL);
+/
 
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '明细作废状态：0正常 1已作废', '0');
+/
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '累计作废数量', '0');
+/
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_by', 'varchar(64)', '明细作废操作人', NULL);
+/
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_time', 'datetime', '明细作废时间', NULL);
+/
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(500)', '明细作废原因', NULL);
+/
 
 -- wh_wh_apply_ck_entry_ref（出库关联表）全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
 /
