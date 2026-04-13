@@ -18,6 +18,9 @@ public interface IWhWarehouseApplyService {
 
     List<WhWarehouseApply> selectWhWarehouseApplyList(WhWarehouseApply query);
 
+    /** 出库单引用：分页列表（仅仍有可出库数量的仓库申请单） */
+    List<WhWarehouseApply> selectWhWarehouseApplyListForOutboundCk(WhWarehouseApply query);
+
     WhWarehouseApply selectWhWarehouseApplyById(String id);
 
     /**

@@ -34,6 +34,9 @@ public interface WhWarehouseApplyMapper {
 
     List<WhWarehouseApply> selectWhWarehouseApplyList(WhWarehouseApply query);
 
+    /** 出库管理引用：仅返回仍有可出库数量的仓库申请单 */
+    List<WhWarehouseApply> selectWhWarehouseApplyListForOutboundCk(WhWarehouseApply query);
+
     WhWarehouseApplyEntry selectWhWarehouseApplyEntryById(@Param("id") String id);
 
     int updateWhWarehouseApplyVoidWhole(@Param("id") String id,

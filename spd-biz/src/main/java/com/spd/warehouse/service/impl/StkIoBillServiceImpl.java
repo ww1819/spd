@@ -1995,6 +1995,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBillEntry.setBeginTime(we.getBeginTime());
             stkIoBillEntry.setEndTime(we.getEndTime());
             stkIoBillEntry.setWarehouseId(we.getWarehouseId());
+            if (we.getStkInventoryId() != null) {
+                stkIoBillEntry.setKcNo(we.getStkInventoryId());
+            }
             stkIoBillEntry.setWhApplyEntryId(we.getId());
             if (we.getSupplierId() != null) {
                 stkIoBillEntry.setSupplerId(String.valueOf(we.getSupplierId()));

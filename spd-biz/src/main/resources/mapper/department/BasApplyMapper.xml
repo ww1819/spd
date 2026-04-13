@@ -157,6 +157,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id, a.apply_bill_status, a.del_flag,
                 a.tenant_id, a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
+                COALESCE(a.bill_type, 1) as bill_type, a.audit_date,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.stock_warehouse_id as sub_stock_warehouse_id,
                 b.unit_price as sub_unit_price,
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,

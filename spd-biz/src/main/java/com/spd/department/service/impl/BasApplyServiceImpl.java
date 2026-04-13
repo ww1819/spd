@@ -334,10 +334,11 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setAuditBy(auditBy);
         basApply.setAuditDate(new Date());
         int res = basApplyMapper.updateBasApply(basApply);
+        int effectiveBillType = basApply.getBillType() != null ? basApply.getBillType() : 1;
         if (res > 0 && basApply.getBillType() != null && basApply.getBillType() == 3) {
             executeDepartmentTransferInventory(basApply);
         }
-        if (res > 0 && basApply.getBillType() != null && basApply.getBillType() == 1) {
+        if (res > 0 && effectiveBillType == 1) {
             whWarehouseApplyService.generateFromDeptApplyAfterAudit(basApply);
         }
         return res;

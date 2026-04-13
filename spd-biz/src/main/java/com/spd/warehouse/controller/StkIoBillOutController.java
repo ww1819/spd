@@ -7,6 +7,8 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.department.domain.WhWarehouseApply;
+import com.spd.department.service.IWhWarehouseApplyService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,20 @@ public class StkIoBillOutController extends BaseController {
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
+
+    @Autowired
+    private IWhWarehouseApplyService whWarehouseApplyService;
+
+    /**
+     * 出库引用：分页查询仍有可出库数量的仓库申请单（科室申领按仓拆分后的 CKSQ 单）
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply')")
+    @GetMapping("/whApplyListForCk")
+    public TableDataInfo whApplyListForCk(WhWarehouseApply query) {
+        startPage();
+        List<WhWarehouseApply> list = whWarehouseApplyService.selectWhWarehouseApplyListForOutboundCk(query);
+        return getDataTable(list);
+    }
 
     /**
      * 查询出库列表

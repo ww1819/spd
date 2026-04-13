@@ -331,9 +331,9 @@ public class BasApplyController extends BaseController
 
 
     /**
-     * 审核科室申领
+     * 审核科室申领（申领单页与申领单审核页按钮权限前缀分别为 dApply / dApplyAudit，需同时放行）
      */
-    @PreAuthorize("@ss.hasPermi('department:dApply:audit')")
+    @PreAuthorize("@ss.hasPermi('department:dApply:audit') || @ss.hasPermi('department:dApplyAudit:audit')")
     @Log(title = "科室申领审核", businessType = BusinessType.UPDATE)
     @PutMapping("/auditApply")
     public AjaxResult audit(@RequestBody JSONObject json)
@@ -343,9 +343,9 @@ public class BasApplyController extends BaseController
     }
 
     /**
-     * 驳回科室申领
+     * 驳回科室申领（同上，与前端 dApplyAudit 页 v-hasPermi 一致）
      */
-    @PreAuthorize("@ss.hasPermi('department:dApply:reject')")
+    @PreAuthorize("@ss.hasPermi('department:dApply:reject') || @ss.hasPermi('department:dApplyAudit:reject')")
     @Log(title = "科室申领驳回", businessType = BusinessType.UPDATE)
     @PutMapping("/reject")
     public AjaxResult reject(@RequestBody JSONObject json)

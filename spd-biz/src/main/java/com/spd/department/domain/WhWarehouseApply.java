@@ -65,6 +65,9 @@ public class WhWarehouseApply extends BaseEntity {
 
     private List<WhWarehouseApplyEntry> entryList;
 
+    /** 出库引用候选列表用：本单剩余可下推出库数量合计（非表字段） */
+    private BigDecimal pendingOutboundTotal;
+
     public String getId() {
         return id;
     }
@@ -223,5 +226,13 @@ public class WhWarehouseApply extends BaseEntity {
 
     public void setEntryList(List<WhWarehouseApplyEntry> entryList) {
         this.entryList = entryList;
+    }
+
+    public BigDecimal getPendingOutboundTotal() {
+        return pendingOutboundTotal;
+    }
+
+    public void setPendingOutboundTotal(BigDecimal pendingOutboundTotal) {
+        this.pendingOutboundTotal = pendingOutboundTotal;
     }
 }

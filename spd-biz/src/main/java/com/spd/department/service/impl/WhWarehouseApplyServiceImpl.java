@@ -55,7 +55,8 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
         if (basApply == null || basApply.getId() == null) {
             return;
         }
-        if (basApply.getBillType() == null || basApply.getBillType() != 1) {
+        int bt = basApply.getBillType() != null ? basApply.getBillType() : 1;
+        if (bt != 1) {
             return;
         }
         String tenantId = StringUtils.isNotEmpty(basApply.getTenantId())
@@ -198,6 +199,14 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         return whWarehouseApplyMapper.selectWhWarehouseApplyList(query);
+    }
+
+    @Override
+    public List<WhWarehouseApply> selectWhWarehouseApplyListForOutboundCk(WhWarehouseApply query) {
+        if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return whWarehouseApplyMapper.selectWhWarehouseApplyListForOutboundCk(query);
     }
 
     @Override
