@@ -3920,6 +3920,209 @@ WHERE @wh_apply_menu IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wh_apply_menu AND perms = 'department:whWarehouseApply:voidEntry');
 /
 
+-- ========== 调拨 warehouseTransfer：补全 F 按钮（WarehouseTransferController；仅 C 行 list 不够，保存需 add/edit 等）==========
+-- 父菜单：调拨申请页
+SET @wt_apply_menu := (
+  SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouseTransfer/apply/index' ORDER BY menu_id LIMIT 1
+);
+/
+
+-- 审核列表与申请共用 GET /list，perms 须为 warehouseTransfer:apply:list（若曾为 warehouseTransfer:audit:list 则修正）
+UPDATE sys_menu
+SET perms = 'warehouseTransfer:apply:list',
+    update_by = 'admin',
+    update_time = NOW()
+WHERE menu_type = 'C'
+  AND component = 'warehouseTransfer/audit/index'
+  AND perms = 'warehouseTransfer:audit:list';
+/
+
+SET @wt_audit_menu := (
+  SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouseTransfer/audit/index' ORDER BY menu_id LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨申请查询',
+  @wt_apply_menu,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:query', '#',
+  'admin', NOW(), '1', NOW(), '详情/查询',
+  '0', '1'
+FROM DUAL
+WHERE @wt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_apply_menu AND perms = 'warehouseTransfer:apply:query');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨申请导出',
+  @wt_apply_menu,
+  2,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @wt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_apply_menu AND perms = 'warehouseTransfer:apply:export');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨申请新增',
+  @wt_apply_menu,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:add', '#',
+  'admin', NOW(), '1', NOW(), 'POST 保存/新增',
+  '0', '1'
+FROM DUAL
+WHERE @wt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_apply_menu AND perms = 'warehouseTransfer:apply:add');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨申请修改',
+  @wt_apply_menu,
+  4,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:edit', '#',
+  'admin', NOW(), '1', NOW(), 'PUT 保存/修改',
+  '0', '1'
+FROM DUAL
+WHERE @wt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_apply_menu AND perms = 'warehouseTransfer:apply:edit');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨申请删除',
+  @wt_apply_menu,
+  5,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @wt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_apply_menu AND perms = 'warehouseTransfer:apply:remove');
+/
+
+-- 审核页：与后端 apply:audit / apply:edit 一致（仅审核角色时可只勾 1546 下按钮）
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨审核查询',
+  @wt_audit_menu,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:query', '#',
+  'admin', NOW(), '1', NOW(), '与申请共用 query',
+  '0', '1'
+FROM DUAL
+WHERE @wt_audit_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_audit_menu AND menu_type = 'F' AND perms = 'warehouseTransfer:apply:query');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨审核导出',
+  @wt_audit_menu,
+  2,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @wt_audit_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_audit_menu AND menu_type = 'F' AND perms = 'warehouseTransfer:apply:export');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨审核',
+  @wt_audit_menu,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:audit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @wt_audit_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_audit_menu AND perms = 'warehouseTransfer:apply:audit');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '调拨审核修改',
+  @wt_audit_menu,
+  4,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouseTransfer:apply:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @wt_audit_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_audit_menu AND menu_type = 'F' AND perms = 'warehouseTransfer:apply:edit');
+/
+
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
@@ -3959,7 +4162,14 @@ JOIN sys_menu m
     'department:newProductAudit:query',
     'department:newProductAudit:export',
     'department:newProductAudit:audit',
-    'department:newProductAudit:reject'
+    'department:newProductAudit:reject',
+    'warehouseTransfer:apply:list',
+    'warehouseTransfer:apply:query',
+    'warehouseTransfer:apply:export',
+    'warehouseTransfer:apply:add',
+    'warehouseTransfer:apply:edit',
+    'warehouseTransfer:apply:remove',
+    'warehouseTransfer:apply:audit'
   )
 WHERE c.hc_status = '0'
   AND NOT EXISTS (
