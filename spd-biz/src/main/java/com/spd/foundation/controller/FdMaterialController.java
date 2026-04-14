@@ -1,6 +1,8 @@
 package com.spd.foundation.controller;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,7 @@ import com.spd.common.utils.file.FileUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
+import com.spd.common.utils.StringUtils;
 
 /**
  * 耗材产品Controller
@@ -82,6 +85,36 @@ public class FdMaterialController extends BaseController
     {
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
         return list;
+    }
+
+    /**
+     * 科室/临床模块专用产品档案低敏列表（仅必要字段，避免返回完整产品档案）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/listDeptSafe")
+    public List<Map<String, Object>> listDeptSafe(@RequestParam(value = "name", required = false) String name)
+    {
+        FdMaterial query = new FdMaterial();
+        if (StringUtils.isNotEmpty(name))
+        {
+            query.setName(name.trim());
+        }
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
+        List<Map<String, Object>> safeList = new ArrayList<>();
+        for (FdMaterial material : list)
+        {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", material.getId());
+            item.put("name", material.getName());
+            item.put("code", material.getCode());
+            item.put("supplierId", material.getSupplierId());
+            item.put("referredName", material.getReferredName());
+            item.put("speci", material.getSpeci());
+            item.put("model", material.getModel());
+            item.put("brand", material.getBrand());
+            safeList.add(item);
+        }
+        return safeList;
     }
 
     /**
