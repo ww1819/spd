@@ -98,6 +98,9 @@ import com.spd.system.service.ITenantScopeService;
 @Service
 public class StkIoBillServiceImpl implements IStkIoBillService
 {
+    /** 衡水三院等租户：出库审核通过后自动执行收货确认，确认人同审核人 */
+    private static final String TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT = "hengsui-third-001";
+
     @Autowired
     private StkIoBillMapper stkIoBillMapper;
 
@@ -402,6 +405,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setAuditDate(new Date());
         stkIoBill.setAuditBy(auditBy);
         int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
+        if (res > 0 && auditBillType != null && auditBillType == 201) {
+            String tid = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+            if (TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT.equals(tid)) {
+                tryApplyOutboundReceiptConfirmation(stkIoBill, auditBy);
+            }
+        }
         return res;
     }
 
@@ -2389,121 +2398,131 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     throw new ServiceException(String.format("无权确认该科室单据：出库单号=%s", stkIoBill.getBillNo()));
                 }
             }
-            // 只确认已审核的出库单
-            if (stkIoBill.getBillStatus() != 2) {
-                continue;
-            }
-            // 只确认出库单（billType=201）
-            if (stkIoBill.getBillType() == null || stkIoBill.getBillType() != 201) {
-                continue;
-            }
-            // 只确认未确认收货的出库单
-            if (stkIoBill.getReceiptConfirmStatus() != null && stkIoBill.getReceiptConfirmStatus() == 1) {
-                continue;
-            }
-            
-            // 收货确认：科室库存在出库审核时已插入(未确认)，此处仅将对应科室库存更新为已确认并插科室流水；绝不再次 insert 科室库存（避免双倍库存）
-            List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
-            String billTenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
-            if (stkIoBillEntryList != null && !stkIoBillEntryList.isEmpty()) {
-                for (StkIoBillEntry entry : stkIoBillEntryList) {
-                    if (entry == null) {
-                        continue;
-                    }
-                    Long depId;
-                    StkDepInventory stkDepInventory = null;
-                    if (entry.getKcNo() != null) {
-                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryById(entry.getKcNo());
-                    }
-                    if (stkDepInventory == null && stkIoBill.getId() != null && entry.getId() != null) {
-                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryByBillEntry(stkIoBill.getId(), entry.getId(), billTenantId);
-                    }
-                    if (stkDepInventory == null) {
-                        throw new ServiceException(String.format(
-                                "收货确认失败：出库单「%s」未找到明细对应的科室库存（出库审核应已生成、未确认）。批次：%s，请检查出库是否已审核或联系管理员。",
-                                stkIoBill.getBillNo(), entry.getBatchNo() != null ? entry.getBatchNo() : "-"));
-                    }
-                    // 校验科室库存记录是否确属当前出库单及当前明细，避免收货确认改错明细
-                    if (!Objects.equals(stkIoBill.getId(), stkDepInventory.getBillId()) || !Objects.equals(entry.getId(), stkDepInventory.getBillEntryId())) {
-                        throw new ServiceException(String.format("收货确认数据异常：科室库存id=%s 与出库单id=%s、明细id=%s 不一致（bill_id=%s, bill_entry_id=%s），请勿继续操作。",
-                                stkDepInventory.getId(), stkIoBill.getId(), entry.getId(),
-                                stkDepInventory.getBillId(), stkDepInventory.getBillEntryId()));
-                    }
-                    if (!Objects.equals(entry.getMaterialId(), stkDepInventory.getMaterialId())
-                            || (entry.getQty() != null && stkDepInventory.getQty() != null && entry.getQty().compareTo(stkDepInventory.getQty()) != 0)
-                            || (entry.getQty() == null ^ (stkDepInventory.getQty() == null))
-                            || !Objects.equals(entry.getBatchNo(), stkDepInventory.getBatchNo())) {
-                        throw new ServiceException(String.format("收货确认数据异常：科室库存id=%s 与出库单明细耗材/数量/批次号不一致，请勿继续操作。", stkDepInventory.getId()));
-                    }
-                    if (stkDepInventory.getReceiptConfirmStatus() != null && stkDepInventory.getReceiptConfirmStatus() == 1) {
-                        depId = stkDepInventory.getId();
-                    } else {
-                        stkDepInventory.setReceiptConfirmStatus(1);
-                        stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
-                        depId = stkDepInventory.getId();
-                    }
-                    // 明细 kc_no 未反写时补写，便于后续业务
-                    if (entry.getId() != null && (entry.getKcNo() == null || !entry.getKcNo().equals(depId))) {
-                        stkIoBillMapper.updateStkIoBillEntryKcNo(entry.getId(), depId);
-                    }
-                    StkInventory inventory = null;
-                    String batchNo = entry.getBatchNo();
-                    Long warehouseId = stkIoBill.getWarehouseId();
-                    if (warehouseId != null) {
-                        inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, warehouseId);
-                    }
-                    if (inventory == null) {
-                        inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
-                    }
-                    // 历史数据科室库存未写 kc_no 时补写为来源仓库库存 id
-                    if (stkDepInventory.getKcNo() == null && inventory != null && inventory.getId() != null) {
-                        stkDepInventory.setKcNo(inventory.getId());
-                        stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
-                    }
-                    HcKsFlow ksFlow = new HcKsFlow();
-                    ksFlow.setBillId(stkIoBill.getId());
-                    ksFlow.setEntryId(entry.getId());
-                    ksFlow.setDepartmentId(stkIoBill.getDepartmentId());
-                    ksFlow.setWarehouseId(stkIoBill.getWarehouseId());
-                    ksFlow.setMaterialId(entry.getMaterialId());
-                    ksFlow.setBatchNo(entry.getBatchNo());
-                    ksFlow.setBatchNumber(entry.getBatchNumber());
-                    if (inventory != null) {
-                        ksFlow.setBatchId(inventory.getBatchId());
-                    }
-                    ksFlow.setQty(entry.getQty());
-                    ksFlow.setUnitPrice(entry.getUnitPrice());
-                    ksFlow.setAmt(entry.getAmt());
-                    ksFlow.setBeginTime(entry.getBeginTime());
-                    ksFlow.setEndTime(entry.getEndTime());
-                    Long ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
-                    ksFlow.setSupplierId(ksSupplierId != null ? String.valueOf(ksSupplierId) : null);
-                    ksFlow.setFactoryId(resolveFactoryId(inventory));
-                    if (inventory != null) {
-                        ksFlow.setMainBarcode(inventory.getMainBarcode());
-                        ksFlow.setSubBarcode(inventory.getSubBarcode());
-                    }
-                    ksFlow.setKcNo(depId);
-                    ksFlow.setLx("CK");
-                    ksFlow.setOriginBusinessType("出库结算");
-                    ksFlow.setFlowTime(new Date());
-                    ksFlow.setDelFlag(0);
-                    ksFlow.setCreateTime(new Date());
-                    ksFlow.setCreateBy(confirmBy);
-                    if (StringUtils.isEmpty(ksFlow.getTenantId())) ksFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    hcKsFlowMapper.insertHcKsFlow(ksFlow);
-                }
-            }
-            
-            stkIoBill.setReceiptConfirmStatus(1); // 已确认
-            stkIoBill.setUpdateBy(confirmBy);
-            stkIoBill.setUpdateTime(new Date());
-            int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
-            if (res > 0) {
+            if (tryApplyOutboundReceiptConfirmation(stkIoBill, confirmBy)) {
                 successCount++;
             }
         }
         return successCount;
+    }
+
+    /**
+     * 出库单收货确认核心逻辑（与 confirmReceipt 单条处理一致）。
+     * 审核通过后自动确认场景不校验科室数据权限，仍走同一业务校验与科室流水。
+     *
+     * @param confirmBy 确认人（科室流水 create_by；衡水三院自动确认时为审核人 auditBy）
+     * @return 是否完成确认（未满足条件已确认则跳过返回 false）
+     */
+    private boolean tryApplyOutboundReceiptConfirmation(StkIoBill stkIoBill, String confirmBy) {
+        if (stkIoBill == null) {
+            return false;
+        }
+        if (stkIoBill.getBillStatus() == null || stkIoBill.getBillStatus() != 2) {
+            return false;
+        }
+        if (stkIoBill.getBillType() == null || stkIoBill.getBillType() != 201) {
+            return false;
+        }
+        if (stkIoBill.getReceiptConfirmStatus() != null && stkIoBill.getReceiptConfirmStatus() == 1) {
+            return false;
+        }
+
+        // 收货确认：科室库存在出库审核时已插入(未确认)，此处仅将对应科室库存更新为已确认并插科室流水；绝不再次 insert 科室库存（避免双倍库存）
+        List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
+        String billTenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+        if (stkIoBillEntryList != null && !stkIoBillEntryList.isEmpty()) {
+            for (StkIoBillEntry entry : stkIoBillEntryList) {
+                if (entry == null) {
+                    continue;
+                }
+                Long depId;
+                StkDepInventory stkDepInventory = null;
+                if (entry.getKcNo() != null) {
+                    stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryById(entry.getKcNo());
+                }
+                if (stkDepInventory == null && stkIoBill.getId() != null && entry.getId() != null) {
+                    stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryByBillEntry(stkIoBill.getId(), entry.getId(), billTenantId);
+                }
+                if (stkDepInventory == null) {
+                    throw new ServiceException(String.format(
+                            "收货确认失败：出库单「%s」未找到明细对应的科室库存（出库审核应已生成、未确认）。批次：%s，请检查出库是否已审核或联系管理员。",
+                            stkIoBill.getBillNo(), entry.getBatchNo() != null ? entry.getBatchNo() : "-"));
+                }
+                // 校验科室库存记录是否确属当前出库单及当前明细，避免收货确认改错明细
+                if (!Objects.equals(stkIoBill.getId(), stkDepInventory.getBillId()) || !Objects.equals(entry.getId(), stkDepInventory.getBillEntryId())) {
+                    throw new ServiceException(String.format("收货确认数据异常：科室库存id=%s 与出库单id=%s、明细id=%s 不一致（bill_id=%s, bill_entry_id=%s），请勿继续操作。",
+                            stkDepInventory.getId(), stkIoBill.getId(), entry.getId(),
+                            stkDepInventory.getBillId(), stkDepInventory.getBillEntryId()));
+                }
+                if (!Objects.equals(entry.getMaterialId(), stkDepInventory.getMaterialId())
+                        || (entry.getQty() != null && stkDepInventory.getQty() != null && entry.getQty().compareTo(stkDepInventory.getQty()) != 0)
+                        || (entry.getQty() == null ^ (stkDepInventory.getQty() == null))
+                        || !Objects.equals(entry.getBatchNo(), stkDepInventory.getBatchNo())) {
+                    throw new ServiceException(String.format("收货确认数据异常：科室库存id=%s 与出库单明细耗材/数量/批次号不一致，请勿继续操作。", stkDepInventory.getId()));
+                }
+                if (stkDepInventory.getReceiptConfirmStatus() != null && stkDepInventory.getReceiptConfirmStatus() == 1) {
+                    depId = stkDepInventory.getId();
+                } else {
+                    stkDepInventory.setReceiptConfirmStatus(1);
+                    stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
+                    depId = stkDepInventory.getId();
+                }
+                // 明细 kc_no 未反写时补写，便于后续业务
+                if (entry.getId() != null && (entry.getKcNo() == null || !entry.getKcNo().equals(depId))) {
+                    stkIoBillMapper.updateStkIoBillEntryKcNo(entry.getId(), depId);
+                }
+                StkInventory inventory = null;
+                String batchNo = entry.getBatchNo();
+                Long warehouseId = stkIoBill.getWarehouseId();
+                if (warehouseId != null) {
+                    inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, warehouseId);
+                }
+                if (inventory == null) {
+                    inventory = stkInventoryMapper.selectStkInventoryOne(batchNo);
+                }
+                // 历史数据科室库存未写 kc_no 时补写为来源仓库库存 id
+                if (stkDepInventory.getKcNo() == null && inventory != null && inventory.getId() != null) {
+                    stkDepInventory.setKcNo(inventory.getId());
+                    stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
+                }
+                HcKsFlow ksFlow = new HcKsFlow();
+                ksFlow.setBillId(stkIoBill.getId());
+                ksFlow.setEntryId(entry.getId());
+                ksFlow.setDepartmentId(stkIoBill.getDepartmentId());
+                ksFlow.setWarehouseId(stkIoBill.getWarehouseId());
+                ksFlow.setMaterialId(entry.getMaterialId());
+                ksFlow.setBatchNo(entry.getBatchNo());
+                ksFlow.setBatchNumber(entry.getBatchNumber());
+                if (inventory != null) {
+                    ksFlow.setBatchId(inventory.getBatchId());
+                }
+                ksFlow.setQty(entry.getQty());
+                ksFlow.setUnitPrice(entry.getUnitPrice());
+                ksFlow.setAmt(entry.getAmt());
+                ksFlow.setBeginTime(entry.getBeginTime());
+                ksFlow.setEndTime(entry.getEndTime());
+                Long ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
+                ksFlow.setSupplierId(ksSupplierId != null ? String.valueOf(ksSupplierId) : null);
+                ksFlow.setFactoryId(resolveFactoryId(inventory));
+                if (inventory != null) {
+                    ksFlow.setMainBarcode(inventory.getMainBarcode());
+                    ksFlow.setSubBarcode(inventory.getSubBarcode());
+                }
+                ksFlow.setKcNo(depId);
+                ksFlow.setLx("CK");
+                ksFlow.setOriginBusinessType("出库结算");
+                ksFlow.setFlowTime(new Date());
+                ksFlow.setDelFlag(0);
+                ksFlow.setCreateTime(new Date());
+                ksFlow.setCreateBy(confirmBy);
+                if (StringUtils.isEmpty(ksFlow.getTenantId())) ksFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                hcKsFlowMapper.insertHcKsFlow(ksFlow);
+            }
+        }
+
+        stkIoBill.setReceiptConfirmStatus(1); // 已确认
+        stkIoBill.setUpdateBy(confirmBy);
+        stkIoBill.setUpdateTime(new Date());
+        return stkIoBillMapper.updateStkIoBill(stkIoBill) > 0;
     }
 
     @Override
