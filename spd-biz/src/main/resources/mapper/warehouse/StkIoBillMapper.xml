@@ -286,8 +286,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType == 501"> and stk.bill_no not like 'JS%'</if>
         </if>
 
-        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="auditBeginDate != null "> and stk.audit_date &gt;= #{auditBeginDate}</if>
         <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
@@ -356,8 +356,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="userId != null "> and stk.user_id = #{userId}</if>
         <if test="billType != null "> and stk.bill_type = #{billType}</if>
 
-        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         order by stk.bill_date desc
     </select>
 
@@ -382,16 +382,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectRTHStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                stk.bill_type billType,b.qty materialQty, b.unit_price unitPrice,
+                stk.bill_type billType,b.qty materialQty, IFNULL(b.unit_price, b.price) unitPrice,
                 b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                 s.name supplierName, w.name warehouseName,b.material_id materialId
+                ,m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay, m.is_gz materialIsGz
+                ,wc.warehouse_category_name materialWarehouseCategoryName
         from stk_io_bill stk
-        left join stk_io_bill_entry b on b.paren_id = stk.id
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
@@ -410,24 +413,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and stk.bill_status =2
             </otherwise>
         </choose>
-        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="billType != null "> and stk.bill_Type = #{billType}</if>
     </select>
 
     <select id="selectRTHStkIoBillSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.id,m.code materialCode,m.name materialName, stk.bill_type billType,
-                sum(b.qty) materialQty, b.price unitPrice,ROUND(sum(b.qty) * b.price, 2) materialAmt,
+                sum(case when stk.bill_type = 301 then -IFNULL(b.qty, 0) else IFNULL(b.qty, 0) end) materialQty,
+                b.unit_price unitPrice,
+                ROUND(sum(case when stk.bill_type = 301 then -IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0) else IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0) end), 2) materialAmt,
                 m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
-                f.factory_name factoryName,s.name supplierName, w.name warehouseName,b.material_id materialId
+                f.factory_name factoryName,s.name supplierName, w.name warehouseName,b.material_id materialId,
+                m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay, m.is_gz materialIsGz,
+                wc.warehouse_category_name materialWarehouseCategoryName,
+                fc.finance_category_name financeCategoryName
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id
+        AND (
+    b.del_flag IS NULL
+    OR b.del_flag != 1
+  )
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where stk.del_flag != 1
         and stk.tenant_id = #{scopedTenantId}
         and stk.bill_type in (101,301)
@@ -436,19 +450,50 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
 
-        <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         GROUP BY stk.id,m.code,m.name, stk.bill_type,
-         b.price,
+         b.unit_price,
         m.speci,m.model,u.unit_name,
         f.factory_name,s.name, w.name,b.material_id
+    </select>
+
+    <select id="selectRTHStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select SUM(case when stk.bill_type = 301 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
+               SUM(case when stk.bill_type = 301 then -IFNULL(b.qty * b.unit_price,0) else IFNULL(b.qty * b.unit_price,0) end) totalAmt
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (101,301)
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="materialId != null "> and m.id = #{materialId}</if>
+        <choose>
+            <when test="billStatus != null">
+                and stk.bill_status = #{billStatus}
+            </when>
+            <otherwise>
+                and stk.bill_status =2
+            </otherwise>
+        </choose>
+        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="billType != null "> and stk.bill_type = #{billType}</if>
     </select>
 
     <!-- 出退库汇总：仅报表所需字段，无嵌套子查询；供应商优先明细 stk_io_bill_entry.suppler_id，否则主表 stk.suppler_id -->
     <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.id, m.code materialCode, m.name materialName, stk.bill_type billType,
-               sum(b.qty) materialQty, b.unit_price unitPrice, ROUND(sum(b.qty) * b.unit_price, 2) materialAmt,
+               sum(IFNULL(b.qty, 0)) materialQty,
+               IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END) unitPrice,
+               ROUND(sum(IFNULL(b.amt, IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0))), 2) materialAmt,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
                f.factory_name factoryName, s.name supplierName,
                (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) supplierId,
@@ -485,7 +530,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
-        GROUP BY stk.id, m.code, m.name, stk.bill_type, b.unit_price, m.speci, m.model, u.unit_name,
+        GROUP BY stk.id, m.code, m.name, stk.bill_type,
+                 IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END),
+                 m.speci, m.model, u.unit_name,
                  f.factory_name, s.name,
                  (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end),
                  fc.finance_category_name, d.name, w.name, b.material_id,
@@ -542,7 +589,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select SUM(IFNULL(b.qty,0)) totalQty,SUM(IFNULL(b.amt,0)) totalAmt
+        select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
+               SUM(case when stk.bill_type = 401 then -IFNULL(b.amt,0) else IFNULL(b.amt,0) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
@@ -575,7 +623,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select SUM(IFNULL(b.qty,0)) totalQty,SUM(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) totalAmt
+        select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
+               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) else (IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
@@ -845,7 +894,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectHistoryInventory" parameterType="String" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select m.name materialName,sum(b.qty) historyQty from stk_io_bill a
-        left join stk_io_bill_entry b on b.paren_id = a.id
+        left join stk_io_bill_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_material m on b.material_id = m.id
         where a.bill_status = 2
         and a.bill_type = '101'
@@ -867,7 +916,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                     d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
-            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
             left join fd_warehouse w on stk.warehouse_id = w.id
             left join fd_material m on b.material_id = m.id
@@ -885,7 +934,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                     d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
-            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
             left join fd_warehouse w on stk.warehouse_id = w.id
             left join fd_material m on b.material_id = m.id
@@ -904,7 +953,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                     d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
-            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
             left join fd_warehouse w on stk.warehouse_id = w.id
             left join fd_material m on b.material_id = m.id
@@ -923,7 +972,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                     d.name departmentName, tw.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_bill stk
-            left join stk_io_bill_entry b on b.paren_id = stk.id
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
             left join fd_warehouse w on stk.warehouse_id = w.id
             left join fd_warehouse tw on stk.department_id = tw.id
@@ -942,7 +991,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                     d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
             from stk_io_stocktaking a
-            left join stk_io_stocktaking_entry b on b.paren_id = a.id
+            left join stk_io_stocktaking_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on a.department_id = d.id
             left join fd_warehouse w on a.warehouse_id = w.id
             left join fd_material m on b.material_id = m.id

@@ -1,16 +1,13 @@
 package com.spd.warehouse.controller;
 
 import com.spd.common.core.controller.BaseController;
-import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.core.page.TotalInfo;
-import com.spd.common.core.page.TableSupport;
 import com.spd.common.utils.StringUtils;
 import com.github.pagehelper.PageInfo;
 import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouseCategory;
-import com.spd.foundation.service.IFdMaterialService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.warehouse.vo.StkCTKVo;
@@ -38,8 +35,37 @@ public class StkIoRThBillController extends BaseController
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
-    @Autowired
-    private IFdMaterialService fdMaterialService;
+
+    /**
+     * 退货单据的数量/金额统一按负数显示：
+     * 入退货: 301；出退库: 401。
+     */
+    private BigDecimal normalizeAmountByBillType(Integer billType, BigDecimal value) {
+        if (value == null || billType == null) {
+            return value;
+        }
+        if (billType == 301 || billType == 401) {
+            return value.abs().negate();
+        }
+        return value;
+    }
+
+    private Integer parseBillType(Object billTypeObj) {
+        if (billTypeObj == null) {
+            return null;
+        }
+        if (billTypeObj instanceof Integer) {
+            return (Integer) billTypeObj;
+        }
+        if (billTypeObj instanceof Number) {
+            return ((Number) billTypeObj).intValue();
+        }
+        try {
+            return Integer.parseInt(billTypeObj.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     /**
      * 查询入退货列表
@@ -52,6 +78,7 @@ public class StkIoRThBillController extends BaseController
         startPage();
         List<StkRTHVo> stkRTHVoList = new ArrayList<StkRTHVo>();
         List<Map<String, Object>> mapList = stkIoBillService.selectRTHStkIoBillList(stkIoBill);
+        long total = new PageInfo<>(mapList).getTotal();
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
         Integer loopCount = 0;
@@ -61,20 +88,20 @@ public class StkIoRThBillController extends BaseController
                 try {  // 每条数据单独捕获异常
 
                     StkRTHVo stkRTHVo = new StkRTHVo();
-                    Long materialId = (Long) map.get("materialId");
-                    if (materialId != null){
-                        FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
-                        stkRTHVo.setMaterial(fdMaterial);
-                    }
+                    stkRTHVo.setMaterial(buildMaterialFromMap(map));
                     stkRTHVo.setId((Long) map.get("id"));
                     stkRTHVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"),"").toString());
                     stkRTHVo.setMaterialName(StringUtils.nvl(map.get("materialName"),"").toString());
                     stkRTHVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"),"").toString());
-                    stkRTHVo.setMaterialQty((BigDecimal) map.get("materialQty"));
+                    Integer billType = parseBillType(map.get("billType"));
+                    BigDecimal materialQty = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialQty"));
+                    BigDecimal unitPrice = (BigDecimal) map.get("unitPrice");
+                    BigDecimal materialAmt = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialAmt"));
+                    stkRTHVo.setMaterialQty(materialQty);
                     stkRTHVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"),"").toString());
-                    stkRTHVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
+                    stkRTHVo.setMaterialAmt(materialAmt);
                     stkRTHVo.setUnitName(StringUtils.nvl(map.get("unitName"),"").toString());
-                    stkRTHVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
+                    stkRTHVo.setUnitPrice(unitPrice);
                     stkRTHVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"),"").toString());
                     stkRTHVo.setFactoryName(StringUtils.nvl(map.get("factoryName"),"").toString());
                     stkRTHVo.setSupplierName(StringUtils.nvl(map.get("supplierName"),"").toString());
@@ -83,7 +110,7 @@ public class StkIoRThBillController extends BaseController
                         stkRTHVo.setBatchNumber(map.get("batchNumber").toString());
                     }
                     stkRTHVo.setBillNo(StringUtils.nvl(map.get("billNo"),"").toString());
-                    stkRTHVo.setBillType((Integer) map.get("billType"));
+                    stkRTHVo.setBillType(billType);
                     if(map.get("billDate") != null){
                         Date billDate = formatter.parse(map.get("billDate").toString());
                         stkRTHVo.setBillDate(billDate);
@@ -107,29 +134,13 @@ public class StkIoRThBillController extends BaseController
             System.out.println(e.getMessage());
         }
         logger.info("loopCount:" + loopCount);
-        
-        // 根据分页参数截取数据
-        List<StkRTHVo> pageList = new ArrayList<>();
-        try {
-            PageDomain pageDomain = TableSupport.buildPageRequest();
-            int pageNum = pageDomain.getPageNum();
-            int pageSize = pageDomain.getPageSize();
-            int total = stkRTHVoList.size();
-            
-            // 计算分页截取的开始和结束索引
-            int startIndex = (pageNum - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, total);
-            
-            if (startIndex < total) {
-                pageList = stkRTHVoList.subList(startIndex, endIndex);
-            }
-        } catch (Exception e) {
-            logger.error("分页处理失败", e);
-            // 发生异常时返回原始列表
-            pageList = stkRTHVoList;
+
+        // mapList 已由 PageHelper 分页，直接返回当前页数据，并使用查询总数
+        TotalInfo totalInfo = stkIoBillService.selectRTHStkIoBillListTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
         }
-        
-        return getDataTable(pageList);
+        return getDataTable(stkRTHVoList, totalInfo, total);
     }
 
     /**
@@ -144,24 +155,24 @@ public class StkIoRThBillController extends BaseController
 
         for(Map<String, Object> map : mapList){
             StkRTHVo stkRTHVo = new StkRTHVo();
-            Long materialId = (Long) map.get("materialId");
-            if (materialId != null){
-                FdMaterial fdMaterial = fdMaterialService.selectFdMaterialById(materialId);
-                stkRTHVo.setMaterial(fdMaterial);
-            }
+            stkRTHVo.setMaterial(buildMaterialFromMap(map));
             stkRTHVo.setId((Long) map.get("id"));
             stkRTHVo.setMaterialCode(map.get("materialCode") != null ? map.get("materialCode").toString() : null);
             stkRTHVo.setMaterialName(map.get("materialName") != null ? map.get("materialName").toString() : null);
             stkRTHVo.setMaterialModel(map.get("materialModel") != null ? map.get("materialModel").toString() : null);
-            stkRTHVo.setMaterialQty((BigDecimal) map.get("materialQty"));
+            Integer billType = parseBillType(map.get("billType"));
+            BigDecimal materialQty = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialQty"));
+            BigDecimal unitPrice = (BigDecimal) map.get("unitPrice");
+            BigDecimal materialAmt = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialAmt"));
+            stkRTHVo.setMaterialQty(materialQty);
             stkRTHVo.setMaterialSpeci(map.get("materialSpeci") != null ? map.get("materialSpeci").toString() : null);
-            stkRTHVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
+            stkRTHVo.setMaterialAmt(materialAmt);
             stkRTHVo.setUnitName(map.get("unitName") != null ? map.get("unitName").toString() : null);
-            stkRTHVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
+            stkRTHVo.setUnitPrice(unitPrice);
             stkRTHVo.setWarehouseName(map.get("warehouseName") != null ? map.get("warehouseName").toString() : null);
             stkRTHVo.setSupplierName(map.get("supplierName") != null ? map.get("supplierName").toString() : null);
             stkRTHVo.setFactoryName(map.get("factoryName") != null ? map.get("factoryName").toString() : null);
-            stkRTHVo.setBillType((Integer) map.get("billType"));
+            stkRTHVo.setBillType(billType);
             stkRTHVoList.add(stkRTHVo);
         }
         return stkRTHVoList;
@@ -215,10 +226,11 @@ public class StkIoRThBillController extends BaseController
                     stkCTKVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"), "").toString());
                     stkCTKVo.setMaterialName(StringUtils.nvl(map.get("materialName"), "").toString());
                     stkCTKVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"), "").toString());
-                    BigDecimal materialQty = (BigDecimal) map.get("materialQty");
+                    Integer billType = parseBillType(map.get("billType"));
+                    BigDecimal materialQty = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialQty"));
                     stkCTKVo.setMaterialQty(materialQty);
                     stkCTKVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"), "").toString());
-                    BigDecimal materialAmt = (BigDecimal) map.get("materialAmt");
+                    BigDecimal materialAmt = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialAmt"));
                     stkCTKVo.setMaterialAmt(materialAmt);
                     stkCTKVo.setUnitName(StringUtils.nvl(map.get("unitName"), "").toString());
                     // 如果单价为空，但有金额和数量，通过金额/数量计算单价
@@ -238,7 +250,7 @@ public class StkIoRThBillController extends BaseController
                     stkCTKVo.setBatchNo(StringUtils.nvl(map.get("batchNo"), "").toString());
                     stkCTKVo.setBatchNumber(StringUtils.nvl(map.get("batchNumber"), "").toString());
                     stkCTKVo.setBillNo(StringUtils.nvl(map.get("billNo"), "").toString());
-                    stkCTKVo.setBillType((Integer) map.get("billType"));
+                    stkCTKVo.setBillType(billType);
                     if(map.get("billDate") != null){
                         Date billDate = formatter.parse(map.get("billDate").toString());
                         stkCTKVo.setBillDate(billDate);
@@ -313,6 +325,7 @@ public class StkIoRThBillController extends BaseController
         startPage();
         List<StkCTKVo> stkRTHVoList = new ArrayList<StkCTKVo>();
         List<Map<String, Object>> mapList = stkIoBillService.selectCTKStkIoBillListSummary(stkIoBill);
+        long total = new PageInfo<>(mapList).getTotal();
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         
         BigDecimal subTotalQty = BigDecimal.ZERO;
@@ -326,10 +339,11 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"), "").toString());
                 stkCTKVo.setMaterialName(StringUtils.nvl(map.get("materialName"), "").toString());
                 stkCTKVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"), "").toString());
-                BigDecimal materialQty = (BigDecimal) map.get("materialQty");
+                Integer billType = parseBillType(map.get("billType"));
+                BigDecimal materialQty = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialQty"));
                 stkCTKVo.setMaterialQty(materialQty);
                 stkCTKVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"), "").toString());
-                BigDecimal materialAmt = (BigDecimal) map.get("materialAmt");
+                BigDecimal materialAmt = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialAmt"));
                 stkCTKVo.setMaterialAmt(materialAmt);
                 stkCTKVo.setUnitName(StringUtils.nvl(map.get("unitName"), "").toString());
                 stkCTKVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
@@ -350,18 +364,7 @@ public class StkIoRThBillController extends BaseController
                         } catch (NumberFormatException ignored) { }
                     }
                 }
-                Object bt = map.get("billType");
-                if (bt != null) {
-                    if (bt instanceof Integer) {
-                        stkCTKVo.setBillType((Integer) bt);
-                    } else if (bt instanceof Number) {
-                        stkCTKVo.setBillType(((Number) bt).intValue());
-                    } else {
-                        try {
-                            stkCTKVo.setBillType(Integer.parseInt(bt.toString()));
-                        } catch (NumberFormatException ignored) { }
-                    }
-                }
+                stkCTKVo.setBillType(billType);
                 if(map.get("createTime") != null){
                     try {
                         Date createTime = formatter.parse(map.get("createTime").toString());
@@ -394,28 +397,6 @@ public class StkIoRThBillController extends BaseController
             }
         }
         
-        // 保存总数据大小（在分页前）
-        Long total = Long.valueOf(stkRTHVoList.size());
-        
-        // 根据分页参数截取数据
-        List<StkCTKVo> pageList = new ArrayList<>();
-        try {
-            PageDomain pageDomain = TableSupport.buildPageRequest();
-            int pageNum = pageDomain.getPageNum();
-            int pageSize = pageDomain.getPageSize();
-            
-            // 计算分页截取的开始和结束索引
-            int startIndex = (pageNum - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, total.intValue());
-            
-            if (startIndex < total.intValue()) {
-                pageList = stkRTHVoList.subList(startIndex, endIndex);
-            }
-        } catch (Exception e) {
-            logger.error("分页处理失败", e);
-            pageList = stkRTHVoList;
-        }
-        
         // 计算总合计（需要查询所有数据）
         TotalInfo totalInfo = stkIoBillService.selectCTKStkIoBillListSummaryTotal(stkIoBill);
         if (totalInfo == null) {
@@ -423,8 +404,8 @@ public class StkIoRThBillController extends BaseController
         }
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
-        
-        return getDataTable(pageList, totalInfo, total);
+
+        return getDataTable(stkRTHVoList, totalInfo, total);
     }
 
     /**

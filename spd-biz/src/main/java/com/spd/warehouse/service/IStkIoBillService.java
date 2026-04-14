@@ -118,6 +118,13 @@ public interface IStkIoBillService
     List<Map<String, Object>> selectRTHStkIoBillList(StkIoBill stkIoBill);
 
     /**
+     * 查询入退货列表合计
+     * @param stkIoBill
+     * @return
+     */
+    TotalInfo selectRTHStkIoBillListTotal(StkIoBill stkIoBill);
+
+    /**
      * 查询出退库列表
      * @param stkIoBill
      * @return
