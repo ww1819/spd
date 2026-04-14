@@ -24,6 +24,10 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.BasApplyMapper;
 import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
+import com.spd.warehouse.domain.HcCkFlow;
+import com.spd.warehouse.domain.StkInventory;
+import com.spd.warehouse.mapper.HcCkFlowMapper;
+import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
 import com.spd.department.service.IWhWarehouseApplyService;
@@ -50,6 +54,12 @@ public class BasApplyServiceImpl implements IBasApplyService
 
     @Autowired
     private HcKsFlowMapper hcKsFlowMapper;
+
+    @Autowired
+    private HcCkFlowMapper hcCkFlowMapper;
+
+    @Autowired
+    private StkInventoryMapper stkInventoryMapper;
 
     @Autowired
     private IWhWarehouseApplyService whWarehouseApplyService;
@@ -524,7 +534,125 @@ public class BasApplyServiceImpl implements IBasApplyService
 
             insertKsTransferFlow(basApply, e, src, outDeptId, need, unitPrice, "科室转出", "KSZC");
             insertKsTransferFlow(basApply, e, tgtExisting, inDeptId, need, unitPrice, "科室转入", "KSZR");
+            insertHcCkTransferPairForWarehouse(basApply, e, src, need, unitPrice);
         }
+    }
+
+    /**
+     * 按科室库存明细的归属仓库写入仓库流水（KSZC+KSZR 成对），不扣减/增加 stk_inventory。
+     * lx 使用 KSZC/KSZR，与仓库间调拨的 ZC/ZR 区分。
+     */
+    private void insertHcCkTransferPairForWarehouse(BasApply basApply, BasApplyEntry entry,
+        StkDepInventory srcRow, BigDecimal qty, BigDecimal deptUnitPrice) {
+        if (srcRow == null || srcRow.getWarehouseId() == null) {
+            throw new ServiceException("转科明细归属仓库不能为空，无法生成仓库流水");
+        }
+        Long whId = srcRow.getWarehouseId();
+        StkInventory whInv = stkInventoryMapper.selectStkInventoryByBatchNoAndMaterialIdAndWarehouse(
+            entry.getBatchNo(), entry.getMaterialId(), whId);
+        if (whInv == null) {
+            whInv = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(entry.getBatchNo(), whId);
+        }
+        if (whInv == null) {
+            StkInventory one = stkInventoryMapper.selectStkInventoryOne(entry.getBatchNo());
+            if (one != null && whId.equals(one.getWarehouseId())) {
+                whInv = one;
+            }
+        }
+        BigDecimal flowUnitPrice = deptUnitPrice;
+        if (whInv != null && whInv.getUnitPrice() != null) {
+            flowUnitPrice = whInv.getUnitPrice();
+        }
+        BigDecimal amt = flowUnitPrice != null && qty != null ? qty.multiply(flowUnitPrice) : BigDecimal.ZERO;
+        Long supplierId = resolveCkSupplierId(srcRow, whInv);
+        Long factoryId = resolveCkFactoryId(srcRow, whInv);
+        Long batchId = whInv != null && whInv.getBatchId() != null ? whInv.getBatchId() : srcRow.getBatchId();
+        Long kcNo = whInv != null ? whInv.getId() : null;
+        String mainBc = whInv != null && StringUtils.isNotEmpty(whInv.getMainBarcode())
+            ? whInv.getMainBarcode() : srcRow.getMainBarcode();
+        String subBc = whInv != null && StringUtils.isNotEmpty(whInv.getSubBarcode())
+            ? whInv.getSubBarcode() : srcRow.getSubBarcode();
+        Date beginT = whInv != null ? whInv.getBeginTime() : srcRow.getBeginDate();
+        Date endT = whInv != null ? whInv.getEndTime() : srcRow.getEndDate();
+        String tenantId = StringUtils.isNotEmpty(basApply.getTenantId())
+            ? basApply.getTenantId() : SecurityUtils.getCustomerId();
+        Date flowTime = new Date();
+        String uid = SecurityUtils.getUserIdStr();
+
+        HcCkFlow zc = new HcCkFlow();
+        zc.setBillId(basApply.getId());
+        zc.setEntryId(entry.getId());
+        zc.setWarehouseId(whId);
+        zc.setMaterialId(entry.getMaterialId());
+        zc.setBatchNo(entry.getBatchNo());
+        zc.setBatchNumber(entry.getBatchNumer());
+        zc.setQty(qty);
+        zc.setUnitPrice(flowUnitPrice);
+        zc.setAmt(amt);
+        zc.setBeginTime(beginT);
+        zc.setEndTime(endT);
+        zc.setSupplierId(supplierId);
+        zc.setFactoryId(factoryId);
+        zc.setMainBarcode(mainBc);
+        zc.setSubBarcode(subBc);
+        zc.setLx("KSZC");
+        zc.setBatchId(batchId);
+        zc.setOriginBusinessType("科室转科仓库转出");
+        zc.setKcNo(kcNo);
+        zc.setFlowTime(flowTime);
+        zc.setDelFlag(0);
+        zc.setCreateTime(flowTime);
+        zc.setCreateBy(uid);
+        zc.setTenantId(tenantId);
+        hcCkFlowMapper.insertHcCkFlow(zc);
+
+        HcCkFlow zr = new HcCkFlow();
+        zr.setBillId(basApply.getId());
+        zr.setEntryId(entry.getId());
+        zr.setWarehouseId(whId);
+        zr.setMaterialId(entry.getMaterialId());
+        zr.setBatchNo(entry.getBatchNo());
+        zr.setBatchNumber(entry.getBatchNumer());
+        zr.setQty(qty);
+        zr.setUnitPrice(flowUnitPrice);
+        zr.setAmt(amt);
+        zr.setBeginTime(beginT);
+        zr.setEndTime(endT);
+        zr.setSupplierId(supplierId);
+        zr.setFactoryId(factoryId);
+        zr.setMainBarcode(mainBc);
+        zr.setSubBarcode(subBc);
+        zr.setLx("KSZR");
+        zr.setBatchId(batchId);
+        zr.setOriginBusinessType("科室转科仓库转入");
+        zr.setKcNo(kcNo);
+        zr.setFlowTime(flowTime);
+        zr.setDelFlag(0);
+        zr.setCreateTime(flowTime);
+        zr.setCreateBy(uid);
+        zr.setTenantId(tenantId);
+        hcCkFlowMapper.insertHcCkFlow(zr);
+    }
+
+    private static Long resolveCkSupplierId(StkDepInventory depRow, StkInventory whInv) {
+        if (whInv != null && whInv.getSupplierId() != null) {
+            return whInv.getSupplierId();
+        }
+        if (depRow != null && StringUtils.isNotEmpty(depRow.getSupplierId())) {
+            try {
+                return Long.parseLong(depRow.getSupplierId().trim());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static Long resolveCkFactoryId(StkDepInventory depRow, StkInventory whInv) {
+        if (whInv != null && whInv.getFactoryId() != null) {
+            return whInv.getFactoryId();
+        }
+        return depRow != null ? depRow.getFactoryId() : null;
     }
 
     private void insertKsTransferFlow(BasApply basApply, BasApplyEntry entry, StkDepInventory depRow,

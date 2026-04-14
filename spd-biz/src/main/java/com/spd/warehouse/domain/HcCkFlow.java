@@ -53,7 +53,7 @@ public class HcCkFlow extends BaseEntity {
     private Long factoryId;
     /** 关联仓库库存id */
     private Long kcNo;
-    /** 类型：RK入库/CK出库/TH退货/TK退库/ZC调拨转出/ZR调拨转入 */
+    /** 类型：RK入库/CK出库/TH退货/TK退库/ZC调拨转出/ZR调拨转入/KSZC科室转科仓库转出/KSZR科室转科仓库转入 */
     private String lx;
     /** 流水时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
