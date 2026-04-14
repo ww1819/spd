@@ -1,6 +1,5 @@
 package com.spd.department.controller;
 
-import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.system.service.ITenantScopeService;
 
 import java.util.List;
-import java.util.Collections;
 
 /**
  * 收货确认Controller
@@ -44,17 +42,8 @@ public class ReceiptConfirmController extends BaseController
     private ITenantScopeService tenantScopeService;
 
     private void applyDepartmentScopeOrDeny(StkIoBill stkIoBill) {
-        Long userId = SecurityUtils.getUserId();
-        String customerId = SecurityUtils.getCustomerId();
-        // 统一租户数据范围：耗材端会按 sys_user_department 解析；租户管理员返回 null 表示不限制
-        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
-        if (deptIds == null) {
-            return;
-        }
-        if (deptIds.isEmpty()) {
-            deptIds = Collections.emptyList();
-        }
-        stkIoBill.getParams().put("deptIds", deptIds);
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            stkIoBill.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
     }
 
     /**

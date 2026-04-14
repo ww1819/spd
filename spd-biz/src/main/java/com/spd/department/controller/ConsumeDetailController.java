@@ -2,7 +2,6 @@ package com.spd.department.controller;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 import com.github.pagehelper.PageInfo;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,17 +34,8 @@ public class ConsumeDetailController extends BaseController
     private ITenantScopeService tenantScopeService;
 
     private void applyDepartmentScopeOrDeny(StkIoBill q) {
-        Long userId = SecurityUtils.getUserId();
-        String customerId = SecurityUtils.getCustomerId();
-        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
-        // null 表示租户管理员/不限制
-        if (deptIds == null) {
-            return;
-        }
-        if (deptIds.isEmpty()) {
-            deptIds = Collections.emptyList();
-        }
-        q.getParams().put("deptIds", deptIds);
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            q.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
     }
 
     /**

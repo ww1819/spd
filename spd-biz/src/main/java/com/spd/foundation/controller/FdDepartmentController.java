@@ -64,15 +64,8 @@ public class FdDepartmentController extends BaseController
         }
         if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
         {
-            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
-            if (allowedIds != null && !allowedIds.isEmpty())
-            {
-                fdDepartment.getParams().put("allowedDeptIds", allowedIds);
-            }
-            else
-            {
-                fdDepartment.getParams().put("allowedDeptIds", new ArrayList<Long>());
-            }
+            tenantScopeService.applyDepartmentScopeQueryParams(
+                fdDepartment.getParams(), SecurityUtils.getUserId(), customerId);
         }
     }
 

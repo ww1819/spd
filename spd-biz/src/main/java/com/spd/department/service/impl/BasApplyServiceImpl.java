@@ -84,13 +84,8 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply == null) {
             return;
         }
-        Long userId = SecurityUtils.getUserId();
-        String customerId = SecurityUtils.getCustomerId();
-        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
-        if (deptIds == null) {
-            return;
-        }
-        basApply.getParams().put("deptIds", deptIds);
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            basApply.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
     }
 
     /**
