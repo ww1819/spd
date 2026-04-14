@@ -87,6 +87,11 @@ public class BasApply extends BaseEntity
     /** 仓库对象 */
     private FdWarehouse warehouse;
 
+    /**
+     * 转科申请（bill_type=3）：调出科室对象；与 warehouse_id 同源（该场景下存的是科室 ID，非库房）
+     */
+    private FdDepartment outDepartment;
+
     /** 操作人对象 */
     private SysUser user;
 
@@ -210,6 +215,14 @@ public class BasApply extends BaseEntity
 
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
+    }
+
+    public FdDepartment getOutDepartment() {
+        return outDepartment;
+    }
+
+    public void setOutDepartment(FdDepartment outDepartment) {
+        this.outDepartment = outDepartment;
     }
 
     public SysUser getUser() {

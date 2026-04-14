@@ -143,8 +143,95 @@ public class SysMenuServiceImpl implements ISysMenuService
         else
         {
             menus = menuMapper.selectMenuTreeByUserId(userId, forTenant);
+            // 租户：sys_user_menu 仅含叶子时，若祖先目录在「扩展写库」时被 is_platform 误判中断，getRouters 无法从 parent_id=0 组树，侧栏不显示子菜单
+            if (menus != null && !menus.isEmpty() && Boolean.TRUE.equals(forTenant))
+            {
+                menus = appendMissingAncestorMenusForHcRouter(menus);
+                normalizeVisibleForTenantHcSidebar(menus);
+            }
         }
         return getChildPerms(menus, 0);
+    }
+
+    /**
+     * 租户侧栏：路由 hidden 来自 menu.visible；若目录(M)被标为「隐藏」，其下子路由整枝不渲染（表现为有权限但无菜单）。
+     * 耗材科室下页面(C) component 以 department/ 开头时同理。仅修正本次返回的内存对象。
+     */
+    private void normalizeVisibleForTenantHcSidebar(List<SysMenu> menus)
+    {
+        if (menus == null)
+        {
+            return;
+        }
+        for (SysMenu m : menus)
+        {
+            if (m == null)
+            {
+                continue;
+            }
+            if (!"1".equals(String.valueOf(m.getVisible()).trim()))
+            {
+                continue;
+            }
+            if (UserConstants.TYPE_DIR.equals(m.getMenuType()))
+            {
+                m.setVisible("0");
+                continue;
+            }
+            if (UserConstants.TYPE_MENU.equals(m.getMenuType())
+                    && StringUtils.isNotEmpty(m.getComponent())
+                    && m.getComponent().startsWith("department/"))
+            {
+                m.setVisible("0");
+            }
+        }
+    }
+
+    /**
+     * 耗材租户侧栏：沿 parent_id 向上只读补充缺失的祖先菜单行（仅用于组树，不改变 sys_user_menu 落库）。
+     * 若某级目录(M)被误标 is_platform=1，expandMenuIdsWithAncestorsForTenant 会中断导致无祖先 ID，此处仍补充 M 目录以便挂载子菜单。
+     */
+    private List<SysMenu> appendMissingAncestorMenusForHcRouter(List<SysMenu> menus)
+    {
+        Map<Long, SysMenu> byId = new LinkedHashMap<>();
+        for (SysMenu m : menus)
+        {
+            if (m != null && m.getMenuId() != null)
+            {
+                byId.put(m.getMenuId(), m);
+            }
+        }
+        boolean added = true;
+        while (added)
+        {
+            added = false;
+            for (Long id : new ArrayList<>(byId.keySet()))
+            {
+                SysMenu node = byId.get(id);
+                if (node == null)
+                {
+                    continue;
+                }
+                Long pid = node.getParentId();
+                if (pid == null || pid <= 0 || byId.containsKey(pid))
+                {
+                    continue;
+                }
+                SysMenu parent = menuMapper.selectMenuById(pid);
+                if (parent == null || !"0".equals(String.valueOf(parent.getStatus()).trim()))
+                {
+                    continue;
+                }
+                if ("1".equals(String.valueOf(parent.getIsPlatform()).trim())
+                        && !UserConstants.TYPE_DIR.equals(parent.getMenuType()))
+                {
+                    continue;
+                }
+                byId.put(pid, parent);
+                added = true;
+            }
+        }
+        return new ArrayList<>(byId.values());
     }
 
     /**
@@ -477,7 +564,9 @@ public class SysMenuServiceImpl implements ISysMenuService
                     break;
                 }
                 SysMenu parent = menuMapper.selectMenuById(pid);
-                if (parent != null && "1".equals(String.valueOf(parent.getIsPlatform()).trim()))
+                // 目录(M)被误标 is_platform=1 时仍须纳入祖先链，否则租户 sys_user_menu 无父级 ID，getRouters 无法组树
+                if (parent != null && "1".equals(String.valueOf(parent.getIsPlatform()).trim())
+                        && !UserConstants.TYPE_DIR.equals(parent.getMenuType()))
                 {
                     break;
                 }

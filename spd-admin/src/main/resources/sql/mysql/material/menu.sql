@@ -4124,13 +4124,12 @@ WHERE @wt_audit_menu IS NOT NULL
 /
 
 -- ========== 科室：转科申请（department/departmentTransfer/apply；DepartmentTransferController /department/transfer）==========
--- perms 与 @PreAuthorize 一致：apply:list/query/export/add/edit/remove/audit；前端 views 路径 department/departmentTransfer/apply/index
+-- perms 与 @PreAuthorize 一致；固定 menu_id 与现网一致：C=1407，F=3204–3209；path=departmentTransfer；default_open_to_customer=1 对客户默认开放
 /
 
-SET @dept_parent_dt := COALESCE(
+SET @dept_parent_transfer := COALESCE(
   (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'department' ORDER BY m.menu_id LIMIT 1),
-  (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component LIKE 'department/%' ORDER BY m.menu_id LIMIT 1),
-  1
+  1062
 );
 /
 
@@ -4141,23 +4140,24 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请',
-  @dept_parent_dt,
-  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @dept_parent_dt),
-  'departmentTransferApply',
-  'department/departmentTransfer/apply/index',
-  NULL,
+  1407, '转科申请', @dept_parent_transfer, 3, 'departmentTransfer', 'department/departmentTransfer/apply/index', NULL,
   1, 0, 'C', '0', '0', 'departmentTransfer:apply:list', 'guide',
   'admin', NOW(), '1', NOW(), 'BasApply billType=3，/department/transfer',
   '0', '1'
 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/departmentTransfer/apply/index');
-/
-
-SET @dt_apply_menu := (
-  SELECT menu_id FROM sys_menu WHERE component = 'department/departmentTransfer/apply/index' AND menu_type = 'C' ORDER BY menu_id DESC LIMIT 1
-);
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 INSERT INTO sys_menu (
@@ -4167,17 +4167,24 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请查询',
-  @dt_apply_menu,
-  1,
-  '#', '', NULL,
+  3204, '转科申请查询', 1407, 1, '#', '', NULL,
   1, 0, 'F', '0', '0', 'departmentTransfer:apply:query', '#',
   'admin', NOW(), '1', NOW(), 'GET /{id}',
   '0', '1'
 FROM DUAL
-WHERE @dt_apply_menu IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:query');
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 1407 AND perms = 'departmentTransfer:apply:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3204)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 INSERT INTO sys_menu (
@@ -4187,17 +4194,24 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请导出',
-  @dt_apply_menu,
-  2,
-  '#', '', NULL,
+  3205, '转科申请导出', 1407, 2, '#', '', NULL,
   1, 0, 'F', '0', '0', 'departmentTransfer:apply:export', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
-WHERE @dt_apply_menu IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:export');
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 1407 AND perms = 'departmentTransfer:apply:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3205)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 INSERT INTO sys_menu (
@@ -4207,17 +4221,24 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请新增',
-  @dt_apply_menu,
-  3,
-  '#', '', NULL,
+  3206, '转科申请新增', 1407, 3, '#', '', NULL,
   1, 0, 'F', '0', '0', 'departmentTransfer:apply:add', '#',
   'admin', NOW(), '1', NOW(), 'POST',
   '0', '1'
 FROM DUAL
-WHERE @dt_apply_menu IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:add');
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 1407 AND perms = 'departmentTransfer:apply:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3206)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 INSERT INTO sys_menu (
@@ -4227,17 +4248,24 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请修改',
-  @dt_apply_menu,
-  4,
-  '#', '', NULL,
+  3207, '转科申请修改', 1407, 4, '#', '', NULL,
   1, 0, 'F', '0', '0', 'departmentTransfer:apply:edit', '#',
   'admin', NOW(), '1', NOW(), 'PUT',
   '0', '1'
 FROM DUAL
-WHERE @dt_apply_menu IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:edit');
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 1407 AND perms = 'departmentTransfer:apply:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3207)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 INSERT INTO sys_menu (
@@ -4247,17 +4275,24 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请删除',
-  @dt_apply_menu,
-  5,
-  '#', '', NULL,
+  3208, '转科申请删除', 1407, 5, '#', '', NULL,
   1, 0, 'F', '0', '0', 'departmentTransfer:apply:remove', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
-WHERE @dt_apply_menu IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:remove');
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 1407 AND perms = 'departmentTransfer:apply:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3208)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
 INSERT INTO sys_menu (
@@ -4267,17 +4302,78 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '转科申请审核',
-  @dt_apply_menu,
-  6,
-  '#', '', NULL,
+  3209, '转科申请审核', 1407, 6, '#', '', NULL,
   1, 0, 'F', '0', '0', 'departmentTransfer:apply:audit', '#',
-  'admin', NOW(), '1', NOW(), 'PUT /auditApply（科室申领审核页若调同一接口也需此权限）',
+  'admin', NOW(), '1', NOW(), 'PUT /auditApply',
   '0', '1'
 FROM DUAL
-WHERE @dt_apply_menu IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:audit');
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 1407 AND perms = 'departmentTransfer:apply:audit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3209)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+-- 转科申请：强制对客户默认开放（含历史数据 is_platform/default_open 被改过的情况）
+UPDATE sys_menu
+SET default_open_to_customer = '1',
+    update_by = '1',
+    update_time = NOW()
+WHERE menu_id IN (1407, 3204, 3205, 3206, 3207, 3208, 3209);
+/
+
+-- 侧栏：visible=1 时路由 hidden，父目录隐藏会导致整枝不显示；转科申请及其父目录须可显
+UPDATE sys_menu
+SET visible = '0',
+    update_by = '1',
+    update_time = NOW()
+WHERE menu_id IN (1407, 3204, 3205, 3206, 3207, 3208, 3209);
+/
+
+UPDATE sys_menu p
+INNER JOIN sys_menu c ON c.menu_id = 1407 AND c.parent_id = p.menu_id
+SET p.visible = '0',
+    p.update_by = '1',
+    p.update_time = NOW()
+WHERE p.menu_type = 'M';
+/
+
+-- 耗材「科室」根目录 path=department：若误标 is_platform=1，expandMenuIdsWithAncestorsForTenant 会在父级中断，sys_user_menu 缺祖先 ID，租户侧栏无法挂载转科等子菜单
+UPDATE sys_menu
+SET is_platform = '0',
+    update_by = '1',
+    update_time = NOW()
+WHERE menu_type = 'M'
+  AND path = 'department'
+  AND IFNULL(is_platform, '0') = '1';
+/
+
+-- 转科：停用历史占位节点（1397 及子 1398/1399/1400，path 为 menu_139x、无真实 component），避免与 1407+3204–3209 重复挂菜单/误授权
+-- status=1 停用、visible=1 隐藏（与 RuoYi 字段语义一致）；若库中无这些 menu_id 则本段影响 0 行
+UPDATE sys_menu
+SET status = '1',
+    visible = '1',
+    default_open_to_customer = '0',
+    update_by = '1',
+    update_time = NOW(),
+    remark = CASE
+      WHEN remark IS NULL OR remark = '' THEN '已由 menu_id=1407 转科申请替代'
+      WHEN remark NOT LIKE '%1407%' THEN CONCAT(remark, '；已由 menu_id=1407 转科申请替代')
+      ELSE remark
+    END
+WHERE menu_id IN (1397, 1398, 1399, 1400);
+/
+
+DELETE FROM hc_customer_menu
+WHERE menu_id IN (1397, 1398, 1399, 1400);
 /
 
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）

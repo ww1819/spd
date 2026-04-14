@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Objects;
 
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.exception.ServiceException;
@@ -170,6 +171,64 @@ public class BasApplyServiceImpl implements IBasApplyService
     }
 
     /**
+     * 转科申请（billType=3）：已存在有效明细时，不允许修改调出科室（warehouseId）、调入科室（departmentId）。
+     */
+    private void assertTransferDepartmentsImmutableWhenDetailsExist(BasApply incoming, BasApply persisted)
+    {
+        if (incoming == null || persisted == null)
+        {
+            return;
+        }
+        Integer bt = incoming.getBillType() != null ? incoming.getBillType() : persisted.getBillType();
+        if (bt == null || bt != 3)
+        {
+            return;
+        }
+        List<BasApplyEntry> oldList = persisted.getBasApplyEntryList();
+        if (oldList == null || oldList.isEmpty())
+        {
+            return;
+        }
+        boolean hasDetail = false;
+        for (BasApplyEntry e : oldList)
+        {
+            if (e != null && e.getMaterialId() != null)
+            {
+                hasDetail = true;
+                break;
+            }
+        }
+        if (!hasDetail)
+        {
+            return;
+        }
+        // 本次保存将清空全部明细时，允许同时调整调出/调入科室
+        List<BasApplyEntry> incList = incoming.getBasApplyEntryList();
+        if (incList == null || incList.isEmpty())
+        {
+            return;
+        }
+        boolean incomingKeepsMaterialLine = false;
+        for (BasApplyEntry e : incList)
+        {
+            if (e != null && e.getMaterialId() != null)
+            {
+                incomingKeepsMaterialLine = true;
+                break;
+            }
+        }
+        if (!incomingKeepsMaterialLine)
+        {
+            return;
+        }
+        if (!Objects.equals(persisted.getWarehouseId(), incoming.getWarehouseId())
+                || !Objects.equals(persisted.getDepartmentId(), incoming.getDepartmentId()))
+        {
+            throw new ServiceException("转科申请已有明细，不允许修改调出科室或调入科室");
+        }
+    }
+
+    /**
      * 新增科室申领
      *
      * @param basApply 科室申领
@@ -186,6 +245,14 @@ public class BasApplyServiceImpl implements IBasApplyService
             throw new ServiceException("科室不能为空，请先选择科室");
         }
         assertDepartmentInUserScope(basApply.getDepartmentId());
+        if (basApply.getBillType() != null && basApply.getBillType() == 3)
+        {
+            if (basApply.getWarehouseId() == null)
+            {
+                throw new ServiceException("转出科室不能为空，请先选择调出科室");
+            }
+            assertDepartmentInUserScope(basApply.getWarehouseId());
+        }
         validateEntryQty(basApply);
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
@@ -249,13 +316,21 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply.getBillType() == null && existing != null) {
             basApply.setBillType(existing.getBillType());
         }
+        Integer billType = basApply.getBillType() != null ? basApply.getBillType()
+            : (existing != null ? existing.getBillType() : null);
+        if (billType != null && billType == 3 && basApply.getWarehouseId() != null)
+        {
+            assertDepartmentInUserScope(basApply.getWarehouseId());
+        }
+        if (existing != null)
+        {
+            assertTransferDepartmentsImmutableWhenDetailsExist(basApply, existing);
+        }
         validateEntryQty(basApply);
         if (existing != null) {
             basApply.setCreateBy(existing.getCreateBy());
             basApply.setCreateTime(existing.getCreateTime());
         }
-        Integer billType = basApply.getBillType() != null ? basApply.getBillType()
-            : (existing != null ? existing.getBillType() : null);
         if (billType != null && billType == 1) {
             basApply.setWarehouseId(null);
             basApply.getParams().put("clearDeptApplyHeaderWarehouse", Boolean.TRUE);
