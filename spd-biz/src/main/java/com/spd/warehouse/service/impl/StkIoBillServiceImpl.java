@@ -2035,6 +2035,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
         StkIoBill ckBill = new StkIoBill();
         ckBill.setWarehouseId(rkBill.getWarehouseId());
+        ckBill.setDepartmentId(rkBill.getDepartmentId());
         ckBill.setBillType(201);
         ckBill.setRefBillNo(rkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
@@ -2146,6 +2147,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
         StkIoBill thBill = new StkIoBill();
         thBill.setWarehouseId(rkBill.getWarehouseId());
+        thBill.setDepartmentId(rkBill.getDepartmentId());
         thBill.setSupplerId(rkBill.getSupplerId());
         thBill.setBillType(301);
         thBill.setRefBillNo(rkBill.getBillNo());

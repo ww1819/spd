@@ -111,7 +111,11 @@ public class StkTkInventoryController extends BaseController {
     }
 
 
-    @PreAuthorize("@ss.hasPermi('outWarehouse:refundDepotApply:createTkEntriesByCkApply')")
+    /**
+     * 引用出库单生成退库明细草稿。与出库引用入库单类似：放宽为拥有退库 list/add/edit 即可，
+     * 避免仅有新增权限却无独立按钮标识 createTkEntriesByCkApply 时 403。
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:refundDepotApply:list') || @ss.hasPermi('outWarehouse:refundDepotApply:add') || @ss.hasPermi('outWarehouse:refundDepotApply:edit') || @ss.hasPermi('outWarehouse:refundDepotApply:createTkEntriesByCkApply')")
     @GetMapping("/createTkEntriesByCkApply")
     public AjaxResult createTkEntriesByCkApply(@RequestParam String ckApplyId) {
         if (ckApplyId == null) {

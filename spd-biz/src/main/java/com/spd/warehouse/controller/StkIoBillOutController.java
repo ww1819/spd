@@ -177,7 +177,11 @@ public class StkIoBillOutController extends BaseController {
         return success(stkIoBill1);
     }
 
-    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:createCkEntriesByRkApply')")
+    /**
+     * 引用入库单生成出库明细草稿。权限与 createCkEntriesByWhApply 一致，
+     * 避免仅有出库新增/修改却无独立按钮权限 createCkEntriesByRkApply 时 403。
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:list') || @ss.hasPermi('outWarehouse:apply:add') || @ss.hasPermi('outWarehouse:apply:edit') || @ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply') || @ss.hasPermi('outWarehouse:apply:createCkEntriesByRkApply') || @ss.hasPermi('department:whWarehouseApply:list') || @ss.hasPermi('department:dApply:list')")
     @GetMapping("/createCkEntriesByRkApply")
     public AjaxResult createCkEntriesByRkApply(@RequestParam String rkApplyId) {
 //        if (stkIoBill == null){
