@@ -624,7 +624,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
-               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) else (IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
+               SUM(case when stk.bill_type = 401 then -IFNULL(b.amt, IFNULL(b.qty,0) * IFNULL(b.unit_price,0))
+                        else IFNULL(b.amt, IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
