@@ -69,6 +69,32 @@ public class FdSupplierController extends BaseController
     }
 
     /**
+     * 科室模块专用供应商低敏列表（仅必要字段，避免返回完整供应商信息）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/listDeptSafe")
+    public List<Map<String, Object>> listDeptSafe(@RequestParam(value = "name", required = false) String name)
+    {
+        FdSupplier query = new FdSupplier();
+        if (StringUtils.isNotEmpty(name))
+        {
+            query.setName(name.trim());
+        }
+        List<FdSupplier> suppliers = fdSupplierService.selectFdSupplierList(query);
+        List<Map<String, Object>> safeList = new ArrayList<>();
+        for (FdSupplier supplier : suppliers)
+        {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", supplier.getId());
+            item.put("name", supplier.getName());
+            item.put("code", supplier.getCode());
+            item.put("referredCode", supplier.getReferredCode());
+            safeList.add(item);
+        }
+        return safeList;
+    }
+
+    /**
      * 导出供应商列表
      */
     @PreAuthorize("@ss.hasPermi('foundation:supplier:export')")
