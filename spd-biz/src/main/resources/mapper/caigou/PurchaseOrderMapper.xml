@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.caigou.mapper.PurchaseOrderMapper">
     
-    <resultMap type="PurchaseOrder" id="PurchaseOrderResult">
+    <resultMap type="com.spd.caigou.domain.PurchaseOrder" id="PurchaseOrderResult">
         <result property="id"    column="id"    />
         <result property="orderNo"    column="order_no"    />
         <result property="planNo"    column="plan_no"    />
@@ -37,13 +37,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
-        <association property="supplier"    column="supplier_id" javaType="FdSupplier" resultMap="supplierResult" />
-        <association property="warehouse"    column="warehouse_id" javaType="FdWarehouse" resultMap="warehouseResult" />
-        <association property="department"    column="department_id" javaType="FdDepartment" resultMap="departmentResult" />
-        <collection property="purchaseOrderEntryList" ofType="PurchaseOrderEntry" resultMap="PurchaseOrderEntryResult" />
+        <association property="supplier"    column="supplier_id" javaType="com.spd.foundation.domain.FdSupplier" resultMap="supplierResult" />
+        <association property="warehouse"    column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult" />
+        <association property="department"    column="department_id" javaType="com.spd.foundation.domain.FdDepartment" resultMap="departmentResult" />
+        <collection property="purchaseOrderEntryList" ofType="com.spd.caigou.domain.PurchaseOrderEntry" resultMap="PurchaseOrderEntryResult" />
     </resultMap>
 
-    <resultMap type="PurchaseOrderEntry" id="PurchaseOrderEntryResult">
+    <resultMap type="com.spd.caigou.domain.PurchaseOrderEntry" id="PurchaseOrderEntryResult">
         <result property="id"    column="id"    />
         <result property="parentId"    column="parent_id"    />
         <result property="materialId"    column="material_id"    />
@@ -70,28 +70,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
-        <association property="material"    column="material_id" javaType="FdMaterial" resultMap="materialResult" />
+        <association property="material"    column="material_id" javaType="com.spd.foundation.domain.FdMaterial" resultMap="materialResult" />
     </resultMap>
 
-    <resultMap type="FdSupplier" id="supplierResult">
+    <resultMap type="com.spd.foundation.domain.FdSupplier" id="supplierResult">
         <result property="id"    column="supplier_id"    />
         <result property="name"    column="supplier_name"    />
         <result property="code"    column="supplier_code"    />
     </resultMap>
 
-    <resultMap type="FdWarehouse" id="warehouseResult">
+    <resultMap type="com.spd.foundation.domain.FdWarehouse" id="warehouseResult">
         <result property="id"    column="warehouse_id"    />
         <result property="name"    column="warehouse_name"    />
         <result property="code"    column="warehouse_code"    />
     </resultMap>
 
-    <resultMap type="FdDepartment" id="departmentResult">
+    <resultMap type="com.spd.foundation.domain.FdDepartment" id="departmentResult">
         <result property="id"    column="department_id"    />
         <result property="name"    column="dept_name"    />
         <result property="code"    column="dept_code"    />
     </resultMap>
 
-    <resultMap type="FdMaterial" id="materialResult">
+    <resultMap type="com.spd.foundation.domain.FdMaterial" id="materialResult">
         <result property="id"    column="material_id"    />
         <result property="name"    column="material_name"    />
         <result property="code"    column="material_code"    />
@@ -114,7 +114,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on po.department_id = d.id
     </sql>
 
-    <select id="selectPurchaseOrderList" parameterType="PurchaseOrder" resultMap="PurchaseOrderResult">
+    <select id="selectPurchaseOrderList" parameterType="com.spd.caigou.domain.PurchaseOrder" resultMap="PurchaseOrderResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectPurchaseOrderVo"/>
         <where>  
@@ -157,7 +157,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by poe.id
     </select>
         
-    <insert id="insertPurchaseOrder" parameterType="PurchaseOrder" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertPurchaseOrder" parameterType="com.spd.caigou.domain.PurchaseOrder" useGeneratedKeys="true" keyProperty="id">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into purchase_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -224,7 +224,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
     </insert>
 
-    <insert id="insertPurchaseOrderEntry" parameterType="PurchaseOrderEntry">
+    <insert id="insertPurchaseOrderEntry" parameterType="com.spd.caigou.domain.PurchaseOrderEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into purchase_order_entry
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -296,7 +296,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </insert>
 
-    <update id="updatePurchaseOrder" parameterType="PurchaseOrder">
+    <update id="updatePurchaseOrder" parameterType="com.spd.caigou.domain.PurchaseOrder">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_order
         <trim prefix="SET" suffixOverrides=",">
@@ -329,7 +329,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <update id="auditPurchaseOrder" parameterType="PurchaseOrder">
+    <update id="auditPurchaseOrder" parameterType="com.spd.caigou.domain.PurchaseOrder">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_order
         <trim prefix="SET" suffixOverrides=",">

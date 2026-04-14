@@ -493,7 +493,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, m.code materialCode, m.name materialName, stk.bill_type billType,
                sum(IFNULL(b.qty, 0)) materialQty,
                IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END) unitPrice,
-               ROUND(sum(IFNULL(b.amt, IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0))), 2) materialAmt,
+               ROUND(sum(IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)), 2) materialAmt,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
                f.factory_name factoryName, s.name supplierName,
                (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) supplierId,
@@ -546,7 +546,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, m.code materialCode, m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                stk.bill_type billType, b.qty materialQty,
                IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END) unitPrice,
-               b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
+               (IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
                f.factory_name factoryName, fc.finance_category_name financeCategoryName,
                s.name supplierName,
@@ -590,7 +590,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
-               SUM(case when stk.bill_type = 401 then -IFNULL(b.amt,0) else IFNULL(b.amt,0) end) totalAmt
+               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) else (IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
@@ -624,8 +624,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
-               SUM(case when stk.bill_type = 401 then -IFNULL(b.amt, IFNULL(b.qty,0) * IFNULL(b.unit_price,0))
-                        else IFNULL(b.amt, IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
+               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(b.unit_price,0))
+                        else (IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
