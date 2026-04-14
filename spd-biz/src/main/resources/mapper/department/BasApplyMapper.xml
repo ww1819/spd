@@ -4,6 +4,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.department.mapper.BasApplyMapper">
 
+    <!-- 科室数据范围：与 TenantScopeService 双表并集一致，避免 params.deptIds IN 过长 -->
+    <sql id="basApplyDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and a.department_id in (
+                select distinct x.did from (
+                    select cast(upd.dept_id as unsigned) as did
+                    from sb_user_permission_dept upd
+                    where upd.user_id = #{params.scopeDeptUserId}
+                      and ifnull(upd.del_flag, '0') = '0'
+                    <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+                      and upd.customer_id = #{params.scopeDeptCustomerId}
+                    </if>
+                    union
+                    select ud.department_id as did
+                    from sys_user_department ud
+                    where ud.user_id = #{params.scopeDeptUserId}
+                      and (ud.status = 0 or ud.status = '0' or ud.status is null)
+                ) x
+                where x.did is not null
+            )
+        </if>
+    </sql>
+
     <resultMap type="BasApply" id="BasApplyResult">
         <result property="id"    column="id"    />
         <result property="applyBillNo"    column="apply_bill_no"    />
@@ -22,18 +45,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditBy"    column="audit_by"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="remark"    column="remark"    />
-        <result property="auditPersonName"    column="auditUserName"    />
-        <result property="createrNmae"    column="createUserName"    />
+        <result property="auditPersonName"    column="audit_display_name"    />
+        <result property="createrNmae"    column="creater_display_name"    />
         <result property="totalAmount"    column="total_amount"    />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="billType"    column="bill_type"    />
         <result property="tenantId"    column="tenant_id"    />
-        <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="warehouse" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="outDepartment" javaType="FdDepartment" resultMap="outDepartmentResult"/>
-        <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
-        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
-        <association property="creater"    column="id" javaType="SysUser" resultMap="createrResult" />
-        <association property="auditPerson"    column="user_id" javaType="SysUser" resultMap="auditPersonResult" />
+        <association property="user" javaType="SysUser" resultMap="userResult" />
+        <association property="department" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="creater" javaType="SysUser" resultMap="createrResult" />
+        <association property="auditPerson" javaType="SysUser" resultMap="auditPersonResult" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="FdWarehouse">
@@ -120,10 +143,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select a.id, a.apply_bill_no, a.apply_bill_date, a.warehouse_id, a.department_id, a.user_id,
                 a.apply_bill_status, a.del_flag, a.tenant_id, a.create_by, a.create_time, a.update_by,
                 a.update_time, a.remark, a.reject_reason, COALESCE(a.bill_type, 1) as bill_type, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
-                u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
-               dept_out.id as out_dId, dept_out.code as out_departmentCode, dept_out.name as out_departmentName,
+                u.user_id userId,u.nick_name nickName,u.user_name userName,d.id dId,d.code departmentCode,d.name departmentName,
                cu.nick_name createNickName,cu.user_name createUserName,
                au.nick_name auditNickName,au.user_name auditUserName,
+               COALESCE(NULLIF(TRIM(cu.nick_name), ''), cu.user_name) AS creater_display_name,
+               COALESCE(NULLIF(TRIM(au.nick_name), ''), au.user_name) AS audit_display_name,
                COALESCE((select SUM(IFNULL(entry.amt, 0)) from bas_apply_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount
         from bas_apply a
         left join fd_warehouse w on (COALESCE(a.bill_type, 1) != 3) and a.warehouse_id = w.id
@@ -145,19 +169,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
             <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
-            <if test="params != null and params.deptIds != null">
-                <choose>
-                    <when test="params.deptIds.size() > 0">
-                        and a.department_id in
-                        <foreach collection="params.deptIds" item="did" open="(" separator="," close=")">
-                            #{did}
-                        </foreach>
-                    </when>
-                    <otherwise>
-                        and 1 = 0
-                    </otherwise>
-                </choose>
-            </if>
+            <include refid="basApplyDepartmentScopeFilter"/>
             and a.tenant_id = #{scopedTenantId}
             and (a.del_flag = 0 or a.del_flag is null)
         </where>
@@ -169,6 +181,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 a.tenant_id, a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
                 COALESCE(a.bill_type, 1) as bill_type, a.audit_date,
                 dept_out.id as out_dId, dept_out.code as out_departmentCode, dept_out.name as out_departmentName,
+                wh.id wId, wh.code warehouseCode, wh.name warehouseName,
+                COALESCE(NULLIF(TRIM(cu.nick_name), ''), cu.user_name) AS creater_display_name,
+                COALESCE(NULLIF(TRIM(au.nick_name), ''), au.user_name) AS audit_display_name,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.stock_warehouse_id as sub_stock_warehouse_id,
                 b.unit_price as sub_unit_price,
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
@@ -177,7 +192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 sw.id sw_id, sw.code sw_code, sw.name sw_name,
                d.id as dId, d.code as departmentCode, d.name as departmentName,
                au.nick_name auditNickName,au.user_name auditUserName,
-               cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName,
+               cu.nick_name createNickName,cu.user_name createUserName,a.audit_by,m.code materialCode,m.name materialName,
                case when whagg.bas_apply_entry_id is null then b.qty else coalesce(whagg.sum_pending_out, b.qty) end as sub_pending_outbound_qty,
                coalesce(whagg.sum_pending_audit_qty, 0) as sub_ck_pending_audit_qty,
                coalesce(whagg.sum_linked_qty, 0) as sub_linked_ck_qty,
@@ -185,6 +200,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                coalesce(whagg.sum_void_qty, 0) as sub_wh_line_void_qty
         from bas_apply a
         left join fd_department dept_out on a.bill_type = 3 and a.warehouse_id = dept_out.id
+        left join fd_warehouse wh on a.warehouse_id = wh.id
         left join bas_apply_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_warehouse sw on b.stock_warehouse_id = sw.id
         left join fd_department d on a.department_id = d.id

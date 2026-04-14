@@ -1,6 +1,7 @@
 package com.spd.system.service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 租户下仓库/科室数据范围：按登录渠道隔离——耗材端仅 sys_user_*，设备端仅 sb_user_permission_*；
@@ -22,4 +23,11 @@ public interface ITenantScopeService {
    * 非 super 时返回当前用户可访问的科室 ID；super 返回 null 表示不限制。
    */
   List<Long> resolveDepartmentScope(Long userId, String customerId);
+
+  /**
+   * 将科室数据范围写入 MyBatis {@code params}，供 SQL 使用子查询过滤（避免 {@code IN (大量id)} 过长）。
+   * 非租户管理员写入 {@code scopeDeptUserId}；若 {@code customerId} 非空则写入 {@code scopeDeptCustomerId}（设备端 sb_user_permission_dept 按客户过滤）。
+   * 租户管理员不写上述键，表示不限制。
+   */
+  void applyDepartmentScopeQueryParams(Map<String, Object> params, Long userId, String customerId);
 }

@@ -3,6 +3,7 @@ package com.spd.system.service.impl;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -148,6 +149,21 @@ public class TenantScopeServiceImpl implements ITenantScopeService {
       return copyList(sbUserPermissionService.selectWarehouseIdsByUserId(userId, customerId));
     }
     return mergeWarehouse(userId, customerId);
+  }
+
+  @Override
+  public void applyDepartmentScopeQueryParams(Map<String, Object> params, Long userId, String customerId) {
+    if (params == null || userId == null) {
+      return;
+    }
+    String cid = StringUtils.trimToEmpty(customerId);
+    if (isTenantSuper(userId, cid)) {
+      return;
+    }
+    params.put("scopeDeptUserId", userId);
+    if (StringUtils.isNotEmpty(cid)) {
+      params.put("scopeDeptCustomerId", cid);
+    }
   }
 
   @Override
