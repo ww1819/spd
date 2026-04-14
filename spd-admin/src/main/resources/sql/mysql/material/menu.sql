@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 aspt.sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单发布(caigou/publish)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单发布(caigou/publish)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -4123,6 +4123,163 @@ WHERE @wt_audit_menu IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @wt_audit_menu AND menu_type = 'F' AND perms = 'warehouseTransfer:apply:edit');
 /
 
+-- ========== 科室：转科申请（department/departmentTransfer/apply；DepartmentTransferController /department/transfer）==========
+-- perms 与 @PreAuthorize 一致：apply:list/query/export/add/edit/remove/audit；前端 views 路径 department/departmentTransfer/apply/index
+/
+
+SET @dept_parent_dt := COALESCE(
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'department' ORDER BY m.menu_id LIMIT 1),
+  (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component LIKE 'department/%' ORDER BY m.menu_id LIMIT 1),
+  1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请',
+  @dept_parent_dt,
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @dept_parent_dt),
+  'departmentTransferApply',
+  'department/departmentTransfer/apply/index',
+  NULL,
+  1, 0, 'C', '0', '0', 'departmentTransfer:apply:list', 'guide',
+  'admin', NOW(), '1', NOW(), 'BasApply billType=3，/department/transfer',
+  '0', '1'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/departmentTransfer/apply/index');
+/
+
+SET @dt_apply_menu := (
+  SELECT menu_id FROM sys_menu WHERE component = 'department/departmentTransfer/apply/index' AND menu_type = 'C' ORDER BY menu_id DESC LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请查询',
+  @dt_apply_menu,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'departmentTransfer:apply:query', '#',
+  'admin', NOW(), '1', NOW(), 'GET /{id}',
+  '0', '1'
+FROM DUAL
+WHERE @dt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:query');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请导出',
+  @dt_apply_menu,
+  2,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'departmentTransfer:apply:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @dt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:export');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请新增',
+  @dt_apply_menu,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'departmentTransfer:apply:add', '#',
+  'admin', NOW(), '1', NOW(), 'POST',
+  '0', '1'
+FROM DUAL
+WHERE @dt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:add');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请修改',
+  @dt_apply_menu,
+  4,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'departmentTransfer:apply:edit', '#',
+  'admin', NOW(), '1', NOW(), 'PUT',
+  '0', '1'
+FROM DUAL
+WHERE @dt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:edit');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请删除',
+  @dt_apply_menu,
+  5,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'departmentTransfer:apply:remove', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @dt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:remove');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '转科申请审核',
+  @dt_apply_menu,
+  6,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'departmentTransfer:apply:audit', '#',
+  'admin', NOW(), '1', NOW(), 'PUT /auditApply（科室申领审核页若调同一接口也需此权限）',
+  '0', '1'
+FROM DUAL
+WHERE @dt_apply_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dt_apply_menu AND perms = 'departmentTransfer:apply:audit');
+/
+
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
@@ -4169,7 +4326,14 @@ JOIN sys_menu m
     'warehouseTransfer:apply:add',
     'warehouseTransfer:apply:edit',
     'warehouseTransfer:apply:remove',
-    'warehouseTransfer:apply:audit'
+    'warehouseTransfer:apply:audit',
+    'departmentTransfer:apply:list',
+    'departmentTransfer:apply:query',
+    'departmentTransfer:apply:export',
+    'departmentTransfer:apply:add',
+    'departmentTransfer:apply:edit',
+    'departmentTransfer:apply:remove',
+    'departmentTransfer:apply:audit'
   )
 WHERE c.hc_status = '0'
   AND NOT EXISTS (
