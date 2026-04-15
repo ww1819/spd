@@ -516,6 +516,8 @@ CALL add_table_column('gz_refund_goods_entry', 'warehouse_id', 'bigint', '仓库
 /
 CALL add_table_column('gz_refund_goods_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
 /
+CALL add_table_column('gz_refund_goods_entry', 'department_id', 'bigint', '科室ID', NULL);
+/
 CALL add_table_column('gz_shipment_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
 /
 CALL add_table_column('gz_shipment_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
@@ -838,6 +840,14 @@ CALL add_table_column('gz_depot_inventory', 'delete_time', 'datetime', '删除�
 /
 CALL add_table_column('gz_depot_inventory', 'supplier_id', 'bigint', '供应商ID', NULL);
 /
+CALL add_table_column('gz_depot_inventory', 'order_id', 'bigint', '备货单ID', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'order_no', 'varchar(64)', '备货单单号', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'order_entry_id', 'bigint', '备货单明细ID', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'inhospitalcode_list_id', 'bigint', '院内码列表ID', NULL);
+/
 
 -- gz_order_entry
 CALL add_table_column('gz_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
@@ -869,6 +879,12 @@ CALL add_table_column('gz_order_entry_inhospitalcode_list', 'master_barcode', 'v
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
 /
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'warehouse_id', 'bigint', '仓库ID', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'del_flag', 'int', '删除标志', 0);
 /
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_by', 'varchar(64)', '创建者', NULL);
 /
@@ -993,6 +1009,10 @@ CALL add_table_column('gz_refund_stock_entry', 'delete_time', 'datetime', '删�
 CALL add_table_column('gz_refund_stock_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
 CALL add_table_column('gz_refund_stock_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
+
+-- 表注释修正：gz_refund_stock_entry 为「退库」明细，勿与 gz_refund_goods_entry「退货」明细混用；CREATE IF NOT EXISTS 不会更新已存在表的注释
+ALTER TABLE `gz_refund_stock_entry` COMMENT = '高值退库明细表';
 /
 
 -- gz_shipment
@@ -1449,6 +1469,18 @@ CALL add_table_column('gz_dep_inventory', 'master_barcode', 'varchar(200)', '主
 CALL add_table_column('gz_dep_inventory', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
 /
 CALL add_table_column('gz_dep_inventory', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'create_by', 'varchar(64)', '创建者', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'update_time', 'datetime', '更新时间', NULL);
 /
 
 -- 科室批量消耗明细补 tenant_id

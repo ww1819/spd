@@ -902,6 +902,9 @@ CREATE TABLE IF NOT EXISTS `gz_order_entry_inhospitalcode_list` (
   `secondary_barcode` varchar(200) DEFAULT NULL COMMENT '辅条码',
   `end_date` datetime DEFAULT NULL COMMENT '有效期',
   `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '院内码',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_date` datetime DEFAULT NULL COMMENT '创建时间',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
@@ -995,6 +998,7 @@ CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry` (
   `end_time` date DEFAULT NULL COMMENT '有效期',
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID(冗余，与备货退库主表一致)',
   `bill_no` varchar(64) DEFAULT NULL COMMENT '单号冗余',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
@@ -1008,7 +1012,8 @@ CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry` (
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_goods_entry_paren` (`paren_id`),
   KEY `idx_gz_refund_goods_entry_batch` (`batch_no`),
-  KEY `idx_gz_refund_goods_entry_tenant` (`tenant_id`)
+  KEY `idx_gz_refund_goods_entry_tenant` (`tenant_id`),
+  KEY `idx_gz_refund_goods_entry_dept` (`department_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值退货明细表';
 /
 
@@ -1043,6 +1048,7 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值退库主表';
 /
 
+-- 以下为高值「退库」明细 gz_refund_stock_entry（科室/备货退回仓库）；上一段 gz_refund_goods_entry 为「退货」明细（退回供应商），表注释勿混用
 CREATE TABLE IF NOT EXISTS `gz_refund_stock_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `paren_id` bigint NOT NULL COMMENT '主表ID',
@@ -1221,6 +1227,10 @@ CREATE TABLE IF NOT EXISTS `gz_depot_inventory` (
   `warehouse_date` date DEFAULT NULL COMMENT '入库日期',
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
   `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '院内码',
+  `order_id` bigint DEFAULT NULL COMMENT '备货单ID',
+  `order_no` varchar(64) DEFAULT NULL COMMENT '备货单单号',
+  `order_entry_id` bigint DEFAULT NULL COMMENT '备货单明细ID',
+  `inhospitalcode_list_id` bigint DEFAULT NULL COMMENT '院内码列表ID',
   `master_barcode` varchar(200) DEFAULT NULL COMMENT '主条码',
   `secondary_barcode` varchar(200) DEFAULT NULL COMMENT '辅条码',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',

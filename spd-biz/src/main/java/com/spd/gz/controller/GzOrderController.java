@@ -24,6 +24,9 @@ import com.spd.gz.domain.GzOrder;
 import com.spd.gz.domain.GzShipment;
 import com.spd.gz.service.IGzOrderService;
 import com.spd.gz.service.IGzShipmentService;
+import com.spd.gz.service.IGzDepotInventoryService;
+import com.spd.gz.domain.GzDepotInventory;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.http.HttpHelper;
@@ -43,6 +46,9 @@ public class GzOrderController extends BaseController
 
     @Autowired
     private IGzShipmentService gzShipmentService;
+
+    @Autowired
+    private IGzDepotInventoryService gzDepotInventoryService;
 
     /**
      * 查询高值入库列表（兼容入库和出库）
@@ -298,6 +304,10 @@ public class GzOrderController extends BaseController
                 shipmentEntry.setEndTime(orderEntry.getEndTime());
                 shipmentEntry.setDelFlag(orderEntry.getDelFlag());
                 shipmentEntry.setRemark(orderEntry.getRemark());
+                shipmentEntry.setWarehouseId(gzOrder.getWarehouseId());
+                shipmentEntry.setDepartmentId(gzOrder.getDepartmentId());
+                shipmentEntry.setBillNo(gzOrder.getOrderNo());
+                shipmentEntry.setSupplierId(orderEntry.getSupplierId());
                 // 使用反射获取可能存在的字段（masterBarcode, secondaryBarcode, inHospitalCode）
                 try {
                     // 获取 masterBarcode
@@ -341,6 +351,26 @@ public class GzOrderController extends BaseController
         }
         
         return gzShipment;
+    }
+
+    /**
+     * 备货出库扫码：按院内码 + 仓库查询备货库存一条
+     */
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query')")
+    @GetMapping("/depotInventory/byInHospitalCode")
+    public AjaxResult getDepotByInHospitalCode(@RequestParam("inHospitalCode") String inHospitalCode,
+            @RequestParam("warehouseId") Long warehouseId)
+    {
+        if (StringUtils.isEmpty(inHospitalCode))
+        {
+            return error("院内码不能为空");
+        }
+        if (warehouseId == null)
+        {
+            return error("仓库不能为空");
+        }
+        GzDepotInventory inv = gzDepotInventoryService.selectByInHospitalCodeAndWarehouse(inHospitalCode.trim(), warehouseId);
+        return success(inv);
     }
 
     /**

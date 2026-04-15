@@ -85,6 +85,9 @@ public interface GzRefundGoodsMapper
      */
     String selectMaxBillNo(String date);
 
+    /** 按单号前缀 + 日期查询当天最大单号（避免 GZTH 与 GZTK 流水互相干扰） */
+    String selectMaxBillNoByPrefix(@Param("prefix") String prefix, @Param("date") String date);
+
     /**
      * 逻辑删除
      * @param entry

@@ -6,6 +6,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <resultMap type="GzDepInventory" id="GzDepInventoryResult">
         <result property="id"    column="id"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="materialId"    column="material_id"    />
         <result property="departmentId"    column="department_id"    />
         <result property="qty"    column="qty"    />
@@ -17,6 +19,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
         <result property="inHospitalCode"    column="in_hospital_code"    />
+        <result property="masterBarcode"    column="gz_dep_master_barcode"    />
+        <result property="secondaryBarcode"    column="gz_dep_secondary_barcode"    />
+        <result property="deleteBy"    column="gz_dep_delete_by"    />
+        <result property="deleteTime"    column="gz_dep_delete_time"    />
         <result property="endTime"    column="end_time"    />
         <result property="shipmentNo"    column="shipmentNo"    />
         <result property="auditBy"    column="auditBy"    />
@@ -68,9 +74,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectGzDepInventoryVo">
-        select gz.id, gz.material_id, gz.department_id, gz.qty, gz.unit_price, gz.amt,
+        select gz.id, gz.del_flag, gz.tenant_id, gz.material_id, gz.department_id, gz.qty, gz.unit_price, gz.amt,
 				gz.batch_no, gz.material_no, gz.supplier_id, gz.material_date, gz.warehouse_date,
 				gz.in_hospital_code,
+				gz.master_barcode as gz_dep_master_barcode,
+				gz.secondary_barcode as gz_dep_secondary_barcode,
+				gz.delete_by as gz_dep_delete_by,
+				gz.delete_time as gz_dep_delete_time,
 				goe.end_time,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				m.id mId,m.code materialCode,m.name materialName,
@@ -128,7 +138,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzDepInventoryById" parameterType="Long" resultMap="GzDepInventoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepInventoryVo"/>
-        where gz.id = #{id} and gz.tenant_id = #{scopedTenantId}
+        where gz.id = #{id} and gz.del_flag != 1 and gz.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
@@ -146,6 +156,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="inHospitalCode != null">in_hospital_code,</if>
+            <if test="masterBarcode != null">master_barcode,</if>
+            <if test="secondaryBarcode != null">secondary_barcode,</if>
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -160,6 +177,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
+            <if test="masterBarcode != null">#{masterBarcode},</if>
+            <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
             #{scopedTenantId},
          </trim>
     </insert>

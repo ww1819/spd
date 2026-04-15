@@ -80,6 +80,8 @@ public class GzRefundGoodsEntry extends BaseEntity
     private Long supplierId;
     /** 仓库ID */
     private Long warehouseId;
+    /** 科室ID（备货退库明细冗余，与 gz_refund_stock_entry 语义一致） */
+    private Long departmentId;
     /** 单号冗余 */
     private String billNo;
 
@@ -217,6 +219,8 @@ public class GzRefundGoodsEntry extends BaseEntity
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
     public String getBillNo() { return billNo; }
     public void setBillNo(String billNo) { this.billNo = billNo; }
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
 
     @Override
     public String toString() {
@@ -237,6 +241,7 @@ public class GzRefundGoodsEntry extends BaseEntity
             .append("delFlag", getDelFlag())
             .append("supplierId", getSupplierId())
             .append("warehouseId", getWarehouseId())
+            .append("departmentId", getDepartmentId())
             .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();

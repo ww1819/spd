@@ -58,4 +58,9 @@ public interface IGzDepotInventoryService
      * @return 结果
      */
     public int deleteGzDepotInventoryById(Long id);
+
+    /**
+     * 备货出库扫码：按院内码 + 仓库查询一条可用库存
+     */
+    public GzDepotInventory selectByInHospitalCodeAndWarehouse(String inHospitalCode, Long warehouseId);
 }

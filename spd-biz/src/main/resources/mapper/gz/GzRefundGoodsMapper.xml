@@ -66,6 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="sub_del_flag"    />
         <result property="supplierId"    column="sub_supplier_id"    />
         <result property="warehouseId"    column="sub_warehouse_id"    />
+        <result property="departmentId"    column="sub_department_id"    />
         <result property="billNo"    column="sub_bill_no"    />
         <result property="remark"    column="sub_remark"    />
     </resultMap>
@@ -133,7 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
         b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode,
         b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.supplier_id as sub_supplier_id,
-        b.warehouse_id as sub_warehouse_id, b.bill_no as sub_bill_no, b.remark as sub_remark
+        b.warehouse_id as sub_warehouse_id, b.department_id as sub_department_id, b.bill_no as sub_bill_no, b.remark as sub_remark
         from gz_refund_goods a
         left join gz_refund_goods_entry b on b.paren_id = a.id and b.del_flag != 1
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
@@ -228,9 +229,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">
-        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, master_barcode, secondary_barcode, in_hospital_code, begin_time, end_time, del_flag, supplier_id, warehouse_id, bill_no, remark, tenant_id, create_by, create_time, update_by, update_time) values
+        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, master_barcode, secondary_barcode, in_hospital_code, begin_time, end_time, del_flag, supplier_id, warehouse_id, department_id, bill_no, remark, tenant_id, create_by, create_time, update_by, update_time) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.supplierId}, #{item.warehouseId}, #{item.billNo}, #{item.remark}, #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.supplierId}, #{item.warehouseId}, #{item.departmentId}, #{item.billNo}, #{item.remark}, #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
     </insert>
 
@@ -238,6 +239,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(goods_no) from gz_refund_goods
         where goods_no like concat('%',#{date},'%') and del_flag != 1 and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectMaxBillNoByPrefix" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(goods_no) from gz_refund_goods
+        where goods_no like concat(#{prefix}, '%', #{date}, '%')
+          and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 
     <update id="updateGzRefundGoodsEntry" parameterType="GzRefundGoodsEntry">

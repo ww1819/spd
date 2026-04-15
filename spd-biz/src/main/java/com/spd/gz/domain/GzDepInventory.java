@@ -24,6 +24,12 @@ public class GzDepInventory extends BaseEntity
     /** ID */
     private Long id;
 
+    /** 删除标志 */
+    private Integer delFlag;
+
+    /** 租户ID */
+    private String tenantId;
+
     /** 耗材ID */
     @Excel(name = "耗材ID")
     private Long materialId;
@@ -75,6 +81,12 @@ public class GzDepInventory extends BaseEntity
     @Excel(name = "院内码")
     private String inHospitalCode;
 
+    /** 主条码 */
+    private String masterBarcode;
+
+    /** 辅条码 */
+    private String secondaryBarcode;
+
     /** 有效期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -111,6 +123,27 @@ public class GzDepInventory extends BaseEntity
     {
         return id;
     }
+
+    public Integer getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(Integer delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
+    public String getTenantId()
+    {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId)
+    {
+        this.tenantId = tenantId;
+    }
+
     public void setMaterialId(Long materialId)
     {
         this.materialId = materialId;
@@ -244,6 +277,22 @@ public class GzDepInventory extends BaseEntity
         this.inHospitalCode = inHospitalCode;
     }
 
+    public String getMasterBarcode() {
+        return masterBarcode;
+    }
+
+    public void setMasterBarcode(String masterBarcode) {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getSecondaryBarcode() {
+        return secondaryBarcode;
+    }
+
+    public void setSecondaryBarcode(String secondaryBarcode) {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
     public Date getEndTime() {
         return endTime;
     }
@@ -288,6 +337,8 @@ public class GzDepInventory extends BaseEntity
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
+            .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
             .append("materialId", getMaterialId())
             .append("departmentId", getDepartmentId())
             .append("qty", getQty())
@@ -298,6 +349,8 @@ public class GzDepInventory extends BaseEntity
             .append("materialDate", getMaterialDate())
             .append("warehouseDate", getWarehouseDate())
             .append("inHospitalCode", getInHospitalCode())
+            .append("masterBarcode", getMasterBarcode())
+            .append("secondaryBarcode", getSecondaryBarcode())
             .append("endTime", getEndTime())
             .append("material", getMaterial())
             .append("department", getDepartment())

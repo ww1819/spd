@@ -264,6 +264,13 @@ INNER JOIN gz_order b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
 SET e.tenant_id = b.tenant_id
 WHERE e.tenant_id IS NULL;
 /
+-- 高值订单明细：从主表回填仓库ID、单号冗余（与备货/入库明细展示、追溯一致）
+UPDATE gz_order_entry e
+INNER JOIN gz_order b ON b.id = e.paren_id AND b.del_flag != 1
+SET e.warehouse_id = COALESCE(e.warehouse_id, b.warehouse_id),
+    e.bill_no = CASE WHEN (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND b.order_no IS NOT NULL THEN b.order_no ELSE e.bill_no END
+WHERE e.del_flag != 1;
+/
 
 -- ========== 财务/结算表 tenant_id 回填（历史数据与多租户隔离） ==========
 -- 仓库结算单主表：从仓库取 tenant_id
@@ -404,6 +411,14 @@ UPDATE gz_refund_goods_entry e
 INNER JOIN gz_refund_goods b ON b.id = e.paren_id AND b.tenant_id IS NOT NULL
 SET e.tenant_id = b.tenant_id
 WHERE e.tenant_id IS NULL;
+/
+-- 备货退库/退货明细：从主表回填科室、仓库、单号（与 gz_refund_stock_entry 字段语义对齐）
+UPDATE gz_refund_goods_entry e
+INNER JOIN gz_refund_goods b ON b.id = e.paren_id AND b.del_flag != 1
+SET e.department_id = COALESCE(e.department_id, b.department_id),
+    e.warehouse_id = COALESCE(e.warehouse_id, b.warehouse_id),
+    e.bill_no = CASE WHEN (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND b.goods_no IS NOT NULL THEN b.goods_no ELSE e.bill_no END
+WHERE e.del_flag != 1;
 /
 -- 高值出库主表：优先从仓库取，无则从科室取
 UPDATE gz_shipment m

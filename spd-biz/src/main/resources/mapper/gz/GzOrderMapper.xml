@@ -233,6 +233,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </insert>
 
+    <insert id="insertGzOrderEntryInhospitalcodeList" parameterType="GzOrderEntryInhospitalcodeList" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        insert into gz_order_entry_inhospitalcode_list(
+            parent_id, code, detail_id, material_id, price, qty, batch_no, batch_number,
+            master_barcode, secondary_barcode, end_date, in_hospital_code, warehouse_id, supplier_id,
+            del_flag, create_date, create_by, create_time, update_by, update_time, tenant_id
+        ) values (
+            #{parentId}, #{code}, #{detailId}, #{materialId}, #{price}, #{qty}, #{batchNo}, #{batchNumber},
+            #{masterBarcode}, #{secondaryBarcode}, #{endDate}, #{inHospitalCode}, #{warehouseId}, #{supplierId},
+            #{delFlag}, #{createDate}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{scopedTenantId}
+        )
+    </insert>
+
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(order_no) from gz_order

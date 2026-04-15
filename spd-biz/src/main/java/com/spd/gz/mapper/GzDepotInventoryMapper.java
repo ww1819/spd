@@ -64,4 +64,17 @@ public interface GzDepotInventoryMapper
      * @return
      */
     GzDepotInventory selectGzDepotInventoryOne(String batchNo);
+
+    /** 按批次号 + 仓库取最新一条备货库存（审核备货退货时按仓扣减） */
+    GzDepotInventory selectGzDepotInventoryOneByBatchNoAndWarehouse(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
+
+    /**
+     * 按院内码 + 仓库精确查询一条可用备货库存（数量大于0）
+     */
+    GzDepotInventory selectByInHospitalCodeAndWarehouse(@Param("inHospitalCode") String inHospitalCode, @Param("warehouseId") Long warehouseId);
+
+    /**
+     * 按院内码 + 仓库取最新一条备货库存（含数量为 0，用于退库回写累加）
+     */
+    GzDepotInventory selectLatestDepotByInHospitalCodeAndWarehouse(@Param("inHospitalCode") String inHospitalCode, @Param("warehouseId") Long warehouseId);
 }

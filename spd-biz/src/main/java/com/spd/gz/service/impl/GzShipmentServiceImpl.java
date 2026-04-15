@@ -10,6 +10,7 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzShipmentEntry;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
@@ -193,16 +194,20 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if(gzShipment == null){
             throw new ServiceException(String.format("高值出库业务ID：%s，不存在!", id));
         }
+        if (gzShipment.getShipmentStatus() != null && gzShipment.getShipmentStatus() == 2) {
+            String no = StringUtils.isNotEmpty(gzShipment.getShipmentNo()) ? gzShipment.getShipmentNo() : id;
+            throw new ServiceException(String.format("高值出库单 %s 已审核，请勿重复审核", no));
+        }
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
         if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
             throw new ServiceException(String.format("高值出库单 %s 无明细，无法审核", id));
         }
 
-        //更新高值仓库库存（减少库存）
-        updateDepotInventory(gzShipment, gzShipmentEntryList);
-
-        //更新高值科室库存（增加库存）
+        // 先增加科室库存（需从备货库存读取批次/效期等），再扣减备货库存；若先扣减，备货行被删后 updateDepInventory 查不到备货，科室行也无法正确落库
         updateDepInventory(gzShipment, gzShipmentEntryList);
+
+        // 更新高值仓库库存（减少库存）
+        updateDepotInventory(gzShipment, gzShipmentEntryList);
 
         gzShipment.setShipmentStatus(2);
         gzShipment.setAuditDate(new Date());
@@ -252,8 +257,8 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         continue;
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) == 0 && remainingQty > 0){
-                        // 删除数量为1的记录
-                        gzDepotInventoryMapper.deleteGzDepotInventoryById(inventory.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
+                        // 出库扣减：将数量、金额置零，保留备货行（不做软删，便于追溯与列表外统计）
+                        zeroOutDepotInventoryRow(inventory);
                         remainingQty--;
                     }
                 }
@@ -270,8 +275,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         BigDecimal reduceQty = BigDecimal.valueOf(Math.min(remainingQty, inventory.getQty().intValue()));
                         inventory.setQty(inventory.getQty().subtract(reduceQty));
                         if(inventory.getQty().compareTo(BigDecimal.ZERO) <= 0){
-                            gzDepotInventoryMapper.deleteGzDepotInventoryById(inventory.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
+                            zeroOutDepotInventoryRow(inventory);
                         } else {
+                            syncDepotInventoryAmt(inventory);
                             gzDepotInventoryMapper.updateGzDepotInventory(inventory);
                         }
                         remainingQty -= reduceQty.intValue();
@@ -283,6 +289,19 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         shipmentEntry.getBatchNo(), qty, qty - remainingQty));
                 }
             }
+        }
+    }
+
+    /** 备货出库扣减后库存为 0：更新 qty/amt，不软删备货行 */
+    private void zeroOutDepotInventoryRow(GzDepotInventory inventory) {
+        inventory.setQty(BigDecimal.ZERO);
+        inventory.setAmt(BigDecimal.ZERO);
+        gzDepotInventoryMapper.updateGzDepotInventory(inventory);
+    }
+
+    private void syncDepotInventoryAmt(GzDepotInventory inventory) {
+        if (inventory.getUnitPrice() != null && inventory.getQty() != null) {
+            inventory.setAmt(inventory.getUnitPrice().multiply(inventory.getQty()));
         }
     }
 
@@ -340,36 +359,45 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     }
                 }
                 
-                // 根据批次号和院内码查询科室库存（每个院内码应该是一条独立记录）
-                com.spd.gz.domain.GzDepInventory queryDepInventory = new com.spd.gz.domain.GzDepInventory();
-                queryDepInventory.setBatchNo(shipmentEntry.getBatchNo());
-                if(inHospitalCode != null && !inHospitalCode.trim().isEmpty()){
-                    queryDepInventory.setInHospitalCode(inHospitalCode);
+                BigDecimal addQty = shipmentEntry.getQty() != null ? shipmentEntry.getQty() : BigDecimal.ONE;
+                if (addQty.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
                 }
-                List<com.spd.gz.domain.GzDepInventory> existingDepInventoryList = gzDepInventoryMapper.selectGzDepInventoryList(queryDepInventory);
-                com.spd.gz.domain.GzDepInventory existingDepInventory = null;
-                // 如果指定了院内码，查找匹配的记录
-                if(inHospitalCode != null && !inHospitalCode.trim().isEmpty() && existingDepInventoryList != null){
-                    for(com.spd.gz.domain.GzDepInventory depInv : existingDepInventoryList){
-                        if(inHospitalCode.equals(depInv.getInHospitalCode())){
-                            existingDepInventory = depInv;
-                            break;
+
+                // 按「科室 + 院内码」判断是否已有科室库存（必须带科室，否则会误判其他科室已有而跳过插入）
+                GzDepInventory existingDepInventory = null;
+                if (inHospitalCode != null && !inHospitalCode.trim().isEmpty() && gzShipment.getDepartmentId() != null) {
+                    existingDepInventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(
+                        inHospitalCode.trim(), gzShipment.getDepartmentId());
+                }
+                if (existingDepInventory == null) {
+                    GzDepInventory queryDepInventory = new GzDepInventory();
+                    queryDepInventory.setBatchNo(shipmentEntry.getBatchNo());
+                    queryDepInventory.setDepartmentId(gzShipment.getDepartmentId());
+                    if (inHospitalCode != null && !inHospitalCode.trim().isEmpty()) {
+                        queryDepInventory.setInHospitalCode(inHospitalCode);
+                    }
+                    queryDepInventory.setShowZeroStock(true);
+                    List<GzDepInventory> existingDepInventoryList = gzDepInventoryMapper.selectGzDepInventoryList(queryDepInventory);
+                    if (inHospitalCode != null && !inHospitalCode.trim().isEmpty() && existingDepInventoryList != null) {
+                        for (GzDepInventory depInv : existingDepInventoryList) {
+                            if (depInv != null && inHospitalCode.equals(depInv.getInHospitalCode())) {
+                                existingDepInventory = depInv;
+                                break;
+                            }
                         }
                     }
                 }
-                
-                // 每个院内码应该是一条独立的记录，数量为1
-                // 如果已存在相同院内码的记录，不应该累加，而是应该报错或跳过（因为每个院内码对应一个物品）
-                if(existingDepInventory == null){
-                    // 如果不存在，新增科室库存（每个院内码一条记录，数量为1）
-                    com.spd.gz.domain.GzDepInventory gzDepInventory = new com.spd.gz.domain.GzDepInventory();
+
+                if (existingDepInventory == null) {
+                    // 新增科室库存
+                    GzDepInventory gzDepInventory = new GzDepInventory();
                     gzDepInventory.setMaterialId(shipmentEntry.getMaterialId());
                     gzDepInventory.setDepartmentId(gzShipment.getDepartmentId());
-                    // 每个院内码对应一个物品，数量固定为1
-                    gzDepInventory.setQty(BigDecimal.ONE);
-                    gzDepInventory.setUnitPrice(shipmentEntry.getPrice());
-                    // 金额 = 单价 * 1
-                    gzDepInventory.setAmt(shipmentEntry.getPrice());
+                    gzDepInventory.setQty(addQty);
+                    BigDecimal unitPrice = shipmentEntry.getPrice() != null ? shipmentEntry.getPrice() : BigDecimal.ZERO;
+                    gzDepInventory.setUnitPrice(unitPrice);
+                    gzDepInventory.setAmt(unitPrice.multiply(addQty));
                     gzDepInventory.setBatchNo(shipmentEntry.getBatchNo());
                     gzDepInventory.setMaterialNo(shipmentEntry.getBatchNumber());
                     if (depotInventory != null && depotInventory.getSupplierId() != null) {
@@ -396,12 +424,39 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         gzDepInventory.setMaterialDate(new Date());
                         gzDepInventory.setWarehouseDate(new Date());
                     }
+                    String tenantId = StringUtils.isNotEmpty(gzShipment.getTenantId())
+                        ? gzShipment.getTenantId()
+                        : SecurityUtils.getCustomerId();
+                    gzDepInventory.setTenantId(tenantId);
+                    gzDepInventory.setDelFlag(0);
+                    String userId = SecurityUtils.getUserIdStr();
+                    Date now = DateUtils.getNowDate();
+                    gzDepInventory.setCreateBy(userId);
+                    gzDepInventory.setUpdateBy(userId);
+                    gzDepInventory.setCreateTime(now);
+                    gzDepInventory.setUpdateTime(now);
+                    gzDepInventory.setMasterBarcode(StringUtils.isNotEmpty(shipmentEntry.getMasterBarcode())
+                        ? shipmentEntry.getMasterBarcode()
+                        : (depotInventory != null ? depotInventory.getMasterBarcode() : null));
+                    gzDepInventory.setSecondaryBarcode(StringUtils.isNotEmpty(shipmentEntry.getSecondaryBarcode())
+                        ? shipmentEntry.getSecondaryBarcode()
+                        : (depotInventory != null ? depotInventory.getSecondaryBarcode() : null));
                     gzDepInventoryMapper.insertGzDepInventory(gzDepInventory);
-                    System.out.println("创建科室库存记录 - 院内码: " + inHospitalCode + ", 批次号: " + shipmentEntry.getBatchNo() + ", 数量: 1");
+                    System.out.println("创建科室库存记录 - 院内码: " + inHospitalCode + ", 批次号: " + shipmentEntry.getBatchNo() + ", 数量: " + addQty);
                 } else {
-                    // 如果已存在相同院内码的记录，不应该累加（因为每个院内码对应一个物品）
-                    // 这里可能是重复审核，记录日志但不报错
-                    System.out.println("科室库存记录已存在，跳过 - 院内码: " + inHospitalCode + ", 批次号: " + shipmentEntry.getBatchNo());
+                    BigDecimal baseQty = existingDepInventory.getQty() != null ? existingDepInventory.getQty() : BigDecimal.ZERO;
+                    existingDepInventory.setQty(baseQty.add(addQty));
+                    BigDecimal unitPrice = shipmentEntry.getPrice() != null ? shipmentEntry.getPrice() : existingDepInventory.getUnitPrice();
+                    if (unitPrice == null) {
+                        unitPrice = BigDecimal.ZERO;
+                    }
+                    BigDecimal baseAmt = existingDepInventory.getAmt() != null ? existingDepInventory.getAmt() : BigDecimal.ZERO;
+                    existingDepInventory.setAmt(baseAmt.add(unitPrice.multiply(addQty)));
+                    existingDepInventory.setUnitPrice(unitPrice);
+                    existingDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+                    existingDepInventory.setUpdateTime(DateUtils.getNowDate());
+                    gzDepInventoryMapper.updateGzDepInventory(existingDepInventory);
+                    System.out.println("科室库存累加 - 院内码: " + inHospitalCode + ", 批次号: " + shipmentEntry.getBatchNo() + ", 增加数量: " + addQty);
                 }
             }
         }

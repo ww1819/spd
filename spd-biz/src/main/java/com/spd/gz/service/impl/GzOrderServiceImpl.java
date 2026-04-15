@@ -12,6 +12,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzOrderEntry;
+import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import com.spd.gz.mapper.SysSheetIdMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -249,6 +250,36 @@ public class GzOrderServiceImpl implements IGzOrderService
                     }
                     gzDepotInventory.setMasterBarcode(orderEntry.getMasterBarcode());
                     gzDepotInventory.setSecondaryBarcode(orderEntry.getSecondaryBarcode());
+                    gzDepotInventory.setOrderId(gzOrder.getId());
+                    gzDepotInventory.setOrderNo(gzOrder.getOrderNo());
+                    gzDepotInventory.setOrderEntryId(orderEntry.getId());
+
+                    Date now = new Date();
+                    String userId = SecurityUtils.getUserIdStr();
+                    GzOrderEntryInhospitalcodeList inhospitalRow = new GzOrderEntryInhospitalcodeList();
+                    inhospitalRow.setParentId(gzOrder.getId());
+                    inhospitalRow.setCode(gzOrder.getOrderNo());
+                    inhospitalRow.setDetailId(orderEntry.getId());
+                    inhospitalRow.setMaterialId(orderEntry.getMaterialId());
+                    inhospitalRow.setPrice(orderEntry.getPrice());
+                    inhospitalRow.setQty(BigDecimal.ONE);
+                    inhospitalRow.setBatchNo(orderEntry.getBatchNo());
+                    inhospitalRow.setBatchNumber(orderEntry.getBatchNumber());
+                    inhospitalRow.setMasterBarcode(orderEntry.getMasterBarcode());
+                    inhospitalRow.setSecondaryBarcode(orderEntry.getSecondaryBarcode());
+                    inhospitalRow.setEndDate(orderEntry.getEndTime());
+                    inhospitalRow.setInHospitalCode(inHospitalCode);
+                    inhospitalRow.setWarehouseId(gzOrder.getWarehouseId());
+                    inhospitalRow.setSupplierId(gzOrder.getSupplerId());
+                    inhospitalRow.setDelFlag(0);
+                    inhospitalRow.setCreateDate(now);
+                    inhospitalRow.setCreateBy(userId);
+                    inhospitalRow.setCreateTime(now);
+                    inhospitalRow.setUpdateBy(userId);
+                    inhospitalRow.setUpdateTime(now);
+                    inhospitalRow.setTenantId(StringUtils.isNotEmpty(gzOrder.getTenantId()) ? gzOrder.getTenantId() : SecurityUtils.getCustomerId());
+                    gzOrderMapper.insertGzOrderEntryInhospitalcodeList(inhospitalRow);
+                    gzDepotInventory.setInhospitalcodeListId(inhospitalRow.getId());
 
                     gzDepotInventoryMapper.insertGzDepotInventory(gzDepotInventory);
                 }
