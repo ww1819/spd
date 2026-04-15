@@ -51,7 +51,7 @@ public interface GzShipmentMapper
      * @param id 高值出库主键
      * @return 结果
      */
-    public int deleteGzShipmentById(Long id);
+    public int deleteGzShipmentById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量新增高值出库明细
@@ -67,7 +67,7 @@ public interface GzShipmentMapper
      * @param id 高值出库ID
      * @return 结果
      */
-    public int deleteGzShipmentEntryByParenId(Long id);
+    public int deleteGzShipmentEntryByParenId(@Param("parenId") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询当天最大的单号

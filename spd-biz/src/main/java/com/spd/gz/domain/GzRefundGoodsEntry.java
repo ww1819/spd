@@ -53,6 +53,14 @@ public class GzRefundGoodsEntry extends BaseEntity
     @Excel(name = "院内码")
     private String inHospitalCode;
 
+    /** 主条码 */
+    @Excel(name = "主条码")
+    private String masterBarcode;
+
+    /** 辅条码 */
+    @Excel(name = "辅条码")
+    private String secondaryBarcode;
+
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "生产日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -68,6 +76,8 @@ public class GzRefundGoodsEntry extends BaseEntity
 
     /** 租户ID */
     private String tenantId;
+    /** 供应商ID */
+    private Long supplierId;
 
     public void setId(Long id) 
     {
@@ -150,6 +160,24 @@ public class GzRefundGoodsEntry extends BaseEntity
     {
         return inHospitalCode;
     }
+    public void setMasterBarcode(String masterBarcode)
+    {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getMasterBarcode()
+    {
+        return masterBarcode;
+    }
+    public void setSecondaryBarcode(String secondaryBarcode)
+    {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
+    public String getSecondaryBarcode()
+    {
+        return secondaryBarcode;
+    }
     public void setBeginTime(Date beginTime)
     {
         this.beginTime = beginTime;
@@ -179,6 +207,8 @@ public class GzRefundGoodsEntry extends BaseEntity
     }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
 
     @Override
     public String toString() {
@@ -191,9 +221,13 @@ public class GzRefundGoodsEntry extends BaseEntity
             .append("amt", getAmt())
             .append("batchNo", getBatchNo())
             .append("batchNumber", getBatchNumber())
+            .append("masterBarcode", getMasterBarcode())
+            .append("secondaryBarcode", getSecondaryBarcode())
+            .append("inHospitalCode", getInHospitalCode())
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
+            .append("supplierId", getSupplierId())
             .append("remark", getRemark())
             .toString();
     }

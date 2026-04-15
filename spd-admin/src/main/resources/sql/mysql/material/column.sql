@@ -748,6 +748,8 @@ CALL add_table_column('fd_warehouse_category', 'tenant_id', 'varchar(36)', '租�
 /
 
 -- gz_dep_apply
+CALL add_table_column('gz_dep_apply', 'del_flag', 'int', '删除标志', 0);
+/
 CALL add_table_column('gz_dep_apply', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_dep_apply', 'create_time', 'datetime', '创建时间', NULL);
@@ -764,6 +766,14 @@ CALL add_table_column('gz_dep_apply', 'tenant_id', 'varchar(36)', '租户ID', NU
 /
 
 -- gz_dep_apply_entry
+CALL add_table_column('gz_dep_apply_entry', 'del_flag', 'int', '删除标志', 0);
+/
+CALL add_table_column('gz_dep_apply_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'master_barcode', 'varchar(200)', '主条码', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+/
 CALL add_table_column('gz_dep_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_dep_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
@@ -794,9 +804,13 @@ CALL add_table_column('gz_depot_inventory', 'delete_by', 'varchar(64)', '删除�
 /
 CALL add_table_column('gz_depot_inventory', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('gz_depot_inventory', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
 
 -- gz_order_entry
 CALL add_table_column('gz_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('gz_order_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
 /
 CALL add_table_column('gz_order_entry', 'create_by', 'varchar(64)', '创建者', NULL);
 /
@@ -810,8 +824,18 @@ CALL add_table_column('gz_order_entry', 'delete_by', 'varchar(64)', '删除者',
 /
 CALL add_table_column('gz_order_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('gz_order_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
 
 -- gz_order_entry_inhospitalcode_list
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'batch_number', 'varchar(100)', '批号', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'master_barcode', 'varchar(200)', '主条码', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+/
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_time', 'datetime', '创建时间', NULL);
@@ -860,6 +884,12 @@ CALL add_table_column('gz_refund_goods', 'tenant_id', 'varchar(36)', '租户ID',
 /
 
 -- gz_refund_goods_entry
+CALL add_table_column('gz_refund_goods_entry', 'master_barcode', 'varchar(200)', '主条码', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+/
 CALL add_table_column('gz_refund_goods_entry', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_refund_goods_entry', 'create_time', 'datetime', '创建时间', NULL);
@@ -874,8 +904,22 @@ CALL add_table_column('gz_refund_goods_entry', 'delete_time', 'datetime', '删�
 /
 CALL add_table_column('gz_refund_goods_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('gz_refund_goods_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+/
 
 -- gz_refund_stock
+CALL add_table_column('gz_refund_stock', 'stock_no', 'varchar(64)', '退库单号(旧版字段)', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'stock_date', 'datetime', '退库日期(旧版字段)', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'stock_status', 'int', '状态(旧版字段)', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'stock_type', 'int', '类型(旧版字段)', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'master_barcode', 'varchar(200)', '主条码', NULL);
+/
+CALL add_table_column('gz_refund_stock', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+/
 CALL add_table_column('gz_refund_stock', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_refund_stock', 'create_time', 'datetime', '创建时间', NULL);
@@ -892,6 +936,8 @@ CALL add_table_column('gz_refund_stock', 'tenant_id', 'varchar(36)', '租户ID',
 /
 
 -- gz_refund_stock_entry
+CALL add_table_column('gz_refund_stock_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+/
 CALL add_table_column('gz_refund_stock_entry', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_refund_stock_entry', 'create_time', 'datetime', '创建时间', NULL);
@@ -905,6 +951,8 @@ CALL add_table_column('gz_refund_stock_entry', 'delete_by', 'varchar(64)', '删�
 CALL add_table_column('gz_refund_stock_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('gz_refund_stock_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
 /
 
 -- gz_shipment
@@ -924,6 +972,8 @@ CALL add_table_column('gz_shipment', 'tenant_id', 'varchar(36)', '租户ID', NUL
 /
 
 -- gz_shipment_entry
+CALL add_table_column('gz_shipment_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+/
 CALL add_table_column('gz_shipment_entry', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_shipment_entry', 'create_time', 'datetime', '创建时间', NULL);
@@ -937,6 +987,8 @@ CALL add_table_column('gz_shipment_entry', 'delete_by', 'varchar(64)', '删除�
 CALL add_table_column('gz_shipment_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('gz_shipment_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
 /
 
 -- gz_traceability
@@ -956,6 +1008,12 @@ CALL add_table_column('gz_traceability', 'tenant_id', 'varchar(36)', '租户ID',
 /
 
 -- gz_traceability_entry
+CALL add_table_column('gz_traceability_entry', 'master_barcode', 'varchar(200)', '主条码', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+/
 CALL add_table_column('gz_traceability_entry', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('gz_traceability_entry', 'create_time', 'datetime', '创建时间', NULL);
@@ -969,6 +1027,8 @@ CALL add_table_column('gz_traceability_entry', 'delete_by', 'varchar(64)', '删�
 CALL add_table_column('gz_traceability_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('gz_traceability_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
 /
 
 -- his_hc_info
@@ -1333,6 +1393,12 @@ CALL add_table_column('fd_factory_change_log', 'tenant_id', 'varchar(36)', '租�
 
 -- 高值科室库存补 tenant_id
 CALL add_table_column('gz_dep_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'master_barcode', 'varchar(200)', '主条码', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'supplier_id', 'bigint', '供应商ID', NULL);
 /
 
 -- 科室批量消耗明细补 tenant_id

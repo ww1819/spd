@@ -132,7 +132,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
         }
         gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
-        gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(gzRefundGoods.getId());
+        gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(gzRefundGoods.getId(), SecurityUtils.getUserIdStr());
         insertGzRefundGoodsEntry(gzRefundGoods);
         return gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
     }
@@ -164,6 +164,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 }
                 entry.setDelFlag(1);
                 entry.setParenId(id);
+                entry.setUpdateBy(SecurityUtils.getUserIdStr());
                 gzRefundGoodsMapper.updateGzRefundGoodsEntry(entry);
             }
         }
@@ -186,6 +187,20 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
         if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
             throw new ServiceException(String.format("高值退货单 %s 无明细，无法审核", id));
+        }
+        if (gzRefundGoods.getSupplerId() == null) {
+            throw new ServiceException(String.format("高值退货单 %s 表头供应商不能为空", id));
+        }
+        for (GzRefundGoodsEntry entry : gzRefundGoodsEntryList) {
+            if (entry == null) {
+                continue;
+            }
+            if (entry.getSupplierId() == null) {
+                throw new ServiceException(String.format("高值退货单 %s 明细供应商不能为空", id));
+            }
+            if (!entry.getSupplierId().equals(gzRefundGoods.getSupplerId())) {
+                throw new ServiceException(String.format("高值退货单 %s 明细供应商与表头供应商不一致，不允许审核", id));
+            }
         }
 
         //更新高值库存明细表
@@ -273,6 +288,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 gzRefundGoodsEntry.setParenId(id);
                 gzRefundGoodsEntry.setDelFlag(0);
                 gzRefundGoodsEntry.setTenantId(tenantId);
+                gzRefundGoodsEntry.setSupplierId(gzRefundGoods.getSupplerId());
                 list.add(gzRefundGoodsEntry);
             }
             if (list.size() > 0)

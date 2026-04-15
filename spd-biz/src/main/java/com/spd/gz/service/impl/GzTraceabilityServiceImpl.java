@@ -114,7 +114,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
         gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
-        gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(gzTraceability.getId());
+        gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(gzTraceability.getId(), SecurityUtils.getUserIdStr());
         insertGzTraceabilityEntry(gzTraceability);
         
         // 扣减新的明细占用的库存
@@ -140,7 +140,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         for (Long id : ids) {
             restoreDepartmentInventory(id);
         }
-        return gzTraceabilityMapper.deleteGzTraceabilityByIds(ids);
+        return gzTraceabilityMapper.deleteGzTraceabilityByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -155,7 +155,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     {
         // 恢复库存
         restoreDepartmentInventory(id);
-        return gzTraceabilityMapper.deleteGzTraceabilityById(id);
+        return gzTraceabilityMapper.deleteGzTraceabilityById(id, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -220,6 +220,12 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 entry.setDelFlag("0");
                 entry.setCreateTime(DateUtils.getNowDate());
                 entry.setCreateBy(SecurityUtils.getUserIdStr());
+                if (entry.getSupplierId() == null && entry.getInventoryId() != null) {
+                    GzDepInventory depInventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
+                    if (depInventory != null) {
+                        entry.setSupplierId(depInventory.getSupplierId());
+                    }
+                }
                 list.add(entry);
             }
             if (list.size() > 0)

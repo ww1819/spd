@@ -130,8 +130,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_supplier s on gz.supplier_id = s.id
-        left join gz_order_entry goe on gz.batch_no = goe.batch_no
-        left join gz_order go on goe.paren_id = go.id
+        left join gz_order_entry goe on gz.batch_no = goe.batch_no and goe.del_flag != 1
+        left join gz_order go on goe.paren_id = go.id and go.del_flag != 1
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
@@ -139,7 +139,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectGzDepotInventoryList" parameterType="GzDepotInventory" resultMap="GzDepotInventoryResult">
         <include refid="selectGzDepotInventoryVo"/>
-        where gz.qty &gt; 0
+        where gz.del_flag != 1
+        and gz.qty &gt; 0
         <!-- 只查询高值仓库的库存 -->
         and w.warehouse_type = '高值'
         <if test="tenantId != null and tenantId != ''"> and gz.tenant_id = #{tenantId}</if>
@@ -164,7 +165,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzDepotInventoryById" parameterType="Long" resultMap="GzDepotInventoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepotInventoryVo"/>
-        where id = #{id} and tenant_id = #{scopedTenantId}
+        where gz.id = #{id} and gz.del_flag != 1 and gz.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepotInventory" parameterType="GzDepotInventory" useGeneratedKeys="true" keyProperty="id">
@@ -242,17 +243,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzDepotInventoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_depot_inventory
-        where batch_no = #{batchNo} and tenant_id = #{scopedTenantId}
+        where batch_no = #{batchNo} and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectGzDepotInventoryOne" parameterType="java.lang.String" resultMap="GzDepotInventoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select * from gz_depot_inventory where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} order by id desc limit 1
+        select * from gz_depot_inventory where batch_no = #{batchNo} and del_flag != 1 and tenant_id = #{scopedTenantId} order by id desc limit 1
     </select>
 
     <select id="selectGzDepotInventoryByBatchNoAndWarehouse" resultType="java.math.BigDecimal">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_depot_inventory
-        where batch_no = #{batchNo} and warehouse_id = #{warehouseId} and qty > 0 and tenant_id = #{scopedTenantId}
+        where batch_no = #{batchNo} and warehouse_id = #{warehouseId} and qty > 0 and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

@@ -67,6 +67,14 @@ public class GzTraceabilityEntry extends BaseEntity
     @Excel(name = "院内码")
     private String inHospitalCode;
 
+    /** 主条码 */
+    @Excel(name = "主条码")
+    private String masterBarcode;
+
+    /** 辅条码 */
+    @Excel(name = "辅条码")
+    private String secondaryBarcode;
+
     /** 生产厂家 */
     @Excel(name = "生产厂家")
     private String manufacturer;
@@ -74,6 +82,8 @@ public class GzTraceabilityEntry extends BaseEntity
     /** 供应商 */
     @Excel(name = "供应商")
     private String supplier;
+    /** 供应商ID */
+    private Long supplierId;
 
     /** 注册证号 */
     @Excel(name = "注册证号")
@@ -271,6 +281,26 @@ public class GzTraceabilityEntry extends BaseEntity
         return inHospitalCode;
     }
 
+    public void setMasterBarcode(String masterBarcode)
+    {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getMasterBarcode()
+    {
+        return masterBarcode;
+    }
+
+    public void setSecondaryBarcode(String secondaryBarcode)
+    {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
+    public String getSecondaryBarcode()
+    {
+        return secondaryBarcode;
+    }
+
     public void setManufacturer(String manufacturer)
     {
         this.manufacturer = manufacturer;
@@ -289,6 +319,14 @@ public class GzTraceabilityEntry extends BaseEntity
     public String getSupplier()
     {
         return supplier;
+    }
+    public void setSupplierId(Long supplierId)
+    {
+        this.supplierId = supplierId;
+    }
+    public Long getSupplierId()
+    {
+        return supplierId;
     }
 
     public void setCertificateNo(String certificateNo)
@@ -499,9 +537,12 @@ public class GzTraceabilityEntry extends BaseEntity
             .append("chargePrice", getChargePrice())
             .append("batchNo", getBatchNo())
             .append("expiryDate", getExpiryDate())
+            .append("masterBarcode", getMasterBarcode())
+            .append("secondaryBarcode", getSecondaryBarcode())
             .append("inHospitalCode", getInHospitalCode())
             .append("manufacturer", getManufacturer())
             .append("supplier", getSupplier())
+            .append("supplierId", getSupplierId())
             .append("certificateNo", getCertificateNo())
             .append("billingFollow", getBillingFollow())
             .append("delFlag", getDelFlag())

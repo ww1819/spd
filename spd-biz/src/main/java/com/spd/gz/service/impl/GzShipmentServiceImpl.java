@@ -154,7 +154,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
         gzShipment.setUpdateTime(DateUtils.getNowDate());
-        gzShipmentMapper.deleteGzShipmentEntryByParenId(gzShipment.getId());
+        gzShipmentMapper.deleteGzShipmentEntryByParenId(gzShipment.getId(), SecurityUtils.getUserIdStr());
         insertGzShipmentEntry(gzShipment);
         return gzShipmentMapper.updateGzShipment(gzShipment);
     }
@@ -186,6 +186,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 }
                 entry.setDelFlag(1);
                 entry.setParenId(id);
+                entry.setUpdateBy(SecurityUtils.getUserIdStr());
                 gzShipmentMapper.updateGzShipmentEntry(entry);
             }
         }
@@ -385,6 +386,11 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     gzDepInventory.setAmt(shipmentEntry.getPrice());
                     gzDepInventory.setBatchNo(shipmentEntry.getBatchNo());
                     gzDepInventory.setMaterialNo(shipmentEntry.getBatchNumber());
+                    if (depotInventory != null && depotInventory.getSupplierId() != null) {
+                        gzDepInventory.setSupplierId(depotInventory.getSupplierId());
+                    } else {
+                        gzDepInventory.setSupplierId(shipmentEntry.getSupplierId());
+                    }
                     // 必须设置院内码
                     if(inHospitalCode != null && !inHospitalCode.trim().isEmpty()){
                         gzDepInventory.setInHospitalCode(inHospitalCode);
@@ -445,6 +451,12 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 
                 gzShipmentEntry.setParenId(id);
                 gzShipmentEntry.setTenantId(tenantId);
+                if (gzShipmentEntry.getSupplierId() == null && StringUtils.isNotEmpty(gzShipmentEntry.getBatchNo())) {
+                    GzDepotInventory source = gzDepotInventoryMapper.selectGzDepotInventoryOne(gzShipmentEntry.getBatchNo());
+                    if (source != null) {
+                        gzShipmentEntry.setSupplierId(source.getSupplierId());
+                    }
+                }
                 // 只有在 batchNo 为空时才生成新的批次号，避免覆盖已有的批次号
                 if (gzShipmentEntry.getBatchNo() == null || gzShipmentEntry.getBatchNo().isEmpty()) {
                     gzShipmentEntry.setBatchNo(getBatchNumber());

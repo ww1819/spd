@@ -175,9 +175,14 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
         if (StringUtils.isNotNull(gzDepApplyEntryList))
         {
             List<GzDepApplyEntry> list = new ArrayList<GzDepApplyEntry>();
+            String tenantId = StringUtils.isNotEmpty(gzDepApply.getTenantId())
+                ? gzDepApply.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
             for (GzDepApplyEntry gzDepApplyEntry : gzDepApplyEntryList)
             {
                 gzDepApplyEntry.setParenId(id);
+                gzDepApplyEntry.setTenantId(tenantId);
+                gzDepApplyEntry.setDelFlag(0);
                 list.add(gzDepApplyEntry);
             }
             if (list.size() > 0)

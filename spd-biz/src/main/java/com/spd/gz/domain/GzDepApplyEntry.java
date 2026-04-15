@@ -51,6 +51,21 @@ public class GzDepApplyEntry extends BaseEntity
     @Excel(name = "批号")
     private String batchNumer;
 
+    /** 供应商ID */
+    private Long supplierId;
+
+    /** 主条码 */
+    private String masterBarcode;
+
+    /** 辅条码 */
+    private String secondaryBarcode;
+
+    /** 删除标识 */
+    private Integer delFlag;
+
+    /** 租户ID */
+    private String tenantId;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -132,6 +147,51 @@ public class GzDepApplyEntry extends BaseEntity
     {
         return batchNumer;
     }
+    public void setSupplierId(Long supplierId)
+    {
+        this.supplierId = supplierId;
+    }
+
+    public Long getSupplierId()
+    {
+        return supplierId;
+    }
+    public void setMasterBarcode(String masterBarcode)
+    {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getMasterBarcode()
+    {
+        return masterBarcode;
+    }
+    public void setSecondaryBarcode(String secondaryBarcode)
+    {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
+    public String getSecondaryBarcode()
+    {
+        return secondaryBarcode;
+    }
+    public void setDelFlag(Integer delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
+    public Integer getDelFlag()
+    {
+        return delFlag;
+    }
+    public void setTenantId(String tenantId)
+    {
+        this.tenantId = tenantId;
+    }
+
+    public String getTenantId()
+    {
+        return tenantId;
+    }
 
     @Override
     public String toString() {
@@ -145,6 +205,11 @@ public class GzDepApplyEntry extends BaseEntity
             .append("amt", getAmt())
             .append("batchNo", getBatchNo())
             .append("batchNumer", getBatchNumer())
+            .append("supplierId", getSupplierId())
+            .append("masterBarcode", getMasterBarcode())
+            .append("secondaryBarcode", getSecondaryBarcode())
+            .append("delFlag", getDelFlag())
+            .append("tenantId", getTenantId())
             .append("remark", getRemark())
             .toString();
     }

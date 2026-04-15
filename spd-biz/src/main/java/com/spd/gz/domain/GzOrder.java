@@ -77,6 +77,9 @@ public class GzOrder extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     private String endDate;
 
+    /** 时间筛选字段：createTime/auditDate */
+    private String timeField;
+
     /** 总金额 */
     private java.math.BigDecimal totalAmt;
 
@@ -264,6 +267,14 @@ public class GzOrder extends BaseEntity
         this.totalAmt = totalAmt;
     }
 
+    public String getTimeField() {
+        return timeField;
+    }
+
+    public void setTimeField(String timeField) {
+        this.timeField = timeField;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -287,6 +298,7 @@ public class GzOrder extends BaseEntity
             .append("supplier", getSupplier())
             .append("warehouse", getWarehouse())
             .append("materialList", getMaterialList())
+            .append("timeField", getTimeField())
             .toString();
     }
 }

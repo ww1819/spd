@@ -322,6 +322,7 @@ public class GzOrderServiceImpl implements IGzOrderService
                 gzOrderEntry.setParenId(id);
                 gzOrderEntry.setBatchNo(getBatchNumber());
                 gzOrderEntry.setDelFlag(0);
+                gzOrderEntry.setSupplierId(gzOrder.getSupplerId());
                 list.add(gzOrderEntry);
             }
             if (list.size() > 0)

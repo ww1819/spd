@@ -58,10 +58,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="amt"    column="sub_amt"    />
         <result property="batchNo"    column="sub_batch_no"    />
         <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="masterBarcode"    column="sub_master_barcode"    />
+        <result property="secondaryBarcode"    column="sub_secondary_barcode"    />
         <result property="inHospitalCode"    column="sub_in_hospital_code"    />
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
         <result property="delFlag"    column="sub_del_flag"    />
+        <result property="supplierId"    column="sub_supplier_id"    />
         <result property="remark"    column="sub_remark"    />
     </resultMap>
 
@@ -101,6 +104,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="goodsStatus != null "> and gz.goods_status = #{goodsStatus}</if>
         <if test="goodsType != null "> and gz.goods_type = #{goodsType}</if>
         <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
+        <choose>
+            <when test="timeField != null and timeField == 'auditDate'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gz.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gz.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </otherwise>
+        </choose>
         group by gz.id, gz.goods_no, gz.suppler_id, gz.goods_date, gz.warehouse_id, gz.department_id,
 				gz.goods_status, gz.goods_type, gz.del_flag, gz.audit_date, gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
@@ -116,10 +129,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         a.audit_date, a.audit_by, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
         b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
         b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
-        b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark
+        b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode,
+        b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.supplier_id as sub_supplier_id, b.remark as sub_remark
         from gz_refund_goods a
-        left join gz_refund_goods_entry b on b.paren_id = a.id
-        where a.id = #{id} and a.tenant_id = #{scopedTenantId}
+        left join gz_refund_goods_entry b on b.paren_id = a.id and b.del_flag != 1
+        where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzRefundGoods" parameterType="GzRefundGoods" useGeneratedKeys="true" keyProperty="id">
@@ -189,12 +203,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteGzRefundGoodsById" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_refund_goods set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update gz_refund_goods
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzRefundGoodsEntryByParenIds" parameterType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_refund_goods_entry set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
+        update gz_refund_goods_entry
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
@@ -202,20 +220,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteGzRefundGoodsEntryByParenId" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_refund_goods_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+        update gz_refund_goods_entry
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">
-        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code, begin_time, end_time, del_flag, remark, tenant_id) values
+        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, master_barcode, secondary_barcode, in_hospital_code, begin_time, end_time, del_flag, supplier_id, remark, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.tenantId})
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.supplierId}, #{item.remark}, #{item.tenantId})
         </foreach>
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(goods_no) from gz_refund_goods
-        where goods_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
+        where goods_no like concat('%',#{date},'%') and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 
     <update id="updateGzRefundGoodsEntry" parameterType="GzRefundGoodsEntry">
@@ -223,6 +243,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update gz_refund_goods_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now(),
         </trim>
         where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>

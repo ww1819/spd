@@ -1,6 +1,7 @@
 package com.spd.gz.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzRefundGoods;
 import com.spd.gz.domain.GzRefundGoodsEntry;
 
@@ -50,7 +51,7 @@ public interface GzRefundGoodsMapper
      * @param id 高值退货主键
      * @return 结果
      */
-    public int deleteGzRefundGoodsById(Long id);
+    public int deleteGzRefundGoodsById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除高值退货明细
@@ -58,7 +59,7 @@ public interface GzRefundGoodsMapper
      * @param ids 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteGzRefundGoodsEntryByParenIds(Long[] ids);
+    public int deleteGzRefundGoodsEntryByParenIds(@Param("array") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量新增高值退货明细
@@ -75,7 +76,7 @@ public interface GzRefundGoodsMapper
      * @param id 高值退货ID
      * @return 结果
      */
-    public int deleteGzRefundGoodsEntryByParenId(Long id);
+    public int deleteGzRefundGoodsEntryByParenId(@Param("parenId") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询当天最大的单号
