@@ -102,6 +102,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if (StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
         }
+        gzRefundGoods.setCreateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setGoodsNo(getOrderNo());
         gzRefundGoods.setCreateTime(DateUtils.getNowDate());
         int rows = gzRefundGoodsMapper.insertGzRefundGoods(gzRefundGoods);
@@ -131,6 +132,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if (StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
         }
+        gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
         gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(gzRefundGoods.getId(), SecurityUtils.getUserIdStr());
         insertGzRefundGoodsEntry(gzRefundGoods);

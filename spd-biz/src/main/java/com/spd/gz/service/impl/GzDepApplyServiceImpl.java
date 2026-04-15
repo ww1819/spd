@@ -71,9 +71,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     {
         gzDepApply.setApplyBillNo(getNumber());
         gzDepApply.setCreateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(gzDepApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
-            gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
-        }
+        gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
         if (StringUtils.isEmpty(gzDepApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzDepApply.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -102,9 +100,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     public int updateGzDepApply(GzDepApply gzDepApply)
     {
         gzDepApply.setUpdateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(gzDepApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
-            gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
-        }
+        gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
         gzDepApplyMapper.deleteGzDepApplyEntryByParenId(gzDepApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertGzDepApplyEntry(gzDepApply);
         return gzDepApplyMapper.updateGzDepApply(gzDepApply);
@@ -158,6 +154,8 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
         }
 
         gzDepApply.setApplyBillStatus(2);
+        gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
+        gzDepApply.setUpdateTime(DateUtils.getNowDate());
 
         int res = gzDepApplyMapper.updateGzDepApply(gzDepApply);
         return res;

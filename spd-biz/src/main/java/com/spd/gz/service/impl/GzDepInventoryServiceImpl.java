@@ -3,6 +3,7 @@ package com.spd.gz.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.service.IGzDepInventoryService;
@@ -76,7 +77,7 @@ public class GzDepInventoryServiceImpl implements IGzDepInventoryService
     @Override
     public int deleteGzDepInventoryByIds(Long[] ids)
     {
-        return gzDepInventoryMapper.deleteGzDepInventoryByIds(ids);
+        return gzDepInventoryMapper.deleteGzDepInventoryByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -88,6 +89,6 @@ public class GzDepInventoryServiceImpl implements IGzDepInventoryService
     @Override
     public int deleteGzDepInventoryById(Long id)
     {
-        return gzDepInventoryMapper.deleteGzDepInventoryById(id);
+        return gzDepInventoryMapper.deleteGzDepInventoryById(id, SecurityUtils.getUserIdStr());
     }
 }

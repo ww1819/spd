@@ -108,9 +108,13 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public int insertGzOrder(GzOrder gzOrder)
     {
+        if (gzOrder == null) {
+            throw new ServiceException("高值入库单不能为空");
+        }
         if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzOrder.setTenantId(SecurityUtils.getCustomerId());
         }
+        gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
         int rows = gzOrderMapper.insertGzOrder(gzOrder);
@@ -150,6 +154,7 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public int updateGzOrder(GzOrder gzOrder)
     {
+        gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
         gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId(), SecurityUtils.getUserIdStr());
         insertGzOrderEntry(gzOrder);
@@ -198,6 +203,8 @@ public class GzOrderServiceImpl implements IGzOrderService
         updateDepotInventory(gzOrder,gzOrderEntryList);
 
         gzOrder.setOrderStatus(2);
+        gzOrder.setAuditBy(SecurityUtils.getUserIdStr());
+        gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setAuditDate(new Date());
         int res = gzOrderMapper.updateGzOrder(gzOrder);
         return res;

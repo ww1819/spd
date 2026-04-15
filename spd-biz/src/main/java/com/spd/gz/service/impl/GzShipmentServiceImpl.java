@@ -122,6 +122,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if (StringUtils.isEmpty(gzShipment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
+        gzShipment.setCreateBy(SecurityUtils.getUserIdStr());
         gzShipment.setShipmentNo(getShipmentNo());
         gzShipment.setCreateTime(DateUtils.getNowDate());
         int rows = gzShipmentMapper.insertGzShipment(gzShipment);
@@ -153,6 +154,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if (StringUtils.isEmpty(gzShipment.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
+        gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(DateUtils.getNowDate());
         gzShipmentMapper.deleteGzShipmentEntryByParenId(gzShipment.getId(), SecurityUtils.getUserIdStr());
         insertGzShipmentEntry(gzShipment);
