@@ -5567,6 +5567,110 @@ FROM DUAL WHERE @profit_loss_menu IS NOT NULL
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- ---------- 24) 科室审核 department/dAudit：父菜单下补齐申领/申购/转科与后端接口一致的按钮权限（解决仅挂「科室审核」时申购审核 403 等）----------
+SET @d_audit_parent := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_type = 'C'
+    AND (perms = 'department:dAudit:list' OR component = 'department/dAudit/index')
+  ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3468, '申领单列表', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:dApply:list', '#', 'admin', NOW(), '1', NOW(), '科室审核-列表/查询申领', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:dApply:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3468))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3469, '申领单查询', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:dApply:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:dApply:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3469))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3470, '申领单修改', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:dApply:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:dApply:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3470))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3471, '申领单删除', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:dApply:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:dApply:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3471))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3472, '申领单导出', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:dApply:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:dApply:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3472))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3473, '申领单审核', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:dApply:audit', '#', 'admin', NOW(), '1', NOW(), '与现网 1163 等重复 perms 时本行不插入', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:dApply:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3473))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3474, '申购单列表', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:list', '#', 'admin', NOW(), '1', NOW(), 'DepPurchaseApplyController', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3474))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3475, '申购单查询', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3475))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3476, '申购单修改', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3476))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3477, '申购单删除', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3477))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3478, '申购单导出', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3478))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3479, '申购单审核', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:audit', '#', 'admin', NOW(), '1', NOW(), 'PUT /department/purchase/auditApply', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3479))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3480, '申购单驳回', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'department:purchase:reject', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'department:purchase:reject') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3480))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3481, '转科申请列表', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'departmentTransfer:apply:list', '#', 'admin', NOW(), '1', NOW(), 'DepartmentTransferController', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'departmentTransfer:apply:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3481))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3482, '转科申请查询', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'departmentTransfer:apply:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'departmentTransfer:apply:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3482))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3483, '转科申请修改', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'departmentTransfer:apply:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'departmentTransfer:apply:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3483))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3484, '转科申请删除', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'departmentTransfer:apply:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'departmentTransfer:apply:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3484))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3485, '转科申请导出', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'departmentTransfer:apply:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'departmentTransfer:apply:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3485))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3486, '转科申请审核', @d_audit_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @d_audit_parent), '#', '', NULL, 1, 0, 'F', '0', '0', 'departmentTransfer:apply:audit', '#', 'admin', NOW(), '1', NOW(), 'PUT /department/transfer/auditApply', '0', '1'
+FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @d_audit_parent AND perms = 'departmentTransfer:apply:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3486))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
