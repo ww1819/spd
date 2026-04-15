@@ -5592,6 +5592,63 @@ FROM DUAL WHERE @gz_goods_audit_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM 
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- 23.9 高值管理：住院高值扫码（gz/zyjf）及追溯接口权限
+-- 兼容历史数据：若早期菜单使用了 gz:zyjf:list，则统一修正为接口所需的 gz:traceability:list
+UPDATE sys_menu
+SET perms = 'gz:traceability:list',
+    update_time = NOW()
+WHERE menu_type = 'C'
+  AND component = 'gz/zyjf/index'
+  AND perms = 'gz:zyjf:list';
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3811, '住院高值扫码', COALESCE(@gz_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@gz_root, 1)), 'zyjf', 'gz/zyjf/index', NULL, 1, 0, 'C', '0', '0', 'gz:traceability:list', 'education', 'admin', NOW(), '1', NOW(), '住院高值扫码页面', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/zyjf/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3811)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @gz_zyjf_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/zyjf/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3812, '追溯查询', @gz_zyjf_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:query', '#', 'admin', NOW(), '1', NOW(), '追溯单详情/扫码页查询', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3812))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3813, '追溯新增', @gz_zyjf_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:add', '#', 'admin', NOW(), '1', NOW(), '扫码页保存（新增）', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3813))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3814, '追溯修改', @gz_zyjf_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:edit', '#', 'admin', NOW(), '1', NOW(), '扫码页保存（修改）', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3814))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3815, '追溯删除', @gz_zyjf_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:remove', '#', 'admin', NOW(), '1', NOW(), '扫码页删除', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3815))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3816, '追溯审核', @gz_zyjf_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:audit', '#', 'admin', NOW(), '1', NOW(), '扫码页审核/反审核', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3816))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3817, '追溯导出', @gz_zyjf_menu, 6, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:export', '#', 'admin', NOW(), '1', NOW(), '追溯单导出', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3817))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3818, '打印耗材清单', @gz_zyjf_menu, 7, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:printMaterial', '#', 'admin', NOW(), '1', NOW(), '住院高值扫码-打印耗材清单', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:printMaterial') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3818))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3819, '打印条码清单', @gz_zyjf_menu, 8, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:printBarcode', '#', 'admin', NOW(), '1', NOW(), '住院高值扫码-打印条码清单', '0', '1'
+FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_zyjf_menu AND perms = 'gz:traceability:printBarcode') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3819))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
 -- 23.7 盈亏单：add/edit/remove/audit（父：warehouse/profitLoss/index；扫描 FE∩BE 相对 menu.sql 曾缺 audit/edit/remove 三项）
 SET @profit_loss_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouse/profitLoss/index' ORDER BY menu_id DESC LIMIT 1);
 /
@@ -5781,7 +5838,16 @@ JOIN sys_menu m
     'departmentTransfer:apply:add',
     'departmentTransfer:apply:edit',
     'departmentTransfer:apply:remove',
-    'departmentTransfer:apply:audit'
+    'departmentTransfer:apply:audit',
+    'gz:traceability:list',
+    'gz:traceability:query',
+    'gz:traceability:add',
+    'gz:traceability:edit',
+    'gz:traceability:remove',
+    'gz:traceability:audit',
+    'gz:traceability:export',
+    'gz:traceability:printMaterial',
+    'gz:traceability:printBarcode'
   )
 WHERE c.hc_status = '0'
   AND NOT EXISTS (
