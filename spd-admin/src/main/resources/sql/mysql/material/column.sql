@@ -500,6 +500,10 @@ CALL add_table_column('gz_order', 'is_follow_flag', 'varchar(16)', '跟台标识
 /
 CALL add_table_column('gz_order', 'del_flag', 'int', '删除标志', 0);
 /
+CALL add_table_column('gz_order', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('gz_order', 'delete_time', 'datetime', '删除时间', NULL);
+/
 CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '主条码', NULL);
 /
 CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '辅条码', NULL);
