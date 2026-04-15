@@ -217,6 +217,11 @@ public class StkIoBill extends BaseEntity
     /** 列表排序场景：apply=申请页，audit=审核页 */
     private String sortScene;
 
+    /**
+     * 列表日期条件维度：bill=按制单日期(bill_date)，audit=按审核日期(audit_date)；为空时与 audit 相同（兼容旧请求）
+     */
+    private String dateQueryType;
+
     /** 出库按单导出：勾选的主键 id，逗号分隔；不传则按其它条件导出全部匹配单据 */
     private String exportBillIds;
 
@@ -536,6 +541,14 @@ public class StkIoBill extends BaseEntity
         this.sortScene = sortScene;
     }
 
+    public String getDateQueryType() {
+        return dateQueryType;
+    }
+
+    public void setDateQueryType(String dateQueryType) {
+        this.dateQueryType = dateQueryType;
+    }
+
     public String getExportBillIds() {
         return exportBillIds;
     }
@@ -669,6 +682,7 @@ public class StkIoBill extends BaseEntity
             .append("supplierKeyword", getSupplierKeyword())
             .append("excludeZeroNoBiz", getExcludeZeroNoBiz())
             .append("sortScene", getSortScene())
+            .append("dateQueryType", getDateQueryType())
             .append("materialList", getMaterialList())
             .append("delPerson", getDelPerson())
             .append("telephone", getTelephone())

@@ -286,8 +286,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType == 501"> and stk.bill_no not like 'JS%'</if>
         </if>
 
-        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+        <choose>
+            <when test="dateQueryType != null and dateQueryType == 'bill'">
+                <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+                <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+                <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+            </otherwise>
+        </choose>
         <if test="auditBeginDate != null "> and stk.audit_date &gt;= #{auditBeginDate}</if>
         <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
@@ -329,8 +337,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="q.departmentId != null"> and stk.department_id = #{q.departmentId}</if>
                 <if test="q.billStatus != null"> and stk.bill_status = #{q.billStatus}</if>
                 <if test="q.userId != null"> and stk.user_id = #{q.userId}</if>
-                <if test="q.beginDate != null"> and stk.bill_date &gt;= #{q.beginDate}</if>
-                <if test="q.endDate != null"> and stk.bill_date &lt;= #{q.endDate}</if>
+                <choose>
+                    <when test="q.dateQueryType != null and q.dateQueryType == 'bill'">
+                        <if test="q.beginDate != null"> and stk.bill_date &gt;= #{q.beginDate}</if>
+                        <if test="q.endDate != null"> and stk.bill_date &lt;= #{q.endDate}</if>
+                    </when>
+                    <otherwise>
+                        <if test="q.beginDate != null"> and stk.audit_date &gt;= #{q.beginDate}</if>
+                        <if test="q.endDate != null"> and stk.audit_date &lt;= #{q.endDate}</if>
+                    </otherwise>
+                </choose>
                 <if test="q.auditBeginDate != null"> and stk.audit_date &gt;= #{q.auditBeginDate}</if>
                 <if test="q.auditEndDate != null"> and DATE(stk.audit_date) &lt;= DATE(#{q.auditEndDate})</if>
                 <if test="q.receiptConfirmStatus != null"> and stk.receipt_confirm_status = #{q.receiptConfirmStatus}</if>
@@ -356,8 +372,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="userId != null "> and stk.user_id = #{userId}</if>
         <if test="billType != null "> and stk.bill_type = #{billType}</if>
 
-        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+        <choose>
+            <when test="dateQueryType != null and dateQueryType == 'bill'">
+                <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
+                <if test="endDate != null "> and stk.bill_date &lt;= #{endDate}</if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+                <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+            </otherwise>
+        </choose>
         order by stk.bill_date desc
     </select>
 
