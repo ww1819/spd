@@ -5239,6 +5239,334 @@ SELECT 3415,'由出库单生成退库明细',@out_refund_c,7,'#','',NULL,1,0,'F'
 ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),remark=VALUES(remark),update_time=VALUES(update_time);
 /
 
+-- ---------- 23) 前后端已有权限、sys_menu 补齐（采购计划/科室批量消耗/收货确认/基础资料子页/高值入库与退货申请/结算列表/盈亏新增）----------
+SET @foundation_root := (SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '基础资料' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1);
+/
+SET @department_root := (SELECT m.menu_id FROM sys_menu m WHERE m.path = 'department' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1);
+/
+SET @gz_root := (SELECT m.menu_id FROM sys_menu m WHERE m.path = 'gz' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1);
+/
+SET @caigou_parent := COALESCE(
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'caigou' ORDER BY m.menu_id LIMIT 1),
+  (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component = 'caigou/dingdan/index' ORDER BY m.menu_id LIMIT 1),
+  1
+);
+/
+
+-- 23.1 结算申请：列表权限 settlement:apply:list（父菜单优先 component=settlement/apply/index，否则 menu_id=1547）
+SET @settlement_apply_parent := COALESCE(
+  (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'settlement/apply/index' ORDER BY menu_id LIMIT 1),
+  (SELECT menu_id FROM sys_menu WHERE menu_id = 1547 AND menu_type = 'C' LIMIT 1)
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3416, '结算申请列表', @settlement_apply_parent, 0, '#', '', NULL, 1, 0, 'F', '0', '0', 'settlement:apply:list', '#', 'admin', NOW(), '1', NOW(), '与前端 v-hasPermi settlement:apply:list 一致', '0', '1'
+FROM DUAL
+WHERE @settlement_apply_parent IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @settlement_apply_parent AND perms = 'settlement:apply:list')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3416))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+-- 23.2 采购计划 caigou/jihua（CaigouJihuaController）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3417, '采购计划', @caigou_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @caigou_parent), 'jihua', 'caigou/jihua/index', NULL, 1, 0, 'C', '0', '0', 'caigou:jihua:list', 'list', 'admin', NOW(), '1', NOW(), '采购计划列表', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/jihua/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3417)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @jihua_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/jihua/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3418, '采购计划新增', @jihua_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:jihua:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jihua_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @jihua_menu AND perms = 'caigou:jihua:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3418))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3419, '采购计划修改', @jihua_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:jihua:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jihua_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @jihua_menu AND perms = 'caigou:jihua:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3419))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3420, '采购计划导出', @jihua_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:jihua:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jihua_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @jihua_menu AND perms = 'caigou:jihua:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3420))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3421, '采购计划删除', @jihua_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:jihua:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jihua_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @jihua_menu AND perms = 'caigou:jihua:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3421))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+-- 23.3 科室批量消耗 department/batchConsume（DeptBatchConsumeController）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3422, '科室批量消耗', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'batchConsume', 'department/batchConsume/index', NULL, 1, 0, 'C', '0', '0', 'department:batchConsume:list', 'list', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/batchConsume/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3422)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @batch_consume_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'department/batchConsume/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3423, '批量消耗新增', @batch_consume_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:batchConsume:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @batch_consume_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @batch_consume_menu AND perms = 'department:batchConsume:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3423))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3424, '批量消耗修改', @batch_consume_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:batchConsume:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @batch_consume_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @batch_consume_menu AND perms = 'department:batchConsume:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3424))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3425, '批量消耗导出', @batch_consume_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:batchConsume:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @batch_consume_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @batch_consume_menu AND perms = 'department:batchConsume:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3425))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3426, '批量消耗删除', @batch_consume_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:batchConsume:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @batch_consume_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @batch_consume_menu AND perms = 'department:batchConsume:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3426))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3427, '批量消耗审核', @batch_consume_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:batchConsume:audit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @batch_consume_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @batch_consume_menu AND perms = 'department:batchConsume:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3427))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+-- 23.4 收货确认 department/receiptConfirm（ReceiptConfirmController）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3428, '收货确认', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'receiptConfirm', 'department/receiptConfirm/index', NULL, 1, 0, 'C', '0', '0', 'department:receiptConfirm:list', 'checkbox', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/receiptConfirm/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3428)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @receipt_confirm_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'department/receiptConfirm/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3429, '收货确认操作', @receipt_confirm_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:receiptConfirm:confirm', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @receipt_confirm_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @receipt_confirm_menu AND perms = 'department:receiptConfirm:confirm') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3429))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3430, '收货确认导出', @receipt_confirm_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:receiptConfirm:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @receipt_confirm_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @receipt_confirm_menu AND perms = 'department:receiptConfirm:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3430))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+-- 23.5 基础资料：68 分类 / 装备字典 / 物资分类 / 仓库维护
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3431, '68分类维护', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'category68', 'foundation/category68/index', NULL, 1, 0, 'C', '0', '0', 'foundation:category68:list', 'tree', 'admin', NOW(), '1', NOW(), 'FdCategory68Controller', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/category68/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3431)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @cat68_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/category68/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3432, '68分类新增', @cat68_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:category68:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @cat68_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @cat68_menu AND perms = 'foundation:category68:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3432))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3433, '68分类修改', @cat68_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:category68:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @cat68_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @cat68_menu AND perms = 'foundation:category68:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3433))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3434, '68分类导出', @cat68_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:category68:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @cat68_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @cat68_menu AND perms = 'foundation:category68:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3434))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3435, '68分类删除', @cat68_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:category68:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @cat68_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @cat68_menu AND perms = 'foundation:category68:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3435))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3436, '装备字典', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'equipmentDict', 'foundation/equipmentDict/index', NULL, 1, 0, 'C', '0', '0', 'foundation:equipmentDict:list', 'education', 'admin', NOW(), '1', NOW(), 'FdEquipmentDictController', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/equipmentDict/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3436)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @eq_dict_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/equipmentDict/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3437, '装备字典新增', @eq_dict_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:equipmentDict:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @eq_dict_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @eq_dict_menu AND perms = 'foundation:equipmentDict:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3437))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3438, '装备字典修改', @eq_dict_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:equipmentDict:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @eq_dict_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @eq_dict_menu AND perms = 'foundation:equipmentDict:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3438))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3439, '装备字典导出', @eq_dict_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:equipmentDict:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @eq_dict_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @eq_dict_menu AND perms = 'foundation:equipmentDict:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3439))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3440, '装备字典导入', @eq_dict_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:equipmentDict:import', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @eq_dict_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @eq_dict_menu AND perms = 'foundation:equipmentDict:import') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3440))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3441, '装备字典删除', @eq_dict_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:equipmentDict:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @eq_dict_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @eq_dict_menu AND perms = 'foundation:equipmentDict:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3441))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3442, '物资分类', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'materialCategory', 'foundation/materialCategory/index', NULL, 1, 0, 'C', '0', '0', 'foundation:materialCategory:list', 'tree', 'admin', NOW(), '1', NOW(), 'FdMaterialCategoryController', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/materialCategory/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3442)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @mat_cat_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/materialCategory/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3443, '物资分类新增', @mat_cat_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3443))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3444, '物资分类修改', @mat_cat_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3444))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3445, '物资分类导出', @mat_cat_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3445))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3446, '物资分类删除', @mat_cat_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3446))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3447, '仓库维护', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'warehouse', 'foundation/warehouse/index', NULL, 1, 0, 'C', '0', '0', 'foundation:warehouse:list', 'warehouse', 'admin', NOW(), '1', NOW(), 'FdWarehouseController', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/warehouse/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3447)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @fd_wh_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/warehouse/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3448, '仓库新增', @fd_wh_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:warehouse:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @fd_wh_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @fd_wh_menu AND perms = 'foundation:warehouse:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3448))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3449, '仓库修改', @fd_wh_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:warehouse:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @fd_wh_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @fd_wh_menu AND perms = 'foundation:warehouse:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3449))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3450, '仓库导出', @fd_wh_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:warehouse:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @fd_wh_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @fd_wh_menu AND perms = 'foundation:warehouse:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3450))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3451, '仓库删除', @fd_wh_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:warehouse:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @fd_wh_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @fd_wh_menu AND perms = 'foundation:warehouse:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3451))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+-- 23.6 高值管理：入库申请 gzOrder/apply、退货申请 gzOrder/goodsApply（GzOrderController / GzRefundGoodsController）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3452, '入库申请', COALESCE(@gz_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@gz_root, 1)), 'apply', 'gzOrder/apply/index', NULL, 1, 0, 'C', '0', '0', 'gzOrder:apply:list', 'list', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'gzOrder/apply/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3452)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @gz_order_apply_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'gzOrder/apply/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3453, '高值入库新增', @gz_order_apply_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:apply:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_order_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_order_apply_menu AND perms = 'gzOrder:apply:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3453))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3454, '高值入库修改', @gz_order_apply_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:apply:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_order_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_order_apply_menu AND perms = 'gzOrder:apply:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3454))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3455, '高值入库导出', @gz_order_apply_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:apply:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_order_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_order_apply_menu AND perms = 'gzOrder:apply:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3455))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3456, '高值入库删除', @gz_order_apply_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:apply:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_order_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_order_apply_menu AND perms = 'gzOrder:apply:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3456))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3457, '高值入库审核', @gz_order_apply_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:apply:audit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_order_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_order_apply_menu AND perms = 'gzOrder:apply:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3457))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3458, '退货申请', COALESCE(@gz_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@gz_root, 1)), 'goodsApply', 'gzOrder/goodsApply/index', NULL, 1, 0, 'C', '0', '0', 'gzOrder:goodsApply:list', 'list', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'gzOrder/goodsApply/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3458)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @gz_goods_apply_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'gzOrder/goodsApply/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3459, '退货申请新增', @gz_goods_apply_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:goodsApply:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_goods_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_goods_apply_menu AND perms = 'gzOrder:goodsApply:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3459))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3460, '退货申请修改', @gz_goods_apply_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:goodsApply:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_goods_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_goods_apply_menu AND perms = 'gzOrder:goodsApply:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3460))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3461, '退货申请导出', @gz_goods_apply_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:goodsApply:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_goods_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_goods_apply_menu AND perms = 'gzOrder:goodsApply:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3461))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3462, '退货申请删除', @gz_goods_apply_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:goodsApply:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_goods_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_goods_apply_menu AND perms = 'gzOrder:goodsApply:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3462))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3463, '退货申请审核', @gz_goods_apply_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'gzOrder:goodsApply:audit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @gz_goods_apply_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_goods_apply_menu AND perms = 'gzOrder:goodsApply:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3463))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+-- 23.7 盈亏单：add/edit/remove/audit（父：warehouse/profitLoss/index；扫描 FE∩BE 相对 menu.sql 曾缺 audit/edit/remove 三项）
+SET @profit_loss_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouse/profitLoss/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3464, '盈亏单新增', @profit_loss_menu, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @profit_loss_menu), '#', '', NULL, 1, 0, 'F', '0', '0', 'warehouse:profitLoss:add', '#', 'admin', NOW(), '1', NOW(), 'StkIoProfitLossController 新增/保存草稿', '0', '1'
+FROM DUAL WHERE @profit_loss_menu IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @profit_loss_menu AND perms = 'warehouse:profitLoss:add')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3464))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3465, '盈亏单修改', @profit_loss_menu, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @profit_loss_menu), '#', '', NULL, 1, 0, 'F', '0', '0', 'warehouse:profitLoss:edit', '#', 'admin', NOW(), '1', NOW(), 'StkIoProfitLossController', '0', '1'
+FROM DUAL WHERE @profit_loss_menu IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @profit_loss_menu AND perms = 'warehouse:profitLoss:edit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3465))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3466, '盈亏单删除', @profit_loss_menu, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @profit_loss_menu), '#', '', NULL, 1, 0, 'F', '0', '0', 'warehouse:profitLoss:remove', '#', 'admin', NOW(), '1', NOW(), 'StkIoProfitLossController', '0', '1'
+FROM DUAL WHERE @profit_loss_menu IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @profit_loss_menu AND perms = 'warehouse:profitLoss:remove')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3466))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3467, '盈亏单审核', @profit_loss_menu, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @profit_loss_menu), '#', '', NULL, 1, 0, 'F', '0', '0', 'warehouse:profitLoss:audit', '#', 'admin', NOW(), '1', NOW(), 'StkIoProfitLossController', '0', '1'
+FROM DUAL WHERE @profit_loss_menu IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @profit_loss_menu AND perms = 'warehouse:profitLoss:audit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3467))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
