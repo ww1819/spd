@@ -78,6 +78,10 @@ public class GzRefundGoodsEntry extends BaseEntity
     private String tenantId;
     /** 供应商ID */
     private Long supplierId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 单号冗余 */
+    private String billNo;
 
     public void setId(Long id) 
     {
@@ -209,6 +213,10 @@ public class GzRefundGoodsEntry extends BaseEntity
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
 
     @Override
     public String toString() {
@@ -228,6 +236,8 @@ public class GzRefundGoodsEntry extends BaseEntity
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
             .append("supplierId", getSupplierId())
+            .append("warehouseId", getWarehouseId())
+            .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();
     }

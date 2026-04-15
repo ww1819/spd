@@ -324,12 +324,20 @@ public class GzOrderServiceImpl implements IGzOrderService
         if (StringUtils.isNotNull(gzOrderEntryList))
         {
             List<GzOrderEntry> list = new ArrayList<GzOrderEntry>();
+            String userId = SecurityUtils.getUserIdStr();
+            Date now = DateUtils.getNowDate();
             for (GzOrderEntry gzOrderEntry : gzOrderEntryList)
             {
                 gzOrderEntry.setParenId(id);
                 gzOrderEntry.setBatchNo(getBatchNumber());
                 gzOrderEntry.setDelFlag(0);
                 gzOrderEntry.setSupplierId(gzOrder.getSupplerId());
+                gzOrderEntry.setWarehouseId(gzOrder.getWarehouseId());
+                gzOrderEntry.setBillNo(gzOrder.getOrderNo());
+                gzOrderEntry.setCreateBy(userId);
+                gzOrderEntry.setCreateTime(now);
+                gzOrderEntry.setUpdateBy(userId);
+                gzOrderEntry.setUpdateTime(now);
                 list.add(gzOrderEntry);
             }
             if (list.size() > 0)

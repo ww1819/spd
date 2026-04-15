@@ -494,11 +494,35 @@ CALL add_table_column('fd_material_change_log', 'tenant_id', 'varchar(36)', '租
 /* ========== 高值耗材相关表：租户关联 + 主条码/辅条码 ========== */
 CALL add_table_column('gz_order', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
+CALL add_table_column('gz_order', 'department_id', 'bigint', '科室ID', NULL);
+/
+CALL add_table_column('gz_order', 'is_follow_flag', 'varchar(16)', '跟台标识', NULL);
+/
 CALL add_table_column('gz_order', 'del_flag', 'int', '删除标志', 0);
 /
 CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '主条码', NULL);
 /
 CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '辅条码', NULL);
+/
+CALL add_table_column('gz_order_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+/
+CALL add_table_column('gz_order_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+/
+CALL add_table_column('gz_shipment_entry', 'department_id', 'bigint', '科室ID', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'department_id', 'bigint', '科室ID', NULL);
 /
 CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
@@ -1521,4 +1545,71 @@ CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(5
 /
 
 -- wh_wh_apply_ck_entry_ref（出库关联表）全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
+/
+
+-- ========== 高值模块最终核对清单（发布后自检 SQL）==========
+-- 说明：以下 SQL 为“只读自检”，可在发布完成后执行，快速核验环境一致性。
+
+-- 1) 高值核心表是否具备逻辑删除三件套（del_flag/delete_by/delete_time）
+SELECT c.table_name,
+       MAX(CASE WHEN c.column_name = 'del_flag' THEN 1 ELSE 0 END) AS has_del_flag,
+       MAX(CASE WHEN c.column_name = 'delete_by' THEN 1 ELSE 0 END) AS has_delete_by,
+       MAX(CASE WHEN c.column_name = 'delete_time' THEN 1 ELSE 0 END) AS has_delete_time
+FROM information_schema.columns c
+WHERE c.table_schema = DATABASE()
+  AND c.table_name IN (
+    'gz_order','gz_order_entry','gz_shipment','gz_shipment_entry',
+    'gz_refund_goods','gz_refund_goods_entry','gz_traceability','gz_traceability_entry',
+    'gz_depot_inventory','gz_dep_inventory','gz_dep_apply','gz_dep_apply_entry','gz_patient_info'
+  )
+GROUP BY c.table_name
+ORDER BY c.table_name;
+/
+
+-- 2) 高值明细表条码/供应商字段完整性
+SELECT c.table_name,
+       MAX(CASE WHEN c.column_name = 'master_barcode' THEN 1 ELSE 0 END) AS has_master_barcode,
+       MAX(CASE WHEN c.column_name = 'secondary_barcode' THEN 1 ELSE 0 END) AS has_secondary_barcode,
+       MAX(CASE WHEN c.column_name = 'supplier_id' THEN 1 ELSE 0 END) AS has_supplier_id
+FROM information_schema.columns c
+WHERE c.table_schema = DATABASE()
+  AND c.table_name IN (
+    'gz_order_entry','gz_shipment_entry','gz_refund_goods_entry',
+    'gz_traceability_entry','gz_dep_apply_entry','gz_depot_inventory','gz_dep_inventory'
+  )
+GROUP BY c.table_name
+ORDER BY c.table_name;
+/
+
+-- 3) gz_order 扩展字段（department_id/is_follow_flag）检查
+SELECT c.table_name,
+       MAX(CASE WHEN c.column_name = 'department_id' THEN 1 ELSE 0 END) AS has_department_id,
+       MAX(CASE WHEN c.column_name = 'is_follow_flag' THEN 1 ELSE 0 END) AS has_is_follow_flag
+FROM information_schema.columns c
+WHERE c.table_schema = DATABASE()
+  AND c.table_name = 'gz_order'
+GROUP BY c.table_name;
+/
+
+-- 4) 住院高值扫码/追溯权限菜单检查（应返回完整一组 perms）
+SELECT m.menu_id, m.menu_name, m.parent_id, m.perms, m.menu_type, m.status
+FROM sys_menu m
+WHERE m.perms IN (
+  'gz:traceability:list','gz:traceability:query','gz:traceability:add',
+  'gz:traceability:edit','gz:traceability:remove','gz:traceability:audit',
+  'gz:traceability:export','gz:traceability:printMaterial','gz:traceability:printBarcode'
+)
+ORDER BY m.menu_type, m.menu_id;
+/
+
+-- 5) 高值表 create_by/update_by/delete_by 是否存在“非数字用户ID”残留（按需抽样）
+-- 说明：当前约定写 user_id（字符串）。若历史存在 user_name，此处可帮助发现异常数据。
+SELECT 'gz_order' AS table_name, COUNT(*) AS suspect_rows
+FROM gz_order
+WHERE del_flag != 1
+  AND (
+    (create_by IS NOT NULL AND create_by <> '' AND create_by NOT REGEXP '^[0-9]+$')
+    OR (update_by IS NOT NULL AND update_by <> '' AND update_by NOT REGEXP '^[0-9]+$')
+    OR (delete_by IS NOT NULL AND delete_by <> '' AND delete_by NOT REGEXP '^[0-9]+$')
+  );
 /

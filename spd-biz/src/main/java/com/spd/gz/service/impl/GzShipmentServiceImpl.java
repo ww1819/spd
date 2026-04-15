@@ -175,25 +175,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if(gzShipment == null){
             throw new ServiceException(String.format("高值出库业务：%s，不存在!", id));
         }
-
-        gzShipment.setDelFlag(1);
-        gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
-        gzShipment.setUpdateTime(new Date());
-
-        List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
-        if (gzShipmentEntryList != null) {
-            for(GzShipmentEntry entry : gzShipmentEntryList){
-                if (entry == null) {
-                    continue;
-                }
-                entry.setDelFlag(1);
-                entry.setParenId(id);
-                entry.setUpdateBy(SecurityUtils.getUserIdStr());
-                gzShipmentMapper.updateGzShipmentEntry(entry);
-            }
-        }
-
-        return gzShipmentMapper.updateGzShipment(gzShipment);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        gzShipmentMapper.deleteGzShipmentEntryByParenId(id, deleteBy);
+        return gzShipmentMapper.deleteGzShipmentById(id, deleteBy);
     }
 
     @Override
@@ -439,6 +423,8 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             String tenantId = StringUtils.isNotEmpty(gzShipment.getTenantId())
                 ? gzShipment.getTenantId()
                 : SecurityUtils.requiredScopedTenantIdForSql();
+            String userId = SecurityUtils.getUserIdStr();
+            Date now = DateUtils.getNowDate();
             for (GzShipmentEntry gzShipmentEntry : gzShipmentEntryList)
             {
                 if (gzShipmentEntry == null) {
@@ -464,6 +450,13 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     gzShipmentEntry.setBatchNo(getBatchNumber());
                 }
                 gzShipmentEntry.setDelFlag(0);
+                gzShipmentEntry.setWarehouseId(gzShipment.getWarehouseId());
+                gzShipmentEntry.setDepartmentId(gzShipment.getDepartmentId());
+                gzShipmentEntry.setBillNo(gzShipment.getShipmentNo());
+                gzShipmentEntry.setCreateBy(userId);
+                gzShipmentEntry.setCreateTime(now);
+                gzShipmentEntry.setUpdateBy(userId);
+                gzShipmentEntry.setUpdateTime(now);
                 list.add(gzShipmentEntry);
             }
             if (list.size() > 0)

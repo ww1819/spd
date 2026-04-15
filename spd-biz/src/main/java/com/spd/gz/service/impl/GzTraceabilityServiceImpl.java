@@ -209,6 +209,8 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
             String tenantId = StringUtils.isNotEmpty(gzTraceability.getTenantId())
                 ? gzTraceability.getTenantId()
                 : SecurityUtils.requiredScopedTenantIdForSql();
+            String userId = SecurityUtils.getUserIdStr();
+            Date now = DateUtils.getNowDate();
             List<GzTraceabilityEntry> list = new ArrayList<GzTraceabilityEntry>();
             for (GzTraceabilityEntry entry : traceabilityEntryList)
             {
@@ -218,8 +220,10 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 entry.setParentId(id);
                 entry.setTenantId(tenantId);
                 entry.setDelFlag("0");
-                entry.setCreateTime(DateUtils.getNowDate());
-                entry.setCreateBy(SecurityUtils.getUserIdStr());
+                entry.setCreateTime(now);
+                entry.setCreateBy(userId);
+                entry.setUpdateTime(now);
+                entry.setUpdateBy(userId);
                 if (entry.getSupplierId() == null && entry.getInventoryId() != null) {
                     GzDepInventory depInventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
                     if (depInventory != null) {

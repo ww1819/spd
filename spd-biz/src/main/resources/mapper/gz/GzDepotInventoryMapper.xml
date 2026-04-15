@@ -138,12 +138,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectGzDepotInventoryList" parameterType="GzDepotInventory" resultMap="GzDepotInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepotInventoryVo"/>
         where gz.del_flag != 1
         and gz.qty &gt; 0
         <!-- 只查询高值仓库的库存 -->
         and w.warehouse_type = '高值'
-        <if test="tenantId != null and tenantId != ''"> and gz.tenant_id = #{tenantId}</if>
+        and gz.tenant_id = #{scopedTenantId}
         <if test="qty != null "> and gz.qty = #{qty}</if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and gz.warehouse_id = #{warehouseId}</if>
@@ -220,7 +221,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="inHospitalCode != null">in_hospital_code = #{inHospitalCode},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="masterBarcode != null">master_barcode = #{masterBarcode},</if>
             <if test="secondaryBarcode != null">secondary_barcode = #{secondaryBarcode},</if>
         </trim>

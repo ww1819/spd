@@ -75,6 +75,12 @@ public class GzShipmentEntry extends BaseEntity
     private String tenantId;
     /** 供应商ID */
     private Long supplierId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 科室ID */
+    private Long departmentId;
+    /** 单号冗余 */
+    private String billNo;
 
     public void setId(Long id) 
     {
@@ -204,6 +210,12 @@ public class GzShipmentEntry extends BaseEntity
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
 
     @Override
     public String toString() {
@@ -223,6 +235,9 @@ public class GzShipmentEntry extends BaseEntity
             .append("secondaryBarcode", getSecondaryBarcode())
             .append("inHospitalCode", getInHospitalCode())
             .append("supplierId", getSupplierId())
+            .append("warehouseId", getWarehouseId())
+            .append("departmentId", getDepartmentId())
+            .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();
     }

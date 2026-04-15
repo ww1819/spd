@@ -68,6 +68,10 @@ public class GzOrderEntry extends BaseEntity
     private String secondaryBarcode;
     /** 供应商ID */
     private Long supplierId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 单号冗余 */
+    private String billNo;
 
     public void setId(Long id) 
     {
@@ -175,6 +179,10 @@ public class GzOrderEntry extends BaseEntity
     public void setSecondaryBarcode(String secondaryBarcode) { this.secondaryBarcode = secondaryBarcode; }
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
 
     @Override
     public String toString() {
@@ -191,6 +199,8 @@ public class GzOrderEntry extends BaseEntity
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
             .append("supplierId", getSupplierId())
+            .append("warehouseId", getWarehouseId())
+            .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();
     }

@@ -153,24 +153,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if(gzRefundGoods == null){
             throw new ServiceException(String.format("高值退货业务：%s，不存在!", id));
         }
-
-        gzRefundGoods.setDelFlag(1);
-        gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
-        gzRefundGoods.setUpdateTime(new Date());
-
-        List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
-        if (gzRefundGoodsEntryList != null) {
-            for(GzRefundGoodsEntry entry : gzRefundGoodsEntryList){
-                if (entry == null) {
-                    continue;
-                }
-                entry.setDelFlag(1);
-                entry.setParenId(id);
-                entry.setUpdateBy(SecurityUtils.getUserIdStr());
-                gzRefundGoodsMapper.updateGzRefundGoodsEntry(entry);
-            }
-        }
-        return gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(id, deleteBy);
+        return gzRefundGoodsMapper.deleteGzRefundGoodsById(id, deleteBy);
     }
 
     @Override
@@ -281,6 +266,8 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             String tenantId = StringUtils.isNotEmpty(gzRefundGoods.getTenantId())
                 ? gzRefundGoods.getTenantId()
                 : SecurityUtils.requiredScopedTenantIdForSql();
+            String userId = SecurityUtils.getUserIdStr();
+            Date now = DateUtils.getNowDate();
             for (GzRefundGoodsEntry gzRefundGoodsEntry : gzRefundGoodsEntryList)
             {
                 if (gzRefundGoodsEntry == null) {
@@ -291,6 +278,12 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 gzRefundGoodsEntry.setDelFlag(0);
                 gzRefundGoodsEntry.setTenantId(tenantId);
                 gzRefundGoodsEntry.setSupplierId(gzRefundGoods.getSupplerId());
+                gzRefundGoodsEntry.setWarehouseId(gzRefundGoods.getWarehouseId());
+                gzRefundGoodsEntry.setBillNo(gzRefundGoods.getGoodsNo());
+                gzRefundGoodsEntry.setCreateBy(userId);
+                gzRefundGoodsEntry.setCreateTime(now);
+                gzRefundGoodsEntry.setUpdateBy(userId);
+                gzRefundGoodsEntry.setUpdateTime(now);
                 list.add(gzRefundGoodsEntry);
             }
             if (list.size() > 0)
