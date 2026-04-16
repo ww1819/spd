@@ -150,6 +150,21 @@ public class DeptBatchConsumeEntry extends BaseEntity
     /** 租户ID */
     private String tenantId;
 
+    /** 反消耗来源主单ID（正向消耗主单） */
+    private Long srcConsumeId;
+
+    /** 反消耗来源主单号（正向消耗单号） */
+    private String srcConsumeBillNo;
+
+    /** 反消耗来源明细ID（正向消耗明细ID） */
+    private Long srcConsumeEntryId;
+
+    /** 正向消耗数量快照 */
+    private BigDecimal srcConsumeQty;
+
+    /** 生成反消耗时可退数量快照 */
+    private BigDecimal srcCanReverseQty;
+
     /** 耗材对象 */
     private FdMaterial material;
 
@@ -383,6 +398,16 @@ public class DeptBatchConsumeEntry extends BaseEntity
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public Long getSrcConsumeId() { return srcConsumeId; }
+    public void setSrcConsumeId(Long srcConsumeId) { this.srcConsumeId = srcConsumeId; }
+    public String getSrcConsumeBillNo() { return srcConsumeBillNo; }
+    public void setSrcConsumeBillNo(String srcConsumeBillNo) { this.srcConsumeBillNo = srcConsumeBillNo; }
+    public Long getSrcConsumeEntryId() { return srcConsumeEntryId; }
+    public void setSrcConsumeEntryId(Long srcConsumeEntryId) { this.srcConsumeEntryId = srcConsumeEntryId; }
+    public BigDecimal getSrcConsumeQty() { return srcConsumeQty; }
+    public void setSrcConsumeQty(BigDecimal srcConsumeQty) { this.srcConsumeQty = srcConsumeQty; }
+    public BigDecimal getSrcCanReverseQty() { return srcCanReverseQty; }
+    public void setSrcCanReverseQty(BigDecimal srcCanReverseQty) { this.srcCanReverseQty = srcCanReverseQty; }
 
     @Override
     public String toString() {
@@ -417,6 +442,11 @@ public class DeptBatchConsumeEntry extends BaseEntity
             .append("materialModel", getMaterialModel())
             .append("materialFactoryId", getMaterialFactoryId())
             .append("tenantId", getTenantId())
+            .append("srcConsumeId", getSrcConsumeId())
+            .append("srcConsumeBillNo", getSrcConsumeBillNo())
+            .append("srcConsumeEntryId", getSrcConsumeEntryId())
+            .append("srcConsumeQty", getSrcConsumeQty())
+            .append("srcCanReverseQty", getSrcCanReverseQty())
             .append("deleteBy", getDeleteBy())
             .append("deleteTime", getDeleteTime())
             .append("remark", getRemark())

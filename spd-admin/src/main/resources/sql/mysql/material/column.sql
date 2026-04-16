@@ -370,6 +370,12 @@ CALL add_table_column('t_hc_ks_xh', 'delete_by', 'varchar(64)', '删除者', NUL
 /
 CALL add_table_column('t_hc_ks_xh', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('t_hc_ks_xh', 'reverse_flag', 'int', '是否反消耗单(0否1是)', '0');
+/
+CALL add_table_column('t_hc_ks_xh', 'reverse_of_consume_id', 'bigint', '反消耗来源主单ID', NULL);
+/
+CALL add_table_column('t_hc_ks_xh', 'reverse_of_bill_no', 'varchar(64)', '反消耗来源主单号', NULL);
+/
 CALL add_table_column('t_hc_ks_xh_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
 /
 CALL add_table_column('t_hc_ks_xh_entry', 'delete_time', 'datetime', '删除时间', NULL);
@@ -404,6 +410,16 @@ CALL add_table_column('t_hc_ks_xh_entry', 'material_speci', 'varchar(256)', '规
 CALL add_table_column('t_hc_ks_xh_entry', 'material_model', 'varchar(256)', '型号快照', NULL);
 /
 CALL add_table_column('t_hc_ks_xh_entry', 'material_factory_id', 'bigint', '生产厂家ID快照(fd_factory.factory_id)', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_id', 'bigint', '反消耗来源主单ID(正向消耗主单)', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_bill_no', 'varchar(64)', '反消耗来源主单号(正向消耗单号)', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_entry_id', 'bigint', '反消耗来源明细ID(正向消耗明细ID)', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_qty', 'decimal(18,2)', '正向消耗数量快照', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'src_can_reverse_qty', 'decimal(18,2)', '反消耗生成时可退数量快照', NULL);
 /
 /* 兼容历史库：t_hc_ks_xh_entry 早期字段为 batch_numer，统一迁移/补齐为 batch_number */
 SET @__db := DATABASE();

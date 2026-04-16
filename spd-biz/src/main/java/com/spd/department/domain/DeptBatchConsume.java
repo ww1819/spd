@@ -81,6 +81,15 @@ public class DeptBatchConsume extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 是否反消耗单（0否 1是） */
+    private Integer reverseFlag;
+
+    /** 反消耗来源主单ID */
+    private Long reverseOfConsumeId;
+
+    /** 反消耗来源主单号 */
+    private String reverseOfBillNo;
+
     /** 保存时后台自动去重过滤条数（不落库） */
     private Integer dedupFilteredCount;
 
@@ -390,6 +399,12 @@ public class DeptBatchConsume extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public Integer getReverseFlag() { return reverseFlag; }
+    public void setReverseFlag(Integer reverseFlag) { this.reverseFlag = reverseFlag; }
+    public Long getReverseOfConsumeId() { return reverseOfConsumeId; }
+    public void setReverseOfConsumeId(Long reverseOfConsumeId) { this.reverseOfConsumeId = reverseOfConsumeId; }
+    public String getReverseOfBillNo() { return reverseOfBillNo; }
+    public void setReverseOfBillNo(String reverseOfBillNo) { this.reverseOfBillNo = reverseOfBillNo; }
     public Integer getDedupFilteredCount() { return dedupFilteredCount; }
     public void setDedupFilteredCount(Integer dedupFilteredCount) { this.dedupFilteredCount = dedupFilteredCount; }
 
@@ -417,6 +432,9 @@ public class DeptBatchConsume extends BaseEntity
             .append("auditPersonName", getAuditPersonName())
             .append("createrName", getCreaterName())
             .append("rejectReason", getRejectReason())
+            .append("reverseFlag", getReverseFlag())
+            .append("reverseOfConsumeId", getReverseOfConsumeId())
+            .append("reverseOfBillNo", getReverseOfBillNo())
             .append("deptBatchConsumeEntryList", getDeptBatchConsumeEntryList())
             .append("warehouse", getWarehouse())
             .append("user", getUser())

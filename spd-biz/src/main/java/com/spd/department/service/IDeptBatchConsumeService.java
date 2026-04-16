@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
 import com.spd.department.domain.DeptBatchConsume;
+import com.spd.department.domain.DeptBatchConsumeReverseReq;
 
 /**
  * 科室批量消耗Service接口
@@ -98,4 +99,14 @@ public interface IDeptBatchConsumeService
      * 引用出库单：查询可引用的科室库存行（低敏感接口）
      */
     List<Map<String, Object>> selectOutRefEntryList(DeptBatchConsume deptBatchConsume);
+
+    /**
+     * 查询可反消耗明细
+     */
+    List<Map<String, Object>> selectReverseableEntryList(Long consumeId);
+
+    /**
+     * 生成反消耗单并回补科室库存
+     */
+    DeptBatchConsume reverseConsume(DeptBatchConsumeReverseReq req, String operator);
 }

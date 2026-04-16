@@ -122,6 +122,11 @@ public interface DeptBatchConsumeMapper
     List<Map<String, Object>> selectOutRefEntryList(DeptBatchConsume deptBatchConsume);
 
     /**
+     * 查询某正向消耗单下可反消耗明细（含可退数量）
+     */
+    List<Map<String, Object>> selectReverseableEntryList(@Param("consumeId") Long consumeId);
+
+    /**
      * 查询已审核的科室批量消耗明细列表（用于消耗追溯报表）
      * 
      * @param deptBatchConsume 查询条件

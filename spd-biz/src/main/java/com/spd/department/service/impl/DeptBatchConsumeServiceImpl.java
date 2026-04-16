@@ -1,6 +1,9 @@
 package com.spd.department.service.impl;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +14,11 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.uuid.UUID7;
+import com.spd.department.domain.DeptBatchConsumeReverseReq;
+import com.spd.department.domain.HcKsFlow;
+import com.spd.department.domain.StkDepInventory;
+import com.spd.department.mapper.HcKsFlowMapper;
+import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +44,10 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     private DeptBatchConsumeMapper deptBatchConsumeMapper;
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+    @Autowired
+    private StkDepInventoryMapper stkDepInventoryMapper;
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
 
     /**
      * 查询科室批量消耗
@@ -187,12 +199,18 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if(deptBatchConsume == null){
             throw new ServiceException(String.format("科室批量消耗ID：%s，不存在!", id));
         }
+        if (deptBatchConsume.getConsumeBillStatus() != null && deptBatchConsume.getConsumeBillStatus() == 2) {
+            throw new ServiceException(String.format("科室批量消耗单 %s 已审核，请勿重复审核", deptBatchConsume.getConsumeBillNo()));
+        }
+        List<DeptBatchConsumeEntry> entryList = deptBatchConsume.getDeptBatchConsumeEntryList();
+        if (entryList == null || entryList.isEmpty()) {
+            throw new ServiceException(String.format("科室批量消耗单 %s 无明细，无法审核", deptBatchConsume.getConsumeBillNo()));
+        }
+        applyInventoryAndFlow(deptBatchConsume, entryList, auditBy);
         deptBatchConsume.setConsumeBillStatus(2);//已审核状态
         deptBatchConsume.setAuditBy(auditBy);
         deptBatchConsume.setAuditDate(new Date());
-        int res = deptBatchConsumeMapper.updateDeptBatchConsume(deptBatchConsume);
-        // TODO: 审核后扣减库存逻辑（参考科室申领）
-        return res;
+        return deptBatchConsumeMapper.updateDeptBatchConsume(deptBatchConsume);
     }
 
     /**
@@ -324,5 +342,254 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
             deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
         }
         return deptBatchConsumeMapper.selectOutRefEntryList(deptBatchConsume);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectReverseableEntryList(Long consumeId)
+    {
+        if (consumeId == null) {
+            return new ArrayList<>();
+        }
+        return deptBatchConsumeMapper.selectReverseableEntryList(consumeId);
+    }
+
+    @Override
+    @Transactional
+    public DeptBatchConsume reverseConsume(DeptBatchConsumeReverseReq req, String operator)
+    {
+        if (req == null || req.getConsumeId() == null) {
+            throw new ServiceException("反消耗失败：来源消耗单不能为空");
+        }
+        DeptBatchConsume srcBill = deptBatchConsumeMapper.selectDeptBatchConsumeById(req.getConsumeId());
+        if (srcBill == null) {
+            throw new ServiceException("反消耗失败：来源消耗单不存在");
+        }
+        if (srcBill.getConsumeBillStatus() == null || srcBill.getConsumeBillStatus() != 2) {
+            throw new ServiceException("反消耗失败：仅支持对已审核消耗单执行反消耗");
+        }
+        List<Map<String, Object>> reverseableRows = deptBatchConsumeMapper.selectReverseableEntryList(req.getConsumeId());
+        if (reverseableRows == null || reverseableRows.isEmpty()) {
+            throw new ServiceException("反消耗失败：来源单没有可反消耗明细");
+        }
+        Map<Long, Map<String, Object>> reverseableByEntryId = new HashMap<>();
+        for (Map<String, Object> row : reverseableRows) {
+            Long srcEntryId = toLong(row.get("srcConsumeEntryId"));
+            if (srcEntryId != null) {
+                reverseableByEntryId.put(srcEntryId, row);
+            }
+        }
+        if (reverseableByEntryId.isEmpty()) {
+            throw new ServiceException("反消耗失败：来源单可反消耗明细为空");
+        }
+
+        List<DeptBatchConsumeReverseReq.ReverseItem> items = req.getItems();
+        Map<Long, BigDecimal> requestQtyMap = new HashMap<>();
+        if (items != null && !items.isEmpty()) {
+            for (DeptBatchConsumeReverseReq.ReverseItem item : items) {
+                if (item == null || item.getSrcConsumeEntryId() == null || item.getReverseQty() == null) {
+                    continue;
+                }
+                if (item.getReverseQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ServiceException("反消耗失败：反消耗数量必须大于0");
+                }
+                requestQtyMap.merge(item.getSrcConsumeEntryId(), item.getReverseQty(), BigDecimal::add);
+            }
+        } else {
+            for (Map.Entry<Long, Map<String, Object>> en : reverseableByEntryId.entrySet()) {
+                BigDecimal canReverseQty = toBigDecimal(en.getValue().get("canReverseQty"));
+                if (canReverseQty != null && canReverseQty.compareTo(BigDecimal.ZERO) > 0) {
+                    requestQtyMap.put(en.getKey(), canReverseQty);
+                }
+            }
+        }
+        if (requestQtyMap.isEmpty()) {
+            throw new ServiceException("反消耗失败：未提供有效反消耗数量");
+        }
+
+        Map<Long, DeptBatchConsumeEntry> srcEntryMap = new HashMap<>();
+        List<DeptBatchConsumeEntry> srcEntries = srcBill.getDeptBatchConsumeEntryList();
+        if (srcEntries != null) {
+            for (DeptBatchConsumeEntry e : srcEntries) {
+                if (e != null && e.getId() != null) {
+                    srcEntryMap.put(e.getId(), e);
+                }
+            }
+        }
+
+        List<DeptBatchConsumeEntry> reverseEntries = new ArrayList<>();
+        for (Map.Entry<Long, BigDecimal> en : requestQtyMap.entrySet()) {
+            Long srcEntryId = en.getKey();
+            BigDecimal requestReverseQty = en.getValue();
+            Map<String, Object> reverseable = reverseableByEntryId.get(srcEntryId);
+            if (reverseable == null) {
+                throw new ServiceException(String.format("反消耗失败：来源明细[%s]不存在或不可反消耗", srcEntryId));
+            }
+            BigDecimal canReverseQty = toBigDecimal(reverseable.get("canReverseQty"));
+            if (canReverseQty == null || canReverseQty.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ServiceException(String.format("反消耗失败：来源明细[%s]可反消耗数量为0", srcEntryId));
+            }
+            if (requestReverseQty.compareTo(canReverseQty) > 0) {
+                throw new ServiceException(String.format("反消耗失败：来源明细[%s]反消耗数量超限，最多可反消耗%s", srcEntryId, canReverseQty));
+            }
+            DeptBatchConsumeEntry srcEntry = srcEntryMap.get(srcEntryId);
+            if (srcEntry == null) {
+                throw new ServiceException(String.format("反消耗失败：来源明细[%s]不存在", srcEntryId));
+            }
+            DeptBatchConsumeEntry reverseEntry = cloneReverseEntry(srcBill, srcEntry, requestReverseQty, canReverseQty);
+            reverseEntries.add(reverseEntry);
+        }
+
+        if (reverseEntries.isEmpty()) {
+            throw new ServiceException("反消耗失败：未生成有效反消耗明细");
+        }
+
+        DeptBatchConsume reverseBill = new DeptBatchConsume();
+        reverseBill.setConsumeBillDate(DateUtils.getNowDate());
+        reverseBill.setWarehouseId(srcBill.getWarehouseId());
+        reverseBill.setDepartmentId(srcBill.getDepartmentId());
+        reverseBill.setUserId(srcBill.getUserId());
+        reverseBill.setConsumeBillStatus(2);
+        reverseBill.setDelFlag(0);
+        reverseBill.setCreateBy(SecurityUtils.getUserIdStr());
+        reverseBill.setCreateTime(DateUtils.getNowDate());
+        reverseBill.setAuditBy(operator);
+        reverseBill.setAuditDate(DateUtils.getNowDate());
+        reverseBill.setConsumeBillNo(getNumber());
+        reverseBill.setRemark(StringUtils.isNotBlank(req.getRemark()) ? req.getRemark() : String.format("反消耗来源：%s", srcBill.getConsumeBillNo()));
+        reverseBill.setReverseFlag(1);
+        reverseBill.setReverseOfConsumeId(srcBill.getId());
+        reverseBill.setReverseOfBillNo(srcBill.getConsumeBillNo());
+        reverseBill.setTenantId(StringUtils.isNotEmpty(srcBill.getTenantId()) ? srcBill.getTenantId() : SecurityUtils.getCustomerId());
+        reverseBill.setDeptBatchConsumeEntryList(reverseEntries);
+
+        deptBatchConsumeMapper.insertDeptBatchConsume(reverseBill);
+        insertDeptBatchConsumeEntry(reverseBill);
+        applyInventoryAndFlow(reverseBill, reverseEntries, operator);
+        return reverseBill;
+    }
+
+    private DeptBatchConsumeEntry cloneReverseEntry(DeptBatchConsume srcBill, DeptBatchConsumeEntry srcEntry, BigDecimal reverseQty, BigDecimal canReverseQty) {
+        DeptBatchConsumeEntry e = new DeptBatchConsumeEntry();
+        e.setMaterialId(srcEntry.getMaterialId());
+        e.setUnitPrice(srcEntry.getUnitPrice());
+        e.setPrice(srcEntry.getPrice());
+        e.setQty(reverseQty.negate());
+        BigDecimal unitPrice = srcEntry.getUnitPrice() == null ? BigDecimal.ZERO : srcEntry.getUnitPrice();
+        e.setAmt(unitPrice.multiply(e.getQty()));
+        e.setBatchNo(srcEntry.getBatchNo());
+        e.setBatchNumer(srcEntry.getBatchNumer());
+        e.setDepInventoryId(srcEntry.getDepInventoryId());
+        e.setKcNo(srcEntry.getKcNo());
+        e.setBatchId(srcEntry.getBatchId());
+        e.setWarehouseId(srcEntry.getWarehouseId());
+        e.setDepartmentId(srcEntry.getDepartmentId());
+        e.setSupplierId(srcEntry.getSupplierId());
+        e.setFactoryId(srcEntry.getFactoryId());
+        e.setMaterialNo(srcEntry.getMaterialNo());
+        e.setBeginTime(srcEntry.getBeginTime());
+        e.setEndTime(srcEntry.getEndTime());
+        e.setMaterialDate(srcEntry.getMaterialDate());
+        e.setWarehouseDate(srcEntry.getWarehouseDate());
+        e.setSettlementType(srcEntry.getSettlementType());
+        e.setMaterialName(srcEntry.getMaterialName());
+        e.setMaterialSpeci(srcEntry.getMaterialSpeci());
+        e.setMaterialModel(srcEntry.getMaterialModel());
+        e.setMaterialFactoryId(srcEntry.getMaterialFactoryId());
+        e.setMainBarcode(srcEntry.getMainBarcode());
+        e.setSubBarcode(srcEntry.getSubBarcode());
+        e.setRefOutBillId(srcEntry.getRefOutBillId());
+        e.setRefOutBillNo(srcEntry.getRefOutBillNo());
+        e.setRefOutEntryId(srcEntry.getRefOutEntryId());
+        e.setRefOutEntryQty(srcEntry.getRefOutEntryQty());
+        e.setRefOutAvailableQty(srcEntry.getRefOutAvailableQty());
+        e.setRefDefaultConsumeQty(srcEntry.getRefDefaultConsumeQty());
+        e.setSrcConsumeId(srcBill.getId());
+        e.setSrcConsumeBillNo(srcBill.getConsumeBillNo());
+        e.setSrcConsumeEntryId(srcEntry.getId());
+        e.setSrcConsumeQty(srcEntry.getQty());
+        e.setSrcCanReverseQty(canReverseQty);
+        e.setRemark(String.format("反消耗来源明细:%s", srcEntry.getId()));
+        return e;
+    }
+
+    private void applyInventoryAndFlow(DeptBatchConsume bill, List<DeptBatchConsumeEntry> entries, String operator) {
+        String user = StringUtils.defaultIfBlank(operator, SecurityUtils.getUserIdStr());
+        Date now = DateUtils.getNowDate();
+        for (DeptBatchConsumeEntry entry : entries) {
+            if (entry == null || entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
+            if (entry.getDepInventoryId() == null) {
+                throw new ServiceException(String.format("消耗审核失败：明细耗材[%s]缺少来源科室库存ID", entry.getMaterialId()));
+            }
+            StkDepInventory depInv = stkDepInventoryMapper.selectStkDepInventoryById(entry.getDepInventoryId());
+            if (depInv == null) {
+                throw new ServiceException(String.format("消耗审核失败：科室库存[%s]不存在", entry.getDepInventoryId()));
+            }
+            if (bill.getDepartmentId() != null && depInv.getDepartmentId() != null
+                && !bill.getDepartmentId().equals(depInv.getDepartmentId())) {
+                throw new ServiceException(String.format("消耗审核失败：明细库存[%s]不属于当前科室", depInv.getId()));
+            }
+            BigDecimal currentQty = depInv.getQty() == null ? BigDecimal.ZERO : depInv.getQty();
+            BigDecimal targetQty = currentQty.subtract(entry.getQty());
+            if (targetQty.compareTo(BigDecimal.ZERO) < 0) {
+                throw new ServiceException(String.format("消耗审核失败：明细[%s]库存不足，当前库存%s，消耗数量%s", entry.getId(), currentQty, entry.getQty()));
+            }
+            depInv.setQty(targetQty);
+            BigDecimal invPrice = depInv.getUnitPrice() != null ? depInv.getUnitPrice() : (entry.getUnitPrice() == null ? BigDecimal.ZERO : entry.getUnitPrice());
+            depInv.setUnitPrice(invPrice);
+            depInv.setAmt(invPrice.multiply(targetQty));
+            depInv.setUpdateBy(user);
+            depInv.setUpdateTime(now);
+            stkDepInventoryMapper.updateStkDepInventory(depInv);
+
+            HcKsFlow flow = new HcKsFlow();
+            flow.setBillId(bill.getId());
+            flow.setEntryId(entry.getId());
+            flow.setDepartmentId(bill.getDepartmentId());
+            flow.setWarehouseId(depInv.getWarehouseId());
+            flow.setMaterialId(entry.getMaterialId());
+            flow.setBatchNo(entry.getBatchNo());
+            flow.setBatchNumber(entry.getBatchNumer());
+            flow.setBatchId(entry.getBatchId());
+            flow.setQty(entry.getQty());
+            flow.setUnitPrice(entry.getUnitPrice());
+            flow.setAmt(entry.getAmt());
+            flow.setBeginTime(entry.getBeginTime());
+            flow.setEndTime(entry.getEndTime());
+            flow.setSupplierId(entry.getSupplierId());
+            flow.setFactoryId(entry.getFactoryId());
+            flow.setKcNo(depInv.getId());
+            flow.setLx(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "XH" : "TXH");
+            flow.setFlowTime(now);
+            flow.setOriginBusinessType(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗" : "科室退消耗");
+            flow.setDelFlag(0);
+            flow.setMainBarcode(entry.getMainBarcode());
+            flow.setSubBarcode(entry.getSubBarcode());
+            flow.setCreateBy(user);
+            flow.setCreateTime(now);
+            flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+            hcKsFlowMapper.insertHcKsFlow(flow);
+        }
+    }
+
+    private Long toLong(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).longValue();
+        try {
+            return Long.parseLong(String.valueOf(v));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private BigDecimal toBigDecimal(Object v) {
+        if (v == null) return null;
+        if (v instanceof BigDecimal) return (BigDecimal) v;
+        try {
+            return new BigDecimal(String.valueOf(v));
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
