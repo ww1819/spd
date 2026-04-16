@@ -6156,7 +6156,7 @@ JOIN sys_menu m
     'gz:traceability:audit',
     'gz:traceability:export',
     'gz:traceability:printMaterial',
-    'gz:traceability:printBarcode'，
+    'gz:traceability:printBarcode',
     'system:dataBackup:list',
     'system:dataBackup:query',
     'system:dataBackup:edit',
