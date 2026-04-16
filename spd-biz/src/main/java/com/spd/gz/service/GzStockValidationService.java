@@ -209,24 +209,47 @@ public class GzStockValidationService
                 addLineGoods(errs, idx, e, "批次号为空，无法校验备货库存");
                 continue;
             }
-            GzDepotInventory inv = gzDepotInventoryMapper.selectGzDepotInventoryOneByBatchNoAndWarehouse(e.getBatchNo(), bill.getWarehouseId());
-            if (inv == null)
+            String inCode = e.getInHospitalCode() == null ? "" : e.getInHospitalCode().trim();
+            if (StringUtils.isNotEmpty(inCode))
             {
-                addLineGoods(errs, idx, e, "退货仓库不存在该批次的备货库存");
-                continue;
+                GzDepotInventory inv = gzDepotInventoryMapper.selectByInHospitalCodeAndWarehouse(inCode, bill.getWarehouseId());
+                if (inv == null)
+                {
+                    addLineGoods(errs, idx, e, "退货仓库不存在该院内码的可用备货库存");
+                    continue;
+                }
+                if (inv.getWarehouseId() != null && !inv.getWarehouseId().equals(bill.getWarehouseId()))
+                {
+                    addLineGoods(errs, idx, e, "备货库存不属于当前退货仓库");
+                }
+                BigDecimal iq = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+                if (iq.compareTo(qty) < 0)
+                {
+                    addLineGoods(errs, idx, e, "备货库存数量不足，当前 " + iq + "，申请退货 " + qty);
+                }
+                if (inv.getSupplierId() != null && bill.getSupplerId() != null && !inv.getSupplierId().equals(bill.getSupplerId()))
+                {
+                    addLineGoods(errs, idx, e, "备货库存所属供应商与表头供应商不一致");
+                }
             }
-            if (inv.getWarehouseId() != null && !inv.getWarehouseId().equals(bill.getWarehouseId()))
+            else
             {
-                addLineGoods(errs, idx, e, "备货库存不属于当前退货仓库");
-            }
-            BigDecimal iq = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
-            if (iq.compareTo(qty) < 0)
-            {
-                addLineGoods(errs, idx, e, "备货库存数量不足，当前 " + iq + "，申请退货 " + qty);
-            }
-            if (inv.getSupplierId() != null && !inv.getSupplierId().equals(bill.getSupplerId()))
-            {
-                addLineGoods(errs, idx, e, "备货库存所属供应商与表头供应商不一致");
+                List<GzDepotInventory> rows = gzDepotInventoryMapper.selectPositiveDepotByBatchWarehouseSupplierAsc(
+                    e.getBatchNo(), bill.getWarehouseId(), bill.getSupplerId());
+                BigDecimal sum = BigDecimal.ZERO;
+                for (GzDepotInventory r : rows)
+                {
+                    sum = sum.add(r.getQty() != null ? r.getQty() : BigDecimal.ZERO);
+                }
+                if (rows.isEmpty())
+                {
+                    addLineGoods(errs, idx, e, "退货仓库不存在该批次下（表头供应商）的可用备货库存");
+                    continue;
+                }
+                if (sum.compareTo(qty) < 0)
+                {
+                    addLineGoods(errs, idx, e, "备货库存数量不足，当前合计 " + sum + "，申请退货 " + qty);
+                }
             }
         }
         if (!errs.isEmpty())

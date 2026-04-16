@@ -273,7 +273,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select * from gz_depot_inventory
         where batch_no = #{batchNo} and del_flag != 1 and tenant_id = #{scopedTenantId}
         <if test="warehouseId != null"> and warehouse_id = #{warehouseId}</if>
-        order by id desc limit 1
+        order by (CASE WHEN IFNULL(qty, 0) &gt; 0 THEN 0 ELSE 1 END), id desc limit 1
+    </select>
+
+    <!-- 备货退货按批次扣减：同批次多行、按供应商过滤，仅 qty&gt;0，按 id 升序 FIFO -->
+    <select id="selectPositiveDepotByBatchWarehouseSupplierAsc" resultMap="GzDepotInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectGzDepotInventoryVo"/>
+        where gz.del_flag != 1
+        and gz.tenant_id = #{scopedTenantId}
+        and gz.batch_no = #{batchNo}
+        and gz.warehouse_id = #{warehouseId}
+        and IFNULL(gz.qty, 0) &gt; 0
+        and w.warehouse_type = '高值'
+        <if test="supplierId != null">
+            and gz.supplier_id = #{supplierId}
+        </if>
+        order by gz.id asc
     </select>
 
     <select id="selectGzDepotInventoryByBatchNoAndWarehouse" resultType="java.math.BigDecimal">

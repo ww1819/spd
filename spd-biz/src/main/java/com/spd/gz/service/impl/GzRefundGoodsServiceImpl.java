@@ -336,7 +336,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     }
 
     /**
-     * 备货退货给供应商：按批次减少备货库存
+     * 备货退货给供应商：按院内码单行扣减；无院内码时按批次 + 供应商对多行正数量 FIFO 扣减（避免同批次多条记录时误命中 id 最大且 qty=0 的行）
      */
     private void updateGzDepotInventoryForSupplierReturn(GzRefundGoods gzRefundGoods,List<GzRefundGoodsEntry> gzRefundGoodsEntryList){
         if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
@@ -361,29 +361,63 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 throw new ServiceException(String.format("高值退货明细数量必须大于0，批次号：%s", batchNo));
             }
 
-            GzDepotInventory gzDepotInventory = gzRefundGoods.getWarehouseId() != null
-                ? gzDepotInventoryMapper.selectGzDepotInventoryOneByBatchNoAndWarehouse(batchNo, gzRefundGoods.getWarehouseId())
-                : gzDepotInventoryMapper.selectGzDepotInventoryOne(batchNo);
-            if(gzDepotInventory == null){
-                throw new ServiceException(String.format("该仓库下不存在批次 %s 的备货库存，无法退货", batchNo));
+            String inCode = entry.getInHospitalCode() == null ? "" : entry.getInHospitalCode().trim();
+            if (StringUtils.isNotEmpty(inCode)) {
+                GzDepotInventory inv = gzDepotInventoryMapper.selectByInHospitalCodeAndWarehouse(inCode, gzRefundGoods.getWarehouseId());
+                if (inv == null) {
+                    throw new ServiceException(String.format("该仓库下不存在院内码 %s 的可用备货库存，无法退货", inCode));
+                }
+                BigDecimal depotInventoryQty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+                if (qty.compareTo(depotInventoryQty) > 0) {
+                    throw new ServiceException(String.format("高值备货库存不足！退货数量：%s，备货库存：%s", qty, depotInventoryQty));
+                }
+                inv.setQty(depotInventoryQty.subtract(qty));
+                if (inv.getUnitPrice() != null) {
+                    inv.setAmt(inv.getUnitPrice().multiply(inv.getQty()));
+                }
+                inv.setUpdateTime(new Date());
+                inv.setUpdateBy(SecurityUtils.getUserIdStr());
+                gzDepotInventoryMapper.updateGzDepotInventory(inv);
+                continue;
             }
 
-            BigDecimal depotInventoryQty = gzDepotInventory.getQty();
-            if (depotInventoryQty == null) {
-                throw new ServiceException(String.format("高值退货-备货库存数量为空，批次号：%s", batchNo));
+            List<GzDepotInventory> rows = gzDepotInventoryMapper.selectPositiveDepotByBatchWarehouseSupplierAsc(
+                batchNo, gzRefundGoods.getWarehouseId(), gzRefundGoods.getSupplerId());
+            BigDecimal sum = BigDecimal.ZERO;
+            for (GzDepotInventory r : rows) {
+                sum = sum.add(r.getQty() != null ? r.getQty() : BigDecimal.ZERO);
             }
+            if (rows.isEmpty() || sum.compareTo(qty) < 0) {
+                throw new ServiceException(String.format("高值备货库存不足！退货数量：%s，同批次（表头供应商）可用备货合计：%s", qty, sum));
+            }
+            subtractDepotInventoryFifoForSupplierReturn(rows, qty, batchNo);
+        }
+    }
 
-            if(qty.compareTo(depotInventoryQty) > 0){
-                throw new ServiceException(String.format("高值备货库存不足！退货数量：%s，备货库存：%s", qty, depotInventoryQty));
+    private void subtractDepotInventoryFifoForSupplierReturn(List<GzDepotInventory> rows, BigDecimal need, String batchNo) {
+        BigDecimal remaining = need;
+        String updateBy = SecurityUtils.getUserIdStr();
+        Date now = new Date();
+        for (GzDepotInventory row : rows) {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
             }
-
-            gzDepotInventory.setQty(depotInventoryQty.subtract(qty));
-            if (gzDepotInventory.getUnitPrice() != null) {
-                gzDepotInventory.setAmt(gzDepotInventory.getUnitPrice().multiply(gzDepotInventory.getQty()));
+            BigDecimal q = row.getQty() != null ? row.getQty() : BigDecimal.ZERO;
+            if (q.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
             }
-            gzDepotInventory.setUpdateTime(new Date());
-            gzDepotInventory.setUpdateBy(SecurityUtils.getUserIdStr());
-            gzDepotInventoryMapper.updateGzDepotInventory(gzDepotInventory);
+            BigDecimal take = q.min(remaining);
+            row.setQty(q.subtract(take));
+            if (row.getUnitPrice() != null) {
+                row.setAmt(row.getUnitPrice().multiply(row.getQty()));
+            }
+            row.setUpdateTime(now);
+            row.setUpdateBy(updateBy);
+            gzDepotInventoryMapper.updateGzDepotInventory(row);
+            remaining = remaining.subtract(take);
+        }
+        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+            throw new ServiceException(String.format("备货库存扣减未完成，批次号：%s", batchNo));
         }
     }
 

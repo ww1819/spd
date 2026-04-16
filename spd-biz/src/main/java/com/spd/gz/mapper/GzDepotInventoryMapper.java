@@ -65,8 +65,16 @@ public interface GzDepotInventoryMapper
      */
     GzDepotInventory selectGzDepotInventoryOne(String batchNo);
 
-    /** 按批次号 + 仓库取最新一条备货库存（审核备货退货时按仓扣减） */
+    /** 按批次号 + 仓库取一条备货库存（优先 qty&gt;0 行，避免 id 最大但已扣为 0 的误命中） */
     GzDepotInventory selectGzDepotInventoryOneByBatchNoAndWarehouse(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
+
+    /**
+     * 同批次、同仓、指定供应商下所有 qty&gt;0 的备货行（id 升序，用于备货退货 FIFO 扣减）
+     */
+    List<GzDepotInventory> selectPositiveDepotByBatchWarehouseSupplierAsc(
+        @Param("batchNo") String batchNo,
+        @Param("warehouseId") Long warehouseId,
+        @Param("supplierId") Long supplierId);
 
     /**
      * 按院内码 + 仓库精确查询一条可用备货库存（数量大于0）
