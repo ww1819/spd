@@ -85,6 +85,16 @@ public class GzRefundGoodsEntry extends BaseEntity
     /** 单号冗余 */
     private String billNo;
 
+    /** 引用备货验收（退货 TH） */
+    private String refSrcAcceptanceId;
+    private String refSrcAcceptanceNo;
+    private String refSrcOrderEntryId;
+    private String refSrcBarcodeLineId;
+    /** 引用备货出库（退库 TK） */
+    private String refSrcShipmentId;
+    private String refSrcShipmentNo;
+    private String refSrcShipmentEntryId;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -221,6 +231,21 @@ public class GzRefundGoodsEntry extends BaseEntity
     public void setBillNo(String billNo) { this.billNo = billNo; }
     public Long getDepartmentId() { return departmentId; }
     public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public String getRefSrcAcceptanceId() { return refSrcAcceptanceId; }
+    public void setRefSrcAcceptanceId(String refSrcAcceptanceId) { this.refSrcAcceptanceId = refSrcAcceptanceId; }
+    public String getRefSrcAcceptanceNo() { return refSrcAcceptanceNo; }
+    public void setRefSrcAcceptanceNo(String refSrcAcceptanceNo) { this.refSrcAcceptanceNo = refSrcAcceptanceNo; }
+    public String getRefSrcOrderEntryId() { return refSrcOrderEntryId; }
+    public void setRefSrcOrderEntryId(String refSrcOrderEntryId) { this.refSrcOrderEntryId = refSrcOrderEntryId; }
+    public String getRefSrcBarcodeLineId() { return refSrcBarcodeLineId; }
+    public void setRefSrcBarcodeLineId(String refSrcBarcodeLineId) { this.refSrcBarcodeLineId = refSrcBarcodeLineId; }
+    public String getRefSrcShipmentId() { return refSrcShipmentId; }
+    public void setRefSrcShipmentId(String refSrcShipmentId) { this.refSrcShipmentId = refSrcShipmentId; }
+    public String getRefSrcShipmentNo() { return refSrcShipmentNo; }
+    public void setRefSrcShipmentNo(String refSrcShipmentNo) { this.refSrcShipmentNo = refSrcShipmentNo; }
+    public String getRefSrcShipmentEntryId() { return refSrcShipmentEntryId; }
+    public void setRefSrcShipmentEntryId(String refSrcShipmentEntryId) { this.refSrcShipmentEntryId = refSrcShipmentEntryId; }
 
     @Override
     public String toString() {

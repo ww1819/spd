@@ -308,6 +308,10 @@ public class GzOrderController extends BaseController
                 shipmentEntry.setDepartmentId(gzOrder.getDepartmentId());
                 shipmentEntry.setBillNo(gzOrder.getOrderNo());
                 shipmentEntry.setSupplierId(orderEntry.getSupplierId());
+                shipmentEntry.setRefSrcAcceptanceId(orderEntry.getRefSrcAcceptanceId());
+                shipmentEntry.setRefSrcAcceptanceNo(orderEntry.getRefSrcAcceptanceNo());
+                shipmentEntry.setRefSrcOrderEntryId(orderEntry.getRefSrcOrderEntryId());
+                shipmentEntry.setRefSrcBarcodeLineId(orderEntry.getRefSrcBarcodeLineId());
                 // 使用反射获取可能存在的字段（masterBarcode, secondaryBarcode, inHospitalCode）
                 try {
                     // 获取 masterBarcode

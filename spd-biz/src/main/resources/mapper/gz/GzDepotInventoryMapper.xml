@@ -152,6 +152,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="qty != null "> and gz.qty = #{qty}</if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and gz.warehouse_id = #{warehouseId}</if>
+        <if test="orderId != null "> and gz.order_id = #{orderId}</if>
         <if test="unitPrice != null "> and gz.unit_price = #{unitPrice}</if>
         <if test="amt != null "> and gz.amt = #{amt}</if>
         <if test="batchNo != null  and batchNo != ''"> and gz.batch_no = #{batchNo}</if>

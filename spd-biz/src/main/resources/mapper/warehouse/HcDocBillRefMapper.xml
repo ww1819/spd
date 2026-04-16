@@ -76,4 +76,16 @@
           and (del_flag = 0 or del_flag is null)
         group by src_entry_id
     </select>
+
+    <select id="sumRefQtyBySrcEntryExcludingTgtBill" resultType="java.math.BigDecimal">
+        select IFNULL(SUM(ref_qty), 0)
+        from hc_doc_bill_ref
+        where tenant_id = #{tenantId}
+          and src_bill_id = #{srcBillId}
+          and src_entry_id = #{srcEntryId}
+          and (del_flag = 0 or del_flag is null)
+        <if test="excludeTgtBillId != null and excludeTgtBillId != ''">
+          and (tgt_bill_id is null or tgt_bill_id != #{excludeTgtBillId})
+        </if>
+    </select>
 </mapper>

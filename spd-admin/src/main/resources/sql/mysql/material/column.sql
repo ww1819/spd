@@ -1583,6 +1583,85 @@ CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(5
 -- wh_wh_apply_ck_entry_ref（出库关联表）全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
 /
 
+CALL add_table_column('gz_order', 'apply_department_id', 'bigint', '申请科室ID（备货验收）', NULL);
+/
+
+-- 高值单据明细引用关系（主键 UUID7 36 位；双方主键/明细 ID 使用字符串便于扩展）
+CREATE TABLE IF NOT EXISTS `gz_order_entry_code_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户',
+  `src_acceptance_id` varchar(36) DEFAULT NULL COMMENT '备货验收主表ID',
+  `src_acceptance_no` varchar(64) DEFAULT NULL COMMENT '验收单号',
+  `src_order_entry_id` varchar(36) DEFAULT NULL COMMENT '验收明细ID',
+  `src_barcode_line_id` varchar(36) DEFAULT NULL COMMENT '条码明细ID(gz_order_entry_inhospitalcode_list)',
+  `src_in_hospital_code` varchar(200) DEFAULT NULL COMMENT '院内码',
+  `tgt_bill_kind` varchar(32) DEFAULT NULL COMMENT '目标单据类型 GZ_SHIPMENT 等',
+  `tgt_main_id` varchar(36) DEFAULT NULL COMMENT '目标主表ID',
+  `tgt_bill_no` varchar(64) DEFAULT NULL COMMENT '目标单号',
+  `tgt_entry_id` varchar(36) DEFAULT NULL COMMENT '目标明细ID',
+  `ref_purpose` varchar(200) DEFAULT NULL COMMENT '引用用途（中文）',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID冗余',
+  `material_name` varchar(300) DEFAULT NULL COMMENT '耗材名称冗余',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库冗余',
+  `create_by` varchar(64) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_code_ref_barcode` (`src_barcode_line_id`),
+  KEY `idx_gz_code_ref_tgt` (`tgt_bill_kind`,`tgt_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货验收条码明细引用关系';
+/
+
+CREATE TABLE IF NOT EXISTS `gz_shipment_entry_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL,
+  `shipment_entry_id` varchar(36) DEFAULT NULL COMMENT '备货出库明细ID',
+  `src_bill_kind` varchar(32) DEFAULT NULL COMMENT '来源类型',
+  `src_main_id` varchar(36) DEFAULT NULL,
+  `src_bill_no` varchar(64) DEFAULT NULL,
+  `src_detail_id` varchar(36) DEFAULT NULL,
+  `src_in_hospital_code` varchar(200) DEFAULT NULL,
+  `tgt_bill_kind` varchar(32) DEFAULT NULL,
+  `tgt_main_id` varchar(36) DEFAULT NULL,
+  `tgt_bill_no` varchar(64) DEFAULT NULL,
+  `tgt_entry_id` varchar(36) DEFAULT NULL,
+  `ref_purpose` varchar(200) DEFAULT NULL,
+  `material_id` bigint DEFAULT NULL,
+  `material_name` varchar(300) DEFAULT NULL,
+  `create_by` varchar(64) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_ship_ref_entry` (`shipment_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货出库明细引用关系';
+/
+
+CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL,
+  `refund_goods_entry_id` varchar(36) DEFAULT NULL COMMENT '退库/退货明细ID',
+  `src_bill_kind` varchar(32) DEFAULT NULL,
+  `src_main_id` varchar(36) DEFAULT NULL,
+  `src_bill_no` varchar(64) DEFAULT NULL,
+  `src_detail_id` varchar(36) DEFAULT NULL,
+  `src_in_hospital_code` varchar(200) DEFAULT NULL,
+  `tgt_bill_kind` varchar(32) DEFAULT NULL,
+  `tgt_main_id` varchar(36) DEFAULT NULL,
+  `tgt_bill_no` varchar(64) DEFAULT NULL,
+  `tgt_entry_id` varchar(36) DEFAULT NULL,
+  `ref_purpose` varchar(200) DEFAULT NULL,
+  `material_id` bigint DEFAULT NULL,
+  `material_name` varchar(300) DEFAULT NULL,
+  `create_by` varchar(64) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_rg_ref_entry` (`refund_goods_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货退库/退货明细引用关系';
+/
+
+INSERT INTO sys_menu(menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '引用单据查询', COALESCE((SELECT parent_id FROM sys_menu WHERE perms = 'gzOrder:apply:list' LIMIT 1), 0), 90, '#', '', 1, 0, 'F', '0', '0', 'gz:refDoc:query', '#', 'admin', NOW(), '高值引用验收/出库低敏感查询'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'gz:refDoc:query');
+/
+
 -- ========== 高值模块最终核对清单（发布后自检 SQL）==========
 -- 说明：以下 SQL 为“只读自检”，可在发布完成后执行，快速核验环境一致性。
 

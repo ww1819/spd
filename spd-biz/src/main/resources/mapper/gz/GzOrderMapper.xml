@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="orderDate"    column="order_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="departmentId"    column="department_id"    />
+        <result property="applyDepartmentId"    column="apply_department_id"    />
         <result property="orderStatus"    column="order_status"    />
         <result property="orderType"    column="order_type"    />
         <result property="delFlag"    column="del_flag"    />
@@ -26,6 +27,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="applyDepartment"    column="id" javaType="FdDepartment" resultMap="applyDepartmentResult" />
+    </resultMap>
+
+    <resultMap id="applyDepartmentResult" type="FdDepartment">
+        <id     property="id"    column="adId"     />
+        <result property="code"  column="adCode"   />
+        <result property="name"  column="adName"   />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -72,7 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectGzOrderVo">
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				gz.department_id,
+				gz.department_id, gz.apply_department_id,
 				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
 				gz.is_follow_flag,
 				gz.create_by,
@@ -80,17 +88,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				s.id sId,s.code supplierCode,s.name supplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
+				ad.id adId,ad.code adCode,ad.name adName,
 				gz.tenant_id
         from gz_order gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
         left join fd_department d on gz.department_id = d.id
+        left join fd_department ad on gz.apply_department_id = ad.id
     </sql>
 
     <select id="selectGzOrderList" parameterType="GzOrder" resultMap="GzOrderResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				gz.department_id,
+				gz.department_id, gz.apply_department_id,
 				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
 				gz.is_follow_flag,
 				gz.create_by,
@@ -99,11 +109,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				s.id sId,s.code supplierCode,s.name supplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
+				ad.id adId,ad.code adCode,ad.name adName,
 				COALESCE(SUM(gze.amt), 0) as totalAmt
         from gz_order gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
         left join fd_department d on gz.department_id = d.id
+        left join fd_department ad on gz.apply_department_id = ad.id
         left join gz_order_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
         and gz.tenant_id = #{scopedTenantId}
@@ -124,29 +136,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="endDate != null and endDate != ''"><![CDATA[ and gz.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
             </otherwise>
         </choose>
-        group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id, gz.department_id,
+        group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id, gz.department_id, gz.apply_department_id,
 				gz.order_status, gz.order_type, gz.del_flag, gz.tenant_id, gz.audit_date, gz.is_follow_flag,
 				gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id, s.code, s.name,
 				w.id, w.code, w.name,
-				d.id, d.code, d.name
+				d.id, d.code, d.name,
+				ad.id, ad.code, ad.name
         order by gz.order_date desc, gz.id desc
     </select>
 
     <select id="selectGzOrderById" parameterType="Long" resultMap="GzOrderGzOrderEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, 
-				a.department_id,
+				a.department_id, a.apply_department_id,
 				a.order_status, a.order_type, a.del_flag,
                 a.audit_date, 
 				a.is_follow_flag,
 				a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.tenant_id,
+				ad.id adId, ad.code adCode, ad.name adName,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
                 b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
                 b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark,
                 b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode, b.supplier_id as sub_supplier_id,
                 b.warehouse_id as sub_warehouse_id, b.bill_no as sub_bill_no
         from gz_order a
+        left join fd_department ad on a.apply_department_id = ad.id
         left join gz_order_entry b on b.paren_id = a.id and b.del_flag != 1
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>
@@ -160,6 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderDate != null">order_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="departmentId != null">department_id,</if>
+            <if test="applyDepartmentId != null">apply_department_id,</if>
             <if test="orderStatus != null">order_status,</if>
             <if test="orderType != null">order_type,</if>
             <if test="delFlag != null">del_flag,</if>
@@ -178,6 +194,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderDate != null">#{orderDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="departmentId != null">#{departmentId},</if>
+            <if test="applyDepartmentId != null">#{applyDepartmentId},</if>
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="orderType != null">#{orderType},</if>
             <if test="delFlag != null">#{delFlag},</if>
@@ -201,6 +218,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderDate != null">order_date = #{orderDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="applyDepartmentId != null">apply_department_id = #{applyDepartmentId},</if>
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="orderType != null">order_type = #{orderType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>

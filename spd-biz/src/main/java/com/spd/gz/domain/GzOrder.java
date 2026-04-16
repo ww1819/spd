@@ -46,6 +46,9 @@ public class GzOrder extends BaseEntity
     @Excel(name = "科室ID")
     private Long departmentId;
 
+    /** 申请科室ID（备货验收） */
+    private Long applyDepartmentId;
+
     /** 单据状态 */
     @Excel(name = "单据状态")
     private Integer orderStatus;
@@ -94,6 +97,9 @@ public class GzOrder extends BaseEntity
 
     /** 科室对象 */
     private FdDepartment department;
+
+    /** 申请科室（展示） */
+    private FdDepartment applyDepartment;
 
     private List<FdMaterial> materialList;
 
@@ -151,6 +157,27 @@ public class GzOrder extends BaseEntity
     {
         return departmentId;
     }
+
+    public Long getApplyDepartmentId()
+    {
+        return applyDepartmentId;
+    }
+
+    public void setApplyDepartmentId(Long applyDepartmentId)
+    {
+        this.applyDepartmentId = applyDepartmentId;
+    }
+
+    public FdDepartment getApplyDepartment()
+    {
+        return applyDepartment;
+    }
+
+    public void setApplyDepartment(FdDepartment applyDepartment)
+    {
+        this.applyDepartment = applyDepartment;
+    }
+
     public void setOrderStatus(Integer orderStatus)
     {
         this.orderStatus = orderStatus;

@@ -1,7 +1,7 @@
 -- ========== 耗材模块 建表脚本 ==========
 -- 执行顺序建议：1.table.sql 2.column.sql（存储过程 add_table_column + 存量库增量字段）3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
 -- 分工：本文件为全量 CREATE TABLE IF NOT EXISTS；column.sql 不再重复建表，仅对存量库已存在的表执行 CALL add_table_column 等增量（字段已存在则跳过）。
--- 本脚本已含：出入库/库存/批次、仓库与科室流水、盘点/盈亏、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置、档案变更日志（fd_*_change_log）、盘盈待入账（stk_profit_loss_pending）、库房申请单（wh_warehouse_apply / wh_warehouse_apply_entry / wh_wh_apply_ck_entry_ref）等；存量库若已建表可跳过对应 CREATE。
+-- 本脚本已含：出入库/库存/批次、仓库与科室流水、盘点/盈亏、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置、档案变更日志（fd_*_change_log）、盘盈待入账（stk_profit_loss_pending）、库房申请单（wh_warehouse_apply / wh_warehouse_apply_entry / wh_wh_apply_ck_entry_ref）、高值备货引用（gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref）等；存量库若已建表可跳过对应 CREATE。
 -- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；历史增量字段仍由 column.sql 补齐。
 -- 按「/」分段，每段一条语句执行
 /
@@ -2002,6 +2002,79 @@ CREATE TABLE IF NOT EXISTS `wh_wh_apply_ck_entry_ref` (
   KEY `idx_wh_ck_ref_ck` (`ck_bill_id`),
   KEY `idx_wh_ck_ref_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房申请单明细与出库单明细关联';
+/
+
+-- ========== 高值备货：明细引用关系（主键 UUID7；与 column.sql 增量段定义一致，全量库请以此为准）==========
+-- 与库房申请出库关联 wh_wh_apply_ck_entry_ref、耗材全路径 hc_doc_bill_ref 并列，构成业务侧多类明细追溯
+
+CREATE TABLE IF NOT EXISTS `gz_order_entry_code_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户',
+  `src_acceptance_id` varchar(36) DEFAULT NULL COMMENT '备货验收主表ID',
+  `src_acceptance_no` varchar(64) DEFAULT NULL COMMENT '验收单号',
+  `src_order_entry_id` varchar(36) DEFAULT NULL COMMENT '验收明细ID',
+  `src_barcode_line_id` varchar(36) DEFAULT NULL COMMENT '条码明细ID(gz_order_entry_inhospitalcode_list)',
+  `src_in_hospital_code` varchar(200) DEFAULT NULL COMMENT '院内码',
+  `tgt_bill_kind` varchar(32) DEFAULT NULL COMMENT '目标单据类型 GZ_SHIPMENT 等',
+  `tgt_main_id` varchar(36) DEFAULT NULL COMMENT '目标主表ID',
+  `tgt_bill_no` varchar(64) DEFAULT NULL COMMENT '目标单号',
+  `tgt_entry_id` varchar(36) DEFAULT NULL COMMENT '目标明细ID',
+  `ref_purpose` varchar(200) DEFAULT NULL COMMENT '引用用途（中文）',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID冗余',
+  `material_name` varchar(300) DEFAULT NULL COMMENT '耗材名称冗余',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库冗余',
+  `create_by` varchar(64) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_code_ref_barcode` (`src_barcode_line_id`),
+  KEY `idx_gz_code_ref_tgt` (`tgt_bill_kind`,`tgt_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货验收条码明细引用关系';
+/
+
+CREATE TABLE IF NOT EXISTS `gz_shipment_entry_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL,
+  `shipment_entry_id` varchar(36) DEFAULT NULL COMMENT '备货出库明细ID',
+  `src_bill_kind` varchar(32) DEFAULT NULL COMMENT '来源类型',
+  `src_main_id` varchar(36) DEFAULT NULL,
+  `src_bill_no` varchar(64) DEFAULT NULL,
+  `src_detail_id` varchar(36) DEFAULT NULL,
+  `src_in_hospital_code` varchar(200) DEFAULT NULL,
+  `tgt_bill_kind` varchar(32) DEFAULT NULL,
+  `tgt_main_id` varchar(36) DEFAULT NULL,
+  `tgt_bill_no` varchar(64) DEFAULT NULL,
+  `tgt_entry_id` varchar(36) DEFAULT NULL,
+  `ref_purpose` varchar(200) DEFAULT NULL,
+  `material_id` bigint DEFAULT NULL,
+  `material_name` varchar(300) DEFAULT NULL,
+  `create_by` varchar(64) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_ship_ref_entry` (`shipment_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货出库明细引用关系';
+/
+
+CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry_ref` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL,
+  `refund_goods_entry_id` varchar(36) DEFAULT NULL COMMENT '退库/退货明细ID',
+  `src_bill_kind` varchar(32) DEFAULT NULL,
+  `src_main_id` varchar(36) DEFAULT NULL,
+  `src_bill_no` varchar(64) DEFAULT NULL,
+  `src_detail_id` varchar(36) DEFAULT NULL,
+  `src_in_hospital_code` varchar(200) DEFAULT NULL,
+  `tgt_bill_kind` varchar(32) DEFAULT NULL,
+  `tgt_main_id` varchar(36) DEFAULT NULL,
+  `tgt_bill_no` varchar(64) DEFAULT NULL,
+  `tgt_entry_id` varchar(36) DEFAULT NULL,
+  `ref_purpose` varchar(200) DEFAULT NULL,
+  `material_id` bigint DEFAULT NULL,
+  `material_name` varchar(300) DEFAULT NULL,
+  `create_by` varchar(64) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_rg_ref_entry` (`refund_goods_entry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货退库/退货明细引用关系';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

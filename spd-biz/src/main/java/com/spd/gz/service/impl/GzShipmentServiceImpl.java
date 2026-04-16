@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.spd.gz.mapper.GzShipmentMapper;
 import com.spd.gz.domain.GzShipment;
 import com.spd.gz.service.IGzShipmentService;
+import com.spd.gz.service.GzStockValidationService;
+import com.spd.gz.service.GzLineRefWriteService;
 
 /**
  * 高值出库Service业务层处理
@@ -43,6 +45,12 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
     @Autowired
     private com.spd.gz.mapper.GzDepInventoryMapper gzDepInventoryMapper;
+
+    @Autowired
+    private GzStockValidationService gzStockValidationService;
+
+    @Autowired
+    private GzLineRefWriteService gzLineRefWriteService;
 
     /**
      * 查询高值出库
@@ -126,8 +134,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setCreateBy(SecurityUtils.getUserIdStr());
         gzShipment.setShipmentNo(getShipmentNo());
         gzShipment.setCreateTime(DateUtils.getNowDate());
+        gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         int rows = gzShipmentMapper.insertGzShipment(gzShipment);
         insertGzShipmentEntry(gzShipment);
+        gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return rows;
     }
 
@@ -157,8 +167,11 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         }
         gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(DateUtils.getNowDate());
+        gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
+        gzLineRefWriteService.deleteOutboundRefs(gzShipment.getId());
         gzShipmentMapper.deleteGzShipmentEntryByParenId(gzShipment.getId(), SecurityUtils.getUserIdStr());
         insertGzShipmentEntry(gzShipment);
+        gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return gzShipmentMapper.updateGzShipment(gzShipment);
     }
 
@@ -177,6 +190,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             throw new ServiceException(String.format("高值出库业务：%s，不存在!", id));
         }
         String deleteBy = SecurityUtils.getUserIdStr();
+        gzLineRefWriteService.deleteOutboundRefs(id);
         gzShipmentMapper.deleteGzShipmentEntryByParenId(id, deleteBy);
         return gzShipmentMapper.deleteGzShipmentById(id, deleteBy);
     }
@@ -202,6 +216,8 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
             throw new ServiceException(String.format("高值出库单 %s 无明细，无法审核", id));
         }
+
+        gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipmentEntryList);
 
         // 先增加科室库存（需从备货库存读取批次/效期等），再扣减备货库存；若先扣减，备货行被删后 updateDepInventory 查不到备货，科室行也无法正确落库
         updateDepInventory(gzShipment, gzShipmentEntryList);
