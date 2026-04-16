@@ -93,4 +93,9 @@ public interface IDeptBatchConsumeService
      * @return 汇总列表
      */
     List<Map<String, Object>> selectAuditedConsumeSummaryList(DeptBatchConsume deptBatchConsume);
+
+    /**
+     * 引用出库单：查询可引用的科室库存行（低敏感接口）
+     */
+    List<Map<String, Object>> selectOutRefEntryList(DeptBatchConsume deptBatchConsume);
 }

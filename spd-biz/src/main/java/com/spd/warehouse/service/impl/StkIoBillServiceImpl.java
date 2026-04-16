@@ -1463,7 +1463,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
-        insertOutStkIoBillEntry(stkIoBill);
+        int filteredCount = insertOutStkIoBillEntry(stkIoBill);
+        stkIoBill.setDedupFilteredCount(filteredCount);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
             StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (reloaded != null) {
@@ -1506,7 +1507,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
-        insertOutStkIoBillEntry(stkIoBill);
+        int filteredCount = insertOutStkIoBillEntry(stkIoBill);
+        stkIoBill.setDedupFilteredCount(filteredCount);
         int u = stkIoBillMapper.updateStkIoBill(stkIoBill);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
             StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
@@ -1584,7 +1586,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setBillNo(getTHNumber("TH"));
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
-        insertOutStkIoBillEntry(stkIoBill);
+        int filteredCount = insertOutStkIoBillEntry(stkIoBill);
+        stkIoBill.setDedupFilteredCount(filteredCount);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
             StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (reloaded != null) {
@@ -1904,11 +1907,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
      *
      * @param stkIoBill 出库对象
      */
-    public void insertOutStkIoBillEntry(StkIoBill stkIoBill)
+    public int insertOutStkIoBillEntry(StkIoBill stkIoBill)
     {
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
         Long id = stkIoBill.getId();
         Integer outBt = stkIoBill.getBillType();
+        int filteredCount = 0;
         if (outBt != null && (outBt == 201 || outBt == 301)) {
             assertWarehouseStockEntriesMatchBillHeader(stkIoBill, outBt == 301);
         }
@@ -1916,10 +1920,19 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         {
             String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
+            Set<String> dedupKeys = new HashSet<>();
             for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
             {
+                if (stkIoBillEntry == null) {
+                    continue;
+                }
                 // 将表头仓库ID反写到明细，保证后续按仓库校验/锁定准确
                 stkIoBillEntry.setWarehouseId(stkIoBill.getWarehouseId());
+                String dedupKey = buildOutboundEntryDedupKey(stkIoBillEntry);
+                if (StringUtils.isNotEmpty(dedupKey) && dedupKeys.contains(dedupKey)) {
+                    filteredCount++;
+                    continue;
+                }
                 validateInventory(stkIoBillEntry.getBatchNo(), stkIoBill.getWarehouseId(), stkIoBillEntryList);
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
@@ -1928,12 +1941,35 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setTenantId(tenantId);
                 fillEntryMaterialSnapshot(stkIoBillEntry, tenantId);
                 list.add(stkIoBillEntry);
+                if (StringUtils.isNotEmpty(dedupKey)) {
+                    dedupKeys.add(dedupKey);
+                }
             }
             if (list.size() > 0)
             {
                 stkIoBillMapper.batchStkIoBillEntry(list);
             }
         }
+        return filteredCount;
+    }
+
+    /**
+     * 引用单据防重键：优先来源明细ID（whApplyEntryId），其次库存来源键，最后批次+耗材键。
+     */
+    private String buildOutboundEntryDedupKey(StkIoBillEntry e) {
+        if (e == null) {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(e.getWhApplyEntryId())) {
+            return "WHAPPLY#" + e.getWhApplyEntryId().trim();
+        }
+        if (e.getKcNo() != null) {
+            return "KCNO#" + e.getKcNo();
+        }
+        if (e.getMaterialId() != null && StringUtils.isNotEmpty(e.getBatchNo())) {
+            return "MAT_BATCH#" + e.getMaterialId() + "#" + e.getBatchNo().trim();
+        }
+        return null;
     }
 
     /**

@@ -84,8 +84,11 @@ public class DeptBatchConsumeController extends BaseController
     {
         int result = deptBatchConsumeService.insertDeptBatchConsume(deptBatchConsume);
         if (result > 0) {
-            // 插入成功后返回deptBatchConsume对象，此时id已被自动填充
-            return success(deptBatchConsume);
+            Integer filteredCount = deptBatchConsume.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "新增成功";
+            return AjaxResult.success(msg, deptBatchConsume);
         }
         return toAjax(result);
     }
@@ -98,7 +101,15 @@ public class DeptBatchConsumeController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody DeptBatchConsume deptBatchConsume)
     {
-        return toAjax(deptBatchConsumeService.updateDeptBatchConsume(deptBatchConsume));
+        int result = deptBatchConsumeService.updateDeptBatchConsume(deptBatchConsume);
+        if (result > 0) {
+            Integer filteredCount = deptBatchConsume.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "修改成功";
+            return AjaxResult.success(msg, deptBatchConsume);
+        }
+        return toAjax(result);
     }
 
     /**
@@ -122,6 +133,18 @@ public class DeptBatchConsumeController extends BaseController
     {
         int result = deptBatchConsumeService.auditConsume(json.getString("id"), getUserIdStr());
         return toAjax(result);
+    }
+
+    /**
+     * 引用出库单：查询可引用明细（低敏感接口，权限锚定科室批量消耗自身）
+     */
+    @PreAuthorize("@ss.hasPermi('department:batchConsume:add') || @ss.hasPermi('department:batchConsume:edit') || @ss.hasPermi('department:batchConsume:list')")
+    @GetMapping("/outRefEntryList")
+    public TableDataInfo outRefEntryList(DeptBatchConsume deptBatchConsume)
+    {
+        startPage();
+        List<Map<String, Object>> list = deptBatchConsumeService.selectOutRefEntryList(deptBatchConsume);
+        return getDataTable(list);
     }
 
     /**

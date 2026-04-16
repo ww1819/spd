@@ -13,6 +13,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="userId"    column="user_id"    />
         <result property="consumeBillStatus"    column="consume_bill_status"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteTime"    column="delete_time"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -75,12 +77,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="amt"    column="sub_amt"    />
         <result property="batchNo"    column="sub_batch_no"    />
         <result property="batchNumer"    column="sub_batch_number"    />
+        <result property="depInventoryId"    column="sub_dep_inventory_id"    />
+        <result property="kcNo"    column="sub_kc_no"    />
+        <result property="batchId"    column="sub_batch_id"    />
+        <result property="warehouseId"    column="sub_warehouse_id"    />
+        <result property="departmentId"    column="sub_department_id"    />
+        <result property="supplierId"    column="sub_supplier_id"    />
+        <result property="factoryId"    column="sub_factory_id"    />
+        <result property="materialNo"    column="sub_material_no"    />
         <result property="remark"    column="sub_remark"    />
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
         <result property="delFlag"    column="sub_del_flag"    />
         <result property="mainBarcode"    column="sub_main_barcode"    />
         <result property="subBarcode"    column="sub_sub_barcode"    />
+        <result property="materialDate"    column="sub_material_date"    />
+        <result property="warehouseDate"    column="sub_warehouse_date"    />
+        <result property="settlementType"    column="sub_settlement_type"    />
+        <result property="materialName"    column="sub_material_name"    />
+        <result property="materialSpeci"    column="sub_material_speci"    />
+        <result property="materialModel"    column="sub_material_model"    />
+        <result property="materialFactoryId"    column="sub_material_factory_id"    />
+        <result property="deleteBy"    column="sub_delete_by"    />
+        <result property="deleteTime"    column="sub_delete_time"    />
+        <result property="tenantId"    column="sub_tenant_id"    />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -92,7 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectDeptBatchConsumeVo">
         select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id,
-                a.consume_bill_status, a.del_flag, a.tenant_id, a.create_by, a.create_time, a.update_by,
+                a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.create_by, a.create_time, a.update_by,
                 a.update_time, a.remark, a.reject_reason, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
                cu.nick_name createNickName,cu.user_name createUserName,
@@ -126,12 +146,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectDeptBatchConsumeById" parameterType="Long" resultMap="DeptBatchConsumeDeptBatchConsumeEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id, a.consume_bill_status, a.del_flag, a.tenant_id,
+        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id, a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id,
                 a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price,
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
-                b.batch_number as sub_batch_number, b.remark as sub_remark, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
-                b.del_flag as sub_del_flag, b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode,
+                b.batch_number as sub_batch_number, b.dep_inventory_id as sub_dep_inventory_id, b.kc_no as sub_kc_no, b.batch_id as sub_batch_id,
+                b.warehouse_id as sub_warehouse_id, b.department_id as sub_department_id, b.supplier_id as sub_supplier_id, b.factory_id as sub_factory_id,
+                b.material_no as sub_material_no, b.remark as sub_remark, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
+                b.del_flag as sub_del_flag, b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.material_date as sub_material_date,
+                b.warehouse_date as sub_warehouse_date, b.settlement_type as sub_settlement_type, b.material_name as sub_material_name,
+                b.material_speci as sub_material_speci, b.material_model as sub_material_model, b.material_factory_id as sub_material_factory_id,
+                b.delete_by as sub_delete_by, b.delete_time as sub_delete_time, b.tenant_id as sub_tenant_id,
                au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
         from t_hc_ks_xh a
@@ -157,6 +182,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="deleteBy != null">delete_by,</if>
+            <if test="deleteTime != null">delete_time,</if>
             <if test="remark != null">remark,</if>
             <if test="auditBy != null">audit_by,</if>
             <if test="auditDate != null">audit_date,</if>
@@ -175,6 +202,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="deleteBy != null">#{deleteBy},</if>
+            <if test="deleteTime != null">#{deleteTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="auditBy != null">#{auditBy},</if>
             <if test="auditDate != null">#{auditDate},</if>
@@ -198,6 +227,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
@@ -209,12 +240,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <update id="deleteDeptBatchConsumeById" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update t_hc_ks_xh set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update t_hc_ks_xh set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteDeptBatchConsumeByIds" parameterType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update t_hc_ks_xh set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update t_hc_ks_xh set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -222,7 +253,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <update id="deleteDeptBatchConsumeEntryByParenIds" parameterType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
+        update t_hc_ks_xh_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
         </foreach>
@@ -230,21 +261,140 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <update id="deleteDeptBatchConsumeEntryByParenId" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update t_hc_ks_xh_entry set del_flag = 1, update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+        update t_hc_ks_xh_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
+    <delete id="deleteDeptBatchConsumeEntryRefByConsumeIds">
+        delete from t_hc_ks_xh_entry_ref
+        where tenant_id = #{tenantId}
+          and consume_id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            cast(#{id} as char)
+        </foreach>
+    </delete>
+
     <insert id="batchDeptBatchConsumeEntry">
-        insert into t_hc_ks_xh_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, remark, begin_time, end_time, del_flag, main_barcode, sub_barcode, create_by, create_time, tenant_id) values
+        insert into t_hc_ks_xh_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, dep_inventory_id, kc_no, batch_id, warehouse_id, department_id, supplier_id, factory_id, material_no, remark, begin_time, end_time, del_flag, main_barcode, sub_barcode, material_date, warehouse_date, settlement_type, material_name, material_speci, material_model, material_factory_id, create_by, create_time, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumer}, #{item.remark}, #{item.beginTime}, #{item.endTime}, 0, #{item.mainBarcode}, #{item.subBarcode}, #{item.createBy}, now(),
+            (#{item.parenId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumer}, #{item.depInventoryId}, #{item.kcNo}, #{item.batchId}, #{item.warehouseId}, #{item.departmentId}, #{item.supplierId}, #{item.factoryId}, #{item.materialNo}, #{item.remark}, #{item.beginTime}, #{item.endTime}, 0, #{item.mainBarcode}, #{item.subBarcode}, #{item.materialDate}, #{item.warehouseDate}, #{item.settlementType}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.createBy}, now(),
              (select m.tenant_id from t_hc_ks_xh m where m.id = #{item.parenId} limit 1))
         </foreach>
+    </insert>
+
+    <insert id="insertDeptBatchConsumeEntry" parameterType="DeptBatchConsumeEntry" useGeneratedKeys="true" keyProperty="id">
+        insert into t_hc_ks_xh_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, dep_inventory_id, kc_no, batch_id, warehouse_id, department_id, supplier_id, factory_id, material_no, remark, begin_time, end_time, del_flag, main_barcode, sub_barcode, material_date, warehouse_date, settlement_type, material_name, material_speci, material_model, material_factory_id, create_by, create_time, tenant_id)
+        values
+            (#{parenId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{batchNumer}, #{depInventoryId}, #{kcNo}, #{batchId}, #{warehouseId}, #{departmentId}, #{supplierId}, #{factoryId}, #{materialNo}, #{remark}, #{beginTime}, #{endTime}, 0, #{mainBarcode}, #{subBarcode}, #{materialDate}, #{warehouseDate}, #{settlementType}, #{materialName}, #{materialSpeci}, #{materialModel}, #{materialFactoryId}, #{createBy}, now(), (select m.tenant_id from t_hc_ks_xh m where m.id = #{parenId} limit 1))
+    </insert>
+
+    <insert id="insertDeptBatchConsumeEntryRef" parameterType="DeptBatchConsumeEntry">
+        insert into t_hc_ks_xh_entry_ref(
+            id, tenant_id, consume_id, consume_bill_no, consume_entry_id, consume_bill_date, consume_status,
+            src_bill_kind, src_bill_id, src_bill_no, src_entry_id,
+            department_id, warehouse_id, material_id, material_name, material_speci, material_model,
+            batch_no, batch_number, material_no, supplier_id, factory_id,
+            out_entry_qty, available_qty, default_consume_qty, consume_qty, unit_price, amount,
+            main_barcode, sub_barcode, create_by, create_time, remark
+        ) values (
+            #{refId},
+            #{tenantId},
+            cast(#{parenId} as char),
+            (select m.consume_bill_no from t_hc_ks_xh m where m.id = #{parenId} limit 1),
+            cast(#{id} as char),
+            (select m.consume_bill_date from t_hc_ks_xh m where m.id = #{parenId} limit 1),
+            (select m.consume_bill_status from t_hc_ks_xh m where m.id = #{parenId} limit 1),
+            'OUT_WAREHOUSE',
+            #{refOutBillId},
+            #{refOutBillNo},
+            #{refOutEntryId},
+            #{departmentId},
+            #{warehouseId},
+            #{materialId},
+            #{materialName},
+            #{materialSpeci},
+            #{materialModel},
+            #{batchNo},
+            #{batchNumer},
+            #{materialNo},
+            #{supplierId},
+            #{factoryId},
+            #{refOutEntryQty},
+            #{refOutAvailableQty},
+            #{refDefaultConsumeQty},
+            #{qty},
+            #{unitPrice},
+            #{amt},
+            #{mainBarcode},
+            #{subBarcode},
+            #{createBy},
+            now(),
+            #{remark}
+        )
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(consume_bill_no) from t_hc_ks_xh
         where consume_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectOutRefEntryList" parameterType="DeptBatchConsume" resultType="java.util.Map">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select 
+            dep.id as depInventoryId,
+            cast(dep.bill_id as char) as refOutBillId,
+            dep.bill_no as refOutBillNo,
+            cast(dep.bill_entry_id as char) as refOutEntryId,
+            bill.bill_date as billDate,
+            dep.department_id as departmentId,
+            dep.warehouse_id as warehouseId,
+            dep.material_id as materialId,
+            dep.material_name as materialName,
+            dep.material_speci as materialSpeci,
+            dep.material_model as materialModel,
+            dep.material_factory_id as materialFactoryId,
+            dep.supplier_id as supplierId,
+            dep.factory_id as factoryId,
+            dep.batch_id as batchId,
+            dep.batch_no as batchNo,
+            dep.batch_number as batchNumber,
+            dep.material_no as materialNo,
+            dep.begin_time as beginTime,
+            dep.end_time as endTime,
+            dep.material_date as materialDate,
+            dep.warehouse_date as warehouseDate,
+            dep.main_barcode as mainBarcode,
+            dep.sub_barcode as subBarcode,
+            dep.settlement_type as settlementType,
+            dep.unit_price as unitPrice,
+            dep.qty as availableQty,
+            dep.amt as availableAmount,
+            oe.qty as outEntryQty,
+            case 
+                when oe.qty is null then dep.qty
+                when dep.qty &gt; oe.qty then oe.qty
+                else dep.qty
+            end as defaultConsumeQty
+        from stk_dep_inventory dep
+        inner join stk_io_bill bill on bill.id = dep.bill_id and bill.del_flag = 0 and bill.bill_type = 201
+        left join stk_io_bill_entry oe on oe.id = dep.bill_entry_id and oe.del_flag = 0
+        where dep.del_flag = 0
+          and dep.qty &gt; 0
+          and dep.tenant_id = #{scopedTenantId}
+          and bill.tenant_id = #{scopedTenantId}
+          and bill.bill_status = 2
+          and not exists (
+            select 1
+            from t_hc_ks_xh_entry_ref r
+            where r.tenant_id = #{scopedTenantId}
+              and r.src_entry_id = cast(dep.bill_entry_id as char)
+          )
+          <if test="departmentId != null">and dep.department_id = #{departmentId}</if>
+          <if test="warehouseId != null">and dep.warehouse_id = #{warehouseId}</if>
+          <if test="consumeBillNo != null and consumeBillNo != ''">and dep.bill_no like concat('%', #{consumeBillNo}, '%')</if>
+          <if test="materialId != null">and dep.material_id = #{materialId}</if>
+          <if test="materialName != null and materialName != ''">and (dep.material_name like concat('%', #{materialName}, '%') or dep.material_no like concat('%', #{materialName}, '%'))</if>
+        order by bill.bill_date desc, dep.bill_no desc, dep.id desc
     </select>
 
     <!-- 已审核消耗追溯报表：明细/汇总共用的筛选条件（需已 join a、e、m） -->

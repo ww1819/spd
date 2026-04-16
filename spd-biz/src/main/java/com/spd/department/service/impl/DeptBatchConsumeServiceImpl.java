@@ -1,18 +1,20 @@
 package com.spd.department.service.impl;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,7 +96,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
             deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
         }
         int rows = deptBatchConsumeMapper.insertDeptBatchConsume(deptBatchConsume);
-        insertDeptBatchConsumeEntry(deptBatchConsume);
+        int filteredCount = insertDeptBatchConsumeEntry(deptBatchConsume);
+        deptBatchConsume.setDedupFilteredCount(filteredCount);
         return rows;
     }
 
@@ -121,8 +124,12 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     public int updateDeptBatchConsume(DeptBatchConsume deptBatchConsume)
     {
         deptBatchConsume.setUpdateTime(DateUtils.getNowDate());
-        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenId(deptBatchConsume.getId());
-        insertDeptBatchConsumeEntry(deptBatchConsume);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        String tenantId = StringUtils.isNotEmpty(deptBatchConsume.getTenantId()) ? deptBatchConsume.getTenantId() : SecurityUtils.getCustomerId();
+        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryRefByConsumeIds(new Long[]{deptBatchConsume.getId()}, tenantId);
+        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenId(deptBatchConsume.getId(), deleteBy);
+        int filteredCount = insertDeptBatchConsumeEntry(deptBatchConsume);
+        deptBatchConsume.setDedupFilteredCount(filteredCount);
         return deptBatchConsumeMapper.updateDeptBatchConsume(deptBatchConsume);
     }
 
@@ -139,8 +146,10 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (ids == null || ids.length == 0) {
             return 0;
         }
-        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenIds(ids);
-        return deptBatchConsumeMapper.deleteDeptBatchConsumeByIds(ids);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryRefByConsumeIds(ids, SecurityUtils.getCustomerId());
+        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenIds(ids, deleteBy);
+        return deptBatchConsumeMapper.deleteDeptBatchConsumeByIds(ids, deleteBy);
     }
 
     /**
@@ -153,8 +162,10 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int deleteDeptBatchConsumeById(Long id)
     {
-        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenId(id);
-        return deptBatchConsumeMapper.deleteDeptBatchConsumeById(id);
+        String deleteBy = SecurityUtils.getUserIdStr();
+        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryRefByConsumeIds(new Long[]{id}, SecurityUtils.getCustomerId());
+        deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenId(id, deleteBy);
+        return deptBatchConsumeMapper.deleteDeptBatchConsumeById(id, deleteBy);
     }
 
     /**
@@ -189,25 +200,91 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
      *
      * @param deptBatchConsume 科室批量消耗对象
      */
-    public void insertDeptBatchConsumeEntry(DeptBatchConsume deptBatchConsume)
+    public int insertDeptBatchConsumeEntry(DeptBatchConsume deptBatchConsume)
     {
         List<DeptBatchConsumeEntry> deptBatchConsumeEntryList = deptBatchConsume.getDeptBatchConsumeEntryList();
         Long id = deptBatchConsume.getId();
+        int filteredCount = 0;
         if (StringUtils.isNotNull(deptBatchConsumeEntryList))
         {
-            List<DeptBatchConsumeEntry> list = new ArrayList<DeptBatchConsumeEntry>();
+            Set<String> dedupKeys = new HashSet<>();
             for (DeptBatchConsumeEntry deptBatchConsumeEntry : deptBatchConsumeEntryList)
             {
+                if (deptBatchConsumeEntry == null) {
+                    continue;
+                }
+                String dedupKey = buildConsumeEntryDedupKey(deptBatchConsumeEntry);
+                if (StringUtils.isNotBlank(dedupKey) && dedupKeys.contains(dedupKey)) {
+                    filteredCount++;
+                    continue;
+                }
                 deptBatchConsumeEntry.setParenId(id);
                 deptBatchConsumeEntry.setDelFlag(0);
                 deptBatchConsumeEntry.setCreateBy(deptBatchConsume.getCreateBy());
-                list.add(deptBatchConsumeEntry);
-            }
-            if (list.size() > 0)
-            {
-                deptBatchConsumeMapper.batchDeptBatchConsumeEntry(list);
+                deptBatchConsumeEntry.setDepartmentId(deptBatchConsume.getDepartmentId());
+                deptBatchConsumeEntry.setTenantId(deptBatchConsume.getTenantId());
+                if (StringUtils.isBlank(deptBatchConsumeEntry.getMaterialName())
+                        || StringUtils.isBlank(deptBatchConsumeEntry.getMaterialSpeci())
+                        || StringUtils.isBlank(deptBatchConsumeEntry.getMaterialModel())
+                        || deptBatchConsumeEntry.getMaterialFactoryId() == null)
+                {
+                    FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(deptBatchConsumeEntry.getMaterialId());
+                    if (material != null)
+                    {
+                        if (StringUtils.isBlank(deptBatchConsumeEntry.getMaterialName())) {
+                            deptBatchConsumeEntry.setMaterialName(material.getName());
+                        }
+                        if (StringUtils.isBlank(deptBatchConsumeEntry.getMaterialSpeci())) {
+                            deptBatchConsumeEntry.setMaterialSpeci(material.getSpeci());
+                        }
+                        if (StringUtils.isBlank(deptBatchConsumeEntry.getMaterialModel())) {
+                            deptBatchConsumeEntry.setMaterialModel(material.getModel());
+                        }
+                        if (deptBatchConsumeEntry.getMaterialFactoryId() == null && material.getFactoryId() != null) {
+                            deptBatchConsumeEntry.setMaterialFactoryId(material.getFactoryId().longValue());
+                        }
+                    }
+                }
+                deptBatchConsumeMapper.insertDeptBatchConsumeEntry(deptBatchConsumeEntry);
+                if (StringUtils.isNotBlank(dedupKey)) {
+                    dedupKeys.add(dedupKey);
+                }
+                if (StringUtils.isNotBlank(deptBatchConsumeEntry.getRefOutEntryId()) || StringUtils.isNotBlank(deptBatchConsumeEntry.getRefOutBillId()))
+                {
+                    if (deptBatchConsumeEntry.getRefOutAvailableQty() == null) {
+                        deptBatchConsumeEntry.setRefOutAvailableQty(deptBatchConsumeEntry.getQty());
+                    }
+                    if (deptBatchConsumeEntry.getRefDefaultConsumeQty() == null) {
+                        deptBatchConsumeEntry.setRefDefaultConsumeQty(deptBatchConsumeEntry.getQty());
+                    }
+                    if (StringUtils.isBlank(deptBatchConsumeEntry.getRemark())) {
+                        deptBatchConsumeEntry.setRemark(null);
+                    }
+                    deptBatchConsumeEntry.setRefId(UUID7.generateUUID7());
+                    deptBatchConsumeMapper.insertDeptBatchConsumeEntryRef(deptBatchConsumeEntry);
+                }
             }
         }
+        return filteredCount;
+    }
+
+    private String buildConsumeEntryDedupKey(DeptBatchConsumeEntry e) {
+        if (e == null) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(e.getRefOutEntryId())) {
+            return "REF_OUT_ENTRY#" + e.getRefOutEntryId().trim();
+        }
+        if (e.getDepInventoryId() != null) {
+            return "DEP_INV#" + e.getDepInventoryId();
+        }
+        if (e.getMaterialId() != null && StringUtils.isNotBlank(e.getBatchNo())) {
+            return "MAT_BATCH#" + e.getMaterialId() + "#" + e.getBatchNo().trim();
+        }
+        if (e.getMaterialId() != null && StringUtils.isNotBlank(e.getBatchNumer())) {
+            return "MAT_BATCHNUM#" + e.getMaterialId() + "#" + e.getBatchNumer().trim();
+        }
+        return null;
     }
 
     /**
@@ -238,5 +315,14 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     public List<Map<String, Object>> selectAuditedConsumeSummaryList(DeptBatchConsume deptBatchConsume)
     {
         return deptBatchConsumeMapper.selectAuditedConsumeSummaryList(deptBatchConsume);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectOutRefEntryList(DeptBatchConsume deptBatchConsume)
+    {
+        if (deptBatchConsume != null && StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return deptBatchConsumeMapper.selectOutRefEntryList(deptBatchConsume);
     }
 }

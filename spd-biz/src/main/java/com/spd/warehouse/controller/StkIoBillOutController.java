@@ -81,7 +81,11 @@ public class StkIoBillOutController extends BaseController {
     {
         int rows = stkIoBillService.insertOutStkIoBill(stkIoBill);
         if (rows > 0) {
-            return success(stkIoBill);
+            Integer filteredCount = stkIoBill.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "新增成功";
+            return AjaxResult.success(msg, stkIoBill);
         }
         return AjaxResult.error("新增失败");
     }
@@ -94,7 +98,15 @@ public class StkIoBillOutController extends BaseController {
     @PutMapping("/updateOutWarehouse")
     public AjaxResult updateOutWarehouse(@RequestBody StkIoBill stkIoBill)
     {
-        return toAjax(stkIoBillService.updateOutStkIoBill(stkIoBill));
+        int rows = stkIoBillService.updateOutStkIoBill(stkIoBill);
+        if (rows > 0) {
+            Integer filteredCount = stkIoBill.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "修改成功";
+            return AjaxResult.success(msg, stkIoBill);
+        }
+        return AjaxResult.error("修改失败");
     }
 
     /**

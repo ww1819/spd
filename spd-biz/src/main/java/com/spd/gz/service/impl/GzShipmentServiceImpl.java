@@ -3,6 +3,8 @@ package com.spd.gz.service.impl;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
@@ -136,7 +138,8 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setCreateTime(DateUtils.getNowDate());
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         int rows = gzShipmentMapper.insertGzShipment(gzShipment);
-        insertGzShipmentEntry(gzShipment);
+        int filteredCount = insertGzShipmentEntry(gzShipment);
+        gzShipment.setDedupFilteredCount(filteredCount);
         gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return rows;
     }
@@ -170,7 +173,8 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         gzLineRefWriteService.deleteOutboundRefs(gzShipment.getId());
         gzShipmentMapper.deleteGzShipmentEntryByParenId(gzShipment.getId(), SecurityUtils.getUserIdStr());
-        insertGzShipmentEntry(gzShipment);
+        int filteredCount = insertGzShipmentEntry(gzShipment);
+        gzShipment.setDedupFilteredCount(filteredCount);
         gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return gzShipmentMapper.updateGzShipment(gzShipment);
     }
@@ -483,10 +487,11 @@ public class GzShipmentServiceImpl implements IGzShipmentService
      *
      * @param gzShipment 高值出库对象
      */
-    public void insertGzShipmentEntry(GzShipment gzShipment)
+    public int insertGzShipmentEntry(GzShipment gzShipment)
     {
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
         Long id = gzShipment.getId();
+        int filteredCount = 0;
         if (StringUtils.isNotNull(gzShipmentEntryList))
         {
             List<GzShipmentEntry> list = new ArrayList<GzShipmentEntry>();
@@ -496,9 +501,15 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 : SecurityUtils.requiredScopedTenantIdForSql();
             String userId = SecurityUtils.getUserIdStr();
             Date now = DateUtils.getNowDate();
+            Set<String> dedupRefKeys = new HashSet<>();
             for (GzShipmentEntry gzShipmentEntry : gzShipmentEntryList)
             {
                 if (gzShipmentEntry == null) {
+                    continue;
+                }
+                String refKey = buildShipmentRefDedupKey(gzShipmentEntry);
+                if (StringUtils.isNotEmpty(refKey) && dedupRefKeys.contains(refKey)) {
+                    filteredCount++;
                     continue;
                 }
                 // 调试：打印保存前的数据，特别是院内码
@@ -529,12 +540,32 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 gzShipmentEntry.setUpdateBy(userId);
                 gzShipmentEntry.setUpdateTime(now);
                 list.add(gzShipmentEntry);
+                if (StringUtils.isNotEmpty(refKey)) {
+                    dedupRefKeys.add(refKey);
+                }
             }
             if (list.size() > 0)
             {
                 gzShipmentMapper.batchGzShipmentEntry(list);
             }
         }
+        return filteredCount;
+    }
+
+    private String buildShipmentRefDedupKey(GzShipmentEntry e) {
+        if (e == null) {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(e.getRefSrcBarcodeLineId())) {
+            return "ACC_BARCODE#" + e.getRefSrcBarcodeLineId().trim();
+        }
+        if (StringUtils.isNotEmpty(e.getRefSrcOrderEntryId())) {
+            return "ACC_ENTRY#" + e.getRefSrcOrderEntryId().trim();
+        }
+        if (StringUtils.isNotEmpty(e.getInHospitalCode()) && StringUtils.isNotEmpty(e.getBatchNo())) {
+            return "IHC_BATCH#" + e.getInHospitalCode().trim() + "#" + e.getBatchNo().trim();
+        }
+        return null;
     }
 
     public String getBatchNumber() {

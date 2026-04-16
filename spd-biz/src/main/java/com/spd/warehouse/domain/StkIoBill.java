@@ -86,6 +86,9 @@ public class StkIoBill extends BaseEntity
     /** 删除时间 */
     private Date deleteTime;
 
+    /** 保存时后台自动去重过滤条数（不落库） */
+    private Integer dedupFilteredCount;
+
     /** 结算方式（来自仓库：1入库结算 2出库结算 3消耗结算） */
     private String settlementType;
 
@@ -386,6 +389,8 @@ public class StkIoBill extends BaseEntity
     public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
     public Date getDeleteTime() { return deleteTime; }
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
+    public Integer getDedupFilteredCount() { return dedupFilteredCount; }
+    public void setDedupFilteredCount(Integer dedupFilteredCount) { this.dedupFilteredCount = dedupFilteredCount; }
 
     public String getSettlementType() {
         return settlementType;
@@ -698,6 +703,7 @@ public class StkIoBill extends BaseEntity
                 .append("auditPersonName", getAuditPersonName())
                 .append("creater", getCreater())
                 .append("auditPerson", getAuditPerson())
+            .append("dedupFilteredCount", getDedupFilteredCount())
             .toString();
     }
 

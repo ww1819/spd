@@ -3,6 +3,8 @@ package com.spd.gz.service.impl;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
@@ -126,7 +128,8 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         }
         int rows = gzRefundGoodsMapper.insertGzRefundGoods(gzRefundGoods);
-        insertGzRefundGoodsEntry(gzRefundGoods);
+        int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods);
+        gzRefundGoods.setDedupFilteredCount(filteredCount);
         gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(),
             isWarehouseStockRefundBill(gzRefundGoods));
         return rows;
@@ -172,7 +175,8 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
         gzLineRefWriteService.deleteRefundGoodsRefs(gzRefundGoods.getId());
         gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(gzRefundGoods.getId(), SecurityUtils.getUserIdStr());
-        insertGzRefundGoodsEntry(gzRefundGoods);
+        int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods);
+        gzRefundGoods.setDedupFilteredCount(filteredCount);
         gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(),
             isWarehouseStockRefundBill(gzRefundGoods));
         return gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
@@ -426,10 +430,11 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
      *
      * @param gzRefundGoods 高值退货对象
      */
-    public void insertGzRefundGoodsEntry(GzRefundGoods gzRefundGoods)
+    public int insertGzRefundGoodsEntry(GzRefundGoods gzRefundGoods)
     {
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
         Long id = gzRefundGoods.getId();
+        int filteredCount = 0;
         if (StringUtils.isNotNull(gzRefundGoodsEntryList))
         {
             List<GzRefundGoodsEntry> list = new ArrayList<GzRefundGoodsEntry>();
@@ -438,9 +443,15 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 : SecurityUtils.requiredScopedTenantIdForSql();
             String userId = SecurityUtils.getUserIdStr();
             Date now = DateUtils.getNowDate();
+            Set<String> dedupRefKeys = new HashSet<>();
             for (GzRefundGoodsEntry gzRefundGoodsEntry : gzRefundGoodsEntryList)
             {
                 if (gzRefundGoodsEntry == null) {
+                    continue;
+                }
+                String refKey = buildRefundRefDedupKey(gzRefundGoodsEntry);
+                if (StringUtils.isNotEmpty(refKey) && dedupRefKeys.contains(refKey)) {
+                    filteredCount++;
                     continue;
                 }
                 if (!isWarehouseStockRefundBill(gzRefundGoods) && gzRefundGoods.getWarehouseId() == null) {
@@ -460,11 +471,34 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 gzRefundGoodsEntry.setUpdateBy(userId);
                 gzRefundGoodsEntry.setUpdateTime(now);
                 list.add(gzRefundGoodsEntry);
+                if (StringUtils.isNotEmpty(refKey)) {
+                    dedupRefKeys.add(refKey);
+                }
             }
             if (list.size() > 0)
             {
                 gzRefundGoodsMapper.batchGzRefundGoodsEntry(list);
             }
         }
+        return filteredCount;
+    }
+
+    private String buildRefundRefDedupKey(GzRefundGoodsEntry e) {
+        if (e == null) {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(e.getRefSrcShipmentEntryId())) {
+            return "SHIP_ENTRY#" + e.getRefSrcShipmentEntryId().trim();
+        }
+        if (StringUtils.isNotEmpty(e.getRefSrcBarcodeLineId())) {
+            return "ACC_BARCODE#" + e.getRefSrcBarcodeLineId().trim();
+        }
+        if (StringUtils.isNotEmpty(e.getRefSrcOrderEntryId())) {
+            return "ACC_ENTRY#" + e.getRefSrcOrderEntryId().trim();
+        }
+        if (StringUtils.isNotEmpty(e.getInHospitalCode()) && StringUtils.isNotEmpty(e.getBatchNo())) {
+            return "IHC_BATCH#" + e.getInHospitalCode().trim() + "#" + e.getBatchNo().trim();
+        }
+        return null;
     }
 }

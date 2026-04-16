@@ -96,6 +96,9 @@ public class GzRefundGoods extends BaseEntity
     /** 总金额 */
     private java.math.BigDecimal totalAmt;
 
+    /** 保存时后台自动去重过滤条数（不落库） */
+    private Integer dedupFilteredCount;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -273,6 +276,14 @@ public class GzRefundGoods extends BaseEntity
         this.totalAmt = totalAmt;
     }
 
+    public Integer getDedupFilteredCount() {
+        return dedupFilteredCount;
+    }
+
+    public void setDedupFilteredCount(Integer dedupFilteredCount) {
+        this.dedupFilteredCount = dedupFilteredCount;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -296,6 +307,7 @@ public class GzRefundGoods extends BaseEntity
             .append("beginDate", getBeginDate())
             .append("endDate", getEndDate())
             .append("timeField", getTimeField())
+            .append("dedupFilteredCount", getDedupFilteredCount())
             .toString();
     }
 }
