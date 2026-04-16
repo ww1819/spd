@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SysDataBackupConfigMapper">
+
+    <resultMap type="com.spd.system.domain.SysDataBackupConfig" id="SysDataBackupConfigResult">
+        <id     property="id"                  column="id"/>
+        <result property="tenantId"            column="tenant_id"/>
+        <result property="backupPath"          column="backup_path"/>
+        <result property="mysqldumpPath"       column="mysqldump_path"/>
+        <result property="backupTime"          column="backup_time"/>
+        <result property="enabled"             column="enabled"/>
+        <result property="jobId"               column="job_id"/>
+        <result property="retainDays"          column="retain_days"/>
+        <result property="lastBackupTime"      column="last_backup_time"/>
+        <result property="lastBackupStatus"   column="last_backup_status"/>
+        <result property="lastBackupMessage"  column="last_backup_message"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select id, tenant_id, backup_path, mysqldump_path, backup_time, enabled, job_id, retain_days,
+               last_backup_time, last_backup_status, last_backup_message,
+               create_by, create_time, update_by, update_time, remark
+        from sys_data_backup_config
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="SysDataBackupConfigResult">
+        <include refid="selectVo"/> where id = #{id}
+    </select>
+
+    <select id="selectByTenantId" parameterType="string" resultMap="SysDataBackupConfigResult">
+        <include refid="selectVo"/> where tenant_id = #{tenantId}
+    </select>
+
+    <insert id="insert" parameterType="com.spd.system.domain.SysDataBackupConfig" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_data_backup_config (
+            tenant_id, backup_path, mysqldump_path, backup_time, enabled, job_id, retain_days,
+            last_backup_time, last_backup_status, last_backup_message,
+            create_by, create_time, remark
+        ) values (
+            #{tenantId}, #{backupPath}, #{mysqldumpPath}, #{backupTime}, #{enabled}, #{jobId}, #{retainDays},
+            #{lastBackupTime}, #{lastBackupStatus}, #{lastBackupMessage},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.spd.system.domain.SysDataBackupConfig">
+        update sys_data_backup_config
+        <set>
+            <if test="backupPath != null">backup_path = #{backupPath},</if>
+            <if test="mysqldumpPath != null">mysqldump_path = #{mysqldumpPath},</if>
+            <if test="backupTime != null">backup_time = #{backupTime},</if>
+            <if test="enabled != null">enabled = #{enabled},</if>
+            <if test="jobId != null">job_id = #{jobId},</if>
+            <if test="retainDays != null">retain_days = #{retainDays},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateLastResult" parameterType="com.spd.system.domain.SysDataBackupConfig">
+        update sys_data_backup_config
+        set last_backup_time = #{lastBackupTime},
+            last_backup_status = #{lastBackupStatus},
+            last_backup_message = #{lastBackupMessage},
+            update_time = sysdate()
+        where id = #{id}
+    </update>
+
+    <update id="updateJobId" parameterType="com.spd.system.domain.SysDataBackupConfig">
+        update sys_data_backup_config
+        set job_id = #{jobId},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where id = #{id}
+    </update>
+</mapper>

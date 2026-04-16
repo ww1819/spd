@@ -79,6 +79,10 @@ CALL add_table_column('bas_apply', 'del_flag', 'int', '删除标志', 0);
 CALL add_table_column('sys_user', 'customer_id', 'char(36)', '客户ID(UUID7)，归属客户/租户', NULL);
 /
 
+-- 数据备份：mysqldump 可执行文件路径（为空则从 PATH 查找）
+CALL add_table_column('sys_data_backup_config', 'mysqldump_path', 'varchar(500)', 'mysqldump可执行文件路径（可选；为空则从PATH查找）', '');
+/
+
 
 -- 为sb_customer表添加planned_disable_time字段
 CALL add_table_column('sb_customer', 'planned_disable_time', 'datetime', '计划停用时间，到达后租户无法使用', NULL);

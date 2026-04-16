@@ -729,6 +729,29 @@ CREATE TABLE IF NOT EXISTS `sb_user_permission_dept` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备用户科室权限';
 /
 
+-- 数据备份配置（与 sys_job 联动；与耗材 material/table.sql 结构一致）
+CREATE TABLE IF NOT EXISTS `sys_data_backup_config` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `tenant_id` varchar(36) NOT NULL DEFAULT '' COMMENT '租户ID(同 sb_customer.customer_id)，空串表示平台',
+  `backup_path` varchar(500) NOT NULL DEFAULT '' COMMENT '备份文件目录（服务器本地路径）',
+  `mysqldump_path` varchar(500) NOT NULL DEFAULT '' COMMENT 'mysqldump 可执行文件路径（可选；为空则从 PATH 查找）',
+  `backup_time` varchar(8) NOT NULL DEFAULT '02:00' COMMENT '每日备份时间 HH:mm',
+  `enabled` char(1) NOT NULL DEFAULT '0' COMMENT '是否启用（0停用 1启用）',
+  `job_id` bigint DEFAULT NULL COMMENT '关联 sys_job.job_id',
+  `retain_days` int NOT NULL DEFAULT 7 COMMENT '保留最近多少天的备份文件（0表示不自动清理）',
+  `last_backup_time` datetime DEFAULT NULL COMMENT '最近一次备份完成时间',
+  `last_backup_status` varchar(32) DEFAULT NULL COMMENT '最近一次状态 success/failed/skipped',
+  `last_backup_message` varchar(500) DEFAULT NULL COMMENT '最近一次结果说明',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_data_backup_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据备份配置';
+/
+
 -- ========== 覆盖说明（扫描结论）==========
 -- 设备侧业务表已全部包含于上文；若后续新增表，请同步本文件并补充 equipment/column.sql 与相关 Mapper。
 /

@@ -1,7 +1,7 @@
 -- ========== 耗材模块 菜单与权限（由 aspt.sys_menu 扫描刷新）==========
 -- 文末含：采购订单(caigou/dingdan)、订单发布(caigou/publish)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
--- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297)
+-- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
 -- 执行顺序：建议在主库 sys_menu 基础数据（若依）之后执行；按「/」分段执行
 -- 依赖：parent_id=1「系统管理」、1065「财务管理」、1070「盘点管理」须已存在（ID 以主库为准）
@@ -5671,6 +5671,173 @@ FROM DUAL WHERE @d_audit_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_m
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- ---------- 数据备份管理（系统管理下；须早于下方 hc_customer_menu 回填）----------
+SET @data_backup_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'system:dataBackup:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  2300,
+  '数据备份管理',
+  COALESCE(
+    (SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '系统管理' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1),
+    1
+  ),
+  92,
+  'dataBackup',
+  'system/dataBackup/index',
+  NULL,
+  1,
+  0,
+  'C',
+  '0',
+  '0',
+  'system:dataBackup:list',
+  'download',
+  'admin',
+  NOW(),
+  '1',
+  NOW(),
+  '每日数据库备份路径/时间/启停（与定时任务 sys_job 联动）',
+  '0',
+  '1'
+FROM DUAL
+WHERE @data_backup_menu_id IS NULL
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+SET @data_backup_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE perms = 'system:dataBackup:list' AND menu_type = 'C' ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2301, '备份配置查询', @data_backup_menu_id, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'system:dataBackup:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @data_backup_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@data_backup_menu_id AND perms='system:dataBackup:query')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2301)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2302, '备份配置保存', @data_backup_menu_id, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'system:dataBackup:edit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @data_backup_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@data_backup_menu_id AND perms='system:dataBackup:edit')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2302)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2303, '备份启停', @data_backup_menu_id, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'system:dataBackup:changeStatus', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @data_backup_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@data_backup_menu_id AND perms='system:dataBackup:changeStatus')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2303)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  2304, '立即备份', @data_backup_menu_id, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'system:dataBackup:run', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @data_backup_menu_id IS NOT NULL
+  AND (
+    NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@data_backup_menu_id AND perms='system:dataBackup:run')
+    OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2304)
+  )
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
 -- 默认对客户开放：回填 hc_customer_menu（采购订单、订单发布、到货验收、盘点入库、定数监测、科室新品申购）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
@@ -5724,7 +5891,12 @@ JOIN sys_menu m
     'departmentTransfer:apply:add',
     'departmentTransfer:apply:edit',
     'departmentTransfer:apply:remove',
-    'departmentTransfer:apply:audit'
+    'departmentTransfer:apply:audit',
+    'system:dataBackup:list',
+    'system:dataBackup:query',
+    'system:dataBackup:edit',
+    'system:dataBackup:changeStatus',
+    'system:dataBackup:run'
   )
 WHERE c.hc_status = '0'
   AND NOT EXISTS (

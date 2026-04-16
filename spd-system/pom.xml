@@ -23,6 +23,12 @@
             <artifactId>spd-common</artifactId>
         </dependency>
 
+        <!-- 定时任务（数据备份与 sys_job 同步） -->
+        <dependency>
+            <groupId>com.spd</groupId>
+            <artifactId>spd-quartz</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>
