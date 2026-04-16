@@ -69,6 +69,15 @@ public class GzRefundGoods extends BaseEntity
     /** 租户ID */
     private String tenantId;
 
+    /** 开始时间（用于查询） */
+    private String beginDate;
+
+    /** 结束时间（用于查询） */
+    private String endDate;
+
+    /** 时间筛选字段：createTime/auditDate */
+    private String timeField;
+
     /** 高值退货明细信息 */
     private List<GzRefundGoodsEntry> gzRefundGoodsEntryList;
 
@@ -86,6 +95,9 @@ public class GzRefundGoods extends BaseEntity
 
     /** 总金额 */
     private java.math.BigDecimal totalAmt;
+
+    /** 保存时后台自动去重过滤条数（不落库） */
+    private Integer dedupFilteredCount;
 
     public void setId(Long id)
     {
@@ -190,6 +202,30 @@ public class GzRefundGoods extends BaseEntity
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
+    public String getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(String beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getTimeField() {
+        return timeField;
+    }
+
+    public void setTimeField(String timeField) {
+        this.timeField = timeField;
+    }
+
     public List<GzRefundGoodsEntry> getGzRefundGoodsEntryList()
     {
         return gzRefundGoodsEntryList;
@@ -240,6 +276,14 @@ public class GzRefundGoods extends BaseEntity
         this.totalAmt = totalAmt;
     }
 
+    public Integer getDedupFilteredCount() {
+        return dedupFilteredCount;
+    }
+
+    public void setDedupFilteredCount(Integer dedupFilteredCount) {
+        this.dedupFilteredCount = dedupFilteredCount;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -260,6 +304,10 @@ public class GzRefundGoods extends BaseEntity
             .append("gzRefundGoodsEntryList", getGzRefundGoodsEntryList())
             .append("supplier", getSupplier())
             .append("warehouse", getSupplier())
+            .append("beginDate", getBeginDate())
+            .append("endDate", getEndDate())
+            .append("timeField", getTimeField())
+            .append("dedupFilteredCount", getDedupFilteredCount())
             .toString();
     }
 }

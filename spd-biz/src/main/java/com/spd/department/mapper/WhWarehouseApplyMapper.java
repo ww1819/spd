@@ -56,6 +56,10 @@ public interface WhWarehouseApplyMapper {
 
     BigDecimal sumLinkedQtyByWhApplyEntryId(@Param("entryId") String entryId);
 
+    /** 库房申请明细已被出库单占用的数量（可选排除某张出库单，用于修改本单） */
+    BigDecimal sumLinkedQtyByWhApplyEntryIdExcludingCkBill(@Param("entryId") String entryId,
+        @Param("excludeCkBillId") String excludeCkBillId);
+
     int insertWhWhApplyCkEntryRef(WhWhApplyCkEntryRef row);
 
     /** 按出库单主表解除库房申请关联（逻辑删除 ref 行） */

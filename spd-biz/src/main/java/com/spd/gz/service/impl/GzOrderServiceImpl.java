@@ -12,6 +12,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzOrderEntry;
+import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import com.spd.gz.mapper.SysSheetIdMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,9 +109,13 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public int insertGzOrder(GzOrder gzOrder)
     {
+        if (gzOrder == null) {
+            throw new ServiceException("高值入库单不能为空");
+        }
         if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzOrder.setTenantId(SecurityUtils.getCustomerId());
         }
+        gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
         int rows = gzOrderMapper.insertGzOrder(gzOrder);
@@ -150,6 +155,7 @@ public class GzOrderServiceImpl implements IGzOrderService
     @Override
     public int updateGzOrder(GzOrder gzOrder)
     {
+        gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
         gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId(), SecurityUtils.getUserIdStr());
         insertGzOrderEntry(gzOrder);
@@ -198,6 +204,8 @@ public class GzOrderServiceImpl implements IGzOrderService
         updateDepotInventory(gzOrder,gzOrderEntryList);
 
         gzOrder.setOrderStatus(2);
+        gzOrder.setAuditBy(SecurityUtils.getUserIdStr());
+        gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setAuditDate(new Date());
         int res = gzOrderMapper.updateGzOrder(gzOrder);
         return res;
@@ -242,6 +250,36 @@ public class GzOrderServiceImpl implements IGzOrderService
                     }
                     gzDepotInventory.setMasterBarcode(orderEntry.getMasterBarcode());
                     gzDepotInventory.setSecondaryBarcode(orderEntry.getSecondaryBarcode());
+                    gzDepotInventory.setOrderId(gzOrder.getId());
+                    gzDepotInventory.setOrderNo(gzOrder.getOrderNo());
+                    gzDepotInventory.setOrderEntryId(orderEntry.getId());
+
+                    Date now = new Date();
+                    String userId = SecurityUtils.getUserIdStr();
+                    GzOrderEntryInhospitalcodeList inhospitalRow = new GzOrderEntryInhospitalcodeList();
+                    inhospitalRow.setParentId(gzOrder.getId());
+                    inhospitalRow.setCode(gzOrder.getOrderNo());
+                    inhospitalRow.setDetailId(orderEntry.getId());
+                    inhospitalRow.setMaterialId(orderEntry.getMaterialId());
+                    inhospitalRow.setPrice(orderEntry.getPrice());
+                    inhospitalRow.setQty(BigDecimal.ONE);
+                    inhospitalRow.setBatchNo(orderEntry.getBatchNo());
+                    inhospitalRow.setBatchNumber(orderEntry.getBatchNumber());
+                    inhospitalRow.setMasterBarcode(orderEntry.getMasterBarcode());
+                    inhospitalRow.setSecondaryBarcode(orderEntry.getSecondaryBarcode());
+                    inhospitalRow.setEndDate(orderEntry.getEndTime());
+                    inhospitalRow.setInHospitalCode(inHospitalCode);
+                    inhospitalRow.setWarehouseId(gzOrder.getWarehouseId());
+                    inhospitalRow.setSupplierId(gzOrder.getSupplerId());
+                    inhospitalRow.setDelFlag(0);
+                    inhospitalRow.setCreateDate(now);
+                    inhospitalRow.setCreateBy(userId);
+                    inhospitalRow.setCreateTime(now);
+                    inhospitalRow.setUpdateBy(userId);
+                    inhospitalRow.setUpdateTime(now);
+                    inhospitalRow.setTenantId(StringUtils.isNotEmpty(gzOrder.getTenantId()) ? gzOrder.getTenantId() : SecurityUtils.getCustomerId());
+                    gzOrderMapper.insertGzOrderEntryInhospitalcodeList(inhospitalRow);
+                    gzDepotInventory.setInhospitalcodeListId(inhospitalRow.getId());
 
                     gzDepotInventoryMapper.insertGzDepotInventory(gzDepotInventory);
                 }
@@ -317,11 +355,20 @@ public class GzOrderServiceImpl implements IGzOrderService
         if (StringUtils.isNotNull(gzOrderEntryList))
         {
             List<GzOrderEntry> list = new ArrayList<GzOrderEntry>();
+            String userId = SecurityUtils.getUserIdStr();
+            Date now = DateUtils.getNowDate();
             for (GzOrderEntry gzOrderEntry : gzOrderEntryList)
             {
                 gzOrderEntry.setParenId(id);
                 gzOrderEntry.setBatchNo(getBatchNumber());
                 gzOrderEntry.setDelFlag(0);
+                gzOrderEntry.setSupplierId(gzOrder.getSupplerId());
+                gzOrderEntry.setWarehouseId(gzOrder.getWarehouseId());
+                gzOrderEntry.setBillNo(gzOrder.getOrderNo());
+                gzOrderEntry.setCreateBy(userId);
+                gzOrderEntry.setCreateTime(now);
+                gzOrderEntry.setUpdateBy(userId);
+                gzOrderEntry.setUpdateTime(now);
                 list.add(gzOrderEntry);
             }
             if (list.size() > 0)

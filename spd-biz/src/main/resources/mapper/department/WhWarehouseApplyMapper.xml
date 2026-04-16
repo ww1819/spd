@@ -227,6 +227,16 @@
           and del_flag = 0 and link_status = 1
     </select>
 
+    <select id="sumLinkedQtyByWhApplyEntryIdExcludingCkBill" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select coalesce(sum(ref_qty), 0) from wh_wh_apply_ck_entry_ref
+        where wh_apply_entry_id = #{entryId} and tenant_id = #{scopedTenantId}
+          and del_flag = 0 and link_status = 1
+        <if test="excludeCkBillId != null and excludeCkBillId != ''">
+          and (ck_bill_id is null or ck_bill_id != #{excludeCkBillId})
+        </if>
+    </select>
+
     <select id="selectWhWarehouseApplyList" parameterType="WhWarehouseApply" resultMap="WhWarehouseApplyResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select m.id, m.tenant_id, m.apply_bill_no, m.bas_apply_id, m.bas_apply_bill_no, m.warehouse_id, m.department_id,

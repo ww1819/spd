@@ -113,6 +113,15 @@ public class GzDepotInventory extends BaseEntity
     /** 查询参数：入库单号（模糊查询） */
     private String orderNo;
 
+    /** 备货单ID */
+    private Long orderId;
+
+    /** 备货单明细ID */
+    private Long orderEntryId;
+
+    /** 院内码列表ID */
+    private Long inhospitalcodeListId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -328,6 +337,30 @@ public class GzDepotInventory extends BaseEntity
         return orderNo;
     }
 
+    public Long getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(Long orderId) {
+        this.orderId = orderId;
+    }
+
+    public Long getOrderEntryId() {
+        return orderEntryId;
+    }
+
+    public void setOrderEntryId(Long orderEntryId) {
+        this.orderEntryId = orderEntryId;
+    }
+
+    public Long getInhospitalcodeListId() {
+        return inhospitalcodeListId;
+    }
+
+    public void setInhospitalcodeListId(Long inhospitalcodeListId) {
+        this.inhospitalcodeListId = inhospitalcodeListId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -349,6 +382,10 @@ public class GzDepotInventory extends BaseEntity
             .append("supplier", getSupplier())
             .append("warehouseName", getWarehouseName())
             .append("materialName", getMaterialName())
+            .append("orderId", getOrderId())
+            .append("orderNo", getOrderNo())
+            .append("orderEntryId", getOrderEntryId())
+            .append("inhospitalcodeListId", getInhospitalcodeListId())
             .toString();
     }
 }

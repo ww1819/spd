@@ -174,14 +174,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <delete id="deleteGzPatientInfoById" parameterType="Long">
+    <delete id="deleteGzPatientInfoById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_patient_info set del_flag = '2' where id = #{id} and tenant_id = #{scopedTenantId}
+        update gz_patient_info
+        set del_flag = '2',
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
-    <delete id="deleteGzPatientInfoByIds" parameterType="String">
+    <delete id="deleteGzPatientInfoByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_patient_info set del_flag = '2' where tenant_id = #{scopedTenantId} and id in
+        update gz_patient_info
+        set del_flag = '2',
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

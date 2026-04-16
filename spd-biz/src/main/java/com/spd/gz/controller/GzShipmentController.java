@@ -79,7 +79,15 @@ public class GzShipmentController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody GzShipment gzShipment)
     {
-        return toAjax(gzShipmentService.insertGzShipment(gzShipment));
+        int rows = gzShipmentService.insertGzShipment(gzShipment);
+        if (rows > 0) {
+            Integer filteredCount = gzShipment.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "新增成功";
+            return AjaxResult.success(msg, gzShipment);
+        }
+        return AjaxResult.error("新增失败");
     }
 
     /**
@@ -90,7 +98,15 @@ public class GzShipmentController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody GzShipment gzShipment)
     {
-        return toAjax(gzShipmentService.updateGzShipment(gzShipment));
+        int rows = gzShipmentService.updateGzShipment(gzShipment);
+        if (rows > 0) {
+            Integer filteredCount = gzShipment.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "修改成功";
+            return AjaxResult.success(msg, gzShipment);
+        }
+        return AjaxResult.error("修改失败");
     }
 
     /**

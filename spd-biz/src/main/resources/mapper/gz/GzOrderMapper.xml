@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="orderDate"    column="order_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="departmentId"    column="department_id"    />
+        <result property="applyDepartmentId"    column="apply_department_id"    />
         <result property="orderStatus"    column="order_status"    />
         <result property="orderType"    column="order_type"    />
         <result property="delFlag"    column="del_flag"    />
@@ -26,6 +27,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="applyDepartment"    column="id" javaType="FdDepartment" resultMap="applyDepartmentResult" />
+    </resultMap>
+
+    <resultMap id="applyDepartmentResult" type="FdDepartment">
+        <id     property="id"    column="adId"     />
+        <result property="code"  column="adCode"   />
+        <result property="name"  column="adName"   />
     </resultMap>
 
     <resultMap id="supplierResult" type="FdSupplier">
@@ -65,50 +73,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="sub_remark"    />
         <result property="masterBarcode"    column="sub_master_barcode"    />
         <result property="secondaryBarcode"    column="sub_secondary_barcode"    />
+        <result property="supplierId"    column="sub_supplier_id"    />
+        <result property="warehouseId"    column="sub_warehouse_id"    />
+        <result property="billNo"    column="sub_bill_no"    />
     </resultMap>
 
     <sql id="selectGzOrderVo">
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				<!-- 注意：如果执行 SQL 后仍然报错，请先验证字段是否真的存在 -->
-				<!-- 验证 SQL: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_order' AND COLUMN_NAME = 'department_id'; -->
-				<!-- 如果字段存在，取消下面的注释，并删除 NULL as department_id -->
-				NULL as department_id,
-				<!-- gz.department_id, -->
+				gz.department_id, gz.apply_department_id,
 				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
-				<!-- 临时注释：等执行 SQL 添加 is_follow_flag 字段后，取消下面的注释，并删除 NULL as is_follow_flag -->
-				NULL as is_follow_flag,
-				<!-- gz.is_follow_flag, -->
+				gz.is_follow_flag,
 				gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
+				ad.id adId,ad.code adCode,ad.name adName,
 				gz.tenant_id
         from gz_order gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
-        left join fd_department d on NULL = d.id
+        left join fd_department d on gz.department_id = d.id
+        left join fd_department ad on gz.apply_department_id = ad.id
     </sql>
 
     <select id="selectGzOrderList" parameterType="GzOrder" resultMap="GzOrderResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				NULL as department_id,
+				gz.department_id, gz.apply_department_id,
 				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
-				NULL as is_follow_flag,
+				gz.is_follow_flag,
 				gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				gz.tenant_id,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
+				ad.id adId,ad.code adCode,ad.name adName,
 				COALESCE(SUM(gze.amt), 0) as totalAmt
         from gz_order gz
         left join fd_supplier s on gz.suppler_id = s.id
         left join fd_warehouse w on gz.warehouse_id = w.id
-        left join fd_department d on NULL = d.id
+        left join fd_department d on gz.department_id = d.id
+        left join fd_department ad on gz.apply_department_id = ad.id
         left join gz_order_entry gze on gze.paren_id = gz.id and gze.del_flag != 1
         where gz.del_flag != 1
-        <if test="tenantId != null and tenantId != ''"> and gz.tenant_id = #{tenantId}</if>
+        and gz.tenant_id = #{scopedTenantId}
         <if test="orderNo != null  and orderNo != ''"> and gz.order_no like concat('%', #{orderNo}, '%')</if>
         <if test="supplerId != null "> and gz.suppler_id = #{supplerId}</if>
         <if test="orderDate != null "> and gz.order_date = #{orderDate}</if>
@@ -116,46 +126,44 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="orderStatus != null "> and gz.order_status = #{orderStatus}</if>
         <if test="orderType != null "> and gz.order_type = #{orderType}</if>
         <if test="auditDate != null "> and gz.audit_date = #{auditDate}</if>
-        <!-- 如果输入了订单号，则不限制日期范围；否则应用日期范围限制 -->
         <choose>
-            <when test="orderNo != null and orderNo != ''">
-                <!-- 输入了订单号，不限制日期范围 -->
+            <when test="timeField != null and timeField == 'auditDate'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gz.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
             </when>
             <otherwise>
-                <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(gz.order_date) >= DATE(#{beginDate})]]></if>
-                <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(gz.order_date) <= DATE(#{endDate})]]></if>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gz.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
             </otherwise>
         </choose>
-        group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
-				gz.order_status, gz.order_type, gz.del_flag, gz.tenant_id, gz.audit_date, 
+        group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id, gz.department_id, gz.apply_department_id,
+				gz.order_status, gz.order_type, gz.del_flag, gz.tenant_id, gz.audit_date, gz.is_follow_flag,
 				gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id, s.code, s.name,
 				w.id, w.code, w.name,
-				d.id, d.code, d.name
+				d.id, d.code, d.name,
+				ad.id, ad.code, ad.name
         order by gz.order_date desc, gz.id desc
     </select>
 
     <select id="selectGzOrderById" parameterType="Long" resultMap="GzOrderGzOrderEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, 
-				<!-- 注意：如果执行 SQL 后仍然报错，请先验证字段是否真的存在 -->
-				<!-- 验证 SQL: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_order' AND COLUMN_NAME = 'department_id'; -->
-				<!-- 如果字段存在，取消下面的注释，并删除 NULL as department_id -->
-				NULL as department_id,
-				<!-- a.department_id, -->
+				a.department_id, a.apply_department_id,
 				a.order_status, a.order_type, a.del_flag,
                 a.audit_date, 
-				<!-- 临时注释：等执行 SQL 添加 is_follow_flag 字段后，取消下面的注释，并删除 NULL as is_follow_flag -->
-				NULL as is_follow_flag,
-				<!-- a.is_follow_flag, -->
+				a.is_follow_flag,
 				a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.tenant_id,
+				ad.id adId, ad.code adCode, ad.name adName,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
                 b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
                 b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.remark as sub_remark,
-                b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode
+                b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode, b.supplier_id as sub_supplier_id,
+                b.warehouse_id as sub_warehouse_id, b.bill_no as sub_bill_no
         from gz_order a
-        left join gz_order_entry b on b.paren_id = a.id
-        where a.id = #{id} and a.tenant_id = #{scopedTenantId}
+        left join fd_department ad on a.apply_department_id = ad.id
+        left join gz_order_entry b on b.paren_id = a.id and b.del_flag != 1
+        where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzOrder" parameterType="GzOrder" useGeneratedKeys="true" keyProperty="id">
@@ -166,8 +174,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id,</if>
             <if test="orderDate != null">order_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
-            <!-- 临时注释：等执行 SQL 添加 department_id 字段后，取消下面的注释 -->
-            <!-- <if test="departmentId != null">department_id,</if> -->
+            <if test="departmentId != null">department_id,</if>
+            <if test="applyDepartmentId != null">apply_department_id,</if>
             <if test="orderStatus != null">order_status,</if>
             <if test="orderType != null">order_type,</if>
             <if test="delFlag != null">del_flag,</if>
@@ -185,8 +193,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">#{supplerId},</if>
             <if test="orderDate != null">#{orderDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
-            <!-- 临时注释：等执行 SQL 添加 department_id 字段后，取消下面的注释 -->
-            <!-- <if test="departmentId != null">#{departmentId},</if> -->
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="applyDepartmentId != null">#{applyDepartmentId},</if>
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="orderType != null">#{orderType},</if>
             <if test="delFlag != null">#{delFlag},</if>
@@ -209,12 +217,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id = #{supplerId},</if>
             <if test="orderDate != null">order_date = #{orderDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
-            <!-- 临时注释：等执行 SQL 添加 department_id 字段后，取消下面的注释 -->
-            <!-- <if test="departmentId != null">department_id = #{departmentId},</if> -->
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="applyDepartmentId != null">apply_department_id = #{applyDepartmentId},</if>
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="orderType != null">order_type = #{orderType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="isFollowFlag != null">is_follow_flag = #{isFollowFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
@@ -237,11 +244,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzOrderEntry">
-        insert into gz_order_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, master_barcode, secondary_barcode, tenant_id) values
+        insert into gz_order_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, master_barcode, secondary_barcode, supplier_id, warehouse_id, bill_no, tenant_id, create_by, create_time, update_by, update_time) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.masterBarcode}, #{item.secondaryBarcode},
-              (select t.tenant_id from gz_order t where t.id = #{item.parenId} limit 1))
+            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.supplierId},
+              #{item.warehouseId}, #{item.billNo}, (select t.tenant_id from gz_order t where t.id = #{item.parenId} limit 1), #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
+    </insert>
+
+    <insert id="insertGzOrderEntryInhospitalcodeList" parameterType="GzOrderEntryInhospitalcodeList" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        insert into gz_order_entry_inhospitalcode_list(
+            parent_id, code, detail_id, material_id, price, qty, batch_no, batch_number,
+            master_barcode, secondary_barcode, end_date, in_hospital_code, warehouse_id, supplier_id,
+            del_flag, create_date, create_by, create_time, update_by, update_time, tenant_id
+        ) values (
+            #{parentId}, #{code}, #{detailId}, #{materialId}, #{price}, #{qty}, #{batchNo}, #{batchNumber},
+            #{masterBarcode}, #{secondaryBarcode}, #{endDate}, #{inHospitalCode}, #{warehouseId}, #{supplierId},
+            #{delFlag}, #{createDate}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{scopedTenantId}
+        )
     </insert>
 
     <select id="selectMaxBillNo" resultType="String">
@@ -249,6 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select max(order_no) from gz_order
         where order_no like concat(#{prefix},'%')
         and order_no like concat('%',#{date},'%')
+        and del_flag != 1
         and tenant_id = #{scopedTenantId}
     </select>
 
@@ -274,5 +295,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and go.order_status = 1
         and go.del_flag != 1
         and goe.del_flag != 1
+        and gdi.del_flag != 1
     </select>
 </mapper>

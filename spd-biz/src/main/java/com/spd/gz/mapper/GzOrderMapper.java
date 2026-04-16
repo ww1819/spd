@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzOrder;
 import com.spd.gz.domain.GzOrderEntry;
+import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
 
 /**
  * 高值入库Mapper接口
@@ -81,4 +82,9 @@ public interface GzOrderMapper
      * @return 出库单号列表
      */
     List<String> selectOutboundOrderNosByInHospitalCode(String inHospitalCode);
+
+    /**
+     * 新增院内码明细列表
+     */
+    int insertGzOrderEntryInhospitalcodeList(GzOrderEntryInhospitalcodeList row);
 }

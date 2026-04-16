@@ -51,7 +51,7 @@ public interface GzDepInventoryMapper
      * @param id 高值科室库存主键
      * @return 结果
      */
-    public int deleteGzDepInventoryById(Long id);
+    public int deleteGzDepInventoryById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除高值科室库存
@@ -59,7 +59,7 @@ public interface GzDepInventoryMapper
      * @param ids 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteGzDepInventoryByIds(Long[] ids);
+    public int deleteGzDepInventoryByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 按批次号查询科室库存

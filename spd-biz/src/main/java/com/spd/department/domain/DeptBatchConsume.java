@@ -72,8 +72,26 @@ public class DeptBatchConsume extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
+    /** 删除者 */
+    private String deleteBy;
+
+    /** 删除时间 */
+    private Date deleteTime;
+
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
+
+    /** 是否反消耗单（0否 1是） */
+    private Integer reverseFlag;
+
+    /** 反消耗来源主单ID */
+    private Long reverseOfConsumeId;
+
+    /** 反消耗来源主单号 */
+    private String reverseOfBillNo;
+
+    /** 保存时后台自动去重过滤条数（不落库） */
+    private Integer dedupFilteredCount;
 
     /** 科室批量消耗明细信息 */
     private List<DeptBatchConsumeEntry> deptBatchConsumeEntryList;
@@ -199,6 +217,22 @@ public class DeptBatchConsume extends BaseEntity
     public Integer getDelFlag() 
     {
         return delFlag;
+    }
+
+    public String getDeleteBy() {
+        return deleteBy;
+    }
+
+    public void setDeleteBy(String deleteBy) {
+        this.deleteBy = deleteBy;
+    }
+
+    public Date getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(Date deleteTime) {
+        this.deleteTime = deleteTime;
     }
 
     public List<DeptBatchConsumeEntry> getDeptBatchConsumeEntryList()
@@ -365,6 +399,14 @@ public class DeptBatchConsume extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public Integer getReverseFlag() { return reverseFlag; }
+    public void setReverseFlag(Integer reverseFlag) { this.reverseFlag = reverseFlag; }
+    public Long getReverseOfConsumeId() { return reverseOfConsumeId; }
+    public void setReverseOfConsumeId(Long reverseOfConsumeId) { this.reverseOfConsumeId = reverseOfConsumeId; }
+    public String getReverseOfBillNo() { return reverseOfBillNo; }
+    public void setReverseOfBillNo(String reverseOfBillNo) { this.reverseOfBillNo = reverseOfBillNo; }
+    public Integer getDedupFilteredCount() { return dedupFilteredCount; }
+    public void setDedupFilteredCount(Integer dedupFilteredCount) { this.dedupFilteredCount = dedupFilteredCount; }
 
     @Override
     public String toString() {
@@ -377,6 +419,8 @@ public class DeptBatchConsume extends BaseEntity
             .append("userId", getUserId())
             .append("consumeBillStatus", getConsumeBillStatus())
             .append("delFlag", getDelFlag())
+            .append("deleteBy", getDeleteBy())
+            .append("deleteTime", getDeleteTime())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
@@ -388,12 +432,16 @@ public class DeptBatchConsume extends BaseEntity
             .append("auditPersonName", getAuditPersonName())
             .append("createrName", getCreaterName())
             .append("rejectReason", getRejectReason())
+            .append("reverseFlag", getReverseFlag())
+            .append("reverseOfConsumeId", getReverseOfConsumeId())
+            .append("reverseOfBillNo", getReverseOfBillNo())
             .append("deptBatchConsumeEntryList", getDeptBatchConsumeEntryList())
             .append("warehouse", getWarehouse())
             .append("user", getUser())
             .append("department", getDepartment())
             .append("auditPerson", getAuditPerson())
             .append("creater", getCreater())
+            .append("dedupFilteredCount", getDedupFilteredCount())
             .toString();
     }
 }

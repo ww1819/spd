@@ -1,6 +1,7 @@
 package com.spd.gz.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzPatientInfo;
 
 /**
@@ -57,7 +58,7 @@ public interface GzPatientInfoMapper
      * @param id 患者信息主键
      * @return 结果
      */
-    public int deleteGzPatientInfoById(Long id);
+    public int deleteGzPatientInfoById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除患者信息
@@ -65,5 +66,5 @@ public interface GzPatientInfoMapper
      * @param ids 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteGzPatientInfoByIds(Long[] ids);
+    public int deleteGzPatientInfoByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 }

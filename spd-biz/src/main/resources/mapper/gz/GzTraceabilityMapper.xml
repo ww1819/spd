@@ -75,9 +75,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="chargePrice"    column="entry_charge_price"    />
         <result property="batchNo"    column="entry_batch_no"    />
         <result property="expiryDate"    column="entry_expiry_date"    />
+        <result property="masterBarcode"    column="entry_master_barcode"    />
+        <result property="secondaryBarcode"    column="entry_secondary_barcode"    />
         <result property="inHospitalCode"    column="entry_in_hospital_code"    />
         <result property="manufacturer"    column="entry_manufacturer"    />
         <result property="supplier"    column="entry_supplier"    />
+        <result property="supplierId"    column="entry_supplier_id"    />
         <result property="certificateNo"    column="entry_certificate_no"    />
         <result property="billingFollow"    column="entry_billing_follow"    />
         <result property="delFlag"    column="entry_del_flag"    />
@@ -145,8 +148,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                te.specification as entry_specification, te.model as entry_model, te.unit as entry_unit,
                te.quantity as entry_quantity, te.charge_price as entry_charge_price,
                te.batch_no as entry_batch_no, te.expiry_date as entry_expiry_date,
+               te.master_barcode as entry_master_barcode, te.secondary_barcode as entry_secondary_barcode,
                te.in_hospital_code as entry_in_hospital_code, te.manufacturer as entry_manufacturer,
-               te.supplier as entry_supplier, te.certificate_no as entry_certificate_no,
+               te.supplier as entry_supplier, te.supplier_id as entry_supplier_id, te.certificate_no as entry_certificate_no,
                te.billing_follow as entry_billing_follow, te.del_flag as entry_del_flag
         from gz_traceability t
         left join fd_department ad on t.apply_dept_id = ad.id
@@ -160,6 +164,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select max(trace_no) from gz_traceability
         where trace_no like concat(#{prefix},'%')
         and trace_no like concat('%',#{date},'%')
+        and del_flag = '0'
         and tenant_id = #{scopedTenantId}
     </select>
 
@@ -259,34 +264,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
-            <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <delete id="deleteGzTraceabilityById" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_traceability set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update gz_traceability
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzTraceabilityByIds" parameterType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_traceability set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update gz_traceability
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <insert id="batchGzTraceabilityEntry">
-        insert into gz_traceability_entry(parent_id, material_id, inventory_id, material_name, specification, model, unit, quantity, charge_price, batch_no, expiry_date, in_hospital_code, manufacturer, supplier, certificate_no, billing_follow, del_flag, create_by, create_time, tenant_id) values
+        insert into gz_traceability_entry(parent_id, material_id, inventory_id, material_name, specification, model, unit, quantity, charge_price, batch_no, expiry_date, master_barcode, secondary_barcode, in_hospital_code, manufacturer, supplier, supplier_id, certificate_no, billing_follow, del_flag, create_by, create_time, update_by, update_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.inventoryId}, #{item.materialName}, #{item.specification}, #{item.model}, #{item.unit}, #{item.quantity}, #{item.chargePrice}, #{item.batchNo}, #{item.expiryDate}, #{item.inHospitalCode}, #{item.manufacturer}, #{item.supplier}, #{item.certificateNo}, #{item.billingFollow}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.tenantId})
+            (#{item.parentId}, #{item.materialId}, #{item.inventoryId}, #{item.materialName}, #{item.specification}, #{item.model}, #{item.unit}, #{item.quantity}, #{item.chargePrice}, #{item.batchNo}, #{item.expiryDate}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.manufacturer}, #{item.supplier}, #{item.supplierId}, #{item.certificateNo}, #{item.billingFollow}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}, #{item.tenantId})
         </foreach>
     </insert>
 
     <delete id="deleteGzTraceabilityEntryByParentId" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_traceability_entry set del_flag = 1, update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+        update gz_traceability_entry
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <!-- 查询追溯单明细列表（用于使用追溯明细表） -->
@@ -297,8 +307,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                te.specification as entry_specification, te.model as entry_model, te.unit as entry_unit,
                te.quantity as entry_quantity, te.charge_price as entry_charge_price,
                te.batch_no as entry_batch_no, te.expiry_date as entry_expiry_date,
+               te.master_barcode as entry_master_barcode, te.secondary_barcode as entry_secondary_barcode,
                te.in_hospital_code as entry_in_hospital_code, te.manufacturer as entry_manufacturer,
-               te.supplier as entry_supplier, te.certificate_no as entry_certificate_no,
+               te.supplier as entry_supplier, te.supplier_id as entry_supplier_id, te.certificate_no as entry_certificate_no,
                te.billing_follow as entry_billing_follow, te.del_flag as entry_del_flag,
                t.order_status as parent_order_status, t.patient_name, t.patient_sex, t.chief_surgeon,
                t.admission_diagnosis as surgical_diagnosis, t.surgery_date as billing_time,
@@ -311,7 +322,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from gz_traceability_entry te
         left join gz_traceability t on te.parent_id = t.id
         left join fd_material m on te.material_id = m.id
-        left join gz_dep_inventory gdi on te.inventory_id = gdi.id
+        left join gz_dep_inventory gdi on te.inventory_id = gdi.id and gdi.del_flag != 1
         left join stk_batch sb on sb.material_id = gdi.material_id
             and sb.batch_no = gdi.batch_no
             and (sb.del_flag = 0 or sb.del_flag is null)

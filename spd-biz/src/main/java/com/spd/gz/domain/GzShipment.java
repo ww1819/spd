@@ -74,6 +74,9 @@ public class GzShipment extends BaseEntity
     /** 总金额（用于列表显示） */
     private java.math.BigDecimal totalAmt;
 
+    /** 保存时后台自动去重过滤条数（不落库） */
+    private Integer dedupFilteredCount;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -286,6 +289,14 @@ public class GzShipment extends BaseEntity
         this.totalAmt = totalAmt;
     }
 
+    public Integer getDedupFilteredCount() {
+        return dedupFilteredCount;
+    }
+
+    public void setDedupFilteredCount(Integer dedupFilteredCount) {
+        this.dedupFilteredCount = dedupFilteredCount;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -307,6 +318,7 @@ public class GzShipment extends BaseEntity
             .append("warehouse", getWarehouse())
             .append("department", getDepartment())
             .append("materialList", getMaterialList())
+            .append("dedupFilteredCount", getDedupFilteredCount())
             .toString();
     }
 }

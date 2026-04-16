@@ -53,6 +53,14 @@ public class GzRefundGoodsEntry extends BaseEntity
     @Excel(name = "院内码")
     private String inHospitalCode;
 
+    /** 主条码 */
+    @Excel(name = "主条码")
+    private String masterBarcode;
+
+    /** 辅条码 */
+    @Excel(name = "辅条码")
+    private String secondaryBarcode;
+
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "生产日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -68,6 +76,24 @@ public class GzRefundGoodsEntry extends BaseEntity
 
     /** 租户ID */
     private String tenantId;
+    /** 供应商ID */
+    private Long supplierId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 科室ID（备货退库明细冗余，与 gz_refund_stock_entry 语义一致） */
+    private Long departmentId;
+    /** 单号冗余 */
+    private String billNo;
+
+    /** 引用备货验收（退货 TH） */
+    private String refSrcAcceptanceId;
+    private String refSrcAcceptanceNo;
+    private String refSrcOrderEntryId;
+    private String refSrcBarcodeLineId;
+    /** 引用备货出库（退库 TK） */
+    private String refSrcShipmentId;
+    private String refSrcShipmentNo;
+    private String refSrcShipmentEntryId;
 
     public void setId(Long id) 
     {
@@ -150,6 +176,24 @@ public class GzRefundGoodsEntry extends BaseEntity
     {
         return inHospitalCode;
     }
+    public void setMasterBarcode(String masterBarcode)
+    {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getMasterBarcode()
+    {
+        return masterBarcode;
+    }
+    public void setSecondaryBarcode(String secondaryBarcode)
+    {
+        this.secondaryBarcode = secondaryBarcode;
+    }
+
+    public String getSecondaryBarcode()
+    {
+        return secondaryBarcode;
+    }
     public void setBeginTime(Date beginTime)
     {
         this.beginTime = beginTime;
@@ -179,6 +223,29 @@ public class GzRefundGoodsEntry extends BaseEntity
     }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public String getRefSrcAcceptanceId() { return refSrcAcceptanceId; }
+    public void setRefSrcAcceptanceId(String refSrcAcceptanceId) { this.refSrcAcceptanceId = refSrcAcceptanceId; }
+    public String getRefSrcAcceptanceNo() { return refSrcAcceptanceNo; }
+    public void setRefSrcAcceptanceNo(String refSrcAcceptanceNo) { this.refSrcAcceptanceNo = refSrcAcceptanceNo; }
+    public String getRefSrcOrderEntryId() { return refSrcOrderEntryId; }
+    public void setRefSrcOrderEntryId(String refSrcOrderEntryId) { this.refSrcOrderEntryId = refSrcOrderEntryId; }
+    public String getRefSrcBarcodeLineId() { return refSrcBarcodeLineId; }
+    public void setRefSrcBarcodeLineId(String refSrcBarcodeLineId) { this.refSrcBarcodeLineId = refSrcBarcodeLineId; }
+    public String getRefSrcShipmentId() { return refSrcShipmentId; }
+    public void setRefSrcShipmentId(String refSrcShipmentId) { this.refSrcShipmentId = refSrcShipmentId; }
+    public String getRefSrcShipmentNo() { return refSrcShipmentNo; }
+    public void setRefSrcShipmentNo(String refSrcShipmentNo) { this.refSrcShipmentNo = refSrcShipmentNo; }
+    public String getRefSrcShipmentEntryId() { return refSrcShipmentEntryId; }
+    public void setRefSrcShipmentEntryId(String refSrcShipmentEntryId) { this.refSrcShipmentEntryId = refSrcShipmentEntryId; }
 
     @Override
     public String toString() {
@@ -191,9 +258,16 @@ public class GzRefundGoodsEntry extends BaseEntity
             .append("amt", getAmt())
             .append("batchNo", getBatchNo())
             .append("batchNumber", getBatchNumber())
+            .append("masterBarcode", getMasterBarcode())
+            .append("secondaryBarcode", getSecondaryBarcode())
+            .append("inHospitalCode", getInHospitalCode())
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
+            .append("supplierId", getSupplierId())
+            .append("warehouseId", getWarehouseId())
+            .append("departmentId", getDepartmentId())
+            .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();
     }

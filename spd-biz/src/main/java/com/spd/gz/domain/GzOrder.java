@@ -46,6 +46,9 @@ public class GzOrder extends BaseEntity
     @Excel(name = "科室ID")
     private Long departmentId;
 
+    /** 申请科室ID（备货验收） */
+    private Long applyDepartmentId;
+
     /** 单据状态 */
     @Excel(name = "单据状态")
     private Integer orderStatus;
@@ -77,6 +80,9 @@ public class GzOrder extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     private String endDate;
 
+    /** 时间筛选字段：createTime/auditDate */
+    private String timeField;
+
     /** 总金额 */
     private java.math.BigDecimal totalAmt;
 
@@ -91,6 +97,9 @@ public class GzOrder extends BaseEntity
 
     /** 科室对象 */
     private FdDepartment department;
+
+    /** 申请科室（展示） */
+    private FdDepartment applyDepartment;
 
     private List<FdMaterial> materialList;
 
@@ -148,6 +157,27 @@ public class GzOrder extends BaseEntity
     {
         return departmentId;
     }
+
+    public Long getApplyDepartmentId()
+    {
+        return applyDepartmentId;
+    }
+
+    public void setApplyDepartmentId(Long applyDepartmentId)
+    {
+        this.applyDepartmentId = applyDepartmentId;
+    }
+
+    public FdDepartment getApplyDepartment()
+    {
+        return applyDepartment;
+    }
+
+    public void setApplyDepartment(FdDepartment applyDepartment)
+    {
+        this.applyDepartment = applyDepartment;
+    }
+
     public void setOrderStatus(Integer orderStatus)
     {
         this.orderStatus = orderStatus;
@@ -264,6 +294,14 @@ public class GzOrder extends BaseEntity
         this.totalAmt = totalAmt;
     }
 
+    public String getTimeField() {
+        return timeField;
+    }
+
+    public void setTimeField(String timeField) {
+        this.timeField = timeField;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -287,6 +325,7 @@ public class GzOrder extends BaseEntity
             .append("supplier", getSupplier())
             .append("warehouse", getWarehouse())
             .append("materialList", getMaterialList())
+            .append("timeField", getTimeField())
             .toString();
     }
 }

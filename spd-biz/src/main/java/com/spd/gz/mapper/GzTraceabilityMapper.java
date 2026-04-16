@@ -50,7 +50,7 @@ public interface GzTraceabilityMapper
      * @param id 高值追溯单主键
      * @return 结果
      */
-    public int deleteGzTraceabilityById(Long id);
+    public int deleteGzTraceabilityById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除高值追溯单
@@ -58,7 +58,7 @@ public interface GzTraceabilityMapper
      * @param ids 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteGzTraceabilityByIds(Long[] ids);
+    public int deleteGzTraceabilityByIds(@Param("array") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询当天最大的单号
@@ -82,7 +82,7 @@ public interface GzTraceabilityMapper
      * @param id 追溯单ID
      * @return 结果
      */
-    public int deleteGzTraceabilityEntryByParentId(Long id);
+    public int deleteGzTraceabilityEntryByParentId(@Param("parentId") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询追溯单明细列表（用于使用追溯明细表）

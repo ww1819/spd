@@ -73,6 +73,20 @@ public class GzShipmentEntry extends BaseEntity
 
     /** 租户ID */
     private String tenantId;
+    /** 供应商ID */
+    private Long supplierId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 科室ID */
+    private Long departmentId;
+    /** 单号冗余 */
+    private String billNo;
+
+    /** 引用备货验收主表ID（非表字段） */
+    private String refSrcAcceptanceId;
+    private String refSrcAcceptanceNo;
+    private String refSrcOrderEntryId;
+    private String refSrcBarcodeLineId;
 
     public void setId(Long id) 
     {
@@ -200,6 +214,23 @@ public class GzShipmentEntry extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
+
+    public String getRefSrcAcceptanceId() { return refSrcAcceptanceId; }
+    public void setRefSrcAcceptanceId(String refSrcAcceptanceId) { this.refSrcAcceptanceId = refSrcAcceptanceId; }
+    public String getRefSrcAcceptanceNo() { return refSrcAcceptanceNo; }
+    public void setRefSrcAcceptanceNo(String refSrcAcceptanceNo) { this.refSrcAcceptanceNo = refSrcAcceptanceNo; }
+    public String getRefSrcOrderEntryId() { return refSrcOrderEntryId; }
+    public void setRefSrcOrderEntryId(String refSrcOrderEntryId) { this.refSrcOrderEntryId = refSrcOrderEntryId; }
+    public String getRefSrcBarcodeLineId() { return refSrcBarcodeLineId; }
+    public void setRefSrcBarcodeLineId(String refSrcBarcodeLineId) { this.refSrcBarcodeLineId = refSrcBarcodeLineId; }
 
     @Override
     public String toString() {
@@ -218,6 +249,10 @@ public class GzShipmentEntry extends BaseEntity
             .append("masterBarcode", getMasterBarcode())
             .append("secondaryBarcode", getSecondaryBarcode())
             .append("inHospitalCode", getInHospitalCode())
+            .append("supplierId", getSupplierId())
+            .append("warehouseId", getWarehouseId())
+            .append("departmentId", getDepartmentId())
+            .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();
     }

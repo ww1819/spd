@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.service.IGzDepotInventoryService;
+import com.spd.common.utils.StringUtils;
 
 /**
  * 高值备货库存明细Service业务层处理
@@ -106,5 +107,20 @@ public class GzDepotInventoryServiceImpl implements IGzDepotInventoryService
             com.spd.common.utils.SecurityUtils.ensureTenantAccess(existing.getTenantId());
         }
         return gzDepotInventoryMapper.deleteGzDepotInventoryById(id, com.spd.common.utils.SecurityUtils.getUserIdStr());
+    }
+
+    @Override
+    public GzDepotInventory selectByInHospitalCodeAndWarehouse(String inHospitalCode, Long warehouseId)
+    {
+        if (StringUtils.isEmpty(inHospitalCode) || warehouseId == null)
+        {
+            return null;
+        }
+        GzDepotInventory inv = gzDepotInventoryMapper.selectByInHospitalCodeAndWarehouse(inHospitalCode.trim(), warehouseId);
+        if (inv != null)
+        {
+            com.spd.common.utils.SecurityUtils.ensureTenantAccess(inv.getTenantId());
+        }
+        return inv;
     }
 }

@@ -66,6 +66,21 @@ public class GzOrderEntry extends BaseEntity
     private String masterBarcode;
     /** 辅条码 */
     private String secondaryBarcode;
+    /** 供应商ID */
+    private Long supplierId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 单号冗余 */
+    private String billNo;
+
+    /** 引用备货验收主表ID（前端传入，非表字段） */
+    private String refSrcAcceptanceId;
+    /** 引用验收单号 */
+    private String refSrcAcceptanceNo;
+    /** 引用验收明细ID */
+    private String refSrcOrderEntryId;
+    /** 引用条码明细ID gz_order_entry_inhospitalcode_list */
+    private String refSrcBarcodeLineId;
 
     public void setId(Long id) 
     {
@@ -171,6 +186,21 @@ public class GzOrderEntry extends BaseEntity
     public void setMasterBarcode(String masterBarcode) { this.masterBarcode = masterBarcode; }
     public String getSecondaryBarcode() { return secondaryBarcode; }
     public void setSecondaryBarcode(String secondaryBarcode) { this.secondaryBarcode = secondaryBarcode; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
+
+    public String getRefSrcAcceptanceId() { return refSrcAcceptanceId; }
+    public void setRefSrcAcceptanceId(String refSrcAcceptanceId) { this.refSrcAcceptanceId = refSrcAcceptanceId; }
+    public String getRefSrcAcceptanceNo() { return refSrcAcceptanceNo; }
+    public void setRefSrcAcceptanceNo(String refSrcAcceptanceNo) { this.refSrcAcceptanceNo = refSrcAcceptanceNo; }
+    public String getRefSrcOrderEntryId() { return refSrcOrderEntryId; }
+    public void setRefSrcOrderEntryId(String refSrcOrderEntryId) { this.refSrcOrderEntryId = refSrcOrderEntryId; }
+    public String getRefSrcBarcodeLineId() { return refSrcBarcodeLineId; }
+    public void setRefSrcBarcodeLineId(String refSrcBarcodeLineId) { this.refSrcBarcodeLineId = refSrcBarcodeLineId; }
 
     @Override
     public String toString() {
@@ -186,6 +216,9 @@ public class GzOrderEntry extends BaseEntity
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
+            .append("supplierId", getSupplierId())
+            .append("warehouseId", getWarehouseId())
+            .append("billNo", getBillNo())
             .append("remark", getRemark())
             .toString();
     }

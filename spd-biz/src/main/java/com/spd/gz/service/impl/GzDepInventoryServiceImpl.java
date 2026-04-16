@@ -3,9 +3,11 @@ package com.spd.gz.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.service.IGzDepInventoryService;
+import com.spd.common.utils.DateUtils;
 
 /**
  * 高值科室库存Service业务层处理
@@ -52,6 +54,28 @@ public class GzDepInventoryServiceImpl implements IGzDepInventoryService
     @Override
     public int insertGzDepInventory(GzDepInventory gzDepInventory)
     {
+        if (gzDepInventory.getDelFlag() == null)
+        {
+            gzDepInventory.setDelFlag(0);
+        }
+        String userId = SecurityUtils.getUserIdStr();
+        java.util.Date now = DateUtils.getNowDate();
+        if (gzDepInventory.getCreateBy() == null || gzDepInventory.getCreateBy().isEmpty())
+        {
+            gzDepInventory.setCreateBy(userId);
+        }
+        if (gzDepInventory.getUpdateBy() == null || gzDepInventory.getUpdateBy().isEmpty())
+        {
+            gzDepInventory.setUpdateBy(userId);
+        }
+        if (gzDepInventory.getCreateTime() == null)
+        {
+            gzDepInventory.setCreateTime(now);
+        }
+        if (gzDepInventory.getUpdateTime() == null)
+        {
+            gzDepInventory.setUpdateTime(now);
+        }
         return gzDepInventoryMapper.insertGzDepInventory(gzDepInventory);
     }
 
@@ -76,7 +100,7 @@ public class GzDepInventoryServiceImpl implements IGzDepInventoryService
     @Override
     public int deleteGzDepInventoryByIds(Long[] ids)
     {
-        return gzDepInventoryMapper.deleteGzDepInventoryByIds(ids);
+        return gzDepInventoryMapper.deleteGzDepInventoryByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -88,6 +112,6 @@ public class GzDepInventoryServiceImpl implements IGzDepInventoryService
     @Override
     public int deleteGzDepInventoryById(Long id)
     {
-        return gzDepInventoryMapper.deleteGzDepInventoryById(id);
+        return gzDepInventoryMapper.deleteGzDepInventoryById(id, SecurityUtils.getUserIdStr());
     }
 }

@@ -71,9 +71,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     {
         gzDepApply.setApplyBillNo(getNumber());
         gzDepApply.setCreateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(gzDepApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
-            gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
-        }
+        gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
         if (StringUtils.isEmpty(gzDepApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzDepApply.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -102,9 +100,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     public int updateGzDepApply(GzDepApply gzDepApply)
     {
         gzDepApply.setUpdateTime(DateUtils.getNowDate());
-        if (StringUtils.isEmpty(gzDepApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
-            gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
-        }
+        gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
         gzDepApplyMapper.deleteGzDepApplyEntryByParenId(gzDepApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertGzDepApplyEntry(gzDepApply);
         return gzDepApplyMapper.updateGzDepApply(gzDepApply);
@@ -158,6 +154,8 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
         }
 
         gzDepApply.setApplyBillStatus(2);
+        gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
+        gzDepApply.setUpdateTime(DateUtils.getNowDate());
 
         int res = gzDepApplyMapper.updateGzDepApply(gzDepApply);
         return res;
@@ -175,9 +173,20 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
         if (StringUtils.isNotNull(gzDepApplyEntryList))
         {
             List<GzDepApplyEntry> list = new ArrayList<GzDepApplyEntry>();
+            String tenantId = StringUtils.isNotEmpty(gzDepApply.getTenantId())
+                ? gzDepApply.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
+            String userId = SecurityUtils.getUserIdStr();
+            java.util.Date now = DateUtils.getNowDate();
             for (GzDepApplyEntry gzDepApplyEntry : gzDepApplyEntryList)
             {
                 gzDepApplyEntry.setParenId(id);
+                gzDepApplyEntry.setTenantId(tenantId);
+                gzDepApplyEntry.setDelFlag(0);
+                gzDepApplyEntry.setCreateBy(userId);
+                gzDepApplyEntry.setCreateTime(now);
+                gzDepApplyEntry.setUpdateBy(userId);
+                gzDepApplyEntry.setUpdateTime(now);
                 list.add(gzDepApplyEntry);
             }
             if (list.size() > 0)

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzOrderEntryCodeRefMapper">
+
+    <insert id="batchInsert">
+        insert into gz_order_entry_code_ref (
+            id, tenant_id, src_acceptance_id, src_acceptance_no, src_order_entry_id, src_barcode_line_id, src_in_hospital_code,
+            tgt_bill_kind, tgt_main_id, tgt_bill_no, tgt_entry_id, ref_purpose, material_id, material_name, warehouse_id,
+            create_by, create_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.tenantId}, #{item.srcAcceptanceId}, #{item.srcAcceptanceNo}, #{item.srcOrderEntryId},
+                #{item.srcBarcodeLineId}, #{item.srcInHospitalCode}, #{item.tgtBillKind}, #{item.tgtMainId}, #{item.tgtBillNo},
+                #{item.tgtEntryId}, #{item.refPurpose}, #{item.materialId}, #{item.materialName}, #{item.warehouseId},
+                #{item.createBy}, #{item.createTime}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteByTgtMainIdAndKind">
+        delete from gz_order_entry_code_ref
+        where tgt_main_id = #{tgtMainId} and tgt_bill_kind = #{tgtBillKind}
+    </delete>
+</mapper>

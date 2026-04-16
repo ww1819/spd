@@ -3,6 +3,8 @@ package com.spd.gz.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.gz.mapper.GzPatientInfoMapper;
 import com.spd.gz.domain.GzPatientInfo;
 import com.spd.gz.service.IGzPatientInfoService;
@@ -64,6 +66,8 @@ public class GzPatientInfoServiceImpl implements IGzPatientInfoService
     @Override
     public int insertGzPatientInfo(GzPatientInfo gzPatientInfo)
     {
+        gzPatientInfo.setCreateBy(SecurityUtils.getUserIdStr());
+        gzPatientInfo.setCreateTime(DateUtils.getNowDate());
         return gzPatientInfoMapper.insertGzPatientInfo(gzPatientInfo);
     }
 
@@ -76,6 +80,8 @@ public class GzPatientInfoServiceImpl implements IGzPatientInfoService
     @Override
     public int updateGzPatientInfo(GzPatientInfo gzPatientInfo)
     {
+        gzPatientInfo.setUpdateBy(SecurityUtils.getUserIdStr());
+        gzPatientInfo.setUpdateTime(DateUtils.getNowDate());
         return gzPatientInfoMapper.updateGzPatientInfo(gzPatientInfo);
     }
 
@@ -88,7 +94,7 @@ public class GzPatientInfoServiceImpl implements IGzPatientInfoService
     @Override
     public int deleteGzPatientInfoByIds(Long[] ids)
     {
-        return gzPatientInfoMapper.deleteGzPatientInfoByIds(ids);
+        return gzPatientInfoMapper.deleteGzPatientInfoByIds(ids, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -100,6 +106,6 @@ public class GzPatientInfoServiceImpl implements IGzPatientInfoService
     @Override
     public int deleteGzPatientInfoById(Long id)
     {
-        return gzPatientInfoMapper.deleteGzPatientInfoById(id);
+        return gzPatientInfoMapper.deleteGzPatientInfoById(id, SecurityUtils.getUserIdStr());
     }
 }

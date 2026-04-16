@@ -16,6 +16,8 @@ import com.spd.common.constant.HttpStatus;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.exception.DemoModeException;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.exception.DocRefQtyValidationException;
+import com.spd.common.exception.GzInventoryValidationException;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
 
@@ -71,6 +73,26 @@ public class GlobalExceptionHandler
         log.error(e.getMessage(), e);
         Integer code = e.getCode();
         return StringUtils.isNotNull(code) ? AjaxResult.error(code, e.getMessage()) : AjaxResult.error(e.getMessage());
+    }
+
+    /**
+     * 高值备货库存明细校验失败（返回行级原因，code=602）
+     */
+    @ExceptionHandler(GzInventoryValidationException.class)
+    public AjaxResult handleGzInventoryValidationException(GzInventoryValidationException e, HttpServletRequest request)
+    {
+        log.warn("高值库存校验未通过: {}", e.getMessage());
+        return new AjaxResult(602, e.getMessage(), e.getLines());
+    }
+
+    /**
+     * 低值耗材引用单据数量明细校验失败（code=603）
+     */
+    @ExceptionHandler(DocRefQtyValidationException.class)
+    public AjaxResult handleDocRefQtyValidationException(DocRefQtyValidationException e, HttpServletRequest request)
+    {
+        log.warn("引用数量校验未通过: {}", e.getMessage());
+        return new AjaxResult(603, e.getMessage(), e.getLines());
     }
 
     /**

@@ -21,6 +21,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.department.domain.DeptBatchConsume;
+import com.spd.department.domain.DeptBatchConsumeReverseReq;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -84,8 +85,11 @@ public class DeptBatchConsumeController extends BaseController
     {
         int result = deptBatchConsumeService.insertDeptBatchConsume(deptBatchConsume);
         if (result > 0) {
-            // 插入成功后返回deptBatchConsume对象，此时id已被自动填充
-            return success(deptBatchConsume);
+            Integer filteredCount = deptBatchConsume.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "新增成功";
+            return AjaxResult.success(msg, deptBatchConsume);
         }
         return toAjax(result);
     }
@@ -98,7 +102,15 @@ public class DeptBatchConsumeController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody DeptBatchConsume deptBatchConsume)
     {
-        return toAjax(deptBatchConsumeService.updateDeptBatchConsume(deptBatchConsume));
+        int result = deptBatchConsumeService.updateDeptBatchConsume(deptBatchConsume);
+        if (result > 0) {
+            Integer filteredCount = deptBatchConsume.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "修改成功";
+            return AjaxResult.success(msg, deptBatchConsume);
+        }
+        return toAjax(result);
     }
 
     /**
@@ -122,6 +134,40 @@ public class DeptBatchConsumeController extends BaseController
     {
         int result = deptBatchConsumeService.auditConsume(json.getString("id"), getUserIdStr());
         return toAjax(result);
+    }
+
+    /**
+     * 引用出库单：查询可引用明细（低敏感接口，权限锚定科室批量消耗自身）
+     */
+    @PreAuthorize("@ss.hasPermi('department:batchConsume:add') || @ss.hasPermi('department:batchConsume:edit') || @ss.hasPermi('department:batchConsume:list')")
+    @GetMapping("/outRefEntryList")
+    public TableDataInfo outRefEntryList(DeptBatchConsume deptBatchConsume)
+    {
+        startPage();
+        List<Map<String, Object>> list = deptBatchConsumeService.selectOutRefEntryList(deptBatchConsume);
+        return getDataTable(list);
+    }
+
+    /**
+     * 反消耗：查询可反消耗明细（仅已审核正向消耗明细，返回可退数量）
+     */
+    @PreAuthorize("@ss.hasPermi('department:batchConsume:reverse')")
+    @GetMapping("/reverseEntryList/{consumeId}")
+    public AjaxResult reverseEntryList(@PathVariable("consumeId") Long consumeId)
+    {
+        return success(deptBatchConsumeService.selectReverseableEntryList(consumeId));
+    }
+
+    /**
+     * 反消耗：按可退数量校验后生成负数消耗单，并回补科室库存
+     */
+    @PreAuthorize("@ss.hasPermi('department:batchConsume:reverse')")
+    @Log(title = "科室批量消耗-反消耗", businessType = BusinessType.INSERT)
+    @PostMapping("/reverse")
+    public AjaxResult reverse(@RequestBody DeptBatchConsumeReverseReq req)
+    {
+        DeptBatchConsume reverseBill = deptBatchConsumeService.reverseConsume(req, getUserIdStr());
+        return AjaxResult.success(String.format("反消耗成功，生成单号：%s", reverseBill.getConsumeBillNo()), reverseBill);
     }
 
     /**

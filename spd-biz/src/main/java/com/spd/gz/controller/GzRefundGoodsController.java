@@ -79,7 +79,15 @@ public class GzRefundGoodsController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody GzRefundGoods gzRefundGoods)
     {
-        return toAjax(gzRefundGoodsService.insertGzRefundGoods(gzRefundGoods));
+        int rows = gzRefundGoodsService.insertGzRefundGoods(gzRefundGoods);
+        if (rows > 0) {
+            Integer filteredCount = gzRefundGoods.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "新增成功";
+            return AjaxResult.success(msg, gzRefundGoods);
+        }
+        return AjaxResult.error("新增失败");
     }
 
     /**
@@ -90,7 +98,15 @@ public class GzRefundGoodsController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody GzRefundGoods gzRefundGoods)
     {
-        return toAjax(gzRefundGoodsService.updateGzRefundGoods(gzRefundGoods));
+        int rows = gzRefundGoodsService.updateGzRefundGoods(gzRefundGoods);
+        if (rows > 0) {
+            Integer filteredCount = gzRefundGoods.getDedupFilteredCount();
+            String msg = (filteredCount != null && filteredCount > 0)
+                ? String.format("修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "修改成功";
+            return AjaxResult.success(msg, gzRefundGoods);
+        }
+        return AjaxResult.error("修改失败");
     }
 
     /**

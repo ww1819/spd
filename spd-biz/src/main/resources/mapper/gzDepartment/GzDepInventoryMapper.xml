@@ -6,6 +6,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <resultMap type="GzDepInventory" id="GzDepInventoryResult">
         <result property="id"    column="id"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="tenantId"    column="tenant_id"    />
         <result property="materialId"    column="material_id"    />
         <result property="departmentId"    column="department_id"    />
         <result property="qty"    column="qty"    />
@@ -13,9 +15,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="amt"    column="amt"    />
         <result property="batchNo"    column="batch_no"    />
         <result property="materialNo"    column="material_no"    />
+        <result property="supplierId"    column="supplier_id"    />
         <result property="materialDate"    column="material_date"    />
         <result property="warehouseDate"    column="warehouse_date"    />
         <result property="inHospitalCode"    column="in_hospital_code"    />
+        <result property="masterBarcode"    column="gz_dep_master_barcode"    />
+        <result property="secondaryBarcode"    column="gz_dep_secondary_barcode"    />
+        <result property="deleteBy"    column="gz_dep_delete_by"    />
+        <result property="deleteTime"    column="gz_dep_delete_time"    />
         <result property="endTime"    column="end_time"    />
         <result property="shipmentNo"    column="shipmentNo"    />
         <result property="auditBy"    column="auditBy"    />
@@ -67,9 +74,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectGzDepInventoryVo">
-        select gz.id, gz.material_id, gz.department_id, gz.qty, gz.unit_price, gz.amt,
-				gz.batch_no, gz.material_no, gz.material_date, gz.warehouse_date,
+        select gz.id, gz.del_flag, gz.tenant_id, gz.material_id, gz.department_id, gz.qty, gz.unit_price, gz.amt,
+				gz.batch_no, gz.material_no, gz.supplier_id, gz.material_date, gz.warehouse_date,
 				gz.in_hospital_code,
+				gz.master_barcode as gz_dep_master_barcode,
+				gz.secondary_barcode as gz_dep_secondary_barcode,
+				gz.delete_by as gz_dep_delete_by,
+				gz.delete_time as gz_dep_delete_time,
 				goe.end_time,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				m.id mId,m.code materialCode,m.name materialName,
@@ -93,17 +104,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_unit u on m.unit_id = u.unit_id
-        left join gz_order_entry goe on gz.batch_no = goe.batch_no
-        left join gz_order go on goe.paren_id = go.id
+        left join gz_order_entry goe on gz.batch_no = goe.batch_no and goe.del_flag != 1
+        left join gz_order go on goe.paren_id = go.id and go.del_flag != 1
         left join fd_warehouse w on go.warehouse_id = w.id
-        left join gz_shipment_entry gse on gz.batch_no = gse.batch_no and gz.in_hospital_code = gse.in_hospital_code
-        left join gz_shipment gs on gse.paren_id = gs.id
+        left join gz_shipment_entry gse on gz.batch_no = gse.batch_no and gz.in_hospital_code = gse.in_hospital_code and gse.del_flag != 1
+        left join gz_shipment gs on gse.paren_id = gs.id and gs.del_flag != 1
     </sql>
 
     <select id="selectGzDepInventoryList" parameterType="GzDepInventory" resultMap="GzDepInventoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepInventoryVo"/>
-        where 1=1
+        where gz.del_flag != 1
         and gz.tenant_id = #{scopedTenantId}
         <!-- 只查询有院内码的记录，确保每个院内码一行 -->
         and gz.in_hospital_code IS NOT NULL and gz.in_hospital_code != ''
@@ -113,7 +124,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
         <if test="departmentId != null "> and gz.department_id = #{departmentId}</if>
-        <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
+        <if test="supplierId != null "> and gz.supplier_id = #{supplierId}</if>
         <if test="batchNo != null  and batchNo != ''"> and gz.batch_no = #{batchNo}</if>
         <if test="materialNo != null  and materialNo != ''"> and gz.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and gz.material_date = #{materialDate}</if>
@@ -127,7 +138,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzDepInventoryById" parameterType="Long" resultMap="GzDepInventoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepInventoryVo"/>
-        where gz.id = #{id} and gz.tenant_id = #{scopedTenantId}
+        where gz.id = #{id} and gz.del_flag != 1 and gz.tenant_id = #{scopedTenantId}
     </select>
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
@@ -141,9 +152,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="amt != null">amt,</if>
             <if test="batchNo != null">batch_no,</if>
             <if test="materialNo != null">material_no,</if>
+            <if test="supplierId != null">supplier_id,</if>
             <if test="materialDate != null">material_date,</if>
             <if test="warehouseDate != null">warehouse_date,</if>
             <if test="inHospitalCode != null">in_hospital_code,</if>
+            <if test="masterBarcode != null">master_barcode,</if>
+            <if test="secondaryBarcode != null">secondary_barcode,</if>
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -154,9 +173,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="amt != null">#{amt},</if>
             <if test="batchNo != null">#{batchNo},</if>
             <if test="materialNo != null">#{materialNo},</if>
+            <if test="supplierId != null">#{supplierId},</if>
             <if test="materialDate != null">#{materialDate},</if>
             <if test="warehouseDate != null">#{warehouseDate},</if>
             <if test="inHospitalCode != null">#{inHospitalCode},</if>
+            <if test="masterBarcode != null">#{masterBarcode},</if>
+            <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
             #{scopedTenantId},
          </trim>
     </insert>
@@ -172,20 +199,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="amt != null">amt = #{amt},</if>
             <if test="batchNo != null">batch_no = #{batchNo},</if>
             <if test="materialNo != null">material_no = #{materialNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="materialDate != null">material_date = #{materialDate},</if>
             <if test="warehouseDate != null">warehouse_date = #{warehouseDate},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
-    <delete id="deleteGzDepInventoryById" parameterType="Long">
+    <delete id="deleteGzDepInventoryById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_dep_inventory set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update gz_dep_inventory
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
-    <delete id="deleteGzDepInventoryByIds" parameterType="String">
+    <delete id="deleteGzDepInventoryByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update gz_dep_inventory set del_flag = 1, update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update gz_dep_inventory
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -193,13 +225,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectGzDepInventoryOne" parameterType="java.lang.String" resultMap="GzDepInventoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select * from gz_dep_inventory where batch_no = #{batchNo} and tenant_id = #{scopedTenantId} order by id desc limit 1
+        select * from gz_dep_inventory where batch_no = #{batchNo} and del_flag != 1 and tenant_id = #{scopedTenantId} order by id desc limit 1
     </select>
 
     <select id="selectTKDepInvntoryByBatchNo" parameterType="java.lang.String" resultType="java.math.BigDecimal">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(IFNULL(qty, 0)) from gz_dep_inventory
-        where batch_no = #{batchNo} and tenant_id = #{scopedTenantId}
+        where batch_no = #{batchNo} and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
     
     <select id="selectGzDepInventoryByCodeAndDept" resultMap="GzDepInventoryResult">
@@ -207,6 +239,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectGzDepInventoryVo"/>
         where gz.in_hospital_code = #{inHospitalCode}
         and gz.department_id = #{departmentId}
+        and gz.del_flag != 1
         and gz.tenant_id = #{scopedTenantId}
         <!-- 不过滤数量为0的记录 -->
         limit 1
