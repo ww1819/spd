@@ -5123,6 +5123,12 @@ SELECT 3390,'出退库报表',COALESCE(@out_m,COALESCE(@warehouse_m,1)),6,'outWa
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND perms='outWarehouse:outWarehouseQuery:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3390)
 ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),path=VALUES(path),component=VALUES(component),perms=VALUES(perms),update_time=VALUES(update_time);
 /
+SET @out_ck_query_c := (SELECT m.menu_id FROM sys_menu m WHERE m.perms='outWarehouse:outWarehouseQuery:list' AND m.menu_type='C' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3501,'出退库整体导出',@out_ck_query_c,1,'#','',NULL,1,0,'F','0','0','outWarehouse:outWarehouseQuery:exportOverall','#','admin',NOW(),'1',NOW(),'出退库明细单表导出 POST /warehouse/rthWarehouse/exportCTKOverall','0','1' FROM DUAL WHERE @out_ck_query_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@out_ck_query_c AND perms='outWarehouse:outWarehouseQuery:exportOverall') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3501))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),remark=VALUES(remark),update_time=VALUES(update_time);
+/
 
 -- 出库申请页 + 按钮
 INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)

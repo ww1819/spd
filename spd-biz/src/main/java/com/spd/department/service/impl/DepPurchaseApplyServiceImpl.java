@@ -3,6 +3,7 @@ package com.spd.department.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Date;
+import com.spd.system.service.ITenantScopeService;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.exception.ServiceException;
@@ -28,6 +29,38 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Autowired
     private DepPurchaseApplyMapper depPurchaseApplyMapper;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    /** 非租户管理员：仅能访问已授权科室的科室申购单 */
+    private void assertDepartmentInUserScope(Long departmentId) {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        if (deptIds == null) {
+            return;
+        }
+        if (departmentId == null || deptIds.isEmpty() || !deptIds.contains(departmentId)) {
+            throw new ServiceException("无权操作该科室的申购单");
+        }
+    }
+
+    private void assertDepPurchaseDepartmentInUserScope(DepPurchaseApply a) {
+        if (a == null) {
+            return;
+        }
+        assertDepartmentInUserScope(a.getDepartmentId());
+    }
+
+    @Override
+    public void applyDepartmentScopeToQuery(DepPurchaseApply depPurchaseApply) {
+        if (depPurchaseApply == null) {
+            return;
+        }
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            depPurchaseApply.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+    }
+
     /**
      * 查询科室申购
      * 
@@ -40,6 +73,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         DepPurchaseApply a = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
         if (a != null) {
             SecurityUtils.ensureTenantAccess(a.getTenantId());
+            assertDepPurchaseDepartmentInUserScope(a);
         }
         return a;
     }
@@ -79,6 +113,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int insertDepPurchaseApply(DepPurchaseApply depPurchaseApply)
     {
+        if (depPurchaseApply != null && depPurchaseApply.getDepartmentId() != null) {
+            assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
+        }
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         // 生成申购单号
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo())) {
@@ -107,6 +144,14 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Override
     public int updateDepPurchaseApply(DepPurchaseApply depPurchaseApply)
     {
+        DepPurchaseApply existing = depPurchaseApplyMapper.selectDepPurchaseApplyById(depPurchaseApply.getId());
+        if (existing != null) {
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            assertDepPurchaseDepartmentInUserScope(existing);
+        }
+        if (depPurchaseApply.getDepartmentId() != null) {
+            assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
+        }
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -130,6 +175,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
             DepPurchaseApply existing = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
             if (existing != null) {
                 SecurityUtils.ensureTenantAccess(existing.getTenantId());
+                assertDepPurchaseDepartmentInUserScope(existing);
             }
         }
         String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
@@ -150,6 +196,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         DepPurchaseApply existing = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            assertDepPurchaseDepartmentInUserScope(existing);
         }
         String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
         depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(id, deleteBy);
@@ -220,6 +267,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(depPurchaseApply.getTenantId());
+        assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
         if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申购可审核，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
         }
@@ -244,6 +293,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(depPurchaseApply.getTenantId());
+        assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
         if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申购可驳回，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
         }
@@ -268,6 +319,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if(depPurchaseApply == null){
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(depPurchaseApply.getTenantId());
+        assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
         if(depPurchaseApply.getPurchaseBillStatus() != 2){
             throw new ServiceException("只有已审核的申购单才能确认收货!");
         }
@@ -292,6 +345,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if(depPurchaseApply == null){
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(depPurchaseApply.getTenantId());
+        assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
         if(depPurchaseApply.getPurchaseBillStatus() != 2){
             throw new ServiceException("只有已审核的申购单才能驳回收货!");
         }

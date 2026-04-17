@@ -2961,6 +2961,223 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         c.setCellStyle(style);
     }
 
+    @Override
+    public void applyCtkDepartmentScopeToQuery(StkIoBill stkIoBill)
+    {
+        if (stkIoBill == null)
+        {
+            return;
+        }
+        if (stkIoBill.getParams() == null)
+        {
+            stkIoBill.setParams(new HashMap<>());
+        }
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            stkIoBill.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+    }
+
+    @Override
+    public void exportCTKOverallDetailXlsx(StkIoBill q, HttpServletResponse response) throws IOException
+    {
+        if (q == null)
+        {
+            q = new StkIoBill();
+        }
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        applyCtkDepartmentScopeToQuery(q);
+        List<Map<String, Object>> mapList = stkIoBillMapper.selectCTKStkIoBillList(q);
+        SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat fnFmt = new SimpleDateFormat("yyyyMMddHHmmss");
+        String beginStr = q.getBeginDate() != null ? dayFmt.format(q.getBeginDate()) : "";
+        String endStr = "";
+        if (q.getEndDate() != null)
+        {
+            endStr = dayFmt.format(q.getEndDate());
+            if (endStr.length() > 10)
+            {
+                endStr = endStr.substring(0, 10);
+            }
+        }
+        String title = "出退库明细_统计时间" + beginStr + "至" + endStr;
+        String[] headers = new String[] {
+            "耗材编码", "科室", "业务日期", "耗材名称", "规格", "生产厂家", "单位", "单价", "数量", "金额", "批号", "供应商", "仓库名称"
+        };
+        Workbook wb = new XSSFWorkbook();
+        Sheet sheet = wb.createSheet("出退库明细");
+        Font titleFont = wb.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 14);
+        CellStyle titleStyle = wb.createCellStyle();
+        titleStyle.setFont(titleFont);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
+        titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        CellStyle headStyle = wb.createCellStyle();
+        Font hf = wb.createFont();
+        hf.setBold(true);
+        headStyle.setFont(hf);
+        headStyle.setAlignment(HorizontalAlignment.CENTER);
+        headStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        setThinBorderAround(headStyle);
+        CellStyle dataStyle = wb.createCellStyle();
+        dataStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        setThinBorderAround(dataStyle);
+        Row row0 = sheet.createRow(0);
+        Cell c0 = row0.createCell(0);
+        c0.setCellValue(title);
+        c0.setCellStyle(titleStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, headers.length - 1));
+        Row row1 = sheet.createRow(1);
+        for (int i = 0; i < headers.length; i++)
+        {
+            setCellStr(row1, i, headers[i], headStyle);
+        }
+        int r = 2;
+        for (Map<String, Object> map : mapList)
+        {
+            if (map == null)
+            {
+                continue;
+            }
+            Integer billType = parseCtkExportBillType(map.get("billType"));
+            BigDecimal qty = toBd(map.get("materialQty"));
+            BigDecimal amt = toBd(map.get("materialAmt"));
+            BigDecimal up = toBd(map.get("unitPrice"));
+            if (billType != null && billType == 401)
+            {
+                if (qty != null)
+                {
+                    qty = qty.abs();
+                }
+                if (amt != null)
+                {
+                    amt = amt.abs();
+                }
+                if (up != null)
+                {
+                    up = up.abs();
+                }
+            }
+            if (up == null && amt != null && qty != null && qty.compareTo(BigDecimal.ZERO) > 0)
+            {
+                up = amt.divide(qty, 4, RoundingMode.HALF_UP);
+            }
+            String bizDate = "";
+            Object ad = map.get("auditDate");
+            if (ad != null)
+            {
+                try
+                {
+                    if (ad instanceof Date)
+                    {
+                        bizDate = dayFmt.format((Date) ad);
+                    }
+                    else
+                    {
+                        String s = ad.toString();
+                        bizDate = s.length() > 10 ? s.substring(0, 10) : s;
+                    }
+                }
+                catch (Exception ignored)
+                {
+                    bizDate = "";
+                }
+            }
+            String batchDisp = "/";
+            Object bn = map.get("batchNumber");
+            Object bno = map.get("batchNo");
+            if (bn != null && StringUtils.isNotEmpty(String.valueOf(bn).trim()))
+            {
+                batchDisp = String.valueOf(bn).trim();
+            }
+            else if (bno != null && StringUtils.isNotEmpty(String.valueOf(bno).trim()))
+            {
+                batchDisp = String.valueOf(bno).trim();
+            }
+            Row dr = sheet.createRow(r++);
+            String[] vals = new String[] {
+                StringUtils.nvl(map.get("materialCode"), "").toString(),
+                StringUtils.nvl(map.get("departmentName"), "").toString(),
+                bizDate,
+                StringUtils.nvl(map.get("materialName"), "").toString(),
+                StringUtils.nvl(map.get("materialSpeci"), "").toString(),
+                StringUtils.nvl(map.get("factoryName"), "").toString(),
+                StringUtils.nvl(map.get("unitName"), "").toString(),
+                up != null ? up.stripTrailingZeros().toPlainString() : "",
+                qty != null ? qty.stripTrailingZeros().toPlainString() : "",
+                amt != null ? amt.stripTrailingZeros().toPlainString() : "",
+                batchDisp,
+                StringUtils.nvl(map.get("supplierName"), "").toString(),
+                StringUtils.nvl(map.get("warehouseName"), "").toString()
+            };
+            for (int i = 0; i < vals.length; i++)
+            {
+                setCellStr(dr, i, vals[i], dataStyle);
+            }
+        }
+        for (int i = 0; i < headers.length; i++)
+        {
+            sheet.setColumnWidth(i, 14 * 256);
+        }
+        sheet.setColumnWidth(3, 28 * 256);
+        sheet.setColumnWidth(11, 22 * 256);
+        String fn = "出退库明细_统计时间" + beginStr + "至" + endStr + "_" + fnFmt.format(new Date()) + ".xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment;filename*=utf-8''" + URLEncoder.encode(fn, "UTF-8").replace("+", "%20"));
+        wb.write(response.getOutputStream());
+        wb.close();
+    }
+
+    private static Integer parseCtkExportBillType(Object billTypeObj)
+    {
+        if (billTypeObj == null)
+        {
+            return null;
+        }
+        if (billTypeObj instanceof Integer)
+        {
+            return (Integer) billTypeObj;
+        }
+        if (billTypeObj instanceof Number)
+        {
+            return ((Number) billTypeObj).intValue();
+        }
+        try
+        {
+            return Integer.parseInt(billTypeObj.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
+    }
+
+    private static BigDecimal toBd(Object o)
+    {
+        if (o == null)
+        {
+            return null;
+        }
+        if (o instanceof BigDecimal)
+        {
+            return (BigDecimal) o;
+        }
+        if (o instanceof Number)
+        {
+            return BigDecimal.valueOf(((Number) o).doubleValue());
+        }
+        try
+        {
+            return new BigDecimal(o.toString());
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
     /** 为源单明细填充已被引用量、可引用量（不落库） */
     private void fillSrcEntryRefConsumption(StkIoBill bill) {
         if (bill == null || bill.getId() == null) {

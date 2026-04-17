@@ -65,6 +65,7 @@ public class DepPurchaseApplyController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(DepPurchaseApply depPurchaseApply)
     {
+        depPurchaseApplyService.applyDepartmentScopeToQuery(depPurchaseApply);
         startPage();
         List<DepPurchaseApply> list = depPurchaseApplyService.selectDepPurchaseApplyList(depPurchaseApply);
         return getDataTable(list);
@@ -79,6 +80,7 @@ public class DepPurchaseApplyController extends BaseController
     public void export(HttpServletResponse response, DepPurchaseApply depPurchaseApply, @RequestParam(required = false) String exportBillIds)
         throws IOException
     {
+        depPurchaseApplyService.applyDepartmentScopeToQuery(depPurchaseApply);
         List<Long> billIds = parseBillIds(exportBillIds);
         List<DepPurchaseApply> bills = new ArrayList<>();
 

@@ -3,6 +3,30 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.department.mapper.DepPurchaseApplyMapper">
+
+    <sql id="depPurchaseScopedDeptIdsSubquery">
+        select distinct x.did from (
+            select cast(upd.dept_id as unsigned) as did
+            from sb_user_permission_dept upd
+            where upd.user_id = #{params.scopeDeptUserId}
+              and ifnull(upd.del_flag, '0') = '0'
+            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+              and upd.customer_id = #{params.scopeDeptCustomerId}
+            </if>
+            union
+            select ud.department_id as did
+            from sys_user_department ud
+            where ud.user_id = #{params.scopeDeptUserId}
+              and (ud.status = 0 or ud.status = '0' or ud.status is null)
+        ) x
+        where x.did is not null
+    </sql>
+
+    <sql id="depPurchaseDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and dpa.department_id in (<include refid="depPurchaseScopedDeptIdsSubquery"/>)
+        </if>
+    </sql>
     
     <resultMap type="DepPurchaseApply" id="DepPurchaseApplyResult">
         <result property="id"    column="id"    />
@@ -144,6 +168,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
                 where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
             )</if>
+            <include refid="depPurchaseDepartmentScopeFilter"/>
             and (dpa.del_flag = 0 or dpa.del_flag is null)
         </where>
         order by dpa.create_time desc

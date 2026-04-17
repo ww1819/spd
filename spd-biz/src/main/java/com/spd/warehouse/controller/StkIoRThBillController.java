@@ -17,11 +17,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
+import com.spd.common.annotation.Log;
+import com.spd.common.enums.BusinessType;
 
 /**
  * 入库Controller
@@ -207,6 +213,7 @@ public class StkIoRThBillController extends BaseController
     @GetMapping("/CTKList")
     public TableDataInfo CTKList(StkIoBill stkIoBill)
     {
+        stkIoBillService.applyCtkDepartmentScopeToQuery(stkIoBill);
         // 启动分页
         startPage();
         List<StkCTKVo> stkRTHVoList = new ArrayList<StkCTKVo>();
@@ -321,6 +328,7 @@ public class StkIoRThBillController extends BaseController
     @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:list')")
     @GetMapping("/CTKListSummary")
     public TableDataInfo CTKListSummary(StkIoBill stkIoBill){
+        stkIoBillService.applyCtkDepartmentScopeToQuery(stkIoBill);
         // 启动分页
         startPage();
         List<StkCTKVo> stkRTHVoList = new ArrayList<StkCTKVo>();
@@ -414,6 +422,17 @@ public class StkIoRThBillController extends BaseController
     @GetMapping("/purchaseSummaryBySupplier")
     public List<Map<String, Object>> purchaseSummaryBySupplier(StkIoBill stkIoBill) {
         return stkIoBillService.selectPurchaseSummaryBySupplier(stkIoBill);
+    }
+
+    /**
+     * 出退库明细整体导出（单工作表，首行大标题 + 表头，与枣强出退库明细表版式一致；不按供应商拆文件）
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:exportOverall')")
+    @Log(title = "出退库明细整体导出", businessType = BusinessType.EXPORT)
+    @PostMapping("/exportCTKOverall")
+    public void exportCTKOverall(HttpServletResponse response, StkIoBill stkIoBill) throws IOException
+    {
+        stkIoBillService.exportCTKOverallDetailXlsx(stkIoBill, response);
     }
 
 }

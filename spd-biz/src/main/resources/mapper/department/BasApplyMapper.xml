@@ -4,25 +4,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.department.mapper.BasApplyMapper">
 
-    <!-- 科室数据范围：与 TenantScopeService 双表并集一致，避免 params.deptIds IN 过长 -->
+    <!-- 与 TenantScopeService.resolveDepartmentScope 一致：sb_user_permission_dept ∪ sys_user_department -->
+    <sql id="scopedDeptIdsSubquery">
+        select distinct x.did from (
+            select cast(upd.dept_id as unsigned) as did
+            from sb_user_permission_dept upd
+            where upd.user_id = #{params.scopeDeptUserId}
+              and ifnull(upd.del_flag, '0') = '0'
+            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+              and upd.customer_id = #{params.scopeDeptCustomerId}
+            </if>
+            union
+            select ud.department_id as did
+            from sys_user_department ud
+            where ud.user_id = #{params.scopeDeptUserId}
+              and (ud.status = 0 or ud.status = '0' or ud.status is null)
+        ) x
+        where x.did is not null
+    </sql>
+
+    <!-- 非转科：按申请科室过滤；转科 bill_type=3：调出(warehouse_id)、调入(department_id)均须在权限内，与 Service 断言一致 -->
     <sql id="basApplyDepartmentScopeFilter">
         <if test="params != null and params.scopeDeptUserId != null">
-            and a.department_id in (
-                select distinct x.did from (
-                    select cast(upd.dept_id as unsigned) as did
-                    from sb_user_permission_dept upd
-                    where upd.user_id = #{params.scopeDeptUserId}
-                      and ifnull(upd.del_flag, '0') = '0'
-                    <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
-                      and upd.customer_id = #{params.scopeDeptCustomerId}
-                    </if>
-                    union
-                    select ud.department_id as did
-                    from sys_user_department ud
-                    where ud.user_id = #{params.scopeDeptUserId}
-                      and (ud.status = 0 or ud.status = '0' or ud.status is null)
-                ) x
-                where x.did is not null
+            and (
+                (COALESCE(a.bill_type, 1) != 3 and a.department_id in (<include refid="scopedDeptIdsSubquery"/>))
+                or
+                (COALESCE(a.bill_type, 1) = 3 and a.warehouse_id in (<include refid="scopedDeptIdsSubquery"/>)
+                    and a.department_id in (<include refid="scopedDeptIdsSubquery"/>))
             )
         </if>
     </sql>
