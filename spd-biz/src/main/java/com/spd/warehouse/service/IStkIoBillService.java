@@ -268,4 +268,12 @@ public interface IStkIoBillService
      */
     void exportOutWarehouseGroupedByBill(StkIoBill stkIoBill, HttpServletResponse response) throws IOException;
 
+    /** 出退库查询：非租户管理员按科室数据权限过滤（params.scopeDeptUserId，见 Mapper stkIoBillDepartmentScopeFilter） */
+    void applyCtkDepartmentScopeToQuery(StkIoBill stkIoBill);
+
+    /**
+     * 出退库明细整体导出：单工作表，首行标题「出退库明细_统计时间…」，列与枣强出退库明细表样式一致（非按供应商拆文件）
+     */
+    void exportCTKOverallDetailXlsx(StkIoBill stkIoBill, HttpServletResponse response) throws IOException;
+
 }

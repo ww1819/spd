@@ -11,6 +11,9 @@ import com.spd.department.domain.DepPurchaseApply;
  */
 public interface IDepPurchaseApplyService 
 {
+    /** 非租户管理员：列表/导出等查询按科室数据权限过滤（params.scopeDeptUserId，见 Mapper） */
+    void applyDepartmentScopeToQuery(DepPurchaseApply depPurchaseApply);
+
     /**
      * 查询科室申购
      * 

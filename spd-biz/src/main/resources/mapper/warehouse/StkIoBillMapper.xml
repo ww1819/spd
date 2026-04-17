@@ -554,6 +554,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
         GROUP BY stk.id, m.code, m.name, stk.bill_type,
                  IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END),
                  m.speci, m.model, u.unit_name,
@@ -609,6 +610,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="billType != null "> and stk.bill_Type = #{billType}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
     </select>
 
     <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
@@ -643,6 +645,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="billType != null "> and stk.bill_Type = #{billType}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
     </select>
 
     <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
@@ -669,6 +672,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
     </select>
 
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">
