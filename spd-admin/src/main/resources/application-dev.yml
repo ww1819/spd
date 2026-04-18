@@ -45,12 +45,18 @@ spd:
         url: http://localhost:8088
     # HIS：患者计费镜像抓取。主库 sys_his_external_db 按 tenant_id 配置外联库与 db_type（SQLSERVER/MYSQL）；
     # 无租户行且 use-global-datasource-fallback=true 时回退到下方 datasource 全局单库（兼容旧部署）。
+    # SQL Server 2012+JDBC：程序会对 jdbc:sqlserver 自动补 encrypt=false、trustServerCertificate=true、loginTimeout=60（未写时）；
+    # 命名实例与 SSMS 一致：instanceName=HISSVR；18456=SQL 登录失败（核对 HIS 库上的登录名/密码，勿与 MySQL 账号混用）。
     his:
         use-global-datasource-fallback: true
         allowed-tenant-ids:
             - hengsui-third-001
         datasource:
             enabled: false
+            # 启用时示例（与 192.168.3.69\HISSVR + THIS4 一致时可照抄 host/instance/database）：
+            # url: jdbc:sqlserver://192.168.3.69;instanceName=HISSVR;databaseName=THIS4;encrypt=false;trustServerCertificate=true;loginTimeout=60
+            # username: （HIS 实例上的 SQL 登录，非 spd MySQL）
+            # password:
         fetch:
             max-range-days: 31
             chunk-days: 7

@@ -693,24 +693,21 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
                     validateInventory(batchNo, warehouseId, stkIoBillEntryList);
 
-                    BigDecimal inventoryQty = inventory.getQty();//库存数量
                     BigDecimal unitPrice = inventory.getUnitPrice();//单价
 
-                    //出库数量不能大于库存数量
-                    if(qty.compareTo(inventoryQty) > 0){
-                        throw new ServiceException(String.format("实际库存不足！出库数量：%s，实际库存：%s", qty,inventoryQty));
+                    String updateBy = SecurityUtils.getUserIdStr();
+                    int decRows = stkInventoryMapper.decreaseStkInventoryQty(inventory.getId(), qty, updateBy);
+                    if (decRows == 0) {
+                        StkInventory latest = stkInventoryMapper.selectStkInventoryById(inventory.getId());
+                        BigDecimal cur = latest != null && latest.getQty() != null ? latest.getQty() : BigDecimal.ZERO;
+                        throw new ServiceException(String.format(
+                                "实际库存不足，出库审核已拒绝。批次：%s，本行出库：%s，当前库存：%s（可能与他单并发或本单多行合计超库存，请刷新后重试）",
+                                batchNo, qty, cur));
                     }
-                    BigDecimal subQty = inventoryQty.subtract(qty);
-                    // 扣减仓库库存
-                    inventory.setQty(subQty);
-                    if(unitPrice != null && subQty != null){
-                        inventory.setAmt(subQty.multiply(unitPrice));
-                    } else {
-                        inventory.setAmt(BigDecimal.ZERO);
+                    inventory = stkInventoryMapper.selectStkInventoryById(inventory.getId());
+                    if (inventory == null) {
+                        throw new ServiceException(String.format("出库扣减后重新加载库存失败，批次：%s", batchNo));
                     }
-                    inventory.setUpdateTime(new Date());
-                    inventory.setUpdateBy(SecurityUtils.getUserIdStr());
-                    stkInventoryMapper.updateStkInventory(inventory);
 
                     // 插仓库流水（lx=CK，kc_no=仓库库存id）
                     HcCkFlow ckFlow = new HcCkFlow();
@@ -1043,17 +1040,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         throw new ServiceException(String.format("调拨-批次号：%s，不在转出仓库!", batchNo));
                     }
                     validateInventory(batchNo, outWarehouseId, stkIoBillEntryList);
-                    BigDecimal outQty = outInventory.getQty();
                     BigDecimal unitPrice = outInventory.getUnitPrice();
-                    if (qty.compareTo(outQty) > 0) {
-                        throw new ServiceException(String.format("调拨转出库存不足！数量：%s，实际库存：%s", qty, outQty));
+                    String updateBy501 = SecurityUtils.getUserIdStr();
+                    int decOut = stkInventoryMapper.decreaseStkInventoryQty(outInventory.getId(), qty, updateBy501);
+                    if (decOut == 0) {
+                        StkInventory latestOut = stkInventoryMapper.selectStkInventoryById(outInventory.getId());
+                        BigDecimal curOut = latestOut != null && latestOut.getQty() != null ? latestOut.getQty() : BigDecimal.ZERO;
+                        throw new ServiceException(String.format(
+                                "调拨转出库存不足，审核已拒绝。批次：%s，本行数量：%s，当前库存：%s（请刷新后重试）",
+                                batchNo, qty, curOut));
                     }
-                    BigDecimal outSubQty = outQty.subtract(qty);
-                    outInventory.setQty(outSubQty);
-                    outInventory.setAmt(unitPrice != null && outSubQty != null ? outSubQty.multiply(unitPrice) : BigDecimal.ZERO);
-                    outInventory.setUpdateTime(new Date());
-                    outInventory.setUpdateBy(SecurityUtils.getUserIdStr());
-                    stkInventoryMapper.updateStkInventory(outInventory);
+                    outInventory = stkInventoryMapper.selectStkInventoryById(outInventory.getId());
+                    if (outInventory == null) {
+                        throw new ServiceException(String.format("调拨转出扣减后重新加载库存失败，批次：%s", batchNo));
+                    }
 
                     HcCkFlow zcFlow = new HcCkFlow();
                     zcFlow.setBillId(stkIoBill.getId());
@@ -1978,29 +1978,45 @@ public class StkIoBillServiceImpl implements IStkIoBillService
      */
     private void validateInventory(String oldBatchNo, Long oldWarehouseId, List<StkIoBillEntry> stkIoBillEntryList){
         if (oldWarehouseId == null) {
-            throw new ServiceException("warehouseId is required");
+            throw new ServiceException("单据仓库不能为空，无法校验库存");
         }
-        if (oldBatchNo == null) {
+        if (oldBatchNo == null || stkIoBillEntryList == null) {
             return;
         }
+        BigDecimal sumQty = BigDecimal.ZERO;
         for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList) {
-            if (stkIoBillEntry == null) continue;
-            String batchNo = stkIoBillEntry.getBatchNo();
-            BigDecimal qty = stkIoBillEntry.getQty(); // 出库数量
-            if (batchNo == null || qty == null) continue;
-            if (!oldBatchNo.equals(batchNo)) continue;
-
-            Long entryWarehouseId = stkIoBillEntry.getWarehouseId();
-            if (entryWarehouseId == null || !oldWarehouseId.equals(entryWarehouseId)) continue;
-
-            // Current quantity in the warehouse for this batch.
-            StkInventory inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(batchNo, oldWarehouseId);
-            BigDecimal inventoryQty = inventory != null ? inventory.getQty() : null;
-            if (inventoryQty == null) continue;
-
-            if (qty.compareTo(inventoryQty) > 0) {
-                throw new ServiceException(String.format("Inventory insufficient: outQty=%s, inventoryQty=%s", qty, inventoryQty));
+            if (stkIoBillEntry == null) {
+                continue;
             }
+            String batchNo = stkIoBillEntry.getBatchNo();
+            BigDecimal qty = stkIoBillEntry.getQty();
+            if (batchNo == null || qty == null) {
+                continue;
+            }
+            if (!oldBatchNo.equals(batchNo)) {
+                continue;
+            }
+            Long entryWarehouseId = stkIoBillEntry.getWarehouseId();
+            if (entryWarehouseId != null && !oldWarehouseId.equals(entryWarehouseId)) {
+                continue;
+            }
+            sumQty = sumQty.add(qty);
+        }
+        if (sumQty.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        StkInventory inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(oldBatchNo, oldWarehouseId);
+        if (inventory == null) {
+            inventory = stkInventoryMapper.selectStkInventoryOne(oldBatchNo);
+        }
+        if (inventory == null) {
+            throw new ServiceException(String.format("批次「%s」无对应仓库库存，无法出库", oldBatchNo));
+        }
+        BigDecimal inventoryQty = inventory.getQty() != null ? inventory.getQty() : BigDecimal.ZERO;
+        if (inventoryQty.compareTo(sumQty) < 0) {
+            throw new ServiceException(String.format(
+                    "实际库存不足！本单该批次在仓库下的出库合计：%s，当前库存：%s，批次：%s",
+                    sumQty, inventoryQty, oldBatchNo));
         }
     }
     @Override

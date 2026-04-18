@@ -63,6 +63,17 @@ public interface StkInventoryMapper
     public int updateStkInventory(StkInventory stkInventory);
 
     /**
+     * 原子扣减仓库库存数量（qty/amt 同语句计算，且仅当当前 qty 足够时更新）。
+     * 用于出库/调拨转出等，避免同单多行或并发下读改写导致超卖或数量异常。
+     *
+     * @param id     库存明细主键
+     * @param delta  扣减数量（正数）
+     * @param updateBy 更新人
+     * @return 影响行数，0 表示库存不足、记录不存在或无权访问
+     */
+    int decreaseStkInventoryQty(@Param("id") Long id, @Param("delta") BigDecimal delta, @Param("updateBy") String updateBy);
+
+    /**
      * 删除库存明细（逻辑删除）
      *
      * @param id 库存明细主键

@@ -48,10 +48,11 @@ public class HisSqlServerConfiguration
 
     private static String resolveJdbcUrl(HisSqlServerProperties.Datasource c, Environment environment)
     {
-        return firstNonBlank(
+        String raw = firstNonBlank(
             c.getUrl(),
             environment.getProperty(HisSqlServerConnectionDefaults.ENV_URL),
             HisSqlServerConnectionDefaults.JDBC_URL);
+        return HisSqlServerConnectionDefaults.normalizeSqlServerJdbcUrl(raw);
     }
 
     private static String resolveUsername(HisSqlServerProperties.Datasource c, Environment environment)

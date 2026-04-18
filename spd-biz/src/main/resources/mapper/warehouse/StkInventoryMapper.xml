@@ -204,8 +204,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 不使用 <bind name="scopedTenantId">，否则会覆盖实体上的 tenantId，导致与 Service 注入的租户不一致 -->
     <select id="selectStkInventoryList" parameterType="StkInventory" resultMap="StkInventoryResult">
         <include refid="selectStkInventoryVo"/>
-        where stk.qty &gt; 0
-        and (stk.del_flag = 0 or stk.del_flag is null)
+        where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
@@ -227,8 +226,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
         <include refid="selectStkInventoryTotalVo"/>
-        where stk.qty &gt; 0
-        and (stk.del_flag = 0 or stk.del_flag is null)
+        where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
@@ -258,7 +256,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.model materialModel,
                u.unit_name unitName,
                stk.material_id material_id,
-               CASE WHEN SUM(IFNULL(stk.qty, 0)) &gt; 0
+               CASE WHEN SUM(IFNULL(stk.qty, 0)) &lt;&gt; 0
                     THEN SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))) / SUM(IFNULL(stk.qty, 0))
                     ELSE NULL END unitPrice,
                ROUND(SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))), 2) materialAmt,
@@ -271,8 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on stk.material_id = m.id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory f on f.factory_id = m.factory_id
-        where stk.qty &gt; 0
-          and (stk.del_flag = 0 or stk.del_flag is null)
+        where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
@@ -303,8 +300,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on stk.material_id = m.id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory f on f.factory_id = m.factory_id
-        where stk.qty &gt; 0
-          and (stk.del_flag = 0 or stk.del_flag is null)
+        where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
@@ -429,6 +425,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
         where id = #{id} and tenant_id = #{tenantId}
+    </update>
+
+    <update id="decreaseStkInventoryQty">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_inventory
+        set qty = IFNULL(qty, 0) - #{delta},
+            amt = IFNULL(unit_price, 0) * qty,
+            update_time = now(),
+            update_by = #{updateBy}
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+          and IFNULL(qty, 0) &gt;= #{delta}
     </update>
 
     <delete id="deleteStkInventoryById" parameterType="map">

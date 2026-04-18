@@ -94,7 +94,7 @@ public class HisTenantJdbcAccess
         }
         DruidDataSource ds = new DruidDataSource();
         ds.setDriverClassName(driver);
-        ds.setUrl(row.getJdbcUrl().trim());
+        ds.setUrl(HisSqlServerConnectionDefaults.normalizeSqlServerJdbcUrl(row.getJdbcUrl().trim()));
         ds.setUsername(row.getUsername().trim());
         ds.setPassword(row.getPassword() != null ? row.getPassword() : "");
         ds.setValidationQuery("SELECT 1");

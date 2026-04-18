@@ -2197,7 +2197,7 @@ VALUES (
   'hengsui-third-001',
   'SQLSERVER',
   'com.microsoft.sqlserver.jdbc.SQLServerDriver',
-  'jdbc:sqlserver://127.0.0.1;databaseName=THIS4;encrypt=false;trustServerCertificate=true',
+  'jdbc:sqlserver://127.0.0.1;databaseName=THIS4;encrypt=false;trustServerCertificate=true;loginTimeout=60',
   'sa',
   '',
   '1',
