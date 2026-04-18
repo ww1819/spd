@@ -78,8 +78,7 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
-INSERT INTO sys_menu (
-  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+INSERT INTO sys_menu (  menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
