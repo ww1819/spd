@@ -137,6 +137,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="linkedCkQty" column="sub_linked_ck_qty"/>
         <result property="ckAuditedQty" column="sub_ck_audited_qty"/>
         <result property="whLineVoidQty" column="sub_wh_line_void_qty"/>
+        <result property="availableStockQty" column="sub_available_stock_qty"/>
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="stockWarehouse" javaType="FdWarehouse" resultMap="stockWhForEntryResult"/>
     </resultMap>
@@ -208,7 +209,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                coalesce(whagg.sum_pending_audit_qty, 0) as sub_ck_pending_audit_qty,
                coalesce(whagg.sum_linked_qty, 0) as sub_linked_ck_qty,
                coalesce(whagg.sum_audited_qty, 0) as sub_ck_audited_qty,
-               coalesce(whagg.sum_void_qty, 0) as sub_wh_line_void_qty
+               coalesce(whagg.sum_void_qty, 0) as sub_wh_line_void_qty,
+               (case when b.stock_warehouse_id is null then null
+                     else (select coalesce(sum(inv.qty), 0)
+                           from stk_inventory inv
+                           where inv.material_id = b.material_id
+                             and inv.warehouse_id = b.stock_warehouse_id
+                             and inv.tenant_id = b.tenant_id
+                             and (inv.del_flag = 0 or inv.del_flag is null)
+                             and ifnull(inv.qty, 0) &gt; 0)
+                end) as sub_available_stock_qty
         from bas_apply a
         left join fd_department dept_out on COALESCE(a.bill_type, 1) = 3 and a.warehouse_id = dept_out.id
         left join fd_warehouse wh on (COALESCE(a.bill_type, 1) != 3) and a.warehouse_id = wh.id

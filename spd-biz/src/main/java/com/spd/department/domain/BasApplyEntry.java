@@ -95,6 +95,11 @@ public class BasApplyEntry extends BaseEntity
     /** 已作废数量（库房申请明细行累计作废） */
     private BigDecimal whLineVoidQty;
 
+    /**
+     * 当前库存仓库（{@link #stockWarehouseId}）内该耗材剩余可用数量（查询时汇总 {@code stk_inventory}，不落库）。
+     */
+    private BigDecimal availableStockQty;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -275,5 +280,15 @@ public class BasApplyEntry extends BaseEntity
 
     public void setWhLineVoidQty(BigDecimal whLineVoidQty) {
         this.whLineVoidQty = whLineVoidQty;
+    }
+
+    public BigDecimal getAvailableStockQty()
+    {
+        return availableStockQty;
+    }
+
+    public void setAvailableStockQty(BigDecimal availableStockQty)
+    {
+        this.availableStockQty = availableStockQty;
     }
 }
