@@ -21,6 +21,8 @@ import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.gz.domain.GzDepInventory;
+import com.spd.gz.mapper.GzDepInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.common.utils.SecurityUtils;
@@ -48,6 +50,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     private StkDepInventoryMapper stkDepInventoryMapper;
     @Autowired
     private HcKsFlowMapper hcKsFlowMapper;
+    @Autowired
+    private GzDepInventoryMapper gzDepInventoryMapper;
 
     /**
      * 查询科室批量消耗
@@ -232,7 +236,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
                     continue;
                 }
                 String dedupKey = buildConsumeEntryDedupKey(deptBatchConsumeEntry);
-                if (StringUtils.isNotBlank(dedupKey) && dedupKeys.contains(dedupKey)) {
+                if (!Boolean.TRUE.equals(deptBatchConsume.getDisableEntryDedup())
+                    && StringUtils.isNotBlank(dedupKey) && dedupKeys.contains(dedupKey)) {
                     filteredCount++;
                     continue;
                 }
@@ -292,6 +297,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         }
         if (StringUtils.isNotBlank(e.getRefOutEntryId())) {
             return "REF_OUT_ENTRY#" + e.getRefOutEntryId().trim();
+        }
+        if (e.getGzDepInventoryId() != null) {
+            return "GZ_DEP_INV#" + e.getGzDepInventoryId();
         }
         if (e.getDepInventoryId() != null) {
             return "DEP_INV#" + e.getDepInventoryId();
@@ -363,6 +371,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         DeptBatchConsume srcBill = deptBatchConsumeMapper.selectDeptBatchConsumeById(req.getConsumeId());
         if (srcBill == null) {
             throw new ServiceException("反消耗失败：来源消耗单不存在");
+        }
+        if (srcBill.getDisallowReverse() != null && srcBill.getDisallowReverse().intValue() == 1) {
+            throw new ServiceException("反消耗失败：该单来源于HIS计费镜像消耗，禁止手工退消耗");
         }
         if (srcBill.getConsumeBillStatus() == null || srcBill.getConsumeBillStatus() != 2) {
             throw new ServiceException("反消耗失败：仅支持对已审核消耗单执行反消耗");
@@ -519,57 +530,109 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
             if (entry == null || entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) == 0) {
                 continue;
             }
-            if (entry.getDepInventoryId() == null) {
-                throw new ServiceException(String.format("消耗审核失败：明细耗材[%s]缺少来源科室库存ID", entry.getMaterialId()));
-            }
-            StkDepInventory depInv = stkDepInventoryMapper.selectStkDepInventoryById(entry.getDepInventoryId());
-            if (depInv == null) {
-                throw new ServiceException(String.format("消耗审核失败：科室库存[%s]不存在", entry.getDepInventoryId()));
-            }
-            if (bill.getDepartmentId() != null && depInv.getDepartmentId() != null
-                && !bill.getDepartmentId().equals(depInv.getDepartmentId())) {
-                throw new ServiceException(String.format("消耗审核失败：明细库存[%s]不属于当前科室", depInv.getId()));
-            }
-            BigDecimal currentQty = depInv.getQty() == null ? BigDecimal.ZERO : depInv.getQty();
-            BigDecimal targetQty = currentQty.subtract(entry.getQty());
-            if (targetQty.compareTo(BigDecimal.ZERO) < 0) {
-                throw new ServiceException(String.format("消耗审核失败：明细[%s]库存不足，当前库存%s，消耗数量%s", entry.getId(), currentQty, entry.getQty()));
-            }
-            depInv.setQty(targetQty);
-            BigDecimal invPrice = depInv.getUnitPrice() != null ? depInv.getUnitPrice() : (entry.getUnitPrice() == null ? BigDecimal.ZERO : entry.getUnitPrice());
-            depInv.setUnitPrice(invPrice);
-            depInv.setAmt(invPrice.multiply(targetQty));
-            depInv.setUpdateBy(user);
-            depInv.setUpdateTime(now);
-            stkDepInventoryMapper.updateStkDepInventory(depInv);
+            if (entry.getGzDepInventoryId() != null) {
+                GzDepInventory gz = gzDepInventoryMapper.selectGzDepInventoryById(entry.getGzDepInventoryId());
+                if (gz == null) {
+                    throw new ServiceException(String.format("消耗审核失败：高值科室库存[%s]不存在", entry.getGzDepInventoryId()));
+                }
+                if (bill.getDepartmentId() != null && gz.getDepartmentId() != null
+                    && !bill.getDepartmentId().equals(gz.getDepartmentId())) {
+                    throw new ServiceException(String.format("消耗审核失败：高值科室库存[%s]不属于当前科室", gz.getId()));
+                }
+                BigDecimal gzQty = gz.getQty() == null ? BigDecimal.ZERO : gz.getQty();
+                BigDecimal gzTarget = gzQty.subtract(entry.getQty());
+                if (gzTarget.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new ServiceException(String.format("消耗审核失败：高值科室库存[%s]不足，当前%s，本次消耗%s", gz.getId(), gzQty, entry.getQty()));
+                }
+                gz.setQty(gzTarget);
+                BigDecimal gzPrice = gz.getUnitPrice() != null ? gz.getUnitPrice() : (entry.getUnitPrice() == null ? BigDecimal.ZERO : entry.getUnitPrice());
+                gz.setUnitPrice(gzPrice);
+                gz.setAmt(gzPrice.multiply(gzTarget));
+                gz.setUpdateBy(user);
+                gz.setUpdateTime(now);
+                gzDepInventoryMapper.updateGzDepInventory(gz);
 
-            HcKsFlow flow = new HcKsFlow();
-            flow.setBillId(bill.getId());
-            flow.setEntryId(entry.getId());
-            flow.setDepartmentId(bill.getDepartmentId());
-            flow.setWarehouseId(depInv.getWarehouseId());
-            flow.setMaterialId(entry.getMaterialId());
-            flow.setBatchNo(entry.getBatchNo());
-            flow.setBatchNumber(entry.getBatchNumer());
-            flow.setBatchId(entry.getBatchId());
-            flow.setQty(entry.getQty());
-            flow.setUnitPrice(entry.getUnitPrice());
-            flow.setAmt(entry.getAmt());
-            flow.setBeginTime(entry.getBeginTime());
-            flow.setEndTime(entry.getEndTime());
-            flow.setSupplierId(entry.getSupplierId());
-            flow.setFactoryId(entry.getFactoryId());
-            flow.setKcNo(depInv.getId());
-            flow.setLx(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "XH" : "TXH");
-            flow.setFlowTime(now);
-            flow.setOriginBusinessType(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗" : "科室退消耗");
-            flow.setDelFlag(0);
-            flow.setMainBarcode(entry.getMainBarcode());
-            flow.setSubBarcode(entry.getSubBarcode());
-            flow.setCreateBy(user);
-            flow.setCreateTime(now);
-            flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
-            hcKsFlowMapper.insertHcKsFlow(flow);
+                HcKsFlow flow = new HcKsFlow();
+                flow.setBillId(bill.getId());
+                flow.setEntryId(entry.getId());
+                flow.setDepartmentId(bill.getDepartmentId());
+                flow.setWarehouseId(entry.getWarehouseId());
+                flow.setMaterialId(entry.getMaterialId());
+                flow.setBatchNo(entry.getBatchNo());
+                flow.setBatchNumber(entry.getBatchNumer());
+                flow.setBatchId(entry.getBatchId());
+                flow.setQty(entry.getQty());
+                flow.setUnitPrice(entry.getUnitPrice());
+                flow.setAmt(entry.getAmt());
+                flow.setBeginTime(entry.getBeginTime());
+                flow.setEndTime(entry.getEndTime());
+                flow.setSupplierId(entry.getSupplierId());
+                flow.setFactoryId(entry.getFactoryId());
+                flow.setKcNo(entry.getGzDepInventoryId());
+                flow.setLx(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "XH" : "TXH");
+                flow.setFlowTime(now);
+                flow.setOriginBusinessType(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗(高值)" : "科室退消耗(高值)");
+                flow.setDelFlag(0);
+                flow.setMainBarcode(entry.getMainBarcode());
+                flow.setSubBarcode(entry.getSubBarcode());
+                flow.setCreateBy(user);
+                flow.setCreateTime(now);
+                flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+                hcKsFlowMapper.insertHcKsFlow(flow);
+            }
+            else if (entry.getDepInventoryId() != null) {
+                StkDepInventory depInv = stkDepInventoryMapper.selectStkDepInventoryById(entry.getDepInventoryId());
+                if (depInv == null) {
+                    throw new ServiceException(String.format("消耗审核失败：科室库存[%s]不存在", entry.getDepInventoryId()));
+                }
+                if (bill.getDepartmentId() != null && depInv.getDepartmentId() != null
+                    && !bill.getDepartmentId().equals(depInv.getDepartmentId())) {
+                    throw new ServiceException(String.format("消耗审核失败：明细库存[%s]不属于当前科室", depInv.getId()));
+                }
+                BigDecimal currentQty = depInv.getQty() == null ? BigDecimal.ZERO : depInv.getQty();
+                BigDecimal targetQty = currentQty.subtract(entry.getQty());
+                if (targetQty.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new ServiceException(String.format("消耗审核失败：明细[%s]库存不足，当前库存%s，消耗数量%s", entry.getId(), currentQty, entry.getQty()));
+                }
+                depInv.setQty(targetQty);
+                BigDecimal invPrice = depInv.getUnitPrice() != null ? depInv.getUnitPrice() : (entry.getUnitPrice() == null ? BigDecimal.ZERO : entry.getUnitPrice());
+                depInv.setUnitPrice(invPrice);
+                depInv.setAmt(invPrice.multiply(targetQty));
+                depInv.setUpdateBy(user);
+                depInv.setUpdateTime(now);
+                stkDepInventoryMapper.updateStkDepInventory(depInv);
+
+                HcKsFlow flow = new HcKsFlow();
+                flow.setBillId(bill.getId());
+                flow.setEntryId(entry.getId());
+                flow.setDepartmentId(bill.getDepartmentId());
+                flow.setWarehouseId(depInv.getWarehouseId());
+                flow.setMaterialId(entry.getMaterialId());
+                flow.setBatchNo(entry.getBatchNo());
+                flow.setBatchNumber(entry.getBatchNumer());
+                flow.setBatchId(entry.getBatchId());
+                flow.setQty(entry.getQty());
+                flow.setUnitPrice(entry.getUnitPrice());
+                flow.setAmt(entry.getAmt());
+                flow.setBeginTime(entry.getBeginTime());
+                flow.setEndTime(entry.getEndTime());
+                flow.setSupplierId(entry.getSupplierId());
+                flow.setFactoryId(entry.getFactoryId());
+                flow.setKcNo(depInv.getId());
+                flow.setLx(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "XH" : "TXH");
+                flow.setFlowTime(now);
+                flow.setOriginBusinessType(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗" : "科室退消耗");
+                flow.setDelFlag(0);
+                flow.setMainBarcode(entry.getMainBarcode());
+                flow.setSubBarcode(entry.getSubBarcode());
+                flow.setCreateBy(user);
+                flow.setCreateTime(now);
+                flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+                hcKsFlowMapper.insertHcKsFlow(flow);
+            }
+            else {
+                throw new ServiceException(String.format("消耗审核失败：明细耗材[%s]缺少来源库存（科室低值库存或高值科室库存）", entry.getMaterialId()));
+            }
         }
     }
 

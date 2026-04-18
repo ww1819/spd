@@ -5352,6 +5352,45 @@ FROM DUAL WHERE @batch_consume_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM s
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- 23.3.1 患者收费查询（HIS 镜像抓取与查询 HisPatientChargeController）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3601, '患者收费查询', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'patientCharge', 'department/patientCharge/index', NULL, 1, 0, 'C', '0', '0', 'department:patientCharge:list', 'money', 'admin', NOW(), '1', NOW(), 'HIS计费镜像', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/patientCharge/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3601)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @patient_charge_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'department/patientCharge/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3602, '住院计费抓取', @patient_charge_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:fetchInpatient', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:fetchInpatient') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3602))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3603, '门诊计费抓取', @patient_charge_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:fetchOutpatient', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:fetchOutpatient') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3603))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3604, '计费镜像消耗处理(兼容)', @patient_charge_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:generateConsume', '#', 'admin', NOW(), '1', NOW(), '兼容旧权限：与「低值/高值」细粒度权限二选一或同时授予；明细页低值/高值按钮', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:generateConsume') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3604))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3605, '计费镜像低值处理', @patient_charge_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:processMirrorLow', '#', 'admin', NOW(), '1', NOW(), 'POST /his/patientCharge/mirror/processLowValue', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:processMirrorLow') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3605))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3606, '计费镜像高值扫码', @patient_charge_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:processMirrorHigh', '#', 'admin', NOW(), '1', NOW(), 'POST scanHighBarcode / applyHighConsume', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:processMirrorHigh') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3606))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3607, '计费抓取批次查询', @patient_charge_menu, 6, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:fetchBatchList', '#', 'admin', NOW(), '1', NOW(), 'GET /his/patientCharge/fetchBatch/list', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:fetchBatchList') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3607))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+
 -- 23.4 收货确认 department/receiptConfirm（ReceiptConfirmController）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3428, '收货确认', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'receiptConfirm', 'department/receiptConfirm/index', NULL, 1, 0, 'C', '0', '0', 'department:receiptConfirm:list', 'checkbox', 'admin', NOW(), '1', NOW(), '', '0', '1'

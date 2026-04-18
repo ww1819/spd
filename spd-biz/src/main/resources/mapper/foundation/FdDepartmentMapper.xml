@@ -225,4 +225,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <!--            #{id}-->
 <!--        </foreach>-->
 <!--    </delete>-->
+
+    <select id="selectFdDepartmentByTenantAndHisId" resultMap="FdDepartmentResult">
+        <include refid="selectFdDepartmentVo"/>
+        where (del_flag = 0 or del_flag is null)
+          and tenant_id = #{tenantId}
+          and trim(his_id) = trim(#{hisId})
+        limit 1
+    </select>
 </mapper>

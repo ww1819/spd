@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisMirrorConsumeLinkMapper">
+
+    <insert id="insertBatch">
+        insert into his_mirror_consume_link (
+            id, tenant_id, visit_kind, mirror_row_id, fetch_batch_id,
+            dept_batch_consume_id, dept_batch_consume_entry_id, alloc_qty, create_time
+        ) values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.mirrorRowId}, #{e.fetchBatchId},
+            #{e.deptBatchConsumeId}, #{e.deptBatchConsumeEntryId}, #{e.allocQty}, #{e.createTime})
+        </foreach>
+    </insert>
+
+    <select id="sumAllocQtyForMirrorRow" resultType="java.math.BigDecimal">
+        select coalesce(sum(l.alloc_qty), 0) from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+    </select>
+
+    <select id="selectDistinctBillSourcesForMirror" resultType="java.lang.String">
+        select distinct ifnull(h.bill_source, '')
+        from his_mirror_consume_link l
+        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id and ifnull(h.del_flag, 0) = 0
+        where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+    </select>
+</mapper>

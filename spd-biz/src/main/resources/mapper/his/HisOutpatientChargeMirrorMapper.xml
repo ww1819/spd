@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisOutpatientChargeMirrorMapper">
+
+    <resultMap type="com.spd.his.domain.HisOutpatientChargeMirror" id="HisOutpatientChargeMirrorResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="fetchBatchId" column="fetch_batch_id"/>
+        <result property="hisOutpatientChargeId" column="his_outpatient_charge_id"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="patientName" column="patient_name"/>
+        <result property="outpatientNo" column="outpatient_no"/>
+        <result property="clinicCode" column="clinic_code"/>
+        <result property="clinicName" column="clinic_name"/>
+        <result property="doctorId" column="doctor_id"/>
+        <result property="doctorName" column="doctor_name"/>
+        <result property="chargeItemId" column="charge_item_id"/>
+        <result property="itemName" column="item_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="expireDate" column="expire_date"/>
+        <result property="chargeDate" column="charge_date"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="chargeOperator" column="charge_operator"/>
+        <result property="paymentType" column="payment_type"/>
+        <result property="receiptNo" column="receipt_no"/>
+        <result property="remark" column="remark"/>
+        <result property="rowFingerprint" column="row_fingerprint"/>
+        <result property="processStatus" column="process_status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <insert id="insertBatch">
+        insert into his_outpatient_charge_mirror (
+            id, tenant_id, fetch_batch_id, his_outpatient_charge_id, patient_id, patient_name, outpatient_no,
+            clinic_code, clinic_name, doctor_id, doctor_name, charge_item_id, item_name, spec_model,
+            batch_no, expire_date, charge_date, quantity, unit_price, total_amount,
+            charge_operator, payment_type, receipt_no, remark, row_fingerprint, process_status, create_by, create_time
+        ) values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisOutpatientChargeId}, #{e.patientId}, #{e.patientName}, #{e.outpatientNo},
+            #{e.clinicCode}, #{e.clinicName}, #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel},
+            #{e.batchNo}, #{e.expireDate}, #{e.chargeDate}, #{e.quantity}, #{e.unitPrice}, #{e.totalAmount},
+            #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint}, #{e.processStatus}, #{e.createBy}, #{e.createTime})
+        </foreach>
+    </insert>
+
+    <select id="selectFingerprintsByHisIds" resultType="com.spd.his.domain.dto.HisIdFingerprint">
+        select his_outpatient_charge_id as hisChargeId, row_fingerprint as rowFingerprint
+        from his_outpatient_charge_mirror
+        where tenant_id = #{tenantId}
+        and his_outpatient_charge_id in
+        <foreach collection="hisIds" item="hid" open="(" separator="," close=")">#{hid}</foreach>
+    </select>
+
+    <select id="selectMirrorList" resultMap="HisOutpatientChargeMirrorResult">
+        select * from his_outpatient_charge_mirror
+        where tenant_id = #{tenantId}
+        <if test="patientName != null and patientName != ''"> and patient_name like concat('%', #{patientName}, '%')</if>
+        <if test="outpatientNo != null and outpatientNo != ''"> and outpatient_no like concat('%', #{outpatientNo}, '%')</if>
+        <if test="clinicName != null and clinicName != ''"> and clinic_name like concat('%', #{clinicName}, '%')</if>
+        <if test="chargeItemId != null and chargeItemId != ''"> and charge_item_id = #{chargeItemId}</if>
+        <if test="beginChargeDate != null"> and left(replace(ifnull(charge_date,''),'/','-'),10) &gt;= date_format(#{beginChargeDate},'%Y-%m-%d')</if>
+        <if test="endChargeDate != null"> and left(replace(ifnull(charge_date,''),'/','-'),10) &lt;= date_format(#{endChargeDate},'%Y-%m-%d')</if>
+        order by charge_date desc, id desc
+    </select>
+
+    <select id="selectSummary" resultType="com.spd.his.domain.dto.HisPatientChargeSummaryRow">
+        select 'OUTPATIENT' as visitType, patient_name as patientName, outpatient_no as visitNo,
+               ifnull(clinic_name,'') as deptName, count(*) as lineCount, ifnull(sum(total_amount),0) as sumAmount
+        from his_outpatient_charge_mirror
+        where tenant_id = #{tenantId}
+        and left(replace(ifnull(charge_date,''),'/','-'),10) &gt;= #{beginChargeDate}
+        and left(replace(ifnull(charge_date,''),'/','-'),10) &lt;= #{endChargeDate}
+        group by patient_name, outpatient_no, ifnull(clinic_name,'')
+        order by sumAmount desc
+    </select>
+
+    <select id="selectPendingByFetchBatch" resultMap="HisOutpatientChargeMirrorResult">
+        select * from his_outpatient_charge_mirror
+        where tenant_id = #{tenantId} and fetch_batch_id = #{fetchBatchId}
+        and process_status = 'PENDING_CONSUME'
+        order by charge_date, id
+    </select>
+
+    <select id="countConsumedInFetchBatch" resultType="int">
+        select count(*) from his_outpatient_charge_mirror
+        where tenant_id = #{tenantId} and fetch_batch_id = #{fetchBatchId}
+        and process_status = 'CONSUMED'
+    </select>
+
+    <update id="updateProcessStatusByIds">
+        update his_outpatient_charge_mirror set process_status = #{processStatus}, update_time = now()
+        where tenant_id = #{tenantId}
+        and id in
+        <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
+    </update>
+
+    <select id="selectByIdAndTenant" resultMap="HisOutpatientChargeMirrorResult">
+        select * from his_outpatient_charge_mirror
+        where tenant_id = #{tenantId} and id = #{id} limit 1
+    </select>
+</mapper>

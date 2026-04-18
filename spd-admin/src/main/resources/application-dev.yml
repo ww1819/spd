@@ -229,3 +229,18 @@ xss:
     excludes: /system/notice
     # 匹配链接
     urlPatterns: /system/*,/monitor/*,/tool/*
+
+# HIS（SQL Server）只读：患者计费镜像抓取（默认关闭；口令用环境变量或本地覆盖，勿提交密钥）
+spd:
+  his:
+    allowed-tenant-ids:
+      - hengsui-third-001
+    datasource:
+      enabled: false
+      driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      url: jdbc:sqlserver://192.168.3.69;instanceName=HISSVR;databaseName=THIS4;encrypt=false;trustServerCertificate=true
+      username: SPD
+      password: ${HIS_DB_PASSWORD:}
+    fetch:
+      max-range-days: 31
+      chunk-days: 7

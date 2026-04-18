@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisChargeFetchBatchMapper">
+
+    <insert id="insertHisChargeFetchBatch">
+        insert into his_charge_fetch_batch (
+            id, tenant_id, charge_kind, window_start, window_end,
+            inserted_count, skipped_count, drift_count, remark, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{chargeKind}, #{windowStart}, #{windowEnd},
+            #{insertedCount}, #{skippedCount}, #{driftCount}, #{remark}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectByIdAndTenant" resultType="com.spd.his.domain.HisChargeFetchBatch">
+        select id, tenant_id as tenantId, charge_kind as chargeKind,
+               window_start as windowStart, window_end as windowEnd,
+               inserted_count as insertedCount, skipped_count as skippedCount, drift_count as driftCount,
+               remark, create_by as createBy, create_time as createTime
+        from his_charge_fetch_batch
+        where id = #{id} and tenant_id = #{tenantId}
+        limit 1
+    </select>
+
+    <select id="selectRecentByTenant" resultType="com.spd.his.domain.HisChargeFetchBatch">
+        select id, tenant_id as tenantId, charge_kind as chargeKind,
+               window_start as windowStart, window_end as windowEnd,
+               inserted_count as insertedCount, skipped_count as skippedCount, drift_count as driftCount,
+               remark, create_by as createBy, create_time as createTime
+        from his_charge_fetch_batch
+        where tenant_id = #{tenantId}
+        order by create_time desc
+        limit #{limit}
+    </select>
+</mapper>

@@ -31,5 +31,21 @@
             <artifactId>lombok</artifactId>
             <version>1.18.16</version>
         </dependency>
+
+        <!-- HIS SQL Server 只读连接（镜像抓取） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>${druid.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>9.4.1.jre8</version>
+        </dependency>
     </dependencies>
 </project>

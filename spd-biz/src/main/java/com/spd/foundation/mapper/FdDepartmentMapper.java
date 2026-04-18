@@ -106,4 +106,9 @@ public interface FdDepartmentMapper
 //     * @return 结果
 //     */
 //    public int deleteFdDepartmentByIds(String[] ids);
+
+    /**
+     * 按租户与 HIS 科室标识（与计费视图 dept_code 对应 fd_department.his_id）解析科室
+     */
+    FdDepartment selectFdDepartmentByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
 }

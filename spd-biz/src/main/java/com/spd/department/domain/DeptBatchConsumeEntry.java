@@ -58,6 +58,9 @@ public class DeptBatchConsumeEntry extends BaseEntity
     /** 来源科室库存ID */
     private Long depInventoryId;
 
+    /** 高值科室虚拟库存 gz_dep_inventory.id（与 dep_inventory_id 二选一） */
+    private Long gzDepInventoryId;
+
     /** 来源仓库库存ID */
     private Long kcNo;
 
@@ -266,6 +269,14 @@ public class DeptBatchConsumeEntry extends BaseEntity
         this.depInventoryId = depInventoryId;
     }
 
+    public Long getGzDepInventoryId() {
+        return gzDepInventoryId;
+    }
+
+    public void setGzDepInventoryId(Long gzDepInventoryId) {
+        this.gzDepInventoryId = gzDepInventoryId;
+    }
+
     public Long getKcNo() {
         return kcNo;
     }
@@ -422,6 +433,7 @@ public class DeptBatchConsumeEntry extends BaseEntity
             .append("batchNo", getBatchNo())
             .append("batchNumer", getBatchNumer())
             .append("depInventoryId", getDepInventoryId())
+            .append("gzDepInventoryId", getGzDepInventoryId())
             .append("kcNo", getKcNo())
             .append("batchId", getBatchId())
             .append("warehouseId", getWarehouseId())

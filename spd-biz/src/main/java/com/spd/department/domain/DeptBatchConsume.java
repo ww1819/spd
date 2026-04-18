@@ -90,6 +90,21 @@ public class DeptBatchConsume extends BaseEntity
     /** 反消耗来源主单号 */
     private String reverseOfBillNo;
 
+    /**
+     * 为 true 时保存明细跳过「同科室库存/同批次」去重（HIS 按批次自动生成等多条镜像指向同一库存行时需要）。
+     * 不落库，仅请求参数使用。
+     */
+    private transient Boolean disableEntryDedup;
+
+    /** 单据来源（如 MANUAL、HIS_MIRROR_BATCH） */
+    private String billSource;
+
+    /** 1 时禁止手工退消耗（反消耗接口拒绝） */
+    private Integer disallowReverse;
+
+    /** HIS 计费抓取批次 ID */
+    private String hisFetchBatchId;
+
     /** 保存时后台自动去重过滤条数（不落库） */
     private Integer dedupFilteredCount;
 
@@ -405,6 +420,14 @@ public class DeptBatchConsume extends BaseEntity
     public void setReverseOfConsumeId(Long reverseOfConsumeId) { this.reverseOfConsumeId = reverseOfConsumeId; }
     public String getReverseOfBillNo() { return reverseOfBillNo; }
     public void setReverseOfBillNo(String reverseOfBillNo) { this.reverseOfBillNo = reverseOfBillNo; }
+    public Boolean getDisableEntryDedup() { return disableEntryDedup; }
+    public void setDisableEntryDedup(Boolean disableEntryDedup) { this.disableEntryDedup = disableEntryDedup; }
+    public String getBillSource() { return billSource; }
+    public void setBillSource(String billSource) { this.billSource = billSource; }
+    public Integer getDisallowReverse() { return disallowReverse; }
+    public void setDisallowReverse(Integer disallowReverse) { this.disallowReverse = disallowReverse; }
+    public String getHisFetchBatchId() { return hisFetchBatchId; }
+    public void setHisFetchBatchId(String hisFetchBatchId) { this.hisFetchBatchId = hisFetchBatchId; }
     public Integer getDedupFilteredCount() { return dedupFilteredCount; }
     public void setDedupFilteredCount(Integer dedupFilteredCount) { this.dedupFilteredCount = dedupFilteredCount; }
 
@@ -435,6 +458,9 @@ public class DeptBatchConsume extends BaseEntity
             .append("reverseFlag", getReverseFlag())
             .append("reverseOfConsumeId", getReverseOfConsumeId())
             .append("reverseOfBillNo", getReverseOfBillNo())
+            .append("billSource", getBillSource())
+            .append("disallowReverse", getDisallowReverse())
+            .append("hisFetchBatchId", getHisFetchBatchId())
             .append("deptBatchConsumeEntryList", getDeptBatchConsumeEntryList())
             .append("warehouse", getWarehouse())
             .append("user", getUser())

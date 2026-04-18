@@ -1824,6 +1824,9 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh` (
   `reverse_flag` int DEFAULT 0 COMMENT '是否反消耗单(0否1是)',
   `reverse_of_consume_id` bigint DEFAULT NULL COMMENT '反消耗来源主单ID',
   `reverse_of_bill_no` varchar(64) DEFAULT NULL COMMENT '反消耗来源主单号',
+  `bill_source` varchar(32) DEFAULT NULL COMMENT '单据来源(MANUAL/HIS_MIRROR_BATCH等)',
+  `disallow_reverse` tinyint NOT NULL DEFAULT 0 COMMENT '禁止手工退消耗(1禁止)',
+  `his_fetch_batch_id` varchar(36) DEFAULT NULL COMMENT 'HIS计费抓取批次ID',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
@@ -1844,6 +1847,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `paren_id` bigint NOT NULL COMMENT '父表ID',
   `dep_inventory_id` bigint DEFAULT NULL COMMENT '来源科室库存ID(stk_dep_inventory.id)',
+  `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '高值科室虚拟库存 gz_dep_inventory.id（与 dep_inventory_id 二选一）',
   `kc_no` bigint DEFAULT NULL COMMENT '来源仓库库存ID(stk_inventory.id)',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
   `batch_id` bigint DEFAULT NULL COMMENT '批次对象ID(stk_batch.id)',
@@ -2168,6 +2172,122 @@ CREATE TABLE IF NOT EXISTS `sys_data_backup_config` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sys_data_backup_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据备份配置';
+/
+
+-- HIS 患者计费镜像（住院）：业务唯一键 (tenant_id, his_inpatient_charge_id)，主键 UUID 36 位
+-- 退费说明：HIS 退费/冲账数据在未建立与镜像行、抓取批次、院内码的稳定关联前不做自动处理，避免串批次、串条码；后续单独建模再对接。
+CREATE TABLE IF NOT EXISTS `his_inpatient_charge_mirror` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
+  `his_inpatient_charge_id` varchar(32) NOT NULL COMMENT 'HIS住院计费明细主键',
+  `patient_id` varchar(32) DEFAULT NULL COMMENT '患者ID',
+  `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名',
+  `inpatient_no` varchar(64) DEFAULT NULL COMMENT '住院号',
+  `dept_code` varchar(32) DEFAULT NULL COMMENT '费用科室编码',
+  `dept_name` varchar(128) DEFAULT NULL COMMENT '费用科室名称',
+  `doctor_id` varchar(32) DEFAULT NULL COMMENT '医生ID',
+  `doctor_name` varchar(128) DEFAULT NULL COMMENT '医生姓名',
+  `charge_item_id` varchar(64) DEFAULT NULL COMMENT '收费项目ID',
+  `item_name` varchar(512) DEFAULT NULL COMMENT '项目名称',
+  `spec_model` varchar(128) DEFAULT NULL COMMENT '规格型号',
+  `batch_no` varchar(128) DEFAULT NULL COMMENT '批号',
+  `expire_date` varchar(64) DEFAULT NULL COMMENT '效期',
+  `use_date` varchar(32) DEFAULT NULL COMMENT '使用时间',
+  `charge_date` varchar(32) DEFAULT NULL COMMENT '计费时间',
+  `quantity` decimal(18,6) DEFAULT NULL COMMENT '数量',
+  `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
+  `total_amount` decimal(18,6) DEFAULT NULL COMMENT '金额',
+  `charge_operator` varchar(128) DEFAULT NULL COMMENT '计费操作员',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `row_fingerprint` varchar(64) DEFAULT NULL COMMENT '关键字段指纹(防重复与漂移检测)',
+  `process_status` varchar(32) NOT NULL DEFAULT 'PENDING_CONSUME' COMMENT 'PENDING_CONSUME待处理/PARTIALLY_CONSUMED高值部分消耗/CONSUMED已完成；退费未关联前勿自动回滚',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '本地入库时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_his_inp_mirror_tenant_hisid` (`tenant_id`,`his_inpatient_charge_id`),
+  KEY `idx_his_inp_mirror_tenant_charge_date` (`tenant_id`,`charge_date`),
+  KEY `idx_his_inp_mirror_fetch_batch` (`fetch_batch_id`),
+  KEY `idx_his_inp_mirror_charge_item` (`tenant_id`,`charge_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS住院患者耗材计费镜像';
+/
+
+-- HIS 患者计费镜像（门诊）；退费处理原则同住院镜像说明。
+CREATE TABLE IF NOT EXISTS `his_outpatient_charge_mirror` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
+  `his_outpatient_charge_id` varchar(32) NOT NULL COMMENT 'HIS门诊计费明细主键',
+  `patient_id` varchar(32) DEFAULT NULL COMMENT '患者ID',
+  `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名',
+  `outpatient_no` varchar(64) DEFAULT NULL COMMENT '门诊号',
+  `clinic_code` varchar(32) DEFAULT NULL COMMENT '就诊编码',
+  `clinic_name` varchar(128) DEFAULT NULL COMMENT '就诊名称',
+  `doctor_id` varchar(32) DEFAULT NULL COMMENT '医生ID',
+  `doctor_name` varchar(128) DEFAULT NULL COMMENT '医生姓名',
+  `charge_item_id` varchar(64) DEFAULT NULL COMMENT '收费项目ID',
+  `item_name` varchar(512) DEFAULT NULL COMMENT '项目名称',
+  `spec_model` varchar(128) DEFAULT NULL COMMENT '规格型号',
+  `batch_no` varchar(128) DEFAULT NULL COMMENT '批号',
+  `expire_date` varchar(64) DEFAULT NULL COMMENT '效期',
+  `charge_date` varchar(32) DEFAULT NULL COMMENT '计费时间',
+  `quantity` decimal(18,6) DEFAULT NULL COMMENT '数量',
+  `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
+  `total_amount` decimal(18,6) DEFAULT NULL COMMENT '金额',
+  `charge_operator` varchar(128) DEFAULT NULL COMMENT '计费操作员',
+  `payment_type` varchar(32) DEFAULT NULL COMMENT '支付方式',
+  `receipt_no` varchar(64) DEFAULT NULL COMMENT '收据号',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `row_fingerprint` varchar(64) DEFAULT NULL COMMENT '关键字段指纹',
+  `process_status` varchar(32) NOT NULL DEFAULT 'PENDING_CONSUME' COMMENT 'PENDING_CONSUME待处理/PARTIALLY_CONSUMED高值部分消耗/CONSUMED已完成；退费未关联前勿自动回滚',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '本地入库时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_his_out_mirror_tenant_hisid` (`tenant_id`,`his_outpatient_charge_id`),
+  KEY `idx_his_out_mirror_tenant_charge_date` (`tenant_id`,`charge_date`),
+  KEY `idx_his_out_mirror_fetch_batch` (`fetch_batch_id`),
+  KEY `idx_his_out_mirror_charge_item` (`tenant_id`,`charge_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS门诊患者耗材计费镜像';
+/
+
+-- HIS 计费抓取批次日志
+CREATE TABLE IF NOT EXISTS `his_charge_fetch_batch` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `charge_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `window_start` datetime NOT NULL COMMENT '查询窗口起(含)',
+  `window_end` datetime NOT NULL COMMENT '查询窗口止(不含)',
+  `inserted_count` int NOT NULL DEFAULT 0 COMMENT '本次新增条数',
+  `skipped_count` int NOT NULL DEFAULT 0 COMMENT '已存在且指纹一致跳过',
+  `drift_count` int NOT NULL DEFAULT 0 COMMENT '已存在但指纹不一致(HIS可能已变更)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '抓取完成时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_his_fetch_batch_tenant_time` (`tenant_id`,`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费数据抓取批次';
+/
+
+-- HIS 镜像行与科室批量消耗明细追溯（一条镜像可对应多条库存拆分明细）
+CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `mirror_row_id` varchar(36) NOT NULL COMMENT '镜像表主键 his_*_charge_mirror.id',
+  `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
+  `dept_batch_consume_id` bigint NOT NULL COMMENT '科室批量消耗主表 t_hc_ks_xh.id',
+  `dept_batch_consume_entry_id` bigint NOT NULL COMMENT '科室批量消耗明细 t_hc_ks_xh_entry.id',
+  `alloc_qty` decimal(18,6) NOT NULL COMMENT '本行分摊数量',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hmcl_mirror` (`mirror_row_id`),
+  KEY `idx_hmcl_consume` (`dept_batch_consume_id`),
+  KEY `idx_hmcl_fetch` (`tenant_id`,`fetch_batch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（退费未建模前勿删改以免串批次/院内码）';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

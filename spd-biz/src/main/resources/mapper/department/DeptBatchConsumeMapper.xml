@@ -30,6 +30,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="reverseFlag"    column="reverse_flag"    />
         <result property="reverseOfConsumeId"    column="reverse_of_consume_id"    />
         <result property="reverseOfBillNo"    column="reverse_of_bill_no"    />
+        <result property="billSource"    column="bill_source"    />
+        <result property="disallowReverse"    column="disallow_reverse"    />
+        <result property="hisFetchBatchId"    column="his_fetch_batch_id"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="user"    column="user_id" javaType="SysUser" resultMap="userResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -81,6 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="batchNo"    column="sub_batch_no"    />
         <result property="batchNumer"    column="sub_batch_number"    />
         <result property="depInventoryId"    column="sub_dep_inventory_id"    />
+        <result property="gzDepInventoryId"    column="sub_gz_dep_inventory_id"    />
         <result property="kcNo"    column="sub_kc_no"    />
         <result property="batchId"    column="sub_batch_id"    />
         <result property="warehouseId"    column="sub_warehouse_id"    />
@@ -120,7 +124,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectDeptBatchConsumeVo">
         select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id,
-                a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.reverse_flag, a.reverse_of_consume_id, a.reverse_of_bill_no, a.create_by, a.create_time, a.update_by,
+                a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.reverse_flag, a.reverse_of_consume_id, a.reverse_of_bill_no,
+                a.bill_source, a.disallow_reverse, a.his_fetch_batch_id, a.create_by, a.create_time, a.update_by,
                 a.update_time, a.remark, a.reject_reason, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
                cu.nick_name createNickName,cu.user_name createUserName,
@@ -155,10 +160,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDeptBatchConsumeById" parameterType="Long" resultMap="DeptBatchConsumeDeptBatchConsumeEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id, a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.reverse_flag, a.reverse_of_consume_id, a.reverse_of_bill_no,
+                a.bill_source, a.disallow_reverse, a.his_fetch_batch_id,
                 a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price,
                 b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no,
-                b.batch_number as sub_batch_number, b.dep_inventory_id as sub_dep_inventory_id, b.kc_no as sub_kc_no, b.batch_id as sub_batch_id,
+                b.batch_number as sub_batch_number, b.dep_inventory_id as sub_dep_inventory_id, b.gz_dep_inventory_id as sub_gz_dep_inventory_id, b.kc_no as sub_kc_no, b.batch_id as sub_batch_id,
                 b.warehouse_id as sub_warehouse_id, b.department_id as sub_department_id, b.supplier_id as sub_supplier_id, b.factory_id as sub_factory_id,
                 b.material_no as sub_material_no, b.remark as sub_remark, b.begin_time as sub_begin_time, b.end_time as sub_end_time,
                 b.del_flag as sub_del_flag, b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.material_date as sub_material_date,
@@ -201,6 +207,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="reverseFlag != null">reverse_flag,</if>
             <if test="reverseOfConsumeId != null">reverse_of_consume_id,</if>
             <if test="reverseOfBillNo != null">reverse_of_bill_no,</if>
+            <if test="billSource != null">bill_source,</if>
+            <if test="disallowReverse != null">disallow_reverse,</if>
+            <if test="hisFetchBatchId != null">his_fetch_batch_id,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -224,6 +233,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="reverseFlag != null">#{reverseFlag},</if>
             <if test="reverseOfConsumeId != null">#{reverseOfConsumeId},</if>
             <if test="reverseOfBillNo != null">#{reverseOfBillNo},</if>
+            <if test="billSource != null">#{billSource},</if>
+            <if test="disallowReverse != null">#{disallowReverse},</if>
+            <if test="hisFetchBatchId != null">#{hisFetchBatchId},</if>
             #{scopedTenantId},
          </trim>
     </insert>
@@ -252,6 +264,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="reverseFlag != null">reverse_flag = #{reverseFlag},</if>
             <if test="reverseOfConsumeId != null">reverse_of_consume_id = #{reverseOfConsumeId},</if>
             <if test="reverseOfBillNo != null">reverse_of_bill_no = #{reverseOfBillNo},</if>
+            <if test="billSource != null">bill_source = #{billSource},</if>
+            <if test="disallowReverse != null">disallow_reverse = #{disallowReverse},</if>
+            <if test="hisFetchBatchId != null">his_fetch_batch_id = #{hisFetchBatchId},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -301,9 +316,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="insertDeptBatchConsumeEntry" parameterType="DeptBatchConsumeEntry" useGeneratedKeys="true" keyProperty="id">
-        insert into t_hc_ks_xh_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, dep_inventory_id, kc_no, batch_id, warehouse_id, department_id, supplier_id, factory_id, material_no, remark, begin_time, end_time, del_flag, main_barcode, sub_barcode, material_date, warehouse_date, settlement_type, material_name, material_speci, material_model, material_factory_id, src_consume_id, src_consume_bill_no, src_consume_entry_id, src_consume_qty, src_can_reverse_qty, create_by, create_time, tenant_id)
+        insert into t_hc_ks_xh_entry( paren_id, material_id, unit_price, qty, price, amt, batch_no, batch_number, dep_inventory_id, gz_dep_inventory_id, kc_no, batch_id, warehouse_id, department_id, supplier_id, factory_id, material_no, remark, begin_time, end_time, del_flag, main_barcode, sub_barcode, material_date, warehouse_date, settlement_type, material_name, material_speci, material_model, material_factory_id, src_consume_id, src_consume_bill_no, src_consume_entry_id, src_consume_qty, src_can_reverse_qty, create_by, create_time, tenant_id)
         values
-            (#{parenId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{batchNumer}, #{depInventoryId}, #{kcNo}, #{batchId}, #{warehouseId}, #{departmentId}, #{supplierId}, #{factoryId}, #{materialNo}, #{remark}, #{beginTime}, #{endTime}, 0, #{mainBarcode}, #{subBarcode}, #{materialDate}, #{warehouseDate}, #{settlementType}, #{materialName}, #{materialSpeci}, #{materialModel}, #{materialFactoryId}, #{srcConsumeId}, #{srcConsumeBillNo}, #{srcConsumeEntryId}, #{srcConsumeQty}, #{srcCanReverseQty}, #{createBy}, now(), (select m.tenant_id from t_hc_ks_xh m where m.id = #{parenId} limit 1))
+            (#{parenId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{batchNumer}, #{depInventoryId}, #{gzDepInventoryId}, #{kcNo}, #{batchId}, #{warehouseId}, #{departmentId}, #{supplierId}, #{factoryId}, #{materialNo}, #{remark}, #{beginTime}, #{endTime}, 0, #{mainBarcode}, #{subBarcode}, #{materialDate}, #{warehouseDate}, #{settlementType}, #{materialName}, #{materialSpeci}, #{materialModel}, #{materialFactoryId}, #{srcConsumeId}, #{srcConsumeBillNo}, #{srcConsumeEntryId}, #{srcConsumeQty}, #{srcCanReverseQty}, #{createBy}, now(), (select m.tenant_id from t_hc_ks_xh m where m.id = #{parenId} limit 1))
     </insert>
 
     <insert id="insertDeptBatchConsumeEntryRef" parameterType="DeptBatchConsumeEntry">
