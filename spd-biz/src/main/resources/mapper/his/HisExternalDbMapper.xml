@@ -2,20 +2,80 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.his.mapper.HisExternalDbMapper">
 
+    <sql id="Base_Column_List">
+        tenant_id            as tenantId,
+        db_type              as dbType,
+        driver_class         as driverClass,
+        jdbc_url             as jdbcUrl,
+        username             as username,
+        password             as password,
+        enabled              as enabled,
+        sql_inpatient_range  as sqlInpatientRange,
+        sql_outpatient_range as sqlOutpatientRange,
+        remark               as remark,
+        create_time          as createTime
+    </sql>
+
     <select id="selectEnabledByTenantId" resultType="com.spd.his.domain.HisExternalDb">
-        select tenant_id           as tenantId,
-               db_type             as dbType,
-               driver_class        as driverClass,
-               jdbc_url            as jdbcUrl,
-               username            as username,
-               password            as password,
-               enabled             as enabled,
-               sql_inpatient_range as sqlInpatientRange,
-               sql_outpatient_range as sqlOutpatientRange,
-               remark              as remark
+        select
+        <include refid="Base_Column_List"/>
         from sys_his_external_db
         where tenant_id = #{tenantId}
           and enabled = '1'
         limit 1
     </select>
+
+    <select id="selectByTenantId" resultType="com.spd.his.domain.HisExternalDb">
+        select
+        <include refid="Base_Column_List"/>
+        from sys_his_external_db
+        where tenant_id = #{tenantId}
+        limit 1
+    </select>
+
+    <select id="selectList" resultType="com.spd.his.domain.HisExternalDb">
+        select
+        <include refid="Base_Column_List"/>
+        from sys_his_external_db
+        <where>
+            <if test="tenantId != null and tenantId != ''">
+                and tenant_id like concat('%', #{tenantId}, '%')
+            </if>
+            <if test="dbType != null and dbType != ''">
+                and upper(db_type) = upper(#{dbType})
+            </if>
+            <if test="enabled != null and enabled != ''">
+                and enabled = #{enabled}
+            </if>
+        </where>
+        order by tenant_id
+    </select>
+
+    <insert id="insert">
+        insert into sys_his_external_db (
+            tenant_id, db_type, driver_class, jdbc_url, username, password, enabled,
+            sql_inpatient_range, sql_outpatient_range, remark
+        ) values (
+            #{tenantId}, #{dbType}, #{driverClass}, #{jdbcUrl}, #{username}, #{password}, #{enabled},
+            #{sqlInpatientRange}, #{sqlOutpatientRange}, #{remark}
+        )
+    </insert>
+
+    <update id="updateByTenantId">
+        update sys_his_external_db
+        set db_type = #{dbType},
+            driver_class = #{driverClass},
+            jdbc_url = #{jdbcUrl},
+            username = #{username},
+            password = #{password},
+            enabled = #{enabled},
+            sql_inpatient_range = #{sqlInpatientRange},
+            sql_outpatient_range = #{sqlOutpatientRange},
+            remark = #{remark}
+        where tenant_id = #{tenantId}
+    </update>
+
+    <delete id="deleteByTenantId">
+        delete from sys_his_external_db where tenant_id = #{tenantId}
+    </delete>
 </mapper>

@@ -1,5 +1,7 @@
 package com.spd.his.domain;
 
+import java.util.Date;
+
 /**
  * 租户级 HIS 外联库配置（主库表 sys_his_external_db）。
  */
@@ -18,6 +20,18 @@ public class HisExternalDb
     private String sqlInpatientRange;
     private String sqlOutpatientRange;
     private String remark;
+
+    private Date createTime;
+
+    public Date getCreateTime()
+    {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime)
+    {
+        this.createTime = createTime;
+    }
 
     public String getTenantId()
     {

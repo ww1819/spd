@@ -80,6 +80,16 @@ INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2104 FROM DUAL WHERE NOT 
 /
 INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2105 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 2105);
 /
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 3103 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 3103);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 3104 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 3104);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 3105 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 3105);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 3106 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 3106);
+/
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 3107 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu WHERE role_id = 1 AND menu_id = 3107);
+/
 
 -- 科室维护（2230–2237）：挂到「基础资料」M 下，若无则系统管理（与 material/menu.sql 中 COALESCE 一致）
 /
@@ -113,7 +123,7 @@ INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, 2237 FROM DUAL WHERE NOT 
 
 -- 客户管理、客户菜单功能管理设为仅平台管理（不对客户显示）；需先执行 column.sql 增加 is_platform 字段
 /
-UPDATE sys_menu SET is_platform = '1' WHERE menu_id IN (2100, 2101, 2102, 2103, 2104, 2105);
+UPDATE sys_menu SET is_platform = '1' WHERE menu_id IN (2100, 2101, 2102, 2103, 2104, 2105, 3103, 3104, 3105, 3106, 3107);
 /
 
 -- 将耗材菜单全部加到 admin 用户名下（用户权限表 sys_user_menu，耗材登录后仅读此表）

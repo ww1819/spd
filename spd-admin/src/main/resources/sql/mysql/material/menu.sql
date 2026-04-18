@@ -1,7 +1,7 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
 -- 文末含：采购订单(caigou/dingdan)、订单发布(caigou/publish)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
--- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
+-- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
 -- 执行顺序：建议在主库 sys_menu 基础数据（若依）之后执行；按「/」分段执行
 -- 依赖：parent_id=1「系统管理」、1065「财务管理」、1070「盘点管理」须已存在（ID 以主库为准）
@@ -3196,6 +3196,129 @@ FROM DUAL
 WHERE
   NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2100 AND perms='sb:system:customer:purgeEq')
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3102)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+-- ========== HIS 外联库配置（sys_his_external_db；HisExternalDbController /his/externalDb）==========
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3103, 'HIS外联库配置', 1, 22, 'hisExternalDb', 'material/system/hisExternalDb/index', NULL,
+  1, 0, 'C', '0', '0', 'hc:system:hisExternalDb:list', 'link',
+  'admin', NOW(), '1', NOW(), '主库租户级 HIS JDBC（SQLSERVER/MYSQL）；平台菜单',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'material/system/hisExternalDb/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3103)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3104, 'HIS外联库查询', 3103, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:hisExternalDb:query', '#',
+  'admin', NOW(), '1', NOW(), 'GET /his/externalDb/{tenantId}',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 3103 AND perms = 'hc:system:hisExternalDb:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3104)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3105, 'HIS外联库新增', 3103, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:hisExternalDb:add', '#',
+  'admin', NOW(), '1', NOW(), 'POST /his/externalDb',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 3103 AND perms = 'hc:system:hisExternalDb:add')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3105)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3106, 'HIS外联库修改', 3103, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:hisExternalDb:edit', '#',
+  'admin', NOW(), '1', NOW(), 'PUT /his/externalDb',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 3103 AND perms = 'hc:system:hisExternalDb:edit')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3106)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3107, 'HIS外联库删除', 3103, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'hc:system:hisExternalDb:remove', '#',
+  'admin', NOW(), '1', NOW(), 'DELETE /his/externalDb/{tenantId}',
+  '1', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = 3103 AND perms = 'hc:system:hisExternalDb:remove')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3107)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),

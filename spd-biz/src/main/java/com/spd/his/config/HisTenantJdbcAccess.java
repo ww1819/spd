@@ -191,6 +191,25 @@ public class HisTenantJdbcAccess
         }
     }
 
+    /**
+     * 配置变更后丢弃该租户的连接缓存，下次抓取时按新配置重建。
+     */
+    public void evictTenant(String tenantId)
+    {
+        if (StringUtils.isEmpty(tenantId))
+        {
+            return;
+        }
+        synchronized (cache)
+        {
+            CachedHandle removed = cache.remove(tenantId);
+            if (removed != null && removed.handle.getOwnedDataSourceIfAny() instanceof DruidDataSource)
+            {
+                ((DruidDataSource) removed.handle.getOwnedDataSourceIfAny()).close();
+            }
+        }
+    }
+
     @PreDestroy
     public void destroy()
     {
