@@ -1,5 +1,5 @@
 -- ========== 耗材模块 增量字段（含 add_table_column 存储过程） ==========
--- 建议在 table.sql 之后执行；按「/」分段执行。全量建表仅在 material/table.sql，本脚本不含 CREATE TABLE；新环境执行 table.sql 后，本脚本中 CALL add_table_column 对已存在字段会自动跳过。
+-- 建议在 table.sql 之后执行；按「/」分段执行。除本文件内 add_table_column 存储过程外，所有 CREATE TABLE 均在 material/table.sql；本脚本为 CALL add_table_column、动态 ALTER 等增量；新环境先执行 table.sql。
 /*
  * 存储过程：add_table_column
  * 功能：安全地为指定数据表添加新字段，避免重复添加
@@ -392,6 +392,7 @@ CALL add_table_column('t_hc_ks_xh_entry', 'delete_time', 'datetime', '删除时�
 /
 /* 科室批量消耗明细：科室库存冗余快照字段，保证后续追溯不依赖库存实时数据 */
 CALL add_table_column('t_hc_ks_xh_entry', 'dep_inventory_id', 'bigint', '来源科室库存ID(stk_dep_inventory.id)', NULL);
+/
 CALL add_table_column('t_hc_ks_xh_entry', 'gz_dep_inventory_id', 'bigint', '高值科室虚拟库存 gz_dep_inventory.id', NULL);
 /
 CALL add_table_column('t_hc_ks_xh_entry', 'kc_no', 'bigint', '来源仓库库存ID(stk_inventory.id)', NULL);
@@ -459,47 +460,7 @@ EXECUTE __stmt_ksxh_batch;
 /
 DEALLOCATE PREPARE __stmt_ksxh_batch;
 /
-/* 科室批量消耗明细 <-> 出库明细关联（主键UUID7；双方ID/明细ID/单号使用varchar） */
-CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry_ref` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位）',
-  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
-  `consume_id` varchar(36) DEFAULT NULL COMMENT '科室消耗主表ID（varchar冗余）',
-  `consume_bill_no` varchar(64) DEFAULT NULL COMMENT '科室消耗单号',
-  `consume_entry_id` varchar(36) DEFAULT NULL COMMENT '科室消耗明细ID（varchar冗余）',
-  `consume_bill_date` date DEFAULT NULL COMMENT '科室消耗日期',
-  `consume_status` int DEFAULT NULL COMMENT '科室消耗单状态',
-  `src_bill_kind` varchar(32) DEFAULT NULL COMMENT '来源单据类型（OUT_WAREHOUSE）',
-  `src_bill_id` varchar(36) DEFAULT NULL COMMENT '来源单据主表ID（出库单ID）',
-  `src_bill_no` varchar(64) DEFAULT NULL COMMENT '来源单据号（出库单号）',
-  `src_entry_id` varchar(36) DEFAULT NULL COMMENT '来源单据明细ID（出库单明细ID）',
-  `department_id` bigint DEFAULT NULL COMMENT '科室ID（冗余）',
-  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID（冗余）',
-  `material_id` bigint DEFAULT NULL COMMENT '耗材ID（冗余）',
-  `material_name` varchar(256) DEFAULT NULL COMMENT '耗材名称快照',
-  `material_speci` varchar(256) DEFAULT NULL COMMENT '规格快照',
-  `material_model` varchar(256) DEFAULT NULL COMMENT '型号快照',
-  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号（追溯）',
-  `batch_number` varchar(100) DEFAULT NULL COMMENT '批号（追溯）',
-  `material_no` varchar(128) DEFAULT NULL COMMENT '耗材批号',
-  `supplier_id` varchar(128) DEFAULT NULL COMMENT '供应商ID',
-  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID',
-  `out_entry_qty` decimal(18,2) DEFAULT NULL COMMENT '来源出库明细数量',
-  `available_qty` decimal(18,2) DEFAULT NULL COMMENT '库存剩余数量（引用时）',
-  `default_consume_qty` decimal(18,2) DEFAULT NULL COMMENT '默认带出数量（min(库存剩余,出库明细数量)）',
-  `consume_qty` decimal(18,2) DEFAULT NULL COMMENT '本次消耗数量',
-  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
-  `amount` decimal(18,2) DEFAULT NULL COMMENT '金额',
-  `main_barcode` varchar(128) DEFAULT NULL COMMENT '主条码',
-  `sub_barcode` varchar(128) DEFAULT NULL COMMENT '辅条码',
-  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`id`),
-  KEY `idx_ks_xh_ref_tenant` (`tenant_id`),
-  KEY `idx_ks_xh_ref_consume` (`consume_id`,`consume_entry_id`),
-  KEY `idx_ks_xh_ref_src` (`src_bill_id`,`src_entry_id`),
-  KEY `idx_ks_xh_ref_src_no` (`src_bill_no`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室批量消耗明细-出库单明细关联表';
+/* t_hc_ks_xh_entry_ref 全量建表见 material/table.sql */
 /
 /* 批次表：租户隔离与历史追溯 */
 CALL add_table_column('stk_batch', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
@@ -1722,75 +1683,7 @@ CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(5
 CALL add_table_column('gz_order', 'apply_department_id', 'bigint', '申请科室ID（备货验收）', NULL);
 /
 
--- 高值单据明细引用关系（主键 UUID7 36 位；双方主键/明细 ID 使用字符串便于扩展）
-CREATE TABLE IF NOT EXISTS `gz_order_entry_code_ref` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户',
-  `src_acceptance_id` varchar(36) DEFAULT NULL COMMENT '备货验收主表ID',
-  `src_acceptance_no` varchar(64) DEFAULT NULL COMMENT '验收单号',
-  `src_order_entry_id` varchar(36) DEFAULT NULL COMMENT '验收明细ID',
-  `src_barcode_line_id` varchar(36) DEFAULT NULL COMMENT '条码明细ID(gz_order_entry_inhospitalcode_list)',
-  `src_in_hospital_code` varchar(200) DEFAULT NULL COMMENT '院内码',
-  `tgt_bill_kind` varchar(32) DEFAULT NULL COMMENT '目标单据类型 GZ_SHIPMENT 等',
-  `tgt_main_id` varchar(36) DEFAULT NULL COMMENT '目标主表ID',
-  `tgt_bill_no` varchar(64) DEFAULT NULL COMMENT '目标单号',
-  `tgt_entry_id` varchar(36) DEFAULT NULL COMMENT '目标明细ID',
-  `ref_purpose` varchar(200) DEFAULT NULL COMMENT '引用用途（中文）',
-  `material_id` bigint DEFAULT NULL COMMENT '耗材ID冗余',
-  `material_name` varchar(300) DEFAULT NULL COMMENT '耗材名称冗余',
-  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库冗余',
-  `create_by` varchar(64) DEFAULT NULL,
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_gz_code_ref_barcode` (`src_barcode_line_id`),
-  KEY `idx_gz_code_ref_tgt` (`tgt_bill_kind`,`tgt_entry_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货验收条码明细引用关系';
-/
-
-CREATE TABLE IF NOT EXISTS `gz_shipment_entry_ref` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) DEFAULT NULL,
-  `shipment_entry_id` varchar(36) DEFAULT NULL COMMENT '备货出库明细ID',
-  `src_bill_kind` varchar(32) DEFAULT NULL COMMENT '来源类型',
-  `src_main_id` varchar(36) DEFAULT NULL,
-  `src_bill_no` varchar(64) DEFAULT NULL,
-  `src_detail_id` varchar(36) DEFAULT NULL,
-  `src_in_hospital_code` varchar(200) DEFAULT NULL,
-  `tgt_bill_kind` varchar(32) DEFAULT NULL,
-  `tgt_main_id` varchar(36) DEFAULT NULL,
-  `tgt_bill_no` varchar(64) DEFAULT NULL,
-  `tgt_entry_id` varchar(36) DEFAULT NULL,
-  `ref_purpose` varchar(200) DEFAULT NULL,
-  `material_id` bigint DEFAULT NULL,
-  `material_name` varchar(300) DEFAULT NULL,
-  `create_by` varchar(64) DEFAULT NULL,
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_gz_ship_ref_entry` (`shipment_entry_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货出库明细引用关系';
-/
-
-CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry_ref` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) DEFAULT NULL,
-  `refund_goods_entry_id` varchar(36) DEFAULT NULL COMMENT '退库/退货明细ID',
-  `src_bill_kind` varchar(32) DEFAULT NULL,
-  `src_main_id` varchar(36) DEFAULT NULL,
-  `src_bill_no` varchar(64) DEFAULT NULL,
-  `src_detail_id` varchar(36) DEFAULT NULL,
-  `src_in_hospital_code` varchar(200) DEFAULT NULL,
-  `tgt_bill_kind` varchar(32) DEFAULT NULL,
-  `tgt_main_id` varchar(36) DEFAULT NULL,
-  `tgt_bill_no` varchar(64) DEFAULT NULL,
-  `tgt_entry_id` varchar(36) DEFAULT NULL,
-  `ref_purpose` varchar(200) DEFAULT NULL,
-  `material_id` bigint DEFAULT NULL,
-  `material_name` varchar(300) DEFAULT NULL,
-  `create_by` varchar(64) DEFAULT NULL,
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_gz_rg_ref_entry` (`refund_goods_entry_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货退库/退货明细引用关系';
+-- gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref 全量建表见 material/table.sql
 /
 
 INSERT INTO sys_menu(menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
@@ -1798,90 +1691,171 @@ SELECT '引用单据查询', COALESCE((SELECT parent_id FROM sys_menu WHERE perm
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'gz:refDoc:query');
 /
 
+-- sys_his_external_db 建表与示例数据见 material/table.sql
+/
+
 -- ========== HIS 患者计费镜像 / 批次 / 消耗追溯（增量字段）==========
 -- 说明：全量建表见 material/table.sql 文末 his_* 与 his_mirror_consume_link；请先执行该段 CREATE 再执行本段 CALL。
 -- 退费：HIS 退费/冲账在未建立与镜像行、抓取批次、院内码的稳定关联前，业务与脚本均不做自动冲正或删除，避免串批次、串条码。
 CALL add_table_column('his_inpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id', 'varchar(32) NOT NULL', 'HIS住院计费明细主键', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'inpatient_no', 'varchar(64)', '住院号', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'dept_code', 'varchar(32)', '费用科室编码', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'dept_name', 'varchar(128)', '费用科室名称', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'doctor_id', 'varchar(32)', '医生ID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'doctor_name', 'varchar(128)', '医生姓名', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'charge_item_id', 'varchar(64)', '收费项目ID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'item_name', 'varchar(512)', '项目名称', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'spec_model', 'varchar(128)', '规格型号', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'batch_no', 'varchar(128)', '批号', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'expire_date', 'varchar(64)', '效期', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'use_date', 'varchar(32)', '使用时间', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'charge_date', 'varchar(32)', '计费时间', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'quantity', 'decimal(18,6)', '数量', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'unit_price', 'decimal(18,6)', '单价', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'total_amount', 'decimal(18,6)', '金额', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'charge_operator', 'varchar(128)', '计费操作员', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'remark', 'varchar(512)', '备注', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'row_fingerprint', 'varchar(64)', '关键字段指纹', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'process_status', 'varchar(32) NOT NULL', 'PENDING_CONSUME/PARTIALLY_CONSUMED/CONSUMED', 'PENDING_CONSUME');
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'create_by', 'varchar(64)', '创建者', '');
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'create_time', 'datetime', '本地入库时间', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'update_by', 'varchar(64)', '更新者', '');
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'update_time', 'datetime', '更新时间', NULL);
+/
 
 CALL add_table_column('his_outpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id', 'varchar(32) NOT NULL', 'HIS门诊计费明细主键', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'outpatient_no', 'varchar(64)', '门诊号', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'clinic_code', 'varchar(32)', '就诊编码', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'clinic_name', 'varchar(128)', '就诊名称', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'doctor_id', 'varchar(32)', '医生ID', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'doctor_name', 'varchar(128)', '医生姓名', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'charge_item_id', 'varchar(64)', '收费项目ID', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'item_name', 'varchar(512)', '项目名称', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'spec_model', 'varchar(128)', '规格型号', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'batch_no', 'varchar(128)', '批号', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'expire_date', 'varchar(64)', '效期', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'charge_date', 'varchar(32)', '计费时间', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'quantity', 'decimal(18,6)', '数量', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'unit_price', 'decimal(18,6)', '单价', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'total_amount', 'decimal(18,6)', '金额', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'charge_operator', 'varchar(128)', '计费操作员', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'payment_type', 'varchar(32)', '支付方式', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'receipt_no', 'varchar(64)', '收据号', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'remark', 'varchar(512)', '备注', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'row_fingerprint', 'varchar(64)', '关键字段指纹', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'process_status', 'varchar(32) NOT NULL', 'PENDING_CONSUME/PARTIALLY_CONSUMED/CONSUMED', 'PENDING_CONSUME');
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'create_by', 'varchar(64)', '创建者', '');
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'create_time', 'datetime', '本地入库时间', NULL);
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'update_by', 'varchar(64)', '更新者', '');
+/
 CALL add_table_column('his_outpatient_charge_mirror', 'update_time', 'datetime', '更新时间', NULL);
+/
 
 CALL add_table_column('his_charge_fetch_batch', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+/
 CALL add_table_column('his_charge_fetch_batch', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+/
 CALL add_table_column('his_charge_fetch_batch', 'charge_kind', 'varchar(16) NOT NULL', 'INPATIENT/OUTPATIENT', NULL);
+/
 CALL add_table_column('his_charge_fetch_batch', 'window_start', 'datetime NOT NULL', '查询窗口起(含)', NULL);
+/
 CALL add_table_column('his_charge_fetch_batch', 'window_end', 'datetime NOT NULL', '查询窗口止(不含)', NULL);
+/
 CALL add_table_column('his_charge_fetch_batch', 'inserted_count', 'int NOT NULL', '本次新增条数', '0');
+/
 CALL add_table_column('his_charge_fetch_batch', 'skipped_count', 'int NOT NULL', '跳过条数', '0');
+/
 CALL add_table_column('his_charge_fetch_batch', 'drift_count', 'int NOT NULL', '指纹不一致条数', '0');
+/
 CALL add_table_column('his_charge_fetch_batch', 'remark', 'varchar(500)', '备注', NULL);
+/
 CALL add_table_column('his_charge_fetch_batch', 'create_by', 'varchar(64)', '创建者', '');
+/
 CALL add_table_column('his_charge_fetch_batch', 'create_time', 'datetime', '抓取完成时间', NULL);
+/
 
 CALL add_table_column('his_mirror_consume_link', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'visit_kind', 'varchar(16) NOT NULL', 'INPATIENT/OUTPATIENT', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'mirror_row_id', 'varchar(36) NOT NULL', '镜像表主键', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'dept_batch_consume_id', 'bigint NOT NULL', '科室批量消耗主表ID', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'dept_batch_consume_entry_id', 'bigint NOT NULL', '科室批量消耗明细ID', NULL);
+/
 CALL add_table_column('his_mirror_consume_link', 'alloc_qty', 'decimal(18,6) NOT NULL', '本行分摊数量', '0');
+/
 CALL add_table_column('his_mirror_consume_link', 'create_time', 'datetime', '创建时间', NULL);
 /
 

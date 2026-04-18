@@ -18,8 +18,6 @@ import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -27,6 +25,8 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.IdUtils;
 import com.spd.his.config.HisSqlServerProperties;
+import com.spd.his.config.HisTenantDbHandle;
+import com.spd.his.config.HisTenantJdbcAccess;
 import com.spd.his.domain.HisChargeFetchBatch;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
@@ -52,25 +52,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private static final int HIS_ID_QUERY_BATCH = 400;
     private static final int INSERT_BATCH_SIZE = 80;
 
-    private static final String SQL_INPATIENT_RANGE =
-        "SELECT inpatient_charge_id, patient_id, patient_name, inpatient_no, dept_code, dept_name, "
-            + "doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date, "
-            + "use_date, charge_date, quantity, unit_price, total_amount, charge_operator, remark "
-            + "FROM dbo.v_inpatient_consumable_charge "
-            + "WHERE TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) >= ? "
-            + "AND TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) < ?";
-
-    private static final String SQL_OUTPATIENT_RANGE =
-        "SELECT outpatient_charge_id, patient_id, patient_name, outpatient_no, clinic_code, clinic_name, "
-            + "doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date, "
-            + "charge_date, quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark "
-            + "FROM dbo.v_outpatient_consumable_charge "
-            + "WHERE TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) >= ? "
-            + "AND TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) < ?";
-
-    @Autowired(required = false)
-    @Qualifier("hisJdbcTemplate")
-    private JdbcTemplate hisJdbcTemplate;
+    @Autowired
+    private HisTenantJdbcAccess hisTenantJdbcAccess;
 
     @Autowired
     private HisSqlServerProperties hisSqlServerProperties;
@@ -90,10 +73,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     @Override
     public HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body)
     {
-        assertHisJdbcReady();
         assertTenantAllowed();
         LocalDateTime[] win = parseWindow(body);
         String tenantId = SecurityUtils.getCustomerId();
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
         String batchId = IdUtils.fastUUID();
         String createBy = SecurityUtils.getUsername();
         Date now = new Date();
@@ -111,7 +94,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 next = win[1];
             }
-            List<HisInpatientChargeMirror> chunkRows = queryInpatientChunk(cursor, next, tenantId, batchId, createBy, now);
+            List<HisInpatientChargeMirror> chunkRows = queryInpatientChunk(hisDb, cursor, next, tenantId, batchId, createBy, now);
             int[] c = mergeInpatientChunk(tenantId, chunkRows);
             inserted += c[0];
             skipped += c[1];
@@ -143,10 +126,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     @Override
     public HisFetchResultVo fetchOutpatientMirror(HisPatientChargeFetchBody body)
     {
-        assertHisJdbcReady();
         assertTenantAllowed();
         LocalDateTime[] win = parseWindow(body);
         String tenantId = SecurityUtils.getCustomerId();
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
         String batchId = IdUtils.fastUUID();
         String createBy = SecurityUtils.getUsername();
         Date now = new Date();
@@ -163,7 +146,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 next = win[1];
             }
-            List<HisOutpatientChargeMirror> chunkRows = queryOutpatientChunk(cursor, next, tenantId, batchId, createBy, now);
+            List<HisOutpatientChargeMirror> chunkRows = queryOutpatientChunk(hisDb, cursor, next, tenantId, batchId, createBy, now);
             int[] c = mergeOutpatientChunk(tenantId, chunkRows);
             inserted += c[0];
             skipped += c[1];
@@ -258,14 +241,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return hisMirrorConsumeManualService.applyHighConsume(body);
     }
 
-    private void assertHisJdbcReady()
-    {
-        if (hisJdbcTemplate == null || !hisSqlServerProperties.getDatasource().isEnabled())
-        {
-            throw new ServiceException("HIS 数据源未启用：请在配置中设置 spd.his.datasource.enabled=true 并填写 JDBC 连接");
-        }
-    }
-
     private void assertTenantAllowed()
     {
         List<String> allow = hisSqlServerProperties.getAllowedTenantIds();
@@ -313,13 +288,14 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     }
 
     private List<HisInpatientChargeMirror> queryInpatientChunk(
+        HisTenantDbHandle hisDb,
         LocalDateTime chunkStart, LocalDateTime chunkEndExcl,
         String tenantId, String batchId, String createBy, Date createTime)
     {
         Timestamp t0 = Timestamp.valueOf(chunkStart);
         Timestamp t1 = Timestamp.valueOf(chunkEndExcl);
         RowMapper<HisInpatientChargeMirror> rm = (rs, rowNum) -> mapInpatientRow(rs, tenantId, batchId, createBy, createTime);
-        return hisJdbcTemplate.query(SQL_INPATIENT_RANGE, ps ->
+        return hisDb.getJdbcTemplate().query(hisDb.getInpatientRangeSql(), ps ->
         {
             ps.setTimestamp(1, t0);
             ps.setTimestamp(2, t1);
@@ -359,13 +335,14 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     }
 
     private List<HisOutpatientChargeMirror> queryOutpatientChunk(
+        HisTenantDbHandle hisDb,
         LocalDateTime chunkStart, LocalDateTime chunkEndExcl,
         String tenantId, String batchId, String createBy, Date createTime)
     {
         Timestamp t0 = Timestamp.valueOf(chunkStart);
         Timestamp t1 = Timestamp.valueOf(chunkEndExcl);
         RowMapper<HisOutpatientChargeMirror> rm = (rs, rowNum) -> mapOutpatientRow(rs, tenantId, batchId, createBy, createTime);
-        return hisJdbcTemplate.query(SQL_OUTPATIENT_RANGE, ps ->
+        return hisDb.getJdbcTemplate().query(hisDb.getOutpatientRangeSql(), ps ->
         {
             ps.setTimestamp(1, t0);
             ps.setTimestamp(2, t1);

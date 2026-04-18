@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisExternalDbMapper">
+
+    <select id="selectEnabledByTenantId" resultType="com.spd.his.domain.HisExternalDb">
+        select tenant_id           as tenantId,
+               db_type             as dbType,
+               driver_class        as driverClass,
+               jdbc_url            as jdbcUrl,
+               username            as username,
+               password            as password,
+               enabled             as enabled,
+               sql_inpatient_range as sqlInpatientRange,
+               sql_outpatient_range as sqlOutpatientRange,
+               remark              as remark
+        from sys_his_external_db
+        where tenant_id = #{tenantId}
+          and enabled = '1'
+        limit 1
+    </select>
+</mapper>

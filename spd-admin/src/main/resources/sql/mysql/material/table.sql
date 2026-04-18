@@ -1,7 +1,7 @@
 -- ========== 耗材模块 建表脚本 ==========
 -- 执行顺序建议：1.table.sql 2.column.sql（存储过程 add_table_column + 存量库增量字段）3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
--- 分工：本文件为全量 CREATE TABLE IF NOT EXISTS；column.sql 不再重复建表，仅对存量库已存在的表执行 CALL add_table_column 等增量（字段已存在则跳过）。
--- 本脚本已含：出入库/库存/批次、仓库与科室流水、盘点/盈亏、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置、档案变更日志（fd_*_change_log）、盘盈待入账（stk_profit_loss_pending）、库房申请单（wh_warehouse_apply / wh_warehouse_apply_entry / wh_wh_apply_ck_entry_ref）、高值备货引用（gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref）等；存量库若已建表可跳过对应 CREATE。
+-- 分工：本文件为全量 CREATE TABLE IF NOT EXISTS（及必要的 INSERT 种子）；column.sql 仅含 add_table_column 存储过程与 CALL/动态 ALTER 等增量，不含 CREATE TABLE。
+-- 本脚本已含：出入库/库存/批次、仓库与科室流水、盘点/盈亏、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置、档案变更日志（fd_*_change_log）、盘盈待入账（stk_profit_loss_pending）、库房申请单（wh_warehouse_apply / wh_warehouse_apply_entry / wh_wh_apply_ck_entry_ref）、高值备货引用（gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref）、租户级 HIS 外联（sys_his_external_db）等；存量库若已建表可跳过对应 CREATE。
 -- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；历史增量字段仍由 column.sql 补齐。
 -- 按「/」分段，每段一条语句执行
 /
@@ -2172,6 +2172,39 @@ CREATE TABLE IF NOT EXISTS `sys_data_backup_config` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sys_data_backup_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据备份配置';
+/
+
+-- HIS 外联库按租户（与 sb_customer.customer_id / sys_user.customer_id 对齐）；抓取镜像时按 tenant_id 选库与 SQL
+CREATE TABLE IF NOT EXISTS `sys_his_external_db` (
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `db_type` varchar(16) NOT NULL DEFAULT 'SQLSERVER' COMMENT 'SQLSERVER=默认视图SQL；MYSQL=须填自定义区间SQL',
+  `driver_class` varchar(256) DEFAULT NULL COMMENT '为空则按 db_type 使用内置驱动类名',
+  `jdbc_url` varchar(1024) NOT NULL COMMENT 'JDBC URL',
+  `username` varchar(128) NOT NULL COMMENT '账号',
+  `password` varchar(512) DEFAULT NULL COMMENT '口令',
+  `enabled` char(1) NOT NULL DEFAULT '1' COMMENT '0停用 1启用',
+  `sql_inpatient_range` mediumtext COMMENT '住院区间查询SQL，两个?为起止时间；SQLSERVER可空走内置',
+  `sql_outpatient_range` mediumtext COMMENT '门诊区间查询SQL，两个?为起止时间；SQLSERVER可空走内置',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`tenant_id`),
+  KEY `idx_sys_his_ext_enabled` (`enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户级HIS外联库连接';
+/
+
+INSERT INTO sys_his_external_db (tenant_id, db_type, driver_class, jdbc_url, username, password, enabled, sql_inpatient_range, sql_outpatient_range, remark)
+VALUES (
+  'hengsui-third-001',
+  'SQLSERVER',
+  'com.microsoft.sqlserver.jdbc.SQLServerDriver',
+  'jdbc:sqlserver://127.0.0.1;databaseName=THIS4;encrypt=false;trustServerCertificate=true',
+  'sa',
+  '',
+  '1',
+  NULL,
+  NULL,
+  '示例：请按现场修改 url/账号/口令；启用抓取时 enabled=1'
+) ON DUPLICATE KEY UPDATE remark = VALUES(remark);
 /
 
 -- HIS 患者计费镜像（住院）：业务唯一键 (tenant_id, his_inpatient_charge_id)，主键 UUID 36 位

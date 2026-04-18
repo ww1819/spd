@@ -61,7 +61,7 @@ public class DepPurchaseApplyController extends BaseController
     /**
      * 查询科室申购列表
      */
-    @PreAuthorize("@ss.hasPermi('department:purchase:list')")
+    @PreAuthorize("@ss.hasPermi('department:purchase:list') || @ss.hasPermi('department:purchaseAudit:list')")
     @GetMapping("/list")
     public TableDataInfo list(DepPurchaseApply depPurchaseApply)
     {
@@ -294,7 +294,7 @@ public class DepPurchaseApplyController extends BaseController
     /**
      * 获取科室申购详细信息
      */
-    @PreAuthorize("@ss.hasPermi('department:purchase:query')")
+    @PreAuthorize("@ss.hasPermi('department:purchase:query') || @ss.hasPermi('department:purchaseAudit:list')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -342,7 +342,7 @@ public class DepPurchaseApplyController extends BaseController
     /**
      * 审核科室申购
      */
-    @PreAuthorize("@ss.hasPermi('department:purchase:audit')")
+    @PreAuthorize("@ss.hasPermi('department:purchase:audit') || @ss.hasPermi('department:purchaseAudit:audit')")
     @Log(title = "科室申购审核", businessType = BusinessType.UPDATE)
     @PutMapping("/auditApply")
     public AjaxResult audit(@RequestBody JSONObject json)
@@ -354,7 +354,7 @@ public class DepPurchaseApplyController extends BaseController
     /**
      * 驳回科室申购
      */
-    @PreAuthorize("@ss.hasPermi('department:purchase:reject')")
+    @PreAuthorize("@ss.hasPermi('department:purchase:reject') || @ss.hasPermi('department:purchaseAudit:reject')")
     @Log(title = "科室申购驳回", businessType = BusinessType.UPDATE)
     @PutMapping("/reject")
     public AjaxResult reject(@RequestBody JSONObject json)
