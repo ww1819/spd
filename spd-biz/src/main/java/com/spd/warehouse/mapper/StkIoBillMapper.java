@@ -137,13 +137,14 @@ public interface StkIoBillMapper
      */
     int updatestkIobillEntry(StkIoBillEntry stkIoBillEntry);
 
-    /**
-     * 反写出库单明细的科室库存id（kc_no）
-     * @param id 出库单明细id
-     * @param kcNo 科室库存明细id
-     * @return
-     */
-    int updateStkIoBillEntryKcNo(@Param("id") Long id, @Param("kcNo") Long kcNo);
+    /** 入库审核：反写仓库库存主键，kc_no 同步为兼容镜像 */
+    int updateStkIoBillEntryInboundWhRef(@Param("id") Long id, @Param("stkInventoryId") Long stkInventoryId);
+
+    /** 出库审核：反写来源仓库存 + 科室库存主键；kc_no 与 dep_inventory_id 同步（兼容旧接口） */
+    int updateStkIoBillEntryOutboundAuditRefs(@Param("id") Long id, @Param("stkInventoryId") Long stkInventoryId, @Param("depInventoryId") Long depInventoryId);
+
+    /** 收货确认等：仅补写科室库存主键 */
+    int updateStkIoBillEntryDepInventoryRef(@Param("id") Long id, @Param("depInventoryId") Long depInventoryId);
 
     /**
      * 查询出入库明细表耗材是否存在

@@ -103,8 +103,17 @@ public class StkIoBillEntry extends BaseEntity
     /** 查询参数：结算类型 */
     private String settlementType;
 
-    /** 科室退库：科室库存主键 stk_dep_inventory.id；同批次多行时必须填。其它单据含义见各业务实现。 */
+    /**
+     * 遗留字段：出库审核后曾与 {@link #depInventoryId} 同步；历史数据曾写入仓库库存 id。
+     * 新逻辑请使用 {@link #stkInventoryId}、{@link #depInventoryId}。
+     */
     private Long kcNo;
+
+    /** 仓库库存明细主键 {@code stk_inventory.id}（入库审核反写、出库申领来源仓、出库审核来源仓等） */
+    private Long stkInventoryId;
+
+    /** 科室库存明细主键 {@code stk_dep_inventory.id}（出库审核反写、收货确认、退库锁定等） */
+    private Long depInventoryId;
 
     /** 高值耗材主条码 */
     @Excel(name = "高值耗材主条码")
@@ -329,6 +338,45 @@ public class StkIoBillEntry extends BaseEntity
         this.kcNo = kcNo;
     }
 
+    public Long getStkInventoryId() {
+        return stkInventoryId;
+    }
+
+    public void setStkInventoryId(Long stkInventoryId) {
+        this.stkInventoryId = stkInventoryId;
+    }
+
+    public Long getDepInventoryId() {
+        return depInventoryId;
+    }
+
+    public void setDepInventoryId(Long depInventoryId) {
+        this.depInventoryId = depInventoryId;
+    }
+
+    /**
+     * 出库/退货/调拨等：用于定位仓库库存行。优先 {@link #stkInventoryId}，否则兼容旧数据 {@link #kcNo}（仅当未维护科室库存主键时）。
+     */
+    public Long resolveStkInventoryKeyForWarehouseOps() {
+        if (stkInventoryId != null) {
+            return stkInventoryId;
+        }
+        if (depInventoryId != null) {
+            return null;
+        }
+        return kcNo;
+    }
+
+    /**
+     * 退库/出库收货确认：用于定位科室库存行。优先 {@link #depInventoryId}，否则兼容旧数据 {@link #kcNo}。
+     */
+    public Long resolveDepInventoryKeyForDepOps() {
+        if (depInventoryId != null) {
+            return depInventoryId;
+        }
+        return kcNo;
+    }
+
     public String getMainBarcode() { return mainBarcode; }
     public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
     public String getSubBarcode() { return subBarcode; }
@@ -389,6 +437,9 @@ public class StkIoBillEntry extends BaseEntity
             .append("endTime", getEndTime())
             .append("delFlag", getDelFlag())
             .append("material", getMaterial())
+            .append("kcNo", getKcNo())
+            .append("stkInventoryId", getStkInventoryId())
+            .append("depInventoryId", getDepInventoryId())
             .toString();
     }
 }

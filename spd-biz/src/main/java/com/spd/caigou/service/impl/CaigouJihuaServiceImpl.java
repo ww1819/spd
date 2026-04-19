@@ -326,16 +326,17 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
 
                     StkDepInventory stkDepInventory;
                     String batchNo = entry.getBatchNo();
-                    if (entry.getKcNo() != null) {
-                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryById(entry.getKcNo());
+                    Long depKeyCg = entry.resolveDepInventoryKeyForDepOps();
+                    if (depKeyCg != null) {
+                        stkDepInventory = stkDepInventoryMapper.selectStkDepInventoryById(depKeyCg);
                         if (stkDepInventory == null) {
-                            throw new ServiceException(String.format("退库-科室库存不存在或无权访问，id=%s", entry.getKcNo()));
+                            throw new ServiceException(String.format("退库-科室库存不存在或无权访问，id=%s", depKeyCg));
                         }
                         if (!returnWarehouseId.equals(stkDepInventory.getWarehouseId())) {
-                            throw new ServiceException(String.format("退库-科室库存id：%s 与单据仓库不一致", entry.getKcNo()));
+                            throw new ServiceException(String.format("退库-科室库存id：%s 与单据仓库不一致", depKeyCg));
                         }
                         if (stkDepInventory.getReceiptConfirmStatus() == null || stkDepInventory.getReceiptConfirmStatus() != 1) {
-                            throw new ServiceException(String.format("退库-科室库存id：%s 未收货确认，不能退库", entry.getKcNo()));
+                            throw new ServiceException(String.format("退库-科室库存id：%s 未收货确认，不能退库", depKeyCg));
                         }
                         if (StringUtils.isNotEmpty(batchNo) && !batchNo.equals(stkDepInventory.getBatchNo())) {
                             throw new ServiceException("退库明细批次号与科室库存不一致，请刷新后重试");
@@ -708,8 +709,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
             if (e == null || e.getQty() == null) {
                 continue;
             }
-            if (e.getKcNo() != null) {
-                qtyByDepInvId.merge(e.getKcNo(), e.getQty(), BigDecimal::add);
+            Long depKeyCg = e.resolveDepInventoryKeyForDepOps();
+            if (depKeyCg != null) {
+                qtyByDepInvId.merge(depKeyCg, e.getQty(), BigDecimal::add);
             }
         }
         for (Map.Entry<Long, BigDecimal> en : qtyByDepInvId.entrySet()) {
@@ -730,7 +732,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         }
         Map<String, BigDecimal> qtyByBatch = new HashMap<>();
         for (StkIoBillEntry e : stkIoBillEntryList) {
-            if (e == null || e.getQty() == null || e.getKcNo() != null) {
+            if (e == null || e.getQty() == null || e.resolveDepInventoryKeyForDepOps() != null) {
                 continue;
             }
             String bn = e.getBatchNo();

@@ -1605,6 +1605,34 @@ ALTER TABLE `stk_dep_inventory`
   MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '关联仓库库存主键 stk_inventory.id（反写）';
 /
 
+-- 出入库明细 stk_io_bill_entry：拆分仓库/科室库存主键（与 table.sql 一致；kc_no 仅作兼容镜像）
+CALL add_table_column('stk_io_bill_entry', 'stk_inventory_id', 'bigint', '仓库库存明细主键 stk_inventory.id', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'dep_inventory_id', 'bigint', '科室库存明细主键 stk_dep_inventory.id', NULL);
+/
+ALTER TABLE `stk_io_bill_entry` MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '遗留兼容：与 dep_inventory_id 同步（出库审核后）；历史曾混存仓库库存id，请以 stk_inventory_id/dep_inventory_id 为准';
+/
+UPDATE stk_io_bill_entry e INNER JOIN stk_io_bill p ON e.paren_id = p.id AND p.bill_type = 101
+SET e.stk_inventory_id = e.kc_no
+WHERE e.kc_no IS NOT NULL AND e.stk_inventory_id IS NULL;
+/
+UPDATE stk_io_bill_entry e INNER JOIN stk_io_bill p ON e.paren_id = p.id AND p.bill_type = 201
+INNER JOIN stk_dep_inventory d ON d.id = e.kc_no
+SET e.dep_inventory_id = d.id
+WHERE e.kc_no IS NOT NULL AND e.dep_inventory_id IS NULL;
+/
+UPDATE stk_io_bill_entry e INNER JOIN stk_io_bill p ON e.paren_id = p.id AND p.bill_type = 201
+INNER JOIN stk_inventory w ON w.id = e.kc_no
+SET e.stk_inventory_id = w.id
+WHERE e.kc_no IS NOT NULL AND e.stk_inventory_id IS NULL
+  AND NOT EXISTS (SELECT 1 FROM stk_dep_inventory d WHERE d.id = e.kc_no);
+/
+UPDATE stk_io_bill_entry e INNER JOIN stk_io_bill p ON e.paren_id = p.id AND p.bill_type = 401
+INNER JOIN stk_dep_inventory d ON d.id = e.kc_no
+SET e.dep_inventory_id = d.id
+WHERE e.kc_no IS NOT NULL AND e.dep_inventory_id IS NULL;
+/
+
 -- 变更日志表补 tenant_id（多租户隔离）
 CALL add_table_column('fd_department_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
