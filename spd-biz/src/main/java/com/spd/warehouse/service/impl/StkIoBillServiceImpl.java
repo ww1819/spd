@@ -1427,6 +1427,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             {
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
+                if (stkIoBillEntry.getDelFlag() == null) {
+                    stkIoBillEntry.setDelFlag(0);
+                }
                 if(StringUtils.isEmpty(stkIoBillEntry.getBatchNo())){
                     stkIoBillEntry.setBatchNo(getBatchNumber());
                 }

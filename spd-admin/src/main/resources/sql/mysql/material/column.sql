@@ -1605,6 +1605,13 @@ ALTER TABLE `stk_dep_inventory`
   MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '关联仓库库存主键 stk_inventory.id（反写）';
 /
 
+-- 出入库明细 stk_io_bill_entry：del_flag 空值修复并强制默认 0（历史/前端未传时 batch insert 曾写入 NULL）
+UPDATE stk_io_bill_entry SET del_flag = 0 WHERE del_flag IS NULL;
+/
+ALTER TABLE `stk_io_bill_entry`
+  MODIFY COLUMN `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）';
+/
+
 -- 出入库明细 stk_io_bill_entry：拆分仓库/科室库存主键（与 table.sql 一致；kc_no 仅作兼容镜像）
 CALL add_table_column('stk_io_bill_entry', 'stk_inventory_id', 'bigint', '仓库库存明细主键 stk_inventory.id', NULL);
 /

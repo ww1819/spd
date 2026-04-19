@@ -88,8 +88,8 @@ public class StkIoBillEntry extends BaseEntity
     @Excel(name = "有效期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date endTime;
 
-    /** 删除标识 */
-    private Integer delFlag;
+    /** 删除标识（0 正常 1 删除；新建对象默认 0，避免未赋值时批量插入写 NULL） */
+    private Integer delFlag = 0;
 
     /** 耗材对象 */
     private FdMaterial material;
