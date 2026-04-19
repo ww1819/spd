@@ -229,10 +229,10 @@ CALL add_table_column('stk_dep_inventory', 'bill_id', 'BIGINT', '单据主表id(
 /
 CALL add_table_column('stk_dep_inventory', 'bill_entry_id', 'BIGINT', '单据明细id(出库单明细id)', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'bill_no', 'varchar(64)', '单据号', NULL);
+CALL add_table_column('stk_dep_inventory', 'bill_no', 'varchar(100)', '单据号', NULL);
 /
 /* 出库单号：与 table.sql 一致；旧库若仅有 bill_no 无本列，Mapper 列表用 bill_no+子查询回退，不依赖本列 */
-CALL add_table_column('stk_dep_inventory', 'out_order_no', 'varchar(64)', '出库单号', NULL);
+CALL add_table_column('stk_dep_inventory', 'out_order_no', 'varchar(100)', '出库单号', NULL);
 /
 CALL add_table_column('stk_dep_inventory', 'bill_type', 'INT', '单据类型 201出库', NULL);
 /
@@ -1546,6 +1546,63 @@ CALL add_table_column('stk_inventory', 'del_flag', 'int', '删除标识', '0');
 CALL add_table_column('stk_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
 /
 CALL add_table_column('stk_inventory', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+-- 仓库库存明细：审计字段（全量 table.sql 已含；存量库 IF NOT EXISTS 建表时可能缺失，与 StkInventoryMapper.decreaseStkInventoryQty 等一致）
+CALL add_table_column('stk_inventory', 'create_by', 'varchar(64)', '创建者', '');
+/
+CALL add_table_column('stk_inventory', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('stk_inventory', 'update_by', 'varchar(64)', '更新者', '');
+/
+CALL add_table_column('stk_inventory', 'update_time', 'datetime', '更新时间', NULL);
+/
+
+-- 仓库库存：HIS/第三方库存明细键（aspt 等线上一致；字长 128 较 varchar(100) 略放宽）
+CALL add_table_column('stk_inventory', 'his_id', 'varchar(128)', 'HIS/第三方系统库存明细唯一标识', NULL);
+/
+
+-- 科室库存明细：审计字段（部分存量库无此四列，与 BaseEntity、仓库库存 stk_inventory 对齐）
+CALL add_table_column('stk_dep_inventory', 'create_by', 'varchar(64)', '创建者', '');
+/
+CALL add_table_column('stk_dep_inventory', 'create_time', 'datetime', '创建时间', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'update_by', 'varchar(64)', '更新者', '');
+/
+CALL add_table_column('stk_dep_inventory', 'update_time', 'datetime', '更新时间', NULL);
+/
+
+-- 存量库与当前 table.sql 对齐：数量/金额精度、日期粒度、字长（已是目标定义时可跳过本段或按需注释）
+ALTER TABLE `stk_inventory`
+  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '库存数量',
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '金额',
+  MODIFY COLUMN `material_date` datetime DEFAULT NULL COMMENT '耗材日期',
+  MODIFY COLUMN `warehouse_date` datetime DEFAULT NULL COMMENT '入库日期',
+  MODIFY COLUMN `begin_time` datetime DEFAULT NULL COMMENT '生产日期',
+  MODIFY COLUMN `end_time` datetime DEFAULT NULL COMMENT '有效期',
+  MODIFY COLUMN `receipt_order_no` varchar(100) DEFAULT NULL COMMENT '入库单号',
+  MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '科室库存明细id（反写）',
+  MODIFY COLUMN `batch_no` varchar(100) DEFAULT NULL COMMENT '入库批次号',
+  MODIFY COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  MODIFY COLUMN `material_no` varchar(100) DEFAULT NULL COMMENT '耗材批次号';
+/
+
+ALTER TABLE `stk_dep_inventory`
+  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '数量',
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '金额',
+  MODIFY COLUMN `material_date` datetime DEFAULT NULL COMMENT '耗材日期',
+  MODIFY COLUMN `warehouse_date` datetime DEFAULT NULL COMMENT '入库日期',
+  MODIFY COLUMN `supplier_id` varchar(100) DEFAULT NULL COMMENT '供应商ID（与出库一致；可存编码或第三方键）',
+  MODIFY COLUMN `begin_time` datetime DEFAULT NULL COMMENT '生产日期',
+  MODIFY COLUMN `end_time` datetime DEFAULT NULL COMMENT '有效期',
+  MODIFY COLUMN `material_no` varchar(100) DEFAULT NULL COMMENT '耗材批次号',
+  MODIFY COLUMN `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
+  MODIFY COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  MODIFY COLUMN `bill_no` varchar(100) DEFAULT NULL COMMENT '单据号',
+  MODIFY COLUMN `out_order_no` varchar(100) DEFAULT NULL COMMENT '出库单号',
+  MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '关联仓库库存主键 stk_inventory.id（反写）';
 /
 
 -- 变更日志表补 tenant_id（多租户隔离）
