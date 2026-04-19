@@ -81,6 +81,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.spd.warehouse.constants.HcDocBillRefType;
 import com.spd.warehouse.domain.HcDocBillRef;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.domain.vo.InboundEntryRefChannelQtyVo;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.HcDocBillRefMapper;
@@ -210,6 +211,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setMaterialList(materialList);
         fillSrcEntryRefConsumption(stkIoBill);
+        if (stkIoBill.getBillType() != null && stkIoBill.getBillType().intValue() == 401) {
+            fillTkSourceEntryReturnChannelConsumption(stkIoBill);
+        }
         return stkIoBill;
     }
 
@@ -1460,6 +1464,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isEmpty(stkIoBill.getTenantId())) {
             stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
+        syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, null);
         stkIoBill.setBillNo(getBillNumber("CK"));
         // 如果制单日期为空，自动设置为当前日期
@@ -1505,6 +1510,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (bt != null && (bt == 201 || bt == 301)) {
             assertWarehouseStockEntriesMatchBillHeader(stkIoBill, bt == 301);
         }
+        syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, stkIoBill.getId());
         // 如果退货日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -1533,6 +1539,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isEmpty(stkIoBill.getTenantId())) {
             stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
+        syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, null);
         stkIoBill.setBillNo(getTKNumber("TK"));
         // 如果制单日期为空，自动设置为当前日期
@@ -1606,6 +1613,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int updateTKStkIoBill(StkIoBill stkIoBill) {
         assertTkDepInventoryEntriesMatchBillHeader(stkIoBill);
+        syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, stkIoBill.getId());
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -2155,7 +2163,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Override
     public StkIoBill createCkEntriesByRkApply(String rkApplyId) {
-        StkIoBill rkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(rkApplyId));
+        StkIoBill rkBill = this.selectStkIoBillById(Long.valueOf(rkApplyId));
         if (rkBill == null) {
             throw new ServiceException(String.format("入库单ID：%s，不存在!", rkApplyId));
         }
@@ -2169,7 +2177,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
 
         String tenantId = StringUtils.isNotEmpty(rkBill.getTenantId()) ? rkBill.getTenantId() : SecurityUtils.getCustomerId();
-        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(rkBill.getId()));
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillIdAndRefType(tenantId,
+            String.valueOf(rkBill.getId()), HcDocBillRefType.RK_TO_CK);
 
         StkIoBill ckBill = new StkIoBill();
         ckBill.setWarehouseId(rkBill.getWarehouseId());
@@ -2208,10 +2217,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             ckEntry.setBatchNumber(rkEntry.getBatchNumber());
             ckEntry.setBeginTime(rkEntry.getBeginTime());
             ckEntry.setEndTime(rkEntry.getEndTime());
+            ckEntry.setSupplerId(rkEntry.getSupplerId());
             if (rkEntry.getMaterialId() != null) {
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(rkEntry.getMaterialId());
                 ckEntry.setMaterial(material);
             }
+            copyInboundRefDisplayFromRkLine(rkEntry, ckEntry);
             entryList.add(ckEntry);
             docRefList.add(newSrcDocRef(HcDocBillRefType.RK_TO_CK, "101", rkBill, rkEntry, rkLine));
         }
@@ -2220,6 +2231,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         ckBill.setStkIoBillEntryList(entryList);
         ckBill.setDocRefList(docRefList);
+        syncBillHeaderSupplerFromUniformEntries(ckBill);
         return ckBill;
     }
 
@@ -2268,7 +2280,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Override
     public StkIoBill createThEntriesByRkApply(String rkApplyId) {
-        StkIoBill rkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(rkApplyId));
+        StkIoBill rkBill = this.selectStkIoBillById(Long.valueOf(rkApplyId));
         if (rkBill == null) {
             throw new ServiceException(String.format("入库单ID：%s，不存在!", rkApplyId));
         }
@@ -2281,7 +2293,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("入库单ID：%s，明细不存在!", rkApplyId));
         }
         String tenantId = StringUtils.isNotEmpty(rkBill.getTenantId()) ? rkBill.getTenantId() : SecurityUtils.getCustomerId();
-        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(rkBill.getId()));
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillIdAndRefType(tenantId,
+            String.valueOf(rkBill.getId()), HcDocBillRefType.RK_TO_TH);
 
         StkIoBill thBill = new StkIoBill();
         thBill.setWarehouseId(rkBill.getWarehouseId());
@@ -2321,10 +2334,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             thEntry.setBatchNumber(srcEntry.getBatchNumber());
             thEntry.setBeginTime(srcEntry.getBeginTime());
             thEntry.setEndTime(srcEntry.getEndTime());
+            thEntry.setSupplerId(srcEntry.getSupplerId());
             if (srcEntry.getMaterialId() != null) {
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 thEntry.setMaterial(material);
             }
+            copyInboundRefDisplayFromRkLine(srcEntry, thEntry);
             entryList.add(thEntry);
             docRefList.add(newSrcDocRef(HcDocBillRefType.RK_TO_TH, "101", rkBill, srcEntry, rkLine));
         }
@@ -2333,12 +2348,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         thBill.setStkIoBillEntryList(entryList);
         thBill.setDocRefList(docRefList);
+        syncBillHeaderSupplerFromUniformEntries(thBill);
         return thBill;
     }
 
     @Override
     public StkIoBill createTkEntriesByCkApply(String ckApplyId) {
-        StkIoBill ckBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(ckApplyId));
+        StkIoBill ckBill = this.selectStkIoBillById(Long.valueOf(ckApplyId));
         if (ckBill == null) {
             throw new ServiceException(String.format("出库单ID：%s，不存在!", ckApplyId));
         }
@@ -2352,7 +2368,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
 
         String tenantId = StringUtils.isNotEmpty(ckBill.getTenantId()) ? ckBill.getTenantId() : SecurityUtils.getCustomerId();
-        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(ckBill.getId()));
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillIdAndRefType(tenantId,
+            String.valueOf(ckBill.getId()), HcDocBillRefType.CK_TO_TK);
 
         StkIoBill tkBill = new StkIoBill();
         tkBill.setWarehouseId(ckBill.getWarehouseId());
@@ -2394,6 +2411,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             tkEntry.setStkInventoryId(srcEntry.getStkInventoryId());
             tkEntry.setDepInventoryId(srcEntry.getDepInventoryId());
             tkEntry.setKcNo(srcEntry.getDepInventoryId() != null ? srcEntry.getDepInventoryId() : srcEntry.getKcNo());
+            tkEntry.setSupplerId(srcEntry.getSupplerId());
             if (srcEntry.getMaterialId() != null) {
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 tkEntry.setMaterial(material);
@@ -2406,13 +2424,14 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         tkBill.setStkIoBillEntryList(entryList);
         tkBill.setDocRefList(docRefList);
+        syncBillHeaderSupplerFromUniformEntries(tkBill);
         return tkBill;
     }
 
 
     @Override
     public StkIoBill createThEntriesByTkApply(String tkApplyId) {
-        StkIoBill tkBill = this.stkIoBillMapper.selectStkIoBillById(Long.valueOf(tkApplyId));
+        StkIoBill tkBill = this.selectStkIoBillById(Long.valueOf(tkApplyId));
         if (tkBill == null) {
             throw new ServiceException(String.format("科室退库单ID：%s，不存在!", tkApplyId));
         }
@@ -2425,11 +2444,30 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("科室退库单ID：%s，明细不存在!", tkApplyId));
         }
         String tenantId = StringUtils.isNotEmpty(tkBill.getTenantId()) ? tkBill.getTenantId() : SecurityUtils.getCustomerId();
-        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillId(tenantId, String.valueOf(tkBill.getId()));
+        Map<String, BigDecimal> usedMap = hcDocBillRefService.sumRefQtyBySrcBillIdAndRefType(tenantId,
+            String.valueOf(tkBill.getId()), HcDocBillRefType.TK_TO_TH);
+
+        java.util.LinkedHashSet<Long> supSet = new java.util.LinkedHashSet<>();
+        for (StkIoBillEntry x : list) {
+            if (x == null || (x.getDelFlag() != null && x.getDelFlag() == 1)) {
+                continue;
+            }
+            Long sid = parseSupplerIdString(x.getSupplerId());
+            if (sid != null) {
+                supSet.add(sid);
+            }
+        }
+        if (supSet.size() > 1) {
+            throw new ServiceException("科室退库单明细供应商不唯一，不能生成退货单");
+        }
 
         StkIoBill thBill = new StkIoBill();
         thBill.setWarehouseId(tkBill.getWarehouseId());
-        thBill.setSupplerId(tkBill.getSupplerId());
+        if (supSet.size() == 1) {
+            thBill.setSupplerId(supSet.iterator().next());
+        } else {
+            thBill.setSupplerId(tkBill.getSupplerId());
+        }
         thBill.setBillType(301);
         thBill.setRefBillNo(tkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
@@ -2464,10 +2502,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             thEntry.setBatchNumber(srcEntry.getBatchNumber());
             thEntry.setBeginTime(srcEntry.getBeginTime());
             thEntry.setEndTime(srcEntry.getEndTime());
+            thEntry.setSupplerId(srcEntry.getSupplerId());
             if (srcEntry.getMaterialId() != null) {
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 thEntry.setMaterial(material);
             }
+            copyTkReturnRefDisplayFromTkLine(srcEntry, thEntry);
             entryList.add(thEntry);
             docRefList.add(newSrcDocRef(HcDocBillRefType.TK_TO_TH, "401", tkBill, srcEntry, tkLine));
         }
@@ -2476,6 +2516,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         thBill.setStkIoBillEntryList(entryList);
         thBill.setDocRefList(docRefList);
+        syncBillHeaderSupplerFromUniformEntries(thBill);
         return thBill;
     }
 
@@ -3225,7 +3266,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
     }
 
-    /** 为源单明细填充已被引用量、可引用量（不落库） */
+    /** 为源单明细填充已被引用量、可引用量（不落库）；入库单 101 拆分出库/退货两通道 */
     private void fillSrcEntryRefConsumption(StkIoBill bill) {
         if (bill == null || bill.getId() == null) {
             return;
@@ -3234,11 +3275,52 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isEmpty(tid)) {
             return;
         }
-        Map<String, BigDecimal> used = hcDocBillRefService.sumRefQtyBySrcBillId(tid, String.valueOf(bill.getId()));
         List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
         if (list == null) {
             return;
         }
+        Integer bt = bill.getBillType();
+        if (bt != null && bt.intValue() == 101) {
+            Map<String, InboundEntryRefChannelQtyVo> ckMap =
+                hcDocBillRefService.sumInboundOutboundChannelBySrcBillId(tid, String.valueOf(bill.getId()));
+            Map<String, InboundEntryRefChannelQtyVo> thMap =
+                hcDocBillRefService.sumInboundReturnChannelBySrcBillId(tid, String.valueOf(bill.getId()));
+            Map<String, BigDecimal> legacy = hcDocBillRefService.sumRefQtyBySrcBillId(tid, String.valueOf(bill.getId()));
+            for (StkIoBillEntry e : list) {
+                if (e == null || e.getId() == null) {
+                    continue;
+                }
+                if (e.getDelFlag() != null && e.getDelFlag() == 1) {
+                    continue;
+                }
+                String ek = String.valueOf(e.getId());
+                BigDecimal lineQty = e.getQty() != null ? e.getQty() : BigDecimal.ZERO;
+                InboundEntryRefChannelQtyVo ck = ckMap.get(ek);
+                BigDecimal ckA = ck != null && ck.getAuditedQty() != null ? ck.getAuditedQty() : BigDecimal.ZERO;
+                BigDecimal ckP = ck != null && ck.getPendingQty() != null ? ck.getPendingQty() : BigDecimal.ZERO;
+                InboundEntryRefChannelQtyVo th = thMap.get(ek);
+                BigDecimal thA = th != null && th.getAuditedQty() != null ? th.getAuditedQty() : BigDecimal.ZERO;
+                BigDecimal thP = th != null && th.getPendingQty() != null ? th.getPendingQty() : BigDecimal.ZERO;
+                e.setSrcOutboundAuditedRefQty(ckA);
+                e.setSrcOutboundPendingRefQty(ckP);
+                e.setSrcOutboundRefableQty(maxZeroBd(lineQty.subtract(ckA).subtract(ckP)));
+                e.setSrcReturnAuditedRefQty(thA);
+                e.setSrcReturnPendingRefQty(thP);
+                e.setSrcReturnRefableQty(maxZeroBd(lineQty.subtract(thA).subtract(thP)));
+                Long invId = e.getStkInventoryId() != null ? e.getStkInventoryId() : e.getKcNo();
+                if (invId != null) {
+                    StkInventory inv = stkInventoryMapper.selectStkInventoryById(invId);
+                    e.setLinkedStkQty(inv != null ? inv.getQty() : null);
+                } else {
+                    e.setLinkedStkQty(null);
+                }
+                BigDecimal u = legacy.getOrDefault(ek, BigDecimal.ZERO);
+                e.setSrcRefedQty(u);
+                e.setSrcRefableQty(maxZeroBd(lineQty.subtract(u)));
+            }
+            return;
+        }
+        Map<String, BigDecimal> used = hcDocBillRefService.sumRefQtyBySrcBillId(tid, String.valueOf(bill.getId()));
         for (StkIoBillEntry e : list) {
             if (e == null || e.getId() == null) {
                 continue;
@@ -3249,11 +3331,112 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             BigDecimal u = used.getOrDefault(String.valueOf(e.getId()), BigDecimal.ZERO);
             e.setSrcRefedQty(u);
             BigDecimal q = e.getQty() != null ? e.getQty() : BigDecimal.ZERO;
-            BigDecimal refable = q.subtract(u);
-            if (refable.compareTo(BigDecimal.ZERO) < 0) {
-                refable = BigDecimal.ZERO;
+            e.setSrcRefableQty(maxZeroBd(q.subtract(u)));
+        }
+    }
+
+    /** 科室退库单 401 作为源：按 TK_TO_TH 统计退货通道占用（不落库） */
+    private void fillTkSourceEntryReturnChannelConsumption(StkIoBill tkBill) {
+        if (tkBill == null || tkBill.getId() == null) {
+            return;
+        }
+        String tid = StringUtils.isNotEmpty(tkBill.getTenantId()) ? tkBill.getTenantId() : SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(tid)) {
+            return;
+        }
+        List<StkIoBillEntry> list = tkBill.getStkIoBillEntryList();
+        if (list == null) {
+            return;
+        }
+        Map<String, InboundEntryRefChannelQtyVo> thMap =
+            hcDocBillRefService.sumTkReturnChannelBySrcBillId(tid, String.valueOf(tkBill.getId()));
+        for (StkIoBillEntry e : list) {
+            if (e == null || e.getId() == null) {
+                continue;
             }
-            e.setSrcRefableQty(refable);
+            if (e.getDelFlag() != null && e.getDelFlag() == 1) {
+                continue;
+            }
+            String ek = String.valueOf(e.getId());
+            BigDecimal lineQty = e.getQty() != null ? e.getQty() : BigDecimal.ZERO;
+            InboundEntryRefChannelQtyVo th = thMap.get(ek);
+            BigDecimal thA = th != null && th.getAuditedQty() != null ? th.getAuditedQty() : BigDecimal.ZERO;
+            BigDecimal thP = th != null && th.getPendingQty() != null ? th.getPendingQty() : BigDecimal.ZERO;
+            e.setSrcReturnAuditedRefQty(thA);
+            e.setSrcReturnPendingRefQty(thP);
+            e.setSrcReturnRefableQty(maxZeroBd(lineQty.subtract(thA).subtract(thP)));
+            Long invId = e.getStkInventoryId();
+            if (invId != null) {
+                StkInventory inv = stkInventoryMapper.selectStkInventoryById(invId);
+                e.setLinkedStkQty(inv != null ? inv.getQty() : null);
+            } else {
+                e.setLinkedStkQty(null);
+            }
+        }
+    }
+
+    private static BigDecimal maxZeroBd(BigDecimal b) {
+        if (b == null || b.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return b;
+    }
+
+    private static void copyInboundRefDisplayFromRkLine(StkIoBillEntry rk, StkIoBillEntry target) {
+        if (rk == null || target == null) {
+            return;
+        }
+        target.setSrcOutboundAuditedRefQty(rk.getSrcOutboundAuditedRefQty());
+        target.setSrcOutboundPendingRefQty(rk.getSrcOutboundPendingRefQty());
+        target.setSrcOutboundRefableQty(rk.getSrcOutboundRefableQty());
+        target.setSrcReturnAuditedRefQty(rk.getSrcReturnAuditedRefQty());
+        target.setSrcReturnPendingRefQty(rk.getSrcReturnPendingRefQty());
+        target.setSrcReturnRefableQty(rk.getSrcReturnRefableQty());
+        target.setLinkedStkQty(rk.getLinkedStkQty());
+    }
+
+    private static void copyTkReturnRefDisplayFromTkLine(StkIoBillEntry tk, StkIoBillEntry target) {
+        if (tk == null || target == null) {
+            return;
+        }
+        target.setSrcReturnAuditedRefQty(tk.getSrcReturnAuditedRefQty());
+        target.setSrcReturnPendingRefQty(tk.getSrcReturnPendingRefQty());
+        target.setSrcReturnRefableQty(tk.getSrcReturnRefableQty());
+        target.setLinkedStkQty(tk.getLinkedStkQty());
+    }
+
+    /**
+     * 出库/退库保存前：若各明细解析出的供应商 id 一致，则写回主表 supplerId。
+     */
+    private void syncBillHeaderSupplerFromUniformEntries(StkIoBill bill) {
+        if (bill == null) {
+            return;
+        }
+        Integer bt = bill.getBillType();
+        if (bt == null || (bt.intValue() != 201 && bt.intValue() != 401)) {
+            return;
+        }
+        List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        Long uniform = null;
+        for (StkIoBillEntry e : list) {
+            if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                continue;
+            }
+            Long sid = parseSupplerIdString(e.getSupplerId());
+            if (sid == null) {
+                continue;
+            }
+            if (uniform == null) {
+                uniform = sid;
+            } else if (!uniform.equals(sid)) {
+                return;
+            }
+        }
+        if (uniform != null) {
+            bill.setSupplerId(uniform);
         }
     }
 
@@ -3414,7 +3597,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }
                 BigDecimal srcQty = nz(srcEntry.getQty());
                 BigDecimal usedOthers = nz(hcDocBillRefMapper.sumRefQtyBySrcEntryExcludingTgtBill(tenantId,
-                    String.valueOf(srcBillId), String.valueOf(srcEntryId), excludeTgtStr));
+                    String.valueOf(srcBillId), String.valueOf(srcEntryId), excludeTgtStr, r.getRefType()));
                 BigDecimal maxAllowed = srcQty.subtract(usedOthers);
                 if (maxAllowed.compareTo(BigDecimal.ZERO) < 0)
                 {

@@ -12,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
+import com.spd.warehouse.constants.HcDocBillRefType;
 import com.spd.warehouse.domain.HcDocBillRef;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.domain.vo.InboundEntryRefChannelQtyVo;
 import com.spd.warehouse.mapper.HcDocBillRefMapper;
 import com.spd.warehouse.service.IHcDocBillRefService;
 
@@ -94,6 +96,70 @@ public class HcDocBillRefServiceImpl implements IHcDocBillRefService {
             return out;
         }
         List<Map<String, Object>> rows = hcDocBillRefMapper.selectRefQtySumBySrcBillId(tenantId, srcBillId);
+        if (rows == null) {
+            return out;
+        }
+        for (Map<String, Object> row : rows) {
+            if (row == null || row.isEmpty()) {
+                continue;
+            }
+            Object k = firstKey(row, "srcEntryId", "SRCENTRYID", "src_entry_id");
+            Object v = firstKey(row, "usedQty", "USEDQTY", "used_qty");
+            if (k == null) {
+                continue;
+            }
+            out.put(String.valueOf(k), toBigDecimal(v));
+        }
+        return out;
+    }
+
+    @Override
+    public Map<String, InboundEntryRefChannelQtyVo> sumInboundOutboundChannelBySrcBillId(String tenantId, String srcBillId) {
+        return sumChannelAgg(tenantId, srcBillId, HcDocBillRefType.RK_TO_CK);
+    }
+
+    @Override
+    public Map<String, InboundEntryRefChannelQtyVo> sumInboundReturnChannelBySrcBillId(String tenantId, String srcBillId) {
+        return sumChannelAgg(tenantId, srcBillId, HcDocBillRefType.RK_TO_TH);
+    }
+
+    @Override
+    public Map<String, InboundEntryRefChannelQtyVo> sumTkReturnChannelBySrcBillId(String tenantId, String srcBillId) {
+        return sumChannelAgg(tenantId, srcBillId, HcDocBillRefType.TK_TO_TH);
+    }
+
+    private Map<String, InboundEntryRefChannelQtyVo> sumChannelAgg(String tenantId, String srcBillId, String refType) {
+        Map<String, InboundEntryRefChannelQtyVo> out = new HashMap<>();
+        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(srcBillId) || StringUtils.isEmpty(refType)) {
+            return out;
+        }
+        List<Map<String, Object>> rows = hcDocBillRefMapper.selectRefChannelAggBySrcBillId(tenantId, srcBillId, refType);
+        if (rows == null) {
+            return out;
+        }
+        for (Map<String, Object> row : rows) {
+            if (row == null || row.isEmpty()) {
+                continue;
+            }
+            Object k = firstKey(row, "srcEntryId", "SRCENTRYID", "src_entry_id");
+            if (k == null) {
+                continue;
+            }
+            InboundEntryRefChannelQtyVo vo = new InboundEntryRefChannelQtyVo();
+            vo.setAuditedQty(toBigDecimal(firstKey(row, "auditedQty", "AUDITEDQTY", "audited_qty")));
+            vo.setPendingQty(toBigDecimal(firstKey(row, "pendingQty", "PENDINGQTY", "pending_qty")));
+            out.put(String.valueOf(k), vo);
+        }
+        return out;
+    }
+
+    @Override
+    public Map<String, BigDecimal> sumRefQtyBySrcBillIdAndRefType(String tenantId, String srcBillId, String refType) {
+        Map<String, BigDecimal> out = new HashMap<>();
+        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(srcBillId) || StringUtils.isEmpty(refType)) {
+            return out;
+        }
+        List<Map<String, Object>> rows = hcDocBillRefMapper.selectRefQtySumBySrcBillIdAndRefType(tenantId, srcBillId, refType);
         if (rows == null) {
             return out;
         }

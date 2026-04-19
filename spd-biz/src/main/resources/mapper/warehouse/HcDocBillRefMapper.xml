@@ -84,8 +84,37 @@
           and src_bill_id = #{srcBillId}
           and src_entry_id = #{srcEntryId}
           and (del_flag = 0 or del_flag is null)
+        <if test="refType != null and refType != ''">
+          and ref_type = #{refType}
+        </if>
         <if test="excludeTgtBillId != null and excludeTgtBillId != ''">
           and (tgt_bill_id is null or tgt_bill_id != #{excludeTgtBillId})
         </if>
+    </select>
+
+    <select id="selectRefChannelAggBySrcBillId" resultType="java.util.HashMap">
+        select r.src_entry_id as srcEntryId,
+            sum(case when ifnull(b.bill_status, 0) = 2 and (b.del_flag is null or b.del_flag != 1)
+                then ifnull(r.ref_qty, 0) else 0 end) as auditedQty,
+            sum(case when (ifnull(b.bill_status, 0) != 2 or b.id is null) and (b.del_flag is null or b.del_flag != 1)
+                then ifnull(r.ref_qty, 0) else 0 end) as pendingQty
+        from hc_doc_bill_ref r
+        left join stk_io_bill b on b.tenant_id = r.tenant_id
+            and b.id = cast(nullif(trim(r.tgt_bill_id), '') as unsigned)
+        where r.tenant_id = #{tenantId}
+          and r.src_bill_id = #{srcBillId}
+          and r.ref_type = #{refType}
+          and (r.del_flag = 0 or r.del_flag is null)
+        group by r.src_entry_id
+    </select>
+
+    <select id="selectRefQtySumBySrcBillIdAndRefType" resultType="java.util.HashMap">
+        select src_entry_id as srcEntryId, ifnull(sum(ref_qty), 0) as usedQty
+        from hc_doc_bill_ref
+        where tenant_id = #{tenantId}
+          and src_bill_id = #{srcBillId}
+          and ref_type = #{refType}
+          and (del_flag = 0 or del_flag is null)
+        group by src_entry_id
     </select>
 </mapper>

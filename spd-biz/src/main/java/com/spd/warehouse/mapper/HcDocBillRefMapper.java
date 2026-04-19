@@ -30,5 +30,20 @@ public interface HcDocBillRefMapper {
     BigDecimal sumRefQtyBySrcEntryExcludingTgtBill(@Param("tenantId") String tenantId,
         @Param("srcBillId") String srcBillId,
         @Param("srcEntryId") String srcEntryId,
-        @Param("excludeTgtBillId") String excludeTgtBillId);
+        @Param("excludeTgtBillId") String excludeTgtBillId,
+        @Param("refType") String refType);
+
+    /**
+     * 按源单明细汇总：指定 ref_type 下已审核目标单与待审核目标单的引用数量
+     */
+    List<Map<String, Object>> selectRefChannelAggBySrcBillId(@Param("tenantId") String tenantId,
+        @Param("srcBillId") String srcBillId,
+        @Param("refType") String refType);
+
+    /**
+     * 按源单明细汇总某 ref_type 的引用数量（不区分审核态）
+     */
+    List<Map<String, Object>> selectRefQtySumBySrcBillIdAndRefType(@Param("tenantId") String tenantId,
+        @Param("srcBillId") String srcBillId,
+        @Param("refType") String refType);
 }

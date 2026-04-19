@@ -305,6 +305,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="params != null and params.docRefStatus != null and params.docRefStatus != ''">
             and <include refid="docRefStatusScalarExpr"/> = #{params.docRefStatus}
         </if>
+        <!-- 退货引用科室退库：仅展示明细供应商唯一（去重后≤1）的退库单，避免串供应商 -->
+        <if test="params != null and params.uniformTkEntrySupplierOnly != null and params.uniformTkEntrySupplierOnly == '1'">
+            and (
+                select count(distinct nullif(trim(e.suppler_id), ''))
+                from stk_io_bill_entry e
+                where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
+                  and e.suppler_id is not null and trim(e.suppler_id) != ''
+            ) &lt;= 1
+        </if>
         order by stk.bill_date desc
     </select>
 
@@ -384,6 +393,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
             </otherwise>
         </choose>
+        <if test="params != null and params.uniformTkEntrySupplierOnly != null and params.uniformTkEntrySupplierOnly == '1'">
+            and (
+                select count(distinct nullif(trim(e.suppler_id), ''))
+                from stk_io_bill_entry e
+                where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
+                  and e.suppler_id is not null and trim(e.suppler_id) != ''
+            ) &lt;= 1
+        </if>
         order by stk.bill_date desc
     </select>
 

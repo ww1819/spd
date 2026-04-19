@@ -137,6 +137,21 @@ public class StkIoBillEntry extends BaseEntity
     /** 作为源单明细时尚可引用数量（不落库） */
     private BigDecimal srcRefableQty;
 
+    /** 入库源单行：已被出库引用且目标出库单已审核的数量（RK_TO_CK，不落库） */
+    private BigDecimal srcOutboundAuditedRefQty;
+    /** 入库源单行：已被出库引用但目标出库单未审核的数量（不落库） */
+    private BigDecimal srcOutboundPendingRefQty;
+    /** 入库源单行：按出库通道尚可引用数量（不落库） */
+    private BigDecimal srcOutboundRefableQty;
+    /** 入库/退库源单行：已被退货引用且目标退货单已审核的数量（RK_TO_TH 或 TK_TO_TH，不落库） */
+    private BigDecimal srcReturnAuditedRefQty;
+    /** 入库/退库源单行：已被退货引用但目标退货单未审核的数量（不落库） */
+    private BigDecimal srcReturnPendingRefQty;
+    /** 入库/退库源单行：按退货通道尚可引用数量（不落库） */
+    private BigDecimal srcReturnRefableQty;
+    /** 关联仓库库存行当前数量 stk_inventory.qty（不落库） */
+    private BigDecimal linkedStkQty;
+
     /** 库房申请单明细 ID（UUID，不落库；保存出库单后写入 wh_wh_apply_ck_entry_ref） */
     private String whApplyEntryId;
 
@@ -404,6 +419,62 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setSrcRefableQty(BigDecimal srcRefableQty) {
         this.srcRefableQty = srcRefableQty;
+    }
+
+    public BigDecimal getSrcOutboundAuditedRefQty() {
+        return srcOutboundAuditedRefQty;
+    }
+
+    public void setSrcOutboundAuditedRefQty(BigDecimal srcOutboundAuditedRefQty) {
+        this.srcOutboundAuditedRefQty = srcOutboundAuditedRefQty;
+    }
+
+    public BigDecimal getSrcOutboundPendingRefQty() {
+        return srcOutboundPendingRefQty;
+    }
+
+    public void setSrcOutboundPendingRefQty(BigDecimal srcOutboundPendingRefQty) {
+        this.srcOutboundPendingRefQty = srcOutboundPendingRefQty;
+    }
+
+    public BigDecimal getSrcOutboundRefableQty() {
+        return srcOutboundRefableQty;
+    }
+
+    public void setSrcOutboundRefableQty(BigDecimal srcOutboundRefableQty) {
+        this.srcOutboundRefableQty = srcOutboundRefableQty;
+    }
+
+    public BigDecimal getSrcReturnAuditedRefQty() {
+        return srcReturnAuditedRefQty;
+    }
+
+    public void setSrcReturnAuditedRefQty(BigDecimal srcReturnAuditedRefQty) {
+        this.srcReturnAuditedRefQty = srcReturnAuditedRefQty;
+    }
+
+    public BigDecimal getSrcReturnPendingRefQty() {
+        return srcReturnPendingRefQty;
+    }
+
+    public void setSrcReturnPendingRefQty(BigDecimal srcReturnPendingRefQty) {
+        this.srcReturnPendingRefQty = srcReturnPendingRefQty;
+    }
+
+    public BigDecimal getSrcReturnRefableQty() {
+        return srcReturnRefableQty;
+    }
+
+    public void setSrcReturnRefableQty(BigDecimal srcReturnRefableQty) {
+        this.srcReturnRefableQty = srcReturnRefableQty;
+    }
+
+    public BigDecimal getLinkedStkQty() {
+        return linkedStkQty;
+    }
+
+    public void setLinkedStkQty(BigDecimal linkedStkQty) {
+        this.linkedStkQty = linkedStkQty;
     }
 
     public String getWhApplyEntryId() {
