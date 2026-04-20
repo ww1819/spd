@@ -3,6 +3,7 @@ package com.spd.foundation.controller;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
+import com.spd.common.constant.HttpStatus;
 import com.spd.common.enums.BusinessType;
 import com.github.pagehelper.PageHelper;
 import com.spd.foundation.domain.FdMaterial;
@@ -32,6 +34,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.his.config.HisTenantDbHandle;
+import com.spd.his.config.HisTenantJdbcAccess;
 
 /**
  * 耗材产品Controller
@@ -43,8 +48,13 @@ import com.spd.common.utils.StringUtils;
 @RequestMapping("/foundation/material")
 public class FdMaterialController extends BaseController
 {
+    private static final String HS_THIRD_TENANT_ID = "hengsui-third-001";
+
     @Autowired
     private IFdMaterialService fdMaterialService;
+
+    @Autowired
+    private HisTenantJdbcAccess hisTenantJdbcAccess;
 
     /** 服务器interface接口URL */
     @Value("${spd.interface.url:http://localhost:8081}")
@@ -115,6 +125,140 @@ public class FdMaterialController extends BaseController
             safeList.add(item);
         }
         return safeList;
+    }
+
+    /**
+     * HIS 收费项目列表（仅衡水三院租户，来源：v_charge_item）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/hisChargeItem/list")
+    public TableDataInfo listHisChargeItem(
+        @RequestParam(value = "name", required = false) String name,
+        @RequestParam(value = "speci", required = false) String speci,
+        @RequestParam(value = "pageNum", required = false) Integer pageNum,
+        @RequestParam(value = "pageSize", required = false) Integer pageSize)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return getDataTable(new ArrayList<>());
+        }
+
+        if (pageNum == null || pageNum < 1)
+        {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1)
+        {
+            pageSize = 10;
+        }
+        int offset = (pageNum - 1) * pageSize;
+        String nameLike = StringUtils.isNotEmpty(name) ? "%" + name.trim() + "%" : null;
+        String speciLike = StringUtils.isNotEmpty(speci) ? "%" + speci.trim() + "%" : null;
+
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        String dbType = hisDb.getDbTypeNormalized();
+        String baseWhere = " from v_charge_item where 1=1 "
+            + " and (? is null or item_name like ?) "
+            + " and (? is null or spec_model like ?) ";
+        String countSql = "select count(1) " + baseWhere;
+        Long total = hisDb.getJdbcTemplate().queryForObject(
+            countSql,
+            new Object[]{nameLike, nameLike, speciLike, speciLike},
+            Long.class);
+
+        String listSql;
+        Object[] listArgs;
+        if ("MYSQL".equalsIgnoreCase(dbType))
+        {
+            listSql = "select charge_item_id, item_code, item_name, spec_model, price " + baseWhere
+                + " order by charge_item_id limit ? offset ?";
+            listArgs = new Object[]{nameLike, nameLike, speciLike, speciLike, pageSize, offset};
+        }
+        else
+        {
+            listSql = "select charge_item_id, item_code, item_name, spec_model, price " + baseWhere
+                + " order by charge_item_id offset ? rows fetch next ? rows only";
+            listArgs = new Object[]{nameLike, nameLike, speciLike, speciLike, offset, pageSize};
+        }
+
+        List<Map<String, Object>> rows = hisDb.getJdbcTemplate().query(listSql, listArgs, (rs, i) -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("chargeItemId", rs.getString("charge_item_id"));
+            item.put("chargeCode", rs.getString("item_code"));
+            item.put("chargeName", rs.getString("item_name"));
+            item.put("chargeSpeci", rs.getString("spec_model"));
+            item.put("chargeModel", rs.getString("spec_model"));
+            item.put("chargePrice", rs.getBigDecimal("price"));
+            return item;
+        });
+
+        TableDataInfo rsp = new TableDataInfo();
+        rsp.setCode(HttpStatus.SUCCESS);
+        rsp.setRows(rows);
+        rsp.setTotal(total == null ? 0L : total);
+        return rsp;
+    }
+
+    /**
+     * 绑定耗材与 HIS 收费项目（fd_material.his_id = v_charge_item.charge_item_id）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @PostMapping("/bindHisChargeItem")
+    public AjaxResult bindHisChargeItem(@RequestBody Map<String, Object> body)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+        if (body == null || body.get("materialId") == null || body.get("chargeItemId") == null)
+        {
+            return error("materialId 和 chargeItemId 不能为空");
+        }
+
+        Long materialId = Long.valueOf(String.valueOf(body.get("materialId")));
+        String chargeItemId = String.valueOf(body.get("chargeItemId")).trim();
+        if (StringUtils.isEmpty(chargeItemId))
+        {
+            return error("chargeItemId 不能为空");
+        }
+
+        FdMaterial db = fdMaterialService.selectFdMaterialById(materialId);
+        if (db == null)
+        {
+            return error("耗材不存在");
+        }
+        db.setHisId(chargeItemId);
+        db.setUpdateBy(getUsername());
+        return toAjax(fdMaterialService.updateFdMaterial(db));
+    }
+
+    /**
+     * 解绑耗材与 HIS 收费项目（清空 fd_material.his_id）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @PostMapping("/unbindHisChargeItem")
+    public AjaxResult unbindHisChargeItem(@RequestBody Map<String, Object> body)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+        if (body == null || body.get("materialId") == null)
+        {
+            return error("materialId 不能为空");
+        }
+        Long materialId = Long.valueOf(String.valueOf(body.get("materialId")));
+        FdMaterial db = fdMaterialService.selectFdMaterialById(materialId);
+        if (db == null)
+        {
+            return error("耗材不存在");
+        }
+        db.setHisId(null);
+        db.setUpdateBy(getUsername());
+        return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
     /**
