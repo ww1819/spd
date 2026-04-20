@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
-import com.spd.common.constant.HttpStatus;
 import com.spd.common.enums.BusinessType;
 import com.github.pagehelper.PageHelper;
 import com.spd.foundation.domain.FdMaterial;
@@ -37,6 +36,8 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.his.config.HisTenantDbHandle;
 import com.spd.his.config.HisTenantJdbcAccess;
+import com.spd.his.domain.HisChargeItemMirror;
+import com.spd.his.mapper.HisChargeItemMirrorMapper;
 
 /**
  * 耗材产品Controller
@@ -55,6 +56,9 @@ public class FdMaterialController extends BaseController
 
     @Autowired
     private HisTenantJdbcAccess hisTenantJdbcAccess;
+
+    @Autowired
+    private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
 
     /** 服务器interface接口URL */
     @Value("${spd.interface.url:http://localhost:8081}")
@@ -144,65 +148,84 @@ public class FdMaterialController extends BaseController
             return getDataTable(new ArrayList<>());
         }
 
-        if (pageNum == null || pageNum < 1)
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 10;
+        PageHelper.startPage(pageNum, pageSize);
+        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci);
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (HisChargeItemMirror r : mirrorRows)
         {
-            pageNum = 1;
-        }
-        if (pageSize == null || pageSize < 1)
-        {
-            pageSize = 10;
-        }
-        int offset = (pageNum - 1) * pageSize;
-        String nameLike = StringUtils.isNotEmpty(name) ? "%" + name.trim() + "%" : null;
-        String speciLike = StringUtils.isNotEmpty(speci) ? "%" + speci.trim() + "%" : null;
-
-        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
-        String dbType = hisDb.getDbTypeNormalized();
-        String baseWhere = " from v_charge_item where 1=1 "
-            + " and (? is null or item_name like ?) "
-            + " and (? is null or spec_model like ?) ";
-        String countSql = "select count(1) " + baseWhere;
-        Long total = hisDb.getJdbcTemplate().queryForObject(
-            countSql,
-            new Object[]{nameLike, nameLike, speciLike, speciLike},
-            Long.class);
-
-        String listSql;
-        Object[] listArgs;
-        if ("MYSQL".equalsIgnoreCase(dbType))
-        {
-            listSql = "select charge_item_id, item_code, item_name, spec_model, price " + baseWhere
-                + " order by charge_item_id limit ? offset ?";
-            listArgs = new Object[]{nameLike, nameLike, speciLike, speciLike, pageSize, offset};
-        }
-        else
-        {
-            int rowStart = offset + 1;
-            int rowEnd = offset + pageSize;
-            listSql = "select charge_item_id, item_code, item_name, spec_model, price from ("
-                + " select row_number() over(order by charge_item_id) as rn, "
-                + " charge_item_id, item_code, item_name, spec_model, price "
-                + baseWhere
-                + " ) t where t.rn between ? and ? order by t.rn";
-            listArgs = new Object[]{nameLike, nameLike, speciLike, speciLike, rowStart, rowEnd};
-        }
-
-        List<Map<String, Object>> rows = hisDb.getJdbcTemplate().query(listSql, listArgs, (rs, i) -> {
             Map<String, Object> item = new HashMap<>();
-            item.put("chargeItemId", rs.getString("charge_item_id"));
-            item.put("chargeCode", rs.getString("item_code"));
-            item.put("chargeName", rs.getString("item_name"));
-            item.put("chargeSpeci", rs.getString("spec_model"));
-            item.put("chargeModel", rs.getString("spec_model"));
-            item.put("chargePrice", rs.getBigDecimal("price"));
-            return item;
-        });
+            item.put("chargeItemId", r.getChargeItemId());
+            item.put("chargeCode", r.getItemCode());
+            item.put("chargeName", r.getItemName());
+            item.put("chargeSpeci", r.getSpecModel());
+            item.put("chargeModel", r.getSpecModel());
+            item.put("chargePrice", r.getPrice());
+            rows.add(item);
+        }
+        return getDataTable(rows);
+    }
 
-        TableDataInfo rsp = new TableDataInfo();
-        rsp.setCode(HttpStatus.SUCCESS);
-        rsp.setRows(rows);
-        rsp.setTotal(total == null ? 0L : total);
-        return rsp;
+    /**
+     * 抓取 HIS 收费项目到本地镜像表 his_charge_item_mirror
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @Log(title = "抓取HIS收费项目", businessType = BusinessType.OTHER)
+    @PostMapping("/hisChargeItem/fetch")
+    public AjaxResult fetchHisChargeItem()
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        String sql = "select charge_item_id, item_code, item_name, item_type, consumable_type, spec_model, "
+            + "unit, price, manufacturer, register_no, is_active, create_time, update_time "
+            + "from v_charge_item";
+        List<HisChargeItemMirror> hisRows = hisDb.getJdbcTemplate().query(sql, (rs, i) -> {
+            HisChargeItemMirror row = new HisChargeItemMirror();
+            row.setTenantId(tenantId);
+            row.setChargeItemId(rs.getString("charge_item_id"));
+            row.setItemCode(rs.getString("item_code"));
+            row.setItemName(rs.getString("item_name"));
+            row.setItemType(rs.getString("item_type"));
+            row.setConsumableType(rs.getString("consumable_type"));
+            row.setSpecModel(rs.getString("spec_model"));
+            row.setUnit(rs.getString("unit"));
+            row.setPrice(rs.getBigDecimal("price"));
+            row.setManufacturer(rs.getString("manufacturer"));
+            row.setRegisterNo(rs.getString("register_no"));
+            row.setIsActive(rs.getString("is_active"));
+            row.setHisCreateTime(rs.getString("create_time"));
+            row.setHisUpdateTime(rs.getString("update_time"));
+            return row;
+        });
+        // 先将本租户本地镜像全部标记为删除，再将本次抓取到的数据回写为有效（deleted_flag=0）
+        int markedDeleted = hisChargeItemMirrorMapper.markAllDeletedByTenant(tenantId);
+        if (hisRows.isEmpty())
+        {
+            Map<String, Object> emptyData = new HashMap<>();
+            emptyData.put("fetchedRows", 0);
+            emptyData.put("affectedRows", 0);
+            emptyData.put("markedDeletedRows", markedDeleted);
+            emptyData.put("refreshTime", new java.util.Date());
+            return AjaxResult.success("抓取完成，HIS视图无数据", emptyData);
+        }
+        int affect = 0;
+        final int batchSize = 500;
+        for (int i = 0; i < hisRows.size(); i += batchSize)
+        {
+            int end = Math.min(i + batchSize, hisRows.size());
+            affect += hisChargeItemMirrorMapper.insertOrUpdateBatch(hisRows.subList(i, end));
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("fetchedRows", hisRows.size());
+        data.put("affectedRows", affect);
+        data.put("markedDeletedRows", markedDeleted);
+        data.put("refreshTime", new java.util.Date());
+        return AjaxResult.success("抓取完成", data);
     }
 
     /**

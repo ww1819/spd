@@ -325,6 +325,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
+            his_id = #{hisId},
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="speci != null">speci = #{speci},</if>
             <if test="model != null">model = #{model},</if>

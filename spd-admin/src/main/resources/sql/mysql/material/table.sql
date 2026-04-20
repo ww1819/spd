@@ -2306,6 +2306,31 @@ CREATE TABLE IF NOT EXISTS `his_charge_fetch_batch` (
   PRIMARY KEY (`id`),
   KEY `idx_his_fetch_batch_tenant_time` (`tenant_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费数据抓取批次';
+
+-- HIS 收费项目本地镜像（来源 v_charge_item；用于对照页面查询与排障）
+CREATE TABLE IF NOT EXISTS `his_charge_item_mirror` (
+  `tenant_id` varchar(64) NOT NULL COMMENT '租户ID',
+  `charge_item_id` varchar(64) NOT NULL COMMENT 'HIS收费项目ID（v_charge_item.charge_item_id）',
+  `item_code` varchar(64) DEFAULT NULL COMMENT '收费编码',
+  `item_name` varchar(256) DEFAULT NULL COMMENT '收费名称',
+  `item_type` varchar(32) DEFAULT NULL COMMENT '项目类型',
+  `consumable_type` varchar(32) DEFAULT NULL COMMENT '耗材类型',
+  `spec_model` varchar(64) DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(32) DEFAULT NULL COMMENT '单位',
+  `price` decimal(18,6) DEFAULT NULL COMMENT '价格',
+  `manufacturer` varchar(64) DEFAULT NULL COMMENT '生产厂家',
+  `register_no` varchar(128) DEFAULT NULL COMMENT '注册证号',
+  `is_active` varchar(16) DEFAULT NULL COMMENT '是否有效',
+  `his_create_time` varchar(32) DEFAULT NULL COMMENT 'HIS创建时间(字符串)',
+  `his_update_time` varchar(32) DEFAULT NULL COMMENT 'HIS更新时间(字符串)',
+  `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '本地删除标记：0正常，1已删除(HIS未返回)',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '本地首次入库时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '本地最近刷新时间',
+  PRIMARY KEY (`tenant_id`,`charge_item_id`),
+  KEY `idx_his_charge_item_mirror_name` (`tenant_id`,`item_name`),
+  KEY `idx_his_charge_item_mirror_spec` (`tenant_id`,`spec_model`),
+  KEY `idx_his_charge_item_mirror_deleted` (`tenant_id`,`deleted_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS收费项目本地镜像';
 /
 
 -- HIS 镜像行与科室批量消耗明细追溯（一条镜像可对应多条库存拆分明细）
