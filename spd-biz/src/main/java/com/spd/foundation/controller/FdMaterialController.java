@@ -3,6 +3,7 @@ package com.spd.foundation.controller;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.his.config.HisTenantDbHandle;
+import com.spd.his.config.HisTenantJdbcAccess;
+import com.spd.his.domain.HisChargeItemMirror;
+import com.spd.his.mapper.HisChargeItemMirrorMapper;
 
 /**
  * 耗材产品Controller
@@ -43,8 +49,16 @@ import com.spd.common.utils.StringUtils;
 @RequestMapping("/foundation/material")
 public class FdMaterialController extends BaseController
 {
+    private static final String HS_THIRD_TENANT_ID = "hengsui-third-001";
+
     @Autowired
     private IFdMaterialService fdMaterialService;
+
+    @Autowired
+    private HisTenantJdbcAccess hisTenantJdbcAccess;
+
+    @Autowired
+    private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
 
     /** 服务器interface接口URL */
     @Value("${spd.interface.url:http://localhost:8081}")
@@ -115,6 +129,164 @@ public class FdMaterialController extends BaseController
             safeList.add(item);
         }
         return safeList;
+    }
+
+    /**
+     * HIS 收费项目列表（仅衡水三院租户，来源：v_charge_item）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @GetMapping("/hisChargeItem/list")
+    public TableDataInfo listHisChargeItem(
+        @RequestParam(value = "name", required = false) String name,
+        @RequestParam(value = "speci", required = false) String speci,
+        @RequestParam(value = "pageNum", required = false) Integer pageNum,
+        @RequestParam(value = "pageSize", required = false) Integer pageSize)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return getDataTable(new ArrayList<>());
+        }
+
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 10;
+        PageHelper.startPage(pageNum, pageSize);
+        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci);
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (HisChargeItemMirror r : mirrorRows)
+        {
+            Map<String, Object> item = new HashMap<>();
+            item.put("chargeItemId", r.getChargeItemId());
+            item.put("chargeCode", r.getItemCode());
+            item.put("chargeName", r.getItemName());
+            item.put("chargeSpeci", r.getSpecModel());
+            item.put("chargeModel", r.getSpecModel());
+            item.put("chargePrice", r.getPrice());
+            rows.add(item);
+        }
+        return getDataTable(rows);
+    }
+
+    /**
+     * 抓取 HIS 收费项目到本地镜像表 his_charge_item_mirror
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @Log(title = "抓取HIS收费项目", businessType = BusinessType.OTHER)
+    @PostMapping("/hisChargeItem/fetch")
+    public AjaxResult fetchHisChargeItem()
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        String sql = "select charge_item_id, item_code, item_name, item_type, consumable_type, spec_model, "
+            + "unit, price, manufacturer, register_no, is_active, create_time, update_time "
+            + "from v_charge_item";
+        List<HisChargeItemMirror> hisRows = hisDb.getJdbcTemplate().query(sql, (rs, i) -> {
+            HisChargeItemMirror row = new HisChargeItemMirror();
+            row.setTenantId(tenantId);
+            row.setChargeItemId(rs.getString("charge_item_id"));
+            row.setItemCode(rs.getString("item_code"));
+            row.setItemName(rs.getString("item_name"));
+            row.setItemType(rs.getString("item_type"));
+            row.setConsumableType(rs.getString("consumable_type"));
+            row.setSpecModel(rs.getString("spec_model"));
+            row.setUnit(rs.getString("unit"));
+            row.setPrice(rs.getBigDecimal("price"));
+            row.setManufacturer(rs.getString("manufacturer"));
+            row.setRegisterNo(rs.getString("register_no"));
+            row.setIsActive(rs.getString("is_active"));
+            row.setHisCreateTime(rs.getString("create_time"));
+            row.setHisUpdateTime(rs.getString("update_time"));
+            return row;
+        });
+        // 先将本租户本地镜像全部标记为删除，再将本次抓取到的数据回写为有效（deleted_flag=0）
+        int markedDeleted = hisChargeItemMirrorMapper.markAllDeletedByTenant(tenantId);
+        if (hisRows.isEmpty())
+        {
+            Map<String, Object> emptyData = new HashMap<>();
+            emptyData.put("fetchedRows", 0);
+            emptyData.put("affectedRows", 0);
+            emptyData.put("markedDeletedRows", markedDeleted);
+            emptyData.put("refreshTime", new java.util.Date());
+            return AjaxResult.success("抓取完成，HIS视图无数据", emptyData);
+        }
+        int affect = 0;
+        final int batchSize = 500;
+        for (int i = 0; i < hisRows.size(); i += batchSize)
+        {
+            int end = Math.min(i + batchSize, hisRows.size());
+            affect += hisChargeItemMirrorMapper.insertOrUpdateBatch(hisRows.subList(i, end));
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("fetchedRows", hisRows.size());
+        data.put("affectedRows", affect);
+        data.put("markedDeletedRows", markedDeleted);
+        data.put("refreshTime", new java.util.Date());
+        return AjaxResult.success("抓取完成", data);
+    }
+
+    /**
+     * 绑定耗材与 HIS 收费项目（fd_material.his_id = v_charge_item.charge_item_id）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @PostMapping("/bindHisChargeItem")
+    public AjaxResult bindHisChargeItem(@RequestBody Map<String, Object> body)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+        if (body == null || body.get("materialId") == null || body.get("chargeItemId") == null)
+        {
+            return error("materialId 和 chargeItemId 不能为空");
+        }
+
+        Long materialId = Long.valueOf(String.valueOf(body.get("materialId")));
+        String chargeItemId = String.valueOf(body.get("chargeItemId")).trim();
+        if (StringUtils.isEmpty(chargeItemId))
+        {
+            return error("chargeItemId 不能为空");
+        }
+
+        FdMaterial db = fdMaterialService.selectFdMaterialById(materialId);
+        if (db == null)
+        {
+            return error("耗材不存在");
+        }
+        db.setHisId(chargeItemId);
+        db.setUpdateBy(getUsername());
+        return toAjax(fdMaterialService.updateFdMaterial(db));
+    }
+
+    /**
+     * 解绑耗材与 HIS 收费项目（清空 fd_material.his_id）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @PostMapping("/unbindHisChargeItem")
+    public AjaxResult unbindHisChargeItem(@RequestBody Map<String, Object> body)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+        if (body == null || body.get("materialId") == null)
+        {
+            return error("materialId 不能为空");
+        }
+        Long materialId = Long.valueOf(String.valueOf(body.get("materialId")));
+        FdMaterial db = fdMaterialService.selectFdMaterialById(materialId);
+        if (db == null)
+        {
+            return error("耗材不存在");
+        }
+        db.setHisId(null);
+        db.setUpdateBy(getUsername());
+        return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
     /**

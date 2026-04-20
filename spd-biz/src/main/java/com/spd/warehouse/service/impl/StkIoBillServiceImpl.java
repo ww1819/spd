@@ -3091,7 +3091,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         String title = "出退库明细_统计时间" + beginStr + "至" + endStr;
         String[] headers = new String[] {
-            "耗材编码", "科室", "业务日期", "耗材名称", "规格", "生产厂家", "单位", "单价", "数量", "金额", "批号", "供应商", "仓库名称"
+            "耗材编码", "科室", "业务日期", "耗材名称", "规格", "生产厂家", "单位", "单价", "数量", "金额", "批号", "财务分类", "供应商", "仓库名称"
         };
         Workbook wb = new XSSFWorkbook();
         Sheet sheet = wb.createSheet("出退库明细");
@@ -3197,6 +3197,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 qty != null ? qty.stripTrailingZeros().toPlainString() : "",
                 amt != null ? amt.stripTrailingZeros().toPlainString() : "",
                 batchDisp,
+                StringUtils.nvl(map.get("financeCategoryName"), "").toString(),
                 StringUtils.nvl(map.get("supplierName"), "").toString(),
                 StringUtils.nvl(map.get("warehouseName"), "").toString()
             };
@@ -3210,7 +3211,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             sheet.setColumnWidth(i, 14 * 256);
         }
         sheet.setColumnWidth(3, 28 * 256);
-        sheet.setColumnWidth(11, 22 * 256);
+        sheet.setColumnWidth(11, 18 * 256);
+        sheet.setColumnWidth(12, 22 * 256);
         String fn = "出退库明细_统计时间" + beginStr + "至" + endStr + "_" + fnFmt.format(new Date()) + ".xlsx";
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment;filename*=utf-8''" + URLEncoder.encode(fn, "UTF-8").replace("+", "%20"));
