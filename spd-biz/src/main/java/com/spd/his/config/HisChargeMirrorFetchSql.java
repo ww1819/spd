@@ -14,14 +14,18 @@ public final class HisChargeMirrorFetchSql
             + "doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date, "
             + "use_date, charge_date, quantity, unit_price, total_amount, charge_operator, remark "
             + "FROM dbo.v_inpatient_consumable_charge "
-            + "WHERE TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) >= ? "
-            + "AND TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) < ?";
+            + "WHERE CASE WHEN ISDATE(NULLIF(LTRIM(RTRIM(charge_date)), '')) = 1 "
+            + "THEN CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) END >= ? "
+            + "AND CASE WHEN ISDATE(NULLIF(LTRIM(RTRIM(charge_date)), '')) = 1 "
+            + "THEN CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) END < ?";
 
     public static final String SQLSERVER_OUTPATIENT_RANGE =
         "SELECT outpatient_charge_id, patient_id, patient_name, outpatient_no, clinic_code, clinic_name, "
             + "doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date, "
             + "charge_date, quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark "
             + "FROM dbo.v_outpatient_consumable_charge "
-            + "WHERE TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) >= ? "
-            + "AND TRY_CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) < ?";
+            + "WHERE CASE WHEN ISDATE(NULLIF(LTRIM(RTRIM(charge_date)), '')) = 1 "
+            + "THEN CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) END >= ? "
+            + "AND CASE WHEN ISDATE(NULLIF(LTRIM(RTRIM(charge_date)), '')) = 1 "
+            + "THEN CONVERT(datetime, NULLIF(LTRIM(RTRIM(charge_date)), '')) END < ?";
 }

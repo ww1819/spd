@@ -177,9 +177,14 @@ public class FdMaterialController extends BaseController
         }
         else
         {
-            listSql = "select charge_item_id, item_code, item_name, spec_model, price " + baseWhere
-                + " order by charge_item_id offset ? rows fetch next ? rows only";
-            listArgs = new Object[]{nameLike, nameLike, speciLike, speciLike, offset, pageSize};
+            int rowStart = offset + 1;
+            int rowEnd = offset + pageSize;
+            listSql = "select charge_item_id, item_code, item_name, spec_model, price from ("
+                + " select row_number() over(order by charge_item_id) as rn, "
+                + " charge_item_id, item_code, item_name, spec_model, price "
+                + baseWhere
+                + " ) t where t.rn between ? and ? order by t.rn";
+            listArgs = new Object[]{nameLike, nameLike, speciLike, speciLike, rowStart, rowEnd};
         }
 
         List<Map<String, Object>> rows = hisDb.getJdbcTemplate().query(listSql, listArgs, (rs, i) -> {
