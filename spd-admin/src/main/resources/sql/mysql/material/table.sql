@@ -2322,6 +2322,7 @@ CREATE TABLE IF NOT EXISTS `his_charge_item_mirror` (
   `manufacturer` varchar(64) DEFAULT NULL COMMENT '生产厂家',
   `register_no` varchar(128) DEFAULT NULL COMMENT '注册证号',
   `is_active` varchar(16) DEFAULT NULL COMMENT '是否有效',
+  `referred_code` varchar(64) DEFAULT NULL COMMENT '收费项目拼音简码（首字母）',
   `his_create_time` varchar(32) DEFAULT NULL COMMENT 'HIS创建时间(字符串)',
   `his_update_time` varchar(32) DEFAULT NULL COMMENT 'HIS更新时间(字符串)',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '本地删除标记：0正常，1已删除(HIS未返回)',
@@ -2329,6 +2330,7 @@ CREATE TABLE IF NOT EXISTS `his_charge_item_mirror` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '本地最近刷新时间',
   PRIMARY KEY (`tenant_id`,`charge_item_id`),
   KEY `idx_his_charge_item_mirror_name` (`tenant_id`,`item_name`),
+  KEY `idx_his_charge_item_mirror_referred` (`tenant_id`,`referred_code`),
   KEY `idx_his_charge_item_mirror_spec` (`tenant_id`,`spec_model`),
   KEY `idx_his_charge_item_mirror_deleted` (`tenant_id`,`deleted_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS收费项目本地镜像';

@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.his.config.HisTenantDbHandle;
 import com.spd.his.config.HisTenantJdbcAccess;
 import com.spd.his.domain.HisChargeItemMirror;
@@ -139,6 +140,7 @@ public class FdMaterialController extends BaseController
     public TableDataInfo listHisChargeItem(
         @RequestParam(value = "name", required = false) String name,
         @RequestParam(value = "speci", required = false) String speci,
+        @RequestParam(value = "chargeItemId", required = false) String chargeItemId,
         @RequestParam(value = "pageNum", required = false) Integer pageNum,
         @RequestParam(value = "pageSize", required = false) Integer pageSize)
     {
@@ -151,7 +153,7 @@ public class FdMaterialController extends BaseController
         if (pageNum == null || pageNum < 1) pageNum = 1;
         if (pageSize == null || pageSize < 1) pageSize = 10;
         PageHelper.startPage(pageNum, pageSize);
-        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci);
+        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId);
         List<Map<String, Object>> rows = new ArrayList<>();
         for (HisChargeItemMirror r : mirrorRows)
         {
@@ -162,6 +164,7 @@ public class FdMaterialController extends BaseController
             item.put("chargeSpeci", r.getSpecModel());
             item.put("chargeModel", r.getSpecModel());
             item.put("chargePrice", r.getPrice());
+            item.put("referredCode", r.getReferredCode());
             rows.add(item);
         }
         return getDataTable(rows);
@@ -198,6 +201,7 @@ public class FdMaterialController extends BaseController
             row.setManufacturer(rs.getString("manufacturer"));
             row.setRegisterNo(rs.getString("register_no"));
             row.setIsActive(rs.getString("is_active"));
+            row.setReferredCode(PinyinUtils.getPinyinInitials(rs.getString("item_name")));
             row.setHisCreateTime(rs.getString("create_time"));
             row.setHisUpdateTime(rs.getString("update_time"));
             return row;
@@ -229,7 +233,7 @@ public class FdMaterialController extends BaseController
     }
 
     /**
-     * 绑定耗材与 HIS 收费项目（fd_material.his_id = v_charge_item.charge_item_id）
+     * 绑定耗材与 HIS 收费项目（fd_material.his_charge_item_id = v_charge_item.charge_item_id）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
     @PostMapping("/bindHisChargeItem")
@@ -257,13 +261,13 @@ public class FdMaterialController extends BaseController
         {
             return error("耗材不存在");
         }
-        db.setHisId(chargeItemId);
+        db.setHisChargeItemId(chargeItemId);
         db.setUpdateBy(getUsername());
         return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
     /**
-     * 解绑耗材与 HIS 收费项目（清空 fd_material.his_id）
+     * 解绑耗材与 HIS 收费项目（清空 fd_material.his_charge_item_id）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
     @PostMapping("/unbindHisChargeItem")
@@ -284,7 +288,7 @@ public class FdMaterialController extends BaseController
         {
             return error("耗材不存在");
         }
-        db.setHisId(null);
+        db.setHisChargeItemId(null);
         db.setUpdateBy(getUsername());
         return toAjax(fdMaterialService.updateFdMaterial(db));
     }

@@ -263,6 +263,9 @@ public class FdMaterial extends BaseEntity
     @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "选填；与 HIS 等产品编码对接时使用")
     private String hisId;
 
+    /** HIS收费项目ID（用于HIS收费项目对照关系） */
+    private String hisChargeItemId;
+
     /** 入选原因 */
     @Excel(name = "入选原因", prompt = "选填")
     private String selectionReason;
