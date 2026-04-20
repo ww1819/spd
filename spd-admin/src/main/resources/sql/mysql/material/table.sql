@@ -2306,6 +2306,7 @@ CREATE TABLE IF NOT EXISTS `his_charge_fetch_batch` (
   PRIMARY KEY (`id`),
   KEY `idx_his_fetch_batch_tenant_time` (`tenant_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费数据抓取批次';
+/
 
 -- HIS 收费项目本地镜像（来源 v_charge_item；用于对照页面查询与排障）
 CREATE TABLE IF NOT EXISTS `his_charge_item_mirror` (
