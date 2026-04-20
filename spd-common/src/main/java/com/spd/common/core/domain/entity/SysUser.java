@@ -115,6 +115,10 @@ public class SysUser extends BaseEntity
     /** 岗位名称（用于列表显示） */
     private String postName;
 
+    /** 用户科室（导出显示，多个科室拼接；无多科室时回退主部门） */
+    @Excel(name = "科室", type = Type.EXPORT)
+    private String departmentNames;
+
     /** 工作组ID（设备系统，列表筛选：仅显示该工作组下的用户，对应 sb_work_group_user.group_id） */
     private String workgroupPostId;
 
@@ -400,6 +404,14 @@ public class SysUser extends BaseEntity
         this.postName = postName;
     }
 
+    public String getDepartmentNames() {
+        return departmentNames;
+    }
+
+    public void setDepartmentNames(String departmentNames) {
+        this.departmentNames = departmentNames;
+    }
+
     public String getWorkgroupPostId() {
         return workgroupPostId;
     }
@@ -449,6 +461,7 @@ public class SysUser extends BaseEntity
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
+            .append("departmentNames", getDepartmentNames())
             .append("dept", getDept())
             .toString();
     }
