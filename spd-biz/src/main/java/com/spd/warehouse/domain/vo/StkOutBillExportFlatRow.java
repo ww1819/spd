@@ -16,6 +16,8 @@ public class StkOutBillExportFlatRow
     private String model;
     private String unitName;
     private BigDecimal qty;
+    private BigDecimal unitPrice;
+    private BigDecimal amt;
     /** 批号（优先 batch_number，否则 batch_no） */
     private String batchPh;
     private Date endTime;
@@ -36,6 +38,10 @@ public class StkOutBillExportFlatRow
     public void setUnitName(String unitName) { this.unitName = unitName; }
     public BigDecimal getQty() { return qty; }
     public void setQty(BigDecimal qty) { this.qty = qty; }
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+    public BigDecimal getAmt() { return amt; }
+    public void setAmt(BigDecimal amt) { this.amt = amt; }
     public String getBatchPh() { return batchPh; }
     public void setBatchPh(String batchPh) { this.batchPh = batchPh; }
     public Date getEndTime() { return endTime; }

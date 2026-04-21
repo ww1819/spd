@@ -2806,6 +2806,19 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         org.apache.poi.ss.usermodel.DataFormat df = wb.createDataFormat();
         dataNumStyle.setDataFormat(df.getFormat("#,##0.######"));
 
+        CellStyle subtotalTextStyle = wb.createCellStyle();
+        subtotalTextStyle.cloneStyleFrom(dataTextStyle);
+        subtotalTextStyle.setFont(fontBold);
+        subtotalTextStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        subtotalTextStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        subtotalTextStyle.setAlignment(HorizontalAlignment.LEFT);
+
+        CellStyle subtotalNumStyle = wb.createCellStyle();
+        subtotalNumStyle.cloneStyleFrom(dataNumStyle);
+        subtotalNumStyle.setFont(fontBold);
+        subtotalNumStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        subtotalNumStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         CellStyle emptyMsgStyle = wb.createCellStyle();
         Font fMsg = wb.createFont();
         fMsg.setBold(true);
@@ -2815,8 +2828,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         emptyMsgStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         emptyMsgStyle.setAlignment(HorizontalAlignment.CENTER);
 
-        final int lastCol = 6;
+        final int lastCol = 8;
         DataFormatter dataFormatter = new DataFormatter();
+        BigDecimal grandTotalQty = BigDecimal.ZERO;
+        BigDecimal grandTotalAmt = BigDecimal.ZERO;
 
         int rowNum = 0;
         if (byBill.isEmpty())
@@ -2826,8 +2841,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             sheet.setColumnWidth(2, 12 * 256);
             sheet.setColumnWidth(3, 8 * 256);
             sheet.setColumnWidth(4, 10 * 256);
-            sheet.setColumnWidth(5, 14 * 256);
+            sheet.setColumnWidth(5, 10 * 256);
             sheet.setColumnWidth(6, 12 * 256);
+            sheet.setColumnWidth(7, 14 * 256);
+            sheet.setColumnWidth(8, 12 * 256);
             Row r0 = sheet.createRow(rowNum++);
             Cell c0 = r0.createCell(0);
             c0.setCellValue(mainTitleText);
@@ -2848,8 +2865,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             sheet.setColumnWidth(2, 12 * 256);
             sheet.setColumnWidth(3, 8 * 256);
             sheet.setColumnWidth(4, 10 * 256);
-            sheet.setColumnWidth(5, 14 * 256);
+            sheet.setColumnWidth(5, 10 * 256);
             sheet.setColumnWidth(6, 12 * 256);
+            sheet.setColumnWidth(7, 14 * 256);
+            sheet.setColumnWidth(8, 12 * 256);
 
             for (Map.Entry<Long, List<StkOutBillExportFlatRow>> e : byBill.entrySet())
             {
@@ -2881,13 +2900,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
                 Row head = sheet.createRow(rowNum++);
                 head.setHeightInPoints(18);
-                String[] cols = { "名称", "规格", "型号", "单位", "数量", "批号", "有效期" };
+                String[] cols = { "名称", "规格", "型号", "单位", "数量", "单价", "金额", "批号", "有效期" };
                 for (int i = 0; i < cols.length; i++)
                 {
                     Cell hc = head.createCell(i);
                     hc.setCellValue(cols[i]);
                     hc.setCellStyle(detailHeadStyle);
                 }
+                BigDecimal billTotalQty = BigDecimal.ZERO;
+                BigDecimal billTotalAmt = BigDecimal.ZERO;
                 for (StkOutBillExportFlatRow r : detail)
                 {
                     Row dr = sheet.createRow(rowNum++);
@@ -2906,12 +2927,99 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         cq.setCellValue("");
                         cq.setCellStyle(dataTextStyle);
                     }
-                    setCellStr(dr, 5, r.getBatchPh(), dataTextStyle);
-                    setCellStr(dr, 6, r.getEndTime() != null ? sdf.format(r.getEndTime()) : "", dataTextStyle);
+                    Cell cup = dr.createCell(5);
+                    if (r.getUnitPrice() != null)
+                    {
+                        cup.setCellValue(r.getUnitPrice().doubleValue());
+                        cup.setCellStyle(dataNumStyle);
+                    }
+                    else
+                    {
+                        cup.setCellValue("");
+                        cup.setCellStyle(dataTextStyle);
+                    }
+                    Cell ca = dr.createCell(6);
+                    if (r.getAmt() != null)
+                    {
+                        ca.setCellValue(r.getAmt().doubleValue());
+                        ca.setCellStyle(dataNumStyle);
+                    }
+                    else
+                    {
+                        ca.setCellValue("");
+                        ca.setCellStyle(dataTextStyle);
+                    }
+                    setCellStr(dr, 7, r.getBatchPh(), dataTextStyle);
+                    setCellStr(dr, 8, r.getEndTime() != null ? sdf.format(r.getEndTime()) : "", dataTextStyle);
                     setDetailRowHeightAuto(dr, sheet, dataFormatter);
+                    if (r.getQty() != null)
+                    {
+                        billTotalQty = billTotalQty.add(r.getQty());
+                    }
+                    if (r.getAmt() != null)
+                    {
+                        billTotalAmt = billTotalAmt.add(r.getAmt());
+                    }
                 }
+
+                Row subtotalRow = sheet.createRow(rowNum++);
+                Cell subLabel = subtotalRow.createCell(0);
+                subLabel.setCellValue("本单合计");
+                subLabel.setCellStyle(subtotalTextStyle);
+                sheet.addMergedRegion(new CellRangeAddress(subtotalRow.getRowNum(), subtotalRow.getRowNum(), 0, 3));
+                for (int col = 1; col <= 3; col++)
+                {
+                    Cell filler = subtotalRow.createCell(col);
+                    filler.setCellStyle(subtotalTextStyle);
+                }
+                Cell subQty = subtotalRow.createCell(4);
+                subQty.setCellValue(billTotalQty.doubleValue());
+                subQty.setCellStyle(subtotalNumStyle);
+                Cell subUnitPrice = subtotalRow.createCell(5);
+                subUnitPrice.setCellValue("");
+                subUnitPrice.setCellStyle(subtotalTextStyle);
+                Cell subAmt = subtotalRow.createCell(6);
+                subAmt.setCellValue(billTotalAmt.doubleValue());
+                subAmt.setCellStyle(subtotalNumStyle);
+                Cell subBatch = subtotalRow.createCell(7);
+                subBatch.setCellValue("");
+                subBatch.setCellStyle(subtotalTextStyle);
+                Cell subExpire = subtotalRow.createCell(8);
+                subExpire.setCellValue("");
+                subExpire.setCellStyle(subtotalTextStyle);
+                subtotalRow.setHeightInPoints(20);
+
+                grandTotalQty = grandTotalQty.add(billTotalQty);
+                grandTotalAmt = grandTotalAmt.add(billTotalAmt);
                 rowNum++;
             }
+
+            Row grandRow = sheet.createRow(rowNum++);
+            Cell grandLabel = grandRow.createCell(0);
+            grandLabel.setCellValue("总合计");
+            grandLabel.setCellStyle(subtotalTextStyle);
+            sheet.addMergedRegion(new CellRangeAddress(grandRow.getRowNum(), grandRow.getRowNum(), 0, 3));
+            for (int col = 1; col <= 3; col++)
+            {
+                Cell filler = grandRow.createCell(col);
+                filler.setCellStyle(subtotalTextStyle);
+            }
+            Cell grandQtyCell = grandRow.createCell(4);
+            grandQtyCell.setCellValue(grandTotalQty.doubleValue());
+            grandQtyCell.setCellStyle(subtotalNumStyle);
+            Cell grandUnitPrice = grandRow.createCell(5);
+            grandUnitPrice.setCellValue("");
+            grandUnitPrice.setCellStyle(subtotalTextStyle);
+            Cell grandAmtCell = grandRow.createCell(6);
+            grandAmtCell.setCellValue(grandTotalAmt.doubleValue());
+            grandAmtCell.setCellStyle(subtotalNumStyle);
+            Cell grandBatch = grandRow.createCell(7);
+            grandBatch.setCellValue("");
+            grandBatch.setCellStyle(subtotalTextStyle);
+            Cell grandExpire = grandRow.createCell(8);
+            grandExpire.setCellValue("");
+            grandExpire.setCellStyle(subtotalTextStyle);
+            grandRow.setHeightInPoints(22);
         }
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         String fn = URLEncoder.encode(mainTitleText + "_" + fnFmt.format(new Date()), "UTF-8").replace("+", "%20");
@@ -3014,7 +3122,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     private static void setDetailRowHeightAuto(Row row, Sheet sheet, DataFormatter df)
     {
         int maxLines = 1;
-        for (int col = 0; col <= 6; col++)
+        for (int col = 0; col <= 8; col++)
         {
             Cell c = row.getCell(col);
             if (c == null)

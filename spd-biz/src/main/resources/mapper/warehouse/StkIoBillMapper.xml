@@ -328,6 +328,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                ifnull(m.model, '') as model,
                ifnull(u.unit_name, '') as unitName,
                b.qty as qty,
+               b.unit_price as unitPrice,
+               b.amt as amt,
                case when b.batch_number is not null and trim(b.batch_number) != '' then trim(b.batch_number) else ifnull(b.batch_no, '') end as batchPh,
                b.end_time as endTime
         from stk_io_bill stk
