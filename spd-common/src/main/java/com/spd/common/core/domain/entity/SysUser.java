@@ -405,6 +405,14 @@ public class SysUser extends BaseEntity
     }
 
     public String getDepartmentNames() {
+        if (departmentNames != null && !departmentNames.trim().isEmpty())
+        {
+            return departmentNames;
+        }
+        if (dept != null && dept.getDeptName() != null && !dept.getDeptName().trim().isEmpty())
+        {
+            return dept.getDeptName();
+        }
         return departmentNames;
     }
 

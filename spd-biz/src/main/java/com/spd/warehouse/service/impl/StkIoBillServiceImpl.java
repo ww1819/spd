@@ -3049,6 +3049,16 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         c.setCellStyle(style);
     }
 
+    private static void setCellDecimal(Row row, int col, BigDecimal val, CellStyle style)
+    {
+        Cell c = row.createCell(col);
+        if (val != null)
+        {
+            c.setCellValue(val.doubleValue());
+        }
+        c.setCellStyle(style);
+    }
+
     @Override
     public void applyCtkDepartmentScopeToQuery(StkIoBill stkIoBill)
     {
@@ -3112,6 +3122,25 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         CellStyle dataStyle = wb.createCellStyle();
         dataStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         setThinBorderAround(dataStyle);
+        CellStyle dataNumPriceAmtStyle = wb.createCellStyle();
+        dataNumPriceAmtStyle.cloneStyleFrom(dataStyle);
+        dataNumPriceAmtStyle.setAlignment(HorizontalAlignment.RIGHT);
+        dataNumPriceAmtStyle.setDataFormat(wb.createDataFormat().getFormat("#,##0.0000"));
+        CellStyle dataNumQtyStyle = wb.createCellStyle();
+        dataNumQtyStyle.cloneStyleFrom(dataStyle);
+        dataNumQtyStyle.setAlignment(HorizontalAlignment.RIGHT);
+        dataNumQtyStyle.setDataFormat(wb.createDataFormat().getFormat("#,##0.00"));
+        CellStyle totalLabelStyle = wb.createCellStyle();
+        totalLabelStyle.cloneStyleFrom(headStyle);
+        totalLabelStyle.setAlignment(HorizontalAlignment.LEFT);
+        CellStyle totalNumPriceAmtStyle = wb.createCellStyle();
+        totalNumPriceAmtStyle.cloneStyleFrom(dataNumPriceAmtStyle);
+        Font totalFont = wb.createFont();
+        totalFont.setBold(true);
+        totalNumPriceAmtStyle.setFont(totalFont);
+        CellStyle totalNumQtyStyle = wb.createCellStyle();
+        totalNumQtyStyle.cloneStyleFrom(dataNumQtyStyle);
+        totalNumQtyStyle.setFont(totalFont);
         Row row0 = sheet.createRow(0);
         Cell c0 = row0.createCell(0);
         c0.setCellValue(title);
@@ -3123,6 +3152,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             setCellStr(row1, i, headers[i], headStyle);
         }
         int r = 2;
+        BigDecimal totalQty = BigDecimal.ZERO;
+        BigDecimal totalAmt = BigDecimal.ZERO;
         for (Map<String, Object> map : mapList)
         {
             if (map == null)
@@ -3137,20 +3168,28 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             {
                 if (qty != null)
                 {
-                    qty = qty.abs();
+                    qty = qty.abs().negate();
                 }
                 if (amt != null)
                 {
-                    amt = amt.abs();
+                    amt = amt.abs().negate();
                 }
                 if (up != null)
                 {
                     up = up.abs();
                 }
             }
-            if (up == null && amt != null && qty != null && qty.compareTo(BigDecimal.ZERO) > 0)
+            if (up == null && amt != null && qty != null && qty.compareTo(BigDecimal.ZERO) != 0)
             {
-                up = amt.divide(qty, 4, RoundingMode.HALF_UP);
+                up = amt.abs().divide(qty.abs(), 4, RoundingMode.HALF_UP);
+            }
+            if (qty != null)
+            {
+                totalQty = totalQty.add(qty);
+            }
+            if (amt != null)
+            {
+                totalAmt = totalAmt.add(amt);
             }
             String bizDate = "";
             Object ad = map.get("auditDate");
@@ -3185,26 +3224,32 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 batchDisp = String.valueOf(bno).trim();
             }
             Row dr = sheet.createRow(r++);
-            String[] vals = new String[] {
-                StringUtils.nvl(map.get("materialCode"), "").toString(),
-                StringUtils.nvl(map.get("departmentName"), "").toString(),
-                bizDate,
-                StringUtils.nvl(map.get("materialName"), "").toString(),
-                StringUtils.nvl(map.get("materialSpeci"), "").toString(),
-                StringUtils.nvl(map.get("factoryName"), "").toString(),
-                StringUtils.nvl(map.get("unitName"), "").toString(),
-                up != null ? up.stripTrailingZeros().toPlainString() : "",
-                qty != null ? qty.stripTrailingZeros().toPlainString() : "",
-                amt != null ? amt.stripTrailingZeros().toPlainString() : "",
-                batchDisp,
-                StringUtils.nvl(map.get("financeCategoryName"), "").toString(),
-                StringUtils.nvl(map.get("supplierName"), "").toString(),
-                StringUtils.nvl(map.get("warehouseName"), "").toString()
-            };
-            for (int i = 0; i < vals.length; i++)
-            {
-                setCellStr(dr, i, vals[i], dataStyle);
-            }
+            setCellStr(dr, 0, StringUtils.nvl(map.get("materialCode"), "").toString(), dataStyle);
+            setCellStr(dr, 1, StringUtils.nvl(map.get("departmentName"), "").toString(), dataStyle);
+            setCellStr(dr, 2, bizDate, dataStyle);
+            setCellStr(dr, 3, StringUtils.nvl(map.get("materialName"), "").toString(), dataStyle);
+            setCellStr(dr, 4, StringUtils.nvl(map.get("materialSpeci"), "").toString(), dataStyle);
+            setCellStr(dr, 5, StringUtils.nvl(map.get("factoryName"), "").toString(), dataStyle);
+            setCellStr(dr, 6, StringUtils.nvl(map.get("unitName"), "").toString(), dataStyle);
+            setCellDecimal(dr, 7, up, dataNumPriceAmtStyle);
+            setCellDecimal(dr, 8, qty, dataNumQtyStyle);
+            setCellDecimal(dr, 9, amt, dataNumPriceAmtStyle);
+            setCellStr(dr, 10, batchDisp, dataStyle);
+            setCellStr(dr, 11, StringUtils.nvl(map.get("financeCategoryName"), "").toString(), dataStyle);
+            setCellStr(dr, 12, StringUtils.nvl(map.get("supplierName"), "").toString(), dataStyle);
+            setCellStr(dr, 13, StringUtils.nvl(map.get("warehouseName"), "").toString(), dataStyle);
+        }
+        Row totalRow = sheet.createRow(r);
+        setCellStr(totalRow, 0, "合计", totalLabelStyle);
+        for (int i = 1; i < 8; i++)
+        {
+            setCellStr(totalRow, i, "", totalLabelStyle);
+        }
+        setCellDecimal(totalRow, 8, totalQty, totalNumQtyStyle);
+        setCellDecimal(totalRow, 9, totalAmt, totalNumPriceAmtStyle);
+        for (int i = 10; i < headers.length; i++)
+        {
+            setCellStr(totalRow, i, "", totalLabelStyle);
         }
         for (int i = 0; i < headers.length; i++)
         {

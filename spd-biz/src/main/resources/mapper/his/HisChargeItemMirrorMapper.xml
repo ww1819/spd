@@ -16,6 +16,7 @@
             manufacturer as manufacturer,
             register_no as registerNo,
             is_active as isActive,
+            referred_code as referredCode,
             his_create_time as hisCreateTime,
             his_update_time as hisUpdateTime,
             deleted_flag as deletedFlag,
@@ -24,8 +25,16 @@
         from his_charge_item_mirror
         where tenant_id = #{tenantId}
           and (deleted_flag is null or deleted_flag != 1)
+        <if test="chargeItemId != null and chargeItemId != ''">
+            and charge_item_id = #{chargeItemId}
+        </if>
         <if test="name != null and name != ''">
-            and item_name like concat('%', #{name}, '%')
+            and (
+                item_name like concat('%', #{name}, '%')
+                or item_code like concat('%', #{name}, '%')
+                or charge_item_id like concat('%', #{name}, '%')
+                or referred_code like concat('%', #{name}, '%')
+            )
         </if>
         <if test="speci != null and speci != ''">
             and spec_model like concat('%', #{speci}, '%')
@@ -44,13 +53,13 @@
     <insert id="insertOrUpdateBatch">
         insert into his_charge_item_mirror (
             tenant_id, charge_item_id, item_code, item_name, item_type, consumable_type,
-            spec_model, unit, price, manufacturer, register_no, is_active,
+            spec_model, unit, price, manufacturer, register_no, is_active, referred_code,
             his_create_time, his_update_time, deleted_flag, create_time, update_time
         ) values
         <foreach collection="rows" item="r" separator=",">
             (
                 #{r.tenantId}, #{r.chargeItemId}, #{r.itemCode}, #{r.itemName}, #{r.itemType}, #{r.consumableType},
-                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive},
+                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode},
                 #{r.hisCreateTime}, #{r.hisUpdateTime}, 0, now(), now()
             )
         </foreach>
@@ -65,6 +74,7 @@
             manufacturer = values(manufacturer),
             register_no = values(register_no),
             is_active = values(is_active),
+            referred_code = values(referred_code),
             his_create_time = values(his_create_time),
             his_update_time = values(his_update_time),
             deleted_flag = 0,

@@ -60,6 +60,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isFollow"    column="is_follow"    />
         <result property="locationId"    column="location_id"    />
         <result property="hisId"    column="his_id"    />
+        <result property="hisChargeItemId"    column="his_charge_item_id"    />
         <result property="selectionReason"    column="selection_reason"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
@@ -109,6 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.price, m.default_warehouse_id as default_warehouse_id, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
             m.his_id,
+            m.his_charge_item_id,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
             m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.producer, m.material_level,
             m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
@@ -208,6 +210,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">code,</if>
             <if test="name != null">name,</if>
             <if test="hisId != null and hisId != ''">his_id,</if>
+            <if test="hisChargeItemId != null and hisChargeItemId != ''">his_charge_item_id,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="speci != null">speci,</if>
             <if test="model != null">model,</if>
@@ -264,6 +267,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">#{code},</if>
             <if test="name != null">#{name},</if>
             <if test="hisId != null and hisId != ''">#{hisId},</if>
+            <if test="hisChargeItemId != null and hisChargeItemId != ''">#{hisChargeItemId},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="speci != null">#{speci},</if>
             <if test="model != null">#{model},</if>
@@ -326,6 +330,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
             his_id = #{hisId},
+            his_charge_item_id = #{hisChargeItemId},
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="speci != null">speci = #{speci},</if>
             <if test="model != null">model = #{model},</if>
