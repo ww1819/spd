@@ -1,5 +1,6 @@
 package com.spd.department.mapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
@@ -87,4 +88,9 @@ public interface BasApplyMapper
      * 科室申领单关联的出库单明细（经 wh_wh_apply_ck_entry_ref）
      */
     List<BasApplyOutboundRefVo> selectBasApplyOutboundRefsByBasApplyId(@Param("basApplyId") Long basApplyId);
+
+    /**
+     * 按条件汇总申领明细数量（首页今日统计等）
+     */
+    BigDecimal selectBasApplyEntryQtySum(BasApply basApply);
 }

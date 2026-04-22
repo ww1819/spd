@@ -1,5 +1,6 @@
 package com.spd.department.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.DepPurchaseApply;
 
@@ -29,6 +30,11 @@ public interface IDepPurchaseApplyService
      * @return 科室申购集合
      */
     public List<DepPurchaseApply> selectDepPurchaseApplyList(DepPurchaseApply depPurchaseApply);
+
+    /**
+     * 按条件汇总申购明细数量（首页今日统计等，一条 SQL）
+     */
+    BigDecimal selectDepPurchaseApplyEntryQtySum(DepPurchaseApply depPurchaseApply);
 
     /**
      * 新增科室申购

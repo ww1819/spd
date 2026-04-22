@@ -1,6 +1,7 @@
 package com.spd.department.controller;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.common.core.page.TableDataInfo;
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.system.mapper.SysUserMapper;
 
@@ -69,6 +71,23 @@ public class DepPurchaseApplyController extends BaseController
         startPage();
         List<DepPurchaseApply> list = depPurchaseApplyService.selectDepPurchaseApplyList(depPurchaseApply);
         return getDataTable(list);
+    }
+
+    /**
+     * 汇总申购明细数量（首页今日统计等，单条 SQL，避免逐单拉详情）
+     * 路径不可使用 /entryQtySum，否则会被下方 {@code /{id}} 当成主键导致类型转换失败。
+     */
+    @PreAuthorize("@ss.hasPermi('department:purchase:list') || @ss.hasPermi('department:purchaseAudit:list')")
+    @GetMapping("/stats/todayEntryQtySum")
+    public AjaxResult todayEntryQtySum(DepPurchaseApply depPurchaseApply)
+    {
+        depPurchaseApplyService.applyDepartmentScopeToQuery(depPurchaseApply);
+        if (depPurchaseApply != null && StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        BigDecimal sum = depPurchaseApplyService.selectDepPurchaseApplyEntryQtySum(depPurchaseApply);
+        return success(sum != null ? sum : BigDecimal.ZERO);
     }
 
     /**

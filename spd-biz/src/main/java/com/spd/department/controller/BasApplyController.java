@@ -1,6 +1,7 @@
 package com.spd.department.controller;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.system.service.ISysUserService;
 
@@ -80,6 +82,23 @@ public class BasApplyController extends BaseController
         startPage();
         List<BasApply> list = basApplyService.selectBasApplyList(basApply);
         return getDataTable(list);
+    }
+
+    /**
+     * 汇总申领明细数量（首页今日统计等，单条 SQL，避免逐单拉详情）
+     * 路径不可使用 /entryQtySum，否则会被下方 {@code /{id}} 当成主键导致类型转换失败。
+     */
+    @PreAuthorize("@ss.hasPermi('department:dApply:list')")
+    @GetMapping("/stats/todayEntryQtySum")
+    public AjaxResult todayEntryQtySum(BasApply basApply)
+    {
+        basApplyService.applyDepartmentScopeToQuery(basApply);
+        if (basApply != null && StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            basApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        BigDecimal sum = basApplyService.selectBasApplyEntryQtySum(basApply);
+        return success(sum != null ? sum : BigDecimal.ZERO);
     }
 
     /**

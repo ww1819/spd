@@ -1,5 +1,6 @@
 package com.spd.department.mapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.DepPurchaseApplyEntry;
@@ -70,4 +71,9 @@ public interface DepPurchaseApplyMapper
      * @return 结果
      */
     public int deleteDepPurchaseApplyEntryByParentId(@Param("id") Long id, @Param("deleteBy") String deleteBy);
+
+    /**
+     * 按条件汇总申购明细数量（首页今日统计等）
+     */
+    BigDecimal selectDepPurchaseApplyEntryQtySum(DepPurchaseApply depPurchaseApply);
 }

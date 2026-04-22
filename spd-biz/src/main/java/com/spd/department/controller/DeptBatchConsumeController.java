@@ -179,12 +179,13 @@ public class DeptBatchConsumeController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = deptBatchConsumeService.selectAuditedConsumeDetailList(deptBatchConsume);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
         TotalInfo totalInfo = deptBatchConsumeService.selectAuditedConsumeReportTotal(deptBatchConsume);
         if (totalInfo == null)
         {
             totalInfo = new TotalInfo();
         }
-        Long total = new PageInfo<>(list).getTotal();
         return getDataTable(list, totalInfo, total);
     }
 
@@ -197,12 +198,28 @@ public class DeptBatchConsumeController extends BaseController
     {
         startPage();
         List<Map<String, Object>> list = deptBatchConsumeService.selectAuditedConsumeSummaryList(deptBatchConsume);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
         TotalInfo totalInfo = deptBatchConsumeService.selectAuditedConsumeReportTotal(deptBatchConsume);
         if (totalInfo == null)
         {
             totalInfo = new TotalInfo();
         }
-        Long total = new PageInfo<>(list).getTotal();
         return getDataTable(list, totalInfo, total);
+    }
+
+    /**
+     * 仅返回已审核科室消耗报表合计（首页科室图等）。仅登录即可调用，数据仍受租户 SQL 隔离；不返回明细行。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/auditedReportTotal")
+    public AjaxResult auditedReportTotal(DeptBatchConsume deptBatchConsume)
+    {
+        TotalInfo totalInfo = deptBatchConsumeService.selectAuditedConsumeReportTotal(deptBatchConsume);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        return success(totalInfo);
     }
 }

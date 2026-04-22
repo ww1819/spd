@@ -143,6 +143,16 @@ public class BasApplyServiceImpl implements IBasApplyService
         return basApplyMapper.selectBasApplyList(basApply);
     }
 
+    @Override
+    public BigDecimal selectBasApplyEntryQtySum(BasApply basApply)
+    {
+        if (basApply != null && StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            basApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        BigDecimal v = basApplyMapper.selectBasApplyEntryQtySum(basApply);
+        return v != null ? v : BigDecimal.ZERO;
+    }
+
     /**
      * 校验明细数量；申领单（billType=1）还须填写可用库存所属仓库，供审核按仓拆分、避免串库。
      */

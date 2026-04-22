@@ -400,4 +400,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select max(apply_bill_no) from bas_apply
         where apply_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
     </select>
+
+    <!-- 首页等：按筛选条件汇总申领明细数量（与逐单拉详情后 sum(qty) 口径一致） -->
+    <select id="selectBasApplyEntryQtySum" parameterType="BasApply" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(e.qty), 0)
+        from bas_apply a
+        inner join bas_apply_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
+        where a.tenant_id = #{scopedTenantId}
+          and (a.del_flag = 0 or a.del_flag is null)
+        <if test="applyBillDate != null"> and a.apply_bill_date = #{applyBillDate}</if>
+        <if test="applyBillStatus != null"> and a.apply_bill_status = #{applyBillStatus}</if>
+        <if test="billType != null"> and COALESCE(a.bill_type, 1) = #{billType}</if>
+        <include refid="basApplyDepartmentScopeFilter"/>
+    </select>
 </mapper>

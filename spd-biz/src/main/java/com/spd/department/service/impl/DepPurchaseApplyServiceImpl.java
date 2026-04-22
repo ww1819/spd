@@ -93,6 +93,16 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         return depPurchaseApplyMapper.selectDepPurchaseApplyList(depPurchaseApply);
     }
 
+    @Override
+    public BigDecimal selectDepPurchaseApplyEntryQtySum(DepPurchaseApply depPurchaseApply)
+    {
+        if (depPurchaseApply != null && StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        BigDecimal v = depPurchaseApplyMapper.selectDepPurchaseApplyEntryQtySum(depPurchaseApply);
+        return v != null ? v : BigDecimal.ZERO;
+    }
+
     /**
      * 新增科室申购
      * 

@@ -1,5 +1,6 @@
 package com.spd.department.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.BasApply;
 
@@ -26,6 +27,11 @@ public interface IBasApplyService
      * @return 科室申领集合
      */
     public List<BasApply> selectBasApplyList(BasApply basApply);
+
+    /**
+     * 按条件汇总申领明细数量（首页今日统计等，一条 SQL）
+     */
+    BigDecimal selectBasApplyEntryQtySum(BasApply basApply);
 
     /**
      * 按当前用户科室数据范围写入查询条件（非租户管理员须限制；须在 PageHelper.startPage 之前调用）。
