@@ -140,6 +140,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFdMaterialVo"/>
         where m.del_flag != 1
         and m.tenant_id = #{scopedTenantId}
+        <!-- 未指定使用状态时默认不展示已停用（is_use='2'）；档案页可按 isUse 筛选；includeDisabledInList 为内部全量查询 -->
+        <choose>
+            <when test="isUse != null and isUse != ''">
+                and m.is_use = #{isUse}
+            </when>
+            <when test="includeDisabledInList != null and includeDisabledInList == true">
+            </when>
+            <otherwise>
+                and (m.is_use is null or m.is_use = '' or m.is_use != '2')
+            </otherwise>
+        </choose>
         <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
         <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
@@ -147,7 +158,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
         <if test="isGz != null "> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
-        <if test="isUse != null and isUse != ''"> and m.is_use = #{isUse}</if>
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>

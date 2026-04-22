@@ -128,6 +128,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="stkDepInventoryListWhere">
         where stk.qty &gt; 0
         and (stk.del_flag = 0 or stk.del_flag is null)
+        and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
         <if test="params != null and params.scopeUserId != null">
             and stk.department_id in (
                 select ud.department_id

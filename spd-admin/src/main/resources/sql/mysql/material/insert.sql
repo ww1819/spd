@@ -47,3 +47,11 @@ SELECT
   '数据备份调度'
 WHERE NOT EXISTS (SELECT 1 FROM sys_job WHERE job_id = 5);
 /
+
+-- 按单据类型打印每页行数（与 sys_print_doc_rows 表、spd-ui docKind 一致；可重复执行）
+INSERT IGNORE INTO `sys_print_doc_rows` (`doc_kind`, `rows_per_page`, `create_by`, `remark`) VALUES
+('INBOUND', 6, 'system', '入库'),
+('OUTBOUND', 6, 'system', '出库'),
+('REFUND_DEPOT', 6, 'system', '退库'),
+('REFUND_GOODS', 6, 'system', '退货');
+/

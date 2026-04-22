@@ -140,6 +140,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user au on rk.audit_by = au.user_id
     </sql>
 
+    <!-- 选库存/选耗材：不展示已删除或已停用的产品档案（m 为空时保留行，避免脏数据整行消失） -->
+    <sql id="stkInventoryMaterialActive">
+        and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
+    </sql>
+
     <sql id="selectStkInventoryTotalVo">
         select SUM(IFNULL(stk.qty,0)) totalQty,SUM(IFNULL(stk.qty,0) * IFNULL(stk.unit_price,0)) totalAmt
         from stk_inventory stk
@@ -197,6 +202,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
         where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0 and stk.tenant_id = #{tenantId}
+          and (m.is_use is null or m.is_use = '' or m.is_use != '2')
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         order by stk.material_id, stk.batch_no, stk.id
     </select>
@@ -206,6 +212,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkInventoryVo"/>
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{tenantId}
+        <include refid="stkInventoryMaterialActive"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -228,6 +235,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkInventoryTotalVo"/>
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{tenantId}
+        <include refid="stkInventoryMaterialActive"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -271,6 +279,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
+        <include refid="stkInventoryMaterialActive"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -302,6 +311,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
+        <include refid="stkInventoryMaterialActive"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -324,6 +334,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             and (stk.del_flag = 0 or stk.del_flag is null)
             and stk.tenant_id = #{tenantId}
+            <include refid="stkInventoryMaterialActive"/>
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         </where>
     </select>
@@ -538,6 +549,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where stk.qty &gt; 0
         and stk.end_time IS NOT NULL
         and (m.id IS NULL OR m.del_flag IS NULL OR m.del_flag != 1)
+        and (m.id IS NULL OR m.is_use IS NULL OR m.is_use = '' OR m.is_use != '2')
         and stk.tenant_id = #{tenantId}
         <if test="daysToExpiry != null">
         <![CDATA[
@@ -603,6 +615,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        <include refid="stkInventoryMaterialActive"/>
         <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
@@ -626,6 +639,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.material_id = #{materialId}
           and stk.warehouse_id = #{warehouseId}
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        <include refid="stkInventoryMaterialActive"/>
         order by stk.warehouse_date asc, stk.id asc
     </select>
 </mapper>

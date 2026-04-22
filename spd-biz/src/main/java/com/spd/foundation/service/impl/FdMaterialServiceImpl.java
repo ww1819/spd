@@ -664,14 +664,16 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     }
 
     /**
-     * 校验耗材是否已存在出入库业务
-     * @param id
+     * 删除前校验：若耗材已在出入库等业务单据中作为明细出现，则不允许删除（历史单据仍可查看），只能停用。
+     *
+     * @param id 耗材主键
      */
-    private void checkMaterialIsWarehouse(Long id){
-
+    private void checkMaterialIsWarehouse(Long id)
+    {
         int count = stkIoBillMapper.selectStkIobillEntryMaterialIsExist(id);
-        if(count > 0){
-            throw new ServiceException(String.format("已存在出入库业务的耗材不能进行删除!"));
+        if (count > 0)
+        {
+            throw new ServiceException("该产品已产生业务单据（含入库等），无法删除，请在档案中改为「停用」。");
         }
     }
 

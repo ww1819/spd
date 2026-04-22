@@ -2354,4 +2354,26 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（退费未建模前勿删改以免串批次/院内码）';
 /
 
+-- 按单据类型的打印每页行数（与 spd-ui 打印页 docKind 一致；可重复执行：INSERT 使用 INSERT IGNORE）
+CREATE TABLE IF NOT EXISTS `sys_print_doc_rows` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `doc_kind` varchar(32) NOT NULL COMMENT '单据类型：INBOUND/OUTBOUND/REFUND_DEPOT/REFUND_GOODS',
+  `rows_per_page` int NOT NULL DEFAULT 6 COMMENT '每页明细行数',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_print_doc_rows_doc_kind` (`doc_kind`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='按单据类型的打印每页行数';
+/
+
+INSERT IGNORE INTO `sys_print_doc_rows` (`doc_kind`, `rows_per_page`, `create_by`, `remark`) VALUES
+('INBOUND', 6, 'system', '入库'),
+('OUTBOUND', 6, 'system', '出库'),
+('REFUND_DEPOT', 6, 'system', '退库'),
+('REFUND_GOODS', 6, 'system', '退货');
+/
+
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

@@ -99,6 +99,9 @@
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectWhFixedNumberVo"/>
         and (f.tenant_id = #{scopedTenantId})
+        and m.id is not null
+        and (m.del_flag is null or m.del_flag != 1)
+        and (m.is_use is null or m.is_use = '' or m.is_use != '2')
         <if test="warehouseId != null">
             and f.warehouse_id = #{warehouseId}
         </if>

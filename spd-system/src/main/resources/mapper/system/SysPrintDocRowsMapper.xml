@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SysPrintDocRowsMapper">
+
+    <resultMap type="SysPrintDocRows" id="SysPrintDocRowsResult">
+        <id     property="id"            column="id" />
+        <result property="docKind"       column="doc_kind" />
+        <result property="rowsPerPage"   column="rows_per_page" />
+        <result property="createBy"     column="create_by" />
+        <result property="createTime"   column="create_time" />
+        <result property="updateBy"     column="update_by" />
+        <result property="updateTime"   column="update_time" />
+        <result property="remark"       column="remark" />
+    </resultMap>
+
+    <sql id="selectSysPrintDocRowsVo">
+        select id, doc_kind, rows_per_page, create_by, create_time, update_by, update_time, remark
+        from sys_print_doc_rows
+    </sql>
+
+    <select id="selectByDocKind" resultMap="SysPrintDocRowsResult">
+        <include refid="selectSysPrintDocRowsVo"/>
+        where doc_kind = #{docKind}
+    </select>
+
+    <insert id="insertSysPrintDocRows" parameterType="SysPrintDocRows" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_print_doc_rows
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="docKind != null and docKind != ''">doc_kind,</if>
+            <if test="rowsPerPage != null">rows_per_page,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time,
+            <if test="updateBy != null">update_by,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="docKind != null and docKind != ''">#{docKind},</if>
+            <if test="rowsPerPage != null">#{rowsPerPage},</if>
+            <if test="createBy != null">#{createBy},</if>
+            sysdate(),
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRowsByDocKind" parameterType="SysPrintDocRows">
+        update sys_print_doc_rows
+        <set>
+            rows_per_page = #{rowsPerPage},
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where doc_kind = #{docKind}
+    </update>
+</mapper>

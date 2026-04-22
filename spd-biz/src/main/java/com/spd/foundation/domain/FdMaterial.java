@@ -259,6 +259,9 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：仅包含的物料ID，逗号分隔（用于入库新增明细：只查该仓库定数产品档案） */
     private String includeMaterialIds;
 
+    /** 查询列表时是否包含已停用产品（仅查询传参，不持久化；true 时用于编码生成等需在全量编码中避重） */
+    private Boolean includeDisabledInList;
+
     /** 第三方系统产品档案ID（HIS等，用于期初导入匹配） */
     @Excel(name = "HIS系统ID", nameAliases = {"第三方系统产品档案ID"}, width = 22, prompt = "选填；与 HIS 等产品编码对接时使用")
     private String hisId;

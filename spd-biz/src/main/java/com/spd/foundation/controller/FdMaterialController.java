@@ -32,6 +32,7 @@ import com.spd.common.utils.file.FileUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.PinyinUtils;
@@ -115,6 +116,19 @@ public class FdMaterialController extends BaseController
             query.setName(name.trim());
         }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
+        // 业务选耗材：再次排除已删除、已停用（与定数申购等入口一致，避免仅 SQL 时遗漏）
+        list = list.stream()
+            .filter(m -> m != null)
+            .filter(m -> !(m.getDelFlag() != null && m.getDelFlag() == 1))
+            .filter(m -> {
+                Object u = m.getIsUse();
+                if (u == null) {
+                    return true;
+                }
+                String s = u.toString().trim();
+                return s.isEmpty() || !"2".equals(s);
+            })
+            .collect(Collectors.toList());
         List<Map<String, Object>> safeList = new ArrayList<>();
         for (FdMaterial material : list)
         {
