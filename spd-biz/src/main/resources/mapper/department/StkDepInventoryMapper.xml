@@ -148,6 +148,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
                 or m.code like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
             )
         </if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
@@ -374,6 +375,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
                 or m.code like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
             )
         </if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
@@ -462,6 +464,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
                 or m.code like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
             )
         </if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
@@ -517,6 +520,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
                 or m.code like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
             )
         </if>
         <if test="departmentId != null"> and bill.department_id = #{departmentId}</if>
