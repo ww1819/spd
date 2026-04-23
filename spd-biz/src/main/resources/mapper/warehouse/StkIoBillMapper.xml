@@ -448,8 +448,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and stk.bill_type in (101,301)
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <choose>
             <when test="billStatus != null">
                 and stk.bill_status = #{billStatus}
@@ -493,7 +497,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="materialId != null "> and m.id = #{materialId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
 
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
@@ -517,8 +526,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (101,301)
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
+        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
         <choose>
             <when test="billStatus != null">
                 and stk.bill_status = #{billStatus}
@@ -1535,7 +1548,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select
             stk.id as billId,
             stk.bill_no as billNo,
-            w.warehouse_code as warehouseCode,
+            w.code as warehouseCode,
             w.name as warehouseName,
             s.code as supplierCode,
             s.name as supplierName,
@@ -1562,6 +1575,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and e.material_id = #{materialId}
           <if test="supplierId != null">
               and stk.suppler_id = #{supplierId}
+          </if>
+          <if test="warehouseId != null">
+              and stk.warehouse_id = #{warehouseId}
+          </if>
+          <if test="auditBeginTime != null and auditBeginTime != ''">
+              and stk.audit_date &gt;= #{auditBeginTime}
+          </if>
+          <if test="auditEndTime != null and auditEndTime != ''">
+              and stk.audit_date &lt;= #{auditEndTime}
           </if>
         order by
           <choose>

@@ -229,6 +229,8 @@ public class FdMaterial extends BaseEntity
     /** 是否高值 */
     @Excel(name = "是否高值", readConverterExp = "1=是,2=否")
     private String isGz;
+    /** 查询参数：仓库ID（按仓库定数监测范围过滤） */
+    private Long warehouseId;
 
     /** 是否跟台 */
     @Excel(name = "是否跟台", readConverterExp = "1=是,2=否")
@@ -274,6 +276,8 @@ public class FdMaterial extends BaseEntity
 
     /** HIS收费项目ID（用于HIS收费项目对照关系） */
     private String hisChargeItemId;
+    /** 查询参数：是否HIS对照（1=已对照，0=未对照） */
+    private String hisBindStatus;
 
     /** 入选原因 */
     @Excel(name = "入选原因", prompt = "选填")
@@ -296,6 +300,14 @@ public class FdMaterial extends BaseEntity
 
     public void setStatusChangeReason(String statusChangeReason) {
         this.statusChangeReason = statusChangeReason;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     /**

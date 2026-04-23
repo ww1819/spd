@@ -5,6 +5,9 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouse;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 仓库定数监测对象 wh_fixed_number
@@ -87,6 +90,8 @@ public class WhFixedNumber extends BaseEntity {
     private String isGz;
     /** 查询参数：是否集采（1=是 2=否） */
     private String isProcure;
+    /** 查询参数：排除的耗材ID，逗号分隔（用于申购明细去重） */
+    private String excludeMaterialIds;
 
     public String getId() {
         return id;
@@ -294,6 +299,29 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setIsProcure(String isProcure) {
         this.isProcure = isProcure;
+    }
+
+    public String getExcludeMaterialIds() {
+        return excludeMaterialIds;
+    }
+
+    public void setExcludeMaterialIds(String excludeMaterialIds) {
+        this.excludeMaterialIds = excludeMaterialIds;
+    }
+
+    public List<Long> getExcludeMaterialIdList() {
+        if (excludeMaterialIds == null || excludeMaterialIds.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(excludeMaterialIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @Override

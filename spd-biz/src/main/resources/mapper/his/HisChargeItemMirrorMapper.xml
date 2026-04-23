@@ -28,13 +28,14 @@
         <if test="chargeItemId != null and chargeItemId != ''">
             and charge_item_id = #{chargeItemId}
         </if>
+        <if test="itemCode != null and itemCode != ''">
+            and item_code like concat('%', #{itemCode}, '%')
+        </if>
         <if test="name != null and name != ''">
-            and (
-                item_name like concat('%', #{name}, '%')
-                or item_code like concat('%', #{name}, '%')
-                or charge_item_id like concat('%', #{name}, '%')
-                or referred_code like concat('%', #{name}, '%')
-            )
+            and item_name like concat('%', #{name}, '%')
+        </if>
+        <if test="referredCode != null and referredCode != ''">
+            and referred_code like concat('%', #{referredCode}, '%')
         </if>
         <if test="speci != null and speci != ''">
             and spec_model like concat('%', #{speci}, '%')

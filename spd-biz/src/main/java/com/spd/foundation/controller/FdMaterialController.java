@@ -155,6 +155,8 @@ public class FdMaterialController extends BaseController
         @RequestParam(value = "name", required = false) String name,
         @RequestParam(value = "speci", required = false) String speci,
         @RequestParam(value = "chargeItemId", required = false) String chargeItemId,
+        @RequestParam(value = "itemCode", required = false) String itemCode,
+        @RequestParam(value = "referredCode", required = false) String referredCode,
         @RequestParam(value = "pageNum", required = false) Integer pageNum,
         @RequestParam(value = "pageSize", required = false) Integer pageSize)
     {
@@ -167,7 +169,7 @@ public class FdMaterialController extends BaseController
         if (pageNum == null || pageNum < 1) pageNum = 1;
         if (pageSize == null || pageSize < 1) pageSize = 10;
         PageHelper.startPage(pageNum, pageSize);
-        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId);
+        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode);
         List<Map<String, Object>> rows = new ArrayList<>();
         for (HisChargeItemMirror r : mirrorRows)
         {
@@ -668,8 +670,11 @@ public class FdMaterialController extends BaseController
     @GetMapping("/{id}/inboundRecords")
     public AjaxResult listInboundRecords(@PathVariable("id") Long id,
                                          @RequestParam(value = "supplierId", required = false) Long supplierId,
+                                         @RequestParam(value = "warehouseId", required = false) Long warehouseId,
+                                         @RequestParam(value = "auditBeginTime", required = false) String auditBeginTime,
+                                         @RequestParam(value = "auditEndTime", required = false) String auditEndTime,
                                          @RequestParam(value = "orderMode", required = false) String orderMode) {
-        return success(fdMaterialService.listInboundRecords(id, supplierId, orderMode));
+        return success(fdMaterialService.listInboundRecords(id, supplierId, warehouseId, auditBeginTime, auditEndTime, orderMode));
     }
 
     /**

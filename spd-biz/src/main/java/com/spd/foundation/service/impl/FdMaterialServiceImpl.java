@@ -549,12 +549,13 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     }
 
     @Override
-    public List<Map<String, Object>> listInboundRecords(Long materialId, Long supplierId, String orderMode) {
+    public List<Map<String, Object>> listInboundRecords(Long materialId, Long supplierId, Long warehouseId,
+                                                        String auditBeginTime, String auditEndTime, String orderMode) {
         if (materialId == null) {
             return new ArrayList<>();
         }
         String mode = StringUtils.isNotEmpty(orderMode) ? orderMode.trim() : "AUDIT_DESC";
-        return stkIoBillMapper.selectMaterialInboundRecords(materialId, supplierId, mode);
+        return stkIoBillMapper.selectMaterialInboundRecords(materialId, supplierId, warehouseId, auditBeginTime, auditEndTime, mode);
     }
 
     /**

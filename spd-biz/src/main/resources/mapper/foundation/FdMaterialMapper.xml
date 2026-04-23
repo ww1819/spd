@@ -162,6 +162,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </choose>
         <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
         <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
+        <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
+        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%')</if>
+        <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>
         <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
@@ -172,9 +175,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
         <if test="storeroomId != null "> and m.storeroom_id = #{storeroomId}</if>
+        <if test="warehouseId != null">
+            and exists (
+                select 1
+                from wh_fixed_number fn
+                where fn.material_id = m.id
+                  and fn.warehouse_id = #{warehouseId}
+                  and fn.del_flag != 1
+                  and fn.tenant_id = #{scopedTenantId}
+            )
+        </if>
         <if test="financeCategoryId != null "> and m.finance_category_id = #{financeCategoryId}</if>
         <if test="locationId != null "> and m.location_id = #{locationId}</if>
         <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
+        <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '1' or hisBindStatus == 1)">
+            and m.his_charge_item_id is not null
+            and m.his_charge_item_id != ''
+        </if>
+        <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '0' or hisBindStatus == 0)">
+            and (m.his_charge_item_id is null or m.his_charge_item_id = '')
+        </if>
         <if test="beginDate != null "> and m.create_time &gt;= #{beginDate}</if>
         <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
         <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0"> and m.id not in <foreach collection="excludeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>

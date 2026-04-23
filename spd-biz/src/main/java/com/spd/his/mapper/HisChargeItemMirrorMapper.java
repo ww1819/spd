@@ -7,7 +7,11 @@ import com.spd.his.domain.HisChargeItemMirror;
 public interface HisChargeItemMirrorMapper
 {
     List<HisChargeItemMirror> selectList(@Param("tenantId") String tenantId,
-        @Param("name") String name, @Param("speci") String speci, @Param("chargeItemId") String chargeItemId);
+        @Param("name") String name,
+        @Param("speci") String speci,
+        @Param("chargeItemId") String chargeItemId,
+        @Param("itemCode") String itemCode,
+        @Param("referredCode") String referredCode);
 
     int markAllDeletedByTenant(@Param("tenantId") String tenantId);
 

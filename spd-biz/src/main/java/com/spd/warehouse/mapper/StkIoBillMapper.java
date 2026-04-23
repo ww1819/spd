@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
-
-import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
@@ -316,6 +314,9 @@ public interface StkIoBillMapper
      */
     List<Map<String, Object>> selectMaterialInboundRecords(@Param("materialId") Long materialId,
                                                            @Param("supplierId") Long supplierId,
+                                                           @Param("warehouseId") Long warehouseId,
+                                                           @Param("auditBeginTime") String auditBeginTime,
+                                                           @Param("auditEndTime") String auditEndTime,
                                                            @Param("orderMode") String orderMode);
 
     /**

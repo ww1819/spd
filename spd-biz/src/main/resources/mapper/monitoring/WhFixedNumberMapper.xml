@@ -131,6 +131,12 @@
         <if test="isProcure != null and isProcure != ''">
             and m.is_procure = #{isProcure}
         </if>
+        <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0">
+            and m.id not in
+            <foreach collection="excludeMaterialIdList" item="eid" open="(" separator="," close=")">
+                #{eid}
+            </foreach>
+        </if>
         <if test="material != null and material.speci != null and material.speci != ''">
             and m.speci like concat('%', #{material.speci}, '%')
         </if>
