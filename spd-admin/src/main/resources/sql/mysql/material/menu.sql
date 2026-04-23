@@ -706,6 +706,70 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+-- ---------- 3.x) 财务管理：财务结算汇总（出退库按供货单位 / 材料·试剂）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3191, '财务结算汇总', 1065, 5, 'settlementSummary', 'finance/settlementSummary/index', NULL,
+  1, 0, 'C', '0', '0', 'finance:settlementSummary:list', 'documentation',
+  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '出退库按库房分类汇总材料/试剂供货单位批发金额',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/settlementSummary/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3191)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3192, '财务结算汇总导出', 3191, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:settlementSummary:export', '#',
+  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '前端导出 xlsx',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=3191 AND perms='finance:settlementSummary:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3192)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,

@@ -317,4 +317,9 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectMaterialInboundRecords(@Param("materialId") Long materialId,
                                                            @Param("supplierId") Long supplierId,
                                                            @Param("orderMode") String orderMode);
+
+    /**
+     * 财务结算汇总：按材料/试剂 + 供货单位聚合批发金额（出退库 201/401，单价×数量）
+     */
+    List<Map<String, Object>> selectFinanceSettlementSupplierSummary(StkIoBill stkIoBill);
 }
