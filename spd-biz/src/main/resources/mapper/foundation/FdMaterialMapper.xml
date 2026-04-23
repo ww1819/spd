@@ -58,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isMonitor"    column="is_monitor"    />
         <result property="isGz"    column="is_gz"    />
         <result property="isFollow"    column="is_follow"    />
+        <result property="isBilling"    column="is_billing"    />
         <result property="locationId"    column="location_id"    />
         <result property="hisId"    column="his_id"    />
         <result property="hisChargeItemId"    column="his_charge_item_id"    />
@@ -118,6 +119,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.is_use, m.is_procure, m.is_monitor, m.is_gz,
 			<!-- 如果报错 Unknown column 'm.is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             m.is_follow,
+            <!-- 如果报错 Unknown column 'm.is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
+            m.is_billing,
 			<!-- 如果报错 Unknown column 'm.location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
 			m.location_id,
             m.selection_reason,
@@ -156,7 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>
         <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
-        <if test="isGz != null "> and m.is_gz = #{isGz}</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
