@@ -154,7 +154,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginDate != null and beginDate != ''"> and a.consume_bill_date &gt;= #{beginDate}</if>
             <if test="endDate != null and endDate != ''"> and a.consume_bill_date &lt;= #{endDate}</if>
         </where>
-        order by a.create_time desc
+        order by
+            case when a.consume_bill_status = 2 then 1 else 0 end asc,
+            case when a.consume_bill_status = 2 then a.audit_date else null end desc,
+            case when a.consume_bill_status = 2 then null else a.create_time end desc,
+            a.id desc
     </select>
 
     <select id="selectDeptBatchConsumeById" parameterType="Long" resultMap="DeptBatchConsumeDeptBatchConsumeEntryResult">

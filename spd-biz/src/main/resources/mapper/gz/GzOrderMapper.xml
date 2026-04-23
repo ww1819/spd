@@ -143,7 +143,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				w.id, w.code, w.name,
 				d.id, d.code, d.name,
 				ad.id, ad.code, ad.name
-        order by gz.order_date desc, gz.id desc
+        order by
+            case when gz.order_status = 2 then 1 else 0 end asc,
+            case when gz.order_status = 2 then gz.audit_date else null end desc,
+            case when gz.order_status = 2 then null else gz.create_time end desc,
+            gz.id desc
     </select>
 
     <select id="selectGzOrderById" parameterType="Long" resultMap="GzOrderGzOrderEntryResult">

@@ -98,7 +98,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
 				gs.create_time, gs.update_by, gs.update_time, gs.remark,
 				w.id, w.code, w.name, d.id, d.code, d.name
-        order by gs.shipment_date desc, gs.id desc
+        order by
+            case when gs.shipment_status = 2 then 1 else 0 end asc,
+            case when gs.shipment_status = 2 then gs.audit_date else null end desc,
+            case when gs.shipment_status = 2 then null else gs.create_time end desc,
+            gs.id desc
     </select>
 
     <select id="selectGzShipmentById" parameterType="Long" resultMap="GzShipmentGzShipmentEntryResult">

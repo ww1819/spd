@@ -123,7 +123,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				s.id, s.code, s.name,
 				w.id, w.code, w.name,
 				d.id, d.code, d.name
-        order by gz.goods_date desc, gz.id desc
+        order by
+            case when gz.goods_status = 2 then 1 else 0 end asc,
+            case when gz.goods_status = 2 then gz.audit_date else null end desc,
+            case when gz.goods_status = 2 then null else gz.create_time end desc,
+            gz.id desc
     </select>
 
     <select id="selectGzRefundGoodsById" parameterType="Long" resultMap="GzRefundGoodsGzRefundGoodsEntryResult">

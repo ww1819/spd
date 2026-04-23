@@ -314,7 +314,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                   and e.suppler_id is not null and trim(e.suppler_id) != ''
             ) &lt;= 1
         </if>
-        order by stk.bill_date desc
+        order by
+            case when stk.bill_status = 2 then 1 else 0 end asc,
+            case when stk.bill_status = 2 then stk.audit_date else null end desc,
+            case when stk.bill_status = 2 then null else stk.create_time end desc,
+            stk.id desc
     </select>
 
     <!-- 出库单按单导出（bill_type=201），扁平行 -->
