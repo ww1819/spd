@@ -37,6 +37,10 @@ public interface FdMaterialMapper
      * 按租户 + HIS 产品档案 ID 查一条（未删除）
      */
     FdMaterial selectFdMaterialByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
+    /**
+     * 按租户 + HIS 收费项目ID（his_charge_item_id）查一条（未删除）
+     */
+    FdMaterial selectFdMaterialByTenantAndHisChargeItemId(@Param("tenantId") String tenantId, @Param("hisChargeItemId") String hisChargeItemId);
 
     /**
      * 按租户 + 耗材编码查一条（未删除）

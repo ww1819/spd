@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.PageUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.IdUtils;
 import com.spd.his.config.HisSqlServerProperties;
@@ -47,6 +49,8 @@ import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
+import com.spd.his.domain.dto.HisPatientChargeAllQuery;
+import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
 import com.spd.system.service.ITenantScopeService;
@@ -199,6 +203,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
+        PageUtils.startPage();
         return hisInpatientChargeMirrorMapper.selectMirrorList(query);
     }
 
@@ -215,7 +220,25 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
+        PageUtils.startPage();
         return hisOutpatientChargeMirrorMapper.selectMirrorList(query);
+    }
+
+    @Override
+    public List<HisPatientChargeDetailRow> selectAllMirrorList(HisPatientChargeAllQuery query)
+    {
+        HisPatientChargeAllQuery q = query == null ? new HisPatientChargeAllQuery() : query;
+        if (StringUtils.isEmpty(q.getTenantId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        String customerId = q.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
+        }
+        PageUtils.startPage();
+        return hisInpatientChargeMirrorMapper.selectAllMirrorList(q);
     }
 
     @Override
@@ -464,8 +487,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         e.setSpecModel(rs.getString("spec_model"));
         e.setBatchNo(rs.getString("batch_no"));
         e.setExpireDate(rs.getString("expire_date"));
-        e.setUseDate(rs.getString("use_date"));
-        e.setChargeDate(rs.getString("charge_date"));
+        e.setUseDate(parseHisDateTime(rs.getObject("use_date")));
+        e.setChargeDate(parseHisDateTime(rs.getObject("charge_date")));
         e.setQuantity(rs.getBigDecimal("quantity"));
         e.setUnitPrice(rs.getBigDecimal("unit_price"));
         e.setTotalAmount(rs.getBigDecimal("total_amount"));
@@ -748,4 +771,44 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String t = s.trim();
         return t.isEmpty() ? null : t;
     }
+
+    private static Date parseHisDateTime(Object raw)
+    {
+        if (raw == null)
+        {
+            return null;
+        }
+        if (raw instanceof Timestamp)
+        {
+            return new Date(((Timestamp) raw).getTime());
+        }
+        if (raw instanceof java.util.Date)
+        {
+            return new Date(((java.util.Date) raw).getTime());
+        }
+        String text = String.valueOf(raw).trim();
+        if (text.isEmpty())
+        {
+            return null;
+        }
+        String normalized = text.replace('/', '-');
+        if (normalized.length() == 10)
+        {
+            normalized = normalized + " 00:00:00";
+        }
+        if (normalized.length() > 19)
+        {
+            normalized = normalized.substring(0, 19);
+        }
+        try
+        {
+            LocalDateTime ldt = LocalDateTime.parse(normalized, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            return Timestamp.valueOf(ldt);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
 }

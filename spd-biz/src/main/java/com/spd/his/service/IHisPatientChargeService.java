@@ -14,6 +14,8 @@ import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
+import com.spd.his.domain.dto.HisPatientChargeAllQuery;
+import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 
 /**
@@ -28,6 +30,8 @@ public interface IHisPatientChargeService
     List<HisInpatientChargeMirror> selectInpatientMirrorList(HisInpatientChargeMirror query);
 
     List<HisOutpatientChargeMirror> selectOutpatientMirrorList(HisOutpatientChargeMirror query);
+
+    List<HisPatientChargeDetailRow> selectAllMirrorList(HisPatientChargeAllQuery query);
 
     List<HisPatientChargeSummaryRow> selectChargeSummary(String beginChargeDate, String endChargeDate);
 

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +49,8 @@ import com.spd.his.service.IHisMirrorConsumeManualService;
 @Service
 public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManualService
 {
+    private static final Logger log = LoggerFactory.getLogger(HisMirrorConsumeManualServiceImpl.class);
+
     private static final String KIND_IN = "INPATIENT";
     private static final String KIND_OUT = "OUTPATIENT";
     private static final String STATUS_PENDING = "PENDING_CONSUME";
@@ -540,7 +544,14 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException("镜像行「" + mirrorRowId + "」缺少 charge_item_id");
         }
-        FdMaterial mat = fdMaterialMapper.selectFdMaterialByTenantAndHisId(tenantId, HisMatchTextUtils.normalizeMatchKey(chargeItemId));
+        String normalizedChargeItemId = HisMatchTextUtils.normalizeMatchKey(chargeItemId);
+        FdMaterial mat = fdMaterialMapper.selectFdMaterialByTenantAndHisChargeItemId(
+            tenantId, normalizedChargeItemId);
+        if (log.isInfoEnabled())
+        {
+            log.info("HIS镜像耗材匹配 tenantId={}, mirrorRowId={}, chargeItemIdRaw={}, chargeItemIdNorm={}, materialId={}",
+                tenantId, mirrorRowId, chargeItemId, normalizedChargeItemId, mat == null ? null : mat.getId());
+        }
         if (mat == null || mat.getId() == null)
         {
             throw new ServiceException("镜像行「" + mirrorRowId + "」无法匹配耗材档案（charge_item_id）");

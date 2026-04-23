@@ -47,6 +47,10 @@ public class HisOutpatientChargeMirror extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date processTime;
     private String processBy;
+    /** 该科室该项目对应的高值耗材库存数量 */
+    private BigDecimal highValueStockQty;
+    /** 该科室该项目对应的低值耗材库存数量 */
+    private BigDecimal lowValueStockQty;
 
     private Long departmentId;
     private String processed;
@@ -63,4 +67,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endChargeDate;
+    /** 查询排序字段（仅允许白名单字段） */
+    private String orderByColumn;
+    /** 查询排序方向：asc/desc */
+    private String isAsc;
 }

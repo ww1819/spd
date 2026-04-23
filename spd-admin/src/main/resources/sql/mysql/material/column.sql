@@ -1832,9 +1832,9 @@ CALL add_table_column('his_inpatient_charge_mirror', 'batch_no', 'varchar(128)',
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'expire_date', 'varchar(64)', '效期', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'use_date', 'varchar(32)', '使用时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'use_date', 'datetime', '使用时间', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'charge_date', 'varchar(32)', '计费时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'charge_date', 'datetime', '计费时间', NULL);
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'quantity', 'decimal(18,6)', '数量', NULL);
 /

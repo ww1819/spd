@@ -27,6 +27,8 @@ import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
+import com.spd.his.domain.dto.HisPatientChargeAllQuery;
+import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.service.IHisPatientChargeService;
@@ -45,7 +47,6 @@ public class HisPatientChargeController extends BaseController
     @GetMapping("/mirror/inpatient/list")
     public TableDataInfo inpatientMirrorList(HisInpatientChargeMirror query)
     {
-        startPage();
         query.setTenantId(SecurityUtils.getCustomerId());
         List<HisInpatientChargeMirror> list = hisPatientChargeService.selectInpatientMirrorList(query);
         return getDataTable(list);
@@ -55,9 +56,17 @@ public class HisPatientChargeController extends BaseController
     @GetMapping("/mirror/outpatient/list")
     public TableDataInfo outpatientMirrorList(HisOutpatientChargeMirror query)
     {
-        startPage();
         query.setTenantId(SecurityUtils.getCustomerId());
         List<HisOutpatientChargeMirror> list = hisPatientChargeService.selectOutpatientMirrorList(query);
+        return getDataTable(list);
+    }
+
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @GetMapping("/mirror/all/list")
+    public TableDataInfo allMirrorList(HisPatientChargeAllQuery query)
+    {
+        query.setTenantId(SecurityUtils.getCustomerId());
+        List<HisPatientChargeDetailRow> list = hisPatientChargeService.selectAllMirrorList(query);
         return getDataTable(list);
     }
 

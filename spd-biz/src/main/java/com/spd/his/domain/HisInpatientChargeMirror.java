@@ -33,8 +33,12 @@ public class HisInpatientChargeMirror extends BaseEntity
     private String specModel;
     private String batchNo;
     private String expireDate;
-    private String useDate;
-    private String chargeDate;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date useDate;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date chargeDate;
     private BigDecimal quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalAmount;
@@ -47,6 +51,10 @@ public class HisInpatientChargeMirror extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date processTime;
     private String processBy;
+    /** 该科室该项目对应的高值耗材库存数量 */
+    private BigDecimal highValueStockQty;
+    /** 该科室该项目对应的低值耗材库存数量 */
+    private BigDecimal lowValueStockQty;
 
     /** 查询：科室主键（fd_department.id），与 HIS 科室 his_id 对照 */
     private Long departmentId;
@@ -69,4 +77,8 @@ public class HisInpatientChargeMirror extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endChargeDate;
+    /** 查询排序字段（仅允许白名单字段） */
+    private String orderByColumn;
+    /** 查询排序方向：asc/desc */
+    private String isAsc;
 }

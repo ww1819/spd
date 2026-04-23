@@ -230,6 +230,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
         limit 1
     </select>
+    <select id="selectFdMaterialByTenantAndHisChargeItemId" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where trim(m.his_charge_item_id) = trim(#{hisChargeItemId})
+          and (m.del_flag = 0 or m.del_flag is null)
+          and m.tenant_id = #{tenantId}
+        limit 1
+    </select>
 
     <select id="selectFdMaterialByTenantAndCode" resultMap="FdMaterialResult">
         <include refid="selectFdMaterialVo"/>
