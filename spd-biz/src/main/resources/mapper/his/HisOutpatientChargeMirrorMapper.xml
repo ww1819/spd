@@ -2,6 +2,41 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.his.mapper.HisOutpatientChargeMirrorMapper">
 
+    <sql id="outpatientChargeTsExpr">
+        coalesce(
+            str_to_date(left(replace(trim(ifnull(charge_date,'')),'/', '-'),19), '%Y-%m-%d %H:%i:%s'),
+            str_to_date(concat(left(replace(trim(ifnull(charge_date,'')),'/', '-'),10),' 00:00:00'), '%Y-%m-%d %H:%i:%s')
+        )
+    </sql>
+
+    <sql id="outpatientMirrorDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and exists (
+                select 1 from fd_department dscope
+                where (dscope.del_flag = 0 or dscope.del_flag is null)
+                  and dscope.tenant_id = #{tenantId}
+                  and trim(dscope.his_id) = trim(clinic_code)
+                  and dscope.id in (
+                    select distinct x.did from (
+                        select cast(upd.dept_id as unsigned) as did
+                        from sb_user_permission_dept upd
+                        where upd.user_id = #{params.scopeDeptUserId}
+                          and ifnull(upd.del_flag, '0') = '0'
+                        <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+                          and upd.customer_id = #{params.scopeDeptCustomerId}
+                        </if>
+                        union
+                        select ud.department_id as did
+                        from sys_user_department ud
+                        where ud.user_id = #{params.scopeDeptUserId}
+                          and (ud.status = 0 or ud.status = '0' or ud.status is null)
+                    ) x
+                    where x.did is not null
+                  )
+            )
+        </if>
+    </sql>
+
     <resultMap type="com.spd.his.domain.HisOutpatientChargeMirror" id="HisOutpatientChargeMirrorResult">
         <id property="id" column="id"/>
         <result property="tenantId" column="tenant_id"/>
@@ -29,6 +64,9 @@
         <result property="remark" column="remark"/>
         <result property="rowFingerprint" column="row_fingerprint"/>
         <result property="processStatus" column="process_status"/>
+        <result property="processType" column="process_type"/>
+        <result property="processTime" column="process_time"/>
+        <result property="processBy" column="process_by"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -65,8 +103,26 @@
         <if test="outpatientNo != null and outpatientNo != ''"> and outpatient_no like concat('%', #{outpatientNo}, '%')</if>
         <if test="clinicName != null and clinicName != ''"> and clinic_name like concat('%', #{clinicName}, '%')</if>
         <if test="chargeItemId != null and chargeItemId != ''"> and charge_item_id = #{chargeItemId}</if>
-        <if test="beginChargeDate != null"> and left(replace(ifnull(charge_date,''),'/','-'),10) &gt;= date_format(#{beginChargeDate},'%Y-%m-%d')</if>
-        <if test="endChargeDate != null"> and left(replace(ifnull(charge_date,''),'/','-'),10) &lt;= date_format(#{endChargeDate},'%Y-%m-%d')</if>
+        <if test="departmentId != null">
+            and exists (
+                select 1 from fd_department dsel
+                where (dsel.del_flag = 0 or dsel.del_flag is null)
+                  and dsel.tenant_id = #{tenantId}
+                  and dsel.id = #{departmentId}
+                  and trim(dsel.his_id) = trim(clinic_code)
+            )
+        </if>
+        <if test='processed != null and processed == "Y"'>
+            and process_status != 'PENDING_CONSUME'
+        </if>
+        <if test='processed != null and processed == "N"'>
+            and process_status = 'PENDING_CONSUME'
+        </if>
+        <if test="beginChargeDate != null"> and <include refid="outpatientChargeTsExpr"/> &gt;= #{beginChargeDate}</if>
+        <if test="endChargeDate != null"> and <include refid="outpatientChargeTsExpr"/> &lt;= #{endChargeDate}</if>
+        <if test="beginProcessTime != null"> and process_time &gt;= #{beginProcessTime}</if>
+        <if test="endProcessTime != null"> and process_time &lt;= #{endProcessTime}</if>
+        <include refid="outpatientMirrorDepartmentScopeFilter"/>
         order by charge_date desc, id desc
     </select>
 
@@ -94,8 +150,13 @@
         and process_status = 'CONSUMED'
     </select>
 
-    <update id="updateProcessStatusByIds">
-        update his_outpatient_charge_mirror set process_status = #{processStatus}, update_time = now()
+    <update id="updateMirrorProcessByIds">
+        update his_outpatient_charge_mirror set
+            process_status = #{processStatus},
+            process_type = #{processType},
+            process_time = #{processTime},
+            process_by = #{processBy},
+            update_time = now()
         where tenant_id = #{tenantId}
         and id in
         <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>

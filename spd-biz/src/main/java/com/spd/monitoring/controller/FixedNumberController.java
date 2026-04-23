@@ -74,6 +74,7 @@ public class FixedNumberController extends BaseController
                     map.put("specification", item.getMaterial().getSpeci());
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
+                    map.put("isProcure", item.getMaterial().getIsProcure());
                     if (item.getMaterial().getSupplierId() != null) {
                         map.put("supplierId", item.getMaterial().getSupplierId());
                     }
@@ -131,6 +132,7 @@ public class FixedNumberController extends BaseController
                     map.put("specification", item.getMaterial().getSpeci());
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
+                    map.put("isProcure", item.getMaterial().getIsProcure());
                 }
                 if (item.getDepartment() != null) {
                     map.put("departmentName", item.getDepartment().getName());

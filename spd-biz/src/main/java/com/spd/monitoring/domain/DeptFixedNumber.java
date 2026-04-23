@@ -72,6 +72,8 @@ public class DeptFixedNumber extends BaseEntity {
 
     /** 查询字段：财务分类名称 */
     private String financeCategoryName;
+    /** 查询参数：是否集采（1=是 2=否） */
+    private String isProcure;
 
     public String getId() {
         return id;
@@ -231,6 +233,14 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setFinanceCategoryName(String financeCategoryName) {
         this.financeCategoryName = financeCategoryName;
+    }
+
+    public String getIsProcure() {
+        return isProcure;
+    }
+
+    public void setIsProcure(String isProcure) {
+        this.isProcure = isProcure;
     }
 
     @Override

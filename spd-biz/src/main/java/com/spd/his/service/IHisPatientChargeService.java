@@ -10,6 +10,8 @@ import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
+import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
+import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
@@ -32,6 +34,8 @@ public interface IHisPatientChargeService
     List<HisChargeFetchBatch> listRecentFetchBatches(int limit);
 
     HisGenerateConsumeResultVo processMirrorLowValue(HisMirrorManualRowBody body);
+
+    HisMirrorLowBatchResultVo processMirrorLowValueBatch(HisMirrorManualBatchBody body);
 
     HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body);
 

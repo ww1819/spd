@@ -85,6 +85,8 @@ public class WhFixedNumber extends BaseEntity {
 
     /** 查询参数：是否高值（1=高值 2=非高值，科室申购只查非高值） */
     private String isGz;
+    /** 查询参数：是否集采（1=是 2=否） */
+    private String isProcure;
 
     public String getId() {
         return id;
@@ -284,6 +286,14 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setIsGz(String isGz) {
         this.isGz = isGz;
+    }
+
+    public String getIsProcure() {
+        return isProcure;
+    }
+
+    public void setIsProcure(String isProcure) {
+        this.isProcure = isProcure;
     }
 
     @Override

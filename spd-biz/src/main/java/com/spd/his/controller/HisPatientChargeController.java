@@ -24,6 +24,8 @@ import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
+import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
+import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
@@ -99,6 +101,15 @@ public class HisPatientChargeController extends BaseController
     public AjaxResult processLowValue(@RequestBody HisMirrorManualRowBody body)
     {
         HisGenerateConsumeResultVo vo = hisPatientChargeService.processMirrorLowValue(body);
+        return success(vo);
+    }
+
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:generateConsume') or @ss.hasPermi('department:patientCharge:processMirrorLow')")
+    @Log(title = "HIS计费镜像批量低值处理", businessType = BusinessType.OTHER)
+    @PostMapping("/mirror/processLowValueBatch")
+    public AjaxResult processLowValueBatch(@RequestBody HisMirrorManualBatchBody body)
+    {
+        HisMirrorLowBatchResultVo vo = hisPatientChargeService.processMirrorLowValueBatch(body);
         return success(vo);
     }
 

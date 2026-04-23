@@ -42,9 +42,14 @@ import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
+import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.mapper.FdDepartmentMapper;
+import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
+import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.system.service.ITenantScopeService;
 
 @Service
 public class HisPatientChargeServiceImpl implements IHisPatientChargeService
@@ -69,6 +74,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private IHisMirrorConsumeManualService hisMirrorConsumeManualService;
+
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    @Autowired
+    private FdDepartmentMapper fdDepartmentMapper;
 
     @Override
     public HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body)
@@ -183,6 +194,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query = query == null ? new HisInpatientChargeMirror() : query;
             query.setTenantId(SecurityUtils.getCustomerId());
         }
+        String customerId = query.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
+        }
         return hisInpatientChargeMirrorMapper.selectMirrorList(query);
     }
 
@@ -193,6 +209,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             query = query == null ? new HisOutpatientChargeMirror() : query;
             query.setTenantId(SecurityUtils.getCustomerId());
+        }
+        String customerId = query.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
         return hisOutpatientChargeMirrorMapper.selectMirrorList(query);
     }
@@ -224,13 +245,72 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public HisGenerateConsumeResultVo processMirrorLowValue(HisMirrorManualRowBody body)
     {
         assertTenantAllowed();
+        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
+        {
+            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
+                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+        }
         return hisMirrorConsumeManualService.processLowValue(body);
+    }
+
+    @Override
+    public HisMirrorLowBatchResultVo processMirrorLowValueBatch(HisMirrorManualBatchBody body)
+    {
+        assertTenantAllowed();
+        if (body == null || body.getMirrorRowIds() == null || body.getMirrorRowIds().isEmpty())
+        {
+            throw new ServiceException("请选择至少一条计费明细");
+        }
+        String vk = normalizeVisitKindForAuth(body.getVisitKind());
+        if (!"INPATIENT".equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        int ok = 0;
+        int fail = 0;
+        HisMirrorLowBatchResultVo vo = new HisMirrorLowBatchResultVo();
+        for (String rid : body.getMirrorRowIds())
+        {
+            String id = StringUtils.trimToEmpty(rid);
+            if (StringUtils.isEmpty(id))
+            {
+                continue;
+            }
+            try
+            {
+                assertMirrorRowDepartmentAllowed(tenantId, vk, id);
+                HisMirrorManualRowBody one = new HisMirrorManualRowBody();
+                one.setVisitKind(vk);
+                one.setMirrorRowId(id);
+                hisMirrorConsumeManualService.processLowValue(one);
+                ok++;
+            }
+            catch (Exception ex)
+            {
+                fail++;
+                String msg = ex.getMessage();
+                if (StringUtils.isBlank(msg) && ex.getCause() != null)
+                {
+                    msg = ex.getCause().getMessage();
+                }
+                vo.getFailMessages().add(id + (StringUtils.isBlank(msg) ? "" : (": " + msg)));
+            }
+        }
+        vo.setSuccessCount(ok);
+        vo.setFailCount(fail);
+        return vo;
     }
 
     @Override
     public HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body)
     {
         assertTenantAllowed();
+        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
+        {
+            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
+                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+        }
         return hisMirrorConsumeManualService.scanHighBarcode(body);
     }
 
@@ -238,7 +318,73 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public HisMirrorHighApplyResultVo applyMirrorHighConsume(HisMirrorHighApplyBody body)
     {
         assertTenantAllowed();
+        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
+        {
+            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
+                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+        }
         return hisMirrorConsumeManualService.applyHighConsume(body);
+    }
+
+    private void assertMirrorRowDepartmentAllowed(String tenantId, String visitKind, String mirrorRowId)
+    {
+        if (StringUtils.isEmpty(tenantId))
+        {
+            throw new ServiceException("无法解析当前租户");
+        }
+        if (tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), tenantId))
+        {
+            return;
+        }
+        List<Long> allowed = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), tenantId);
+        if (allowed == null || allowed.isEmpty())
+        {
+            throw new ServiceException("无科室数据权限");
+        }
+        Long deptPk = resolveMirrorDepartmentDbId(tenantId, visitKind, mirrorRowId);
+        if (deptPk == null || !allowed.contains(deptPk))
+        {
+            throw new ServiceException("计费明细不在您的科室权限范围内");
+        }
+    }
+
+    private Long resolveMirrorDepartmentDbId(String tenantId, String visitKind, String mirrorRowId)
+    {
+        if ("INPATIENT".equalsIgnoreCase(visitKind))
+        {
+            HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
+            if (r == null || StringUtils.isBlank(r.getDeptCode()))
+            {
+                return null;
+            }
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getDeptCode()));
+            return d != null ? d.getId() : null;
+        }
+        if ("OUTPATIENT".equalsIgnoreCase(visitKind))
+        {
+            HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
+            if (r == null || StringUtils.isBlank(r.getClinicCode()))
+            {
+                return null;
+            }
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getClinicCode()));
+            return d != null ? d.getId() : null;
+        }
+        return null;
+    }
+
+    private static String normalizeVisitKindForAuth(String raw)
+    {
+        if (StringUtils.isBlank(raw))
+        {
+            return "";
+        }
+        String v = raw.trim().toUpperCase();
+        if ("INPATIENT".equals(v) || "OUTPATIENT".equals(v))
+        {
+            return v;
+        }
+        return "";
     }
 
     private void assertTenantAllowed()

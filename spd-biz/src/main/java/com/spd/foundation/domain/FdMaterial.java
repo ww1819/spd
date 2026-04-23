@@ -249,6 +249,12 @@ public class FdMaterial extends BaseEntity
 
     /** 查询参数：是否计费 */
     private String isBilling;
+    /** 是否临购 */
+    private String isTemporaryPurchase;
+    /** 是否服务费 */
+    private String isServiceFee;
+    /** 是否阳采 */
+    private String isSunshineProcurement;
 
     /** 查询参数：名称搜索（首字母） */
     private String nameSearch;

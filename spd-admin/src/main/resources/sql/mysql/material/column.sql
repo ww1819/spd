@@ -219,6 +219,12 @@ CALL add_table_column('fd_material', 'selection_reason', 'varchar(512)', '入选
 /* 产品档案 fd_material 增加 是否计费 */
 CALL add_table_column('fd_material', 'is_billing', 'char(4)', '是否计费：1=计费,2=不计费', '2');
 /
+CALL add_table_column('fd_material', 'is_temporary_purchase', 'char(4)', '是否临购：1=是,2=否', '2');
+/
+CALL add_table_column('fd_material', 'is_service_fee', 'char(4)', '是否服务费：1=是,2=否', '2');
+/
+CALL add_table_column('fd_material', 'is_sunshine_procurement', 'char(4)', '是否阳采：1=是,2=否', '2');
+/
 
 /* 产品档案 fd_material 增加 默认所属仓库ID（用于科室盘盈可退库仓库） */
 CALL add_table_column('fd_material', 'default_warehouse_id', 'bigint', '产品档案默认所属仓库ID（科室盘盈可退库仓库）', NULL);
@@ -1852,6 +1858,12 @@ CALL add_table_column('his_inpatient_charge_mirror', 'update_by', 'varchar(64)',
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'update_time', 'datetime', '更新时间', NULL);
 /
+CALL add_table_column('his_inpatient_charge_mirror', 'process_type', 'varchar(32)', '处理类型 LOW_VALUE/HIGH_VALUE', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'process_time', 'datetime', '处理时间', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'process_by', 'varchar(64)', '处理人', NULL);
+/
 
 CALL add_table_column('his_outpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
 /
@@ -1912,6 +1924,12 @@ CALL add_table_column('his_outpatient_charge_mirror', 'create_time', 'datetime',
 CALL add_table_column('his_outpatient_charge_mirror', 'update_by', 'varchar(64)', '更新者', '');
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'process_type', 'varchar(32)', '处理类型 LOW_VALUE/HIGH_VALUE', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'process_time', 'datetime', '处理时间', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'process_by', 'varchar(64)', '处理人', NULL);
 /
 
 CALL add_table_column('his_charge_fetch_batch', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);

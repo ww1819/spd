@@ -55,6 +55,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private static final String BILL_LOW = "HIS_MIRROR_ROW_LOW";
     private static final String BILL_HIGH = "HIS_MIRROR_ROW_HIGH";
     private static final String LEGACY_BATCH = "HIS_MIRROR_BATCH";
+    private static final String PROC_TYPE_LOW = "LOW_VALUE";
+    private static final String PROC_TYPE_HIGH = "HIGH_VALUE";
 
     @Autowired
     private HisInpatientChargeMirrorMapper hisInpatientChargeMirrorMapper;
@@ -168,13 +170,17 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             }
         }
         flushLinks(linkBuffer);
+        Date procTime = DateUtils.getNowDate();
+        String procBy = currentMirrorProcessBy();
         if (KIND_IN.equals(visitKind))
         {
-            hisInpatientChargeMirrorMapper.updateProcessStatusByIds(tenantId, java.util.Collections.singletonList(mirrorRowId), STATUS_CONSUMED);
+            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
+                STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
         }
         else
         {
-            hisOutpatientChargeMirrorMapper.updateProcessStatusByIds(tenantId, java.util.Collections.singletonList(mirrorRowId), STATUS_CONSUMED);
+            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
+                STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
         }
         vo.setConsumeBillCount(vo.getConsumeBillIds().size());
         vo.setConsumeEntryCount(pieces.size());
@@ -354,13 +360,17 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         BigDecimal allocatedAfter = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
         BigDecimal newRemaining = billQty.subtract(allocatedAfter);
         String newStatus = newRemaining.compareTo(BigDecimal.ZERO) <= 0 ? STATUS_CONSUMED : STATUS_PARTIAL;
+        Date procTime = DateUtils.getNowDate();
+        String procBy = currentMirrorProcessBy();
         if (KIND_IN.equals(visitKind))
         {
-            hisInpatientChargeMirrorMapper.updateProcessStatusByIds(tenantId, java.util.Collections.singletonList(mirrorRowId), newStatus);
+            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
+                newStatus, PROC_TYPE_HIGH, procTime, procBy);
         }
         else
         {
-            hisOutpatientChargeMirrorMapper.updateProcessStatusByIds(tenantId, java.util.Collections.singletonList(mirrorRowId), newStatus);
+            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
+                newStatus, PROC_TYPE_HIGH, procTime, procBy);
         }
         HisMirrorHighApplyResultVo vo = new HisMirrorHighApplyResultVo();
         vo.setConsumeBillId(consumeId);
@@ -383,6 +393,22 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException("无法解析当前租户");
         }
         return tenantId;
+    }
+
+    private String currentMirrorProcessBy()
+    {
+        try
+        {
+            com.spd.common.core.domain.model.LoginUser lu = SecurityUtils.getLoginUser();
+            if (lu != null && lu.getUser() != null && StringUtils.isNotBlank(lu.getUser().getNickName()))
+            {
+                return lu.getUser().getNickName();
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return SecurityUtils.getUsername();
     }
 
     private String resolveVisitKind(String raw)

@@ -59,6 +59,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isGz"    column="is_gz"    />
         <result property="isFollow"    column="is_follow"    />
         <result property="isBilling"    column="is_billing"    />
+        <result property="isTemporaryPurchase"    column="is_temporary_purchase"    />
+        <result property="isServiceFee"    column="is_service_fee"    />
+        <result property="isSunshineProcurement"    column="is_sunshine_procurement"    />
         <result property="locationId"    column="location_id"    />
         <result property="hisId"    column="his_id"    />
         <result property="hisChargeItemId"    column="his_charge_item_id"    />
@@ -121,6 +124,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.is_follow,
             <!-- 如果报错 Unknown column 'm.is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
             m.is_billing,
+            m.is_temporary_purchase,
+            m.is_service_fee,
+            m.is_sunshine_procurement,
 			<!-- 如果报错 Unknown column 'm.location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
 			m.location_id,
             m.selection_reason,
@@ -161,6 +167,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
+        <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
@@ -264,6 +271,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isUse != null">is_use,</if>
             <if test="isProcure != null">is_procure,</if>
             <if test="isMonitor != null">is_monitor,</if>
+            <if test="isTemporaryPurchase != null">is_temporary_purchase,</if>
+            <if test="isServiceFee != null">is_service_fee,</if>
+            <if test="isSunshineProcurement != null">is_sunshine_procurement,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -321,6 +331,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isUse != null">#{isUse},</if>
             <if test="isProcure != null">#{isProcure},</if>
             <if test="isMonitor != null">#{isMonitor},</if>
+            <if test="isTemporaryPurchase != null">#{isTemporaryPurchase},</if>
+            <if test="isServiceFee != null">#{isServiceFee},</if>
+            <if test="isSunshineProcurement != null">#{isSunshineProcurement},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -384,6 +397,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isUse != null">is_use = #{isUse},</if>
             <if test="isProcure != null">is_procure = #{isProcure},</if>
             <if test="isMonitor != null">is_monitor = #{isMonitor},</if>
+            <if test="isTemporaryPurchase != null">is_temporary_purchase = #{isTemporaryPurchase},</if>
+            <if test="isServiceFee != null">is_service_fee = #{isServiceFee},</if>
+            <if test="isSunshineProcurement != null">is_sunshine_procurement = #{isSunshineProcurement},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

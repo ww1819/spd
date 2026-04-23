@@ -188,6 +188,10 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         MATERIAL_FIELD_LABELS.put("isMonitor", "重点监测");
         MATERIAL_FIELD_LABELS.put("isGz", "是否高值");
         MATERIAL_FIELD_LABELS.put("isFollow", "是否跟台");
+        MATERIAL_FIELD_LABELS.put("isBilling", "是否计费");
+        MATERIAL_FIELD_LABELS.put("isTemporaryPurchase", "是否临购");
+        MATERIAL_FIELD_LABELS.put("isServiceFee", "是否服务费");
+        MATERIAL_FIELD_LABELS.put("isSunshineProcurement", "是否阳采");
         MATERIAL_FIELD_LABELS.put("locationId", "货位");
         MATERIAL_FIELD_LABELS.put("hisId", "第三方系统产品档案ID");
         MATERIAL_FIELD_LABELS.put("selectionReason", "入选原因");
