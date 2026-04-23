@@ -327,6 +327,88 @@ public class FdMaterialController extends BaseController
     }
 
     /**
+     * 采购计划「添加产品明细」专用：低敏分页列表。
+     * <p>
+     * 过滤条件与 /list 一致（如 storeroomId、factoryId、name、supplierId、isGz、includeMaterialIds 等），
+     * 由服务端 PageHelper 分页；响应中去除审计字段、租户、HIS/医保/UDI 等敏感信息。
+     * </p>
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:list') or @ss.hasPermi('foundation:material:list')")
+    @GetMapping("/listPurchasePlanPick")
+    public TableDataInfo listPurchasePlanPickGet(FdMaterial fdMaterial)
+    {
+        startPage();
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
+        for (FdMaterial m : list)
+        {
+            stripMaterialForPurchasePlanPick(m);
+        }
+        return getDataTable(list);
+    }
+
+    /**
+     * 采购计划「添加产品明细」专用：低敏分页列表（POST，避免 includeMaterialIds 过长）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:list') or @ss.hasPermi('foundation:material:list')")
+    @PostMapping("/listPurchasePlanPick")
+    public TableDataInfo listPurchasePlanPickPost(@RequestBody FdMaterialListRequest request)
+    {
+        Integer pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
+        Integer pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
+        FdMaterial query = request.getQuery() != null ? request.getQuery() : new FdMaterial();
+        PageHelper.startPage(pageNum, pageSize);
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
+        for (FdMaterial m : list)
+        {
+            stripMaterialForPurchasePlanPick(m);
+        }
+        return getDataTable(list);
+    }
+
+    /** 采购计划选耗材：去掉不必要且偏敏感的产品档案字段 */
+    private void stripMaterialForPurchasePlanPick(FdMaterial m)
+    {
+        if (m == null)
+        {
+            return;
+        }
+        m.setTenantId(null);
+        m.setCreateBy(null);
+        m.setCreateTime(null);
+        m.setUpdateBy(null);
+        m.setUpdateTime(null);
+        m.setDeleteBy(null);
+        m.setDeleteTime(null);
+        m.setAuditBy(null);
+        m.setAuditDate(null);
+        m.setHisId(null);
+        m.setHisChargeItemId(null);
+        m.setMedicalName(null);
+        m.setMedicalNo(null);
+        m.setCountryNo(null);
+        m.setCountryName(null);
+        m.setUdiNo(null);
+        m.setPermitNo(null);
+        m.setDescription(null);
+        m.setSuccessfulType(null);
+        m.setSuccessfulNo(null);
+        m.setSuccessfulPrice(null);
+        m.setSalePrice(null);
+        m.setPackageSpeci(null);
+        m.setMaterialLevel(null);
+        m.setRegisterLevel(null);
+        m.setRiskLevel(null);
+        m.setFirstaidLevel(null);
+        m.setDoctorLevel(null);
+        m.setQuality(null);
+        m.setFunction(null);
+        m.setUseto(null);
+        m.setSelectionReason(null);
+        m.setProducer(null);
+        m.setRegisterName(null);
+    }
+
+    /**
      * 导出耗材产品列表
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:export')")

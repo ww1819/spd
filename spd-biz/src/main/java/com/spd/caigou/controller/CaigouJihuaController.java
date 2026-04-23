@@ -20,7 +20,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 采购计划Controller
@@ -80,7 +82,15 @@ public class CaigouJihuaController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody PurchasePlan purchasePlan)
     {
-        return toAjax(purchasePlanService.insertPurchasePlan(purchasePlan));
+        int rows = purchasePlanService.insertPurchasePlan(purchasePlan);
+        if (rows <= 0)
+        {
+            return error();
+        }
+        Map<String, Object> data = new HashMap<>(2);
+        data.put("id", purchasePlan.getId());
+        data.put("planNo", purchasePlan.getPlanNo());
+        return AjaxResult.success("操作成功", data);
     }
 
     /**
