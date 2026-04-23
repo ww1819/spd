@@ -35,5 +35,10 @@ public interface DeptFixedNumberMapper {
      * 根据主键软删除科室定数监测
      */
     int deleteDeptFixedNumberById(@Param("id") String id, @Param("deleteBy") String deleteBy);
+
+    /**
+     * 根据主键批量软删除科室定数监测
+     */
+    int deleteDeptFixedNumberByIds(@Param("ids") List<String> ids, @Param("deleteBy") String deleteBy);
 }
 

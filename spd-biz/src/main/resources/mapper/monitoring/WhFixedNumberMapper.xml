@@ -171,6 +171,20 @@
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
+    <update id="deleteWhFixedNumberByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update wh_fixed_number
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_time = now()
+        where tenant_id = #{scopedTenantId}
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectWhFixedNumberVo"/>

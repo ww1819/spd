@@ -31,5 +31,10 @@ public interface IFixedNumberService {
      */
     int deleteFixedNumberById(String id);
 
+    /**
+     * 根据主键批量删除定数监测（仓库/科室）
+     */
+    int deleteFixedNumberByIds(List<String> ids);
+
 }
 

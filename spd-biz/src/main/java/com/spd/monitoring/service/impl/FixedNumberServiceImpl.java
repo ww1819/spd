@@ -10,6 +10,7 @@ import com.spd.monitoring.mapper.DeptFixedNumberMapper;
 import com.spd.monitoring.mapper.WhFixedNumberMapper;
 import com.spd.monitoring.service.IFixedNumberService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -138,6 +139,22 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
         if (rows == 0) {
             rows = deptFixedNumberMapper.deleteDeptFixedNumberById(id, operator);
         }
+        return rows;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteFixedNumberByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        String operator = SecurityUtils.getUsername();
+        if (operator == null) {
+            operator = "";
+        }
+        int rows = 0;
+        rows += whFixedNumberMapper.deleteWhFixedNumberByIds(ids, operator);
+        rows += deptFixedNumberMapper.deleteDeptFixedNumberByIds(ids, operator);
         return rows;
     }
 }

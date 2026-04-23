@@ -240,6 +240,23 @@ public class FixedNumberController extends BaseController
     }
 
     /**
+     * 批量删除定数监测
+     */
+    @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:remove')")
+    @Log(title = "定数监测", businessType = BusinessType.DELETE)
+    @PostMapping("/batchDelete")
+    public AjaxResult batchRemove(@RequestBody Map<String, List<String>> body)
+    {
+        List<String> ids = body == null ? null : body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        int rows = fixedNumberService.deleteFixedNumberByIds(ids);
+        return toAjax(rows);
+    }
+
+    /**
      * 导出定数监测列表
      */
     @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:export')")
