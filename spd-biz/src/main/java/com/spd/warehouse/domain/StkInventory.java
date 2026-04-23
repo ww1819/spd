@@ -127,6 +127,18 @@ public class StkInventory extends BaseEntity
     /** 查询参数：型号（模糊） */
     private String materialModel;
 
+    /** 查询参数：库房分类ID（与产品档案 fd_material.storeroom_id 一致） */
+    private Long warehouseCategoryId;
+
+    /** 查询参数：业务日期起（yyyy-MM-dd，按 stk.warehouse_date） */
+    private String beginDate;
+
+    /** 查询参数：业务日期止（yyyy-MM-dd，按 stk.warehouse_date） */
+    private String endDate;
+
+    /** 查询参数：是否计费（前端 1=是、0=否；库表 fd_material.is_billing：1=计费，2=不计费） */
+    private String isBilling;
+
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
@@ -404,6 +416,38 @@ public class StkInventory extends BaseEntity
         this.materialModel = materialModel;
     }
 
+    public Long getWarehouseCategoryId() {
+        return warehouseCategoryId;
+    }
+
+    public void setWarehouseCategoryId(Long warehouseCategoryId) {
+        this.warehouseCategoryId = warehouseCategoryId;
+    }
+
+    public String getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(String beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getIsBilling() {
+        return isBilling;
+    }
+
+    public void setIsBilling(String isBilling) {
+        this.isBilling = isBilling;
+    }
+
     public Integer getDaysToExpiry() {
         return daysToExpiry;
     }
@@ -434,6 +478,10 @@ public class StkInventory extends BaseEntity
             .append("material", getMaterial())
             .append("warehouseName", getWarehouseName())
             .append("materialName", getMaterialName())
+            .append("warehouseCategoryId", getWarehouseCategoryId())
+            .append("beginDate", getBeginDate())
+            .append("endDate", getEndDate())
+            .append("isBilling", getIsBilling())
             .append("daysToExpiry", getDaysToExpiry())
             .append("supplierId", getSupplierId())
             .append("supplier", getSupplier())

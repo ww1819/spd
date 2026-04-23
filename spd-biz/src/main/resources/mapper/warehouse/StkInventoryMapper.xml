@@ -220,14 +220,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
         <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
+        <if test="receiptOrderNo != null and receiptOrderNo != ''"> and stk.receipt_order_no like concat('%', #{receiptOrderNo}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="isBilling != null">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
+        <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -243,14 +253,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
         <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
+        <if test="receiptOrderNo != null and receiptOrderNo != ''"> and stk.receipt_order_no like concat('%', #{receiptOrderNo}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="isBilling != null">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
+        <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -287,14 +307,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
         <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
+        <if test="receiptOrderNo != null and receiptOrderNo != ''"> and stk.receipt_order_no like concat('%', #{receiptOrderNo}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="isBilling != null">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
+        <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         GROUP BY stk.material_id, stk.warehouse_id, m.code, m.name, m.speci, m.model, u.unit_name
         order by m.code, MAX(w.name)
     </select>
@@ -319,14 +349,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="batchNo != null  and batchNo != ''"> and stk.batch_no = #{batchNo}</if>
         <if test="batchNumber != null  and batchNumber != ''"> and stk.batch_number like concat('%', #{batchNumber}, '%')</if>
+        <if test="receiptOrderNo != null and receiptOrderNo != ''"> and stk.receipt_order_no like concat('%', #{receiptOrderNo}, '%')</if>
         <if test="materialNo != null  and materialNo != ''"> and stk.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and stk.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and stk.warehouse_date = #{warehouseDate}</if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="isBilling != null">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
+        <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
     </select>
 
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">
