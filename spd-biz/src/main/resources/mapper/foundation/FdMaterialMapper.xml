@@ -207,6 +207,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
     </select>
 
+    <select id="selectFdMaterialByIds" resultMap="FdMaterialResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectFdMaterialVo"/>
+        where (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
+        and m.id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <select id="selectFdMaterialByIdAndTenant" resultMap="FdMaterialResult">
         <include refid="selectFdMaterialVo"/>
         where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null)

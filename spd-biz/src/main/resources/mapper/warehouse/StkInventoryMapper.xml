@@ -622,6 +622,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
     </select>
 
+    <select id="selectSumQtyGroupByMaterialAndWarehouse" resultType="com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select stk.material_id as materialId, COALESCE(SUM(stk.qty), 0) as sumQty
+        from stk_inventory stk
+        where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.tenant_id = #{scopedTenantId}
+        and stk.warehouse_id = #{warehouseId}
+        and stk.material_id in
+        <foreach collection="materialIds" item="mid" open="(" separator="," close=")">
+            #{mid}
+        </foreach>
+        group by stk.material_id
+    </select>
+
     <!-- 科室申领：按「耗材+仓库」聚合可用库存（排除高值/设备仓），明细保存 stock_warehouse_id 后审核仅在该仓拆分 -->
     <select id="selectMaterialAvailableAggForDeptApply" parameterType="StkInventory" resultType="java.util.HashMap">
         select stk.material_id materialId,

@@ -170,6 +170,13 @@ public interface StkInventoryMapper
     BigDecimal selectSumQtyByMaterialAndWarehouse(@Param("materialId") Long materialId, @Param("warehouseId") Long warehouseId);
 
     /**
+     * 按耗材汇总某仓库下库存数量（采购计划/订单明细批量回填 stockQty）
+     */
+    List<com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg> selectSumQtyGroupByMaterialAndWarehouse(
+            @Param("warehouseId") Long warehouseId,
+            @Param("materialIds") List<Long> materialIds);
+
+    /**
      * 科室申领：按耗材跨仓聚合可用库存（排除高值仓、设备仓等，与默认策略一致）
      */
     List<Map<String, Object>> selectMaterialAvailableAggForDeptApply(StkInventory stkInventory);

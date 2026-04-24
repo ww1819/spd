@@ -1,6 +1,7 @@
 package com.spd.caigou.service;
 
 import com.spd.caigou.domain.PurchasePlan;
+import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 
 import java.util.List;
@@ -87,4 +88,14 @@ public interface IPurchasePlanService
      * @return 导出行列表
      */
     List<PurchaseRecordExportVO> listPurchaseRecordForExportByIds(Long[] planIds);
+
+    /**
+     * 采购计划明细导出（与列表筛选一致，一行一条明细）
+     */
+    List<PurchasePlanEntrySupplierExportVO> listPurchasePlanEntrySupplierExport(PurchasePlan query);
+
+    /**
+     * 仅导出指定计划下的明细
+     */
+    List<PurchasePlanEntrySupplierExportVO> listPurchasePlanEntrySupplierExportByPlanIds(Long[] planIds);
 }

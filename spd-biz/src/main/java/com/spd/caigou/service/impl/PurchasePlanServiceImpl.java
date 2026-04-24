@@ -14,11 +14,14 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.caigou.domain.vo.PurchasePlanEntryDepRefRow;
+import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,9 +32,11 @@ import com.spd.caigou.domain.vo.EntryBillNoVO;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -78,21 +83,54 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         }
         SecurityUtils.ensureTenantAccess(purchasePlan.getTenantId());
         List<PurchasePlanEntry> purchasePlanEntryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
-        if (purchasePlanEntryList != null) {
+        if (purchasePlanEntryList != null && !purchasePlanEntryList.isEmpty()) {
             Long warehouseId = purchasePlan.getWarehouseId();
-            for (PurchasePlanEntry entry : purchasePlanEntryList) {
-                if (entry.getMaterialId() != null) {
-                    FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-                    entry.setMaterial(fdMaterial);
-                    if (warehouseId != null) {
-                        BigDecimal stock = stkInventoryMapper.selectSumQtyByMaterialAndWarehouse(entry.getMaterialId(), warehouseId);
-                        entry.setStockQty(stock != null ? stock : BigDecimal.ZERO);
+
+            List<Long> materialIds = purchasePlanEntryList.stream()
+                .map(PurchasePlanEntry::getMaterialId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+            Map<Long, FdMaterial> materialById = new HashMap<>();
+            if (!materialIds.isEmpty()) {
+                List<FdMaterial> mats = fdMaterialMapper.selectFdMaterialByIds(materialIds);
+                if (mats != null) {
+                    for (FdMaterial m : mats) {
+                        if (m != null && m.getId() != null) {
+                            materialById.put(m.getId(), m);
+                        }
                     }
                 }
             }
+
+            Map<Long, BigDecimal> stockByMaterialId = new HashMap<>();
+            if (warehouseId != null && !materialIds.isEmpty()) {
+                List<MaterialWarehouseStockAgg> stockAggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, materialIds);
+                if (stockAggs != null) {
+                    for (MaterialWarehouseStockAgg a : stockAggs) {
+                        if (a != null && a.getMaterialId() != null) {
+                            stockByMaterialId.put(a.getMaterialId(), a.getSumQty() != null ? a.getSumQty() : BigDecimal.ZERO);
+                        }
+                    }
+                }
+            }
+
+            for (PurchasePlanEntry entry : purchasePlanEntryList) {
+                if (entry.getMaterialId() != null) {
+                    FdMaterial full = materialById.get(entry.getMaterialId());
+                    if (full != null) {
+                        entry.setMaterial(full);
+                    }
+                    if (warehouseId != null) {
+                        entry.setStockQty(stockByMaterialId.getOrDefault(entry.getMaterialId(), BigDecimal.ZERO));
+                    }
+                }
+            }
+
             List<EntryBillNoVO> entryBillNos = purchasePlanEntryDepApplyMapper.selectEntryBillNosByPlanId(id);
             if (entryBillNos != null && !entryBillNos.isEmpty()) {
-                java.util.Map<Long, List<String>> byEntry = entryBillNos.stream()
+                Map<Long, List<String>> byEntry = entryBillNos.stream()
                     .filter(v -> v.getEntryId() != null && v.getPurchaseBillNo() != null)
                     .collect(Collectors.groupingBy(EntryBillNoVO::getEntryId, Collectors.mapping(EntryBillNoVO::getPurchaseBillNo, Collectors.toList())));
                 for (PurchasePlanEntry entry : purchasePlanEntryList) {
@@ -101,12 +139,22 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                     }
                 }
             }
-            // 回填每条计划明细关联的科室申购单明细ID列表，便于编辑保存时重新写入关联表
-            for (PurchasePlanEntry entry : purchasePlanEntryList) {
-                if (entry.getId() != null) {
-                    List<Long> depIds = purchasePlanEntryDepApplyMapper.selectDepApplyEntryIdsByEntryId(entry.getId());
-                    if (depIds != null && !depIds.isEmpty()) {
-                        entry.setDepApplyEntryIds(depIds);
+
+            List<PurchasePlanEntryDepRefRow> depRefs = purchasePlanEntryDepApplyMapper.selectDepApplyRefsByPlanId(id);
+            if (depRefs != null && !depRefs.isEmpty()) {
+                Map<Long, List<Long>> depIdsByEntry = new HashMap<>();
+                for (PurchasePlanEntryDepRefRow row : depRefs) {
+                    if (row.getEntryId() == null || row.getDepApplyEntryId() == null) {
+                        continue;
+                    }
+                    depIdsByEntry.computeIfAbsent(row.getEntryId(), k -> new ArrayList<>()).add(row.getDepApplyEntryId());
+                }
+                for (PurchasePlanEntry entry : purchasePlanEntryList) {
+                    if (entry.getId() != null) {
+                        List<Long> depIds = depIdsByEntry.get(entry.getId());
+                        if (depIds != null && !depIds.isEmpty()) {
+                            entry.setDepApplyEntryIds(depIds);
+                        }
                     }
                 }
             }
@@ -496,5 +544,21 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             list.add(vo);
         }
         return list;
+    }
+
+    @Override
+    public List<PurchasePlanEntrySupplierExportVO> listPurchasePlanEntrySupplierExport(PurchasePlan query)
+    {
+        return purchasePlanMapper.selectPurchasePlanEntrySupplierExportList(query);
+    }
+
+    @Override
+    public List<PurchasePlanEntrySupplierExportVO> listPurchasePlanEntrySupplierExportByPlanIds(Long[] planIds)
+    {
+        if (planIds == null || planIds.length == 0)
+        {
+            return new ArrayList<>();
+        }
+        return purchasePlanMapper.selectPurchasePlanEntrySupplierExportListByPlanIds(planIds);
     }
 }

@@ -64,6 +64,11 @@ public interface FdMaterialMapper
     public FdMaterial selectFdMaterialById(Long id);
 
     /**
+     * 批量查询产品档案（与 {@link #selectFdMaterialById} 相同字段与关联，用于避免 N+1）
+     */
+    List<FdMaterial> selectFdMaterialByIds(@Param("ids") List<Long> ids);
+
+    /**
      * 按主键 + 租户查产品档案（与单据 tenant 一致，避免仅用 getCustomerId() 导致查不到）
      */
     FdMaterial selectFdMaterialByIdAndTenant(@Param("id") Long id, @Param("tenantId") String tenantId);
