@@ -175,7 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
         <if test="storeroomId != null "> and m.storeroom_id = #{storeroomId}</if>
-        <if test="warehouseId != null">
+        <if test="warehouseId != null and (skipWarehouseFixedNumberExists == null or skipWarehouseFixedNumberExists != true)">
             and exists (
                 select 1
                 from wh_fixed_number fn
