@@ -72,6 +72,9 @@ public class StkIoBill extends BaseEntity
     /** 型号 模糊查询（出退库查询） */
     private String materialModelLike;
 
+    /** 查询：产品档案是否集采（fd_material.is_procure：1是 2否，财务结算汇总等） */
+    private String materialIsProcure;
+
     @Excel(name = "库房分类ID")
     private String warehouseCategoryId;
 
@@ -335,6 +338,14 @@ public class StkIoBill extends BaseEntity
 
     public void setMaterialModelLike(String materialModelLike) {
         this.materialModelLike = materialModelLike;
+    }
+
+    public String getMaterialIsProcure() {
+        return materialIsProcure;
+    }
+
+    public void setMaterialIsProcure(String materialIsProcure) {
+        this.materialIsProcure = materialIsProcure;
     }
 
     public Long getDepartmentId()
