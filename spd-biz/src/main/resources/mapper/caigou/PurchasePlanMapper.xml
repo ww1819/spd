@@ -190,9 +190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department ad on ppe.apply_department_id = ad.id
     </sql>
 
-    <select id="selectPurchasePlanEntrySupplierExportList" parameterType="PurchasePlan" resultType="com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        <include refid="selectPurchasePlanEntrySupplierExportColumns"/>
+    <sql id="purchasePlanExportWhere">
         <where>
             (ppe.del_flag = '0' or ppe.del_flag is null)
             and ppe.tenant_id = #{scopedTenantId}
@@ -210,7 +208,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and date_format(pp.plan_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
             </if>
         </where>
+    </sql>
+
+    <select id="selectPurchasePlanEntrySupplierExportList" parameterType="PurchasePlan" resultType="com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectPurchasePlanEntrySupplierExportColumns"/>
+        <include refid="purchasePlanExportWhere"/>
         order by pp.plan_date desc, pp.plan_no, ppe.id
+    </select>
+
+    <select id="selectPurchasePlanSummaryExportList" parameterType="PurchasePlan" resultType="com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            coalesce(s_line.name, s_main.name) as supplierName,
+            m.code as materialCode,
+            m.name as materialName,
+            (case when ppe.speci is not null and trim(ppe.speci) != '' then ppe.speci else m.speci end) as speci,
+            (case when ppe.model is not null and trim(ppe.model) != '' then ppe.model else m.model end) as model,
+            u.unit_name as unitName,
+            ppe.price as price,
+            sum(coalesce(ppe.apply_qty, ppe.qty, 0)) as applyQty,
+            coalesce(max(inv.sumQty), 0) as stockQty
+        from purchase_plan_entry ppe
+        inner join purchase_plan pp on pp.id = ppe.parent_id
+            and (pp.del_flag = '0' or pp.del_flag is null)
+            and pp.tenant_id = #{scopedTenantId}
+        left join fd_material m on ppe.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_supplier s_main on pp.supplier_id = s_main.id
+        left join fd_supplier s_line on ppe.supplier_id = s_line.id
+        left join (
+            select si.material_id as materialId, sum(coalesce(si.qty, 0)) as sumQty
+            from stk_inventory si
+            where (si.del_flag = '0' or si.del_flag is null)
+              and si.tenant_id = #{scopedTenantId}
+            group by si.material_id
+        ) inv on inv.materialId = ppe.material_id
+        <include refid="purchasePlanExportWhere"/>
+        group by
+            coalesce(s_line.name, s_main.name),
+            m.code,
+            m.name,
+            (case when ppe.speci is not null and trim(ppe.speci) != '' then ppe.speci else m.speci end),
+            (case when ppe.model is not null and trim(ppe.model) != '' then ppe.model else m.model end),
+            u.unit_name,
+            ppe.price
+        order by supplierName, materialName, speci, model
     </select>
 
     <select id="selectPurchasePlanEntrySupplierExportListByPlanIds" resultType="com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO">

@@ -3,6 +3,7 @@ package com.spd.caigou.controller;
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.caigou.domain.PurchasePlan;
 import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
+import com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 import com.spd.caigou.service.IPurchasePlanEntryApplyService;
 import com.spd.caigou.service.IPurchasePlanService;
@@ -83,6 +84,25 @@ public class CaigouJihuaController extends BaseController
         String title = "采购计划明细（供货清单）";
         ExcelUtil<PurchasePlanEntrySupplierExportVO> util = new ExcelUtil<>(PurchasePlanEntrySupplierExportVO.class);
         util.exportExcel(response, list, sheetName, title);
+    }
+
+    /**
+     * 导出采购计划汇总（按供应商+物资维度汇总）
+     * 导出范围：current=当前页；all=全部查询结果。
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:export')")
+    @Log(title = "采购计划汇总", businessType = BusinessType.EXPORT)
+    @PostMapping("/exportSummary")
+    public void exportSummary(HttpServletResponse response, PurchasePlan purchasePlan,
+                              @RequestParam(name = "exportScope", required = false, defaultValue = "all") String exportScope)
+    {
+        if ("current".equalsIgnoreCase(exportScope))
+        {
+            startPage();
+        }
+        List<PurchasePlanSummaryExportVO> list = purchasePlanService.listPurchasePlanSummaryExport(purchasePlan);
+        ExcelUtil<PurchasePlanSummaryExportVO> util = new ExcelUtil<>(PurchasePlanSummaryExportVO.class);
+        util.exportExcel(response, list, "采购计划汇总", "采购计划汇总");
     }
 
     /**

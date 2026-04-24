@@ -16,6 +16,7 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.caigou.domain.vo.PurchasePlanEntryDepRefRow;
 import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
+import com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
@@ -560,5 +561,11 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             return new ArrayList<>();
         }
         return purchasePlanMapper.selectPurchasePlanEntrySupplierExportListByPlanIds(planIds);
+    }
+
+    @Override
+    public List<PurchasePlanSummaryExportVO> listPurchasePlanSummaryExport(PurchasePlan query)
+    {
+        return purchasePlanMapper.selectPurchasePlanSummaryExportList(query);
     }
 }

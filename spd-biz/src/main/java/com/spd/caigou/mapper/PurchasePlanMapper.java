@@ -3,6 +3,7 @@ package com.spd.caigou.mapper;
 import com.spd.caigou.domain.PurchasePlan;
 import com.spd.caigou.domain.PurchasePlanEntry;
 import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
+import com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -40,6 +41,11 @@ public interface PurchasePlanMapper
      * 按计划主键导出明细（用于勾选多条计划后仅导出所选）
      */
     List<PurchasePlanEntrySupplierExportVO> selectPurchasePlanEntrySupplierExportListByPlanIds(@Param("ids") Long[] ids);
+
+    /**
+     * 采购计划汇总导出（按供应商+物资维度汇总）
+     */
+    List<PurchasePlanSummaryExportVO> selectPurchasePlanSummaryExportList(PurchasePlan purchasePlan);
 
     /**
      * 新增采购计划
