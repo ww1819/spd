@@ -1,6 +1,9 @@
 package com.spd.web.controller.system;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +28,8 @@ import com.spd.system.domain.SbMenu;
 import com.spd.system.domain.SbWorkGroup;
 import com.spd.system.service.ISbMenuService;
 import com.spd.system.service.ISbWorkGroupService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 设备系统工作组管理
@@ -33,6 +38,8 @@ import com.spd.system.service.ISbWorkGroupService;
 @RestController
 @RequestMapping("/equipment/system/workgroup")
 public class SbWorkGroupController extends BaseController {
+  private static final Logger log = LoggerFactory.getLogger(SbWorkGroupController.class);
+  private static final Map<String, SyncStatus> SYNC_STATUS_MAP = new ConcurrentHashMap<>();
 
   @Autowired
   private ISbWorkGroupService sbWorkGroupService;
@@ -163,7 +170,52 @@ public class SbWorkGroupController extends BaseController {
   @Log(title = "工作组权限同步到用户", businessType = BusinessType.UPDATE)
   @PostMapping("/sync/{groupId}")
   public AjaxResult syncToGroupUsers(@PathVariable String groupId) {
-    return success(sbWorkGroupService.syncToGroupUsers(groupId));
+    SyncStatus running = new SyncStatus();
+    running.setGroupId(groupId);
+    running.setStatus("RUNNING");
+    running.setMessage("同步任务执行中");
+    running.setAffected(0);
+    running.setUpdateTime(System.currentTimeMillis());
+    SYNC_STATUS_MAP.put(groupId, running);
+    CompletableFuture.runAsync(() -> {
+      try {
+        int affected = sbWorkGroupService.syncToGroupUsers(groupId);
+        SyncStatus success = new SyncStatus();
+        success.setGroupId(groupId);
+        success.setStatus("SUCCESS");
+        success.setMessage("同步完成");
+        success.setAffected(affected);
+        success.setUpdateTime(System.currentTimeMillis());
+        SYNC_STATUS_MAP.put(groupId, success);
+        log.info("工作组菜单/仓库/科室权限异步同步完成, groupId={}, affected={}", groupId, affected);
+      } catch (Exception e) {
+        SyncStatus failed = new SyncStatus();
+        failed.setGroupId(groupId);
+        failed.setStatus("FAILED");
+        failed.setMessage("同步失败: " + e.getMessage());
+        failed.setAffected(0);
+        failed.setUpdateTime(System.currentTimeMillis());
+        SYNC_STATUS_MAP.put(groupId, failed);
+        log.error("工作组权限异步同步失败, groupId={}", groupId, e);
+      }
+    });
+    return success("已提交后台同步任务，请稍后刷新查看结果");
+  }
+
+  @PreAuthorize("@ss.hasPermi('sb:system:workgroup:query') or @ss.hasPermi('system:post:query') or @ss.isPlatformUser() or @ss.isTenantUserWithGroup(#groupId)")
+  @GetMapping("/sync/status/{groupId}")
+  public AjaxResult getSyncStatus(@PathVariable String groupId) {
+    SyncStatus status = SYNC_STATUS_MAP.get(groupId);
+    if (status == null) {
+      SyncStatus idle = new SyncStatus();
+      idle.setGroupId(groupId);
+      idle.setStatus("IDLE");
+      idle.setMessage("暂无同步任务");
+      idle.setAffected(0);
+      idle.setUpdateTime(System.currentTimeMillis());
+      return success(idle);
+    }
+    return success(status);
   }
 
   /** 兼容前端 PUT 数组参数绑定失败：支持 menuIds 数组或 menuIdsStr 逗号分隔字符串 */
@@ -194,5 +246,53 @@ public class SbWorkGroupController extends BaseController {
       } catch (NumberFormatException ignored) { }
     }
     return list.isEmpty() ? null : list.toArray(new Long[0]);
+  }
+
+  public static class SyncStatus {
+    private String groupId;
+    private String status;
+    private String message;
+    private Integer affected;
+    private Long updateTime;
+
+    public String getGroupId() {
+      return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+      this.groupId = groupId;
+    }
+
+    public String getStatus() {
+      return status;
+    }
+
+    public void setStatus(String status) {
+      this.status = status;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public void setMessage(String message) {
+      this.message = message;
+    }
+
+    public Integer getAffected() {
+      return affected;
+    }
+
+    public void setAffected(Integer affected) {
+      this.affected = affected;
+    }
+
+    public Long getUpdateTime() {
+      return updateTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+      this.updateTime = updateTime;
+    }
   }
 }

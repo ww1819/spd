@@ -127,6 +127,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：型号（模糊） */
     private String materialModel;
 
+    /** 查询参数：排除的明细组合，格式 materialId__warehouseId 逗号分隔 */
+    private String excludeMaterialWarehousePairs;
+
     /** 查询参数：库房分类ID（与产品档案 fd_material.storeroom_id 一致） */
     private Long warehouseCategoryId;
 
@@ -416,6 +419,14 @@ public class StkInventory extends BaseEntity
         this.materialModel = materialModel;
     }
 
+    public String getExcludeMaterialWarehousePairs() {
+        return excludeMaterialWarehousePairs;
+    }
+
+    public void setExcludeMaterialWarehousePairs(String excludeMaterialWarehousePairs) {
+        this.excludeMaterialWarehousePairs = excludeMaterialWarehousePairs;
+    }
+
     public Long getWarehouseCategoryId() {
         return warehouseCategoryId;
     }
@@ -478,6 +489,7 @@ public class StkInventory extends BaseEntity
             .append("material", getMaterial())
             .append("warehouseName", getWarehouseName())
             .append("materialName", getMaterialName())
+            .append("excludeMaterialWarehousePairs", getExcludeMaterialWarehousePairs())
             .append("warehouseCategoryId", getWarehouseCategoryId())
             .append("beginDate", getBeginDate())
             .append("endDate", getEndDate())

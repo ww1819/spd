@@ -678,6 +678,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
+        <if test="excludeMaterialWarehousePairs != null and excludeMaterialWarehousePairs != ''">
+            and find_in_set(concat(stk.material_id, '__', stk.warehouse_id), #{excludeMaterialWarehousePairs}) = 0
+        </if>
         GROUP BY stk.material_id, stk.warehouse_id, w.code, w.name,
                  m.code, m.name, m.speci, m.model, u.unit_name, m.package_speci, m.register_no, m.is_way,
                  wc.warehouse_category_name, fc.finance_category_name
