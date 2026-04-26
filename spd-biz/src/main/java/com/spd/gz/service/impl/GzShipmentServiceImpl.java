@@ -5,16 +5,24 @@ import java.util.Date;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
+import com.alibaba.fastjson2.JSON;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.gz.domain.GzBillEntryChangeLog;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzShipmentEntry;
+import com.spd.gz.mapper.GzBillEntryChangeLogMapper;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,6 +44,7 @@ import com.spd.gz.service.GzLineRefWriteService;
 @Service
 public class GzShipmentServiceImpl implements IGzShipmentService
 {
+    private static final Logger log = LoggerFactory.getLogger(GzShipmentServiceImpl.class);
     @Autowired
     private GzShipmentMapper gzShipmentMapper;
 
@@ -53,6 +62,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
     @Autowired
     private GzLineRefWriteService gzLineRefWriteService;
+
+    @Autowired
+    private GzBillEntryChangeLogMapper gzBillEntryChangeLogMapper;
 
     /**
      * 查询高值出库
@@ -172,8 +184,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setUpdateTime(DateUtils.getNowDate());
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         gzLineRefWriteService.deleteOutboundRefs(gzShipment.getId());
-        gzShipmentMapper.deleteGzShipmentEntryByParenId(gzShipment.getId(), SecurityUtils.getUserIdStr());
-        int filteredCount = insertGzShipmentEntry(gzShipment);
+        int filteredCount = syncGzShipmentEntry(gzShipment);
         gzShipment.setDedupFilteredCount(filteredCount);
         gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return gzShipmentMapper.updateGzShipment(gzShipment);
@@ -550,6 +561,140 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             }
         }
         return filteredCount;
+    }
+
+    /**
+     * 修改单据时明细增量更新：按ID更新/新增，缺失项逻辑删除
+     */
+    public int syncGzShipmentEntry(GzShipment gzShipment)
+    {
+        List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
+        Long parenId = gzShipment.getId();
+        int filteredCount = 0;
+        String userId = SecurityUtils.getUserIdStr();
+        Date now = DateUtils.getNowDate();
+
+        List<Long> existingIds = gzShipmentMapper.selectActiveShipmentEntryIdsByParenId(parenId);
+        Set<Long> remainingIds = new HashSet<>();
+        if (existingIds != null) {
+            remainingIds.addAll(existingIds);
+        }
+        Map<Long, GzShipmentEntry> oldEntryMap = gzShipmentMapper.selectActiveShipmentEntriesByParenId(parenId)
+            .stream().collect(Collectors.toMap(GzShipmentEntry::getId, e -> e, (a, b) -> a));
+
+        if (StringUtils.isNotNull(gzShipmentEntryList))
+        {
+            List<GzShipmentEntry> newList = new ArrayList<GzShipmentEntry>();
+            String tenantId = StringUtils.isNotEmpty(gzShipment.getTenantId())
+                ? gzShipment.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
+            Set<String> dedupRefKeys = new HashSet<>();
+            for (GzShipmentEntry entry : gzShipmentEntryList)
+            {
+                if (entry == null) {
+                    continue;
+                }
+                String refKey = buildShipmentRefDedupKey(entry);
+                if (StringUtils.isNotEmpty(refKey) && dedupRefKeys.contains(refKey)) {
+                    filteredCount++;
+                    continue;
+                }
+
+                entry.setParenId(parenId);
+                entry.setTenantId(tenantId);
+                entry.setDelFlag(0);
+                entry.setWarehouseId(gzShipment.getWarehouseId());
+                entry.setDepartmentId(gzShipment.getDepartmentId());
+                entry.setBillNo(gzShipment.getShipmentNo());
+                entry.setUpdateBy(userId);
+                entry.setUpdateTime(now);
+                if (entry.getSupplierId() == null && StringUtils.isNotEmpty(entry.getBatchNo())) {
+                    GzDepotInventory source = gzDepotInventoryMapper.selectGzDepotInventoryOne(entry.getBatchNo());
+                    if (source != null) {
+                        entry.setSupplierId(source.getSupplierId());
+                    }
+                }
+                if (StringUtils.isEmpty(entry.getBatchNo())) {
+                    entry.setBatchNo(getBatchNumber());
+                }
+
+                if (entry.getId() != null) {
+                    GzShipmentEntry old = oldEntryMap.get(entry.getId());
+                    gzShipmentMapper.updateGzShipmentEntryById(entry);
+                    remainingIds.remove(entry.getId());
+                    if (old != null && isShipmentEntryChanged(old, entry)) {
+                        log.info("GZ_SHIPMENT_ENTRY_CHANGE UPDATE billId={}, entryId={}, before={}, after={}",
+                            parenId, entry.getId(), JSON.toJSONString(old), JSON.toJSONString(entry));
+                        saveEntryChangeLog("GZ_SHIPMENT", parenId, "GZ_SHIPMENT_ENTRY", entry.getId(), "UPDATE", old, entry, userId, gzShipment.getTenantId());
+                    }
+                } else {
+                    entry.setCreateBy(userId);
+                    entry.setCreateTime(now);
+                    newList.add(entry);
+                    log.info("GZ_SHIPMENT_ENTRY_CHANGE INSERT billId={}, entry={}", parenId, JSON.toJSONString(entry));
+                    saveEntryChangeLog("GZ_SHIPMENT", parenId, "GZ_SHIPMENT_ENTRY", null, "INSERT", null, entry, userId, gzShipment.getTenantId());
+                }
+                if (StringUtils.isNotEmpty(refKey)) {
+                    dedupRefKeys.add(refKey);
+                }
+            }
+            if (!newList.isEmpty()) {
+                gzShipmentMapper.batchGzShipmentEntry(newList);
+            }
+        }
+
+        for (Long removedId : remainingIds) {
+            GzShipmentEntry toDelete = new GzShipmentEntry();
+            toDelete.setId(removedId);
+            toDelete.setParenId(parenId);
+            toDelete.setDelFlag(1);
+            toDelete.setUpdateBy(userId);
+            gzShipmentMapper.updateGzShipmentEntryById(toDelete);
+            GzShipmentEntry old = oldEntryMap.get(removedId);
+            log.info("GZ_SHIPMENT_ENTRY_CHANGE DELETE billId={}, entryId={}, before={}",
+                parenId, removedId, JSON.toJSONString(old));
+            saveEntryChangeLog("GZ_SHIPMENT", parenId, "GZ_SHIPMENT_ENTRY", removedId, "DELETE", old, null, userId, gzShipment.getTenantId());
+        }
+        return filteredCount;
+    }
+
+    private void saveEntryChangeLog(String billType, Long billId, String entryType, Long entryId, String actionType,
+                                    Object before, Object after, String operator, String tenantId) {
+        GzBillEntryChangeLog rec = new GzBillEntryChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setBillType(billType);
+        rec.setBillId(billId);
+        rec.setEntryType(entryType);
+        rec.setEntryId(entryId);
+        rec.setActionType(actionType);
+        rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
+        rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
+        rec.setOperator(operator);
+        rec.setChangeTime(DateUtils.getNowDate());
+        rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
+        gzBillEntryChangeLogMapper.insert(rec);
+    }
+
+    private boolean isShipmentEntryChanged(GzShipmentEntry oldRow, GzShipmentEntry newRow) {
+        if (oldRow == null || newRow == null) {
+            return false;
+        }
+        return !java.util.Objects.equals(oldRow.getMaterialId(), newRow.getMaterialId())
+            || !java.util.Objects.equals(oldRow.getQty(), newRow.getQty())
+            || !java.util.Objects.equals(oldRow.getPrice(), newRow.getPrice())
+            || !java.util.Objects.equals(oldRow.getAmt(), newRow.getAmt())
+            || !java.util.Objects.equals(oldRow.getBatchNo(), newRow.getBatchNo())
+            || !java.util.Objects.equals(oldRow.getBatchNumber(), newRow.getBatchNumber())
+            || !java.util.Objects.equals(oldRow.getBeginTime(), newRow.getBeginTime())
+            || !java.util.Objects.equals(oldRow.getEndTime(), newRow.getEndTime())
+            || !java.util.Objects.equals(oldRow.getMasterBarcode(), newRow.getMasterBarcode())
+            || !java.util.Objects.equals(oldRow.getSecondaryBarcode(), newRow.getSecondaryBarcode())
+            || !java.util.Objects.equals(oldRow.getInHospitalCode(), newRow.getInHospitalCode())
+            || !java.util.Objects.equals(oldRow.getSupplierId(), newRow.getSupplierId())
+            || !java.util.Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
+            || !java.util.Objects.equals(oldRow.getDepartmentId(), newRow.getDepartmentId())
+            || !java.util.Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
+            || !java.util.Objects.equals(oldRow.getRemark(), newRow.getRemark());
     }
 
     private String buildShipmentRefDedupKey(GzShipmentEntry e) {

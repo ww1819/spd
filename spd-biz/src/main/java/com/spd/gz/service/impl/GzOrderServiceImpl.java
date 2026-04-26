@@ -3,16 +3,26 @@ package com.spd.gz.service.impl;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
+import com.alibaba.fastjson2.JSON;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.gz.domain.GzBillEntryChangeLog;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzOrderEntry;
 import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
+import com.spd.gz.mapper.GzBillEntryChangeLogMapper;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import com.spd.gz.mapper.SysSheetIdMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +44,7 @@ import java.text.SimpleDateFormat;
 @Service
 public class GzOrderServiceImpl implements IGzOrderService
 {
+    private static final Logger log = LoggerFactory.getLogger(GzOrderServiceImpl.class);
     @Autowired
     private GzOrderMapper gzOrderMapper;
 
@@ -45,6 +56,9 @@ public class GzOrderServiceImpl implements IGzOrderService
 
     @Autowired
     private SysSheetIdMapper sysSheetIdMapper;
+
+    @Autowired
+    private GzBillEntryChangeLogMapper gzBillEntryChangeLogMapper;
 
     /**
      * 查询高值入库
@@ -157,8 +171,7 @@ public class GzOrderServiceImpl implements IGzOrderService
     {
         gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
-        gzOrderMapper.deleteGzOrderEntryByParenId(gzOrder.getId(), SecurityUtils.getUserIdStr());
-        insertGzOrderEntry(gzOrder);
+        syncGzOrderEntry(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);
     }
 
@@ -376,6 +389,117 @@ public class GzOrderServiceImpl implements IGzOrderService
                 gzOrderMapper.batchGzOrderEntry(list);
             }
         }
+    }
+
+    /**
+     * 修改单据时明细增量更新：保留原明细ID，按ID更新；新增无ID明细；移除的明细做逻辑删除
+     */
+    public void syncGzOrderEntry(GzOrder gzOrder)
+    {
+        List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
+        Long parenId = gzOrder.getId();
+        String userId = SecurityUtils.getUserIdStr();
+        Date now = DateUtils.getNowDate();
+
+        List<Long> existingIds = gzOrderMapper.selectActiveOrderEntryIdsByParenId(parenId);
+        Set<Long> remainingIds = new HashSet<>();
+        if (existingIds != null) {
+            remainingIds.addAll(existingIds);
+        }
+        Map<Long, GzOrderEntry> oldEntryMap = gzOrderMapper.selectActiveOrderEntriesByParenId(parenId)
+            .stream().collect(Collectors.toMap(GzOrderEntry::getId, e -> e, (a, b) -> a));
+
+        if (StringUtils.isNotNull(gzOrderEntryList))
+        {
+            List<GzOrderEntry> newList = new ArrayList<GzOrderEntry>();
+            for (GzOrderEntry entry : gzOrderEntryList)
+            {
+                if (entry == null) {
+                    continue;
+                }
+                entry.setParenId(parenId);
+                if (StringUtils.isEmpty(entry.getBatchNo())) {
+                    entry.setBatchNo(getBatchNumber());
+                }
+                entry.setDelFlag(0);
+                entry.setSupplierId(gzOrder.getSupplerId());
+                entry.setWarehouseId(gzOrder.getWarehouseId());
+                entry.setBillNo(gzOrder.getOrderNo());
+                entry.setUpdateBy(userId);
+                entry.setUpdateTime(now);
+
+                if (entry.getId() != null) {
+                    GzOrderEntry old = oldEntryMap.get(entry.getId());
+                    gzOrderMapper.updateGzOrderEntryById(entry);
+                    remainingIds.remove(entry.getId());
+                    if (old != null && isOrderEntryChanged(old, entry)) {
+                        log.info("GZ_ORDER_ENTRY_CHANGE UPDATE billId={}, entryId={}, before={}, after={}",
+                            parenId, entry.getId(), JSON.toJSONString(old), JSON.toJSONString(entry));
+                        saveEntryChangeLog("GZ_ORDER", parenId, "GZ_ORDER_ENTRY", entry.getId(), "UPDATE", old, entry, userId, gzOrder.getTenantId());
+                    }
+                } else {
+                    entry.setCreateBy(userId);
+                    entry.setCreateTime(now);
+                    newList.add(entry);
+                    log.info("GZ_ORDER_ENTRY_CHANGE INSERT billId={}, entry={}", parenId, JSON.toJSONString(entry));
+                    saveEntryChangeLog("GZ_ORDER", parenId, "GZ_ORDER_ENTRY", null, "INSERT", null, entry, userId, gzOrder.getTenantId());
+                }
+            }
+
+            if (!newList.isEmpty()) {
+                gzOrderMapper.batchGzOrderEntry(newList);
+            }
+        }
+
+        for (Long removedId : remainingIds) {
+            GzOrderEntry toDelete = new GzOrderEntry();
+            toDelete.setId(removedId);
+            toDelete.setParenId(parenId);
+            toDelete.setDelFlag(1);
+            toDelete.setUpdateBy(userId);
+            gzOrderMapper.updateGzOrderEntryById(toDelete);
+            GzOrderEntry old = oldEntryMap.get(removedId);
+            log.info("GZ_ORDER_ENTRY_CHANGE DELETE billId={}, entryId={}, before={}",
+                parenId, removedId, JSON.toJSONString(old));
+            saveEntryChangeLog("GZ_ORDER", parenId, "GZ_ORDER_ENTRY", removedId, "DELETE", old, null, userId, gzOrder.getTenantId());
+        }
+    }
+
+    private void saveEntryChangeLog(String billType, Long billId, String entryType, Long entryId, String actionType,
+                                    Object before, Object after, String operator, String tenantId) {
+        GzBillEntryChangeLog rec = new GzBillEntryChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setBillType(billType);
+        rec.setBillId(billId);
+        rec.setEntryType(entryType);
+        rec.setEntryId(entryId);
+        rec.setActionType(actionType);
+        rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
+        rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
+        rec.setOperator(operator);
+        rec.setChangeTime(DateUtils.getNowDate());
+        rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
+        gzBillEntryChangeLogMapper.insert(rec);
+    }
+
+    private boolean isOrderEntryChanged(GzOrderEntry oldRow, GzOrderEntry newRow) {
+        if (oldRow == null || newRow == null) {
+            return false;
+        }
+        return !java.util.Objects.equals(oldRow.getMaterialId(), newRow.getMaterialId())
+            || !java.util.Objects.equals(oldRow.getQty(), newRow.getQty())
+            || !java.util.Objects.equals(oldRow.getPrice(), newRow.getPrice())
+            || !java.util.Objects.equals(oldRow.getAmt(), newRow.getAmt())
+            || !java.util.Objects.equals(oldRow.getBatchNo(), newRow.getBatchNo())
+            || !java.util.Objects.equals(oldRow.getBatchNumber(), newRow.getBatchNumber())
+            || !java.util.Objects.equals(oldRow.getBeginTime(), newRow.getBeginTime())
+            || !java.util.Objects.equals(oldRow.getEndTime(), newRow.getEndTime())
+            || !java.util.Objects.equals(oldRow.getMasterBarcode(), newRow.getMasterBarcode())
+            || !java.util.Objects.equals(oldRow.getSecondaryBarcode(), newRow.getSecondaryBarcode())
+            || !java.util.Objects.equals(oldRow.getSupplierId(), newRow.getSupplierId())
+            || !java.util.Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
+            || !java.util.Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
+            || !java.util.Objects.equals(oldRow.getRemark(), newRow.getRemark());
     }
 
     public String getBatchNumber() {

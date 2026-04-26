@@ -77,6 +77,21 @@ public interface GzOrderMapper
     int updateGzOrderEntry(GzOrderEntry entry);
 
     /**
+     * 查询主单下有效明细ID列表
+     */
+    List<Long> selectActiveOrderEntryIdsByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 查询主单下有效明细
+     */
+    List<GzOrderEntry> selectActiveOrderEntriesByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 按明细ID更新高值入库明细（增量更新）
+     */
+    int updateGzOrderEntryById(GzOrderEntry entry);
+
+    /**
      * 根据院内码查询是否有未出库的出库单
      * @param inHospitalCode 院内码
      * @return 出库单号列表

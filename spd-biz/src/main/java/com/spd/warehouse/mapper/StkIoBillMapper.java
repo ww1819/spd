@@ -120,6 +120,21 @@ public interface StkIoBillMapper
     public int deleteStkIoBillEntryByParenId(@Param("parenId") Long parenId, @Param("deleteBy") String deleteBy, @Param("deleteTime") java.util.Date deleteTime);
 
     /**
+     * 查询主表下未删除的明细ID
+     */
+    List<Long> selectActiveStkIoBillEntryIdsByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 查询主表下未删除的明细
+     */
+    List<StkIoBillEntry> selectActiveStkIoBillEntriesByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 按明细ID更新（仅未删除行）
+     */
+    int updateStkIoBillEntryById(StkIoBillEntry stkIoBillEntry);
+
+    /**
      * 查询出入库表当天最大的单号
      * @param date 当天日期
      * @return

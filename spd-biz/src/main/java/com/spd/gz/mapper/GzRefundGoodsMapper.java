@@ -94,4 +94,19 @@ public interface GzRefundGoodsMapper
      * @return
      */
     int updateGzRefundGoodsEntry(GzRefundGoodsEntry entry);
+
+    /**
+     * 查询主单下有效明细ID列表
+     */
+    List<Long> selectActiveRefundGoodsEntryIdsByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 查询主单下有效明细
+     */
+    List<GzRefundGoodsEntry> selectActiveRefundGoodsEntriesByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 按明细ID更新退货/退库明细（增量更新）
+     */
+    int updateGzRefundGoodsEntryById(GzRefundGoodsEntry entry);
 }

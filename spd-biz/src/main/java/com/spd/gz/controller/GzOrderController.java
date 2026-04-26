@@ -135,10 +135,18 @@ public class GzOrderController extends BaseController
                     System.out.println("出库明细 - materialId: " + entry.getMaterialId() + ", qty: " + entry.getQty() + ", inHospitalCode: " + entry.getInHospitalCode());
                 }
             }
-            return toAjax(gzShipmentService.insertGzShipment(gzShipment));
+            int rows = gzShipmentService.insertGzShipment(gzShipment);
+            if (rows > 0) {
+                return AjaxResult.success(gzShipment.getId());
+            }
+            return AjaxResult.error("新增失败");
         } else {
             // 默认保存到入库表
-            return toAjax(gzOrderService.insertGzOrder(gzOrder));
+            int rows = gzOrderService.insertGzOrder(gzOrder);
+            if (rows > 0) {
+                return AjaxResult.success(gzOrder.getId());
+            }
+            return AjaxResult.error("新增失败");
         }
     }
 

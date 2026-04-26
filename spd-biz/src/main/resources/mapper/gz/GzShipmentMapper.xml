@@ -219,5 +219,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </trim>
         where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
+
+    <select id="selectActiveShipmentEntryIdsByParenId" resultType="Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id from gz_shipment_entry
+        where paren_id = #{parenId}
+          and del_flag != 1
+          and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectActiveShipmentEntriesByParenId" resultType="GzShipmentEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time,
+               master_barcode, secondary_barcode, in_hospital_code, supplier_id, warehouse_id, department_id,
+               bill_no, remark, del_flag
+        from gz_shipment_entry
+        where paren_id = #{parenId}
+          and del_flag != 1
+          and tenant_id = #{scopedTenantId}
+    </select>
+
+    <update id="updateGzShipmentEntryById" parameterType="GzShipmentEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_shipment_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="amt != null">amt = #{amt},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchNumber != null">batch_number = #{batchNumber},</if>
+            <if test="beginTime != null">begin_time = #{beginTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="masterBarcode != null">master_barcode = #{masterBarcode},</if>
+            <if test="secondaryBarcode != null">secondary_barcode = #{secondaryBarcode},</if>
+            <if test="inHospitalCode != null">in_hospital_code = #{inHospitalCode},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="billNo != null">bill_no = #{billNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now(),
+        </trim>
+        where id = #{id}
+          and paren_id = #{parenId}
+          and tenant_id = #{scopedTenantId}
+    </update>
 </mapper>
 

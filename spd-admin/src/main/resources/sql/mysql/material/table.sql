@@ -2382,4 +2382,44 @@ INSERT IGNORE INTO `sys_print_doc_rows` (`doc_kind`, `rows_per_page`, `create_by
 ('REFUND_GOODS', 6, 'system', '退货');
 /
 
+-- 高值单据明细变更审计（入库/出库/退货/退库通用）
+CREATE TABLE IF NOT EXISTS `gz_bill_entry_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `bill_type` varchar(32) NOT NULL COMMENT '单据类型：GZ_ORDER/GZ_SHIPMENT/GZ_REFUND_GOODS/GZ_REFUND_DEPOT',
+  `bill_id` bigint(20) NOT NULL COMMENT '单据主表ID',
+  `entry_type` varchar(64) NOT NULL COMMENT '明细类型：如GZ_ORDER_ENTRY',
+  `entry_id` bigint(20) DEFAULT NULL COMMENT '明细ID（新增时可能为空）',
+  `action_type` varchar(16) NOT NULL COMMENT '变更动作：INSERT/UPDATE/DELETE',
+  `before_json` longtext COMMENT '变更前快照JSON',
+  `after_json` longtext COMMENT '变更后快照JSON',
+  `operator` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_becl_bill` (`bill_type`,`bill_id`),
+  KEY `idx_gz_becl_time` (`change_time`),
+  KEY `idx_gz_becl_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值单据明细变更审计表';
+/
+
+-- 低值单据明细变更审计（到货验收/入库审核/退货申请/退货审核/出库申请/出库审核/退库申请/退库审核）
+CREATE TABLE IF NOT EXISTS `stk_bill_entry_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `bill_type` varchar(32) NOT NULL COMMENT '单据类型：STK_IO_BILL_101/201/301/401 等',
+  `bill_id` bigint(20) NOT NULL COMMENT '单据主表ID',
+  `entry_type` varchar(64) NOT NULL COMMENT '明细类型：如STK_IO_BILL_ENTRY',
+  `entry_id` bigint(20) DEFAULT NULL COMMENT '明细ID（新增时可能为空）',
+  `action_type` varchar(16) NOT NULL COMMENT '变更动作：INSERT/UPDATE/DELETE',
+  `before_json` longtext COMMENT '变更前快照JSON',
+  `after_json` longtext COMMENT '变更后快照JSON',
+  `operator` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_stk_becl_bill` (`bill_type`,`bill_id`),
+  KEY `idx_stk_becl_time` (`change_time`),
+  KEY `idx_stk_becl_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='低值单据明细变更审计表';
+/
+
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

@@ -905,6 +905,70 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
+    <select id="selectActiveStkIoBillEntryIdsByParenId" resultType="Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id
+        from stk_io_bill_entry
+        where paren_id = #{parenId}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
+    </select>
+
+    <select id="selectActiveStkIoBillEntriesByParenId" resultType="StkIoBillEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model,
+               material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time,
+               del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode,
+               suppler_id, settlement_type, wh_apply_entry_id, tenant_id, create_by, create_time, update_by, update_time,
+               delete_by, delete_time
+        from stk_io_bill_entry
+        where paren_id = #{parenId}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
+    </select>
+
+    <update id="updateStkIoBillEntryById" parameterType="StkIoBillEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="parenId != null">paren_id = #{parenId},</if>
+            <if test="billNo != null">bill_no = #{billNo},</if>
+            <if test="commodityId != null">commodity_id = #{commodityId},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="materialSpeci != null">material_speci = #{materialSpeci},</if>
+            <if test="materialModel != null">material_model = #{materialModel},</if>
+            <if test="materialFactoryId != null">material_factory_id = #{materialFactoryId},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="amt != null">amt = #{amt},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchNumber != null">batch_number = #{batchNumber},</if>
+            <if test="beginTime != null">begin_time = #{beginTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="kcNo != null">kc_no = #{kcNo},</if>
+            <if test="stkInventoryId != null">stk_inventory_id = #{stkInventoryId},</if>
+            <if test="depInventoryId != null">dep_inventory_id = #{depInventoryId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>
+            <if test="subBarcode != null">sub_barcode = #{subBarcode},</if>
+            <if test="supplerId != null">suppler_id = #{supplerId},</if>
+            <if test="settlementType != null">settlement_type = #{settlementType},</if>
+            <if test="whApplyEntryId != null">wh_apply_entry_id = #{whApplyEntryId},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteTime != null">delete_time = #{deleteTime},</if>
+        </trim>
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
+    </update>
+
     <insert id="batchStkIoBillEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, tenant_id) values
