@@ -248,9 +248,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchGzOrderEntry">
-        insert into gz_order_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, master_barcode, secondary_barcode, supplier_id, warehouse_id, bill_no, tenant_id, create_by, create_time, update_by, update_time) values
+        insert into gz_order_entry( paren_id, material_id, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, master_barcode, secondary_barcode, supplier_id, warehouse_id, bill_no, tenant_id, create_by, create_time, update_by, update_time) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.supplierId},
+            ( #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.supplierId},
               #{item.warehouseId}, #{item.billNo}, (select t.tenant_id from gz_order t where t.id = #{item.parenId} limit 1), #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
     </insert>
