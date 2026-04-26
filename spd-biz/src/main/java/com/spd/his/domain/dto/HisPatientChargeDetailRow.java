@@ -39,4 +39,6 @@ public class HisPatientChargeDetailRow
     private Date createTime;
     private BigDecimal highValueStockQty;
     private BigDecimal lowValueStockQty;
+    /** 收费项目高低值：1高值 2低值（his_charge_item_mirror.value_level） */
+    private String valueLevel;
 }

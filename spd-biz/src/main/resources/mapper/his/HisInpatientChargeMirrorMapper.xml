@@ -61,6 +61,7 @@
         <result property="processBy" column="process_by"/>
         <result property="highValueStockQty" column="high_value_stock_qty"/>
         <result property="lowValueStockQty" column="low_value_stock_qty"/>
+        <result property="valueLevel" column="value_level"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -94,7 +95,8 @@
         select
             m.*,
             ifnull(gzq.stock_qty, 0) as high_value_stock_qty,
-            ifnull(lzq.stock_qty, 0) as low_value_stock_qty
+            ifnull(lzq.stock_qty, 0) as low_value_stock_qty,
+            cim.value_level as value_level
         from his_inpatient_charge_mirror m
         left join (
             select
@@ -142,6 +144,9 @@
           on lzq.tenant_id = m.tenant_id
          and lzq.his_dept_code = trim(m.dept_code)
          and lzq.his_charge_item_id = trim(m.charge_item_id)
+        left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+            and trim(cim.charge_item_id) = trim(m.charge_item_id)
+            and (cim.deleted_flag is null or cim.deleted_flag = 0)
         where m.tenant_id = #{tenantId}
         <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
         <if test="inpatientNo != null and inpatientNo != ''"> and m.inpatient_no like concat('%', #{inpatientNo}, '%')</if>
@@ -166,6 +171,7 @@
         <if test="endChargeDate != null"> and m.charge_date &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+        <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
         <include refid="inpatientMirrorDepartmentScopeFilter"/>
         <choose>
             <when test="orderByColumn == 'highValueStockQty'">
@@ -219,7 +225,8 @@
                 m.process_by as process_by,
                 m.create_time as create_time,
                 ifnull(gzq.stock_qty, 0) as high_value_stock_qty,
-                ifnull(lzq.stock_qty, 0) as low_value_stock_qty
+                ifnull(lzq.stock_qty, 0) as low_value_stock_qty,
+                cim.value_level as value_level
             from his_inpatient_charge_mirror m
             left join (
                 select d.tenant_id as tenant_id, trim(d.his_id) as his_dept_code, trim(fm.his_charge_item_id) as his_charge_item_id,
@@ -243,6 +250,9 @@
                   and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
                 group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
             ) lzq on lzq.tenant_id = m.tenant_id and lzq.his_dept_code = trim(m.dept_code) and lzq.his_charge_item_id = trim(m.charge_item_id)
+            left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+                and trim(cim.charge_item_id) = trim(m.charge_item_id)
+                and (cim.deleted_flag is null or cim.deleted_flag = 0)
             where m.tenant_id = #{tenantId}
             <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
             <if test="visitNo != null and visitNo != ''"> and m.inpatient_no like concat('%', #{visitNo}, '%')</if>
@@ -262,6 +272,7 @@
             <if test="endChargeDate != null"> and m.charge_date &lt;= #{endChargeDate}</if>
             <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
             <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+            <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
             <if test="params != null and params.scopeDeptUserId != null">
                 and exists (
                     select 1 from fd_department dscope
@@ -312,7 +323,8 @@
                 m.process_by as process_by,
                 m.create_time as create_time,
                 ifnull(gzq.stock_qty, 0) as high_value_stock_qty,
-                ifnull(lzq.stock_qty, 0) as low_value_stock_qty
+                ifnull(lzq.stock_qty, 0) as low_value_stock_qty,
+                cim.value_level as value_level
             from his_outpatient_charge_mirror m
             left join (
                 select d.tenant_id as tenant_id, trim(d.his_id) as his_dept_code, trim(fm.his_charge_item_id) as his_charge_item_id,
@@ -336,6 +348,9 @@
                   and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
                 group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
             ) lzq on lzq.tenant_id = m.tenant_id and lzq.his_dept_code = trim(m.clinic_code) and lzq.his_charge_item_id = trim(m.charge_item_id)
+            left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+                and trim(cim.charge_item_id) = trim(m.charge_item_id)
+                and (cim.deleted_flag is null or cim.deleted_flag = 0)
             where m.tenant_id = #{tenantId}
             <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
             <if test="visitNo != null and visitNo != ''"> and m.outpatient_no like concat('%', #{visitNo}, '%')</if>
@@ -355,6 +370,7 @@
             <if test="endChargeDate != null"> and <include refid="allMirrorOutpatientChargeTsExpr"/> &lt;= #{endChargeDate}</if>
             <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
             <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+            <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
             <if test="params != null and params.scopeDeptUserId != null">
                 and exists (
                     select 1 from fd_department dscope

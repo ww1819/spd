@@ -24,6 +24,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     private Long departmentId;
     /** Y=已处理 N=未处理 */
     private String processed;
+    /** 收费项目高低值筛选：1高值 2低值，空=全部 */
+    private String valueLevel;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date beginChargeDate;

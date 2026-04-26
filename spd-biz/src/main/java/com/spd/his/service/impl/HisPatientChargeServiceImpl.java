@@ -39,6 +39,7 @@ import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.mapper.HisChargeFetchBatchMapper;
 import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
 import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
@@ -51,6 +52,7 @@ import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
+import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
 import com.spd.system.service.ITenantScopeService;
@@ -84,6 +86,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private FdDepartmentMapper fdDepartmentMapper;
+
+    @Autowired
+    private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
 
     @Override
     public HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body)
@@ -239,6 +244,25 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         PageUtils.startPage();
         return hisInpatientChargeMirrorMapper.selectAllMirrorList(q);
+    }
+
+    @Override
+    public List<HisMirrorConsumeRecordVo> listMirrorConsumeRecords(String visitKind, String mirrorRowId)
+    {
+        assertTenantAllowed();
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isAnyBlank(tenantId, visitKind, mirrorRowId))
+        {
+            return new ArrayList<>();
+        }
+        String vk = normalizeVisitKindForAuth(visitKind);
+        if (!"INPATIENT".equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        String rowId = StringUtils.trimToEmpty(mirrorRowId);
+        assertMirrorRowDepartmentAllowed(tenantId, vk, rowId);
+        return hisMirrorConsumeLinkMapper.selectConsumeRecordsByMirrorRow(tenantId, vk, rowId);
     }
 
     @Override

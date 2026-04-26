@@ -51,6 +51,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private BigDecimal highValueStockQty;
     /** 该科室该项目对应的低值耗材库存数量 */
     private BigDecimal lowValueStockQty;
+    /** 收费项目高低值：1高值 2低值（来自 his_charge_item_mirror，仅查询展示） */
+    private String valueLevel;
 
     private Long departmentId;
     private String processed;

@@ -31,6 +31,7 @@ import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
+import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.service.IHisPatientChargeService;
 
 /**
@@ -68,6 +69,18 @@ public class HisPatientChargeController extends BaseController
         query.setTenantId(SecurityUtils.getCustomerId());
         List<HisPatientChargeDetailRow> list = hisPatientChargeService.selectAllMirrorList(query);
         return getDataTable(list);
+    }
+
+    /**
+     * 某条计费明细关联的科室消耗记录（追溯 his_mirror_consume_link）
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @GetMapping("/mirror/consumeRecords")
+    public AjaxResult mirrorConsumeRecords(@RequestParam("visitKind") String visitKind,
+        @RequestParam("mirrorRowId") String mirrorRowId)
+    {
+        List<HisMirrorConsumeRecordVo> list = hisPatientChargeService.listMirrorConsumeRecords(visitKind, mirrorRowId);
+        return success(list);
     }
 
     @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
