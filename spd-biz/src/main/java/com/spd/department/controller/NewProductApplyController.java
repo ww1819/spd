@@ -34,6 +34,18 @@ public class NewProductApplyController extends BaseController
     @Autowired
     private INewProductApplyService newProductApplyService;
 
+    private TableDataInfo buildList(NewProductApply newProductApply)
+    {
+        startPage();
+        List<NewProductApply> list = newProductApplyService.selectNewProductApplyList(newProductApply);
+        return getDataTable(list);
+    }
+
+    private AjaxResult buildGetInfo(Long id)
+    {
+        return success(newProductApplyService.selectNewProductApplyById(id));
+    }
+
     /**
      * 查询新品申购申请列表
      */
@@ -41,9 +53,17 @@ public class NewProductApplyController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(NewProductApply newProductApply)
     {
-        startPage();
-        List<NewProductApply> list = newProductApplyService.selectNewProductApplyList(newProductApply);
-        return getDataTable(list);
+        return buildList(newProductApply);
+    }
+
+    /**
+     * 列表（仅需登录）：与 {@link #list} 数据一致，租户由 Mapper/SQL 约束；供仅有菜单入口无 list 权限用户使用。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/list")
+    public TableDataInfo pickList(NewProductApply newProductApply)
+    {
+        return buildList(newProductApply);
     }
 
     /**
@@ -66,7 +86,17 @@ public class NewProductApplyController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(newProductApplyService.selectNewProductApplyById(id));
+        return buildGetInfo(id);
+    }
+
+    /**
+     * 详情（仅需登录）：与 {@link #getInfo} 数据一致。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/{id}")
+    public AjaxResult pickGetInfo(@PathVariable("id") Long id)
+    {
+        return buildGetInfo(id);
     }
 
     /**

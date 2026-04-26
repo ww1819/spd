@@ -232,6 +232,12 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：仓库ID（按仓库定数监测范围过滤） */
     private Long warehouseId;
 
+    /**
+     * 查询参数：为 true 时不应用「本仓库已有未删除定数行」的 EXISTS 过滤。
+     * 由定数监测「新增明细」专用接口置为 true，避免与 excludeMaterialIds 叠加导致无数据、或删定数后无法再选该产品。
+     */
+    private Boolean skipWarehouseFixedNumberExists;
+
     /** 是否跟台 */
     @Excel(name = "是否跟台", readConverterExp = "1=是,2=否")
     private String isFollow;

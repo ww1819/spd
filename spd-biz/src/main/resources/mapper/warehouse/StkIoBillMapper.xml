@@ -1644,6 +1644,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         group by
             case

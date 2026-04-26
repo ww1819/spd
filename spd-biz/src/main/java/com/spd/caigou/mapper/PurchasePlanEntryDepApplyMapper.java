@@ -3,6 +3,7 @@ package com.spd.caigou.mapper;
 import com.spd.caigou.domain.PurchasePlanEntryDepApply;
 import com.spd.caigou.domain.vo.ApplyBillHeaderVO;
 import com.spd.caigou.domain.vo.ApplyDetailVO;
+import com.spd.caigou.domain.vo.PurchasePlanEntryDepRefRow;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -35,4 +36,7 @@ public interface PurchasePlanEntryDepApplyMapper {
 
     /** 根据采购计划明细ID查询关联的科室申购单明细ID列表（未逻辑删除，用于回填 entry.depApplyEntryIds） */
     List<Long> selectDepApplyEntryIdsByEntryId(@Param("entryId") Long entryId);
+
+    /** 按计划主键一次查出所有明细与 dep 申购明细关联，避免按行循环查询 */
+    List<PurchasePlanEntryDepRefRow> selectDepApplyRefsByPlanId(@Param("planId") Long planId);
 }
