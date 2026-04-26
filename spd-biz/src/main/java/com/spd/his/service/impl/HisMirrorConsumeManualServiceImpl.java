@@ -32,6 +32,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.his.domain.HisInpatientChargeMirror;
+import com.spd.his.domain.HisChargeItemMirror;
 import com.spd.his.domain.HisMirrorConsumeLink;
 import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
@@ -42,6 +43,7 @@ import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisChargeItemMirrorMapper;
 import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.service.IHisMirrorConsumeManualService;
@@ -78,6 +80,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private GzDepInventoryMapper gzDepInventoryMapper;
     @Autowired
     private IDeptBatchConsumeService deptBatchConsumeService;
+    @Autowired
+    private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -220,6 +224,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
+        assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, mat);
         GzDepInventory hit = findGzByNormalizedCode(tenantId, dept.getId(), mat.getId(), codeRaw);
         if (hit.getQty() == null || hit.getQty().compareTo(BigDecimal.ZERO) <= 0)
         {
@@ -265,6 +270,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
+        assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, mat);
         Map<Long, BigDecimal> mergedByGz = new LinkedHashMap<>();
         for (HisMirrorHighApplyLine ln : body.getLines())
         {
@@ -585,6 +591,41 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         throw new ServiceException("未匹配到院内码对应的高值科室库存（请确认已对照且条码属于本科室）");
     }
 
+    private void assertChargeItemValueLevelForLow(String tenantId, String chargeItemId, FdMaterial mat)
+    {
+        String level = resolveChargeItemValueLevel(tenantId, chargeItemId, mat);
+        if ("1".equals(level))
+        {
+            throw new ServiceException("收费项目为高值属性，请使用高值扫码处理");
+        }
+    }
+
+    private void assertChargeItemValueLevelForHigh(String tenantId, String chargeItemId, FdMaterial mat)
+    {
+        String level = resolveChargeItemValueLevel(tenantId, chargeItemId, mat);
+        if (!"1".equals(level))
+        {
+            throw new ServiceException("收费项目为低值属性，请使用低值自动处理");
+        }
+    }
+
+    private String resolveChargeItemValueLevel(String tenantId, String chargeItemId, FdMaterial mat)
+    {
+        if (StringUtils.isNotBlank(chargeItemId))
+        {
+            HisChargeItemMirror ci = hisChargeItemMirrorMapper.selectByTenantAndChargeItemId(tenantId, chargeItemId.trim());
+            if (ci != null && StringUtils.isNotBlank(ci.getValueLevel()))
+            {
+                return ci.getValueLevel().trim();
+            }
+        }
+        if (mat != null && "1".equals(StringUtils.trimToEmpty(mat.getIsGz())))
+        {
+            return "1";
+        }
+        return "2";
+    }
+
     private int appendPiecesForLine(String tenantId, String fetchBatchId, String visitKind, String mirrorRowId,
         String deptHisCode, String chargeItemId, BigDecimal qty, List<AllocPiece> out)
     {
@@ -594,6 +635,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         FdDepartment dept = resolveDepartment(tenantId, deptHisCode, mirrorRowId);
         FdMaterial mat = resolveMaterial(tenantId, chargeItemId, mirrorRowId);
+        assertChargeItemValueLevelForLow(tenantId, chargeItemId, mat);
         out.addAll(allocateLine(tenantId, dept.getId(), mat.getId(), qty, mirrorRowId, visitKind, fetchBatchId));
         return 0;
     }

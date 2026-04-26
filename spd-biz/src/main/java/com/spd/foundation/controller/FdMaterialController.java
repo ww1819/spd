@@ -149,7 +149,7 @@ public class FdMaterialController extends BaseController
     /**
      * HIS 收费项目列表（仅衡水三院租户，来源：v_charge_item）
      */
-    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @PreAuthorize("@ss.hasPermi('foundation:material:query') or @ss.hasPermi('foundation:chargeItem:query')")
     @GetMapping("/hisChargeItem/list")
     public TableDataInfo listHisChargeItem(
         @RequestParam(value = "name", required = false) String name,
@@ -157,6 +157,7 @@ public class FdMaterialController extends BaseController
         @RequestParam(value = "chargeItemId", required = false) String chargeItemId,
         @RequestParam(value = "itemCode", required = false) String itemCode,
         @RequestParam(value = "referredCode", required = false) String referredCode,
+        @RequestParam(value = "valueLevel", required = false) String valueLevel,
         @RequestParam(value = "pageNum", required = false) Integer pageNum,
         @RequestParam(value = "pageSize", required = false) Integer pageSize)
     {
@@ -169,7 +170,7 @@ public class FdMaterialController extends BaseController
         if (pageNum == null || pageNum < 1) pageNum = 1;
         if (pageSize == null || pageSize < 1) pageSize = 10;
         PageHelper.startPage(pageNum, pageSize);
-        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode);
+        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel);
         List<Map<String, Object>> rows = new ArrayList<>();
         for (HisChargeItemMirror r : mirrorRows)
         {
@@ -181,15 +182,68 @@ public class FdMaterialController extends BaseController
             item.put("chargeModel", r.getSpecModel());
             item.put("chargePrice", r.getPrice());
             item.put("referredCode", r.getReferredCode());
+            item.put("valueLevel", r.getValueLevel());
             rows.add(item);
         }
         return getDataTable(rows);
     }
 
     /**
+     * 导出 HIS 收费项目镜像（含高低值属性）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:export') or @ss.hasPermi('foundation:chargeItem:export')")
+    @Log(title = "导出HIS收费项目", businessType = BusinessType.EXPORT)
+    @PostMapping("/hisChargeItem/export")
+    public void exportHisChargeItem(
+        HttpServletResponse response,
+        @RequestParam(value = "name", required = false) String name,
+        @RequestParam(value = "speci", required = false) String speci,
+        @RequestParam(value = "chargeItemId", required = false) String chargeItemId,
+        @RequestParam(value = "itemCode", required = false) String itemCode,
+        @RequestParam(value = "referredCode", required = false) String referredCode,
+        @RequestParam(value = "valueLevel", required = false) String valueLevel)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        List<HisChargeItemMirror> list = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel);
+        ExcelUtil<HisChargeItemMirror> util = new ExcelUtil<>(HisChargeItemMirror.class);
+        util.exportExcel(response, list, "收费项目维护数据");
+    }
+
+    /**
+     * 维护收费项目高低值属性（1高值 2低值）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
+    @Log(title = "维护收费项目高低值属性", businessType = BusinessType.UPDATE)
+    @PutMapping("/hisChargeItem/valueLevel")
+    public AjaxResult updateHisChargeItemValueLevel(@RequestBody Map<String, Object> body)
+    {
+        if (body == null || body.get("chargeItemId") == null || body.get("valueLevel") == null)
+        {
+            return error("chargeItemId 和 valueLevel 不能为空");
+        }
+        String chargeItemId = String.valueOf(body.get("chargeItemId")).trim();
+        String valueLevel = String.valueOf(body.get("valueLevel")).trim();
+        if (StringUtils.isEmpty(chargeItemId))
+        {
+            return error("chargeItemId 不能为空");
+        }
+        if (!"1".equals(valueLevel) && !"2".equals(valueLevel))
+        {
+            return error("valueLevel 仅支持 1(高值) 或 2(低值)");
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        int rows = hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, valueLevel);
+        if (rows <= 0)
+        {
+            return error("收费项目不存在或不可维护");
+        }
+        return success("保存成功");
+    }
+
+    /**
      * 抓取 HIS 收费项目到本地镜像表 his_charge_item_mirror
      */
-    @PreAuthorize("@ss.hasPermi('foundation:material:query')")
+    @PreAuthorize("@ss.hasPermi('foundation:material:query') or @ss.hasPermi('foundation:chargeItem:fetch')")
     @Log(title = "抓取HIS收费项目", businessType = BusinessType.OTHER)
     @PostMapping("/hisChargeItem/fetch")
     public AjaxResult fetchHisChargeItem()

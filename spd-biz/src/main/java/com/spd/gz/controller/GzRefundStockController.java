@@ -22,112 +22,114 @@ import com.spd.gz.domain.GzRefundGoods;
 import com.spd.gz.service.IGzRefundGoodsService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+
 /**
- * 高值备货退货 Controller
+ * 高值备货退库 Controller
  *
  * @author spd
  * @date 2024-06-11
  */
 @RestController
-@RequestMapping("/gz/goods")
-public class GzRefundGoodsController extends BaseController
+@RequestMapping("/gz/refundStock")
+public class GzRefundStockController extends BaseController
 {
     @Autowired
     private IGzRefundGoodsService gzRefundGoodsService;
 
     /**
-     * 查询高值备货退货列表
+     * 查询高值备货退库列表
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzRefundGoods gzRefundGoods)
     {
         startPage();
-        List<GzRefundGoods> list = gzRefundGoodsService.selectGzRefundGoodsList(gzRefundGoods);
+        List<GzRefundGoods> list = gzRefundGoodsService.selectGzRefundStockList(gzRefundGoods);
         return getDataTable(list);
     }
 
     /**
-     * 导出高值备货退货列表
+     * 导出高值备货退库列表
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:export')")
-    @Log(title = "高值备货退货", businessType = BusinessType.EXPORT)
+    @Log(title = "高值备货退库", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, GzRefundGoods gzRefundGoods)
     {
-        List<GzRefundGoods> list = gzRefundGoodsService.selectGzRefundGoodsList(gzRefundGoods);
+        List<GzRefundGoods> list = gzRefundGoodsService.selectGzRefundStockList(gzRefundGoods);
         ExcelUtil<GzRefundGoods> util = new ExcelUtil<GzRefundGoods>(GzRefundGoods.class);
-        util.exportExcel(response, list, "高值备货退货数据");
+        util.exportExcel(response, list, "高值备货退库数据");
     }
 
     /**
-     * 获取高值备货退货详细信息
+     * 获取高值备货退库详细信息
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(gzRefundGoodsService.selectGzRefundGoodsById(id));
+        return success(gzRefundGoodsService.selectGzRefundStockById(id));
     }
 
     /**
-     * 新增高值备货退货
+     * 新增高值备货退库
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:add')")
-    @Log(title = "高值备货退货", businessType = BusinessType.INSERT)
+    @Log(title = "高值备货退库", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody GzRefundGoods gzRefundGoods)
     {
-        int rows = gzRefundGoodsService.insertGzRefundGoods(gzRefundGoods);
+        int rows = gzRefundGoodsService.insertGzRefundStock(gzRefundGoods);
         if (rows > 0) {
             Integer filteredCount = gzRefundGoods.getDedupFilteredCount();
             String msg = (filteredCount != null && filteredCount > 0)
-                ? String.format("高值备货退货新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
-                : "高值备货退货新增成功";
+                ? String.format("高值备货退库新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "高值备货退库新增成功";
             return AjaxResult.success(msg, gzRefundGoods);
         }
         return AjaxResult.error("新增失败");
     }
 
     /**
-     * 修改高值备货退货
+     * 修改高值备货退库
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:edit')")
-    @Log(title = "高值备货退货", businessType = BusinessType.UPDATE)
+    @Log(title = "高值备货退库", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody GzRefundGoods gzRefundGoods)
     {
-        int rows = gzRefundGoodsService.updateGzRefundGoods(gzRefundGoods);
+        int rows = gzRefundGoodsService.updateGzRefundStock(gzRefundGoods);
         if (rows > 0) {
             Integer filteredCount = gzRefundGoods.getDedupFilteredCount();
             String msg = (filteredCount != null && filteredCount > 0)
-                ? String.format("高值备货退货修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
-                : "高值备货退货修改成功";
+                ? String.format("高值备货退库修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "高值备货退库修改成功";
             return AjaxResult.success(msg, gzRefundGoods);
         }
         return AjaxResult.error("修改失败");
     }
 
     /**
-     * 删除高值备货退货
+     * 删除高值备货退库
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:remove')")
-    @Log(title = "高值备货退货", businessType = BusinessType.DELETE)
-	@DeleteMapping("/{ids}")
+    @Log(title = "高值备货退库", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long ids)
     {
-        return toAjax(gzRefundGoodsService.deleteGzRefundGoodsById(ids));
+        return toAjax(gzRefundGoodsService.deleteGzRefundStockById(ids));
     }
 
     /**
-     * 审核高值备货退货
+     * 审核高值备货退库
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:audit')")
-    @Log(title = "高值备货退货审核", businessType = BusinessType.UPDATE)
-    @PutMapping("/auditGoods")
+    @Log(title = "高值备货退库审核", businessType = BusinessType.UPDATE)
+    @PutMapping("/auditStock")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = gzRefundGoodsService.auditGoods(json.getString("id"));
+        int result = gzRefundGoodsService.auditStock(json.getString("id"));
         return toAjax(result);
     }
 }
+

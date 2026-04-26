@@ -23,4 +23,10 @@
             ) t
         )
     </delete>
+
+    <delete id="deleteByTgtMainIdAndKind">
+        delete from gz_refund_goods_entry_ref
+        where tgt_main_id = #{tgtMainId}
+          and tgt_bill_kind = #{tgtBillKind}
+    </delete>
 </mapper>

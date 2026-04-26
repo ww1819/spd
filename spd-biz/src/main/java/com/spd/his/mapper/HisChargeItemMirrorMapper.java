@@ -11,7 +11,15 @@ public interface HisChargeItemMirrorMapper
         @Param("speci") String speci,
         @Param("chargeItemId") String chargeItemId,
         @Param("itemCode") String itemCode,
-        @Param("referredCode") String referredCode);
+        @Param("referredCode") String referredCode,
+        @Param("valueLevel") String valueLevel);
+
+    HisChargeItemMirror selectByTenantAndChargeItemId(@Param("tenantId") String tenantId,
+        @Param("chargeItemId") String chargeItemId);
+
+    int updateValueLevel(@Param("tenantId") String tenantId,
+        @Param("chargeItemId") String chargeItemId,
+        @Param("valueLevel") String valueLevel);
 
     int markAllDeletedByTenant(@Param("tenantId") String tenantId);
 

@@ -58,8 +58,8 @@ public class GzRefundGoods extends BaseEntity
     private Integer delFlag;
 
     /** 审核日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
 
     /** 审核人 */

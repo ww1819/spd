@@ -56,8 +56,8 @@ public class GzShipment extends BaseEntity
     private String tenantId;
 
     /** 审核日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
 
     /** 高值出库明细信息 */

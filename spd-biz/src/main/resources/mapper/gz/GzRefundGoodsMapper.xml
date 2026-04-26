@@ -312,4 +312,230 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and paren_id = #{parenId}
           and tenant_id = #{scopedTenantId}
     </update>
+
+    <select id="selectGzRefundStockList" parameterType="GzRefundGoods" resultMap="GzRefundGoodsResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select rs.id,
+               rs.refund_no as goods_no,
+               null as suppler_id,
+               rs.refund_date as goods_date,
+               rs.warehouse_id,
+               rs.department_id,
+               rs.refund_status as goods_status,
+               rs.refund_type as goods_type,
+               rs.del_flag,
+               rs.audit_date,
+               rs.audit_by,
+               rs.create_by,
+               rs.create_time,
+               rs.update_by,
+               rs.update_time,
+               rs.remark,
+               null as sId, null as supplierCode, null as supplierName,
+               w.id wId,w.code warehouseCode,w.name warehouseName,
+               d.id dId,d.code departmentCode,d.name departmentName,
+               COALESCE(SUM(rse.amt), 0) as totalAmt
+        from gz_refund_stock rs
+        left join fd_warehouse w on rs.warehouse_id = w.id
+        left join fd_department d on rs.department_id = d.id
+        left join gz_refund_stock_entry rse on rse.paren_id = rs.id and rse.del_flag != 1
+        where rs.del_flag != 1
+          and rs.tenant_id = #{scopedTenantId}
+        <if test="goodsNo != null  and goodsNo != ''"> and rs.refund_no like concat('%', #{goodsNo}, '%')</if>
+        <if test="warehouseId != null "> and rs.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null "> and rs.department_id = #{departmentId}</if>
+        <if test="goodsStatus != null "> and rs.refund_status = #{goodsStatus}</if>
+        <if test="goodsType != null "> and rs.refund_type = #{goodsType}</if>
+        <if test="auditDate != null "> and rs.audit_date = #{auditDate}</if>
+        <choose>
+            <when test="timeField != null and timeField == 'auditDate'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </otherwise>
+        </choose>
+        group by rs.id, rs.refund_no, rs.refund_date, rs.warehouse_id, rs.department_id,
+                 rs.refund_status, rs.refund_type, rs.del_flag, rs.audit_date, rs.audit_by, rs.create_by,
+                 rs.create_time, rs.update_by, rs.update_time, rs.remark,
+                 w.id, w.code, w.name,
+                 d.id, d.code, d.name
+        order by
+            case when rs.refund_status = 2 then 1 else 0 end asc,
+            case when rs.refund_status = 2 then rs.audit_date else null end desc,
+            case when rs.refund_status = 2 then null else rs.create_time end desc,
+            rs.id desc
+    </select>
+
+    <select id="selectGzRefundStockById" parameterType="Long" resultMap="GzRefundGoodsGzRefundGoodsEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select a.id,
+               a.refund_no as goods_no,
+               null as suppler_id,
+               a.refund_date as goods_date,
+               a.warehouse_id,
+               a.department_id,
+               a.refund_status as goods_status,
+               a.refund_type as goods_type,
+               a.del_flag,
+               a.audit_date,
+               a.audit_by,
+               a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+               b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
+               b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
+               null as sub_master_barcode, null as sub_secondary_barcode,
+               b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag,
+               b.supplier_id as sub_supplier_id, b.warehouse_id as sub_warehouse_id, b.department_id as sub_department_id,
+               b.bill_no as sub_bill_no, b.remark as sub_remark
+        from gz_refund_stock a
+        left join gz_refund_stock_entry b on b.paren_id = a.id and b.del_flag != 1
+        where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
+    </select>
+
+    <insert id="insertGzRefundStock" parameterType="GzRefundGoods" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        insert into gz_refund_stock
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="goodsNo != null">refund_no,</if>
+            <if test="goodsDate != null">refund_date,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="goodsStatus != null">refund_status,</if>
+            <if test="goodsType != null">refund_type,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="auditDate != null">audit_date,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+            tenant_id,
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="goodsNo != null">#{goodsNo},</if>
+            <if test="goodsDate != null">#{goodsDate},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="goodsStatus != null">#{goodsStatus},</if>
+            <if test="goodsType != null">#{goodsType},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="auditDate != null">#{auditDate},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+            #{scopedTenantId},
+         </trim>
+    </insert>
+
+    <update id="updateGzRefundStock" parameterType="GzRefundGoods">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_refund_stock
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="goodsNo != null">refund_no = #{goodsNo},</if>
+            <if test="goodsDate != null">refund_date = #{goodsDate},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="goodsStatus != null">refund_status = #{goodsStatus},</if>
+            <if test="goodsType != null">refund_type = #{goodsType},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <delete id="deleteGzRefundStockById" parameterType="Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_refund_stock
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </delete>
+
+    <insert id="batchGzRefundStockEntry">
+        insert into gz_refund_stock_entry(
+            id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code,
+            begin_time, end_time, del_flag, supplier_id, warehouse_id, department_id, bill_no, remark,
+            tenant_id, create_by, create_time, update_by, update_time
+        ) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (
+             #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo},
+             #{item.batchNumber}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag},
+             #{item.supplierId}, #{item.warehouseId}, #{item.departmentId}, #{item.billNo}, #{item.remark},
+             #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteGzRefundStockEntryByParenId" parameterType="Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_refund_stock_entry
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+    </delete>
+
+    <select id="selectActiveRefundStockEntryIdsByParenId" resultType="Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id from gz_refund_stock_entry
+        where paren_id = #{parenId}
+          and del_flag != 1
+          and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectActiveRefundStockEntriesByParenId" resultType="GzRefundGoodsEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, paren_id, material_id, qty, price, amt, batch_no, batch_number,
+               in_hospital_code, begin_time, end_time, supplier_id, warehouse_id,
+               department_id, bill_no, remark, del_flag
+        from gz_refund_stock_entry
+        where paren_id = #{parenId}
+          and del_flag != 1
+          and tenant_id = #{scopedTenantId}
+    </select>
+
+    <update id="updateGzRefundStockEntryById" parameterType="GzRefundGoodsEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_refund_stock_entry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="amt != null">amt = #{amt},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchNumber != null">batch_number = #{batchNumber},</if>
+            <if test="inHospitalCode != null">in_hospital_code = #{inHospitalCode},</if>
+            <if test="beginTime != null">begin_time = #{beginTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="billNo != null">bill_no = #{billNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now(),
+        </trim>
+        where id = #{id}
+          and paren_id = #{parenId}
+          and tenant_id = #{scopedTenantId}
+    </update>
+
+    <select id="selectMaxStockBillNoByPrefix" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(refund_no) from gz_refund_stock
+        where refund_no like concat(#{prefix}, '%', #{date}, '%')
+          and del_flag != 1 and tenant_id = #{scopedTenantId}
+    </select>
 </mapper>
