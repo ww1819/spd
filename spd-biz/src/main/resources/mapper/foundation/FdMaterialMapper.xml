@@ -65,6 +65,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="locationId"    column="location_id"    />
         <result property="hisId"    column="his_id"    />
         <result property="hisChargeItemId"    column="his_charge_item_id"    />
+        <result property="hisChargeItemName"    column="his_charge_item_name"    />
+        <result property="hisChargeItemSpeci"    column="his_charge_item_speci"    />
+        <result property="hisChargeItemPrice"    column="his_charge_item_price"    />
         <result property="selectionReason"    column="selection_reason"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
@@ -115,6 +118,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
             m.his_id,
             m.his_charge_item_id,
+            hci.item_name as his_charge_item_name,
+            hci.spec_model as his_charge_item_speci,
+            hci.price as his_charge_item_price,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
             m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.producer, m.material_level,
             m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
@@ -142,6 +148,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category cwfl on m.finance_category_id = cwfl.finance_category_id
         left join fd_location l on m.location_id = l.location_id
+        left join his_charge_item_mirror hci on hci.tenant_id = m.tenant_id
+            and hci.charge_item_id = m.his_charge_item_id
+            and (hci.deleted_flag is null or hci.deleted_flag != 1)
     </sql>
 
     <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">

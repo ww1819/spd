@@ -282,6 +282,14 @@ public class FdMaterial extends BaseEntity
 
     /** HIS收费项目ID（用于HIS收费项目对照关系） */
     private String hisChargeItemId;
+
+    /** 已对照 HIS 收费项目名称（来自 his_charge_item_mirror，列表展示用，非表字段） */
+    private String hisChargeItemName;
+    /** 已对照 HIS 收费规格（镜像 spec_model，非表字段） */
+    private String hisChargeItemSpeci;
+    /** 已对照 HIS 收费单价（非表字段） */
+    private BigDecimal hisChargeItemPrice;
+
     /** 查询参数：是否HIS对照（1=已对照，0=未对照） */
     private String hisBindStatus;
 
