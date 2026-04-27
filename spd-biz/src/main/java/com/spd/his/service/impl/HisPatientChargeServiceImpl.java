@@ -499,6 +499,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         HisInpatientChargeMirror e = new HisInpatientChargeMirror();
         e.setHisInpatientChargeId(toHisIdString(rs.getObject("inpatient_charge_id")));
+        e.setHisInpatientChargeIdTf(toHisIdString(rs.getObject("inpatient_charge_id_tf")));
         e.setPatientId(toHisIdString(rs.getObject("patient_id")));
         e.setPatientName(rs.getString("patient_name"));
         e.setInpatientNo(rs.getString("inpatient_no"));
@@ -546,6 +547,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         HisOutpatientChargeMirror e = new HisOutpatientChargeMirror();
         e.setHisOutpatientChargeId(toHisIdString(rs.getObject("outpatient_charge_id")));
+        e.setHisOutpatientChargeIdTf(toHisIdString(rs.getObject("outpatient_charge_id_tf")));
         e.setPatientId(toHisIdString(rs.getObject("patient_id")));
         e.setPatientName(rs.getString("patient_name"));
         e.setOutpatientNo(rs.getString("outpatient_no"));
@@ -735,6 +737,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         String raw = String.join("|",
             nz(e.getHisInpatientChargeId()),
+            nz(e.getHisInpatientChargeIdTf()),
             nz(e.getPatientId()),
             nz(e.getChargeItemId()),
             nz(e.getQuantity()),
@@ -749,6 +752,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         String raw = String.join("|",
             nz(e.getHisOutpatientChargeId()),
+            nz(e.getHisOutpatientChargeIdTf()),
             nz(e.getPatientId()),
             nz(e.getChargeItemId()),
             nz(e.getQuantity()),

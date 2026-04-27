@@ -24,6 +24,8 @@ public class HisPatientChargeDetailRow
     /** 展示统一科室/就诊 */
     private String deptDisplayName;
     private String chargeItemId;
+    /** 退费记录对应的原收费明细ID（住院/门诊统一展示） */
+    private String chargeIdTf;
     private String itemName;
     private String specModel;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

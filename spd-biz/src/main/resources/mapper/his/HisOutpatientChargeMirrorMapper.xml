@@ -42,6 +42,7 @@
         <result property="tenantId" column="tenant_id"/>
         <result property="fetchBatchId" column="fetch_batch_id"/>
         <result property="hisOutpatientChargeId" column="his_outpatient_charge_id"/>
+        <result property="hisOutpatientChargeIdTf" column="his_outpatient_charge_id_tf"/>
         <result property="patientId" column="patient_id"/>
         <result property="patientName" column="patient_name"/>
         <result property="outpatientNo" column="outpatient_no"/>
@@ -78,13 +79,13 @@
 
     <insert id="insertBatch">
         insert into his_outpatient_charge_mirror (
-            id, tenant_id, fetch_batch_id, his_outpatient_charge_id, patient_id, patient_name, outpatient_no,
+            id, tenant_id, fetch_batch_id, his_outpatient_charge_id, his_outpatient_charge_id_tf, patient_id, patient_name, outpatient_no,
             clinic_code, clinic_name, doctor_id, doctor_name, charge_item_id, item_name, spec_model,
             batch_no, expire_date, charge_date, quantity, unit_price, total_amount,
             charge_operator, payment_type, receipt_no, remark, row_fingerprint, process_status, create_by, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisOutpatientChargeId}, #{e.patientId}, #{e.patientName}, #{e.outpatientNo},
+            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisOutpatientChargeId}, #{e.hisOutpatientChargeIdTf}, #{e.patientId}, #{e.patientName}, #{e.outpatientNo},
             #{e.clinicCode}, #{e.clinicName}, #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel},
             #{e.batchNo}, #{e.expireDate}, #{e.chargeDate}, #{e.quantity}, #{e.unitPrice}, #{e.totalAmount},
             #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint}, #{e.processStatus}, #{e.createBy}, #{e.createTime})
@@ -160,6 +161,7 @@
         <if test="outpatientNo != null and outpatientNo != ''"> and m.outpatient_no like concat('%', #{outpatientNo}, '%')</if>
         <if test="clinicName != null and clinicName != ''"> and m.clinic_name like concat('%', #{clinicName}, '%')</if>
         <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+        <if test="hisOutpatientChargeIdTf != null and hisOutpatientChargeIdTf != ''"> and trim(ifnull(m.his_outpatient_charge_id_tf,'')) = trim(#{hisOutpatientChargeIdTf})</if>
         <if test="departmentId != null">
             and exists (
                 select 1 from fd_department dsel

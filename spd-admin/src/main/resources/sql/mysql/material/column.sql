@@ -1850,6 +1850,8 @@ CALL add_table_column('his_inpatient_charge_mirror', 'fetch_batch_id', 'varchar(
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id', 'varchar(32) NOT NULL', 'HIS住院计费明细主键', NULL);
 /
+CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id_tf', 'varchar(32)', '退费记录对应的收费明细ID', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
@@ -1914,6 +1916,8 @@ CALL add_table_column('his_outpatient_charge_mirror', 'tenant_id', 'varchar(36) 
 CALL add_table_column('his_outpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id', 'varchar(32) NOT NULL', 'HIS门诊计费明细主键', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id_tf', 'varchar(32)', '退费记录对应的收费明细ID', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
 /

@@ -21,6 +21,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String tenantId;
     private String fetchBatchId;
     private String hisOutpatientChargeId;
+    /** 退费记录对应的原收费明细ID（HIS 视图字段：outpatient_charge_id_tf） */
+    private String hisOutpatientChargeIdTf;
     private String patientId;
     private String patientName;
     private String outpatientNo;
