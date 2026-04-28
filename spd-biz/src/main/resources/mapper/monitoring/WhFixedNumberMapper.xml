@@ -161,6 +161,9 @@
             location = #{location},
             location_id = #{locationId},
             remark = #{remark},
+            del_flag = 0,
+            delete_by = null,
+            delete_time = null,
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             update_by = #{updateBy},
             update_time = now()
@@ -193,7 +196,27 @@
 
     <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        <include refid="selectWhFixedNumberVo"/>
+        select
+            f.id,
+            f.material_id,
+            f.warehouse_id,
+            f.upper_limit,
+            f.lower_limit,
+            f.expiry_reminder,
+            f.monitoring,
+            f.location,
+            f.location_id,
+            f.del_flag,
+            f.tenant_id,
+            f.remark,
+            f.delete_by,
+            f.delete_time,
+            f.create_by,
+            f.create_time,
+            f.update_by,
+            f.update_time
+        from wh_fixed_number f
+        where 1 = 1
         and f.tenant_id = #{scopedTenantId}
         and f.warehouse_id = #{warehouseId}
         and f.material_id = #{materialId}

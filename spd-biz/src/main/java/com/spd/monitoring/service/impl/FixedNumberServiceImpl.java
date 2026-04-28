@@ -82,6 +82,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
                     existing.setLocation(d.getLocation());
                     existing.setLocationId(d.getLocationId());
                     existing.setRemark(d.getRemark());
+                    existing.setDelFlag(0);
                     existing.setUpdateBy(operator);
                     whFixedNumberMapper.updateWhFixedNumber(existing);
                 }

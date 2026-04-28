@@ -108,6 +108,9 @@
         <if test="material != null and material.name != null and material.name != ''">
             and m.name like concat('%', #{material.name}, '%')
         </if>
+        <if test="materialName != null and materialName != ''">
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
+        </if>
         <if test="material != null and material.speci != null and material.speci != ''">
             and m.speci like concat('%', #{material.speci}, '%')
         </if>

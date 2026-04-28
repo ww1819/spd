@@ -72,6 +72,8 @@ public class DeptFixedNumber extends BaseEntity {
 
     /** 查询字段：财务分类名称 */
     private String financeCategoryName;
+    /** 查询参数：耗材名称/编码/拼音简码（用于列表筛选） */
+    private String materialName;
     /** 查询参数：是否集采（1=是 2=否） */
     private String isProcure;
 
@@ -233,6 +235,14 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setFinanceCategoryName(String financeCategoryName) {
         this.financeCategoryName = financeCategoryName;
+    }
+
+    public String getMaterialName() {
+        return materialName;
+    }
+
+    public void setMaterialName(String materialName) {
+        this.materialName = materialName;
     }
 
     public String getIsProcure() {
