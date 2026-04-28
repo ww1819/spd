@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单发布(caigou/publish)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -3396,13 +3396,56 @@ ON DUPLICATE KEY UPDATE
 -- ========== 采购订单 / 订单发布 / 到货验收：菜单与按钮（CaigouDingdanController；默认对客户开放）==========
 -- 采购订单 caigou/dingdan/index：caigou:dingdan:list 及 query/export/add/edit/remove/audit（列表接口 GET /caigou/dingdan/list）
 -- 订单发布 caigou/publish/index：与采购订单共用 caigou:dingdan:*（独立页面，可无采购订单菜单时仍插入）
+-- 订单审查 caigou/shenhe/index：与列表共用 caigou:dingdan:list，审查操作为 caigou:dingdan:audit（前端 spd-ui/views/caigou/shenhe/index.vue）
 -- 到货验收 inWarehouse/audit：inWarehouse:apply:*
+-- 注意：parent_id=1 为「系统管理」，勿将 COALESCE 末项设为 1，否则采购菜单会误入系统管理/系统设置。
+/
+
+-- ---------- 采购管理一级目录（M；path=caigou）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3195, '采购管理', 0,
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = 0),
+  'caigou', 'Layout', NULL,
+  1, 0, 'M', '0', '0', '', 'shopping',
+  'admin', NOW(), '1', NOW(), '采购模块一级目录；子菜单含采购订单、订单审查、订单发布等',
+  '0', '1'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'M' AND path = 'caigou')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3195)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  remark = VALUES(remark),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+-- 历史误执行：采购相关菜单 parent_id=1（系统管理）时纠正到采购目录下
+UPDATE sys_menu sm
+JOIN sys_menu root ON root.menu_type = 'M' AND root.path = 'caigou'
+SET sm.parent_id = root.menu_id
+WHERE sm.menu_type = 'C'
+  AND sm.component IN ('caigou/dingdan/index', 'caigou/publish/index', 'caigou/shenhe/index')
+  AND sm.parent_id = 1;
 /
 
 SET @caigou_parent := COALESCE(
   (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'caigou' ORDER BY m.menu_id LIMIT 1),
-  (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component = 'caigou/dingdan/index' ORDER BY m.menu_id LIMIT 1),
-  1
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_id = 3195 LIMIT 1)
 );
 /
 
@@ -3551,6 +3594,61 @@ SELECT
 FROM DUAL
 WHERE @dingdan_menu_id IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @dingdan_menu_id AND perms = 'caigou:dingdan:audit');
+/
+
+-- ---------- 订单审查（固定 menu_id=3196；caigou/shenhe/index 与 spd-ui 路由 path=shenhe 一致）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3196, '订单审查', @caigou_parent,
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @caigou_parent),
+  'shenhe', 'caigou/shenhe/index', NULL,
+  1, 0, 'C', '0', '0', 'caigou:dingdan:list', 'audit',
+  'admin', NOW(), '1', NOW(), '采购订单审查页，对应 spd-ui/views/caigou/shenhe/index.vue',
+  '0', '1'
+FROM DUAL
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  remark = VALUES(remark),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+-- 历史曾用动态 menu_id 插入的「订单审查/审核/审批」行：统一名称、父级、路由 path（与 menu_id=3196 并存时仅修正旧行）
+UPDATE sys_menu sm
+JOIN (
+  SELECT menu_id AS root_id FROM sys_menu
+  WHERE menu_type = 'M' AND path = 'caigou'
+  ORDER BY menu_id LIMIT 1
+) r ON 1 = 1
+SET sm.menu_name = '订单审查',
+    sm.parent_id = r.root_id,
+    sm.path = 'shenhe',
+    sm.component = 'caigou/shenhe/index',
+    sm.perms = 'caigou:dingdan:list',
+    sm.icon = 'audit',
+    sm.menu_type = 'C',
+    sm.visible = '1',
+    sm.status = '0',
+    sm.update_by = '1',
+    sm.update_time = NOW()
+WHERE sm.menu_type = 'C'
+  AND sm.component = 'caigou/shenhe/index'
+  AND sm.menu_id <> 3196;
 /
 
 INSERT INTO sys_menu (
@@ -5440,8 +5538,7 @@ SET @gz_root := (SELECT m.menu_id FROM sys_menu m WHERE m.path = 'gz' AND m.menu
 /
 SET @caigou_parent := COALESCE(
   (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'caigou' ORDER BY m.menu_id LIMIT 1),
-  (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component = 'caigou/dingdan/index' ORDER BY m.menu_id LIMIT 1),
-  1
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_id = 3195 LIMIT 1)
 );
 /
 
