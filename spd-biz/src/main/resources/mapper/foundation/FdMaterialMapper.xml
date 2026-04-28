@@ -59,9 +59,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isGz"    column="is_gz"    />
         <result property="isFollow"    column="is_follow"    />
         <result property="isBilling"    column="is_billing"    />
+        <result property="isTemporaryPurchase"    column="is_temporary_purchase"    />
+        <result property="isServiceFee"    column="is_service_fee"    />
+        <result property="isSunshineProcurement"    column="is_sunshine_procurement"    />
         <result property="locationId"    column="location_id"    />
         <result property="hisId"    column="his_id"    />
         <result property="hisChargeItemId"    column="his_charge_item_id"    />
+        <result property="hisChargeItemName"    column="his_charge_item_name"    />
+        <result property="hisChargeItemSpeci"    column="his_charge_item_speci"    />
+        <result property="hisChargeItemPrice"    column="his_charge_item_price"    />
         <result property="selectionReason"    column="selection_reason"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
@@ -112,6 +118,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
             m.his_id,
             m.his_charge_item_id,
+            hci.item_name as his_charge_item_name,
+            hci.spec_model as his_charge_item_speci,
+            hci.price as his_charge_item_price,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
             m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.producer, m.material_level,
             m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
@@ -121,6 +130,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.is_follow,
             <!-- 如果报错 Unknown column 'm.is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
             m.is_billing,
+            m.is_temporary_purchase,
+            m.is_service_fee,
+            m.is_sunshine_procurement,
 			<!-- 如果报错 Unknown column 'm.location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
 			m.location_id,
             m.selection_reason,
@@ -136,6 +148,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category cwfl on m.finance_category_id = cwfl.finance_category_id
         left join fd_location l on m.location_id = l.location_id
+        left join his_charge_item_mirror hci on hci.tenant_id = m.tenant_id
+            and hci.charge_item_id = m.his_charge_item_id
+            and (hci.deleted_flag is null or hci.deleted_flag != 1)
     </sql>
 
     <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
@@ -156,18 +171,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </choose>
         <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
         <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
+        <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
+        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%')</if>
+        <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>
         <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
+        <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
         <if test="storeroomId != null "> and m.storeroom_id = #{storeroomId}</if>
+        <if test="warehouseId != null and (skipWarehouseFixedNumberExists == null or skipWarehouseFixedNumberExists != true)">
+            and exists (
+                select 1
+                from wh_fixed_number fn
+                where fn.material_id = m.id
+                  and fn.warehouse_id = #{warehouseId}
+                  and fn.del_flag != 1
+                  and fn.tenant_id = #{scopedTenantId}
+            )
+        </if>
         <if test="financeCategoryId != null "> and m.finance_category_id = #{financeCategoryId}</if>
         <if test="locationId != null "> and m.location_id = #{locationId}</if>
         <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
+        <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '1' or hisBindStatus == 1)">
+            and m.his_charge_item_id is not null
+            and m.his_charge_item_id != ''
+        </if>
+        <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '0' or hisBindStatus == 0)">
+            and (m.his_charge_item_id is null or m.his_charge_item_id = '')
+        </if>
         <if test="beginDate != null "> and m.create_time &gt;= #{beginDate}</if>
         <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
         <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0"> and m.id not in <foreach collection="excludeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
@@ -178,6 +214,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialVo"/>
         where m.id = #{id} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectFdMaterialByIds" resultMap="FdMaterialResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectFdMaterialVo"/>
+        where (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{scopedTenantId}
+        and m.id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </select>
 
     <select id="selectFdMaterialByIdAndTenant" resultMap="FdMaterialResult">
@@ -201,6 +247,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdMaterialByTenantAndHisId" resultMap="FdMaterialResult">
         <include refid="selectFdMaterialVo"/>
         where m.his_id = #{hisId} and (m.del_flag = 0 or m.del_flag is null) and m.tenant_id = #{tenantId}
+        limit 1
+    </select>
+    <select id="selectFdMaterialByTenantAndHisChargeItemId" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where trim(m.his_charge_item_id) = trim(#{hisChargeItemId})
+          and (m.del_flag = 0 or m.del_flag is null)
+          and m.tenant_id = #{tenantId}
         limit 1
     </select>
 
@@ -264,6 +317,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isUse != null">is_use,</if>
             <if test="isProcure != null">is_procure,</if>
             <if test="isMonitor != null">is_monitor,</if>
+            <if test="isTemporaryPurchase != null">is_temporary_purchase,</if>
+            <if test="isServiceFee != null">is_service_fee,</if>
+            <if test="isSunshineProcurement != null">is_sunshine_procurement,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -321,6 +377,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isUse != null">#{isUse},</if>
             <if test="isProcure != null">#{isProcure},</if>
             <if test="isMonitor != null">#{isMonitor},</if>
+            <if test="isTemporaryPurchase != null">#{isTemporaryPurchase},</if>
+            <if test="isServiceFee != null">#{isServiceFee},</if>
+            <if test="isSunshineProcurement != null">#{isSunshineProcurement},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -384,6 +443,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isUse != null">is_use = #{isUse},</if>
             <if test="isProcure != null">is_procure = #{isProcure},</if>
             <if test="isMonitor != null">is_monitor = #{isMonitor},</if>
+            <if test="isTemporaryPurchase != null">is_temporary_purchase = #{isTemporaryPurchase},</if>
+            <if test="isServiceFee != null">is_service_fee = #{isServiceFee},</if>
+            <if test="isSunshineProcurement != null">is_sunshine_procurement = #{isSunshineProcurement},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

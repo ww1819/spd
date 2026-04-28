@@ -5,14 +5,22 @@ import java.util.Date;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
+import com.alibaba.fastjson2.JSON;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.gz.domain.GzBillEntryChangeLog;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
+import com.spd.gz.mapper.GzBillEntryChangeLogMapper;
 import com.spd.gz.mapper.GzDepotInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +45,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 @Service
 public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 {
+    private static final Logger log = LoggerFactory.getLogger(GzRefundGoodsServiceImpl.class);
     @Autowired
     private GzRefundGoodsMapper gzRefundGoodsMapper;
 
@@ -54,6 +63,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
     @Autowired
     private GzLineRefWriteService gzLineRefWriteService;
+
+    @Autowired
+    private GzBillEntryChangeLogMapper gzBillEntryChangeLogMapper;
 
     /**
      * 查询高值退货
@@ -101,6 +113,21 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         return gzRefundGoodsMapper.selectGzRefundGoodsList(gzRefundGoods);
     }
 
+    @Override
+    public GzRefundGoods selectGzRefundStockById(Long id)
+    {
+        return gzRefundGoodsMapper.selectGzRefundStockById(id);
+    }
+
+    @Override
+    public List<GzRefundGoods> selectGzRefundStockList(GzRefundGoods gzRefundGoods)
+    {
+        if (gzRefundGoods != null && StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return gzRefundGoodsMapper.selectGzRefundStockList(gzRefundGoods);
+    }
+
     /**
      * 新增高值退货
      *
@@ -119,37 +146,52 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
         gzRefundGoods.setCreateBy(SecurityUtils.getUserIdStr());
         if (StringUtils.isEmpty(gzRefundGoods.getGoodsNo())) {
-            gzRefundGoods.setGoodsNo(nextGoodsNo(gzRefundGoods));
+            gzRefundGoods.setGoodsNo(nextGoodsNoForGoods());
         }
         gzRefundGoods.setCreateTime(DateUtils.getNowDate());
-        if (isWarehouseStockRefundBill(gzRefundGoods)) {
-            gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
-        } else {
-            gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
-        }
+        gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         int rows = gzRefundGoodsMapper.insertGzRefundGoods(gzRefundGoods);
-        int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods);
+        int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods, false);
         gzRefundGoods.setDedupFilteredCount(filteredCount);
-        gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(),
-            isWarehouseStockRefundBill(gzRefundGoods));
+        gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(), false);
         return rows;
     }
 
-    /** 备货退库：科室有、供应商无 → GZTK；否则备货退货供应商 GZTH */
-    private boolean isWarehouseStockRefundBill(GzRefundGoods gzRefundGoods) {
+    @Override
+    @Transactional
+    public int insertGzRefundStock(GzRefundGoods gzRefundGoods)
+    {
         if (gzRefundGoods == null) {
-            return false;
+            throw new ServiceException("高值备货退库单不能为空");
         }
-        if (StringUtils.isNotEmpty(gzRefundGoods.getGoodsNo()) && gzRefundGoods.getGoodsNo().startsWith("GZTK")) {
-            return true;
+        if (StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
         }
-        return gzRefundGoods.getDepartmentId() != null && gzRefundGoods.getSupplerId() == null;
+        gzRefundGoods.setCreateBy(SecurityUtils.getUserIdStr());
+        gzRefundGoods.setSupplerId(null);
+        if (StringUtils.isEmpty(gzRefundGoods.getGoodsNo())) {
+            gzRefundGoods.setGoodsNo(nextGoodsNoForStock());
+        }
+        gzRefundGoods.setCreateTime(DateUtils.getNowDate());
+        gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
+        int rows = gzRefundGoodsMapper.insertGzRefundStock(gzRefundGoods);
+        int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods, true);
+        gzRefundGoods.setDedupFilteredCount(filteredCount);
+        gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(), true);
+        return rows;
     }
 
-    private String nextGoodsNo(GzRefundGoods gzRefundGoods) {
-        String prefix = isWarehouseStockRefundBill(gzRefundGoods) ? "GZTK-" : "GZTH-";
+    private String nextGoodsNoForGoods() {
+        String prefix = "GZTH-";
         String date = FillRuleUtil.getDateNum();
         String maxNum = gzRefundGoodsMapper.selectMaxBillNoByPrefix(prefix, date);
+        return FillRuleUtil.getNumber(prefix, maxNum, date);
+    }
+
+    private String nextGoodsNoForStock() {
+        String prefix = "GZTK-";
+        String date = FillRuleUtil.getDateNum();
+        String maxNum = gzRefundGoodsMapper.selectMaxStockBillNoByPrefix(prefix, date);
         return FillRuleUtil.getNumber(prefix, maxNum, date);
     }
 
@@ -168,18 +210,30 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
         gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
-        if (isWarehouseStockRefundBill(gzRefundGoods)) {
-            gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
-        } else {
-            gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
-        }
+        gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         gzLineRefWriteService.deleteRefundGoodsRefs(gzRefundGoods.getId());
-        gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(gzRefundGoods.getId(), SecurityUtils.getUserIdStr());
-        int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods);
+        int filteredCount = syncGzRefundGoodsEntry(gzRefundGoods, false);
         gzRefundGoods.setDedupFilteredCount(filteredCount);
-        gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(),
-            isWarehouseStockRefundBill(gzRefundGoods));
+        gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(), false);
         return gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
+    }
+
+    @Override
+    @Transactional
+    public int updateGzRefundStock(GzRefundGoods gzRefundGoods)
+    {
+        if (StringUtils.isEmpty(gzRefundGoods.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            gzRefundGoods.setTenantId(SecurityUtils.getCustomerId());
+        }
+        gzRefundGoods.setSupplerId(null);
+        gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
+        gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
+        gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
+        gzLineRefWriteService.deleteRefundGoodsRefs(gzRefundGoods.getId());
+        int filteredCount = syncGzRefundGoodsEntry(gzRefundGoods, true);
+        gzRefundGoods.setDedupFilteredCount(filteredCount);
+        gzLineRefWriteService.persistRefundGoodsRefs(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList(), true);
+        return gzRefundGoodsMapper.updateGzRefundStock(gzRefundGoods);
     }
 
     /**
@@ -200,6 +254,20 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         gzLineRefWriteService.deleteRefundGoodsRefs(id);
         gzRefundGoodsMapper.deleteGzRefundGoodsEntryByParenId(id, deleteBy);
         return gzRefundGoodsMapper.deleteGzRefundGoodsById(id, deleteBy);
+    }
+
+    @Override
+    @Transactional
+    public int deleteGzRefundStockById(Long id)
+    {
+        GzRefundGoods gzRefundGoods = gzRefundGoodsMapper.selectGzRefundStockById(id);
+        if(gzRefundGoods == null){
+            throw new ServiceException(String.format("高值退库业务：%s，不存在!", id));
+        }
+        String deleteBy = SecurityUtils.getUserIdStr();
+        gzLineRefWriteService.deleteRefundGoodsRefs(id);
+        gzRefundGoodsMapper.deleteGzRefundStockEntryByParenId(id, deleteBy);
+        return gzRefundGoodsMapper.deleteGzRefundStockById(id, deleteBy);
     }
 
     @Override
@@ -225,31 +293,22 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             throw new ServiceException(String.format("高值退货单 %s 无明细，无法审核", id));
         }
 
-        if (isWarehouseStockRefundBill(gzRefundGoods)) {
-            gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoodsEntryList);
-        } else {
-            gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoodsEntryList);
+        gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoodsEntryList);
+        if (gzRefundGoods.getSupplerId() == null) {
+            throw new ServiceException(String.format("高值退货单 %s 表头供应商不能为空", id));
         }
-
-        if (isWarehouseStockRefundBill(gzRefundGoods)) {
-            auditWarehouseStockRefund(gzRefundGoods, gzRefundGoodsEntryList);
-        } else {
-            if (gzRefundGoods.getSupplerId() == null) {
-                throw new ServiceException(String.format("高值退货单 %s 表头供应商不能为空", id));
+        for (GzRefundGoodsEntry entry : gzRefundGoodsEntryList) {
+            if (entry == null) {
+                continue;
             }
-            for (GzRefundGoodsEntry entry : gzRefundGoodsEntryList) {
-                if (entry == null) {
-                    continue;
-                }
-                if (entry.getSupplierId() == null) {
-                    throw new ServiceException(String.format("高值退货单 %s 明细供应商不能为空", id));
-                }
-                if (!entry.getSupplierId().equals(gzRefundGoods.getSupplerId())) {
-                    throw new ServiceException(String.format("高值退货单 %s 明细供应商与表头供应商不一致，不允许审核", id));
-                }
+            if (entry.getSupplierId() == null) {
+                throw new ServiceException(String.format("高值退货单 %s 明细供应商不能为空", id));
             }
-            updateGzDepotInventoryForSupplierReturn(gzRefundGoods, gzRefundGoodsEntryList);
+            if (!entry.getSupplierId().equals(gzRefundGoods.getSupplerId())) {
+                throw new ServiceException(String.format("高值退货单 %s 明细供应商与表头供应商不一致，不允许审核", id));
+            }
         }
+        updateGzDepotInventoryForSupplierReturn(gzRefundGoods, gzRefundGoodsEntryList);
 
         gzRefundGoods.setGoodsStatus(2);
         gzRefundGoods.setAuditDate(new Date());
@@ -257,6 +316,37 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(new Date());
         return gzRefundGoodsMapper.updateGzRefundGoods(gzRefundGoods);
+    }
+
+    @Override
+    @Transactional
+    public int auditStock(String id) {
+        Long billId;
+        try {
+            billId = Long.valueOf(id);
+        } catch (Exception e) {
+            throw new ServiceException(String.format("高值退库业务ID：%s 非法", id));
+        }
+        GzRefundGoods gzRefundGoods = gzRefundGoodsMapper.selectGzRefundStockById(billId);
+        if(gzRefundGoods == null){
+            throw new ServiceException(String.format("高值退库业务ID：%s，不存在!", id));
+        }
+        if (gzRefundGoods.getGoodsStatus() != null && gzRefundGoods.getGoodsStatus() == 2) {
+            String no = StringUtils.isNotEmpty(gzRefundGoods.getGoodsNo()) ? gzRefundGoods.getGoodsNo() : id;
+            throw new ServiceException(String.format("单据 %s 已审核，请勿重复审核", no));
+        }
+        List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
+        if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
+            throw new ServiceException(String.format("高值退库单 %s 无明细，无法审核", id));
+        }
+        gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoodsEntryList);
+        auditWarehouseStockRefund(gzRefundGoods, gzRefundGoodsEntryList);
+        gzRefundGoods.setGoodsStatus(2);
+        gzRefundGoods.setAuditDate(new Date());
+        gzRefundGoods.setAuditBy(SecurityUtils.getUserIdStr());
+        gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
+        gzRefundGoods.setUpdateTime(new Date());
+        return gzRefundGoodsMapper.updateGzRefundStock(gzRefundGoods);
     }
 
     /**
@@ -430,7 +520,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
      *
      * @param gzRefundGoods 高值退货对象
      */
-    public int insertGzRefundGoodsEntry(GzRefundGoods gzRefundGoods)
+    public int insertGzRefundGoodsEntry(GzRefundGoods gzRefundGoods, boolean warehouseStockRefund)
     {
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
         Long id = gzRefundGoods.getId();
@@ -454,7 +544,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                     filteredCount++;
                     continue;
                 }
-                if (!isWarehouseStockRefundBill(gzRefundGoods) && gzRefundGoods.getWarehouseId() == null) {
+                if (!warehouseStockRefund && gzRefundGoods.getWarehouseId() == null) {
                     throw new ServiceException("备货退货保存失败：请先选择仓库");
                 }
                 gzRefundGoodsEntry.setParenId(id);
@@ -477,10 +567,164 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             }
             if (list.size() > 0)
             {
-                gzRefundGoodsMapper.batchGzRefundGoodsEntry(list);
+                if (warehouseStockRefund) {
+                    gzRefundGoodsMapper.batchGzRefundStockEntry(list);
+                } else {
+                    gzRefundGoodsMapper.batchGzRefundGoodsEntry(list);
+                }
             }
         }
         return filteredCount;
+    }
+
+    /**
+     * 修改单据时明细增量更新：按ID更新/新增，缺失项逻辑删除
+     */
+    public int syncGzRefundGoodsEntry(GzRefundGoods gzRefundGoods, boolean warehouseStockRefund)
+    {
+        String entryType = warehouseStockRefund ? "GZ_REFUND_STOCK_ENTRY" : "GZ_REFUND_GOODS_ENTRY";
+        List<GzRefundGoodsEntry> entryList = gzRefundGoods.getGzRefundGoodsEntryList();
+        Long parenId = gzRefundGoods.getId();
+        int filteredCount = 0;
+        String userId = SecurityUtils.getUserIdStr();
+        Date now = DateUtils.getNowDate();
+
+        List<Long> existingIds = warehouseStockRefund
+            ? gzRefundGoodsMapper.selectActiveRefundStockEntryIdsByParenId(parenId)
+            : gzRefundGoodsMapper.selectActiveRefundGoodsEntryIdsByParenId(parenId);
+        Set<Long> remainingIds = new HashSet<>();
+        if (existingIds != null) {
+            remainingIds.addAll(existingIds);
+        }
+        Map<Long, GzRefundGoodsEntry> oldEntryMap = (warehouseStockRefund
+            ? gzRefundGoodsMapper.selectActiveRefundStockEntriesByParenId(parenId)
+            : gzRefundGoodsMapper.selectActiveRefundGoodsEntriesByParenId(parenId))
+            .stream().collect(Collectors.toMap(GzRefundGoodsEntry::getId, e -> e, (a, b) -> a));
+
+        if (StringUtils.isNotNull(entryList))
+        {
+            List<GzRefundGoodsEntry> newList = new ArrayList<GzRefundGoodsEntry>();
+            String tenantId = StringUtils.isNotEmpty(gzRefundGoods.getTenantId())
+                ? gzRefundGoods.getTenantId()
+                : SecurityUtils.requiredScopedTenantIdForSql();
+            Set<String> dedupRefKeys = new HashSet<>();
+            for (GzRefundGoodsEntry entry : entryList)
+            {
+                if (entry == null) {
+                    continue;
+                }
+                String refKey = buildRefundRefDedupKey(entry);
+                if (StringUtils.isNotEmpty(refKey) && dedupRefKeys.contains(refKey)) {
+                    filteredCount++;
+                    continue;
+                }
+                if (!warehouseStockRefund && gzRefundGoods.getWarehouseId() == null) {
+                    throw new ServiceException("备货退货保存失败：请先选择仓库");
+                }
+                entry.setParenId(parenId);
+                entry.setDelFlag(0);
+                entry.setTenantId(tenantId);
+                if (gzRefundGoods.getSupplerId() != null) {
+                    entry.setSupplierId(gzRefundGoods.getSupplerId());
+                }
+                entry.setWarehouseId(gzRefundGoods.getWarehouseId());
+                entry.setDepartmentId(gzRefundGoods.getDepartmentId());
+                entry.setBillNo(gzRefundGoods.getGoodsNo());
+                entry.setUpdateBy(userId);
+                entry.setUpdateTime(now);
+
+                if (entry.getId() != null) {
+                    GzRefundGoodsEntry old = oldEntryMap.get(entry.getId());
+                    if (warehouseStockRefund) {
+                        gzRefundGoodsMapper.updateGzRefundStockEntryById(entry);
+                    } else {
+                        gzRefundGoodsMapper.updateGzRefundGoodsEntryById(entry);
+                    }
+                    remainingIds.remove(entry.getId());
+                    if (old != null && isRefundEntryChanged(old, entry)) {
+                        log.info("GZ_REFUND_ENTRY_CHANGE UPDATE billId={}, entryId={}, before={}, after={}",
+                            parenId, entry.getId(), JSON.toJSONString(old), JSON.toJSONString(entry));
+                        saveEntryChangeLog(warehouseStockRefund ? "GZ_REFUND_STOCK" : "GZ_REFUND_GOODS",
+                            parenId, entryType, entry.getId(), "UPDATE", old, entry, userId, gzRefundGoods.getTenantId());
+                    }
+                } else {
+                    entry.setCreateBy(userId);
+                    entry.setCreateTime(now);
+                    newList.add(entry);
+                    log.info("GZ_REFUND_ENTRY_CHANGE INSERT billId={}, entry={}", parenId, JSON.toJSONString(entry));
+                    saveEntryChangeLog(warehouseStockRefund ? "GZ_REFUND_STOCK" : "GZ_REFUND_GOODS",
+                        parenId, entryType, null, "INSERT", null, entry, userId, gzRefundGoods.getTenantId());
+                }
+                if (StringUtils.isNotEmpty(refKey)) {
+                    dedupRefKeys.add(refKey);
+                }
+            }
+            if (!newList.isEmpty()) {
+                if (warehouseStockRefund) {
+                    gzRefundGoodsMapper.batchGzRefundStockEntry(newList);
+                } else {
+                    gzRefundGoodsMapper.batchGzRefundGoodsEntry(newList);
+                }
+            }
+        }
+
+        for (Long removedId : remainingIds) {
+            GzRefundGoodsEntry toDelete = new GzRefundGoodsEntry();
+            toDelete.setId(removedId);
+            toDelete.setParenId(parenId);
+            toDelete.setDelFlag(1);
+            toDelete.setUpdateBy(userId);
+            if (warehouseStockRefund) {
+                gzRefundGoodsMapper.updateGzRefundStockEntryById(toDelete);
+            } else {
+                gzRefundGoodsMapper.updateGzRefundGoodsEntryById(toDelete);
+            }
+            GzRefundGoodsEntry old = oldEntryMap.get(removedId);
+            log.info("GZ_REFUND_ENTRY_CHANGE DELETE billId={}, entryId={}, before={}",
+                parenId, removedId, JSON.toJSONString(old));
+            saveEntryChangeLog(warehouseStockRefund ? "GZ_REFUND_STOCK" : "GZ_REFUND_GOODS",
+                parenId, entryType, removedId, "DELETE", old, null, userId, gzRefundGoods.getTenantId());
+        }
+        return filteredCount;
+    }
+
+    private void saveEntryChangeLog(String billType, Long billId, String entryType, Long entryId, String actionType,
+                                    Object before, Object after, String operator, String tenantId) {
+        GzBillEntryChangeLog rec = new GzBillEntryChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setBillType(billType);
+        rec.setBillId(billId);
+        rec.setEntryType(entryType);
+        rec.setEntryId(entryId);
+        rec.setActionType(actionType);
+        rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
+        rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
+        rec.setOperator(operator);
+        rec.setChangeTime(DateUtils.getNowDate());
+        rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
+        gzBillEntryChangeLogMapper.insert(rec);
+    }
+
+    private boolean isRefundEntryChanged(GzRefundGoodsEntry oldRow, GzRefundGoodsEntry newRow) {
+        if (oldRow == null || newRow == null) {
+            return false;
+        }
+        return !java.util.Objects.equals(oldRow.getMaterialId(), newRow.getMaterialId())
+            || !java.util.Objects.equals(oldRow.getQty(), newRow.getQty())
+            || !java.util.Objects.equals(oldRow.getPrice(), newRow.getPrice())
+            || !java.util.Objects.equals(oldRow.getAmt(), newRow.getAmt())
+            || !java.util.Objects.equals(oldRow.getBatchNo(), newRow.getBatchNo())
+            || !java.util.Objects.equals(oldRow.getBatchNumber(), newRow.getBatchNumber())
+            || !java.util.Objects.equals(oldRow.getMasterBarcode(), newRow.getMasterBarcode())
+            || !java.util.Objects.equals(oldRow.getSecondaryBarcode(), newRow.getSecondaryBarcode())
+            || !java.util.Objects.equals(oldRow.getInHospitalCode(), newRow.getInHospitalCode())
+            || !java.util.Objects.equals(oldRow.getBeginTime(), newRow.getBeginTime())
+            || !java.util.Objects.equals(oldRow.getEndTime(), newRow.getEndTime())
+            || !java.util.Objects.equals(oldRow.getSupplierId(), newRow.getSupplierId())
+            || !java.util.Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
+            || !java.util.Objects.equals(oldRow.getDepartmentId(), newRow.getDepartmentId())
+            || !java.util.Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
+            || !java.util.Objects.equals(oldRow.getRemark(), newRow.getRemark());
     }
 
     private String buildRefundRefDedupKey(GzRefundGoodsEntry e) {

@@ -185,6 +185,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and a.tenant_id = #{scopedTenantId}
             and (a.del_flag = 0 or a.del_flag is null)
         </where>
+        order by
+            case when a.apply_bill_status = 2 then 1 else 0 end asc,
+            case when a.apply_bill_status = 2 then a.audit_date else null end desc,
+            case when a.apply_bill_status = 2 then null else a.create_time end desc,
+            a.id desc
     </select>
 
     <select id="selectBasApplyById" parameterType="Long" resultMap="BasApplyBasApplyEntryResult">

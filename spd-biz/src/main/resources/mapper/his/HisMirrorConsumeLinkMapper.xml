@@ -24,4 +24,35 @@
         inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id and ifnull(h.del_flag, 0) = 0
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
     </select>
+
+    <select id="selectConsumeRecordsByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorConsumeRecordVo">
+        select
+            l.id as linkId,
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            l.alloc_qty as allocQty,
+            l.create_time as createTime,
+            h.id as consumeBillId,
+            h.consume_bill_no as consumeBillNo,
+            h.consume_bill_date as consumeBillDate,
+            h.consume_bill_status as consumeBillStatus,
+            e.id as consumeEntryId,
+            e.material_name as materialName,
+            e.batch_no as batchNo,
+            e.batch_number as batchNumber,
+            e.qty as entryQty,
+            case
+                when trim(ifnull(e.main_barcode, '')) != '' then trim(e.main_barcode)
+                else trim(ifnull(e.sub_barcode, ''))
+            end as inHospitalCode
+        from his_mirror_consume_link l
+        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
+            and ifnull(h.del_flag, 0) = 0
+            and h.tenant_id = l.tenant_id
+        left join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id and ifnull(e.del_flag, 0) = 0
+        where l.tenant_id = #{tenantId}
+          and l.visit_kind = #{visitKind}
+          and l.mirror_row_id = #{mirrorRowId}
+        order by l.create_time desc, l.id desc
+    </select>
 </mapper>

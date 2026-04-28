@@ -1019,10 +1019,6 @@ CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry` (
 
 CREATE TABLE IF NOT EXISTS `gz_refund_stock` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `stock_no` varchar(64) DEFAULT NULL COMMENT '退库单号(旧版字段)',
-  `stock_date` datetime DEFAULT NULL COMMENT '退库日期(旧版字段)',
-  `stock_status` int DEFAULT NULL COMMENT '状态(旧版字段)',
-  `stock_type` int DEFAULT NULL COMMENT '类型(旧版字段)',
   `refund_no` varchar(64) DEFAULT NULL COMMENT '退库单号',
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
   `department_id` bigint DEFAULT NULL COMMENT '科室ID',
@@ -1045,10 +1041,9 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock` (
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_stock_no` (`refund_no`),
   KEY `idx_gz_refund_stock_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值退库主表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值备货退库主表';
 /
 
--- 以下为高值「退库」明细 gz_refund_stock_entry（科室/备货退回仓库）；上一段 gz_refund_goods_entry 为「退货」明细（退回供应商），表注释勿混用
 CREATE TABLE IF NOT EXISTS `gz_refund_stock_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `paren_id` bigint NOT NULL COMMENT '主表ID',
@@ -1078,7 +1073,7 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock_entry` (
   KEY `idx_gz_refund_stock_entry_paren` (`paren_id`),
   KEY `idx_gz_refund_stock_entry_batch` (`batch_no`),
   KEY `idx_gz_refund_stock_entry_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值退库明细表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值备货退库明细表';
 /
 
 CREATE TABLE IF NOT EXISTS `gz_shipment` (
@@ -1350,6 +1345,10 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `suppler_id` varchar(128) DEFAULT NULL COMMENT '供应商ID（明细，可与主表一致或来自批次）',
   `settlement_type` varchar(16) DEFAULT NULL COMMENT '结算方式（与主表一致）',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `wh_apply_entry_id` varchar(36) DEFAULT NULL COMMENT '库房申请单明细ID（引用库房申请出库时回填）',
@@ -1362,6 +1361,74 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   KEY `idx_stk_io_entry_wh` (`warehouse_id`),
   KEY `idx_stk_io_entry_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='出入库明细表';
+/
+
+-- 兼容历史库：补齐 stk_io_bill_entry 审计字段
+SET @__db := DATABASE();
+/
+SET @__sioe_has_create_by := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'stk_io_bill_entry' AND COLUMN_NAME = 'create_by'
+);
+/
+SET @__sioe_sql_create_by := IF(@__sioe_has_create_by = 0,
+  'ALTER TABLE `stk_io_bill_entry` ADD COLUMN `create_by` varchar(64) DEFAULT NULL COMMENT ''创建者''',
+  'SELECT ''skip_stk_io_bill_entry_create_by'' AS msg'
+);
+/
+PREPARE __sioe_stmt_create_by FROM @__sioe_sql_create_by;
+/
+EXECUTE __sioe_stmt_create_by;
+/
+DEALLOCATE PREPARE __sioe_stmt_create_by;
+/
+SET @__sioe_has_create_time := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'stk_io_bill_entry' AND COLUMN_NAME = 'create_time'
+);
+/
+SET @__sioe_sql_create_time := IF(@__sioe_has_create_time = 0,
+  'ALTER TABLE `stk_io_bill_entry` ADD COLUMN `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT ''创建时间''',
+  'SELECT ''skip_stk_io_bill_entry_create_time'' AS msg'
+);
+/
+PREPARE __sioe_stmt_create_time FROM @__sioe_sql_create_time;
+/
+EXECUTE __sioe_stmt_create_time;
+/
+DEALLOCATE PREPARE __sioe_stmt_create_time;
+/
+SET @__sioe_has_update_by := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'stk_io_bill_entry' AND COLUMN_NAME = 'update_by'
+);
+/
+SET @__sioe_sql_update_by := IF(@__sioe_has_update_by = 0,
+  'ALTER TABLE `stk_io_bill_entry` ADD COLUMN `update_by` varchar(64) DEFAULT NULL COMMENT ''更新者''',
+  'SELECT ''skip_stk_io_bill_entry_update_by'' AS msg'
+);
+/
+PREPARE __sioe_stmt_update_by FROM @__sioe_sql_update_by;
+/
+EXECUTE __sioe_stmt_update_by;
+/
+DEALLOCATE PREPARE __sioe_stmt_update_by;
+/
+SET @__sioe_has_update_time := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'stk_io_bill_entry' AND COLUMN_NAME = 'update_time'
+);
+/
+SET @__sioe_sql_update_time := IF(@__sioe_has_update_time = 0,
+  'ALTER TABLE `stk_io_bill_entry` ADD COLUMN `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT ''更新时间''',
+  'SELECT ''skip_stk_io_bill_entry_update_time'' AS msg'
+);
+/
+PREPARE __sioe_stmt_update_time FROM @__sioe_sql_update_time;
+/
+EXECUTE __sioe_stmt_update_time;
+/
+DEALLOCATE PREPARE __sioe_stmt_update_time;
 /
 
 -- 单据引用/生成关联：从源单（入库/出库/退库/退货等）生成目标单时的明细级追溯；主键为 36 位 UUID7 字符串（与 UUID7.generateUUID7() 一致）
@@ -2217,6 +2284,7 @@ CREATE TABLE IF NOT EXISTS `his_inpatient_charge_mirror` (
   `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
   `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
   `his_inpatient_charge_id` varchar(32) NOT NULL COMMENT 'HIS住院计费明细主键',
+  `his_inpatient_charge_id_tf` varchar(32) DEFAULT NULL COMMENT '退费记录对应的收费明细ID',
   `patient_id` varchar(32) DEFAULT NULL COMMENT '患者ID',
   `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名',
   `inpatient_no` varchar(64) DEFAULT NULL COMMENT '住院号',
@@ -2238,6 +2306,9 @@ CREATE TABLE IF NOT EXISTS `his_inpatient_charge_mirror` (
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
   `row_fingerprint` varchar(64) DEFAULT NULL COMMENT '关键字段指纹(防重复与漂移检测)',
   `process_status` varchar(32) NOT NULL DEFAULT 'PENDING_CONSUME' COMMENT 'PENDING_CONSUME待处理/PARTIALLY_CONSUMED高值部分消耗/CONSUMED已完成；退费未关联前勿自动回滚',
+  `process_type` varchar(32) DEFAULT NULL COMMENT '处理类型 LOW_VALUE/HIGH_VALUE',
+  `process_time` datetime DEFAULT NULL COMMENT '处理时间',
+  `process_by` varchar(64) DEFAULT NULL COMMENT '处理人',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '本地入库时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -2256,6 +2327,7 @@ CREATE TABLE IF NOT EXISTS `his_outpatient_charge_mirror` (
   `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
   `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
   `his_outpatient_charge_id` varchar(32) NOT NULL COMMENT 'HIS门诊计费明细主键',
+  `his_outpatient_charge_id_tf` varchar(32) DEFAULT NULL COMMENT '退费记录对应的收费明细ID',
   `patient_id` varchar(32) DEFAULT NULL COMMENT '患者ID',
   `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名',
   `outpatient_no` varchar(64) DEFAULT NULL COMMENT '门诊号',
@@ -2278,6 +2350,9 @@ CREATE TABLE IF NOT EXISTS `his_outpatient_charge_mirror` (
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
   `row_fingerprint` varchar(64) DEFAULT NULL COMMENT '关键字段指纹',
   `process_status` varchar(32) NOT NULL DEFAULT 'PENDING_CONSUME' COMMENT 'PENDING_CONSUME待处理/PARTIALLY_CONSUMED高值部分消耗/CONSUMED已完成；退费未关联前勿自动回滚',
+  `process_type` varchar(32) DEFAULT NULL COMMENT '处理类型 LOW_VALUE/HIGH_VALUE',
+  `process_time` datetime DEFAULT NULL COMMENT '处理时间',
+  `process_by` varchar(64) DEFAULT NULL COMMENT '处理人',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '本地入库时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -2323,6 +2398,7 @@ CREATE TABLE IF NOT EXISTS `his_charge_item_mirror` (
   `register_no` varchar(128) DEFAULT NULL COMMENT '注册证号',
   `is_active` varchar(16) DEFAULT NULL COMMENT '是否有效',
   `referred_code` varchar(64) DEFAULT NULL COMMENT '收费项目拼音简码（首字母）',
+  `value_level` char(1) NOT NULL DEFAULT '2' COMMENT '收费项目高低值属性：1高值 2低值',
   `his_create_time` varchar(32) DEFAULT NULL COMMENT 'HIS创建时间(字符串)',
   `his_update_time` varchar(32) DEFAULT NULL COMMENT 'HIS更新时间(字符串)',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '本地删除标记：0正常，1已删除(HIS未返回)',
@@ -2374,6 +2450,46 @@ INSERT IGNORE INTO `sys_print_doc_rows` (`doc_kind`, `rows_per_page`, `create_by
 ('OUTBOUND', 6, 'system', '出库'),
 ('REFUND_DEPOT', 6, 'system', '退库'),
 ('REFUND_GOODS', 6, 'system', '退货');
+/
+
+-- 高值单据明细变更审计（入库/出库/退货/退库通用）
+CREATE TABLE IF NOT EXISTS `gz_bill_entry_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `bill_type` varchar(32) NOT NULL COMMENT '单据类型：GZ_ORDER/GZ_SHIPMENT/GZ_REFUND_GOODS/GZ_REFUND_DEPOT',
+  `bill_id` bigint(20) NOT NULL COMMENT '单据主表ID',
+  `entry_type` varchar(64) NOT NULL COMMENT '明细类型：如GZ_ORDER_ENTRY',
+  `entry_id` bigint(20) DEFAULT NULL COMMENT '明细ID（新增时可能为空）',
+  `action_type` varchar(16) NOT NULL COMMENT '变更动作：INSERT/UPDATE/DELETE',
+  `before_json` longtext COMMENT '变更前快照JSON',
+  `after_json` longtext COMMENT '变更后快照JSON',
+  `operator` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_becl_bill` (`bill_type`,`bill_id`),
+  KEY `idx_gz_becl_time` (`change_time`),
+  KEY `idx_gz_becl_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值单据明细变更审计表';
+/
+
+-- 低值单据明细变更审计（到货验收/入库审核/退货申请/退货审核/出库申请/出库审核/退库申请/退库审核）
+CREATE TABLE IF NOT EXISTS `stk_bill_entry_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `bill_type` varchar(32) NOT NULL COMMENT '单据类型：STK_IO_BILL_101/201/301/401 等',
+  `bill_id` bigint(20) NOT NULL COMMENT '单据主表ID',
+  `entry_type` varchar(64) NOT NULL COMMENT '明细类型：如STK_IO_BILL_ENTRY',
+  `entry_id` bigint(20) DEFAULT NULL COMMENT '明细ID（新增时可能为空）',
+  `action_type` varchar(16) NOT NULL COMMENT '变更动作：INSERT/UPDATE/DELETE',
+  `before_json` longtext COMMENT '变更前快照JSON',
+  `after_json` longtext COMMENT '变更后快照JSON',
+  `operator` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_stk_becl_bill` (`bill_type`,`bill_id`),
+  KEY `idx_stk_becl_time` (`change_time`),
+  KEY `idx_stk_becl_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='低值单据明细变更审计表';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

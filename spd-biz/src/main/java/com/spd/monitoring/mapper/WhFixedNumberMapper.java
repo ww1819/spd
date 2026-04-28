@@ -35,5 +35,10 @@ public interface WhFixedNumberMapper {
      * 根据主键软删除仓库定数监测
      */
     int deleteWhFixedNumberById(@Param("id") String id, @Param("deleteBy") String deleteBy);
+
+    /**
+     * 根据主键批量软删除仓库定数监测
+     */
+    int deleteWhFixedNumberByIds(@Param("ids") List<String> ids, @Param("deleteBy") String deleteBy);
 }
 

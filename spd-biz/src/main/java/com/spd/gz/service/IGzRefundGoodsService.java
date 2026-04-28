@@ -57,4 +57,34 @@ public interface IGzRefundGoodsService
      * @return
      */
     int auditGoods(String id);
+
+    /**
+     * 查询高值备货退库
+     */
+    GzRefundGoods selectGzRefundStockById(Long id);
+
+    /**
+     * 查询高值备货退库列表
+     */
+    List<GzRefundGoods> selectGzRefundStockList(GzRefundGoods gzRefundGoods);
+
+    /**
+     * 新增高值备货退库
+     */
+    int insertGzRefundStock(GzRefundGoods gzRefundGoods);
+
+    /**
+     * 修改高值备货退库
+     */
+    int updateGzRefundStock(GzRefundGoods gzRefundGoods);
+
+    /**
+     * 删除高值备货退库
+     */
+    int deleteGzRefundStockById(Long id);
+
+    /**
+     * 审核高值备货退库
+     */
+    int auditStock(String id);
 }

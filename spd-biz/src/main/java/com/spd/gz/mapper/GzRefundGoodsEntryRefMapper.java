@@ -10,4 +10,6 @@ public interface GzRefundGoodsEntryRefMapper
     int batchInsert(@Param("list") List<GzRefundGoodsEntryRef> list);
 
     int deleteByParenRefundGoodsId(@Param("parenId") Long parenId);
+
+    int deleteByTgtMainIdAndKind(@Param("tgtMainId") String tgtMainId, @Param("tgtBillKind") String tgtBillKind);
 }

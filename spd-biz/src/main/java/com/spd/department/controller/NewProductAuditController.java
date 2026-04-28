@@ -33,6 +33,18 @@ public class NewProductAuditController extends BaseController
     @Autowired
     private INewProductAuditService newProductAuditService;
 
+    private TableDataInfo buildList(NewProductApply newProductApply)
+    {
+        startPage();
+        List<NewProductApply> list = newProductAuditService.selectNewProductAuditList(newProductApply);
+        return getDataTable(list);
+    }
+
+    private AjaxResult buildGetInfo(Long id)
+    {
+        return AjaxResult.success(newProductAuditService.selectNewProductAuditById(id));
+    }
+
     /**
      * 查询新品申购审批列表
      */
@@ -40,9 +52,17 @@ public class NewProductAuditController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(NewProductApply newProductApply)
     {
-        startPage();
-        List<NewProductApply> list = newProductAuditService.selectNewProductAuditList(newProductApply);
-        return getDataTable(list);
+        return buildList(newProductApply);
+    }
+
+    /**
+     * 审批列表（仅需登录）：与 {@link #list} 数据一致。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/list")
+    public TableDataInfo pickList(NewProductApply newProductApply)
+    {
+        return buildList(newProductApply);
     }
 
     /**
@@ -65,7 +85,17 @@ public class NewProductAuditController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return AjaxResult.success(newProductAuditService.selectNewProductAuditById(id));
+        return buildGetInfo(id);
+    }
+
+    /**
+     * 详情（仅需登录）：与 {@link #getInfo} 数据一致。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/{id}")
+    public AjaxResult pickGetInfo(@PathVariable("id") Long id)
+    {
+        return buildGetInfo(id);
     }
 
     /**

@@ -2,11 +2,40 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.his.mapper.HisInpatientChargeMirrorMapper">
 
+    <sql id="inpatientMirrorDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and exists (
+                select 1 from fd_department dscope
+                where (dscope.del_flag = 0 or dscope.del_flag is null)
+                  and dscope.tenant_id = #{tenantId}
+                  and trim(dscope.his_id) = trim(m.dept_code)
+                  and dscope.id in (
+                    select distinct x.did from (
+                        select cast(upd.dept_id as unsigned) as did
+                        from sb_user_permission_dept upd
+                        where upd.user_id = #{params.scopeDeptUserId}
+                          and ifnull(upd.del_flag, '0') = '0'
+                        <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+                          and upd.customer_id = #{params.scopeDeptCustomerId}
+                        </if>
+                        union
+                        select ud.department_id as did
+                        from sys_user_department ud
+                        where ud.user_id = #{params.scopeDeptUserId}
+                          and (ud.status = 0 or ud.status = '0' or ud.status is null)
+                    ) x
+                    where x.did is not null
+                  )
+            )
+        </if>
+    </sql>
+
     <resultMap type="com.spd.his.domain.HisInpatientChargeMirror" id="HisInpatientChargeMirrorResult">
         <id property="id" column="id"/>
         <result property="tenantId" column="tenant_id"/>
         <result property="fetchBatchId" column="fetch_batch_id"/>
         <result property="hisInpatientChargeId" column="his_inpatient_charge_id"/>
+        <result property="hisInpatientChargeIdTf" column="his_inpatient_charge_id_tf"/>
         <result property="patientId" column="patient_id"/>
         <result property="patientName" column="patient_name"/>
         <result property="inpatientNo" column="inpatient_no"/>
@@ -28,6 +57,12 @@
         <result property="remark" column="remark"/>
         <result property="rowFingerprint" column="row_fingerprint"/>
         <result property="processStatus" column="process_status"/>
+        <result property="processType" column="process_type"/>
+        <result property="processTime" column="process_time"/>
+        <result property="processBy" column="process_by"/>
+        <result property="highValueStockQty" column="high_value_stock_qty"/>
+        <result property="lowValueStockQty" column="low_value_stock_qty"/>
+        <result property="valueLevel" column="value_level"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -36,13 +71,13 @@
 
     <insert id="insertBatch">
         insert into his_inpatient_charge_mirror (
-            id, tenant_id, fetch_batch_id, his_inpatient_charge_id, patient_id, patient_name, inpatient_no,
+            id, tenant_id, fetch_batch_id, his_inpatient_charge_id, his_inpatient_charge_id_tf, patient_id, patient_name, inpatient_no,
             dept_code, dept_name, doctor_id, doctor_name, charge_item_id, item_name, spec_model,
             batch_no, expire_date, use_date, charge_date, quantity, unit_price, total_amount,
             charge_operator, remark, row_fingerprint, process_status, create_by, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisInpatientChargeId}, #{e.patientId}, #{e.patientName}, #{e.inpatientNo},
+            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisInpatientChargeId}, #{e.hisInpatientChargeIdTf}, #{e.patientId}, #{e.patientName}, #{e.inpatientNo},
             #{e.deptCode}, #{e.deptName}, #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel},
             #{e.batchNo}, #{e.expireDate}, #{e.useDate}, #{e.chargeDate}, #{e.quantity}, #{e.unitPrice}, #{e.totalAmount},
             #{e.chargeOperator}, #{e.remark}, #{e.rowFingerprint}, #{e.processStatus}, #{e.createBy}, #{e.createTime})
@@ -58,15 +93,331 @@
     </select>
 
     <select id="selectMirrorList" resultMap="HisInpatientChargeMirrorResult">
-        select * from his_inpatient_charge_mirror
-        where tenant_id = #{tenantId}
-        <if test="patientName != null and patientName != ''"> and patient_name like concat('%', #{patientName}, '%')</if>
-        <if test="inpatientNo != null and inpatientNo != ''"> and inpatient_no like concat('%', #{inpatientNo}, '%')</if>
-        <if test="deptName != null and deptName != ''"> and dept_name like concat('%', #{deptName}, '%')</if>
-        <if test="chargeItemId != null and chargeItemId != ''"> and charge_item_id = #{chargeItemId}</if>
-        <if test="beginChargeDate != null"> and left(replace(ifnull(charge_date,''),'/','-'),10) &gt;= date_format(#{beginChargeDate},'%Y-%m-%d')</if>
-        <if test="endChargeDate != null"> and left(replace(ifnull(charge_date,''),'/','-'),10) &lt;= date_format(#{endChargeDate},'%Y-%m-%d')</if>
-        order by charge_date desc, id desc
+        select
+            m.*,
+            ifnull(gzq.stock_qty, 0) as high_value_stock_qty,
+            ifnull(lzq.stock_qty, 0) as low_value_stock_qty,
+            cim.value_level as value_level
+        from his_inpatient_charge_mirror m
+        left join (
+            select
+                d.tenant_id as tenant_id,
+                trim(d.his_id) as his_dept_code,
+                trim(fm.his_charge_item_id) as his_charge_item_id,
+                sum(ifnull(gdi.qty, 0)) as stock_qty
+            from gz_dep_inventory gdi
+            join fd_department d
+              on d.id = gdi.department_id
+             and d.tenant_id = gdi.tenant_id
+             and (d.del_flag = 0 or d.del_flag is null)
+            join fd_material fm
+              on fm.id = gdi.material_id
+             and fm.tenant_id = gdi.tenant_id
+             and (fm.del_flag = 0 or fm.del_flag is null)
+            where (gdi.del_flag = 0 or gdi.del_flag is null)
+              and d.his_id is not null and trim(d.his_id) != ''
+              and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+            group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
+        ) gzq
+          on gzq.tenant_id = m.tenant_id
+         and gzq.his_dept_code = trim(m.dept_code)
+         and gzq.his_charge_item_id = trim(m.charge_item_id)
+        left join (
+            select
+                d.tenant_id as tenant_id,
+                trim(d.his_id) as his_dept_code,
+                trim(fm.his_charge_item_id) as his_charge_item_id,
+                sum(ifnull(sdi.qty, 0)) as stock_qty
+            from stk_dep_inventory sdi
+            join fd_department d
+              on d.id = sdi.department_id
+             and d.tenant_id = sdi.tenant_id
+             and (d.del_flag = 0 or d.del_flag is null)
+            join fd_material fm
+              on fm.id = sdi.material_id
+             and fm.tenant_id = sdi.tenant_id
+             and (fm.del_flag = 0 or fm.del_flag is null)
+            where (sdi.del_flag = 0 or sdi.del_flag is null)
+              and d.his_id is not null and trim(d.his_id) != ''
+              and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+            group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
+        ) lzq
+          on lzq.tenant_id = m.tenant_id
+         and lzq.his_dept_code = trim(m.dept_code)
+         and lzq.his_charge_item_id = trim(m.charge_item_id)
+        left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+            and trim(cim.charge_item_id) = trim(m.charge_item_id)
+            and (cim.deleted_flag is null or cim.deleted_flag = 0)
+        where m.tenant_id = #{tenantId}
+        <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
+        <if test="inpatientNo != null and inpatientNo != ''"> and m.inpatient_no like concat('%', #{inpatientNo}, '%')</if>
+        <if test="deptName != null and deptName != ''"> and m.dept_name like concat('%', #{deptName}, '%')</if>
+        <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+        <if test="hisInpatientChargeIdTf != null and hisInpatientChargeIdTf != ''"> and trim(ifnull(m.his_inpatient_charge_id_tf,'')) = trim(#{hisInpatientChargeIdTf})</if>
+        <if test="departmentId != null">
+            and exists (
+                select 1 from fd_department dsel
+                where (dsel.del_flag = 0 or dsel.del_flag is null)
+                  and dsel.tenant_id = #{tenantId}
+                  and dsel.id = #{departmentId}
+                  and trim(dsel.his_id) = trim(m.dept_code)
+            )
+        </if>
+        <if test='processed != null and processed == "Y"'>
+            and m.process_status != 'PENDING_CONSUME'
+        </if>
+        <if test='processed != null and processed == "N"'>
+            and m.process_status = 'PENDING_CONSUME'
+        </if>
+        <if test="beginChargeDate != null"> and m.charge_date &gt;= #{beginChargeDate}</if>
+        <if test="endChargeDate != null"> and m.charge_date &lt;= #{endChargeDate}</if>
+        <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
+        <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+        <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
+        <include refid="inpatientMirrorDepartmentScopeFilter"/>
+        <choose>
+            <when test="orderByColumn == 'highValueStockQty'">
+                order by high_value_stock_qty
+                <choose>
+                    <when test="isAsc == 'asc'">asc</when>
+                    <otherwise>desc</otherwise>
+                </choose>, m.charge_date desc, m.id desc
+            </when>
+            <when test="orderByColumn == 'lowValueStockQty'">
+                order by low_value_stock_qty
+                <choose>
+                    <when test="isAsc == 'asc'">asc</when>
+                    <otherwise>desc</otherwise>
+                </choose>, m.charge_date desc, m.id desc
+            </when>
+            <otherwise>
+                order by m.charge_date desc, m.id desc
+            </otherwise>
+        </choose>
+    </select>
+
+    <sql id="allMirrorOutpatientChargeTsExpr">
+        coalesce(
+            str_to_date(left(replace(trim(ifnull(m.charge_date,'')),'/', '-'),19), '%Y-%m-%d %H:%i:%s'),
+            str_to_date(concat(left(replace(trim(ifnull(m.charge_date,'')),'/', '-'),10),' 00:00:00'), '%Y-%m-%d %H:%i:%s')
+        )
+    </sql>
+
+    <select id="selectAllMirrorList" resultType="com.spd.his.domain.dto.HisPatientChargeDetailRow">
+        select * from (
+            select
+                m.id as id,
+                'INPATIENT' as visit_type,
+                m.patient_name as patient_name,
+                m.inpatient_no as inpatient_no,
+                null as outpatient_no,
+                m.inpatient_no as visit_no,
+                m.dept_name as dept_name,
+                null as clinic_name,
+                m.dept_name as dept_display_name,
+                m.charge_item_id as charge_item_id,
+                m.his_inpatient_charge_id_tf as charge_id_tf,
+                m.item_name as item_name,
+                m.spec_model as spec_model,
+                m.charge_date as charge_date,
+                m.quantity as quantity,
+                m.total_amount as total_amount,
+                m.process_status as process_status,
+                m.process_type as process_type,
+                m.process_time as process_time,
+                m.process_by as process_by,
+                m.create_time as create_time,
+                ifnull(gzq.stock_qty, 0) as high_value_stock_qty,
+                ifnull(lzq.stock_qty, 0) as low_value_stock_qty,
+                cim.value_level as value_level
+            from his_inpatient_charge_mirror m
+            left join (
+                select d.tenant_id as tenant_id, trim(d.his_id) as his_dept_code, trim(fm.his_charge_item_id) as his_charge_item_id,
+                       sum(ifnull(gdi.qty, 0)) as stock_qty
+                from gz_dep_inventory gdi
+                join fd_department d on d.id = gdi.department_id and d.tenant_id = gdi.tenant_id and (d.del_flag = 0 or d.del_flag is null)
+                join fd_material fm on fm.id = gdi.material_id and fm.tenant_id = gdi.tenant_id and (fm.del_flag = 0 or fm.del_flag is null)
+                where (gdi.del_flag = 0 or gdi.del_flag is null)
+                  and d.his_id is not null and trim(d.his_id) != ''
+                  and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+                group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
+            ) gzq on gzq.tenant_id = m.tenant_id and gzq.his_dept_code = trim(m.dept_code) and gzq.his_charge_item_id = trim(m.charge_item_id)
+            left join (
+                select d.tenant_id as tenant_id, trim(d.his_id) as his_dept_code, trim(fm.his_charge_item_id) as his_charge_item_id,
+                       sum(ifnull(sdi.qty, 0)) as stock_qty
+                from stk_dep_inventory sdi
+                join fd_department d on d.id = sdi.department_id and d.tenant_id = sdi.tenant_id and (d.del_flag = 0 or d.del_flag is null)
+                join fd_material fm on fm.id = sdi.material_id and fm.tenant_id = sdi.tenant_id and (fm.del_flag = 0 or fm.del_flag is null)
+                where (sdi.del_flag = 0 or sdi.del_flag is null)
+                  and d.his_id is not null and trim(d.his_id) != ''
+                  and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+                group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
+            ) lzq on lzq.tenant_id = m.tenant_id and lzq.his_dept_code = trim(m.dept_code) and lzq.his_charge_item_id = trim(m.charge_item_id)
+            left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+                and trim(cim.charge_item_id) = trim(m.charge_item_id)
+                and (cim.deleted_flag is null or cim.deleted_flag = 0)
+            where m.tenant_id = #{tenantId}
+            <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
+            <if test="visitNo != null and visitNo != ''"> and m.inpatient_no like concat('%', #{visitNo}, '%')</if>
+            <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+            <if test="chargeIdTf != null and chargeIdTf != ''"> and trim(ifnull(m.his_inpatient_charge_id_tf,'')) = trim(#{chargeIdTf})</if>
+            <if test="departmentId != null">
+                and exists (
+                    select 1 from fd_department dsel
+                    where (dsel.del_flag = 0 or dsel.del_flag is null)
+                      and dsel.tenant_id = #{tenantId}
+                      and dsel.id = #{departmentId}
+                      and trim(dsel.his_id) = trim(m.dept_code)
+                )
+            </if>
+            <if test='processed != null and processed == "Y"'> and m.process_status != 'PENDING_CONSUME'</if>
+            <if test='processed != null and processed == "N"'> and m.process_status = 'PENDING_CONSUME'</if>
+            <if test="beginChargeDate != null"> and m.charge_date &gt;= #{beginChargeDate}</if>
+            <if test="endChargeDate != null"> and m.charge_date &lt;= #{endChargeDate}</if>
+            <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
+            <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+            <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
+            <if test="params != null and params.scopeDeptUserId != null">
+                and exists (
+                    select 1 from fd_department dscope
+                    where (dscope.del_flag = 0 or dscope.del_flag is null)
+                      and dscope.tenant_id = #{tenantId}
+                      and trim(dscope.his_id) = trim(m.dept_code)
+                      and dscope.id in (
+                        select distinct x.did from (
+                            select cast(upd.dept_id as unsigned) as did
+                            from sb_user_permission_dept upd
+                            where upd.user_id = #{params.scopeDeptUserId}
+                              and ifnull(upd.del_flag, '0') = '0'
+                            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+                              and upd.customer_id = #{params.scopeDeptCustomerId}
+                            </if>
+                            union
+                            select ud.department_id as did
+                            from sys_user_department ud
+                            where ud.user_id = #{params.scopeDeptUserId}
+                              and (ud.status = 0 or ud.status = '0' or ud.status is null)
+                        ) x
+                        where x.did is not null
+                      )
+                )
+            </if>
+
+            union all
+
+            select
+                m.id as id,
+                'OUTPATIENT' as visit_type,
+                m.patient_name as patient_name,
+                null as inpatient_no,
+                m.outpatient_no as outpatient_no,
+                m.outpatient_no as visit_no,
+                null as dept_name,
+                m.clinic_name as clinic_name,
+                m.clinic_name as dept_display_name,
+                m.charge_item_id as charge_item_id,
+                m.his_outpatient_charge_id_tf as charge_id_tf,
+                m.item_name as item_name,
+                m.spec_model as spec_model,
+                <include refid="allMirrorOutpatientChargeTsExpr"/> as charge_date,
+                m.quantity as quantity,
+                m.total_amount as total_amount,
+                m.process_status as process_status,
+                m.process_type as process_type,
+                m.process_time as process_time,
+                m.process_by as process_by,
+                m.create_time as create_time,
+                ifnull(gzq.stock_qty, 0) as high_value_stock_qty,
+                ifnull(lzq.stock_qty, 0) as low_value_stock_qty,
+                cim.value_level as value_level
+            from his_outpatient_charge_mirror m
+            left join (
+                select d.tenant_id as tenant_id, trim(d.his_id) as his_dept_code, trim(fm.his_charge_item_id) as his_charge_item_id,
+                       sum(ifnull(gdi.qty, 0)) as stock_qty
+                from gz_dep_inventory gdi
+                join fd_department d on d.id = gdi.department_id and d.tenant_id = gdi.tenant_id and (d.del_flag = 0 or d.del_flag is null)
+                join fd_material fm on fm.id = gdi.material_id and fm.tenant_id = gdi.tenant_id and (fm.del_flag = 0 or fm.del_flag is null)
+                where (gdi.del_flag = 0 or gdi.del_flag is null)
+                  and d.his_id is not null and trim(d.his_id) != ''
+                  and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+                group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
+            ) gzq on gzq.tenant_id = m.tenant_id and gzq.his_dept_code = trim(m.clinic_code) and gzq.his_charge_item_id = trim(m.charge_item_id)
+            left join (
+                select d.tenant_id as tenant_id, trim(d.his_id) as his_dept_code, trim(fm.his_charge_item_id) as his_charge_item_id,
+                       sum(ifnull(sdi.qty, 0)) as stock_qty
+                from stk_dep_inventory sdi
+                join fd_department d on d.id = sdi.department_id and d.tenant_id = sdi.tenant_id and (d.del_flag = 0 or d.del_flag is null)
+                join fd_material fm on fm.id = sdi.material_id and fm.tenant_id = sdi.tenant_id and (fm.del_flag = 0 or fm.del_flag is null)
+                where (sdi.del_flag = 0 or sdi.del_flag is null)
+                  and d.his_id is not null and trim(d.his_id) != ''
+                  and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+                group by d.tenant_id, trim(d.his_id), trim(fm.his_charge_item_id)
+            ) lzq on lzq.tenant_id = m.tenant_id and lzq.his_dept_code = trim(m.clinic_code) and lzq.his_charge_item_id = trim(m.charge_item_id)
+            left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+                and trim(cim.charge_item_id) = trim(m.charge_item_id)
+                and (cim.deleted_flag is null or cim.deleted_flag = 0)
+            where m.tenant_id = #{tenantId}
+            <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
+            <if test="visitNo != null and visitNo != ''"> and m.outpatient_no like concat('%', #{visitNo}, '%')</if>
+            <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+            <if test="chargeIdTf != null and chargeIdTf != ''"> and trim(ifnull(m.his_outpatient_charge_id_tf,'')) = trim(#{chargeIdTf})</if>
+            <if test="departmentId != null">
+                and exists (
+                    select 1 from fd_department dsel
+                    where (dsel.del_flag = 0 or dsel.del_flag is null)
+                      and dsel.tenant_id = #{tenantId}
+                      and dsel.id = #{departmentId}
+                      and trim(dsel.his_id) = trim(m.clinic_code)
+                )
+            </if>
+            <if test='processed != null and processed == "Y"'> and m.process_status != 'PENDING_CONSUME'</if>
+            <if test='processed != null and processed == "N"'> and m.process_status = 'PENDING_CONSUME'</if>
+            <if test="beginChargeDate != null"> and <include refid="allMirrorOutpatientChargeTsExpr"/> &gt;= #{beginChargeDate}</if>
+            <if test="endChargeDate != null"> and <include refid="allMirrorOutpatientChargeTsExpr"/> &lt;= #{endChargeDate}</if>
+            <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
+            <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+            <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
+            <if test="params != null and params.scopeDeptUserId != null">
+                and exists (
+                    select 1 from fd_department dscope
+                    where (dscope.del_flag = 0 or dscope.del_flag is null)
+                      and dscope.tenant_id = #{tenantId}
+                      and trim(dscope.his_id) = trim(m.clinic_code)
+                      and dscope.id in (
+                        select distinct x.did from (
+                            select cast(upd.dept_id as unsigned) as did
+                            from sb_user_permission_dept upd
+                            where upd.user_id = #{params.scopeDeptUserId}
+                              and ifnull(upd.del_flag, '0') = '0'
+                            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+                              and upd.customer_id = #{params.scopeDeptCustomerId}
+                            </if>
+                            union
+                            select ud.department_id as did
+                            from sys_user_department ud
+                            where ud.user_id = #{params.scopeDeptUserId}
+                              and (ud.status = 0 or ud.status = '0' or ud.status is null)
+                        ) x
+                        where x.did is not null
+                      )
+                )
+            </if>
+        ) t
+        <choose>
+            <when test="orderByColumn == 'highValueStockQty'">
+                order by t.high_value_stock_qty
+                <choose><when test="isAsc == 'asc'">asc</when><otherwise>desc</otherwise></choose>,
+                t.charge_date desc, t.id desc
+            </when>
+            <when test="orderByColumn == 'lowValueStockQty'">
+                order by t.low_value_stock_qty
+                <choose><when test="isAsc == 'asc'">asc</when><otherwise>desc</otherwise></choose>,
+                t.charge_date desc, t.id desc
+            </when>
+            <otherwise>
+                order by t.charge_date desc, t.id desc
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectSummary" resultType="com.spd.his.domain.dto.HisPatientChargeSummaryRow">
@@ -74,8 +425,8 @@
                ifnull(dept_name,'') as deptName, count(*) as lineCount, ifnull(sum(total_amount),0) as sumAmount
         from his_inpatient_charge_mirror
         where tenant_id = #{tenantId}
-        and left(replace(ifnull(charge_date,''),'/','-'),10) &gt;= #{beginChargeDate}
-        and left(replace(ifnull(charge_date,''),'/','-'),10) &lt;= #{endChargeDate}
+        and date(charge_date) &gt;= date(#{beginChargeDate})
+        and date(charge_date) &lt;= date(#{endChargeDate})
         group by patient_name, inpatient_no, ifnull(dept_name,'')
         order by sumAmount desc
     </select>
@@ -84,7 +435,7 @@
         select * from his_inpatient_charge_mirror
         where tenant_id = #{tenantId} and fetch_batch_id = #{fetchBatchId}
         and process_status = 'PENDING_CONSUME'
-        order by charge_date, id
+        order by charge_date asc, id asc
     </select>
 
     <select id="countConsumedInFetchBatch" resultType="int">
@@ -93,8 +444,13 @@
         and process_status = 'CONSUMED'
     </select>
 
-    <update id="updateProcessStatusByIds">
-        update his_inpatient_charge_mirror set process_status = #{processStatus}, update_time = now()
+    <update id="updateMirrorProcessByIds">
+        update his_inpatient_charge_mirror set
+            process_status = #{processStatus},
+            process_type = #{processType},
+            process_time = #{processTime},
+            process_by = #{processBy},
+            update_time = now()
         where tenant_id = #{tenantId}
         and id in
         <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>

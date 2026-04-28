@@ -24,8 +24,10 @@ server:
 spd:
     # 名称
     name: spd
-    # 版本
+    # 版本（与 spd-ui/package.json 发版时建议保持一致）
     version: 3.8.6
+    # 发版/部署标识（可选；建议在每次生产发布时写入）
+    build-time: ""
     # 版权年份
     copyrightYear: 2023
     # 实例演示开关

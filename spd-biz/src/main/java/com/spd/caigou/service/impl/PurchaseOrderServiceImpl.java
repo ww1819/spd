@@ -14,6 +14,7 @@ import com.spd.common.utils.rule.FillRuleUtil;
 import java.math.BigDecimal;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 采购订单Service业务层处理
@@ -62,13 +65,43 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         SecurityUtils.ensureTenantAccess(purchaseOrder.getTenantId());
         List<PurchaseOrderEntry> purchaseOrderEntryList = purchaseOrderMapper.selectPurchaseOrderEntryByParentId(id);
         Long warehouseId = purchaseOrder.getWarehouseId();
-        for (PurchaseOrderEntry entry : purchaseOrderEntryList) {
-            if (entry.getMaterialId() != null) {
-                FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-                entry.setMaterial(fdMaterial);
-                if (warehouseId != null) {
-                    BigDecimal stock = stkInventoryMapper.selectSumQtyByMaterialAndWarehouse(entry.getMaterialId(), warehouseId);
-                    entry.setStockQty(stock != null ? stock : BigDecimal.ZERO);
+        if (purchaseOrderEntryList != null && !purchaseOrderEntryList.isEmpty()) {
+            List<Long> materialIds = purchaseOrderEntryList.stream()
+                .map(PurchaseOrderEntry::getMaterialId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+            Map<Long, FdMaterial> materialById = new HashMap<>();
+            if (!materialIds.isEmpty()) {
+                List<FdMaterial> mats = fdMaterialMapper.selectFdMaterialByIds(materialIds);
+                if (mats != null) {
+                    for (FdMaterial m : mats) {
+                        if (m != null && m.getId() != null) {
+                            materialById.put(m.getId(), m);
+                        }
+                    }
+                }
+            }
+            Map<Long, BigDecimal> stockByMaterialId = new HashMap<>();
+            if (warehouseId != null && !materialIds.isEmpty()) {
+                List<MaterialWarehouseStockAgg> stockAggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, materialIds);
+                if (stockAggs != null) {
+                    for (MaterialWarehouseStockAgg a : stockAggs) {
+                        if (a != null && a.getMaterialId() != null) {
+                            stockByMaterialId.put(a.getMaterialId(), a.getSumQty() != null ? a.getSumQty() : BigDecimal.ZERO);
+                        }
+                    }
+                }
+            }
+            for (PurchaseOrderEntry entry : purchaseOrderEntryList) {
+                if (entry.getMaterialId() != null) {
+                    FdMaterial full = materialById.get(entry.getMaterialId());
+                    if (full != null) {
+                        entry.setMaterial(full);
+                    }
+                    if (warehouseId != null) {
+                        entry.setStockQty(stockByMaterialId.getOrDefault(entry.getMaterialId(), BigDecimal.ZERO));
+                    }
                 }
             }
         }

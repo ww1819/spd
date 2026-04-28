@@ -101,4 +101,86 @@ public interface ISysPostService
      * 耗材工作组：关联用户 ID 列表（sys_user_post）
      */
     List<Long> selectUserIdsByPostId(Long postId);
+
+    /**
+     * 异步同步任务：将工作组菜单补充到组内用户（仅追加缺失，不删除已有）
+     *
+     * @param postId 工作组ID
+     * @return 实际补充的用户菜单条数
+     */
+    int syncMenuToPostUsers(Long postId, String syncMode);
+
+    /**
+     * 异步同步任务：将工作组科室补充到组内用户（仅追加缺失，不删除已有）
+     */
+    int syncDepartmentToPostUsers(Long postId, String syncMode);
+
+    /**
+     * 异步同步任务：将工作组仓库补充到组内用户（仅追加缺失，不删除已有）
+     */
+    int syncWarehouseToPostUsers(Long postId, String syncMode);
+
+    /**
+     * 同步任务状态查询
+     */
+    SyncStatus getMenuSyncStatus(Long postId);
+
+    class SyncStatus
+    {
+        private Long postId;
+        private String status;
+        private String message;
+        private Integer affected;
+        private Long updateTime;
+
+        public Long getPostId()
+        {
+            return postId;
+        }
+
+        public void setPostId(Long postId)
+        {
+            this.postId = postId;
+        }
+
+        public String getStatus()
+        {
+            return status;
+        }
+
+        public void setStatus(String status)
+        {
+            this.status = status;
+        }
+
+        public String getMessage()
+        {
+            return message;
+        }
+
+        public void setMessage(String message)
+        {
+            this.message = message;
+        }
+
+        public Integer getAffected()
+        {
+            return affected;
+        }
+
+        public void setAffected(Integer affected)
+        {
+            this.affected = affected;
+        }
+
+        public Long getUpdateTime()
+        {
+            return updateTime;
+        }
+
+        public void setUpdateTime(Long updateTime)
+        {
+            this.updateTime = updateTime;
+        }
+    }
 }

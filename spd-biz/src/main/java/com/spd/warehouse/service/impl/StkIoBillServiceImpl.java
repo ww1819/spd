@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.alibaba.fastjson2.JSON;
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
 import com.spd.caigou.mapper.PurchaseOrderMapper;
@@ -92,6 +94,9 @@ import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ITenantScopeService;
+import com.spd.common.utils.uuid.UUID7;
+import com.spd.gz.domain.GzBillEntryChangeLog;
+import com.spd.warehouse.mapper.StkBillEntryChangeLogMapper;
 
 /**
  * 出入库Service业务层处理
@@ -167,6 +172,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private WhWarehouseApplyMapper whWarehouseApplyMapper;
+
+    @Autowired
+    private StkBillEntryChangeLogMapper stkBillEntryChangeLogMapper;
 
     /**
      * 查询出入库
@@ -316,14 +324,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        // 仅当请求中带了明细列表且非空时，才逻辑删除旧明细并重新插入；否则保留原明细，只更新主表
+        // 仅当请求中带了明细列表且非空时，才同步明细（增量更新）；否则保留原明细，只更新主表
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
         if (entryList != null && !entryList.isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
                 normalizeInboundSupplierFields(stkIoBill);
             }
-            stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
-            updateStkIoBillEntry(stkIoBill);
+            syncStkIoBillEntry(stkIoBill);
         }
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
     }
@@ -1451,6 +1458,204 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
     }
 
+    private void syncStkIoBillEntry(StkIoBill stkIoBill) {
+        normalizeInboundSupplierFields(stkIoBill);
+        List<StkIoBillEntry> incoming = stkIoBill.getStkIoBillEntryList();
+        if (incoming == null || incoming.isEmpty()) {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        List<StkIoBillEntry> prepared = new ArrayList<>();
+        for (StkIoBillEntry e : incoming) {
+            if (e == null) {
+                continue;
+            }
+            e.setParenId(stkIoBill.getId());
+            e.setBillNo(stkIoBill.getBillNo());
+            if (e.getDelFlag() == null) {
+                e.setDelFlag(0);
+            }
+            if (StringUtils.isEmpty(e.getBatchNo())) {
+                e.setBatchNo(getBatchNumber());
+            }
+            e.setWarehouseId(stkIoBill.getWarehouseId());
+            e.setTenantId(tenantId);
+            fillEntryMaterialSnapshot(e, tenantId);
+            prepared.add(e);
+        }
+        applyIncrementalSync(stkIoBill.getId(), prepared, stkIoBill.getBillType(), tenantId);
+    }
+
+    private int syncOutStkIoBillEntry(StkIoBill stkIoBill) {
+        List<StkIoBillEntry> incoming = stkIoBill.getStkIoBillEntryList();
+        if (incoming == null || incoming.isEmpty()) {
+            return 0;
+        }
+        int outBt = stkIoBill.getBillType() == null ? 0 : stkIoBill.getBillType();
+        if (outBt == 201 || outBt == 301) {
+            assertWarehouseStockEntriesMatchBillHeader(stkIoBill, outBt == 301);
+        }
+        String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        List<StkIoBillEntry> prepared = new ArrayList<>();
+        Set<String> dedupKeys = new HashSet<>();
+        int filteredCount = 0;
+        for (StkIoBillEntry e : incoming) {
+            if (e == null) {
+                continue;
+            }
+            if (e.getStkInventoryId() == null && e.getDepInventoryId() == null && e.getKcNo() != null) {
+                e.setStkInventoryId(e.getKcNo());
+                e.setKcNo(null);
+            }
+            e.setWarehouseId(stkIoBill.getWarehouseId());
+            String dedupKey = buildOutboundEntryDedupKey(e);
+            if (StringUtils.isNotEmpty(dedupKey) && dedupKeys.contains(dedupKey)) {
+                filteredCount++;
+                continue;
+            }
+            validateInventory(e.getBatchNo(), stkIoBill.getWarehouseId(), incoming);
+            e.setParenId(stkIoBill.getId());
+            e.setBillNo(stkIoBill.getBillNo());
+            e.setDelFlag(0);
+            fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, e);
+            e.setTenantId(tenantId);
+            fillEntryMaterialSnapshot(e, tenantId);
+            prepared.add(e);
+            if (StringUtils.isNotEmpty(dedupKey)) {
+                dedupKeys.add(dedupKey);
+            }
+        }
+        applyIncrementalSync(stkIoBill.getId(), prepared, stkIoBill.getBillType(), tenantId);
+        return filteredCount;
+    }
+
+    private void syncTKStkIoBillEntry(StkIoBill stkIoBill) {
+        List<StkIoBillEntry> incoming = stkIoBill.getStkIoBillEntryList();
+        if (incoming == null || incoming.isEmpty()) {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        Long whId = stkIoBill.getWarehouseId();
+        assertTkDepInventoryEntriesMatchBillHeader(stkIoBill);
+        validateTKStkIoBillEntries(whId, stkIoBill.getDepartmentId(), incoming);
+        List<StkIoBillEntry> prepared = new ArrayList<>();
+        for (StkIoBillEntry e : incoming) {
+            if (e == null) {
+                continue;
+            }
+            if (e.getDepInventoryId() == null && e.getStkInventoryId() == null && e.getKcNo() != null) {
+                e.setDepInventoryId(e.getKcNo());
+                e.setKcNo(null);
+            }
+            e.setWarehouseId(whId);
+            e.setParenId(stkIoBill.getId());
+            e.setBillNo(stkIoBill.getBillNo());
+            e.setDelFlag(0);
+            fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, e);
+            e.setTenantId(tenantId);
+            fillEntryMaterialSnapshot(e, tenantId);
+            prepared.add(e);
+        }
+        applyIncrementalSync(stkIoBill.getId(), prepared, stkIoBill.getBillType(), tenantId);
+    }
+
+    private void applyIncrementalSync(Long parenId, List<StkIoBillEntry> preparedEntries, Integer billType, String tenantId) {
+        List<Long> existingIds = stkIoBillMapper.selectActiveStkIoBillEntryIdsByParenId(parenId);
+        Map<Long, StkIoBillEntry> oldEntryMap = stkIoBillMapper.selectActiveStkIoBillEntriesByParenId(parenId)
+            .stream().collect(Collectors.toMap(StkIoBillEntry::getId, e -> e, (a, b) -> a));
+        Map<Long, StkIoBillEntry> incomingById = new HashMap<>();
+        List<StkIoBillEntry> newEntries = new ArrayList<>();
+        for (StkIoBillEntry e : preparedEntries) {
+            if (e.getId() != null) {
+                incomingById.put(e.getId(), e);
+            } else {
+                newEntries.add(e);
+            }
+        }
+        String operator = SecurityUtils.getUserIdStr();
+        Date now = new Date();
+        if (existingIds != null) {
+            for (Long existingId : existingIds) {
+                StkIoBillEntry incoming = incomingById.get(existingId);
+                if (incoming != null) {
+                    incoming.setUpdateBy(operator);
+                    incoming.setUpdateTime(now);
+                    incoming.setDeleteBy(null);
+                    incoming.setDeleteTime(null);
+                    incoming.setDelFlag(0);
+                    stkIoBillMapper.updateStkIoBillEntryById(incoming);
+                    StkIoBillEntry old = oldEntryMap.get(existingId);
+                    if (old != null && isStkIoBillEntryChanged(old, incoming)) {
+                        saveEntryChangeLog(resolveStkBillTypeForChangeLog(billType), parenId, "STK_IO_BILL_ENTRY", existingId,
+                            "UPDATE", old, incoming, operator, tenantId);
+                    }
+                } else {
+                    StkIoBillEntry deleted = new StkIoBillEntry();
+                    deleted.setId(existingId);
+                    deleted.setDelFlag(1);
+                    deleted.setDeleteBy(operator);
+                    deleted.setDeleteTime(now);
+                    deleted.setUpdateBy(operator);
+                    deleted.setUpdateTime(now);
+                    stkIoBillMapper.updateStkIoBillEntryById(deleted);
+                    saveEntryChangeLog(resolveStkBillTypeForChangeLog(billType), parenId, "STK_IO_BILL_ENTRY", existingId,
+                        "DELETE", oldEntryMap.get(existingId), null, operator, tenantId);
+                }
+            }
+        }
+        if (!newEntries.isEmpty()) {
+            stkIoBillMapper.batchStkIoBillEntry(newEntries);
+            for (StkIoBillEntry inserted : newEntries) {
+                saveEntryChangeLog(resolveStkBillTypeForChangeLog(billType), parenId, "STK_IO_BILL_ENTRY", null,
+                    "INSERT", null, inserted, operator, tenantId);
+            }
+        }
+    }
+
+    private String resolveStkBillTypeForChangeLog(Integer billType) {
+        if (billType == null) {
+            return "STK_IO_BILL";
+        }
+        return "STK_IO_BILL_" + billType;
+    }
+
+    private void saveEntryChangeLog(String billType, Long billId, String entryType, Long entryId, String actionType,
+                                    Object before, Object after, String operator, String tenantId) {
+        GzBillEntryChangeLog rec = new GzBillEntryChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setBillType(billType);
+        rec.setBillId(billId);
+        rec.setEntryType(entryType);
+        rec.setEntryId(entryId);
+        rec.setActionType(actionType);
+        rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
+        rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
+        rec.setOperator(operator);
+        rec.setChangeTime(DateUtils.getNowDate());
+        rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
+        stkBillEntryChangeLogMapper.insert(rec);
+    }
+
+    private boolean isStkIoBillEntryChanged(StkIoBillEntry oldRow, StkIoBillEntry newRow) {
+        if (oldRow == null || newRow == null) {
+            return false;
+        }
+        return !Objects.equals(oldRow.getMaterialId(), newRow.getMaterialId())
+            || !Objects.equals(oldRow.getQty(), newRow.getQty())
+            || !Objects.equals(oldRow.getPrice(), newRow.getPrice())
+            || !Objects.equals(oldRow.getAmt(), newRow.getAmt())
+            || !Objects.equals(oldRow.getBatchNo(), newRow.getBatchNo())
+            || !Objects.equals(oldRow.getBatchNumber(), newRow.getBatchNumber())
+            || !Objects.equals(oldRow.getBeginTime(), newRow.getBeginTime())
+            || !Objects.equals(oldRow.getEndTime(), newRow.getEndTime())
+            || !Objects.equals(oldRow.getMainBarcode(), newRow.getMainBarcode())
+            || !Objects.equals(oldRow.getSubBarcode(), newRow.getSubBarcode())
+            || !Objects.equals(oldRow.getSupplerId(), newRow.getSupplerId())
+            || !Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
+            || !Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
+            || !Objects.equals(oldRow.getRemark(), newRow.getRemark());
+    }
+
     /**
      * 新增出库
      *
@@ -1517,8 +1722,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
-        int filteredCount = insertOutStkIoBillEntry(stkIoBill);
+        int filteredCount = syncOutStkIoBillEntry(stkIoBill);
         stkIoBill.setDedupFilteredCount(filteredCount);
         int u = stkIoBillMapper.updateStkIoBill(stkIoBill);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
@@ -1620,8 +1824,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
-        stkIoBillMapper.deleteStkIoBillEntryByParenId(stkIoBill.getId(), SecurityUtils.getUserIdStr(), new Date());
-        insertTKStkIoBillEntry(stkIoBill);
+        syncTKStkIoBillEntry(stkIoBill);
         int u = stkIoBillMapper.updateStkIoBill(stkIoBill);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
             StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());

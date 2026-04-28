@@ -37,6 +37,10 @@ public interface FdMaterialMapper
      * 按租户 + HIS 产品档案 ID 查一条（未删除）
      */
     FdMaterial selectFdMaterialByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
+    /**
+     * 按租户 + HIS 收费项目ID（his_charge_item_id）查一条（未删除）
+     */
+    FdMaterial selectFdMaterialByTenantAndHisChargeItemId(@Param("tenantId") String tenantId, @Param("hisChargeItemId") String hisChargeItemId);
 
     /**
      * 按租户 + 耗材编码查一条（未删除）
@@ -58,6 +62,11 @@ public interface FdMaterialMapper
      * @return 耗材产品
      */
     public FdMaterial selectFdMaterialById(Long id);
+
+    /**
+     * 批量查询产品档案（与 {@link #selectFdMaterialById} 相同字段与关联，用于避免 N+1）
+     */
+    List<FdMaterial> selectFdMaterialByIds(@Param("ids") List<Long> ids);
 
     /**
      * 按主键 + 租户查产品档案（与单据 tenant 一致，避免仅用 getCustomerId() 导致查不到）

@@ -229,6 +229,14 @@ public class FdMaterial extends BaseEntity
     /** 是否高值 */
     @Excel(name = "是否高值", readConverterExp = "1=是,2=否")
     private String isGz;
+    /** 查询参数：仓库ID（按仓库定数监测范围过滤） */
+    private Long warehouseId;
+
+    /**
+     * 查询参数：为 true 时不应用「本仓库已有未删除定数行」的 EXISTS 过滤。
+     * 由定数监测「新增明细」专用接口置为 true，避免与 excludeMaterialIds 叠加导致无数据、或删定数后无法再选该产品。
+     */
+    private Boolean skipWarehouseFixedNumberExists;
 
     /** 是否跟台 */
     @Excel(name = "是否跟台", readConverterExp = "1=是,2=否")
@@ -249,6 +257,12 @@ public class FdMaterial extends BaseEntity
 
     /** 查询参数：是否计费 */
     private String isBilling;
+    /** 是否临购 */
+    private String isTemporaryPurchase;
+    /** 是否服务费 */
+    private String isServiceFee;
+    /** 是否阳采 */
+    private String isSunshineProcurement;
 
     /** 查询参数：名称搜索（首字母） */
     private String nameSearch;
@@ -268,6 +282,16 @@ public class FdMaterial extends BaseEntity
 
     /** HIS收费项目ID（用于HIS收费项目对照关系） */
     private String hisChargeItemId;
+
+    /** 已对照 HIS 收费项目名称（来自 his_charge_item_mirror，列表展示用，非表字段） */
+    private String hisChargeItemName;
+    /** 已对照 HIS 收费规格（镜像 spec_model，非表字段） */
+    private String hisChargeItemSpeci;
+    /** 已对照 HIS 收费单价（非表字段） */
+    private BigDecimal hisChargeItemPrice;
+
+    /** 查询参数：是否HIS对照（1=已对照，0=未对照） */
+    private String hisBindStatus;
 
     /** 入选原因 */
     @Excel(name = "入选原因", prompt = "选填")
@@ -290,6 +314,14 @@ public class FdMaterial extends BaseEntity
 
     public void setStatusChangeReason(String statusChangeReason) {
         this.statusChangeReason = statusChangeReason;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     /**

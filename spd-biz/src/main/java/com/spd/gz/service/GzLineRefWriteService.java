@@ -30,6 +30,7 @@ public class GzLineRefWriteService
     public static final String KIND_ACCEPTANCE = "GZ_ACCEPTANCE";
     public static final String KIND_SHIPMENT = "GZ_SHIPMENT";
     public static final String KIND_REFUND_GOODS = "GZ_REFUND_GOODS";
+    public static final String KIND_REFUND_STOCK = "GZ_REFUND_STOCK";
 
     @Autowired
     private GzOrderEntryCodeRefMapper gzOrderEntryCodeRefMapper;
@@ -146,7 +147,9 @@ public class GzLineRefWriteService
         {
             return;
         }
-        gzRefundGoodsEntryRefMapper.deleteByParenRefundGoodsId(refundGoodsParenId);
+        String mainId = String.valueOf(refundGoodsParenId);
+        gzRefundGoodsEntryRefMapper.deleteByTgtMainIdAndKind(mainId, KIND_REFUND_GOODS);
+        gzRefundGoodsEntryRefMapper.deleteByTgtMainIdAndKind(mainId, KIND_REFUND_STOCK);
     }
 
     public void persistRefundGoodsRefs(GzRefundGoods bill, List<GzRefundGoodsEntry> entries, boolean warehouseStockRefund)
@@ -186,7 +189,7 @@ public class GzLineRefWriteService
                 r.setSrcBillNo(e.getRefSrcShipmentNo());
                 r.setSrcDetailId(e.getRefSrcShipmentEntryId());
                 r.setSrcInHospitalCode(e.getInHospitalCode());
-                r.setTgtBillKind(KIND_REFUND_GOODS);
+                r.setTgtBillKind(KIND_REFUND_STOCK);
                 r.setTgtMainId(mainId);
                 r.setTgtBillNo(billNo);
                 r.setTgtEntryId(entryIdStr);

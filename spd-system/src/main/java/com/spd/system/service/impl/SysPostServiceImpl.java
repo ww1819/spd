@@ -1,7 +1,11 @@
 package com.spd.system.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,11 +17,17 @@ import com.spd.system.domain.SysPost;
 import com.spd.system.domain.SysPostMenu;
 import com.spd.system.domain.SysPostDepartment;
 import com.spd.system.domain.SysPostWarehouse;
+import com.spd.system.domain.SysUserDepartment;
+import com.spd.system.domain.SysUserMenu;
+import com.spd.system.domain.SysUserWarehouse;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.SysMenuMapper;
 import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
+import com.spd.system.mapper.SysUserDepartmentMapper;
+import com.spd.system.mapper.SysUserMenuMapper;
+import com.spd.system.mapper.SysUserWarehouseMapper;
 import com.spd.system.mapper.SysPostMenuMapper;
 import com.spd.system.mapper.SysPostDepartmentMapper;
 import com.spd.system.mapper.SysPostWarehouseMapper;
@@ -31,11 +41,22 @@ import com.spd.system.service.ISysPostService;
 @Service
 public class SysPostServiceImpl implements ISysPostService
 {
+    private static final Map<Long, ISysPostService.SyncStatus> SYNC_STATUS_MAP = new ConcurrentHashMap<>();
+
     @Autowired
     private SysPostMapper postMapper;
 
     @Autowired
     private SysUserPostMapper userPostMapper;
+
+    @Autowired
+    private SysUserMenuMapper userMenuMapper;
+
+    @Autowired
+    private SysUserDepartmentMapper userDepartmentMapper;
+
+    @Autowired
+    private SysUserWarehouseMapper userWarehouseMapper;
 
     @Autowired
     private SysPostMenuMapper postMenuMapper;
@@ -436,5 +457,175 @@ public class SysPostServiceImpl implements ISysPostService
         }
         List<Long> ids = userPostMapper.selectUserIdsByPostId(postId);
         return ids != null ? ids : new ArrayList<>();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncMenuToPostUsers(Long postId, String syncMode)
+    {
+        if (postId == null)
+        {
+            return 0;
+        }
+        List<Long> postMenuIds = postMenuMapper.selectMenuListByPostId(postId);
+        if (postMenuIds == null || postMenuIds.isEmpty())
+        {
+            return 0;
+        }
+        SysPost post = postMapper.selectPostById(postId);
+        String tenantId = post != null ? post.getTenantId() : SecurityUtils.getCustomerId();
+        List<Long> userIds = selectUserIdsByPostId(postId);
+        if (userIds == null || userIds.isEmpty())
+        {
+            return 0;
+        }
+        int affected = 0;
+        boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        for (Long userId : userIds)
+        {
+            if (copyMode)
+            {
+                userMenuMapper.deleteUserMenuByUserId(userId, tenantId);
+            }
+            List<Long> userMenuIds = userMenuMapper.selectMenuListByUserId(userId);
+            Set<Long> exists = new HashSet<>(userMenuIds == null ? new ArrayList<>() : userMenuIds);
+            List<SysUserMenu> toInsert = new ArrayList<>();
+            for (Long menuId : postMenuIds)
+            {
+                if (menuId != null && menuId > 0 && !exists.contains(menuId))
+                {
+                    SysUserMenu userMenu = new SysUserMenu();
+                    userMenu.setUserId(userId);
+                    userMenu.setMenuId(menuId);
+                    userMenu.setTenantId(tenantId);
+                    toInsert.add(userMenu);
+                    exists.add(menuId);
+                }
+            }
+            if (!toInsert.isEmpty())
+            {
+                affected += userMenuMapper.batchUserMenu(toInsert);
+            }
+        }
+        return affected;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncDepartmentToPostUsers(Long postId, String syncMode)
+    {
+        if (postId == null)
+        {
+            return 0;
+        }
+        List<Long> postDepartmentIds = postDepartmentMapper.selectDepartmentListByPostId(postId);
+        if (postDepartmentIds == null || postDepartmentIds.isEmpty())
+        {
+            return 0;
+        }
+        List<Long> userIds = selectUserIdsByPostId(postId);
+        if (userIds == null || userIds.isEmpty())
+        {
+            return 0;
+        }
+        int affected = 0;
+        boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        for (Long userId : userIds)
+        {
+            if (copyMode)
+            {
+                userDepartmentMapper.deleteUserDepartmentByUserId(userId);
+            }
+            List<Long> userDepartmentIds = userDepartmentMapper.selectDepartmentIdsByUserId(userId);
+            Set<Long> exists = new HashSet<>(userDepartmentIds == null ? new ArrayList<>() : userDepartmentIds);
+            List<SysUserDepartment> toInsert = new ArrayList<>();
+            for (Long departmentId : postDepartmentIds)
+            {
+                if (departmentId != null && departmentId > 0 && !exists.contains(departmentId))
+                {
+                    SysUserDepartment userDepartment = new SysUserDepartment();
+                    userDepartment.setUserId(userId);
+                    userDepartment.setDepartmentId(departmentId);
+                    userDepartment.setStatus(0);
+                    toInsert.add(userDepartment);
+                    exists.add(departmentId);
+                }
+            }
+            if (!toInsert.isEmpty())
+            {
+                affected += userDepartmentMapper.batchUserDepartment(toInsert);
+            }
+        }
+        return affected;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncWarehouseToPostUsers(Long postId, String syncMode)
+    {
+        if (postId == null)
+        {
+            return 0;
+        }
+        List<Long> postWarehouseIds = postWarehouseMapper.selectWarehouseListByPostId(postId);
+        if (postWarehouseIds == null || postWarehouseIds.isEmpty())
+        {
+            return 0;
+        }
+        List<Long> userIds = selectUserIdsByPostId(postId);
+        if (userIds == null || userIds.isEmpty())
+        {
+            return 0;
+        }
+        int affected = 0;
+        boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        for (Long userId : userIds)
+        {
+            if (copyMode)
+            {
+                userWarehouseMapper.deleteUserWarehouseByUserId(userId);
+            }
+            List<Long> userWarehouseIds = userWarehouseMapper.selectWarehouseIdsByUserId(userId);
+            Set<Long> exists = new HashSet<>(userWarehouseIds == null ? new ArrayList<>() : userWarehouseIds);
+            List<SysUserWarehouse> toInsert = new ArrayList<>();
+            for (Long warehouseId : postWarehouseIds)
+            {
+                if (warehouseId != null && warehouseId > 0 && !exists.contains(warehouseId))
+                {
+                    SysUserWarehouse userWarehouse = new SysUserWarehouse();
+                    userWarehouse.setUserId(userId);
+                    userWarehouse.setWarehouseId(warehouseId);
+                    userWarehouse.setStatus(0);
+                    toInsert.add(userWarehouse);
+                    exists.add(warehouseId);
+                }
+            }
+            if (!toInsert.isEmpty())
+            {
+                affected += userWarehouseMapper.batchUserWarehouse(toInsert);
+            }
+        }
+        return affected;
+    }
+
+    @Override
+    public ISysPostService.SyncStatus getMenuSyncStatus(Long postId)
+    {
+        ISysPostService.SyncStatus status = SYNC_STATUS_MAP.get(postId);
+        if (status == null)
+        {
+            status = new ISysPostService.SyncStatus();
+            status.setPostId(postId);
+            status.setStatus("IDLE");
+            status.setMessage("未查询到同步任务");
+            status.setAffected(0);
+            status.setUpdateTime(System.currentTimeMillis());
+        }
+        return status;
+    }
+
+    public static Map<Long, ISysPostService.SyncStatus> getSyncStatusMap()
+    {
+        return SYNC_STATUS_MAP;
     }
 }

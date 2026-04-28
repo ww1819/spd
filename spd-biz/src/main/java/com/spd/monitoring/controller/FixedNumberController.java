@@ -11,8 +11,12 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
+import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdMaterialListRequest;
+import com.spd.foundation.service.IFdMaterialService;
 import com.spd.monitoring.domain.DeptFixedNumber;
 import com.spd.monitoring.domain.WhFixedNumber;
 import com.spd.monitoring.domain.FixedNumberSaveRequest;
@@ -31,9 +35,11 @@ import org.springframework.web.bind.annotation.*;
 public class FixedNumberController extends BaseController
 {
     private final IFixedNumberService fixedNumberService;
+    private final IFdMaterialService fdMaterialService;
 
-    public FixedNumberController(IFixedNumberService fixedNumberService) {
+    public FixedNumberController(IFixedNumberService fixedNumberService, IFdMaterialService fdMaterialService) {
         this.fixedNumberService = fixedNumberService;
+        this.fdMaterialService = fdMaterialService;
     }
 
     /**
@@ -74,6 +80,7 @@ public class FixedNumberController extends BaseController
                     map.put("specification", item.getMaterial().getSpeci());
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
+                    map.put("isProcure", item.getMaterial().getIsProcure());
                     if (item.getMaterial().getSupplierId() != null) {
                         map.put("supplierId", item.getMaterial().getSupplierId());
                     }
@@ -131,6 +138,7 @@ public class FixedNumberController extends BaseController
                     map.put("specification", item.getMaterial().getSpeci());
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
+                    map.put("isProcure", item.getMaterial().getIsProcure());
                 }
                 if (item.getDepartment() != null) {
                     map.put("departmentName", item.getDepartment().getName());
@@ -214,6 +222,24 @@ public class FixedNumberController extends BaseController
     }
 
     /**
+     * 定数监测新增/维护明细：分页查询可选产品档案（POST body，避免 excludeMaterialIds 过长）。
+     * 与 {@code POST /foundation/material/list} 的区别：不按「本仓库已有未删除定数行」做 EXISTS，
+     * 避免与 excludeMaterialIds 叠加结果为空、或删除定数后无法再选该产品。
+     */
+    @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:list')")
+    @PostMapping("/materialDetailPick")
+    public TableDataInfo materialDetailPick(@RequestBody(required = false) FdMaterialListRequest request)
+    {
+        Integer pageNum = request != null && request.getPageNum() != null ? request.getPageNum() : 1;
+        Integer pageSize = request != null && request.getPageSize() != null ? request.getPageSize() : 10;
+        FdMaterial query = request != null && request.getQuery() != null ? request.getQuery() : new FdMaterial();
+        query.setSkipWarehouseFixedNumberExists(Boolean.TRUE);
+        PageHelper.startPage(pageNum, pageSize);
+        List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
+        return getDataTable(list);
+    }
+
+    /**
      * 新增定数监测
      */
     @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:add')")
@@ -234,6 +260,23 @@ public class FixedNumberController extends BaseController
     public AjaxResult remove(@PathVariable("id") String id)
     {
         int rows = fixedNumberService.deleteFixedNumberById(id);
+        return toAjax(rows);
+    }
+
+    /**
+     * 批量删除定数监测
+     */
+    @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:remove')")
+    @Log(title = "定数监测", businessType = BusinessType.DELETE)
+    @PostMapping("/batchDelete")
+    public AjaxResult batchRemove(@RequestBody Map<String, List<String>> body)
+    {
+        List<String> ids = body == null ? null : body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        int rows = fixedNumberService.deleteFixedNumberByIds(ids);
         return toAjax(rows);
     }
 

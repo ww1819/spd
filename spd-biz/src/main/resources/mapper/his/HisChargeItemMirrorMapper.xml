@@ -17,6 +17,7 @@
             register_no as registerNo,
             is_active as isActive,
             referred_code as referredCode,
+            value_level as valueLevel,
             his_create_time as hisCreateTime,
             his_update_time as hisUpdateTime,
             deleted_flag as deletedFlag,
@@ -28,19 +29,60 @@
         <if test="chargeItemId != null and chargeItemId != ''">
             and charge_item_id = #{chargeItemId}
         </if>
+        <if test="itemCode != null and itemCode != ''">
+            and item_code like concat('%', #{itemCode}, '%')
+        </if>
         <if test="name != null and name != ''">
-            and (
-                item_name like concat('%', #{name}, '%')
-                or item_code like concat('%', #{name}, '%')
-                or charge_item_id like concat('%', #{name}, '%')
-                or referred_code like concat('%', #{name}, '%')
-            )
+            and item_name like concat('%', #{name}, '%')
+        </if>
+        <if test="referredCode != null and referredCode != ''">
+            and referred_code like concat('%', #{referredCode}, '%')
+        </if>
+        <if test="valueLevel != null and valueLevel != ''">
+            and value_level = #{valueLevel}
         </if>
         <if test="speci != null and speci != ''">
             and spec_model like concat('%', #{speci}, '%')
         </if>
         order by charge_item_id
     </select>
+
+    <select id="selectByTenantAndChargeItemId" resultType="com.spd.his.domain.HisChargeItemMirror">
+        select
+            tenant_id as tenantId,
+            charge_item_id as chargeItemId,
+            item_code as itemCode,
+            item_name as itemName,
+            item_type as itemType,
+            consumable_type as consumableType,
+            spec_model as specModel,
+            unit as unit,
+            price as price,
+            manufacturer as manufacturer,
+            register_no as registerNo,
+            is_active as isActive,
+            referred_code as referredCode,
+            value_level as valueLevel,
+            his_create_time as hisCreateTime,
+            his_update_time as hisUpdateTime,
+            deleted_flag as deletedFlag,
+            create_time as createTime,
+            update_time as updateTime
+        from his_charge_item_mirror
+        where tenant_id = #{tenantId}
+          and charge_item_id = #{chargeItemId}
+          and (deleted_flag is null or deleted_flag != 1)
+        limit 1
+    </select>
+
+    <update id="updateValueLevel">
+        update his_charge_item_mirror
+        set value_level = #{valueLevel},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and charge_item_id = #{chargeItemId}
+          and (deleted_flag is null or deleted_flag != 1)
+    </update>
 
     <update id="markAllDeletedByTenant">
         update his_charge_item_mirror
@@ -53,13 +95,13 @@
     <insert id="insertOrUpdateBatch">
         insert into his_charge_item_mirror (
             tenant_id, charge_item_id, item_code, item_name, item_type, consumable_type,
-            spec_model, unit, price, manufacturer, register_no, is_active, referred_code,
+            spec_model, unit, price, manufacturer, register_no, is_active, referred_code, value_level,
             his_create_time, his_update_time, deleted_flag, create_time, update_time
         ) values
         <foreach collection="rows" item="r" separator=",">
             (
                 #{r.tenantId}, #{r.chargeItemId}, #{r.itemCode}, #{r.itemName}, #{r.itemType}, #{r.consumableType},
-                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode},
+                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode}, '2',
                 #{r.hisCreateTime}, #{r.hisUpdateTime}, 0, now(), now()
             )
         </foreach>

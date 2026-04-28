@@ -83,5 +83,20 @@ public interface GzShipmentMapper
      * @return
      */
     int updateGzShipmentEntry(GzShipmentEntry entry);
+
+    /**
+     * 查询主单下有效明细ID列表
+     */
+    List<Long> selectActiveShipmentEntryIdsByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 查询主单下有效明细
+     */
+    List<GzShipmentEntry> selectActiveShipmentEntriesByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 按明细ID更新出库明细（增量更新）
+     */
+    int updateGzShipmentEntryById(GzShipmentEntry entry);
 }
 

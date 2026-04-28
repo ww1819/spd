@@ -10,9 +10,14 @@ import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
+import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
+import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
+import com.spd.his.domain.dto.HisPatientChargeAllQuery;
+import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
+import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 
 /**
  * HIS 患者计费镜像：抓取、查询与按明细手动生成科室消耗。
@@ -27,11 +32,20 @@ public interface IHisPatientChargeService
 
     List<HisOutpatientChargeMirror> selectOutpatientMirrorList(HisOutpatientChargeMirror query);
 
+    List<HisPatientChargeDetailRow> selectAllMirrorList(HisPatientChargeAllQuery query);
+
+    /**
+     * 查询某条计费镜像行关联的科室消耗记录（含消耗单号、明细、分摊数量等）
+     */
+    List<HisMirrorConsumeRecordVo> listMirrorConsumeRecords(String visitKind, String mirrorRowId);
+
     List<HisPatientChargeSummaryRow> selectChargeSummary(String beginChargeDate, String endChargeDate);
 
     List<HisChargeFetchBatch> listRecentFetchBatches(int limit);
 
     HisGenerateConsumeResultVo processMirrorLowValue(HisMirrorManualRowBody body);
+
+    HisMirrorLowBatchResultVo processMirrorLowValueBatch(HisMirrorManualBatchBody body);
 
     HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body);
 

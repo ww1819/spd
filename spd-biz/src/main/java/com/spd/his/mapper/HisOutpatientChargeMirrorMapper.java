@@ -1,5 +1,6 @@
 package com.spd.his.mapper;
 
+import java.util.Date;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.spd.his.domain.HisOutpatientChargeMirror;
@@ -23,7 +24,13 @@ public interface HisOutpatientChargeMirrorMapper
 
     int countConsumedInFetchBatch(@Param("tenantId") String tenantId, @Param("fetchBatchId") String fetchBatchId);
 
-    int updateProcessStatusByIds(@Param("tenantId") String tenantId, @Param("ids") List<String> ids, @Param("processStatus") String processStatus);
+    int updateMirrorProcessByIds(
+            @Param("tenantId") String tenantId,
+            @Param("ids") List<String> ids,
+            @Param("processStatus") String processStatus,
+            @Param("processType") String processType,
+            @Param("processTime") Date processTime,
+            @Param("processBy") String processBy);
 
     HisOutpatientChargeMirror selectByIdAndTenant(@Param("tenantId") String tenantId, @Param("id") String id);
 }

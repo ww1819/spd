@@ -22,9 +22,8 @@ import com.spd.gz.domain.GzRefundGoods;
 import com.spd.gz.service.IGzRefundGoodsService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
-
 /**
- * 高值退货Controller
+ * 高值备货退货 Controller
  *
  * @author spd
  * @date 2024-06-11
@@ -37,7 +36,7 @@ public class GzRefundGoodsController extends BaseController
     private IGzRefundGoodsService gzRefundGoodsService;
 
     /**
-     * 查询高值退货列表
+     * 查询高值备货退货列表
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:list')")
     @GetMapping("/list")
@@ -49,20 +48,20 @@ public class GzRefundGoodsController extends BaseController
     }
 
     /**
-     * 导出高值退货列表
+     * 导出高值备货退货列表
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:export')")
-    @Log(title = "高值退货", businessType = BusinessType.EXPORT)
+    @Log(title = "高值备货退货", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, GzRefundGoods gzRefundGoods)
     {
         List<GzRefundGoods> list = gzRefundGoodsService.selectGzRefundGoodsList(gzRefundGoods);
         ExcelUtil<GzRefundGoods> util = new ExcelUtil<GzRefundGoods>(GzRefundGoods.class);
-        util.exportExcel(response, list, "高值退货数据");
+        util.exportExcel(response, list, "高值备货退货数据");
     }
 
     /**
-     * 获取高值退货详细信息
+     * 获取高值备货退货详细信息
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:query')")
     @GetMapping(value = "/{id}")
@@ -72,10 +71,10 @@ public class GzRefundGoodsController extends BaseController
     }
 
     /**
-     * 新增高值退货
+     * 新增高值备货退货
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:add')")
-    @Log(title = "高值退货", businessType = BusinessType.INSERT)
+    @Log(title = "高值备货退货", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody GzRefundGoods gzRefundGoods)
     {
@@ -83,18 +82,18 @@ public class GzRefundGoodsController extends BaseController
         if (rows > 0) {
             Integer filteredCount = gzRefundGoods.getDedupFilteredCount();
             String msg = (filteredCount != null && filteredCount > 0)
-                ? String.format("新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
-                : "新增成功";
+                ? String.format("高值备货退货新增成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "高值备货退货新增成功";
             return AjaxResult.success(msg, gzRefundGoods);
         }
         return AjaxResult.error("新增失败");
     }
 
     /**
-     * 修改高值退货
+     * 修改高值备货退货
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:edit')")
-    @Log(title = "高值退货", businessType = BusinessType.UPDATE)
+    @Log(title = "高值备货退货", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody GzRefundGoods gzRefundGoods)
     {
@@ -102,18 +101,18 @@ public class GzRefundGoodsController extends BaseController
         if (rows > 0) {
             Integer filteredCount = gzRefundGoods.getDedupFilteredCount();
             String msg = (filteredCount != null && filteredCount > 0)
-                ? String.format("修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
-                : "修改成功";
+                ? String.format("高值备货退货修改成功，后台已自动过滤 %d 条重复明细", filteredCount)
+                : "高值备货退货修改成功";
             return AjaxResult.success(msg, gzRefundGoods);
         }
         return AjaxResult.error("修改失败");
     }
 
     /**
-     * 删除高值退货
+     * 删除高值备货退货
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:remove')")
-    @Log(title = "高值退货", businessType = BusinessType.DELETE)
+    @Log(title = "高值备货退货", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long ids)
     {
@@ -121,10 +120,10 @@ public class GzRefundGoodsController extends BaseController
     }
 
     /**
-     * 审核高值入库
+     * 审核高值备货退货
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:audit')")
-    @Log(title = "高值入库", businessType = BusinessType.UPDATE)
+    @Log(title = "高值备货退货审核", businessType = BusinessType.UPDATE)
     @PutMapping("/auditGoods")
     public AjaxResult audit(@RequestBody JSONObject json)
     {

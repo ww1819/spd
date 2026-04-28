@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.spd.his.domain.HisMirrorConsumeLink;
+import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 
 public interface HisMirrorConsumeLinkMapper
 {
@@ -14,4 +15,10 @@ public interface HisMirrorConsumeLinkMapper
 
     List<String> selectDistinctBillSourcesForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
+
+    /**
+     * 某条计费镜像行关联的科室消耗记录（按关联时间倒序）
+     */
+    List<HisMirrorConsumeRecordVo> selectConsumeRecordsByMirrorRow(@Param("tenantId") String tenantId,
+        @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId);
 }

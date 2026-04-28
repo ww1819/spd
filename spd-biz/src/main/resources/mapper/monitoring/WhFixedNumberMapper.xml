@@ -47,6 +47,7 @@
         <result property="model" column="model"/>
         <result property="registerNo" column="registerNo"/>
         <result property="supplierId" column="materialSupplierId"/>
+        <result property="isProcure" column="isProcure"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -80,6 +81,7 @@
             u.unit_name as unitName,
             m.price as price,
             m.supplier_id as materialSupplierId,
+            m.is_procure as isProcure,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName,
@@ -126,6 +128,15 @@
         <if test="isGz != null and isGz != ''">
             and m.is_gz = #{isGz}
         </if>
+        <if test="isProcure != null and isProcure != ''">
+            and m.is_procure = #{isProcure}
+        </if>
+        <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0">
+            and m.id not in
+            <foreach collection="excludeMaterialIdList" item="eid" open="(" separator="," close=")">
+                #{eid}
+            </foreach>
+        </if>
         <if test="material != null and material.speci != null and material.speci != ''">
             and m.speci like concat('%', #{material.speci}, '%')
         </if>
@@ -164,6 +175,20 @@
             delete_time = now(),
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="deleteWhFixedNumberByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update wh_fixed_number
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_time = now()
+        where tenant_id = #{scopedTenantId}
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </update>
 
     <select id="selectByWarehouseAndMaterial" parameterType="map" resultMap="WhFixedNumberResult">

@@ -61,11 +61,9 @@ public class StkDepInventoryController extends BaseController
     }
 
     /**
-     * 查询科室库存列表
+     * 科室库存列表查询核心逻辑（含科室/仓库数据范围，非 super 走 scopeUserId）
      */
-    @PreAuthorize("@ss.hasPermi('department:depInventory:list')")
-    @GetMapping("/list")
-    public TableDataInfo list(StkDepInventory stkDepInventory)
+    private TableDataInfo listStkDepInventoryTable(StkDepInventory stkDepInventory)
     {
         applyDepartmentAndWarehouseScopeOrDeny(stkDepInventory);
         // 注意：权限过滤可能触发数据库查询，需在 startPage() 前执行，
@@ -92,6 +90,26 @@ public class StkDepInventoryController extends BaseController
         totalInfo.setSubTotalAmt(subTotalAmt);
         Long total = new PageInfo<>(list).getTotal();
         return getDataTable(list, totalInfo, total);
+    }
+
+    /**
+     * 查询科室库存列表
+     */
+    @PreAuthorize("@ss.hasPermi('department:depInventory:list')")
+    @GetMapping("/list")
+    public TableDataInfo list(StkDepInventory stkDepInventory)
+    {
+        return listStkDepInventoryTable(stkDepInventory);
+    }
+
+    /**
+     * 弹窗/跨模块选科室库存明细：仅需登录，数据范围与 {@link #list} 相同（非 super 仅可见授权科室/仓库库存）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/list")
+    public TableDataInfo pickList(StkDepInventory stkDepInventory)
+    {
+        return listStkDepInventoryTable(stkDepInventory);
     }
 
     /**

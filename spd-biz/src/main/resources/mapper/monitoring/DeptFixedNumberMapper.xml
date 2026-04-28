@@ -46,6 +46,7 @@
         <result property="speci" column="specification"/>
         <result property="model" column="model"/>
         <result property="registerNo" column="registerNo"/>
+        <result property="isProcure" column="isProcure"/>
     </resultMap>
 
     <sql id="selectDeptFixedNumberVo">
@@ -76,6 +77,7 @@
             m.speci    as specification,
             m.model    as model,
             m.register_no as registerNo,
+            m.is_procure as isProcure,
             u.unit_name as unitName,
             m.price as price,
             s.name as supplierName,
@@ -108,6 +110,9 @@
         </if>
         <if test="material != null and material.speci != null and material.speci != ''">
             and m.speci like concat('%', #{material.speci}, '%')
+        </if>
+        <if test="isProcure != null and isProcure != ''">
+            and m.is_procure = #{isProcure}
         </if>
         order by m.code
     </select>
@@ -144,6 +149,20 @@
             delete_time = now(),
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="deleteDeptFixedNumberByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update dept_fixed_number
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_time = now()
+        where tenant_id = #{scopedTenantId}
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </update>
 
     <select id="selectByDepartmentAndMaterial" parameterType="map" resultMap="DeptFixedNumberResult">

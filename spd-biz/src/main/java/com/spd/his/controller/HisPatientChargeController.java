@@ -24,9 +24,14 @@ import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
+import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
+import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
+import com.spd.his.domain.dto.HisPatientChargeAllQuery;
+import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
+import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.service.IHisPatientChargeService;
 
 /**
@@ -43,7 +48,6 @@ public class HisPatientChargeController extends BaseController
     @GetMapping("/mirror/inpatient/list")
     public TableDataInfo inpatientMirrorList(HisInpatientChargeMirror query)
     {
-        startPage();
         query.setTenantId(SecurityUtils.getCustomerId());
         List<HisInpatientChargeMirror> list = hisPatientChargeService.selectInpatientMirrorList(query);
         return getDataTable(list);
@@ -53,10 +57,30 @@ public class HisPatientChargeController extends BaseController
     @GetMapping("/mirror/outpatient/list")
     public TableDataInfo outpatientMirrorList(HisOutpatientChargeMirror query)
     {
-        startPage();
         query.setTenantId(SecurityUtils.getCustomerId());
         List<HisOutpatientChargeMirror> list = hisPatientChargeService.selectOutpatientMirrorList(query);
         return getDataTable(list);
+    }
+
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @GetMapping("/mirror/all/list")
+    public TableDataInfo allMirrorList(HisPatientChargeAllQuery query)
+    {
+        query.setTenantId(SecurityUtils.getCustomerId());
+        List<HisPatientChargeDetailRow> list = hisPatientChargeService.selectAllMirrorList(query);
+        return getDataTable(list);
+    }
+
+    /**
+     * 某条计费明细关联的科室消耗记录（追溯 his_mirror_consume_link）
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @GetMapping("/mirror/consumeRecords")
+    public AjaxResult mirrorConsumeRecords(@RequestParam("visitKind") String visitKind,
+        @RequestParam("mirrorRowId") String mirrorRowId)
+    {
+        List<HisMirrorConsumeRecordVo> list = hisPatientChargeService.listMirrorConsumeRecords(visitKind, mirrorRowId);
+        return success(list);
     }
 
     @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
@@ -99,6 +123,15 @@ public class HisPatientChargeController extends BaseController
     public AjaxResult processLowValue(@RequestBody HisMirrorManualRowBody body)
     {
         HisGenerateConsumeResultVo vo = hisPatientChargeService.processMirrorLowValue(body);
+        return success(vo);
+    }
+
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:generateConsume') or @ss.hasPermi('department:patientCharge:processMirrorLow')")
+    @Log(title = "HIS计费镜像批量低值处理", businessType = BusinessType.OTHER)
+    @PostMapping("/mirror/processLowValueBatch")
+    public AjaxResult processLowValueBatch(@RequestBody HisMirrorManualBatchBody body)
+    {
+        HisMirrorLowBatchResultVo vo = hisPatientChargeService.processMirrorLowValueBatch(body);
         return success(vo);
     }
 

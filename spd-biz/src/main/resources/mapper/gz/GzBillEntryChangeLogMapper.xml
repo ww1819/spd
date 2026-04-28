@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzBillEntryChangeLogMapper">
+
+    <resultMap id="GzBillEntryChangeLogMap" type="GzBillEntryChangeLog">
+        <id property="id" column="id"/>
+        <result property="billType" column="bill_type"/>
+        <result property="billId" column="bill_id"/>
+        <result property="entryType" column="entry_type"/>
+        <result property="entryId" column="entry_id"/>
+        <result property="actionType" column="action_type"/>
+        <result property="beforeJson" column="before_json"/>
+        <result property="afterJson" column="after_json"/>
+        <result property="operator" column="operator"/>
+        <result property="changeTime" column="change_time"/>
+        <result property="tenantId" column="tenant_id"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="GzBillEntryChangeLog">
+        insert into gz_bill_entry_change_log
+        (
+            id, bill_type, bill_id, entry_type, entry_id, action_type,
+            before_json, after_json, operator, change_time, tenant_id
+        ) values (
+            #{id}, #{billType}, #{billId}, #{entryType}, #{entryId}, #{actionType},
+            #{beforeJson}, #{afterJson}, #{operator}, #{changeTime}, #{tenantId}
+        )
+    </insert>
+
+    <select id="selectByBill" resultMap="GzBillEntryChangeLogMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, bill_type, bill_id, entry_type, entry_id, action_type, before_json, after_json, operator, change_time, tenant_id
+        from gz_bill_entry_change_log
+        where bill_type = #{billType}
+          and bill_id = #{billId}
+          and tenant_id = #{scopedTenantId}
+        order by change_time desc, id desc
+    </select>
+</mapper>

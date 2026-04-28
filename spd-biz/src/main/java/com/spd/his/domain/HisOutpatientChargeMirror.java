@@ -21,6 +21,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String tenantId;
     private String fetchBatchId;
     private String hisOutpatientChargeId;
+    /** 退费记录对应的原收费明细ID（HIS 视图字段：outpatient_charge_id_tf） */
+    private String hisOutpatientChargeIdTf;
     private String patientId;
     private String patientName;
     private String outpatientNo;
@@ -43,11 +45,34 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String remark;
     private String rowFingerprint;
     private String processStatus;
+    private String processType;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date processTime;
+    private String processBy;
+    /** 该科室该项目对应的高值耗材库存数量 */
+    private BigDecimal highValueStockQty;
+    /** 该科室该项目对应的低值耗材库存数量 */
+    private BigDecimal lowValueStockQty;
+    /** 收费项目高低值：1高值 2低值（来自 his_charge_item_mirror，仅查询展示） */
+    private String valueLevel;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private Long departmentId;
+    private String processed;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date beginProcessTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date endProcessTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date beginChargeDate;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endChargeDate;
+    /** 查询排序字段（仅允许白名单字段） */
+    private String orderByColumn;
+    /** 查询排序方向：asc/desc */
+    private String isAsc;
 }

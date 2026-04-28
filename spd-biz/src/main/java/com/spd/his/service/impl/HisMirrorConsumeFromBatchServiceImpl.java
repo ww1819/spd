@@ -105,7 +105,8 @@ public class HisMirrorConsumeFromBatchServiceImpl implements IHisMirrorConsumeFr
         {
             throw new ServiceException("镜像行「" + mirrorRowId + "」无法匹配科室（HIS编码「" + deptHisCode + "」）");
         }
-        FdMaterial mat = fdMaterialMapper.selectFdMaterialByTenantAndHisId(tenantId, HisMatchTextUtils.normalizeMatchKey(chargeItemId));
+        FdMaterial mat = fdMaterialMapper.selectFdMaterialByTenantAndHisChargeItemId(
+            tenantId, HisMatchTextUtils.normalizeMatchKey(chargeItemId));
         if (mat == null || mat.getId() == null)
         {
             throw new ServiceException("镜像行「" + mirrorRowId + "」无法匹配耗材档案（charge_item_id=" + chargeItemId + "）");

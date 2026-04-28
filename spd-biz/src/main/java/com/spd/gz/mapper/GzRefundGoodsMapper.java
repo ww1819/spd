@@ -29,6 +29,9 @@ public interface GzRefundGoodsMapper
      */
     public List<GzRefundGoods> selectGzRefundGoodsList(GzRefundGoods gzRefundGoods);
 
+    /** 查询高值退库列表（gz_refund_stock） */
+    public List<GzRefundGoods> selectGzRefundStockList(GzRefundGoods gzRefundGoods);
+
     /**
      * 新增高值退货
      *
@@ -45,6 +48,12 @@ public interface GzRefundGoodsMapper
      */
     public int updateGzRefundGoods(GzRefundGoods gzRefundGoods);
 
+    /** 新增高值退库（gz_refund_stock） */
+    public int insertGzRefundStock(GzRefundGoods gzRefundGoods);
+
+    /** 修改高值退库（gz_refund_stock） */
+    public int updateGzRefundStock(GzRefundGoods gzRefundGoods);
+
     /**
      * 删除高值退货
      *
@@ -52,6 +61,9 @@ public interface GzRefundGoodsMapper
      * @return 结果
      */
     public int deleteGzRefundGoodsById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
+
+    /** 删除高值退库（gz_refund_stock） */
+    public int deleteGzRefundStockById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除高值退货明细
@@ -69,6 +81,9 @@ public interface GzRefundGoodsMapper
      */
     public int batchGzRefundGoodsEntry(List<GzRefundGoodsEntry> gzRefundGoodsEntryList);
 
+    /** 批量新增高值退库明细（gz_refund_stock_entry） */
+    public int batchGzRefundStockEntry(List<GzRefundGoodsEntry> gzRefundGoodsEntryList);
+
 
     /**
      * 通过高值退货主键删除高值退货明细信息
@@ -77,6 +92,9 @@ public interface GzRefundGoodsMapper
      * @return 结果
      */
     public int deleteGzRefundGoodsEntryByParenId(@Param("parenId") Long id, @Param("deleteBy") String deleteBy);
+
+    /** 通过主表ID逻辑删除高值退库明细 */
+    public int deleteGzRefundStockEntryByParenId(@Param("parenId") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询当天最大的单号
@@ -88,10 +106,40 @@ public interface GzRefundGoodsMapper
     /** 按单号前缀 + 日期查询当天最大单号（避免 GZTH 与 GZTK 流水互相干扰） */
     String selectMaxBillNoByPrefix(@Param("prefix") String prefix, @Param("date") String date);
 
+    /** 按退库表查询当天最大单号 */
+    String selectMaxStockBillNoByPrefix(@Param("prefix") String prefix, @Param("date") String date);
+
     /**
      * 逻辑删除
      * @param entry
      * @return
      */
     int updateGzRefundGoodsEntry(GzRefundGoodsEntry entry);
+
+    /**
+     * 查询主单下有效明细ID列表
+     */
+    List<Long> selectActiveRefundGoodsEntryIdsByParenId(@Param("parenId") Long parenId);
+
+    /** 查询主单下有效退库明细ID列表 */
+    List<Long> selectActiveRefundStockEntryIdsByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 查询主单下有效明细
+     */
+    List<GzRefundGoodsEntry> selectActiveRefundGoodsEntriesByParenId(@Param("parenId") Long parenId);
+
+    /** 查询主单下有效退库明细 */
+    List<GzRefundGoodsEntry> selectActiveRefundStockEntriesByParenId(@Param("parenId") Long parenId);
+
+    /**
+     * 按明细ID更新退货/退库明细（增量更新）
+     */
+    int updateGzRefundGoodsEntryById(GzRefundGoodsEntry entry);
+
+    /** 按明细ID更新退库明细 */
+    int updateGzRefundStockEntryById(GzRefundGoodsEntry entry);
+
+    /** 查询高值退库主单 */
+    GzRefundGoods selectGzRefundStockById(Long id);
 }

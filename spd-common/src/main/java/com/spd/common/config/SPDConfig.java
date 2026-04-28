@@ -18,6 +18,9 @@ public class SPDConfig
     /** 版本 */
     private String version;
 
+    /** 发版/部署标识（可选，如 2026-04-25-1，便于与前端构建对照） */
+    private String buildTime;
+
     /** 版权年份 */
     private String copyrightYear;
 
@@ -51,6 +54,16 @@ public class SPDConfig
     public void setVersion(String version)
     {
         this.version = version;
+    }
+
+    public String getBuildTime()
+    {
+        return buildTime;
+    }
+
+    public void setBuildTime(String buildTime)
+    {
+        this.buildTime = buildTime;
     }
 
     public String getCopyrightYear()
