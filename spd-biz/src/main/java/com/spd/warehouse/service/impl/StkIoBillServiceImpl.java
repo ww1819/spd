@@ -19,7 +19,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
 import com.spd.caigou.mapper.PurchaseOrderMapper;
@@ -2533,8 +2532,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             e.setUnitPrice(unitPrice);
             e.setAmt(qty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
             e.setBatchNumber(String.valueOf(row.getOrDefault("batchNumber", "")));
-            e.setBeginTime(String.valueOf(row.getOrDefault("beginTime", "")));
-            e.setEndTime(String.valueOf(row.getOrDefault("endTime", "")));
+            Object beginTimeVal = row.get("beginTime");
+            if (beginTimeVal != null && StringUtils.isNotEmpty(String.valueOf(beginTimeVal))
+                && !"null".equalsIgnoreCase(String.valueOf(beginTimeVal)))
+            {
+                e.setBeginTime(DateUtils.parseDate(beginTimeVal));
+            }
+            Object endTimeVal = row.get("endTime");
+            if (endTimeVal != null && StringUtils.isNotEmpty(String.valueOf(endTimeVal))
+                && !"null".equalsIgnoreCase(String.valueOf(endTimeVal)))
+            {
+                e.setEndTime(DateUtils.parseDate(endTimeVal));
+            }
             entryList.add(e);
         }
         if (entryList.isEmpty()) {
