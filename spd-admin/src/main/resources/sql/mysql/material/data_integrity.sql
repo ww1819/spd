@@ -563,6 +563,33 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'hc.login.defaultCustomerId');
 /
 
+-- 前置机接口地址配置（订单推送/配送单查询下载）：从系统参数读取 IP 与端口
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT
+  '前置机接口IP',
+  'spd.interface.ip',
+  '127.0.0.1',
+  'N',
+  'admin',
+  NOW(),
+  '前置机接口主机IP或域名（不含协议和端口），用于订单推送、配送单查询/下载。'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'spd.interface.ip');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT
+  '前置机接口端口',
+  'spd.interface.port',
+  '8088',
+  'N',
+  'admin',
+  NOW(),
+  '前置机接口端口，用于订单推送、配送单查询/下载。'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'spd.interface.port');
+/
+
 SET @post_list_menu_id := (
   SELECT menu_id FROM sys_menu
   WHERE perms = 'system:post:list' AND menu_type = 'C'

@@ -60,7 +60,6 @@ import com.spd.warehouse.mapper.HcCkFlowMapper;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.Objects;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -101,6 +100,7 @@ import com.spd.warehouse.service.IHcDocBillRefService;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.gz.domain.GzBillEntryChangeLog;
@@ -118,9 +118,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     /** 衡水三院等租户：出库审核通过后自动执行收货确认，确认人同审核人 */
     private static final String TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT = "hengsui-third-001";
 
-    /** 服务器 interface 接口 URL（scminterface） */
-    @Value("${spd.interface.url:http://localhost:8088}")
-    private String interfaceUrl;
+    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
+    private static final String DEFAULT_INTERFACE_PORT = "8088";
 
     @Autowired
     private StkIoBillMapper stkIoBillMapper;
@@ -172,6 +171,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private ISbCustomerService sbCustomerService;
+
+    @Autowired
+    private ISysConfigService sysConfigService;
 
     @Autowired
     private ITenantScopeService tenantScopeService;
@@ -2559,11 +2561,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     private String fetchDeliveryXml(String deliveryNo) {
         try {
-            String base = interfaceUrl;
-            if (!base.endsWith("/")) {
-                base += "/";
-            }
-            String url = base + "api/spd/delivery/download";
+            String url = buildInterfaceBaseUrl() + "/api/spd/delivery/download";
             String param = "deliveryNo=" + URLEncoder.encode(deliveryNo, "UTF-8");
             String xml = HttpUtils.sendGet(url, param, "UTF-8");
             if (StringUtils.isEmpty(xml) || !xml.contains("<LIST>")) {
@@ -2573,6 +2571,23 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         } catch (Exception e) {
             throw new ServiceException("获取配送单明细失败：" + e.getMessage());
         }
+    }
+
+    private String buildInterfaceBaseUrl()
+    {
+        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
+        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
+        if (StringUtils.isEmpty(ip)) {
+            ip = DEFAULT_INTERFACE_IP;
+        }
+        if (!port.matches("\\d{1,5}")) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        int portNum = Integer.parseInt(port);
+        if (portNum < 1 || portNum > 65535) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        return "http://" + ip + ":" + port;
     }
 
     private List<Map<String, Object>> parseDeliveryXmlAndGroup(String xml) {

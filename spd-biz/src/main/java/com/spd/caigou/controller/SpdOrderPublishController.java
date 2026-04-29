@@ -4,7 +4,9 @@ import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
-import org.springframework.beans.factory.annotation.Value;
+import com.spd.common.utils.StringUtils;
+import com.spd.system.service.ISysConfigService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,9 +24,11 @@ import java.util.Map;
 @RequestMapping("/spd/order")
 public class SpdOrderPublishController extends BaseController
 {
-    /** 服务器 interface 接口 URL，沿用耗材档案推送的配置 */
-    @Value("${spd.interface.url:http://localhost:8088}")
-    private String interfaceUrl;
+    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
+    private static final String DEFAULT_INTERFACE_PORT = "8088";
+
+    @Autowired
+    private ISysConfigService sysConfigService;
 
     /**
      * 发布选中的采购订单到前置机
@@ -61,13 +65,8 @@ public class SpdOrderPublishController extends BaseController
                 return error("订单ID列表不能为空");
             }
 
-            // 拼接前置机 scminterface 的订单发布接口地址
-            String url = interfaceUrl;
-            if (!url.endsWith("/"))
-            {
-                url += "/";
-            }
-            url += "api/spd/order/publish";
+            // 拼接前置机 scminterface 的订单发布接口地址（优先从系统参数读取）
+            String url = buildInterfaceBaseUrl() + "/api/spd/order/publish";
 
             Map<String, Object> requestData = new HashMap<>();
             requestData.put("ids", ids);
@@ -93,6 +92,27 @@ public class SpdOrderPublishController extends BaseController
         {
             return error("发布订单失败: " + e.getMessage());
         }
+    }
+
+    private String buildInterfaceBaseUrl()
+    {
+        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
+        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
+
+        if (StringUtils.isEmpty(ip))
+        {
+            ip = DEFAULT_INTERFACE_IP;
+        }
+        if (!port.matches("\\d{1,5}"))
+        {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        int portNum = Integer.parseInt(port);
+        if (portNum < 1 || portNum > 65535)
+        {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        return "http://" + ip + ":" + port;
     }
 }
 

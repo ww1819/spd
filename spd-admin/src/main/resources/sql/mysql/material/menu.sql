@@ -3628,6 +3628,94 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+SET @shenhe_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/shenhe/index' ORDER BY menu_id DESC LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '订单审查查询',
+  @shenhe_menu_id,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'caigou:dingdan:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @shenhe_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @shenhe_menu_id AND perms = 'caigou:dingdan:query');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '订单审查导出',
+  @shenhe_menu_id,
+  2,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'caigou:dingdan:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @shenhe_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @shenhe_menu_id AND perms = 'caigou:dingdan:export');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '订单审查审核',
+  @shenhe_menu_id,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'caigou:dingdan:audit', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @shenhe_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @shenhe_menu_id AND perms = 'caigou:dingdan:audit');
+/
+
+-- 将历史 audit 按钮尽量归并到订单审查菜单下，避免“有权限但页面按钮不显示”
+UPDATE sys_menu sm
+SET sm.parent_id = @shenhe_menu_id,
+    sm.menu_name = '订单审查审核',
+    sm.order_num = 3,
+    sm.visible = '0',
+    sm.status = '0',
+    sm.update_by = '1',
+    sm.update_time = NOW()
+WHERE @shenhe_menu_id IS NOT NULL
+  AND sm.menu_type = 'F'
+  AND sm.perms = 'caigou:dingdan:audit'
+  AND sm.parent_id <> @shenhe_menu_id
+  AND sm.parent_id IN (
+    SELECT m.menu_id FROM (
+      SELECT menu_id
+      FROM sys_menu
+      WHERE component IN ('caigou/dingdan/index', 'caigou/shenhe/index')
+         OR path IN ('dingdan', 'shenhe')
+    ) m
+  );
+/
+
 -- 历史曾用动态 menu_id 插入的「订单审查/审核/审批」行：统一名称、父级、路由 path（与 menu_id=3196 并存时仅修正旧行）
 UPDATE sys_menu sm
 JOIN (
@@ -3642,7 +3730,7 @@ SET sm.menu_name = '订单审查',
     sm.perms = 'caigou:dingdan:list',
     sm.icon = 'audit',
     sm.menu_type = 'C',
-    sm.visible = '1',
+    sm.visible = '0',
     sm.status = '0',
     sm.update_by = '1',
     sm.update_time = NOW()
@@ -3735,6 +3823,30 @@ SELECT
 FROM DUAL
 WHERE @publish_menu_id IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @publish_menu_id AND perms = 'caigou:dingdan:audit');
+/
+
+-- 纠正历史“订单发布审核”按钮挂错父级的问题：若按钮已存在但不在发布菜单下，则归并到订单发布
+UPDATE sys_menu sm
+JOIN (
+  SELECT p.menu_id
+  FROM (
+    SELECT menu_id
+    FROM sys_menu
+    WHERE menu_type = 'C'
+      AND component = 'caigou/publish/index'
+  ) p
+) publish_parent ON publish_parent.menu_id = sm.parent_id
+SET sm.parent_id = @publish_menu_id,
+    sm.menu_name = '订单发布审核',
+    sm.order_num = 3,
+    sm.visible = '0',
+    sm.status = '0',
+    sm.update_by = '1',
+    sm.update_time = NOW()
+WHERE @publish_menu_id IS NOT NULL
+  AND sm.menu_type = 'F'
+  AND sm.perms = 'caigou:dingdan:audit'
+  AND sm.parent_id <> @publish_menu_id;
 /
 
 SET @in_wh_parent := COALESCE(

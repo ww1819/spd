@@ -44,7 +44,7 @@ spd:
     # 服务器interface配置
     interface:
         # 服务器interface接口URL
-        url: http://localhost:8088
+        url: http://192.168.3.76:8080
     # HIS：患者计费镜像抓取。主库 sys_his_external_db 按 tenant_id 配置外联库与 db_type（SQLSERVER/MYSQL）；
     # 无租户行且 use-global-datasource-fallback=true 时回退到下方 datasource 全局单库（兼容旧部署）。
     # SQL Server 2012+JDBC：程序会对 jdbc:sqlserver 自动补 encrypt=false、trustServerCertificate=true、loginTimeout=60（未写时）；

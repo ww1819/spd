@@ -8,10 +8,10 @@ import javax.servlet.http.HttpServletResponse;
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.http.HttpUtils;
+import com.spd.system.service.ISysConfigService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -32,13 +32,15 @@ import com.spd.common.core.page.TableDataInfo;
 @RequestMapping("/warehouse/warehouse")
 public class StkIoBillController extends BaseController
 {
-    /** 服务器 interface 接口 URL（scminterface） */
-    @Value("${spd.interface.url:http://localhost:8088}")
-    private String interfaceUrl;
+    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
+    private static final String DEFAULT_INTERFACE_PORT = "8088";
 
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
+
+    @Autowired
+    private ISysConfigService sysConfigService;
 
     /**
      * 查询入库列表
@@ -143,11 +145,7 @@ public class StkIoBillController extends BaseController
             return AjaxResult.error("配送单号或输入码不能为空");
         }
         try {
-            String url = interfaceUrl;
-            if (!url.endsWith("/")) {
-                url += "/";
-            }
-            url += "api/spd/delivery/query";
+            String url = buildInterfaceBaseUrl() + "/api/spd/delivery/query";
             String param = "keyword=" + URLEncoder.encode(keyword, "UTF-8");
             String result = HttpUtils.sendGet(url, param);
             if (StringUtils.isEmpty(result)) {
@@ -183,5 +181,22 @@ public class StkIoBillController extends BaseController
     public AjaxResult outboundSummaryByDepartment() {
         List<Map<String, Object>> list = stkIoBillService.selectOutboundSummaryByDepartment();
         return success(list);
+    }
+
+    private String buildInterfaceBaseUrl()
+    {
+        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
+        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
+        if (StringUtils.isEmpty(ip)) {
+            ip = DEFAULT_INTERFACE_IP;
+        }
+        if (!port.matches("\\d{1,5}")) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        int portNum = Integer.parseInt(port);
+        if (portNum < 1 || portNum > 65535) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        return "http://" + ip + ":" + port;
     }
 }
