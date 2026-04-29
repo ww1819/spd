@@ -1,9 +1,11 @@
 package com.spd.warehouse.service.impl;
 
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -17,6 +19,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
 import com.spd.caigou.mapper.PurchaseOrderMapper;
@@ -58,10 +61,16 @@ import com.spd.warehouse.mapper.HcCkFlowMapper;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.Objects;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.http.HttpUtils;
 import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
 
@@ -109,6 +118,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 {
     /** 衡水三院等租户：出库审核通过后自动执行收货确认，确认人同审核人 */
     private static final String TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT = "hengsui-third-001";
+
+    /** 服务器 interface 接口 URL（scminterface） */
+    @Value("${spd.interface.url:http://localhost:8088}")
+    private String interfaceUrl;
 
     @Autowired
     private StkIoBillMapper stkIoBillMapper;
@@ -2479,6 +2492,145 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
+    }
+
+    @Override
+    public StkIoBill createRkEntriesByDeliveryNo(String deliveryNo) {
+        if (StringUtils.isEmpty(deliveryNo)) {
+            throw new ServiceException("配送单号不能为空");
+        }
+        String no = deliveryNo.trim();
+        String xml = fetchDeliveryXml(no);
+        List<Map<String, Object>> groupedRows = parseDeliveryXmlAndGroup(xml);
+        if (groupedRows.isEmpty()) {
+            throw new ServiceException("配送单无可用明细数据：" + no);
+        }
+
+        StkIoBill stkIoBill = new StkIoBill();
+        stkIoBill.setBillType(101);
+        stkIoBill.setRefBillNo(no);
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        List<String> missCodes = new ArrayList<>();
+        for (Map<String, Object> row : groupedRows) {
+            String code = String.valueOf(row.get("code"));
+            if (StringUtils.isEmpty(code)) {
+                continue;
+            }
+            FdMaterial material = fdMaterialMapper.selectFdMaterialByMainBarcode(code);
+            if (material == null) {
+                missCodes.add(code);
+                continue;
+            }
+            BigDecimal qty = toBigDecimal(row.get("qty"));
+            BigDecimal unitPrice = toBigDecimal(row.get("unitPrice"));
+            if (unitPrice.compareTo(BigDecimal.ZERO) == 0 && material.getPrice() != null) {
+                unitPrice = material.getPrice();
+            }
+            StkIoBillEntry e = new StkIoBillEntry();
+            e.setMaterialId(material.getId());
+            e.setMaterial(material);
+            e.setQty(qty);
+            e.setUnitPrice(unitPrice);
+            e.setAmt(qty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
+            e.setBatchNumber(String.valueOf(row.getOrDefault("batchNumber", "")));
+            e.setBeginTime(String.valueOf(row.getOrDefault("beginTime", "")));
+            e.setEndTime(String.valueOf(row.getOrDefault("endTime", "")));
+            entryList.add(e);
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("配送单明细未匹配到本地耗材档案，无法生成入库明细");
+        }
+        stkIoBill.setStkIoBillEntryList(entryList);
+        if (!missCodes.isEmpty()) {
+            String uniqueMiss = missCodes.stream().distinct().collect(Collectors.joining(","));
+            stkIoBill.setRemark("以下编码未匹配本地耗材档案并已跳过：" + uniqueMiss);
+        }
+        return stkIoBill;
+    }
+
+    private String fetchDeliveryXml(String deliveryNo) {
+        try {
+            String base = interfaceUrl;
+            if (!base.endsWith("/")) {
+                base += "/";
+            }
+            String url = base + "api/scm/zs/deliveryData/download";
+            String param = "deliveryNo=" + URLEncoder.encode(deliveryNo, "UTF-8");
+            String xml = HttpUtils.sendGet(url, param, "UTF-8");
+            if (StringUtils.isEmpty(xml) || !xml.contains("<LIST>")) {
+                throw new ServiceException("未获取到有效配送单明细数据：" + deliveryNo);
+            }
+            return xml;
+        } catch (Exception e) {
+            throw new ServiceException("获取配送单明细失败：" + e.getMessage());
+        }
+    }
+
+    private List<Map<String, Object>> parseDeliveryXmlAndGroup(String xml) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setExpandEntityReferences(false);
+            factory.setNamespaceAware(false);
+            Document doc = factory.newDocumentBuilder()
+                .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+            NodeList rows = doc.getElementsByTagName("LIST");
+            Map<String, Map<String, Object>> grouped = new LinkedHashMap<>();
+            for (int i = 0; i < rows.getLength(); i++) {
+                Element row = (Element) rows.item(i);
+                String code = xmlTagValue(row, "CODE");
+                if (StringUtils.isEmpty(code)) {
+                    continue;
+                }
+                BigDecimal qty = toBigDecimal(xmlTagValue(row, "SL"));
+                BigDecimal unitPrice = toBigDecimal(xmlTagValue(row, "DJ"));
+                String batchNumber = xmlTagValue(row, "PH");
+                String endTime = xmlTagValue(row, "YXQ");
+                String beginTime = xmlTagValue(row, "SCRQ");
+                String key = code + "|" + unitPrice.toPlainString() + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                Map<String, Object> agg = grouped.get(key);
+                if (agg == null) {
+                    agg = new HashMap<>();
+                    agg.put("code", code);
+                    agg.put("qty", BigDecimal.ZERO);
+                    agg.put("unitPrice", unitPrice);
+                    agg.put("batchNumber", batchNumber);
+                    agg.put("endTime", endTime);
+                    agg.put("beginTime", beginTime);
+                    grouped.put(key, agg);
+                }
+                BigDecimal sum = toBigDecimal(agg.get("qty")).add(qty);
+                agg.put("qty", sum);
+            }
+            result.addAll(grouped.values());
+            return result;
+        } catch (Exception e) {
+            throw new ServiceException("解析配送单数据失败：" + e.getMessage());
+        }
+    }
+
+    private static String xmlTagValue(Element row, String tagName) {
+        NodeList nodes = row.getElementsByTagName(tagName);
+        if (nodes == null || nodes.getLength() == 0 || nodes.item(0) == null) {
+            return "";
+        }
+        String val = nodes.item(0).getTextContent();
+        return val == null ? "" : val.trim();
+    }
+
+    private static BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        String txt = String.valueOf(value).trim();
+        if (txt.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(txt);
+        } catch (Exception ignore) {
+            return BigDecimal.ZERO;
+        }
     }
 
     @Override

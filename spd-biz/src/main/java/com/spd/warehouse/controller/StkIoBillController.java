@@ -2,12 +2,16 @@ package com.spd.warehouse.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.net.URLEncoder;
 import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.http.HttpUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -28,6 +32,10 @@ import com.spd.common.core.page.TableDataInfo;
 @RequestMapping("/warehouse/warehouse")
 public class StkIoBillController extends BaseController
 {
+    /** 服务器 interface 接口 URL（scminterface） */
+    @Value("${spd.interface.url:http://localhost:8088}")
+    private String interfaceUrl;
+
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
@@ -126,6 +134,45 @@ public class StkIoBillController extends BaseController
         }
         StkIoBill stkIoBill1 = stkIoBillService.createRkEntriesByDingdan(dingdanId);
         return success(stkIoBill1);
+    }
+
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createRkEntriesByDingdan')")
+    @GetMapping("/queryZsDelivery")
+    public AjaxResult queryZsDelivery(@RequestParam String keyword) {
+        if (StringUtils.isEmpty(keyword)) {
+            return AjaxResult.error("配送单号或输入码不能为空");
+        }
+        try {
+            String url = interfaceUrl;
+            if (!url.endsWith("/")) {
+                url += "/";
+            }
+            url += "api/scm/zs/delivery/query";
+            String param = "deliveryNo=" + URLEncoder.encode(keyword, "UTF-8");
+            String result = HttpUtils.sendGet(url, param);
+            if (StringUtils.isEmpty(result)) {
+                return AjaxResult.error("配送单查询失败：接口无响应");
+            }
+            JSONObject jsonResult = JSONObject.parseObject(result);
+            Integer code = jsonResult.getInteger("code");
+            if (code != null && code == 200) {
+                return success(jsonResult.get("data"));
+            }
+            String msg = jsonResult.getString("msg");
+            return AjaxResult.error(StringUtils.isNotEmpty(msg) ? msg : "配送单查询失败");
+        } catch (Exception e) {
+            return AjaxResult.error("配送单查询失败：" + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createRkEntriesByDingdan')")
+    @GetMapping("/createRkEntriesByDeliveryNo")
+    public AjaxResult createRkEntriesByDeliveryNo(@RequestParam String deliveryNo) {
+        if (StringUtils.isEmpty(deliveryNo)) {
+            return AjaxResult.error("配送单号不能为空");
+        }
+        StkIoBill stkIoBill = stkIoBillService.createRkEntriesByDeliveryNo(deliveryNo);
+        return success(stkIoBill);
     }
 
     /**

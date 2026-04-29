@@ -228,6 +228,13 @@ public interface IStkIoBillService
     public StkIoBill createRkEntriesByDingdan(String dingdanId);
 
     /**
+     * 引用配送单生成入库单明细
+     * @param deliveryNo 配送单号
+     * @return
+     */
+    StkIoBill createRkEntriesByDeliveryNo(String deliveryNo);
+
+    /**
      * 引用入库单生成退货单明细
      * @param rkApplyId 入库单id
      * @return
