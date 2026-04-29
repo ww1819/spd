@@ -2554,7 +2554,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (!base.endsWith("/")) {
                 base += "/";
             }
-            String url = base + "api/scm/zs/deliveryData/download";
+            String url = base + "api/spd/delivery/download";
             String param = "deliveryNo=" + URLEncoder.encode(deliveryNo, "UTF-8");
             String xml = HttpUtils.sendGet(url, param, "UTF-8");
             if (StringUtils.isEmpty(xml) || !xml.contains("<LIST>")) {

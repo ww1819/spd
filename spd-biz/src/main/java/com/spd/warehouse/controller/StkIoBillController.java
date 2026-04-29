@@ -147,8 +147,8 @@ public class StkIoBillController extends BaseController
             if (!url.endsWith("/")) {
                 url += "/";
             }
-            url += "api/scm/zs/delivery/query";
-            String param = "deliveryNo=" + URLEncoder.encode(keyword, "UTF-8");
+            url += "api/spd/delivery/query";
+            String param = "keyword=" + URLEncoder.encode(keyword, "UTF-8");
             String result = HttpUtils.sendGet(url, param);
             if (StringUtils.isEmpty(result)) {
                 return AjaxResult.error("配送单查询失败：接口无响应");
