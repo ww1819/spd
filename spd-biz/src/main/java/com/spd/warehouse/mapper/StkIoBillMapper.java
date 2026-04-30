@@ -249,6 +249,12 @@ public interface StkIoBillMapper
      * @return
      */
     List<Map<String, Object>> selectListPurInventory(StkIoBill stkIoBill);
+    /**
+     * 查询进销存明细合计
+     * @param stkIoBill
+     * @return
+     */
+    TotalInfo selectListPurInventoryTotal(StkIoBill stkIoBill);
 
     /**
      * 查询月结初始化列表

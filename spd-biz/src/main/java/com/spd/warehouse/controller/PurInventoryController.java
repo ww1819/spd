@@ -3,18 +3,16 @@ package com.spd.warehouse.controller;
 import com.github.pagehelper.PageInfo;
 import com.spd.common.constant.HttpStatus;
 import com.spd.common.core.controller.BaseController;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
-import com.spd.warehouse.vo.PurInventoryVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -65,61 +63,44 @@ public class PurInventoryController extends BaseController
         }
         startPage();
         List<Map<String, Object>> mapPage = stkIoBillService.selectListPurInventory(stkIoBill);
-        List<Map<String, Object>> mapList = stkIoBillService.selectListPurInventory(stkIoBill);
-        List<PurInventoryVo> purInventoryVoList = new ArrayList<PurInventoryVo>();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        long total = new PageInfo<>(mapPage).getTotal();
 
-        try{
-            for(Map<String, Object> map : mapList){
-                PurInventoryVo inventoryVo = new PurInventoryVo();
-                inventoryVo.setId((Long) map.get("id"));
-                inventoryVo.setMaterialCode(map.get("materialCode").toString());
-                inventoryVo.setMaterialName(map.get("materialName").toString());
-                inventoryVo.setMaterialModel(map.get("materialModel").toString());
-                inventoryVo.setMaterialQty((BigDecimal) map.get("materialQty"));
-                inventoryVo.setMaterialSpeci(map.get("materialSpeci").toString());
-                inventoryVo.setMaterialAmt((BigDecimal) map.get("materialAmt"));
-                inventoryVo.setUnitName(map.get("unitName").toString());
-                inventoryVo.setUnitPrice((BigDecimal) map.get("price"));
-                inventoryVo.setWarehouseName(map.get("warehouseName").toString());
-                inventoryVo.setFactoryName(map.get("factoryName").toString());
-                inventoryVo.setSupplierName(map.get("supplierName").toString());
-                if(map.get("departmentName") != null){
-                    inventoryVo.setDepartmentName(map.get("departmentName").toString());
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (mapPage != null) {
+            for (Map<String, Object> row : mapPage) {
+                Object qtyObj = row.get("materialQty");
+                if (qtyObj instanceof BigDecimal) {
+                    subTotalQty = subTotalQty.add((BigDecimal) qtyObj);
+                } else if (qtyObj != null) {
+                    try {
+                        subTotalQty = subTotalQty.add(new BigDecimal(qtyObj.toString()));
+                    } catch (Exception ignored) { }
                 }
-                if(map.get("batchNo") != null){
-                    inventoryVo.setBatchNo(map.get("batchNo").toString());
+                Object amtObj = row.get("materialAmt");
+                if (amtObj instanceof BigDecimal) {
+                    subTotalAmt = subTotalAmt.add((BigDecimal) amtObj);
+                } else if (amtObj != null) {
+                    try {
+                        subTotalAmt = subTotalAmt.add(new BigDecimal(amtObj.toString()));
+                    } catch (Exception ignored) { }
                 }
-                if(map.get("batchNumber") != null){
-                    inventoryVo.setBatchNumber(map.get("batchNumber").toString());
-                }
-                inventoryVo.setBillNo(map.get("billNo").toString());
-                inventoryVo.setBillType((Integer) map.get("billType"));
-                if(map.get("billDate") != null){
-                    Date billDate = formatter.parse(map.get("billDate").toString());
-                    inventoryVo.setBillDate(billDate);
-                }
-                if(map.get("beginTime") != null){
-                    Date beginTime = formatter.parse(map.get("beginTime").toString());
-                    inventoryVo.setBeginDate(beginTime);
-                }
-                if(map.get("endTime") != null){
-                    Date endTime = formatter.parse(map.get("endTime").toString());
-                    inventoryVo.setEndDate(endTime);
-                }
-                inventoryVo.setFinanceCategoryName(map.get("financeCategoryName").toString());
-                purInventoryVoList.add(inventoryVo);
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
         }
+
+        TotalInfo totalInfo = stkIoBillService.selectListPurInventoryTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
 
         TableDataInfo rspData = new TableDataInfo();
         rspData.setCode(HttpStatus.SUCCESS);
         rspData.setMsg("查询成功");
         rspData.setRows(mapPage);
-        rspData.setTotal(new PageInfo<PurInventoryVo>(purInventoryVoList).getTotal());
-//        return getDataTable(purInventoryVoList);
+        rspData.setTotal(total);
+        rspData.setTotalInfo(totalInfo);
         return rspData;
     }
 

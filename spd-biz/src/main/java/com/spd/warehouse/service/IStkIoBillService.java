@@ -179,6 +179,12 @@ public interface IStkIoBillService
      * @return
      */
     List<Map<String, Object>> selectListPurInventory(StkIoBill stkIoBill);
+    /**
+     * 查询进销存明细合计
+     * @param stkIoBill
+     * @return
+     */
+    TotalInfo selectListPurInventoryTotal(StkIoBill stkIoBill);
 
     /**
      * 采购汇总报表（按供应商）

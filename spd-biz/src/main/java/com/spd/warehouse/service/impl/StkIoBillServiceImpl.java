@@ -1934,6 +1934,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public TotalInfo selectListPurInventoryTotal(StkIoBill stkIoBill) {
+        return stkIoBillMapper.selectListPurInventoryTotal(stkIoBill);
+    }
+
+    @Override
     public List<Map<String, Object>> selectPurchaseSummaryBySupplier(StkIoBill stkIoBill) {
         if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
