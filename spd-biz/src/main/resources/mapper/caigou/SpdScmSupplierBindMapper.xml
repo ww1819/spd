@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.SpdScmSupplierBindMapper">
+
+    <select id="selectByTenantAndSupplier" resultType="com.spd.caigou.domain.SpdScmSupplierBind">
+        select id, tenant_id as tenantId, supplier_id as supplierId, scm_supplier_code as scmSupplierCode, remark,
+               del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
+        from spd_scm_supplier_bind
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and del_flag = '0'
+        limit 1
+    </select>
+
+    <select id="selectListByTenantId" resultType="com.spd.caigou.domain.SpdScmSupplierBind">
+        select id, tenant_id as tenantId, supplier_id as supplierId, scm_supplier_code as scmSupplierCode, remark,
+               del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
+        from spd_scm_supplier_bind
+        where tenant_id = #{tenantId} and del_flag = '0'
+        order by supplier_id
+    </select>
+
+    <select id="selectSupplierCode" resultType="java.lang.String">
+        select scm_supplier_code
+        from spd_scm_supplier_bind
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and del_flag = '0'
+          and scm_supplier_code is not null and trim(scm_supplier_code) != ''
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.spd.caigou.domain.SpdScmSupplierBind">
+        insert into spd_scm_supplier_bind(id, tenant_id, supplier_id, scm_supplier_code, remark, del_flag, create_by, create_time)
+        values(#{id}, #{tenantId}, #{supplierId}, #{scmSupplierCode}, #{remark}, '0', #{createBy}, now())
+    </insert>
+
+    <update id="updateByTenantAndSupplier" parameterType="com.spd.caigou.domain.SpdScmSupplierBind">
+        update spd_scm_supplier_bind
+        set scm_supplier_code = #{scmSupplierCode},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and del_flag = '0'
+    </update>
+</mapper>

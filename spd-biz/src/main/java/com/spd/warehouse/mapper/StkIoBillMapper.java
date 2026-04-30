@@ -1,5 +1,6 @@
 package com.spd.warehouse.mapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -338,4 +339,12 @@ public interface StkIoBillMapper
      * 财务结算汇总：按材料/试剂 + 供货单位聚合批发金额（出退库 201/401，单价×数量）
      */
     List<Map<String, Object>> selectFinanceSettlementSupplierSummary(StkIoBill stkIoBill);
+
+    /**
+     * 按配送单引用行汇总已制入库单明细数量（不含逻辑删除；可排除指定主表用于修改单自检）
+     */
+    BigDecimal sumInboundQtyByDeliveryLine(@Param("tenantId") String tenantId,
+        @Param("deliveryNo") String deliveryNo,
+        @Param("lineSign") String lineSign,
+        @Param("excludeBillId") Long excludeBillId);
 }

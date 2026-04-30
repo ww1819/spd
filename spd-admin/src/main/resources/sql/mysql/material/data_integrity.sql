@@ -590,6 +590,20 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'spd.interface.port');
 /
 
+-- 采购订单推送方式：ids=前置机查SPD库组装；payload=SPD拼JSON前置机只转发；auto=先试payload再回退ids（前置机无SPD库时用 payload 或 auto）
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT
+  '采购订单推送方式',
+  'spd.order.push.mode',
+  'auto',
+  'N',
+  'admin',
+  NOW(),
+  'ids=仅走 /api/spd/order/publish；payload=仅走 /api/spd/order/publishPayload；auto=先试 payload 失败再 ids。默认 auto 兼容旧部署。'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'spd.order.push.mode');
+/
+
 SET @post_list_menu_id := (
   SELECT menu_id FROM sys_menu
   WHERE perms = 'system:post:list' AND menu_type = 'C'

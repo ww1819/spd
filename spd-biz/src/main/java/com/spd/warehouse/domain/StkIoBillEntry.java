@@ -155,6 +155,12 @@ public class StkIoBillEntry extends BaseEntity
     /** 库房申请单明细 ID（UUID，不落库；保存出库单后写入 wh_wh_apply_ck_entry_ref） */
     private String whApplyEntryId;
 
+    /** 配送单拆分行签名（与接口 LIST 分组键一致，用于按行累计已引用数量） */
+    private String deliveryLineSign;
+
+    /** 该行在配送接口快照中的可入总量上限（引用配送单时写入，保存时参与校验） */
+    private BigDecimal deliveryLineQtyCap;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -485,6 +491,22 @@ public class StkIoBillEntry extends BaseEntity
         this.whApplyEntryId = whApplyEntryId;
     }
 
+    public String getDeliveryLineSign() {
+        return deliveryLineSign;
+    }
+
+    public void setDeliveryLineSign(String deliveryLineSign) {
+        this.deliveryLineSign = deliveryLineSign;
+    }
+
+    public BigDecimal getDeliveryLineQtyCap() {
+        return deliveryLineQtyCap;
+    }
+
+    public void setDeliveryLineQtyCap(BigDecimal deliveryLineQtyCap) {
+        this.deliveryLineQtyCap = deliveryLineQtyCap;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -511,6 +533,8 @@ public class StkIoBillEntry extends BaseEntity
             .append("kcNo", getKcNo())
             .append("stkInventoryId", getStkInventoryId())
             .append("depInventoryId", getDepInventoryId())
+            .append("deliveryLineSign", getDeliveryLineSign())
+            .append("deliveryLineQtyCap", getDeliveryLineQtyCap())
             .toString();
     }
 }

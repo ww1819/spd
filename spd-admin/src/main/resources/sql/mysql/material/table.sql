@@ -1352,6 +1352,8 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `wh_apply_entry_id` varchar(36) DEFAULT NULL COMMENT '库房申请单明细ID（引用库房申请出库时回填）',
+  `delivery_line_sign` varchar(512) DEFAULT NULL COMMENT '配送单拆分行签名（与接口LIST分组键一致，用于累计已引用数量）',
+  `delivery_line_qty_cap` decimal(18,4) DEFAULT NULL COMMENT '该行在配送接口快照中的可入总量上限（引用配送单时写入）',
   `stk_inventory_id` bigint DEFAULT NULL COMMENT '仓库库存明细主键 stk_inventory.id（入库审核、出库制单/审核来源仓行等）',
   `dep_inventory_id` bigint DEFAULT NULL COMMENT '科室库存明细主键 stk_dep_inventory.id（出库审核后、收货确认、退库等）',
   PRIMARY KEY (`id`),
@@ -1359,8 +1361,23 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   KEY `idx_stk_io_entry_material` (`material_id`),
   KEY `idx_stk_io_entry_batch` (`batch_no`),
   KEY `idx_stk_io_entry_wh` (`warehouse_id`),
-  KEY `idx_stk_io_entry_tenant` (`tenant_id`)
+  KEY `idx_stk_io_entry_tenant` (`tenant_id`),
+  KEY `idx_stk_io_entry_delivery_line` (`tenant_id`, `delivery_line_sign`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='出入库明细表';
+/
+
+CREATE TABLE IF NOT EXISTS `stk_delivery_line_cap` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `delivery_no` varchar(64) NOT NULL COMMENT '配送单号',
+  `line_sign` varchar(512) NOT NULL COMMENT '配送接口分组行签名',
+  `qty_cap` decimal(18,4) NOT NULL COMMENT '该行可入总量上限（取历次接口快照与历史行的最大值）',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_stk_delivery_line_cap` (`tenant_id`, `delivery_no`, `line_sign`(191)),
+  KEY `idx_stk_delivery_line_cap_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='配送单行可入数量上限（支持一单多次拆入、按行防超量）';
 /
 
 -- 兼容历史库：补齐 stk_io_bill_entry 审计字段
@@ -2490,6 +2507,46 @@ CREATE TABLE IF NOT EXISTS `stk_bill_entry_change_log` (
   KEY `idx_stk_becl_time` (`change_time`),
   KEY `idx_stk_becl_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='低值单据明细变更审计表';
+/
+
+-- ========== 采购订单与 SCM 平台对账扩展列 ==========
+-- purchase_order / purchase_order_entry 全量 CREATE 若来自若依主库初始化脚本，此处不重复建表；扩展列统一由 column.sql 中 CALL add_table_column 追加：
+-- purchase_order：scm_order_id、scm_order_no、push_status、push_time、push_error_msg、scm_hospital_code、scm_supplier_code
+-- purchase_order_entry：scm_order_detail_id
+/
+
+-- SPD 租户/供应商与云平台编码绑定（主键 UUID 36 位；外键为逻辑 varchar，不设 DB FK）
+CREATE TABLE IF NOT EXISTS `spd_scm_tenant_bind` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT 'SPD租户ID(sb_customer.customer_id)',
+  `scm_hospital_code` varchar(64) NOT NULL COMMENT '云平台医院编码(scm_hospital.hospital_code)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 2删除',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_spd_scm_tenant_bind` (`tenant_id`),
+  KEY `idx_spd_scm_tenant_hospital_code` (`scm_hospital_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SPD租户-云平台医院编码绑定';
+/
+
+CREATE TABLE IF NOT EXISTS `spd_scm_supplier_bind` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT 'SPD租户ID',
+  `supplier_id` varchar(36) NOT NULL COMMENT 'SPD供应商主键 fd_supplier.id（字符串）',
+  `scm_supplier_code` varchar(64) NOT NULL COMMENT '云平台供应商编码 scm_supplier.supplier_code',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 2删除',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_spd_scm_supplier_bind` (`tenant_id`,`supplier_id`),
+  KEY `idx_spd_scm_supplier_code` (`scm_supplier_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SPD供应商-云平台供应商编码绑定';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.SpdScmTenantBindMapper">
+
+    <select id="selectByTenantId" resultType="com.spd.caigou.domain.SpdScmTenantBind">
+        select id, tenant_id as tenantId, scm_hospital_code as scmHospitalCode, remark, del_flag as delFlag,
+               create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
+        from spd_scm_tenant_bind
+        where tenant_id = #{tenantId} and del_flag = '0'
+        limit 1
+    </select>
+
+    <select id="selectHospitalCodeByTenantId" resultType="java.lang.String">
+        select scm_hospital_code
+        from spd_scm_tenant_bind
+        where tenant_id = #{tenantId} and del_flag = '0'
+          and scm_hospital_code is not null and trim(scm_hospital_code) != ''
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.spd.caigou.domain.SpdScmTenantBind">
+        insert into spd_scm_tenant_bind(id, tenant_id, scm_hospital_code, remark, del_flag, create_by, create_time)
+        values(#{id}, #{tenantId}, #{scmHospitalCode}, #{remark}, '0', #{createBy}, now())
+    </insert>
+
+    <update id="updateByTenantId" parameterType="com.spd.caigou.domain.SpdScmTenantBind">
+        update spd_scm_tenant_bind
+        set scm_hospital_code = #{scmHospitalCode},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId} and del_flag = '0'
+    </update>
+</mapper>

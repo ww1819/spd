@@ -105,4 +105,16 @@ public interface PurchaseOrderMapper
      */
     public String selectMaxOrderNo(String date);
 
+    /**
+     * 推送前写入平台医院/供应商编码快照
+     */
+    int updatePushCodesSnapshot(@Param("id") Long id, @Param("scmHospitalCode") String scmHospitalCode,
+        @Param("scmSupplierCode") String scmSupplierCode, @Param("updateBy") String updateBy);
+
+    /**
+     * 更新推送结果：pushStatus 1成功 2失败
+     */
+    int updatePushOutcome(@Param("id") Long id, @Param("pushStatus") String pushStatus,
+        @Param("pushErrorMsg") String pushErrorMsg, @Param("updateBy") String updateBy);
+
 }

@@ -89,11 +89,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.spd.warehouse.constants.HcDocBillRefType;
 import com.spd.warehouse.domain.HcDocBillRef;
+import com.spd.warehouse.domain.StkDeliveryLineCap;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.vo.InboundEntryRefChannelQtyVo;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.HcDocBillRefMapper;
+import com.spd.warehouse.mapper.StkDeliveryLineCapMapper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IHcDocBillRefService;
@@ -189,6 +191,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private StkBillEntryChangeLogMapper stkBillEntryChangeLogMapper;
+
+    @Autowired
+    private StkDeliveryLineCapMapper stkDeliveryLineCapMapper;
 
     /**
      * 查询出入库
@@ -300,6 +305,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
             normalizeInboundSupplierFields(stkIoBill);
         }
+        assertInboundDeliveryLineQtyWithinCap(stkIoBill, null);
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertStkIoBillEntry(stkIoBill);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
@@ -343,6 +349,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (entryList != null && !entryList.isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
                 normalizeInboundSupplierFields(stkIoBill);
+                mergeDeliveryLineMetaFromDb(stkIoBill, entryList);
+                assertInboundDeliveryLineQtyWithinCap(stkIoBill, stkIoBill.getId());
             }
             syncStkIoBillEntry(stkIoBill);
         }
@@ -1667,7 +1675,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             || !Objects.equals(oldRow.getSupplerId(), newRow.getSupplerId())
             || !Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
             || !Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
-            || !Objects.equals(oldRow.getRemark(), newRow.getRemark());
+            || !Objects.equals(oldRow.getRemark(), newRow.getRemark())
+            || !Objects.equals(oldRow.getDeliveryLineSign(), newRow.getDeliveryLineSign())
+            || !Objects.equals(oldRow.getDeliveryLineQtyCap(), newRow.getDeliveryLineQtyCap());
     }
 
     /**
@@ -2507,11 +2517,28 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException("配送单无可用明细数据：" + no);
         }
 
+        String tenantId = StringUtils.isNotEmpty(SecurityUtils.getCustomerId())
+            ? SecurityUtils.getCustomerId() : SecurityUtils.requiredScopedTenantIdForSql();
+        for (Map<String, Object> row : groupedRows) {
+            String lineSign = String.valueOf(row.getOrDefault("lineSign", ""));
+            BigDecimal xmlLineQty = toBigDecimal(row.get("qty"));
+            if (StringUtils.isNotEmpty(lineSign) && xmlLineQty.compareTo(BigDecimal.ZERO) > 0) {
+                StkDeliveryLineCap capRow = new StkDeliveryLineCap();
+                capRow.setId(UUID7.generateUUID7());
+                capRow.setTenantId(tenantId);
+                capRow.setDeliveryNo(no);
+                capRow.setLineSign(lineSign);
+                capRow.setQtyCap(xmlLineQty);
+                stkDeliveryLineCapMapper.upsertMaxCap(capRow);
+            }
+        }
+
         StkIoBill stkIoBill = new StkIoBill();
         stkIoBill.setBillType(101);
         stkIoBill.setRefBillNo(no);
         List<StkIoBillEntry> entryList = new ArrayList<>();
         List<String> missCodes = new ArrayList<>();
+        List<String> exhaustedCodes = new ArrayList<>();
         for (Map<String, Object> row : groupedRows) {
             String code = String.valueOf(row.get("code"));
             if (StringUtils.isEmpty(code)) {
@@ -2522,18 +2549,37 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 missCodes.add(code);
                 continue;
             }
-            BigDecimal qty = toBigDecimal(row.get("qty"));
+            String lineSign = String.valueOf(row.getOrDefault("lineSign", ""));
+            BigDecimal xmlLineQty = toBigDecimal(row.get("qty"));
             BigDecimal unitPrice = toBigDecimal(row.get("unitPrice"));
             if (unitPrice.compareTo(BigDecimal.ZERO) == 0 && material.getPrice() != null) {
                 unitPrice = material.getPrice();
             }
+            StkDeliveryLineCap capRow = StringUtils.isNotEmpty(lineSign)
+                ? stkDeliveryLineCapMapper.selectByUk(tenantId, no, lineSign) : null;
+            BigDecimal cap = capRow != null && capRow.getQtyCap() != null ? capRow.getQtyCap() : xmlLineQty;
+            BigDecimal used = StringUtils.isNotEmpty(lineSign)
+                ? stkIoBillMapper.sumInboundQtyByDeliveryLine(tenantId, no, lineSign, null) : BigDecimal.ZERO;
+            if (used == null) {
+                used = BigDecimal.ZERO;
+            }
+            BigDecimal remaining = cap.subtract(used);
+            BigDecimal takeQty = xmlLineQty.min(remaining);
+            if (takeQty.compareTo(BigDecimal.ZERO) <= 0) {
+                exhaustedCodes.add(code);
+                continue;
+            }
             StkIoBillEntry e = new StkIoBillEntry();
             e.setMaterialId(material.getId());
             e.setMaterial(material);
-            e.setQty(qty);
+            e.setQty(takeQty);
             e.setUnitPrice(unitPrice);
-            e.setAmt(qty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
+            e.setAmt(takeQty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
             e.setBatchNumber(String.valueOf(row.getOrDefault("batchNumber", "")));
+            if (StringUtils.isNotEmpty(lineSign)) {
+                e.setDeliveryLineSign(lineSign);
+                e.setDeliveryLineQtyCap(cap);
+            }
             Object beginTimeVal = row.get("beginTime");
             if (beginTimeVal != null && StringUtils.isNotEmpty(String.valueOf(beginTimeVal))
                 && !"null".equalsIgnoreCase(String.valueOf(beginTimeVal)))
@@ -2549,14 +2595,110 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             entryList.add(e);
         }
         if (entryList.isEmpty()) {
-            throw new ServiceException("配送单明细未匹配到本地耗材档案，无法生成入库明细");
+            throw new ServiceException("配送单明细未匹配到本地耗材档案或各行可入数量已满，无法生成入库明细");
         }
         stkIoBill.setStkIoBillEntryList(entryList);
+        List<String> remarkParts = new ArrayList<>();
         if (!missCodes.isEmpty()) {
-            String uniqueMiss = missCodes.stream().distinct().collect(Collectors.joining(","));
-            stkIoBill.setRemark("以下编码未匹配本地耗材档案并已跳过：" + uniqueMiss);
+            remarkParts.add("以下编码未匹配本地耗材档案并已跳过：" + missCodes.stream().distinct().collect(Collectors.joining(",")));
+        }
+        if (!exhaustedCodes.isEmpty()) {
+            remarkParts.add("以下编码对应配送行可入数量已满并已跳过：" + exhaustedCodes.stream().distinct().collect(Collectors.joining(",")));
+        }
+        if (!remarkParts.isEmpty()) {
+            stkIoBill.setRemark(String.join("；", remarkParts));
         }
         return stkIoBill;
+    }
+
+    /**
+     * 修改入库单时补全前端未回传的配送行元数据，便于按行校验可入上限。
+     */
+    private void mergeDeliveryLineMetaFromDb(StkIoBill stkIoBill, List<StkIoBillEntry> entryList) {
+        if (stkIoBill.getId() == null) {
+            return;
+        }
+        StkIoBill db = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+        if (db == null || db.getStkIoBillEntryList() == null) {
+            return;
+        }
+        Map<Long, StkIoBillEntry> old = db.getStkIoBillEntryList().stream()
+            .collect(Collectors.toMap(StkIoBillEntry::getId, e -> e, (a, b) -> a));
+        for (StkIoBillEntry e : entryList) {
+            if (e == null || e.getId() == null) {
+                continue;
+            }
+            StkIoBillEntry o = old.get(e.getId());
+            if (o == null) {
+                continue;
+            }
+            if (StringUtils.isEmpty(e.getDeliveryLineSign()) && StringUtils.isNotEmpty(o.getDeliveryLineSign())) {
+                e.setDeliveryLineSign(o.getDeliveryLineSign());
+            }
+            if (e.getDeliveryLineQtyCap() == null && o.getDeliveryLineQtyCap() != null) {
+                e.setDeliveryLineQtyCap(o.getDeliveryLineQtyCap());
+            }
+        }
+        if (StringUtils.isEmpty(stkIoBill.getRefBillNo()) && StringUtils.isNotEmpty(db.getRefBillNo())) {
+            stkIoBill.setRefBillNo(db.getRefBillNo());
+        }
+    }
+
+    /**
+     * 校验引用同一配送单、同一拆分行签名的入库明细累计数量不超过上限（支持一单多次拆入）。
+     */
+    private void assertInboundDeliveryLineQtyWithinCap(StkIoBill bill, Long excludeBillId) {
+        if (bill == null || bill.getBillType() == null || bill.getBillType() != 101) {
+            return;
+        }
+        String deliveryNo = bill.getRefBillNo();
+        if (StringUtils.isEmpty(deliveryNo)) {
+            return;
+        }
+        List<StkIoBillEntry> entries = bill.getStkIoBillEntryList();
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(bill.getTenantId())
+            ? bill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        Map<String, BigDecimal> qtyByLine = new LinkedHashMap<>();
+        Map<String, BigDecimal> capByLine = new LinkedHashMap<>();
+        for (StkIoBillEntry e : entries) {
+            if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                continue;
+            }
+            String sign = e.getDeliveryLineSign();
+            if (StringUtils.isEmpty(sign)) {
+                continue;
+            }
+            BigDecimal q = e.getQty() != null ? e.getQty() : BigDecimal.ZERO;
+            qtyByLine.merge(sign, q, BigDecimal::add);
+            if (e.getDeliveryLineQtyCap() != null) {
+                capByLine.merge(sign, e.getDeliveryLineQtyCap(), BigDecimal::max);
+            }
+        }
+        if (qtyByLine.isEmpty()) {
+            return;
+        }
+        String dn = deliveryNo.trim();
+        for (Map.Entry<String, BigDecimal> en : qtyByLine.entrySet()) {
+            String sign = en.getKey();
+            BigDecimal requestSum = en.getValue();
+            StkDeliveryLineCap capRow = stkDeliveryLineCapMapper.selectByUk(tenantId, dn, sign);
+            BigDecimal cap = capRow != null && capRow.getQtyCap() != null ? capRow.getQtyCap() : capByLine.get(sign);
+            if (cap == null) {
+                continue;
+            }
+            BigDecimal used = stkIoBillMapper.sumInboundQtyByDeliveryLine(tenantId, dn, sign, excludeBillId);
+            if (used == null) {
+                used = BigDecimal.ZERO;
+            }
+            if (used.add(requestSum).compareTo(cap) > 0) {
+                throw new ServiceException(String.format(
+                    "配送单「%s」存在拆分行已超过可入上限：其他单已占 %s，本单合计 %s，上限 %s",
+                    dn, used.toPlainString(), requestSum.toPlainString(), cap.toPlainString()));
+            }
+        }
     }
 
     private String fetchDeliveryXml(String deliveryNo) {
@@ -2615,6 +2757,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 Map<String, Object> agg = grouped.get(key);
                 if (agg == null) {
                     agg = new HashMap<>();
+                    agg.put("lineSign", key);
                     agg.put("code", code);
                     agg.put("qty", BigDecimal.ZERO);
                     agg.put("unitPrice", unitPrice);

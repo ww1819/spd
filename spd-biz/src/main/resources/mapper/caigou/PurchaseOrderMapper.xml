@@ -33,6 +33,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deleteTime"    column="delete_time"    />
         <result property="planId"    column="plan_id"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="scmOrderId"    column="scm_order_id"    />
+        <result property="scmOrderNo"    column="scm_order_no"    />
+        <result property="pushStatus"    column="push_status"    />
+        <result property="pushTime"    column="push_time"    />
+        <result property="pushErrorMsg"    column="push_error_msg"    />
+        <result property="scmHospitalCode"    column="scm_hospital_code"    />
+        <result property="scmSupplierCode"    column="scm_supplier_code"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -104,7 +111,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                po.order_status, po.order_type, po.urgency_level, po.total_amount, po.paid_amount, 
                po.unpaid_amount, po.expected_delivery_date, po.actual_delivery_date, po.payment_terms, 
                po.delivery_address, po.contact_person, po.contact_phone, po.audit_by, po.audit_date, 
-               po.audit_opinion, po.remark, po.del_flag, po.delete_by, po.delete_time, po.tenant_id, po.create_by, po.create_time, po.update_by, po.update_time,
+               po.audit_opinion, po.remark, po.del_flag, po.delete_by, po.delete_time, po.tenant_id,
+               po.scm_order_id, po.scm_order_no, po.push_status, po.push_time, po.push_error_msg,
+               po.scm_hospital_code, po.scm_supplier_code,
+               po.create_by, po.create_time, po.update_by, po.update_time,
         s.name as supplier_name, s.code as supplier_code,
         w.name as warehouse_name, w.code as warehouse_code,
         d.name as dept_name, d.code as dept_code
@@ -365,5 +375,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(order_no) from purchase_order where order_no like concat('PO', #{date}, '%') and tenant_id = #{scopedTenantId}
     </select>
+
+    <update id="updatePushCodesSnapshot">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update purchase_order
+        set scm_hospital_code = #{scmHospitalCode},
+            scm_supplier_code = #{scmSupplierCode},
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updatePushOutcome">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update purchase_order
+        set push_status = #{pushStatus},
+            push_time = now(),
+            push_error_msg = #{pushErrorMsg},
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
 
 </mapper>
