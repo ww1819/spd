@@ -30,7 +30,7 @@ public class CaigouScmBindController extends BaseController
     @Autowired
     private ISpdScmBindService spdScmBindService;
 
-    @PreAuthorize("@ss.hasPermi('caigou:dingdan:list')")
+    @PreAuthorize("@ss.hasPermi('caigou:scmBind:query')")
     @GetMapping("/tenant")
     public AjaxResult getTenantBind()
     {
@@ -38,7 +38,7 @@ public class CaigouScmBindController extends BaseController
     }
 
     @Log(title = "云平台医院编码绑定", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('caigou:dingdan:edit')")
+    @PreAuthorize("@ss.hasPermi('caigou:scmBind:edit')")
     @PutMapping("/tenant")
     public AjaxResult saveTenantBind(@RequestBody Map<String, Object> body)
     {
@@ -48,7 +48,7 @@ public class CaigouScmBindController extends BaseController
         return success();
     }
 
-    @PreAuthorize("@ss.hasPermi('caigou:dingdan:list')")
+    @PreAuthorize("@ss.hasPermi('caigou:scmBind:query')")
     @GetMapping("/supplier/list")
     public AjaxResult listSupplierBinds()
     {
@@ -56,7 +56,7 @@ public class CaigouScmBindController extends BaseController
         return success(list);
     }
 
-    @PreAuthorize("@ss.hasPermi('caigou:dingdan:list')")
+    @PreAuthorize("@ss.hasPermi('caigou:scmBind:query')")
     @GetMapping("/supplier/{supplierId}")
     public AjaxResult getSupplierBind(@PathVariable("supplierId") Long supplierId)
     {
@@ -64,7 +64,7 @@ public class CaigouScmBindController extends BaseController
     }
 
     @Log(title = "云平台供应商编码绑定", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('caigou:dingdan:edit')")
+    @PreAuthorize("@ss.hasPermi('caigou:scmBind:edit')")
     @PutMapping("/supplier")
     public AjaxResult saveSupplierBind(@RequestBody Map<String, Object> body)
     {
