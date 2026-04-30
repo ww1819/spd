@@ -32,6 +32,7 @@ import com.spd.foundation.domain.FdDepartmentChangeLog;
 import com.spd.foundation.domain.vo.FdDepartmentTreeNode;
 import com.spd.foundation.mapper.FdDepartmentChangeLogMapper;
 import com.spd.foundation.mapper.FdDepartmentMapper;
+import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
@@ -51,6 +52,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
 
     @Autowired
     private FdDepartmentChangeLogMapper fdDepartmentChangeLogMapper;
+
+    @Autowired
+    private FoundationSnapshotRecorder foundationSnapshotRecorder;
 
     @Autowired
     private ISbCustomerService sbCustomerService;
@@ -258,6 +262,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             FdDepartment after = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(fdDepartment.getId()));
             String logOp = StringUtils.isNotEmpty(fdDepartment.getUpdateBy()) ? fdDepartment.getUpdateBy() : SecurityUtils.getUserIdStr();
             recordDepartmentFieldChanges(before, after, logOp);
+            foundationSnapshotRecorder.record(before.getTenantId(), "DEPARTMENT", String.valueOf(fdDepartment.getId()), before, after, logOp);
         }
         return n;
     }
@@ -368,6 +373,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             fdDepartmentMapper.updateFdDepartment(dept);
             FdDepartment after = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(id));
             recordDepartmentFieldChanges(before, after, op);
+            foundationSnapshotRecorder.record(before.getTenantId(), "DEPARTMENT", String.valueOf(id), before, after, op);
         }
     }
 

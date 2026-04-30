@@ -2112,6 +2112,21 @@ CREATE TABLE IF NOT EXISTS `stk_delivery_line_cap` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='配送单行可入数量上限（支持一单多次拆入、按行防超量）';
 /
 
+CREATE TABLE IF NOT EXISTS `spd_foundation_data_snapshot` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位）',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `entity_type` varchar(32) NOT NULL COMMENT '实体类型：SUPPLIER/FACTORY/DEPARTMENT/WAREHOUSE_CATEGORY/FINANCE_CATEGORY',
+  `entity_id` varchar(64) NOT NULL COMMENT '业务主键（字符串）',
+  `before_json` mediumtext COMMENT '变更前JSON快照',
+  `after_json` mediumtext COMMENT '变更后JSON快照',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_spd_fd_snap_tenant_entity` (`tenant_id`, `entity_type`, `entity_id`),
+  KEY `idx_spd_fd_snap_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='院内主数据变更整单快照（供应商/厂家/科室/库房分类/财务分类）';
+/
+
 -- 5) 高值表 create_by/update_by/delete_by 是否存在“非数字用户ID”残留（按需抽样）
 -- 说明：当前约定写 user_id（字符串）。若历史存在 user_name，此处可帮助发现异常数据。
 SELECT 'gz_order' AS table_name, COUNT(*) AS suspect_rows

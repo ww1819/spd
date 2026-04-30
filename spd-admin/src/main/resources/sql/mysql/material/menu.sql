@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(caigou/scmBind)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(caigou/scmBind)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -3917,6 +3917,119 @@ WHERE @scm_bind_menu_id IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_menu_id AND perms = 'caigou:scmBind:edit');
 /
 
+-- ---------- 基础资料：平台供应商信息、主数据变更快照 ----------
+SET @foundation_root := (
+  SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '基础资料' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '平台供应商信息',
+  COALESCE(@foundation_root, 1),
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)),
+  'scmSupplier',
+  'foundation/scmSupplier/index',
+  NULL,
+  1, 0, 'C', '0', '0', 'foundation:scmSupplier:list', 'peoples',
+  'admin', NOW(), '1', NOW(), '供应链平台供应商查询、下载、院内补全；FdScmSupplierSpdController',
+  '0', '1'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/scmSupplier/index');
+/
+
+SET @fd_scm_sup_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/scmSupplier/index' ORDER BY menu_id DESC LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '平台供应商查询',
+  @fd_scm_sup_menu_id,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:scmSupplier:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @fd_scm_sup_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_sup_menu_id AND perms = 'foundation:scmSupplier:query');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '平台供应商资料下载',
+  @fd_scm_sup_menu_id,
+  2,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:scmSupplier:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @fd_scm_sup_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_sup_menu_id AND perms = 'foundation:scmSupplier:export');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '院内供应商信息补全',
+  @fd_scm_sup_menu_id,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:scmSupplier:merge', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '1'
+FROM DUAL
+WHERE @fd_scm_sup_menu_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_sup_menu_id AND perms = 'foundation:scmSupplier:merge');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '主数据变更快照',
+  COALESCE(@foundation_root, 1),
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)),
+  'masterSnapshot',
+  'foundation/masterSnapshot/index',
+  NULL,
+  1, 0, 'C', '0', '0', 'foundation:masterSnapshot:list', 'documentation',
+  'admin', NOW(), '1', NOW(), '供应商/厂家/科室/库房分类/财务分类整单快照；FdMasterSnapshotController',
+  '0', '1'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/masterSnapshot/index');
+/
+
 SET @in_wh_parent := COALESCE(
   (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND (m.path = 'inWarehouse' OR m.path = 'warehouse') ORDER BY m.menu_id LIMIT 1),
   (SELECT m.parent_id FROM sys_menu m WHERE m.menu_type = 'C' AND m.component = 'inWarehouse/apply/index' ORDER BY m.menu_id LIMIT 1),
@@ -6832,7 +6945,12 @@ JOIN sys_menu m
     'system:dataBackup:query',
     'system:dataBackup:edit',
     'system:dataBackup:changeStatus',
-    'system:dataBackup:run'
+    'system:dataBackup:run',
+    'foundation:scmSupplier:list',
+    'foundation:scmSupplier:query',
+    'foundation:scmSupplier:export',
+    'foundation:scmSupplier:merge',
+    'foundation:masterSnapshot:list'
   )
 WHERE c.hc_status = '0'
   AND NOT EXISTS (

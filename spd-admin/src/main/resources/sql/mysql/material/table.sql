@@ -2549,4 +2549,19 @@ CREATE TABLE IF NOT EXISTS `spd_scm_supplier_bind` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SPD供应商-云平台供应商编码绑定';
 /
 
+CREATE TABLE IF NOT EXISTS `spd_foundation_data_snapshot` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位）',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `entity_type` varchar(32) NOT NULL COMMENT '实体类型：SUPPLIER/FACTORY/DEPARTMENT/WAREHOUSE_CATEGORY/FINANCE_CATEGORY',
+  `entity_id` varchar(64) NOT NULL COMMENT '业务主键（字符串）',
+  `before_json` mediumtext COMMENT '变更前JSON快照',
+  `after_json` mediumtext COMMENT '变更后JSON快照',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_spd_fd_snap_tenant_entity` (`tenant_id`, `entity_type`, `entity_id`),
+  KEY `idx_spd_fd_snap_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='院内主数据变更整单快照（供应商/厂家/科室/库房分类/财务分类）';
+/
+
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

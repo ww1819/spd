@@ -26,6 +26,7 @@ import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFactoryChangeLog;
 import com.spd.foundation.mapper.FdFactoryChangeLogMapper;
 import com.spd.foundation.mapper.FdFactoryMapper;
+import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdFactoryService;
 
 /**
@@ -42,6 +43,9 @@ public class FdFactoryServiceImpl implements IFdFactoryService
 
     @Autowired
     private FdFactoryChangeLogMapper fdFactoryChangeLogMapper;
+
+    @Autowired
+    private FoundationSnapshotRecorder foundationSnapshotRecorder;
 
     @Autowired
     protected Validator validator;
@@ -157,6 +161,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             FdFactory after = fdFactoryMapper.selectFdFactoryByFactoryId(fdFactory.getFactoryId());
             String logOp = StringUtils.isNotEmpty(fdFactory.getUpdateBy()) ? fdFactory.getUpdateBy() : SecurityUtils.getUserIdStr();
             recordFactoryFieldChanges(before, after, logOp);
+            foundationSnapshotRecorder.record(before.getTenantId(), "FACTORY", String.valueOf(fdFactory.getFactoryId()), before, after, logOp);
         }
         return n;
     }
@@ -205,6 +210,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             fdFactoryMapper.updateFdFactory(factory);
             FdFactory after = fdFactoryMapper.selectFdFactoryByFactoryId(id);
             recordFactoryFieldChanges(before, after, op);
+            foundationSnapshotRecorder.record(before.getTenantId(), "FACTORY", String.valueOf(id), before, after, op);
         }
     }
 
@@ -626,6 +632,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         fdFactoryMapper.updateFdFactory(existing);
         FdFactory after = fdFactoryMapper.selectFdFactoryByFactoryId(existing.getFactoryId());
         recordFactoryFieldChanges(before, after, operName);
+        foundationSnapshotRecorder.record(before.getTenantId(), "FACTORY", String.valueOf(existing.getFactoryId()), before, after, operName);
     }
 
     private static String nz(String v)
