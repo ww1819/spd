@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(caigou/scmBind)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(挂系统设置 path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -3393,11 +3393,11 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
--- ========== 采购订单 / 订单发布 / 云平台绑定 / 到货验收：菜单与按钮（默认对客户开放）==========
+-- ========== 采购订单 / 订单发布 / 到货验收：菜单与按钮（默认对客户开放）==========
 -- 采购订单 caigou/dingdan/index：caigou:dingdan:list 及 query/export/add/edit/remove/audit（列表接口 GET /caigou/dingdan/list）
 -- 订单发布 caigou/publish/index：与采购订单共用 caigou:dingdan:*（独立页面，可无采购订单菜单时仍插入）
 -- 订单审查 caigou/shenhe/index：与列表共用 caigou:dingdan:list，审查操作为 caigou:dingdan:audit（前端 spd-ui/views/caigou/shenhe/index.vue）
--- 云平台编码绑定 caigou/scmBind/index：caigou:scmBind:list / query / edit（CaigouScmBindController /caigou/scmBind）
+-- 云平台编码绑定见下方「系统设置」段：component 仍为 caigou/scmBind/index，路由 path=scmBind（全路径 /system/scmBind）
 -- 到货验收 inWarehouse/audit：inWarehouse:apply:*
 -- 注意：parent_id=1 为「系统管理」，勿将 COALESCE 末项设为 1，否则采购菜单会误入系统管理/系统设置。
 /
@@ -3414,7 +3414,7 @@ SELECT
   (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = 0),
   'caigou', 'Layout', NULL,
   1, 0, 'M', '0', '0', '', 'shopping',
-  'admin', NOW(), '1', NOW(), '采购模块一级目录；子菜单含采购订单、订单审查、订单发布、云平台编码绑定等',
+  'admin', NOW(), '1', NOW(), '采购模块一级目录；子菜单含采购订单、订单审查、订单发布等',
   '0', '1'
 FROM DUAL
 WHERE
@@ -3440,7 +3440,7 @@ UPDATE sys_menu sm
 JOIN sys_menu root ON root.menu_type = 'M' AND root.path = 'caigou'
 SET sm.parent_id = root.menu_id
 WHERE sm.menu_type = 'C'
-  AND sm.component IN ('caigou/dingdan/index', 'caigou/publish/index', 'caigou/shenhe/index', 'caigou/scmBind/index')
+  AND sm.component IN ('caigou/dingdan/index', 'caigou/publish/index', 'caigou/shenhe/index')
   AND sm.parent_id = 1;
 /
 
@@ -3850,7 +3850,13 @@ WHERE @publish_menu_id IS NOT NULL
   AND sm.parent_id <> @publish_menu_id;
 /
 
--- ---------- 云平台编码绑定（CaigouScmBindController /caigou/scmBind；表 spd_scm_tenant_bind、spd_scm_supplier_bind）----------
+-- ---------- 云平台编码绑定：挂「采购管理」目录（全路径 /system/scmBind；CaigouScmBindController /caigou/scmBind；Vue 仍为 caigou/scmBind/index）----------
+-- 固定 menu_id=3550：3193–3197 等号段易被财务/库房/调拨等 F 与 MAX+1 占用，勿再使用邻近 ID
+SET @hc_system_settings := (
+  SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '采购管理' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1
+);
+/
+
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -3858,23 +3864,61 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  3550,
   '云平台编码绑定',
-  @caigou_parent,
-  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @caigou_parent),
+  cp.parent_id,
+  (SELECT IFNULL(MAX(sm.order_num), 0) + 1 FROM sys_menu sm WHERE sm.parent_id = cp.parent_id),
   'scmBind',
   'caigou/scmBind/index',
   NULL,
   1, 0, 'C', '0', '0', 'caigou:scmBind:list', 'link',
-  'admin', NOW(), '1', NOW(), '租户-云平台医院编码、供应商-云平台供应商编码绑定；spd-ui/views/caigou/scmBind/index.vue',
+  'admin', NOW(), '1', NOW(), '租户/供应商与云平台编码绑定；系统设置；spd-ui/views/caigou/scmBind/index.vue',
   '0', '1'
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/scmBind/index');
+FROM (SELECT @hc_system_settings AS parent_id) cp
+WHERE cp.parent_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/scmBind/index')
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  remark = VALUES(remark),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
 /
 
-SET @scm_bind_menu_id := (
+-- 已存在数据若仍挂在采购等目录，统一迁到「系统设置」下（须库内已有 menu_name=系统设置 的 M 目录）
+UPDATE sys_menu sm
+JOIN sys_menu sett ON sett.menu_name = '系统设置' AND sett.menu_type = 'M'
+LEFT JOIN (SELECT parent_id, IFNULL(MAX(order_num), 0) AS mx FROM sys_menu GROUP BY parent_id) ord ON ord.parent_id = sett.menu_id
+SET sm.parent_id = sett.menu_id,
+    sm.path = 'scmBind',
+    sm.order_num = IFNULL(ord.mx, 0) + 1,
+    sm.update_by = '1',
+    sm.update_time = NOW()
+WHERE sm.menu_type = 'C'
+  AND sm.component = 'caigou/scmBind/index'
+  AND sm.parent_id <> sett.menu_id;
+/
+
+SET @scm_bind_c := (
   SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/scmBind/index' ORDER BY menu_id DESC LIMIT 1
 );
+/
+
+UPDATE sys_menu f
+JOIN sys_menu c ON c.menu_type = 'C' AND c.component = 'caigou/scmBind/index'
+SET f.parent_id = c.menu_id
+WHERE f.menu_type = 'F'
+  AND f.perms IN ('caigou:scmBind:query', 'caigou:scmBind:edit')
+  AND f.parent_id <> c.menu_id;
 /
 
 INSERT INTO sys_menu (
@@ -3886,15 +3930,15 @@ INSERT INTO sys_menu (
 SELECT
   (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
   '云平台绑定查询',
-  @scm_bind_menu_id,
+  @scm_bind_c,
   1,
   '#', '', NULL,
   1, 0, 'F', '0', '0', 'caigou:scmBind:query', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
-WHERE @scm_bind_menu_id IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_menu_id AND perms = 'caigou:scmBind:query');
+WHERE @scm_bind_c IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_c AND perms = 'caigou:scmBind:query');
 /
 
 INSERT INTO sys_menu (
@@ -3906,15 +3950,15 @@ INSERT INTO sys_menu (
 SELECT
   (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
   '云平台绑定维护',
-  @scm_bind_menu_id,
+  @scm_bind_c,
   2,
   '#', '', NULL,
   1, 0, 'F', '0', '0', 'caigou:scmBind:edit', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
-WHERE @scm_bind_menu_id IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_menu_id AND perms = 'caigou:scmBind:edit');
+WHERE @scm_bind_c IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_c AND perms = 'caigou:scmBind:edit');
 /
 
 -- ---------- 基础资料：平台供应商信息、主数据变更快照 ----------

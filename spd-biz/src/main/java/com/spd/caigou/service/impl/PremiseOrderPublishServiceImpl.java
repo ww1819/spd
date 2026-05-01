@@ -161,7 +161,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             String hospitalCode = spdScmTenantBindMapper.selectHospitalCodeByTenantId(po.getTenantId());
             if (StringUtils.isEmpty(hospitalCode))
             {
-                throw new ServiceException("订单「" + po.getOrderNo() + "」无法推送：当前租户未维护「平台医院编码」。请在【采购订单】相关菜单中维护「云平台编码绑定-租户医院编码」后再推送。");
+                throw new ServiceException("订单「" + po.getOrderNo() + "」无法推送：当前租户未维护「平台医院编码」。请在【系统设置-云平台编码绑定】中维护「租户医院编码」后再推送。");
             }
             if (po.getSupplierId() == null)
             {
@@ -170,7 +170,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             String supplierCode = spdScmSupplierBindMapper.selectSupplierCode(po.getTenantId(), String.valueOf(po.getSupplierId()));
             if (StringUtils.isEmpty(supplierCode))
             {
-                throw new ServiceException("订单「" + po.getOrderNo() + "」无法推送：该订单供应商未维护「平台供应商编码」。请在「云平台编码绑定-供应商编码」中维护后再推送。");
+                throw new ServiceException("订单「" + po.getOrderNo() + "」无法推送：该订单供应商未维护「平台供应商编码」。请在【系统设置-云平台编码绑定】的供应商编码中维护后再推送。");
             }
             purchaseOrderMapper.updatePushCodesSnapshot(id, hospitalCode.trim(), supplierCode.trim(), updateBy);
         }
