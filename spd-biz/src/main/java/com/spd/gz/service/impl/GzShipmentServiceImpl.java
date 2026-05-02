@@ -323,6 +323,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     throw new ServiceException(String.format("批次号 %s 的库存不足，需要出库 %d，但只有 %d 可用", 
                         shipmentEntry.getBatchNo(), qty, qty - remainingQty));
                 }
+                hcBarcodeLifecycleService.onGzShipmentWarehouseOutbound(gzShipment, shipmentEntry);
             }
         }
     }

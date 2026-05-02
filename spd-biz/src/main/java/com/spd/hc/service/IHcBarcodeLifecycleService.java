@@ -36,6 +36,9 @@ public interface IHcBarcodeLifecycleService {
 
     void onGzShipmentDepInventoryInserted(GzShipment shipment, GzShipmentEntry shipmentEntry, GzDepInventory depInventory, GzDepotInventory depotSource);
 
+    /** 高值出库审核：备货库存扣减写 gz_wh_flow（lx=CK），与 gz_depot_inventory 变动对齐 */
+    void onGzShipmentWarehouseOutbound(GzShipment shipment, GzShipmentEntry shipmentEntry);
+
     void onGzRefundStockLine(GzRefundGoods bill, GzRefundGoodsEntry entry);
 
     void onGzRefundGoodsLine(GzRefundGoods bill, GzRefundGoodsEntry entry);

@@ -9,7 +9,9 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -49,6 +51,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
+
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
 
     /**
      * 查询科室盘点
@@ -271,6 +276,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
 
                     stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
+                    insertKsDeptStocktakingFlow(stkIoStocktaking, entry, stkDepInventory, entry.getQty(), "PY", "科室盘点期初入账");
                 }else if(stockType == 502){//盘点
                     String batchNo = entry.getBatchNo();
                     Long warehouseId = entry.getReturnWarehouseId();
@@ -282,6 +288,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     if(depInventory == null){
                         throw new ServiceException(String.format("科室库存批次号：%s，不存在!", batchNo));
                     }
+
+                    BigDecimal oldDepQty = depInventory.getQty() != null ? depInventory.getQty() : BigDecimal.ZERO;
 
                     // 补齐批次字典关联，便于追溯展示
                     FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
@@ -350,9 +358,54 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
                     stkDepInventoryMapper.updateStkDepInventory(depInventory);
+
+                    BigDecimal deltaQty = totalQty.subtract(oldDepQty);
+                    if (deltaQty.compareTo(BigDecimal.ZERO) != 0) {
+                        String lx = deltaQty.compareTo(BigDecimal.ZERO) > 0 ? "PY" : "PK";
+                        insertKsDeptStocktakingFlow(stkIoStocktaking, entry, depInventory, deltaQty.abs(), lx, "科室盘点审核调整");
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * 科室盘点直改库存时补写 t_hc_ks_flow（与 view_lv_dep_stock_flow_detail 中 PY/PK 符号约定一致）
+     */
+    private void insertKsDeptStocktakingFlow(StkIoStocktaking head, StkIoStocktakingEntry entry, StkDepInventory depRow,
+        BigDecimal absQty, String lx, String originBiz) {
+        if (head == null || entry == null || depRow == null || depRow.getId() == null
+            || absQty == null || absQty.compareTo(BigDecimal.ZERO) <= 0 || StringUtils.isEmpty(lx)) {
+            return;
+        }
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        HcKsFlow flow = new HcKsFlow();
+        flow.setBillId(head.getId());
+        flow.setEntryId(entry.getId());
+        flow.setDepartmentId(head.getDepartmentId());
+        flow.setWarehouseId(depRow.getWarehouseId());
+        flow.setMaterialId(entry.getMaterialId());
+        flow.setBatchNo(entry.getBatchNo());
+        flow.setBatchNumber(entry.getBatchNumber());
+        flow.setBatchId(depRow.getBatchId());
+        flow.setQty(absQty);
+        flow.setUnitPrice(unitPrice);
+        flow.setAmt(unitPrice != null ? absQty.multiply(unitPrice) : null);
+        flow.setBeginTime(entry.getBeginTime());
+        flow.setEndTime(entry.getEndTime());
+        flow.setSupplierId(depRow.getSupplierId());
+        flow.setFactoryId(depRow.getFactoryId());
+        flow.setMainBarcode(depRow.getMainBarcode());
+        flow.setSubBarcode(depRow.getSubBarcode());
+        flow.setKcNo(depRow.getId());
+        flow.setLx(lx);
+        flow.setOriginBusinessType(originBiz);
+        flow.setFlowTime(new Date());
+        flow.setDelFlag(0);
+        flow.setCreateTime(new Date());
+        flow.setCreateBy(SecurityUtils.getUserIdStr());
+        flow.setTenantId(StringUtils.isNotEmpty(head.getTenantId()) ? head.getTenantId() : SecurityUtils.getCustomerId());
+        hcKsFlowMapper.insertHcKsFlow(flow);
     }
 
     /**

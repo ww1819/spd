@@ -753,21 +753,23 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
     @Override
     public void onGzShipmentDepInventoryInserted(GzShipment shipment, GzShipmentEntry shipmentEntry,
         GzDepInventory depInventory, GzDepotInventory depotSource) {
-        if (shipment == null || shipmentEntry == null || StringUtils.isEmpty(shipmentEntry.getInHospitalCode())) {
+        if (shipment == null || shipmentEntry == null) {
             return;
         }
         try {
             String tenantId = StringUtils.isNotEmpty(shipment.getTenantId()) ? shipment.getTenantId() : SecurityUtils.getCustomerId();
-            HcBarcodeMaster master = hcBarcodeTraceMapper.selectHcBarcodeMasterByTenantAndBarcode(
-                tenantId, shipmentEntry.getInHospitalCode().trim());
-            if (master == null) {
-                return;
+            HcBarcodeMaster master = null;
+            if (StringUtils.isNotEmpty(shipmentEntry.getInHospitalCode())) {
+                master = hcBarcodeTraceMapper.selectHcBarcodeMasterByTenantAndBarcode(
+                    tenantId, shipmentEntry.getInHospitalCode().trim());
             }
-            appendFlowEvent(master, "GZ_SHIP_OUT", "高值备货出库至科室", "GZ_SHIPMENT",
-                shipment.getId() != null ? String.valueOf(shipment.getId()) : null, shipment.getShipmentNo(),
-                shipmentEntry.getId() != null ? String.valueOf(shipmentEntry.getId()) : null,
-                str(shipment.getWarehouseId()), null, null, str(shipment.getDepartmentId()),
-                shipmentEntry.getQty());
+            if (master != null) {
+                appendFlowEvent(master, "GZ_SHIP_OUT", "高值备货出库至科室", "GZ_SHIPMENT",
+                    shipment.getId() != null ? String.valueOf(shipment.getId()) : null, shipment.getShipmentNo(),
+                    shipmentEntry.getId() != null ? String.valueOf(shipmentEntry.getId()) : null,
+                    str(shipment.getWarehouseId()), null, null, str(shipment.getDepartmentId()),
+                    shipmentEntry.getQty());
+            }
 
             GzDepFlow df = new GzDepFlow();
             df.setId(UUID7.generateUUID7());
@@ -783,6 +785,9 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             df.setBatchNumber(shipmentEntry.getBatchNumber());
             df.setQty(shipmentEntry.getQty());
             df.setUnitPrice(shipmentEntry.getPrice());
+            if (shipmentEntry.getPrice() != null && shipmentEntry.getQty() != null) {
+                df.setAmt(shipmentEntry.getPrice().multiply(shipmentEntry.getQty()));
+            }
             df.setInHospitalCode(shipmentEntry.getInHospitalCode());
             df.setMasterBarcode(shipmentEntry.getMasterBarcode());
             df.setSecondaryBarcode(shipmentEntry.getSecondaryBarcode());
@@ -796,6 +801,44 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             hcBarcodeTraceMapper.insertGzDepFlow(df);
         } catch (Exception e) {
             log.warn("onGzShipmentDepInventoryInserted failed shipmentId={}", shipment.getId(), e);
+        }
+    }
+
+    @Override
+    public void onGzShipmentWarehouseOutbound(GzShipment shipment, GzShipmentEntry entry) {
+        if (shipment == null || entry == null || entry.getQty() == null
+            || entry.getQty().compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+        try {
+            String tenantId = StringUtils.isNotEmpty(shipment.getTenantId()) ? shipment.getTenantId() : SecurityUtils.getCustomerId();
+            GzWhFlow wf = new GzWhFlow();
+            wf.setId(UUID7.generateUUID7());
+            wf.setTenantId(tenantId);
+            wf.setBillId(shipment.getId() != null ? String.valueOf(shipment.getId()) : null);
+            wf.setBillNo(shipment.getShipmentNo());
+            wf.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
+            wf.setWarehouseId(shipment.getWarehouseId() != null ? String.valueOf(shipment.getWarehouseId()) : null);
+            wf.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : null);
+            wf.setBatchNo(entry.getBatchNo());
+            wf.setBatchNumber(entry.getBatchNumber());
+            wf.setQty(entry.getQty());
+            wf.setUnitPrice(entry.getPrice());
+            if (entry.getPrice() != null && entry.getQty() != null) {
+                wf.setAmt(entry.getPrice().multiply(entry.getQty()));
+            }
+            wf.setInHospitalCode(entry.getInHospitalCode());
+            wf.setMasterBarcode(entry.getMasterBarcode());
+            wf.setSecondaryBarcode(entry.getSecondaryBarcode());
+            wf.setLx("CK");
+            wf.setFlowTime(new Date());
+            wf.setOriginBusinessType("高值备货出库扣减");
+            wf.setDelFlag(0);
+            wf.setCreateBy(uid());
+            wf.setCreateTime(new Date());
+            hcBarcodeTraceMapper.insertGzWhFlow(wf);
+        } catch (Exception e) {
+            log.warn("onGzShipmentWarehouseOutbound failed shipmentId={}", shipment != null ? shipment.getId() : null, e);
         }
     }
 
