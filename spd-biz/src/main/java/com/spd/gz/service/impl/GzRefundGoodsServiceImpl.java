@@ -31,6 +31,7 @@ import com.spd.gz.domain.GzRefundGoodsEntry;
 import com.spd.gz.mapper.GzRefundGoodsMapper;
 import com.spd.gz.domain.GzRefundGoods;
 import com.spd.gz.service.IGzRefundGoodsService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 import com.spd.gz.service.GzStockValidationService;
 import com.spd.gz.service.GzLineRefWriteService;
 import com.spd.foundation.domain.FdMaterial;
@@ -66,6 +67,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
     @Autowired
     private GzBillEntryChangeLogMapper gzBillEntryChangeLogMapper;
+
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     /**
      * 查询高值退货
@@ -410,6 +414,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 row.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
                 gzDepotInventoryMapper.insertGzDepotInventory(row);
             }
+            hcBarcodeLifecycleService.onGzRefundStockLine(bill, entry);
         }
     }
 
@@ -472,6 +477,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 inv.setUpdateTime(new Date());
                 inv.setUpdateBy(SecurityUtils.getUserIdStr());
                 gzDepotInventoryMapper.updateGzDepotInventory(inv);
+                hcBarcodeLifecycleService.onGzRefundGoodsLine(gzRefundGoods, entry);
                 continue;
             }
 
@@ -485,6 +491,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 throw new ServiceException(String.format("高值备货库存不足！退货数量：%s，同批次（表头供应商）可用备货合计：%s", qty, sum));
             }
             subtractDepotInventoryFifoForSupplierReturn(rows, qty, batchNo);
+            hcBarcodeLifecycleService.onGzRefundGoodsLine(gzRefundGoods, entry);
         }
     }
 

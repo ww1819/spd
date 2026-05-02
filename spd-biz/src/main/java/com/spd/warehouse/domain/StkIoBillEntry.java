@@ -161,6 +161,9 @@ public class StkIoBillEntry extends BaseEntity
     /** 该行在配送接口快照中的可入总量上限（引用配送单时写入，保存时参与校验） */
     private BigDecimal deliveryLineQtyCap;
 
+    /** 定数包条码（低值出库/退库/退货行） */
+    private String fixedPackageBarcode;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -507,6 +510,14 @@ public class StkIoBillEntry extends BaseEntity
         this.deliveryLineQtyCap = deliveryLineQtyCap;
     }
 
+    public String getFixedPackageBarcode() {
+        return fixedPackageBarcode;
+    }
+
+    public void setFixedPackageBarcode(String fixedPackageBarcode) {
+        this.fixedPackageBarcode = fixedPackageBarcode;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -535,6 +546,7 @@ public class StkIoBillEntry extends BaseEntity
             .append("depInventoryId", getDepInventoryId())
             .append("deliveryLineSign", getDeliveryLineSign())
             .append("deliveryLineQtyCap", getDeliveryLineQtyCap())
+            .append("fixedPackageBarcode", getFixedPackageBarcode())
             .toString();
     }
 }

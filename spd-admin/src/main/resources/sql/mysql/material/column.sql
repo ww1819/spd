@@ -2138,3 +2138,61 @@ WHERE del_flag != 1
     OR (delete_by IS NOT NULL AND delete_by <> '' AND delete_by NOT REGEXP '^[0-9]+$')
   );
 /
+
+-- ========== 低值定数包/院内码、仓库开关、高低值条码归属/流通、高值流水快照（与 material/table.sql 对齐） ==========
+CALL add_table_column('stk_io_bill_entry', 'fixed_package_barcode', 'varchar(200)', '定数包条码（低值出库/退库/退货行）', null);
+/
+CALL add_table_column('stk_inventory', 'lv_inhospital_package_code', 'varchar(200)', '低值定数包院内码（入库审核生成）', null);
+/
+CALL add_table_column('stk_dep_inventory', 'lv_inhospital_package_code', 'varchar(200)', '低值定数包院内码（出库审核生成）', null);
+/
+CALL add_table_column('fd_warehouse', 'lv_audit_gen_inhospital_in', 'tinyint', '低值入库审核是否生成院内码定数包 0否1是', '0');
+/
+CALL add_table_column('fd_warehouse', 'lv_audit_gen_inhospital_out', 'tinyint', '低值出库审核是否生成院内码定数包 0否1是', '0');
+/
+CALL add_table_column('gz_depot_inventory', 'material_name', 'varchar(256)', '产品名称快照（直打条码）', null);
+/
+CALL add_table_column('gz_depot_inventory', 'material_speci', 'varchar(256)', '规格快照', null);
+/
+CALL add_table_column('gz_depot_inventory', 'material_model', 'varchar(256)', '型号快照', null);
+/
+CALL add_table_column('gz_depot_inventory', 'factory_name', 'varchar(256)', '生产厂家名称快照', null);
+/
+CALL add_table_column('gz_depot_inventory', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+/
+CALL add_table_column('gz_depot_inventory', 'finance_category_name', 'varchar(200)', '财务分类名称快照', null);
+/
+CALL add_table_column('gz_dep_inventory', 'material_name', 'varchar(256)', '产品名称快照（直打条码）', null);
+/
+CALL add_table_column('gz_dep_inventory', 'material_speci', 'varchar(256)', '规格快照', null);
+/
+CALL add_table_column('gz_dep_inventory', 'material_model', 'varchar(256)', '型号快照', null);
+/
+CALL add_table_column('gz_dep_inventory', 'factory_name', 'varchar(256)', '生产厂家名称快照', null);
+/
+CALL add_table_column('gz_dep_inventory', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_name', 'varchar(256)', '产品名称快照（备货验收直打）', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_speci', 'varchar(256)', '规格快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_model', 'varchar(256)', '型号快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_unit_name', 'varchar(64)', '单位名称快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'factory_id', 'bigint', '生产厂家ID快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'factory_name', 'varchar(256)', '生产厂家名称快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'warehouse_name', 'varchar(200)', '仓库名称快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'finance_category_name', 'varchar(200)', '财务分类名称快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'register_no', 'varchar(128)', '注册证号快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'brand_name', 'varchar(128)', '品牌快照', null);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'hc_barcode_master_id', 'varchar(36)', '归属主档 hc_barcode_master.id', null);
+/

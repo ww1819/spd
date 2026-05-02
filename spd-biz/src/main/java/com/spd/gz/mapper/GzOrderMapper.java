@@ -102,4 +102,9 @@ public interface GzOrderMapper
      * 新增院内码明细列表
      */
     int insertGzOrderEntryInhospitalcodeList(GzOrderEntryInhospitalcodeList row);
+
+    /**
+     * 更新备货院内码行快照（审核后打印/归属查询）
+     */
+    int updateGzOrderEntryInhospitalcodeListSnapshots(GzOrderEntryInhospitalcodeList row);
 }

@@ -99,6 +99,7 @@ import com.spd.warehouse.mapper.StkDeliveryLineCapMapper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IHcDocBillRefService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
@@ -149,6 +150,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     @Autowired
     private FdFactoryMapper fdFactoryMapper;
@@ -621,8 +625,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     private void updateInventory(StkIoBill stkIoBill,List<StkIoBillEntry> stkIoBillEntryList){
 
         Integer billType = stkIoBill.getBillType();
+        FdWarehouse headerWarehouse = null;
+        if (stkIoBill.getWarehouseId() != null) {
+            headerWarehouse = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
+        }
         StkInventory stkInventory = null;
         for(StkIoBillEntry entry : stkIoBillEntryList){
+            if (entry == null) {
+                continue;
+            }
+            if (entry.getDelFlag() != null && entry.getDelFlag() == 1) {
+                continue;
+            }
             Long lineSupplerId = resolveInboundLineSupplierId(stkIoBill, entry);
 
             if(entry.getQty() != null && BigDecimal.ZERO.compareTo(entry.getQty()) != 0){
@@ -701,6 +715,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (entry.getId() != null) {
                         stkIoBillMapper.updateStkIoBillEntryInboundWhRef(entry.getId(), stkInventory.getId());
                     }
+                    hcBarcodeLifecycleService.onLowValueInbound101(stkIoBill, entry, stkInventory, headerWarehouse);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -813,6 +828,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (entry.getId() != null) {
                         stkIoBillMapper.updateStkIoBillEntryOutboundAuditRefs(entry.getId(), inventory.getId(), stkDepInventory.getId());
                     }
+                    hcBarcodeLifecycleService.onLowValueOutbound201(stkIoBill, entry, inventory, stkDepInventory, headerWarehouse);
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -873,6 +889,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     thFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(thFlow.getTenantId())) thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(thFlow);
+                    hcBarcodeLifecycleService.onLowValueReturn301(stkIoBill, entry, inventory, headerWarehouse);
                 }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库；优先按明细 kc_no=科室库存 id 锁定行）
                     BigDecimal qty = entry.getQty();//退库数量
                     if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
@@ -1044,6 +1061,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(ksTkFlow.getTenantId())) ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
+                    FdWarehouse wh401 = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(returnWarehouseId401));
+                    hcBarcodeLifecycleService.onLowValueTk401(stkIoBill, entry, inventory, stkDepInventory, wh401);
                 } else if (billType == 501) {// 仓库调拨：审核时已生成 hc_ck_flow 转出(ZC)+转入(ZR)，勿重复补流水
                     Long outWarehouseId = stkIoBill.getWarehouseId();  // 转出仓库
                     Long inWarehouseId = stkIoBill.getDepartmentId(); // 调拨单中 department_id 存调入仓库id

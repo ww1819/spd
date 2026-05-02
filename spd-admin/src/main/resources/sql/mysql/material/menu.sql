@@ -7002,3 +7002,60 @@ WHERE c.hc_status = '0'
     WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
   );
 /
+
+-- ---------- 条码：高低值归属/流通（低敏感权限 hc:barcode:public:*，挂仓库模块；前端建议用独立低敏接口，避免依赖出入库细粒度权限）----------
+SET @warehouse_m := (SELECT m.menu_id FROM sys_menu m WHERE m.path='warehouse' AND m.menu_type='M' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3708,'高低值条码归属查询',COALESCE(@warehouse_m,1),(SELECT IFNULL(MAX(order_num),0)+1 FROM sys_menu WHERE parent_id=COALESCE(@warehouse_m,1)),'hcBarcodeOwnership','warehouse/hcBarcodeOwnership/index',NULL,1,0,'C','0','0','hc:barcode:public:ownership:list','search','admin',NOW(),'1',NOW(),'统一查低值出入库生成与高值备货验收等条码来源；接口前缀建议 /hc/barcode/public/ownership','0','1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND perms='hc:barcode:public:ownership:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3708)
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),path=VALUES(path),component=VALUES(component),perms=VALUES(perms),remark=VALUES(remark),update_time=VALUES(update_time);
+/
+SET @hc_barcode_own_c := (SELECT m.menu_id FROM sys_menu m WHERE m.perms='hc:barcode:public:ownership:list' AND m.menu_type='C' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3709,'条码归属查询',@hc_barcode_own_c,1,'#','',NULL,1,0,'F','0','0','hc:barcode:public:ownership:query','#','admin',NOW(),'1',NOW(),'GET 列表/详情低敏接口','0','1'
+FROM DUAL WHERE @hc_barcode_own_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@hc_barcode_own_c AND perms='hc:barcode:public:ownership:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3709))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3710,'条码归属导出',@hc_barcode_own_c,2,'#','',NULL,1,0,'F','0','0','hc:barcode:public:ownership:export','#','admin',NOW(),'1',NOW(),'可选导出','0','1'
+FROM DUAL WHERE @hc_barcode_own_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@hc_barcode_own_c AND perms='hc:barcode:public:ownership:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3710))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3711,'高低值条码流通查询',COALESCE(@warehouse_m,1),(SELECT IFNULL(MAX(order_num),0)+1 FROM sys_menu WHERE parent_id=COALESCE(@warehouse_m,1)),'hcBarcodeCirculation','warehouse/hcBarcodeCirculation/index',NULL,1,0,'C','0','0','hc:barcode:public:circulation:list','log','admin',NOW(),'1',NOW(),'条码事件流水；接口前缀建议 /hc/barcode/public/circulation','0','1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND perms='hc:barcode:public:circulation:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3711)
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),path=VALUES(path),component=VALUES(component),perms=VALUES(perms),remark=VALUES(remark),update_time=VALUES(update_time);
+/
+SET @hc_barcode_flow_c := (SELECT m.menu_id FROM sys_menu m WHERE m.perms='hc:barcode:public:circulation:list' AND m.menu_type='C' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3712,'条码流通查询',@hc_barcode_flow_c,1,'#','',NULL,1,0,'F','0','0','hc:barcode:public:circulation:query','#','admin',NOW(),'1',NOW(),'GET 流水低敏接口','0','1'
+FROM DUAL WHERE @hc_barcode_flow_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@hc_barcode_flow_c AND perms='hc:barcode:public:circulation:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3712))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3713,'条码流通导出',@hc_barcode_flow_c,2,'#','',NULL,1,0,'F','0','0','hc:barcode:public:circulation:export','#','admin',NOW(),'1',NOW(),'可选导出','0','1'
+FROM DUAL WHERE @hc_barcode_flow_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@hc_barcode_flow_c AND perms='hc:barcode:public:circulation:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3713))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM sb_customer c
+JOIN sys_menu m
+  ON m.perms IN (
+    'hc:barcode:public:ownership:list',
+    'hc:barcode:public:ownership:query',
+    'hc:barcode:public:ownership:export',
+    'hc:barcode:public:circulation:list',
+    'hc:barcode:public:circulation:query',
+    'hc:barcode:public:circulation:export'
+  )
+WHERE c.hc_status = '0'
+  AND NOT EXISTS (
+    SELECT 1 FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
+  );
+/

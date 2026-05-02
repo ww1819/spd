@@ -53,6 +53,11 @@ public class FdWarehouse extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 低值入库审核是否生成院内码定数包：0否 1是 */
+    private Integer lvAuditGenInhospitalIn;
+    /** 低值出库审核是否生成院内码定数包：0否 1是 */
+    private Integer lvAuditGenInhospitalOut;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -137,6 +142,22 @@ public class FdWarehouse extends BaseEntity
         this.tenantId = tenantId;
     }
 
+    public Integer getLvAuditGenInhospitalIn() {
+        return lvAuditGenInhospitalIn;
+    }
+
+    public void setLvAuditGenInhospitalIn(Integer lvAuditGenInhospitalIn) {
+        this.lvAuditGenInhospitalIn = lvAuditGenInhospitalIn;
+    }
+
+    public Integer getLvAuditGenInhospitalOut() {
+        return lvAuditGenInhospitalOut;
+    }
+
+    public void setLvAuditGenInhospitalOut(Integer lvAuditGenInhospitalOut) {
+        this.lvAuditGenInhospitalOut = lvAuditGenInhospitalOut;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -154,6 +175,8 @@ public class FdWarehouse extends BaseEntity
             .append("warehouseType", getWarehouseType())
             .append("settlementType", getSettlementType())
             .append("tenantId", getTenantId())
+            .append("lvAuditGenInhospitalIn", getLvAuditGenInhospitalIn())
+            .append("lvAuditGenInhospitalOut", getLvAuditGenInhospitalOut())
             .toString();
     }
 }

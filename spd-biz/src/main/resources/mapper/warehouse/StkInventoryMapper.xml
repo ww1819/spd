@@ -34,6 +34,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="settlementType"    column="settlement_type"    />
         <result property="mainBarcode"    column="main_barcode"    />
         <result property="subBarcode"    column="sub_barcode"    />
+        <result property="lvInhospitalPackageCode" column="lv_inhospital_package_code" />
         <result property="createTime" column="rk_create_time" />
         <result property="auditDate" column="rk_audit_date" />
         <result property="createrName" column="rk_creater_nick" />
@@ -106,7 +107,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         stk.warehouse_id, stk.unit_price,stk.amt,
 				stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date,
 				stk.supplier_id,stk.factory_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,stk.tenant_id,stk.settlement_type,
-				stk.main_barcode, stk.sub_barcode,
+				stk.main_barcode, stk.sub_barcode, stk.lv_inhospital_package_code,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
 				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
@@ -185,7 +186,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date,
 				stk.supplier_id,stk.begin_time,stk.end_time,stk.receipt_order_no,stk.kc_no,
 				stk.del_flag, stk.delete_by, stk.delete_time,
-				stk.tenant_id, stk.settlement_type, stk.main_barcode, stk.sub_barcode,
+				stk.tenant_id, stk.settlement_type, stk.main_barcode, stk.sub_barcode, stk.lv_inhospital_package_code,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
 				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
@@ -415,6 +416,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="settlementType != null">settlement_type,</if>
             <if test="mainBarcode != null">main_barcode,</if>
             <if test="subBarcode != null">sub_barcode,</if>
+            <if test="lvInhospitalPackageCode != null and lvInhospitalPackageCode != ''">lv_inhospital_package_code,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -442,6 +444,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="settlementType != null">#{settlementType},</if>
             <if test="mainBarcode != null">#{mainBarcode},</if>
             <if test="subBarcode != null">#{subBarcode},</if>
+            <if test="lvInhospitalPackageCode != null and lvInhospitalPackageCode != ''">#{lvInhospitalPackageCode},</if>
          </trim>
     </insert>
 
@@ -473,6 +476,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>
             <if test="subBarcode != null">sub_barcode = #{subBarcode},</if>
+            <if test="lvInhospitalPackageCode != null">lv_inhospital_package_code = #{lvInhospitalPackageCode},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
         where id = #{id} and tenant_id = #{tenantId}

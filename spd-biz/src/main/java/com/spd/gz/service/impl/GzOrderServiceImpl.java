@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.spd.gz.mapper.GzOrderMapper;
 import com.spd.gz.domain.GzOrder;
 import com.spd.gz.service.IGzOrderService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 import java.text.SimpleDateFormat;
 
 /**
@@ -59,6 +60,9 @@ public class GzOrderServiceImpl implements IGzOrderService
 
     @Autowired
     private GzBillEntryChangeLogMapper gzBillEntryChangeLogMapper;
+
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     /**
      * 查询高值入库
@@ -291,10 +295,12 @@ public class GzOrderServiceImpl implements IGzOrderService
                     inhospitalRow.setUpdateBy(userId);
                     inhospitalRow.setUpdateTime(now);
                     inhospitalRow.setTenantId(StringUtils.isNotEmpty(gzOrder.getTenantId()) ? gzOrder.getTenantId() : SecurityUtils.getCustomerId());
+                    hcBarcodeLifecycleService.fillGzOrderInhospitalcodeSnapshots(gzOrder, orderEntry, inhospitalRow);
                     gzOrderMapper.insertGzOrderEntryInhospitalcodeList(inhospitalRow);
                     gzDepotInventory.setInhospitalcodeListId(inhospitalRow.getId());
 
                     gzDepotInventoryMapper.insertGzDepotInventory(gzDepotInventory);
+                    hcBarcodeLifecycleService.onGzPrepAcceptUnit(gzOrder, orderEntry, inhospitalRow, gzDepotInventory);
                 }
             }
         }

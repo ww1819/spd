@@ -260,13 +260,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into gz_order_entry_inhospitalcode_list(
             parent_id, code, detail_id, material_id, price, qty, batch_no, batch_number,
             master_barcode, secondary_barcode, end_date, in_hospital_code, warehouse_id, supplier_id,
+            material_name, material_speci, material_model, material_unit_name, factory_id, factory_name,
+            supplier_name, warehouse_name, finance_category_name, register_no, brand_name, hc_barcode_master_id,
             del_flag, create_date, create_by, create_time, update_by, update_time, tenant_id
         ) values (
             #{parentId}, #{code}, #{detailId}, #{materialId}, #{price}, #{qty}, #{batchNo}, #{batchNumber},
             #{masterBarcode}, #{secondaryBarcode}, #{endDate}, #{inHospitalCode}, #{warehouseId}, #{supplierId},
+            #{materialName}, #{materialSpeci}, #{materialModel}, #{materialUnitName}, #{factoryId}, #{factoryName},
+            #{supplierName}, #{warehouseName}, #{financeCategoryName}, #{registerNo}, #{brandName}, #{hcBarcodeMasterId},
             #{delFlag}, #{createDate}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{scopedTenantId}
         )
     </insert>
+
+    <update id="updateGzOrderEntryInhospitalcodeListSnapshots" parameterType="GzOrderEntryInhospitalcodeList">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_order_entry_inhospitalcode_list
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="materialSpeci != null">material_speci = #{materialSpeci},</if>
+            <if test="materialModel != null">material_model = #{materialModel},</if>
+            <if test="materialUnitName != null">material_unit_name = #{materialUnitName},</if>
+            <if test="factoryId != null">factory_id = #{factoryId},</if>
+            <if test="factoryName != null">factory_name = #{factoryName},</if>
+            <if test="supplierName != null">supplier_name = #{supplierName},</if>
+            <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
+            <if test="financeCategoryName != null">finance_category_name = #{financeCategoryName},</if>
+            <if test="registerNo != null">register_no = #{registerNo},</if>
+            <if test="brandName != null">brand_name = #{brandName},</if>
+            <if test="hcBarcodeMasterId != null">hc_barcode_master_id = #{hcBarcodeMasterId},</if>
+            update_time = now(),
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </trim>
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
 
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.spd.gz.mapper.GzShipmentMapper;
 import com.spd.gz.domain.GzShipment;
 import com.spd.gz.service.IGzShipmentService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 import com.spd.gz.service.GzStockValidationService;
 import com.spd.gz.service.GzLineRefWriteService;
 
@@ -65,6 +66,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
     @Autowired
     private GzBillEntryChangeLogMapper gzBillEntryChangeLogMapper;
+
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     /**
      * 查询高值出库
@@ -473,6 +477,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         ? shipmentEntry.getSecondaryBarcode()
                         : (depotInventory != null ? depotInventory.getSecondaryBarcode() : null));
                     gzDepInventoryMapper.insertGzDepInventory(gzDepInventory);
+                    hcBarcodeLifecycleService.onGzShipmentDepInventoryInserted(gzShipment, shipmentEntry, gzDepInventory, depotInventory);
                     System.out.println("创建科室库存记录 - 院内码: " + inHospitalCode + ", 批次号: " + shipmentEntry.getBatchNo() + ", 数量: " + addQty);
                 } else {
                     BigDecimal baseQty = existingDepInventory.getQty() != null ? existingDepInventory.getQty() : BigDecimal.ZERO;
@@ -487,6 +492,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     existingDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     existingDepInventory.setUpdateTime(DateUtils.getNowDate());
                     gzDepInventoryMapper.updateGzDepInventory(existingDepInventory);
+                    hcBarcodeLifecycleService.onGzShipmentDepInventoryInserted(gzShipment, shipmentEntry, existingDepInventory, depotInventory);
                     System.out.println("科室库存累加 - 院内码: " + inHospitalCode + ", 批次号: " + shipmentEntry.getBatchNo() + ", 增加数量: " + addQty);
                 }
             }
