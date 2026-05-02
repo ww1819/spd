@@ -18,5 +18,17 @@ public class HisMirrorConsumeLink
     private Long deptBatchConsumeId;
     private Long deptBatchConsumeEntryId;
     private BigDecimal allocQty;
+    private Long depInventoryId;
+    private Long gzDepInventoryId;
+    /** 低值科室库存有效期快照（退费返还排序） */
+    private Date stkDepEndDate;
+    private String inHospitalCode;
+    private BigDecimal returnedQty;
+    private BigDecimal refundableRemainingQty;
     private Date createTime;
+    private String updateBy;
+    private Date updateTime;
+    private Integer delFlag;
+    private String deleteBy;
+    private Date deleteTime;
 }

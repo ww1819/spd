@@ -2037,6 +2037,107 @@ CALL add_table_column('his_mirror_consume_link', 'alloc_qty', 'decimal(18,6) NOT
 /
 CALL add_table_column('his_mirror_consume_link', 'create_time', 'datetime', '创建时间', NULL);
 /
+CALL add_table_column('his_mirror_consume_link', 'dep_inventory_id', 'bigint', '低值科室库存 stk_dep_inventory.id', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'gz_dep_inventory_id', 'bigint', '高值科室库存 gz_dep_inventory.id', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'stk_dep_end_date', 'date', '低值科室库存有效期快照(退费返还排序)', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'in_hospital_code', 'varchar(200)', '高值院内码快照', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'returned_qty', 'decimal(18,6) NOT NULL', '计费退费已返还数量累计', '0');
+/
+CALL add_table_column('his_mirror_consume_link', 'refundable_remaining_qty', 'decimal(18,6)', '尚可返还数量', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'update_by', 'varchar(64)', '更新者', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'update_time', 'datetime', '更新时间', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'del_flag', 'tinyint NOT NULL', '删除标志 0正常 1删除', '0');
+/
+CALL add_table_column('his_mirror_consume_link', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'delete_time', 'datetime', '删除时间', NULL);
+/
+
+CREATE TABLE IF NOT EXISTS `sb_tenant_setting` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID(sb_customer.customer_id)',
+  `setting_key` varchar(128) NOT NULL COMMENT '配置键',
+  `setting_value` varchar(500) DEFAULT NULL COMMENT '配置值',
+  `remark` varchar(500) DEFAULT NULL COMMENT '说明',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sb_tenant_setting` (`tenant_id`,`setting_key`),
+  KEY `idx_sb_tenant_setting_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户级业务开关';
+/
+
+CREATE TABLE IF NOT EXISTS `his_billing_refund_order` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `refund_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '退费侧镜像行ID',
+  `origin_charge_detail_id` varchar(64) NOT NULL COMMENT '原收费明细ID(HIS)',
+  `origin_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '原计费镜像行ID',
+  `refund_qty` decimal(18,6) NOT NULL COMMENT '本次退费数量',
+  `value_level` char(1) NOT NULL DEFAULT '2' COMMENT '1高值 2低值',
+  `process_status` varchar(24) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/DONE/FAILED',
+  `fail_reason` varchar(500) DEFAULT NULL COMMENT '失败原因',
+  `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名快照',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID快照',
+  `department_name` varchar(200) DEFAULT NULL COMMENT '科室名称快照',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hbro_tenant_origin` (`tenant_id`,`origin_charge_detail_id`),
+  KEY `idx_hbro_mirror` (`tenant_id`,`origin_mirror_row_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计费退费处理主单';
+/
+
+CREATE TABLE IF NOT EXISTS `his_billing_refund_order_line` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `refund_order_id` varchar(36) NOT NULL COMMENT '主单 his_billing_refund_order.id',
+  `consume_link_id` varchar(36) DEFAULT NULL COMMENT 'his_mirror_consume_link.id',
+  `return_qty` decimal(18,6) NOT NULL COMMENT '本行返还数量',
+  `dep_inventory_id` bigint DEFAULT NULL COMMENT '低值返还目标 stk_dep_inventory.id',
+  `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '高值返还目标 gz_dep_inventory.id',
+  `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '高值院内码',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号快照',
+  `end_date_snapshot` date DEFAULT NULL COMMENT '有效期快照',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hbrol_refund` (`tenant_id`,`refund_order_id`),
+  KEY `idx_hbrol_link` (`consume_link_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计费退费处理明细';
+/
+
+UPDATE his_mirror_consume_link
+SET refundable_remaining_qty = IFNULL(alloc_qty, 0)
+WHERE IFNULL(del_flag, 0) = 0
+  AND refundable_remaining_qty IS NULL
+  AND IFNULL(returned_qty, 0) = 0;
+/
 
 -- ========== 高值模块最终核对清单（发布后自检 SQL）==========
 -- 说明：以下 SQL 为“只读自检”，可在发布完成后执行，快速核验环境一致性。
@@ -2195,4 +2296,74 @@ CALL add_table_column('gz_order_entry_inhospitalcode_list', 'register_no', 'varc
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'brand_name', 'varchar(128)', '品牌快照', null);
 /
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'hc_barcode_master_id', 'varchar(36)', '归属主档 hc_barcode_master.id', null);
+/
+
+-- ========== 仓库盘点/盈亏：审核不直改库存、盘盈批次与库存追溯 ==========
+CALL add_table_column('stk_io_stocktaking', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
+/
+CALL add_table_column('stk_io_stocktaking', 'audit_adjusts_inventory', 'tinyint NOT NULL', '0审核不直改库存 1审核直改', '0');
+/
+CALL add_table_column('stk_io_stocktaking', 'reject_reason', 'varchar(500)', '驳回原因', null);
+/
+CALL add_table_column('stk_io_stocktaking', 'delete_by', 'varchar(64)', '删除者', null);
+/
+CALL add_table_column('stk_io_stocktaking', 'delete_time', 'datetime', '删除时间', null);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'entry_uuid', 'varchar(36)', '明细UUID7', null);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_id', 'bigint', '账面批次stk_batch.id快照', null);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_no_snapshot', 'varchar(100)', '账面批次号快照', null);
+/
+CALL add_table_column('stk_io_profit_loss', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
+/
+CALL add_table_column('stk_io_profit_loss', 'stocktaking_uuid', 'varchar(36)', '关联盘点单uuid', null);
+/
+CALL add_table_column('stk_io_profit_loss', 'delete_by', 'varchar(64)', '删除者', null);
+/
+CALL add_table_column('stk_io_profit_loss', 'delete_time', 'datetime', '删除时间', null);
+/
+CALL add_table_column('stk_io_profit_loss', 'biz_scope', 'varchar(16) NOT NULL', 'WH仓库盈亏 DEP科室盈亏', 'WH');
+/
+CALL add_table_column('stk_io_profit_loss', 'department_id', 'bigint', '科室ID', null);
+/
+CALL add_table_column('stk_io_profit_loss', 'department_name_snap', 'varchar(200)', '科室名称快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'dep_inventory_id', 'bigint', '科室库存明细id盘亏扣减', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'department_name_snap', 'varchar(200)', '科室名称快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'return_warehouse_id', 'bigint', '盘盈可退库仓库快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'result_dep_inventory_id', 'bigint', '盘盈生成科室库存id', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'entry_uuid', 'varchar(36)', '明细UUID7', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'stocktaking_line_uuid', 'varchar(36)', '来源盘点明细entry_uuid', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'orig_batch_no', 'varchar(100)', '原账面批次号快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'orig_batch_id', 'bigint', '原批次stk_batch.id', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'pl_kind', 'varchar(16)', 'SURPLUS/LOSS', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'material_name_snap', 'varchar(256)', '耗材名称快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'material_speci_snap', 'varchar(256)', '规格快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'warehouse_name_snap', 'varchar(200)', '仓库名称快照', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'surplus_stk_batch_id', 'bigint', '盘盈生成stk_batch.id', null);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'result_stk_inventory_id', 'bigint', '盘盈生成stk_inventory.id', null);
+/
+
+-- ========== spd_scm_* 绑定表：del_flag 与全局一致（1=删除；历史若为 2 则迁为 1）==========
+UPDATE spd_scm_tenant_bind SET del_flag = '1' WHERE del_flag = '2';
+/
+UPDATE spd_scm_supplier_bind SET del_flag = '1' WHERE del_flag = '2';
+/
+ALTER TABLE spd_scm_tenant_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除';
+/
+ALTER TABLE spd_scm_supplier_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除';
 /

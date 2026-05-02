@@ -1803,6 +1803,7 @@ CREATE TABLE IF NOT EXISTS `stk_batch` (
 -- ========== 仓库盘点单（与 StkIoStocktakingMapper 一致；明细含 tenant_id 与逻辑删除审计） ==========
 CREATE TABLE IF NOT EXISTS `stk_io_stocktaking` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `uuid_id` varchar(36) DEFAULT NULL COMMENT '业务主键UUID7',
   `stock_no` varchar(64) DEFAULT NULL COMMENT '盘点单号',
   `suppler_id` bigint DEFAULT NULL COMMENT '供应商ID',
   `stock_date` date DEFAULT NULL COMMENT '盘点日期',
@@ -1811,6 +1812,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking` (
   `stock_status` int DEFAULT NULL COMMENT '盘点状态',
   `user_id` bigint DEFAULT NULL COMMENT '操作人',
   `stock_type` int DEFAULT NULL COMMENT '盘点类型',
+  `audit_adjusts_inventory` tinyint NOT NULL DEFAULT 0 COMMENT '0审核不直接变更仓库库存(盈亏单处理，允许盘盈明细) 1审核直接变更库存',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
@@ -1818,9 +1820,13 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `reject_reason` varchar(500) DEFAULT NULL COMMENT '驳回原因',
   `is_month_init` int DEFAULT NULL COMMENT '是否月结',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_stk_stocktaking_uuid` (`uuid_id`),
   KEY `idx_stk_stocktaking_wh` (`warehouse_id`),
   KEY `idx_stk_stocktaking_tenant` (`tenant_id`),
   KEY `idx_stk_stocktaking_no` (`stock_no`)
@@ -1829,6 +1835,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking` (
 
 CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `entry_uuid` varchar(36) DEFAULT NULL COMMENT '明细业务主键UUID7',
   `paren_id` bigint NOT NULL COMMENT '主表ID',
   `commodity_id` bigint DEFAULT NULL COMMENT '商品ID',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
@@ -1838,6 +1845,8 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
   `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
   `kc_no` bigint DEFAULT NULL COMMENT '库存明细id',
+  `orig_batch_id` bigint DEFAULT NULL COMMENT '账面批次stk_batch.id快照',
+  `orig_batch_no_snapshot` varchar(100) DEFAULT NULL COMMENT '账面批次号快照',
   `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
   `begin_time` date DEFAULT NULL COMMENT '生产日期',
   `end_time` date DEFAULT NULL COMMENT '有效期',
@@ -1858,6 +1867,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_stk_ste_entry_uuid` (`entry_uuid`),
   KEY `idx_stk_ste_paren` (`paren_id`),
   KEY `idx_stk_ste_material` (`material_id`),
   KEY `idx_stk_ste_tenant` (`tenant_id`)
@@ -1867,10 +1877,15 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
 -- ========== 盈亏单（与 StkIoProfitLossMapper 一致） ==========
 CREATE TABLE IF NOT EXISTS `stk_io_profit_loss` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `uuid_id` varchar(36) DEFAULT NULL COMMENT '业务主键UUID7',
   `bill_no` varchar(64) DEFAULT NULL COMMENT '盈亏单号',
   `stocktaking_id` bigint DEFAULT NULL COMMENT '关联盘点单ID',
+  `stocktaking_uuid` varchar(36) DEFAULT NULL COMMENT '关联盘点单uuid_id',
   `stocktaking_no` varchar(64) DEFAULT NULL COMMENT '盘点单号',
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `biz_scope` varchar(16) NOT NULL DEFAULT 'WH' COMMENT 'WH仓库盈亏 DEP科室盈亏',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID(biz_scope=DEP)',
+  `department_name_snap` varchar(200) DEFAULT NULL COMMENT '科室名称快照',
   `bill_status` int DEFAULT 1 COMMENT '单据状态 1待审核 2已审核',
   `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
   `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
@@ -1879,10 +1894,15 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_stk_pl_uuid` (`uuid_id`),
   KEY `idx_pl_stocktaking` (`stocktaking_id`),
   KEY `idx_pl_warehouse` (`warehouse_id`),
+  KEY `idx_pl_department` (`department_id`),
+  KEY `idx_pl_biz_scope` (`biz_scope`),
   KEY `idx_pl_tenant` (`tenant_id`),
   KEY `idx_pl_bill_status` (`bill_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盈亏单主表';
@@ -1890,12 +1910,18 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss` (
 
 CREATE TABLE IF NOT EXISTS `stk_io_profit_loss_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `entry_uuid` varchar(36) DEFAULT NULL COMMENT '明细业务主键UUID7',
   `paren_id` bigint DEFAULT NULL COMMENT '盈亏单ID',
-  `stocktaking_entry_id` bigint DEFAULT NULL COMMENT '来源盘点明细ID',
-  `kc_no` bigint DEFAULT NULL COMMENT '库存明细id',
+  `stocktaking_entry_id` bigint DEFAULT NULL COMMENT '来源盘点明细ID stk_io_stocktaking_entry.id',
+  `stocktaking_line_uuid` varchar(36) DEFAULT NULL COMMENT '来源盘点明细entry_uuid',
+  `kc_no` bigint DEFAULT NULL COMMENT '仓库库存明细id stk_inventory.id(盘亏扣减目标,biz_scope=WH)',
+  `dep_inventory_id` bigint DEFAULT NULL COMMENT '科室库存明细id stk_dep_inventory.id(盘亏扣减目标,biz_scope=DEP)',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
-  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号(盘盈为新批次;盘亏为原批次号)',
+  `orig_batch_no` varchar(100) DEFAULT NULL COMMENT '原账面批次号快照',
+  `orig_batch_id` bigint DEFAULT NULL COMMENT '原账面批次stk_batch.id',
   `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
+  `pl_kind` varchar(16) DEFAULT NULL COMMENT 'SURPLUS盘盈 LOSS盘亏',
   `book_qty` decimal(18,2) DEFAULT NULL COMMENT '账面数量',
   `stock_qty` decimal(18,2) DEFAULT NULL COMMENT '盘点数量',
   `profit_qty` decimal(18,2) DEFAULT NULL COMMENT '盈亏数量',
@@ -1907,6 +1933,14 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss_entry` (
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
   `suppler_id` varchar(128) DEFAULT NULL COMMENT '供应商ID',
+  `material_name_snap` varchar(256) DEFAULT NULL COMMENT '耗材名称快照',
+  `material_speci_snap` varchar(256) DEFAULT NULL COMMENT '规格快照',
+  `warehouse_name_snap` varchar(200) DEFAULT NULL COMMENT '仓库名称快照',
+  `department_name_snap` varchar(200) DEFAULT NULL COMMENT '科室名称快照',
+  `return_warehouse_id` bigint DEFAULT NULL COMMENT '盘盈可退库仓库(快照)',
+  `surplus_stk_batch_id` bigint DEFAULT NULL COMMENT '盘盈生成批次stk_batch.id',
+  `result_stk_inventory_id` bigint DEFAULT NULL COMMENT '盘盈审核生成仓库库存stk_inventory.id',
+  `result_dep_inventory_id` bigint DEFAULT NULL COMMENT '盘盈审核生成科室库存stk_dep_inventory.id',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -1915,7 +1949,9 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_stk_ple_entry_uuid` (`entry_uuid`),
   KEY `idx_pl_entry_paren` (`paren_id`),
+  KEY `idx_pl_entry_st_line` (`stocktaking_line_uuid`),
   KEY `idx_pl_entry_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盈亏单明细表';
 /
@@ -2465,12 +2501,100 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   `dept_batch_consume_id` bigint NOT NULL COMMENT '科室批量消耗主表 t_hc_ks_xh.id',
   `dept_batch_consume_entry_id` bigint NOT NULL COMMENT '科室批量消耗明细 t_hc_ks_xh_entry.id',
   `alloc_qty` decimal(18,6) NOT NULL COMMENT '本行分摊数量',
+  `dep_inventory_id` bigint DEFAULT NULL COMMENT '低值科室库存 stk_dep_inventory.id',
+  `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '高值科室库存 gz_dep_inventory.id',
+  `stk_dep_end_date` date DEFAULT NULL COMMENT '低值科室库存有效期快照(退费返还排序)',
+  `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '高值院内码快照',
+  `returned_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '计费退费已返还数量累计',
+  `refundable_remaining_qty` decimal(18,6) DEFAULT NULL COMMENT '尚可返还数量(=alloc-已返，应用维护)',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志 0正常 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
   KEY `idx_hmcl_mirror` (`mirror_row_id`),
   KEY `idx_hmcl_consume` (`dept_batch_consume_id`),
-  KEY `idx_hmcl_fetch` (`tenant_id`,`fetch_batch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（退费未建模前勿删改以免串批次/院内码）';
+  KEY `idx_hmcl_fetch` (`tenant_id`,`fetch_batch_id`),
+  KEY `idx_hmcl_dep_inv` (`tenant_id`,`dep_inventory_id`),
+  KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（含退费返还累计与库存行快照）';
+/
+
+-- 租户级业务开关（如衡水三院低值计费自动消耗等；主键UUID7）
+CREATE TABLE IF NOT EXISTS `sb_tenant_setting` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID(sb_customer.customer_id)',
+  `setting_key` varchar(128) NOT NULL COMMENT '配置键',
+  `setting_value` varchar(500) DEFAULT NULL COMMENT '配置值',
+  `remark` varchar(500) DEFAULT NULL COMMENT '说明',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sb_tenant_setting` (`tenant_id`,`setting_key`),
+  KEY `idx_sb_tenant_setting_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户级业务开关';
+/
+
+-- 计费退费处理主单（HIS退费与科室库存返还关联）
+CREATE TABLE IF NOT EXISTS `his_billing_refund_order` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `refund_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '退费侧镜像行ID his_*_charge_mirror.id',
+  `origin_charge_detail_id` varchar(64) NOT NULL COMMENT '原收费明细ID(HIS侧，对应被消耗行 his_*_charge_id)',
+  `origin_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '原计费镜像行ID(与 his_mirror_consume_link.mirror_row_id 对齐)',
+  `refund_qty` decimal(18,6) NOT NULL COMMENT '本次退费数量',
+  `value_level` char(1) NOT NULL DEFAULT '2' COMMENT '1高值 2低值',
+  `process_status` varchar(24) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/DONE/FAILED',
+  `fail_reason` varchar(500) DEFAULT NULL COMMENT '失败原因',
+  `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名快照',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID快照',
+  `department_name` varchar(200) DEFAULT NULL COMMENT '科室名称快照',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hbro_tenant_origin` (`tenant_id`,`origin_charge_detail_id`),
+  KEY `idx_hbro_mirror` (`tenant_id`,`origin_mirror_row_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计费退费处理主单';
+/
+
+-- 计费退费处理明细（返还到具体库存行/关联消耗link）
+CREATE TABLE IF NOT EXISTS `his_billing_refund_order_line` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `refund_order_id` varchar(36) NOT NULL COMMENT '主单 his_billing_refund_order.id',
+  `consume_link_id` varchar(36) DEFAULT NULL COMMENT 'his_mirror_consume_link.id',
+  `return_qty` decimal(18,6) NOT NULL COMMENT '本行返还数量',
+  `dep_inventory_id` bigint DEFAULT NULL COMMENT '低值返还目标 stk_dep_inventory.id',
+  `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '高值返还目标 gz_dep_inventory.id',
+  `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '高值院内码',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号快照',
+  `end_date_snapshot` date DEFAULT NULL COMMENT '有效期快照',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hbrol_refund` (`tenant_id`,`refund_order_id`),
+  KEY `idx_hbrol_link` (`consume_link_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计费退费处理明细';
 /
 
 -- 按单据类型的打印每页行数（与 spd-ui 打印页 docKind 一致；可重复执行：INSERT 使用 INSERT IGNORE）
@@ -2547,7 +2671,7 @@ CREATE TABLE IF NOT EXISTS `spd_scm_tenant_bind` (
   `tenant_id` varchar(36) NOT NULL COMMENT 'SPD租户ID(sb_customer.customer_id)',
   `scm_hospital_code` varchar(64) NOT NULL COMMENT '云平台医院编码(scm_hospital.hospital_code)',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 2删除',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -2564,7 +2688,7 @@ CREATE TABLE IF NOT EXISTS `spd_scm_supplier_bind` (
   `supplier_id` varchar(36) NOT NULL COMMENT 'SPD供应商主键 fd_supplier.id（字符串）',
   `scm_supplier_code` varchar(64) NOT NULL COMMENT '云平台供应商编码 scm_supplier.supplier_code',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 2删除',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',

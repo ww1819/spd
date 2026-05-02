@@ -6,6 +6,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
+import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdWarehouse;
 
 /**
@@ -28,6 +29,12 @@ public class StkIoProfitLoss extends BaseEntity {
     private String stocktakingNo;
     /** 仓库ID */
     private Long warehouseId;
+    /** WH 仓库盈亏 / DEP 科室盈亏 */
+    private String bizScope;
+    /** 科室ID（biz_scope=DEP） */
+    private Long departmentId;
+    /** 科室名称快照 */
+    private String departmentNameSnap;
     /** 单据状态 1待审核 2已审核 */
     private Integer billStatus;
     /** 审核人 */
@@ -39,10 +46,18 @@ public class StkIoProfitLoss extends BaseEntity {
     private Integer delFlag;
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
+    /** 业务主键 UUID7 */
+    private String uuidId;
+    /** 关联盘点单 uuid_id */
+    private String stocktakingUuid;
+    private String deleteBy;
+    private Date deleteTime;
     /** 盈亏单明细 */
     private List<StkIoProfitLossEntry> entryList;
     /** 仓库对象 */
     private FdWarehouse warehouse;
+    /** 科室对象（列表/详情关联，非必持久化） */
+    private FdDepartment department;
     /** 耗材名称（查询条件，不持久化） */
     private String materialName;
     /** 开始日期（查询条件，不持久化） */
@@ -60,6 +75,15 @@ public class StkIoProfitLoss extends BaseEntity {
     public void setStocktakingNo(String stocktakingNo) { this.stocktakingNo = stocktakingNo; }
     public Long getWarehouseId() { return warehouseId; }
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+
+    public String getBizScope() { return bizScope; }
+    public void setBizScope(String bizScope) { this.bizScope = bizScope; }
+
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public String getDepartmentNameSnap() { return departmentNameSnap; }
+    public void setDepartmentNameSnap(String departmentNameSnap) { this.departmentNameSnap = departmentNameSnap; }
     public Integer getBillStatus() { return billStatus; }
     public void setBillStatus(Integer billStatus) { this.billStatus = billStatus; }
     public String getAuditBy() { return auditBy; }
@@ -72,6 +96,9 @@ public class StkIoProfitLoss extends BaseEntity {
     public void setEntryList(List<StkIoProfitLossEntry> entryList) { this.entryList = entryList; }
     public FdWarehouse getWarehouse() { return warehouse; }
     public void setWarehouse(FdWarehouse warehouse) { this.warehouse = warehouse; }
+
+    public FdDepartment getDepartment() { return department; }
+    public void setDepartment(FdDepartment department) { this.department = department; }
     public String getMaterialName() { return materialName; }
     public void setMaterialName(String materialName) { this.materialName = materialName; }
     public String getBeginDate() { return beginDate; }
@@ -80,4 +107,16 @@ public class StkIoProfitLoss extends BaseEntity {
     public void setEndDate(String endDate) { this.endDate = endDate; }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getUuidId() { return uuidId; }
+    public void setUuidId(String uuidId) { this.uuidId = uuidId; }
+
+    public String getStocktakingUuid() { return stocktakingUuid; }
+    public void setStocktakingUuid(String stocktakingUuid) { this.stocktakingUuid = stocktakingUuid; }
+
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+
+    public Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
 }

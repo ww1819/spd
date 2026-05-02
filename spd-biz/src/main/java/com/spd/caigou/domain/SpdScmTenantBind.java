@@ -4,6 +4,7 @@ import java.util.Date;
 
 /**
  * SPD 租户与云平台医院编码绑定
+ * <p>del_flag：0 正常，1 删除（与系统通用逻辑删除一致）</p>
  */
 public class SpdScmTenantBind
 {
@@ -11,6 +12,7 @@ public class SpdScmTenantBind
     private String tenantId;
     private String scmHospitalCode;
     private String remark;
+    /** 删除标志：0 正常，1 删除 */
     private String delFlag;
     private String createBy;
     private Date createTime;

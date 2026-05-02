@@ -4,6 +4,7 @@ import java.util.Date;
 
 /**
  * SPD 供应商与云平台供应商编码绑定（按租户）
+ * <p>del_flag：0 正常，1 删除（与系统通用逻辑删除一致）</p>
  */
 public class SpdScmSupplierBind
 {
@@ -12,6 +13,7 @@ public class SpdScmSupplierBind
     private String supplierId;
     private String scmSupplierCode;
     private String remark;
+    /** 删除标志：0 正常，1 删除 */
     private String delFlag;
     private String createBy;
     private Date createTime;

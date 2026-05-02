@@ -74,6 +74,11 @@ public interface StkIoProfitLossMapper {
      */
     int updateStkIoProfitLossEntryBatchNo(@Param("id") Long id, @Param("batchNo") String batchNo);
 
+    /** 盘盈审核后回写生成的批次与库存行（仓库库存 / 科室库存二选一或同时追溯） */
+    int updateStkIoProfitLossEntryPostingResult(@Param("id") Long id, @Param("batchNo") String batchNo,
+        @Param("surplusStkBatchId") Long surplusStkBatchId, @Param("resultStkInventoryId") Long resultStkInventoryId,
+        @Param("resultDepInventoryId") Long resultDepInventoryId);
+
     /**
      * 查询盈亏明细列表（用于报表）
      */

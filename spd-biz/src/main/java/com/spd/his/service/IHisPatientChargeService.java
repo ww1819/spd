@@ -18,6 +18,7 @@ import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
+import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 
 /**
  * HIS 患者计费镜像：抓取、查询与按明细手动生成科室消耗。
@@ -50,4 +51,10 @@ public interface IHisPatientChargeService
     HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body);
 
     HisMirrorHighApplyResultVo applyMirrorHighConsume(HisMirrorHighApplyBody body);
+
+    /** 衡水三院：低值计费自动消耗开关查询 */
+    HisTenantBillingSettingBody getTenantBillingSetting();
+
+    /** 衡水三院：保存低值计费自动消耗开关 */
+    void saveTenantBillingSetting(HisTenantBillingSettingBody body);
 }

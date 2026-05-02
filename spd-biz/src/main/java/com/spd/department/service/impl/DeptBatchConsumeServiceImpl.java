@@ -369,6 +369,18 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Transactional
     public DeptBatchConsume reverseConsume(DeptBatchConsumeReverseReq req, String operator)
     {
+        return reverseConsumeInternal(req, operator, false);
+    }
+
+    @Override
+    @Transactional
+    public DeptBatchConsume reverseConsumeForBillingRefund(DeptBatchConsumeReverseReq req, String operator)
+    {
+        return reverseConsumeInternal(req, operator, true);
+    }
+
+    private DeptBatchConsume reverseConsumeInternal(DeptBatchConsumeReverseReq req, String operator, boolean allowHisMirrorSource)
+    {
         if (req == null || req.getConsumeId() == null) {
             throw new ServiceException("反消耗失败：来源消耗单不能为空");
         }
@@ -376,7 +388,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (srcBill == null) {
             throw new ServiceException("反消耗失败：来源消耗单不存在");
         }
-        if (srcBill.getDisallowReverse() != null && srcBill.getDisallowReverse().intValue() == 1) {
+        if (!allowHisMirrorSource && srcBill.getDisallowReverse() != null && srcBill.getDisallowReverse().intValue() == 1) {
             throw new ServiceException("反消耗失败：该单来源于HIS计费镜像消耗，禁止手工退消耗");
         }
         if (srcBill.getConsumeBillStatus() == null || srcBill.getConsumeBillStatus() != 2) {

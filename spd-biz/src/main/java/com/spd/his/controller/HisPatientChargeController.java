@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,6 +33,7 @@ import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
+import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.service.IHisPatientChargeService;
 
 /**
@@ -150,5 +152,27 @@ public class HisPatientChargeController extends BaseController
     {
         HisMirrorHighApplyResultVo vo = hisPatientChargeService.applyMirrorHighConsume(body);
         return success(vo);
+    }
+
+    /**
+     * 衡水三院：低值计费抓取后是否自动生成消耗（开关查询）
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:billingTenantSetting')")
+    @GetMapping("/tenant/billingSetting")
+    public AjaxResult getTenantBillingSetting()
+    {
+        return success(hisPatientChargeService.getTenantBillingSetting());
+    }
+
+    /**
+     * 衡水三院：保存低值计费自动消耗开关
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:billingTenantSetting')")
+    @Log(title = "租户计费自动消耗开关", businessType = BusinessType.UPDATE)
+    @PutMapping("/tenant/billingSetting")
+    public AjaxResult saveTenantBillingSetting(@RequestBody HisTenantBillingSettingBody body)
+    {
+        hisPatientChargeService.saveTenantBillingSetting(body);
+        return success();
     }
 }

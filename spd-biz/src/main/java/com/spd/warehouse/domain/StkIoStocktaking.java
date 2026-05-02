@@ -75,6 +75,17 @@ public class StkIoStocktaking extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
+    /** 业务主键 UUID7 */
+    private String uuidId;
+
+    /**
+     * 0：审核不直接变更仓库库存（盈亏单处理，允许盘盈明细）；1：审核直接变更库存（扩展）
+     */
+    private Integer auditAdjustsInventory;
+
+    private String deleteBy;
+    private java.util.Date deleteTime;
+
     /** 盈亏金额（用于列表显示，从明细汇总） */
     private java.math.BigDecimal profitAmount;
 
@@ -289,6 +300,18 @@ public class StkIoStocktaking extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getUuidId() { return uuidId; }
+    public void setUuidId(String uuidId) { this.uuidId = uuidId; }
+
+    public Integer getAuditAdjustsInventory() { return auditAdjustsInventory; }
+    public void setAuditAdjustsInventory(Integer auditAdjustsInventory) { this.auditAdjustsInventory = auditAdjustsInventory; }
+
+    public String getDeleteBy() { return deleteBy; }
+    public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+
+    public java.util.Date getDeleteTime() { return deleteTime; }
+    public void setDeleteTime(java.util.Date deleteTime) { this.deleteTime = deleteTime; }
 
     @Override
     public String toString() {

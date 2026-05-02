@@ -91,6 +91,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
+        if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
+            stkIoStocktaking.setAuditAdjustsInventory(0);
+        }
         int rows = deptStocktakingMapper.insertDeptStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
         return rows;
@@ -185,8 +188,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
         List<StkIoStocktakingEntry> stkIoStocktakingEntryList = stkIoStocktaking.getStkIoStocktakingEntryList();
 
-        //更新科室库存
-        updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
+        // audit_adjusts_inventory=1：审核直接变更科室库存；=0：仅过账，由科室盈亏单处理库存
+        if (stkIoStocktaking.getAuditAdjustsInventory() != null && stkIoStocktaking.getAuditAdjustsInventory() == 1) {
+            updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
+        }
 
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);

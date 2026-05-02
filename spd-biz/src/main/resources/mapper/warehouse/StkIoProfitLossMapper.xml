@@ -19,13 +19,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="uuidId"    column="uuid_id"    />
+        <result property="stocktakingUuid"    column="stocktaking_uuid"    />
+        <result property="bizScope"    column="biz_scope"    />
+        <result property="departmentId"    column="department_id"    />
+        <result property="departmentNameSnap"    column="department_name_snap"    />
         <association property="warehouse" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult" />
+        <association property="department" javaType="com.spd.foundation.domain.FdDepartment" resultMap="profitLossDeptResult" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="com.spd.foundation.domain.FdWarehouse">
         <id     property="id"    column="wId"     />
         <result property="code"  column="warehouseCode"   />
         <result property="name"  column="warehouseName"   />
+    </resultMap>
+
+    <resultMap id="profitLossDeptResult" type="com.spd.foundation.domain.FdDepartment">
+        <id     property="id"    column="depId"     />
+        <result property="code"  column="deptCode"   />
+        <result property="name"  column="deptName"   />
     </resultMap>
 
     <resultMap type="com.spd.warehouse.domain.StkIoProfitLoss" id="StkIoProfitLossWithEntryResult" extends="StkIoProfitLossResult">
@@ -51,6 +63,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="mainBarcode"    column="sub_main_barcode"    />
         <result property="subBarcode"    column="sub_sub_barcode"    />
         <result property="supplerId"    column="sub_suppler_id"    />
+        <result property="entryUuid"    column="sub_entry_uuid"    />
+        <result property="stocktakingLineUuid"    column="sub_stocktaking_line_uuid"    />
+        <result property="origBatchNo"    column="sub_orig_batch_no"    />
+        <result property="origBatchId"    column="sub_orig_batch_id"    />
+        <result property="plKind"    column="sub_pl_kind"    />
+        <result property="materialNameSnap"    column="sub_material_name_snap"    />
+        <result property="materialSpeciSnap"    column="sub_material_speci_snap"    />
+        <result property="warehouseNameSnap"    column="sub_warehouse_name_snap"    />
+        <result property="surplusStkBatchId"    column="sub_surplus_stk_batch_id"    />
+        <result property="resultStkInventoryId"    column="sub_result_stk_inventory_id"    />
+        <result property="depInventoryId"    column="sub_dep_inventory_id"    />
+        <result property="resultDepInventoryId"    column="sub_result_dep_inventory_id"    />
+        <result property="departmentNameSnap"    column="sub_department_name_snap"    />
+        <result property="returnWarehouseId"    column="sub_return_warehouse_id"    />
+        <result property="tenantId"    column="sub_tenant_id"    />
         <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult" />
     </resultMap>
 
@@ -80,6 +107,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="supplierId"    column="e_supplier_id"    />
         <result property="mainBarcode"    column="e_main_barcode"    />
         <result property="subBarcode"    column="e_sub_barcode"    />
+        <result property="entryUuid"    column="e_entry_uuid"    />
+        <result property="origBatchId"    column="e_orig_batch_id"    />
+        <result property="origBatchNoSnapshot"    column="e_orig_batch_no_snap"    />
+        <result property="returnWarehouseId"    column="e_return_warehouse_id"    />
         <association property="material" javaType="com.spd.foundation.domain.FdMaterial" resultMap="profitLossMaterialResult2" />
     </resultMap>
 
@@ -90,26 +121,38 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectStkIoProfitLossVo">
-        select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
+        select p.id, p.uuid_id, p.bill_no, p.stocktaking_id, p.stocktaking_uuid, p.stocktaking_no, p.warehouse_id,
+               p.biz_scope, p.department_id, p.department_name_snap, p.bill_status,
                p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag, p.tenant_id,
-               w.id as wId, w.code as warehouseCode, w.name as warehouseName
+               w.id as wId, w.code as warehouseCode, w.name as warehouseName,
+               dep.id as depId, dep.code as deptCode, dep.name as deptName
         from stk_io_profit_loss p
         left join fd_warehouse w on p.warehouse_id = w.id
+        left join fd_department dep on p.department_id = dep.id
     </sql>
 
     <select id="selectStkIoProfitLossById" resultMap="StkIoProfitLossWithEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select p.id, p.bill_no, p.stocktaking_id, p.stocktaking_no, p.warehouse_id, p.bill_status,
+        select p.id, p.uuid_id, p.bill_no, p.stocktaking_id, p.stocktaking_uuid, p.stocktaking_no, p.warehouse_id,
+               p.biz_scope, p.department_id, p.department_name_snap, p.bill_status,
                p.audit_by, p.audit_date, p.create_by, p.create_time, p.update_by, p.update_time, p.del_flag, p.tenant_id,
                w.id as wId, w.code as warehouseCode, w.name as warehouseName,
-               e.id as sub_id, e.paren_id as sub_paren_id, e.stocktaking_entry_id as sub_stocktaking_entry_id, e.kc_no as sub_kc_no,
-               e.material_id as sub_material_id, e.batch_no as sub_batch_no, e.batch_number as sub_batch_number,
+               dep.id as depId, dep.code as deptCode, dep.name as deptName,
+               e.id as sub_id, e.entry_uuid as sub_entry_uuid, e.paren_id as sub_paren_id, e.stocktaking_entry_id as sub_stocktaking_entry_id,
+               e.stocktaking_line_uuid as sub_stocktaking_line_uuid, e.kc_no as sub_kc_no, e.dep_inventory_id as sub_dep_inventory_id,
+               e.material_id as sub_material_id, e.batch_no as sub_batch_no, e.orig_batch_no as sub_orig_batch_no, e.orig_batch_id as sub_orig_batch_id,
+               e.batch_number as sub_batch_number, e.pl_kind as sub_pl_kind,
                e.book_qty as sub_book_qty, e.stock_qty as sub_stock_qty, e.profit_qty as sub_profit_qty, e.unit_price as sub_unit_price,
                e.profit_amount as sub_profit_amount, e.begin_time as sub_begin_time, e.end_time as sub_end_time,
                e.del_flag as sub_del_flag, e.main_barcode as sub_main_barcode, e.sub_barcode as sub_sub_barcode, e.suppler_id as sub_suppler_id,
+               e.material_name_snap as sub_material_name_snap, e.material_speci_snap as sub_material_speci_snap, e.warehouse_name_snap as sub_warehouse_name_snap,
+               e.department_name_snap as sub_department_name_snap, e.return_warehouse_id as sub_return_warehouse_id,
+               e.surplus_stk_batch_id as sub_surplus_stk_batch_id, e.result_stk_inventory_id as sub_result_stk_inventory_id,
+               e.result_dep_inventory_id as sub_result_dep_inventory_id, e.tenant_id as sub_tenant_id,
                m.id as mId, m.code as materialCode, m.name as materialName
         from stk_io_profit_loss p
         left join fd_warehouse w on p.warehouse_id = w.id
+        left join fd_department dep on p.department_id = dep.id
         left join stk_io_profit_loss_entry e on e.paren_id = p.id and (e.del_flag is null or e.del_flag != 1)
         left join fd_material m on e.material_id = m.id
         where p.id = #{id} and (p.del_flag is null or p.del_flag != 1) and p.tenant_id = #{scopedTenantId}
@@ -125,6 +168,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="stocktakingId != null"> and p.stocktaking_id = #{stocktakingId}</if>
             <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
             <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null"> and p.department_id = #{departmentId}</if>
+            <if test="bizScope != null and bizScope != ''"> and p.biz_scope = #{bizScope}</if>
             <if test="billStatus != null"> and p.bill_status = #{billStatus}</if>
         </where>
         order by p.create_time desc
@@ -146,6 +191,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="delFlag != null">del_flag,</if>
+            <if test="uuidId != null">uuid_id,</if>
+            <if test="stocktakingUuid != null">stocktaking_uuid,</if>
+            <if test="bizScope != null">biz_scope,</if>
+            <if test="departmentId != null">department_id,</if>
+            <if test="departmentNameSnap != null">department_name_snap,</if>
             tenant_id,
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -161,6 +211,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="delFlag != null">#{delFlag},</if>
+            <if test="uuidId != null">#{uuidId},</if>
+            <if test="stocktakingUuid != null">#{stocktakingUuid},</if>
+            <if test="bizScope != null">#{bizScope},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+            <if test="departmentNameSnap != null">#{departmentNameSnap},</if>
             #{scopedTenantId},
         </trim>
     </insert>
@@ -173,6 +228,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="stocktakingId != null">stocktaking_id = #{stocktakingId},</if>
             <if test="stocktakingNo != null">stocktaking_no = #{stocktakingNo},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="bizScope != null">biz_scope = #{bizScope},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="departmentNameSnap != null">department_name_snap = #{departmentNameSnap},</if>
             <if test="billStatus != null">bill_status = #{billStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
@@ -194,22 +252,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <insert id="batchStkIoProfitLossEntry">
-        insert into stk_io_profit_loss_entry (paren_id, stocktaking_entry_id, kc_no, material_id, batch_no, batch_number, book_qty, stock_qty, profit_qty, unit_price, profit_amount, begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id, create_by, create_time, update_by, update_time, tenant_id)
+        insert into stk_io_profit_loss_entry (
+            entry_uuid, paren_id, stocktaking_entry_id, stocktaking_line_uuid, kc_no, dep_inventory_id, material_id,
+            batch_no, orig_batch_no, orig_batch_id, batch_number, pl_kind,
+            book_qty, stock_qty, profit_qty, unit_price, profit_amount,
+            begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id,
+            material_name_snap, material_speci_snap, warehouse_name_snap, department_name_snap, return_warehouse_id,
+            surplus_stk_batch_id, result_stk_inventory_id, result_dep_inventory_id,
+            create_by, create_time, update_by, update_time, tenant_id
+        )
         values
         <foreach item="item" collection="list" separator=",">
-            ( #{item.parenId}, #{item.stocktakingEntryId}, #{item.kcNo}, #{item.materialId}, #{item.batchNo}, #{item.batchNumber}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime},
-              (select t.tenant_id from stk_io_profit_loss t where t.id = #{item.parenId} limit 1) )
+            ( #{item.entryUuid}, #{item.parenId}, #{item.stocktakingEntryId}, #{item.stocktakingLineUuid}, #{item.kcNo}, #{item.depInventoryId}, #{item.materialId},
+              #{item.batchNo}, #{item.origBatchNo}, #{item.origBatchId}, #{item.batchNumber}, #{item.plKind},
+              #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount},
+              #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId},
+              #{item.materialNameSnap}, #{item.materialSpeciSnap}, #{item.warehouseNameSnap}, #{item.departmentNameSnap}, #{item.returnWarehouseId},
+              #{item.surplusStkBatchId}, #{item.resultStkInventoryId}, #{item.resultDepInventoryId},
+              #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}, #{item.tenantId} )
         </foreach>
     </insert>
 
     <!-- 根据盘点单ID查询有盈亏的盘点明细（profit_qty != 0 或 profit_amount != 0） -->
     <select id="selectStocktakingEntriesWithProfitLoss" resultMap="StocktakingEntryWithProfitResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select e.id as e_id, e.paren_id as e_paren_id, e.kc_no as e_kc_no, e.material_id as e_material_id, e.unit_price as e_unit_price, e.price as e_price,
+        select e.id as e_id, e.paren_id as e_paren_id, e.entry_uuid as e_entry_uuid, e.kc_no as e_kc_no, e.material_id as e_material_id, e.unit_price as e_unit_price, e.price as e_price,
                e.qty as e_qty, e.batch_no as e_batch_no, e.batch_number as e_batch_number,
+               e.orig_batch_id as e_orig_batch_id, e.orig_batch_no_snapshot as e_orig_batch_no_snap,
                e.begin_time as e_begin_time, e.end_time as e_end_time,
                e.stock_qty as e_stock_qty, e.profit_qty as e_profit_qty, e.stock_amount as e_stock_amount, e.profit_amount as e_profit_amount,
                e.supplier_id as e_supplier_id, e.main_barcode as e_main_barcode, e.sub_barcode as e_sub_barcode,
+               e.return_warehouse_id as e_return_warehouse_id,
                m.id as em_id, m.code as em_code, m.name as em_name
         from stk_io_stocktaking_entry e
         left join fd_material m on e.material_id = m.id
@@ -234,6 +307,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateStkIoProfitLossEntryBatchNo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_profit_loss_entry set batch_no = #{batchNo}, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updateStkIoProfitLossEntryPostingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_profit_loss_entry set
+            batch_no = #{batchNo},
+            surplus_stk_batch_id = #{surplusStkBatchId},
+            result_stk_inventory_id = #{resultStkInventoryId},
+            result_dep_inventory_id = #{resultDepInventoryId},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <!-- 查询盈亏明细列表（用于报表） -->

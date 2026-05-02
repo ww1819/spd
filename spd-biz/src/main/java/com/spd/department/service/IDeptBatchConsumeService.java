@@ -109,4 +109,9 @@ public interface IDeptBatchConsumeService
      * 生成反消耗单并回补科室库存
      */
     DeptBatchConsume reverseConsume(DeptBatchConsumeReverseReq req, String operator);
+
+    /**
+     * 计费退费专用：允许来源为 HIS 计费镜像消耗（disallow_reverse=1）的反消耗，其它规则同 {@link #reverseConsume}
+     */
+    DeptBatchConsume reverseConsumeForBillingRefund(DeptBatchConsumeReverseReq req, String operator);
 }

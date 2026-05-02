@@ -6,14 +6,14 @@
         select id, tenant_id as tenantId, scm_hospital_code as scmHospitalCode, remark, del_flag as delFlag,
                create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
         from spd_scm_tenant_bind
-        where tenant_id = #{tenantId} and del_flag = '0'
+        where tenant_id = #{tenantId} and (del_flag is null or del_flag = '' or del_flag = '0')
         limit 1
     </select>
 
     <select id="selectHospitalCodeByTenantId" resultType="java.lang.String">
         select scm_hospital_code
         from spd_scm_tenant_bind
-        where tenant_id = #{tenantId} and del_flag = '0'
+        where tenant_id = #{tenantId} and (del_flag is null or del_flag = '' or del_flag = '0')
           and scm_hospital_code is not null and trim(scm_hospital_code) != ''
         limit 1
     </select>
@@ -29,6 +29,6 @@
             remark = #{remark},
             update_by = #{updateBy},
             update_time = now()
-        where tenant_id = #{tenantId} and del_flag = '0'
+        where tenant_id = #{tenantId} and (del_flag is null or del_flag = '' or del_flag = '0')
     </update>
 </mapper>

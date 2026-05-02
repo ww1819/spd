@@ -460,4 +460,10 @@
         select * from his_inpatient_charge_mirror
         where tenant_id = #{tenantId} and id = #{id} limit 1
     </select>
+
+    <select id="selectMirrorIdByHisChargeId" resultType="java.lang.String">
+        select id from his_inpatient_charge_mirror
+        where tenant_id = #{tenantId} and his_inpatient_charge_id = #{hisChargeId}
+        limit 1
+    </select>
 </mapper>

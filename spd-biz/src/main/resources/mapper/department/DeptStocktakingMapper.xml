@@ -16,6 +16,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="stockType"    column="stock_type"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="tenantId"    column="tenant_id"    />
+        <result property="uuidId"    column="uuid_id"    />
+        <result property="auditAdjustsInventory"    column="audit_adjusts_inventory"    />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -109,8 +112,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectDeptStocktakingVo">
-        select stk.id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
-				stk.stock_status, stk.user_id stk_user_id, stk.stock_type, stk.del_flag,stk.audit_date, stk.reject_reason, stk.create_by, stk.create_time,
+        select stk.id, stk.uuid_id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
+				stk.stock_status, stk.user_id as user_id, stk.stock_type, stk.audit_adjusts_inventory, stk.del_flag, stk.tenant_id, stk.audit_date, stk.reject_reason, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,
 				COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
 				COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
@@ -144,8 +147,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectDeptStocktakingById" parameterType="Long" resultMap="DeptStocktakingStkIoStocktakingEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
-                a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+        select a.id, a.uuid_id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
+                a.stock_type, a.audit_adjusts_inventory, a.del_flag, a.tenant_id, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
                 COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
                 s.id as sId, s.code as supplierCode, s.name as supplierName,
@@ -197,6 +200,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="isMonthInit != null">is_month_init,</if>
+            <if test="uuidId != null">uuid_id,</if>
+            <if test="auditAdjustsInventory != null">audit_adjusts_inventory,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -217,6 +222,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
+            <if test="uuidId != null">#{uuidId},</if>
+            <if test="auditAdjustsInventory != null">#{auditAdjustsInventory},</if>
             #{scopedTenantId},
          </trim>
     </insert>
@@ -242,6 +249,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
+            <if test="uuidId != null">uuid_id = #{uuidId},</if>
+            <if test="auditAdjustsInventory != null">audit_adjusts_inventory = #{auditAdjustsInventory},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>

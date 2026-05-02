@@ -6010,6 +6010,21 @@ SELECT 3607, '计费抓取批次查询', @patient_charge_menu, 6, '#', '', NULL,
 FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:fetchBatchList') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3607))
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
 /
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3608, '衡水计费自动消耗开关', @patient_charge_menu, 7, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:billingTenantSetting', '#', 'admin', NOW(), '1', NOW(), 'GET/PUT /his/patientCharge/tenant/billingSetting', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:billingTenantSetting') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3608))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3609, '计费低值退费返还', @patient_charge_menu, 8, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:billingRefundLow', '#', 'admin', NOW(), '1', NOW(), 'POST /his/billingRefund/low', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:billingRefundLow') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3609))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3610, '计费高值退费返还', @patient_charge_menu, 9, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:billingRefundHigh', '#', 'admin', NOW(), '1', NOW(), 'POST /his/billingRefund/high', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:billingRefundHigh') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3610))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
 
 -- 23.4 收货确认 department/receiptConfirm（ReceiptConfirmController）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
@@ -7041,6 +7056,42 @@ FROM DUAL WHERE @hc_barcode_flow_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sy
 ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
 /
 
+-- ========== 科室盈亏处理 DeptStkIoProfitLossController GET/POST /department/deptProfitLoss ==========
+SET @department_root := (SELECT m.menu_id FROM sys_menu m WHERE m.path = 'department' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3714, '科室盈亏处理', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'deptProfitLoss', 'department/deptProfitLoss/index', NULL, 1, 0, 'C', '0', '0', 'department:deptProfitLoss:list', 'edit', 'admin', NOW(), '1', NOW(), '科室盘点生成；biz_scope=DEP；单号前缀 DPL', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/deptProfitLoss/index')
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+SET @dept_profit_loss_c := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'department/deptProfitLoss/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3715, '科室盈亏查询', @dept_profit_loss_c, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:deptProfitLoss:query', '#', 'admin', NOW(), '1', NOW(), 'GET /{id}', '0', '1'
+FROM DUAL WHERE @dept_profit_loss_c IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @dept_profit_loss_c AND perms = 'department:deptProfitLoss:query')
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3716, '科室盈亏新增', @dept_profit_loss_c, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:deptProfitLoss:add', '#', 'admin', NOW(), '1', NOW(), 'POST、loadDraft', '0', '1'
+FROM DUAL WHERE @dept_profit_loss_c IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @dept_profit_loss_c AND perms = 'department:deptProfitLoss:add')
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3717, '科室盈亏修改', @dept_profit_loss_c, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:deptProfitLoss:edit', '#', 'admin', NOW(), '1', NOW(), 'PUT', '0', '1'
+FROM DUAL WHERE @dept_profit_loss_c IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @dept_profit_loss_c AND perms = 'department:deptProfitLoss:edit')
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3718, '科室盈亏删除', @dept_profit_loss_c, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:deptProfitLoss:remove', '#', 'admin', NOW(), '1', NOW(), 'DELETE', '0', '1'
+FROM DUAL WHERE @dept_profit_loss_c IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @dept_profit_loss_c AND perms = 'department:deptProfitLoss:remove')
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3719, '科室盈亏审核', @dept_profit_loss_c, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:deptProfitLoss:audit', '#', 'admin', NOW(), '1', NOW(), 'PUT /audit/{id}', '0', '1'
+FROM DUAL WHERE @dept_profit_loss_c IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @dept_profit_loss_c AND perms = 'department:deptProfitLoss:audit')
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
 FROM sb_customer c
@@ -7051,7 +7102,13 @@ JOIN sys_menu m
     'hc:barcode:public:ownership:export',
     'hc:barcode:public:circulation:list',
     'hc:barcode:public:circulation:query',
-    'hc:barcode:public:circulation:export'
+    'hc:barcode:public:circulation:export',
+    'department:deptProfitLoss:list',
+    'department:deptProfitLoss:query',
+    'department:deptProfitLoss:add',
+    'department:deptProfitLoss:edit',
+    'department:deptProfitLoss:remove',
+    'department:deptProfitLoss:audit'
   )
 WHERE c.hc_status = '0'
   AND NOT EXISTS (

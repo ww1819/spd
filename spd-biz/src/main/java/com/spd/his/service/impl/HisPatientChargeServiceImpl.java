@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -53,15 +55,21 @@ import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
+import com.spd.his.domain.dto.HisTenantBillingSettingBody;
+import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.system.service.ITenantScopeService;
 
 @Service
 public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 {
+    private static final Logger log = LoggerFactory.getLogger(HisPatientChargeServiceImpl.class);
+
     private static final int HIS_ID_QUERY_BATCH = 400;
     private static final int INSERT_BATCH_SIZE = 80;
+    private static final String KIND_IN = "INPATIENT";
 
     @Autowired
     private HisTenantJdbcAccess hisTenantJdbcAccess;
@@ -89,6 +97,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
+
+    @Autowired
+    private ISbTenantSettingService sbTenantSettingService;
 
     @Override
     public HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body)
@@ -140,6 +151,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setInsertedCount(inserted);
         vo.setSkippedCount(skipped);
         vo.setDriftCount(drift);
+        maybeAutoLvConsumeAfterFetch(tenantId, batchId, "INPATIENT");
         return vo;
     }
 
@@ -192,7 +204,112 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setInsertedCount(inserted);
         vo.setSkippedCount(skipped);
         vo.setDriftCount(drift);
+        maybeAutoLvConsumeAfterFetch(tenantId, batchId, "OUTPATIENT");
         return vo;
+    }
+
+    @Override
+    public HisTenantBillingSettingBody getTenantBillingSetting()
+    {
+        assertHengsuiBillingTenantOnly();
+        HisTenantBillingSettingBody b = new HisTenantBillingSettingBody();
+        String v = sbTenantSettingService.getSettingValue(SecurityUtils.getCustomerId(),
+            HisBillingTenantConstants.SETTING_LV_AUTO_CONSUME_ENABLED, "0");
+        b.setLvAutoConsumeEnabled(v);
+        return b;
+    }
+
+    @Override
+    public void saveTenantBillingSetting(HisTenantBillingSettingBody body)
+    {
+        assertHengsuiBillingTenantOnly();
+        String on = body == null ? "0" : StringUtils.trimToEmpty(body.getLvAutoConsumeEnabled());
+        if (!"0".equals(on) && !"1".equals(on))
+        {
+            throw new ServiceException("lvAutoConsumeEnabled 仅支持 0 或 1");
+        }
+        sbTenantSettingService.saveSettingValue(SecurityUtils.getCustomerId(),
+            HisBillingTenantConstants.SETTING_LV_AUTO_CONSUME_ENABLED, on, "低值计费抓取后自动生成消耗");
+    }
+
+    private void assertHengsuiBillingTenantOnly()
+    {
+        if (!HisBillingTenantConstants.TENANT_HENGSHUI_THIRD.equals(SecurityUtils.getCustomerId()))
+        {
+            throw new ServiceException("该配置仅衡水三院租户可用");
+        }
+    }
+
+    private void maybeAutoLvConsumeAfterFetch(String tenantId, String fetchBatchId, String chargeKind)
+    {
+        if (!HisBillingTenantConstants.TENANT_HENGSHUI_THIRD.equals(tenantId))
+        {
+            return;
+        }
+        String v = sbTenantSettingService.getSettingValue(tenantId,
+            HisBillingTenantConstants.SETTING_LV_AUTO_CONSUME_ENABLED, "0");
+        if (!"1".equals(v))
+        {
+            return;
+        }
+        if ("INPATIENT".equals(chargeKind))
+        {
+            List<HisInpatientChargeMirror> pending = hisInpatientChargeMirrorMapper.selectPendingByFetchBatch(tenantId, fetchBatchId);
+            if (pending == null)
+            {
+                return;
+            }
+            for (HisInpatientChargeMirror row : pending)
+            {
+                if (row == null || !isLowValueMirrorRow(row.getValueLevel()))
+                {
+                    continue;
+                }
+                try
+                {
+                    HisMirrorManualRowBody b = new HisMirrorManualRowBody();
+                    b.setVisitKind(KIND_IN);
+                    b.setMirrorRowId(row.getId());
+                    hisMirrorConsumeManualService.processLowValue(b);
+                }
+                catch (Exception e)
+                {
+                    log.warn("HIS自动低值消耗跳过 mirrorRowId={} err={}", row.getId(), e.toString());
+                }
+            }
+        }
+        else
+        {
+            List<HisOutpatientChargeMirror> pending = hisOutpatientChargeMirrorMapper.selectPendingByFetchBatch(tenantId, fetchBatchId);
+            if (pending == null)
+            {
+                return;
+            }
+            for (HisOutpatientChargeMirror row : pending)
+            {
+                if (row == null || !isLowValueMirrorRow(row.getValueLevel()))
+                {
+                    continue;
+                }
+                try
+                {
+                    HisMirrorManualRowBody b = new HisMirrorManualRowBody();
+                    b.setVisitKind("OUTPATIENT");
+                    b.setMirrorRowId(row.getId());
+                    hisMirrorConsumeManualService.processLowValue(b);
+                }
+                catch (Exception e)
+                {
+                    log.warn("HIS自动低值消耗跳过 mirrorRowId={} err={}", row.getId(), e.toString());
+                }
+            }
+        }
+    }
+
+    private static boolean isLowValueMirrorRow(String valueLevel)
+    {
+        String v = StringUtils.trimToEmpty(valueLevel);
+        return v.isEmpty() || "2".equals(v);
     }
 
     @Override

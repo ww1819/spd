@@ -6,7 +6,7 @@
         select id, tenant_id as tenantId, supplier_id as supplierId, scm_supplier_code as scmSupplierCode, remark,
                del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
         from spd_scm_supplier_bind
-        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and del_flag = '0'
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and (del_flag is null or del_flag = '' or del_flag = '0')
         limit 1
     </select>
 
@@ -14,14 +14,14 @@
         select id, tenant_id as tenantId, supplier_id as supplierId, scm_supplier_code as scmSupplierCode, remark,
                del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
         from spd_scm_supplier_bind
-        where tenant_id = #{tenantId} and del_flag = '0'
+        where tenant_id = #{tenantId} and (del_flag is null or del_flag = '' or del_flag = '0')
         order by supplier_id
     </select>
 
     <select id="selectSupplierCode" resultType="java.lang.String">
         select scm_supplier_code
         from spd_scm_supplier_bind
-        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and del_flag = '0'
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and (del_flag is null or del_flag = '' or del_flag = '0')
           and scm_supplier_code is not null and trim(scm_supplier_code) != ''
         limit 1
     </select>
@@ -37,6 +37,6 @@
             remark = #{remark},
             update_by = #{updateBy},
             update_time = now()
-        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and del_flag = '0'
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId} and (del_flag is null or del_flag = '' or del_flag = '0')
     </update>
 </mapper>
