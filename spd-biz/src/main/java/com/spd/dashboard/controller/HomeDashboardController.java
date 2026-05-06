@@ -8,19 +8,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -109,55 +105,36 @@ public class HomeDashboardController extends BaseController
                 qtyMatrix[wi][mi] = BigDecimal.ZERO;
             }
         }
-        SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        IntStream.range(0, 12).parallel().forEach(mi ->
+        ZoneId zone = ZoneId.systemDefault();
+        for (int mi = 0; mi < 12; mi++)
         {
-            SecurityContext ctx = SecurityContextHolder.createEmptyContext();
-            ctx.setAuthentication(auth);
-            SecurityContextHolder.setContext(ctx);
-            try
+            YearMonth ym = YearMonth.of(y, mi + 1);
+            LocalDate first = ym.atDay(1);
+            LocalDate last = ym.atEndOfMonth();
+            ZonedDateTime zStart = first.atStartOfDay(zone);
+            ZonedDateTime zEnd = last.atTime(23, 59, 59).atZone(zone);
+            Date begin = Date.from(zStart.toInstant());
+            Date end = Date.from(zEnd.toInstant());
+            for (int wi = 0; wi < whCount; wi++)
             {
-                int month = mi + 1;
-                YearMonth ym = YearMonth.of(y, month);
-                LocalDate first = ym.atDay(1);
-                LocalDate last = ym.atEndOfMonth();
-                Date begin;
-                Date end;
-                try
-                {
-                    begin = dayFmt.parse(first.toString());
-                    end = dayFmt.parse(last.toString());
-                }
-                catch (ParseException e)
-                {
-                    return;
-                }
-                for (int wi = 0; wi < whCount; wi++)
-                {
-                    FdWarehouse wh = warehouses.get(wi);
-                    StkIoBill rthQ = new StkIoBill();
-                    rthQ.setWarehouseId(wh.getId());
-                    rthQ.setBeginDate(begin);
-                    rthQ.setEndDate(end);
-                    StkIoBill ctkQ = new StkIoBill();
-                    ctkQ.setWarehouseId(wh.getId());
-                    ctkQ.setBeginDate(begin);
-                    ctkQ.setEndDate(end);
-                    stkIoBillService.applyCtkDepartmentScopeToQuery(ctkQ);
-                    TotalInfo rth = stkIoBillService.selectRTHStkIoBillListTotal(rthQ);
-                    TotalInfo ctk = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
-                    BigDecimal amount = nz(rth.getTotalAmt()).abs().add(nz(ctk.getTotalAmt()).abs());
-                    BigDecimal qty = nz(rth.getTotalQty()).abs().add(nz(ctk.getTotalQty()).abs());
-                    amtMatrix[wi][mi] = amount.setScale(2, RoundingMode.HALF_UP);
-                    qtyMatrix[wi][mi] = qty.setScale(2, RoundingMode.HALF_UP);
-                }
+                FdWarehouse wh = warehouses.get(wi);
+                StkIoBill rthQ = new StkIoBill();
+                rthQ.setWarehouseId(wh.getId());
+                rthQ.setBeginDate(begin);
+                rthQ.setEndDate(end);
+                StkIoBill ctkQ = new StkIoBill();
+                ctkQ.setWarehouseId(wh.getId());
+                ctkQ.setBeginDate(begin);
+                ctkQ.setEndDate(end);
+                // 首页看板：按仓库汇总全租户出退库，不按当前用户科室范围过滤（否则无科室权限用户图表恒为 0）
+                TotalInfo rth = stkIoBillService.selectRTHStkIoBillListTotal(rthQ);
+                TotalInfo ctk = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
+                BigDecimal amount = nz(rth.getTotalAmt()).abs().add(nz(ctk.getTotalAmt()).abs());
+                BigDecimal qty = nz(rth.getTotalQty()).abs().add(nz(ctk.getTotalQty()).abs());
+                amtMatrix[wi][mi] = amount.setScale(2, RoundingMode.HALF_UP);
+                qtyMatrix[wi][mi] = qty.setScale(2, RoundingMode.HALF_UP);
             }
-            finally
-            {
-                SecurityContextHolder.clearContext();
-            }
-        });
+        }
         List<Map<String, Object>> whBrief = new ArrayList<>();
         for (FdWarehouse w : warehouses)
         {
@@ -203,6 +180,7 @@ public class HomeDashboardController extends BaseController
             monthLabels.add(m + "月");
         }
         SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat dayEndFmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         BigDecimal[] receiveQty = new BigDecimal[12];
         BigDecimal[] receiveAmt = new BigDecimal[12];
         BigDecimal[] consumeQty = new BigDecimal[12];
@@ -214,48 +192,38 @@ public class HomeDashboardController extends BaseController
             consumeQty[i] = BigDecimal.ZERO;
             consumeAmt[i] = BigDecimal.ZERO;
         }
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        IntStream.range(0, 12).parallel().forEach(mi ->
+        ZoneId zone = ZoneId.systemDefault();
+        for (int mi = 0; mi < 12; mi++)
         {
-            SecurityContext ctx = SecurityContextHolder.createEmptyContext();
-            ctx.setAuthentication(auth);
-            SecurityContextHolder.setContext(ctx);
+            int month = mi + 1;
+            YearMonth ym = YearMonth.of(y, month);
+            LocalDate first = ym.atDay(1);
+            LocalDate last = ym.atEndOfMonth();
+            LocalDateTime startDt = first.atStartOfDay();
+            LocalDateTime endDt = last.atTime(23, 59, 59);
+            Date ctkBegin = Date.from(startDt.atZone(zone).toInstant());
+            Date ctkEnd = Date.from(endDt.atZone(zone).toInstant());
+            StkIoBill ctkQ = new StkIoBill();
+            ctkQ.setBeginDate(ctkBegin);
+            ctkQ.setEndDate(ctkEnd);
+            // 首页看板：租户级领用（出退库）合计，不按当前用户科室过滤
+            TotalInfo ctk = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
+            DeptBatchConsume dc = new DeptBatchConsume();
             try
             {
-                int month = mi + 1;
-                YearMonth ym = YearMonth.of(y, month);
-                LocalDate first = ym.atDay(1);
-                LocalDate last = ym.atEndOfMonth();
-                LocalDateTime startDt = first.atStartOfDay();
-                LocalDateTime endDt = last.atTime(23, 59, 59);
-                Date ctkBegin = Date.from(startDt.atZone(ZoneId.systemDefault()).toInstant());
-                Date ctkEnd = Date.from(endDt.atZone(ZoneId.systemDefault()).toInstant());
-                StkIoBill ctkQ = new StkIoBill();
-                ctkQ.setBeginDate(ctkBegin);
-                ctkQ.setEndDate(ctkEnd);
-                stkIoBillService.applyCtkDepartmentScopeToQuery(ctkQ);
-                TotalInfo ctk = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
-                DeptBatchConsume dc = new DeptBatchConsume();
-                try
-                {
-                    dc.setBeginDate(dayFmt.parse(first.toString()));
-                    dc.setEndDate(dayFmt.parse(last.toString()));
-                }
-                catch (ParseException e)
-                {
-                    return;
-                }
-                TotalInfo consume = deptBatchConsumeService.selectAuditedConsumeReportTotal(dc);
-                receiveQty[mi] = nz(ctk.getTotalQty()).abs().setScale(2, RoundingMode.HALF_UP);
-                receiveAmt[mi] = nz(ctk.getTotalAmt()).abs().setScale(2, RoundingMode.HALF_UP);
-                consumeQty[mi] = nz(consume.getTotalQty()).setScale(2, RoundingMode.HALF_UP);
-                consumeAmt[mi] = nz(consume.getTotalAmt()).setScale(2, RoundingMode.HALF_UP);
+                dc.setBeginDate(dayFmt.parse(first.toString()));
+                dc.setEndDate(dayEndFmt.parse(last.toString() + " 23:59:59"));
             }
-            finally
+            catch (ParseException e)
             {
-                SecurityContextHolder.clearContext();
+                continue;
             }
-        });
+            TotalInfo consume = deptBatchConsumeService.selectAuditedConsumeReportTotal(dc);
+            receiveQty[mi] = nz(ctk.getTotalQty()).abs().setScale(2, RoundingMode.HALF_UP);
+            receiveAmt[mi] = nz(ctk.getTotalAmt()).abs().setScale(2, RoundingMode.HALF_UP);
+            consumeQty[mi] = nz(consume.getTotalQty()).setScale(2, RoundingMode.HALF_UP);
+            consumeAmt[mi] = nz(consume.getTotalAmt()).setScale(2, RoundingMode.HALF_UP);
+        }
         Map<String, Object> body = new HashMap<>(8);
         body.put("year", y);
         body.put("monthLabels", monthLabels);
@@ -384,15 +352,19 @@ public class HomeDashboardController extends BaseController
             && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
         {
             List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-            if (allowedIds == null || allowedIds.isEmpty())
+            // resolveWarehouseScope 对租户超管返回 null 表示不限制；非超管不应为 null，若为空列表则无仓库权限
+            if (allowedIds != null)
             {
-                fdWarehouseList = new ArrayList<>();
-            }
-            else
-            {
-                fdWarehouseList = fdWarehouseList.stream()
-                    .filter(w -> w.getId() != null && allowedIds.contains(w.getId()))
-                    .collect(java.util.stream.Collectors.toList());
+                if (allowedIds.isEmpty())
+                {
+                    fdWarehouseList = new ArrayList<>();
+                }
+                else
+                {
+                    fdWarehouseList = fdWarehouseList.stream()
+                        .filter(w -> w.getId() != null && allowedIds.contains(w.getId()))
+                        .collect(java.util.stream.Collectors.toList());
+                }
             }
         }
         if (fdWarehouseList == null)
