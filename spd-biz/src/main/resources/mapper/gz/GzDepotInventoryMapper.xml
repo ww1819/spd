@@ -145,7 +145,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectGzDepotInventoryVo"/>
         where gz.del_flag != 1
-        and gz.qty &gt; 0
+        <choose>
+            <when test="includeZeroQty != null and includeZeroQty == true">
+                <!-- 打印条码等：含 qty=0，仍可取 in_hospital_code -->
+            </when>
+            <otherwise>
+                and gz.qty &gt; 0
+            </otherwise>
+        </choose>
         <!-- 只查询高值仓库的库存 -->
         and w.warehouse_type = '高值'
         and gz.tenant_id = #{scopedTenantId}

@@ -361,6 +361,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and tenant_id = #{scopedTenantId}
     </update>
 
+    <!-- 主单下备货生成的院内码明细（不依赖备货库存 qty，用于打印条码兜底） -->
+    <select id="selectInhospitalcodeListByParentId" resultType="com.spd.gz.domain.GzOrderEntryInhospitalcodeList">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, parent_id, code, detail_id, material_id, price, qty, batch_no, batch_number,
+               master_barcode, secondary_barcode, end_date, in_hospital_code, warehouse_id, supplier_id,
+               material_name, material_speci, material_model, material_unit_name, factory_id, factory_name,
+               supplier_name, warehouse_name, finance_category_name, register_no, brand_name, hc_barcode_master_id,
+               del_flag, create_date, create_by, create_time, update_by, update_time, tenant_id
+        from gz_order_entry_inhospitalcode_list
+        where parent_id = #{parentId}
+          and IFNULL(del_flag, 0) = 0
+          and tenant_id = #{scopedTenantId}
+          and in_hospital_code is not null
+          and TRIM(in_hospital_code) != ''
+        order by id asc
+    </select>
+
     <!-- 根据院内码查询是否有未出库的出库单 -->
     <select id="selectOutboundOrderNosByInHospitalCode" parameterType="String" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

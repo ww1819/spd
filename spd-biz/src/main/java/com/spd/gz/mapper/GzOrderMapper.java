@@ -92,6 +92,11 @@ public interface GzOrderMapper
     int updateGzOrderEntryById(GzOrderEntry entry);
 
     /**
+     * 主单下备货院内码明细（gz_order_entry_inhospitalcode_list）
+     */
+    List<GzOrderEntryInhospitalcodeList> selectInhospitalcodeListByParentId(@Param("parentId") Long parentId);
+
+    /**
      * 根据院内码查询是否有未出库的出库单
      * @param inHospitalCode 院内码
      * @return 出库单号列表

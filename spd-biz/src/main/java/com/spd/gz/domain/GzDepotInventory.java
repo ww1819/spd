@@ -113,6 +113,9 @@ public class GzDepotInventory extends BaseEntity
     /** 查询参数：入库单号（模糊查询） */
     private String orderNo;
 
+    /** 查询参数：为 true 时不限制 qty&gt;0（打印条码等场景） */
+    private Boolean includeZeroQty;
+
     /** 备货单ID */
     private Long orderId;
 
@@ -335,6 +338,14 @@ public class GzDepotInventory extends BaseEntity
 
     public String getOrderNo() {
         return orderNo;
+    }
+
+    public Boolean getIncludeZeroQty() {
+        return includeZeroQty;
+    }
+
+    public void setIncludeZeroQty(Boolean includeZeroQty) {
+        this.includeZeroQty = includeZeroQty;
     }
 
     public Long getOrderId() {

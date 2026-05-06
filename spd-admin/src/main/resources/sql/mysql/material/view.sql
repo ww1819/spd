@@ -309,6 +309,7 @@ FROM stk_initial_import sii
          LEFT JOIN fd_factory ff ON fm.factory_id = ff.factory_id
 WHERE IFNULL(sii.del_flag, 0) = 0
   AND sii.bill_status = 1;
+/
 
 -- ========== 低值耗材：仓库流水明细（与 stk_inventory 变动同源：t_hc_ck_flow）==========
 -- qty_signed_wh：按 lx 汇总后应与仓库维度结存变动一致（RK/ZR/PY/QC 增；CK/TH/TK/ZC/PK 减；KSZR 增；KSZC 减）。
@@ -359,6 +360,7 @@ FROM t_hc_ck_flow f
 WHERE IFNULL(f.del_flag, 0) = 0
   AND IFNULL(m.del_flag, 0) != 1
   AND (m.is_gz IS NULL OR m.is_gz = '' OR m.is_gz = '2');
+/
 
 -- ========== 高值耗材：仓库流水明细（gz_wh_flow + 条码链路；与 gz_depot_inventory 核对）==========
 -- 【覆盖边界】备货验收/退库/退货等条码钩子会写 gz_wh_flow；高值出库单审核会扣减 gz_depot_inventory（GzShipmentServiceImpl）但未必写 gz_wh_flow。
@@ -449,6 +451,7 @@ WHERE IFNULL(s.del_flag, 0) = 0
                     AND NULLIF(TRIM(wh.bill_id), '') = CAST(s.id AS CHAR)
                     AND NULLIF(TRIM(wh.entry_id), '') = CAST(e.id AS CHAR)
                     AND wh.lx = 'CK');
+/
 
 -- ========== 低值耗材：科室流水明细（t_hc_ks_flow + 科室盈亏写入 t_hc_ck_flow 的补充段）==========
 -- qty_signed_dep：CK 入科+；TK 退库-；XH 消耗-；TXH 退消耗+；科室盘盈/盘亏见 ck 段。
@@ -533,6 +536,7 @@ WHERE IFNULL(f.del_flag, 0) = 0
   AND f.origin_business_type IN ('科室盘亏', '科室盘盈入库')
   AND IFNULL(m.del_flag, 0) != 1
   AND (m.is_gz IS NULL OR m.is_gz = '' OR m.is_gz = '2');
+/
 
 -- ========== 高值耗材：科室流水明细（t_hc_ks_flow 高值 + gz_dep_flow 条码链路）==========
 -- 【覆盖边界】gz_dep_flow 在条码主数据存在时由出库钩子写入；主数据缺失时可能不写流水但已改 gz_dep_inventory。下段按已审核出库单补录入科 CK（无 gz_dep_flow 时）。
@@ -660,6 +664,7 @@ WHERE IFNULL(s.del_flag, 0) = 0
                     AND NULLIF(TRIM(df.bill_id), '') = CAST(s.id AS CHAR)
                     AND NULLIF(TRIM(df.entry_id), '') = CAST(e.id AS CHAR)
                     AND df.lx = 'CK');
+/
 
 -- ========== 低值耗材：基于进销存全明细视图的仓库维度子集（仅 is_gz=低值）==========
 CREATE OR REPLACE ALGORITHM = UNDEFINED VIEW view_lv_wh_stock_detail_from_jxc AS
@@ -668,3 +673,4 @@ FROM view_stock_all_detail_jxc v
          INNER JOIN fd_material fm ON v.material_id = fm.id
 WHERE IFNULL(fm.del_flag, 0) != 1
   AND (fm.is_gz IS NULL OR fm.is_gz = '' OR fm.is_gz = '2');
+/

@@ -519,4 +519,14 @@ public class GzOrderServiceImpl implements IGzOrderService
     public List<String> selectOutboundOrderNosByInHospitalCode(String inHospitalCode) {
         return gzOrderMapper.selectOutboundOrderNosByInHospitalCode(inHospitalCode);
     }
+
+    @Override
+    public List<GzOrderEntryInhospitalcodeList> selectInhospitalcodeListByParentId(Long orderId) {
+        GzOrder gzOrder = gzOrderMapper.selectGzOrderById(orderId);
+        if (gzOrder == null) {
+            return new ArrayList<>();
+        }
+        SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        return gzOrderMapper.selectInhospitalcodeListByParentId(orderId);
+    }
 }
