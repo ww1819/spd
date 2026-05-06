@@ -1,9 +1,11 @@
 package com.spd.warehouse.service.impl;
 
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -60,8 +62,13 @@ import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Objects;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.http.HttpUtils;
 import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
 
@@ -82,17 +89,21 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.spd.warehouse.constants.HcDocBillRefType;
 import com.spd.warehouse.domain.HcDocBillRef;
+import com.spd.warehouse.domain.StkDeliveryLineCap;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.vo.InboundEntryRefChannelQtyVo;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.HcDocBillRefMapper;
+import com.spd.warehouse.mapper.StkDeliveryLineCapMapper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IHcDocBillRefService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
+import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.gz.domain.GzBillEntryChangeLog;
@@ -109,6 +120,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 {
     /** 衡水三院等租户：出库审核通过后自动执行收货确认，确认人同审核人 */
     private static final String TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT = "hengsui-third-001";
+
+    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
+    private static final String DEFAULT_INTERFACE_PORT = "8088";
 
     @Autowired
     private StkIoBillMapper stkIoBillMapper;
@@ -138,6 +152,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     private FdWarehouseMapper fdWarehouseMapper;
 
     @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
+
+    @Autowired
     private FdFactoryMapper fdFactoryMapper;
 
     @Autowired
@@ -162,6 +179,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     private ISbCustomerService sbCustomerService;
 
     @Autowired
+    private ISysConfigService sysConfigService;
+
+    @Autowired
     private ITenantScopeService tenantScopeService;
 
     @Autowired
@@ -175,6 +195,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private StkBillEntryChangeLogMapper stkBillEntryChangeLogMapper;
+
+    @Autowired
+    private StkDeliveryLineCapMapper stkDeliveryLineCapMapper;
 
     /**
      * 查询出入库
@@ -286,6 +309,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
             normalizeInboundSupplierFields(stkIoBill);
         }
+        assertInboundDeliveryLineQtyWithinCap(stkIoBill, null);
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
         insertStkIoBillEntry(stkIoBill);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {
@@ -329,6 +353,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (entryList != null && !entryList.isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
                 normalizeInboundSupplierFields(stkIoBill);
+                mergeDeliveryLineMetaFromDb(stkIoBill, entryList);
+                assertInboundDeliveryLineQtyWithinCap(stkIoBill, stkIoBill.getId());
             }
             syncStkIoBillEntry(stkIoBill);
         }
@@ -599,8 +625,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     private void updateInventory(StkIoBill stkIoBill,List<StkIoBillEntry> stkIoBillEntryList){
 
         Integer billType = stkIoBill.getBillType();
+        FdWarehouse headerWarehouse = null;
+        if (stkIoBill.getWarehouseId() != null) {
+            headerWarehouse = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
+        }
         StkInventory stkInventory = null;
         for(StkIoBillEntry entry : stkIoBillEntryList){
+            if (entry == null) {
+                continue;
+            }
+            if (entry.getDelFlag() != null && entry.getDelFlag() == 1) {
+                continue;
+            }
             Long lineSupplerId = resolveInboundLineSupplierId(stkIoBill, entry);
 
             if(entry.getQty() != null && BigDecimal.ZERO.compareTo(entry.getQty()) != 0){
@@ -679,6 +715,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (entry.getId() != null) {
                         stkIoBillMapper.updateStkIoBillEntryInboundWhRef(entry.getId(), stkInventory.getId());
                     }
+                    hcBarcodeLifecycleService.onLowValueInbound101(stkIoBill, entry, stkInventory, headerWarehouse);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -791,6 +828,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (entry.getId() != null) {
                         stkIoBillMapper.updateStkIoBillEntryOutboundAuditRefs(entry.getId(), inventory.getId(), stkDepInventory.getId());
                     }
+                    hcBarcodeLifecycleService.onLowValueOutbound201(stkIoBill, entry, inventory, stkDepInventory, headerWarehouse);
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -851,6 +889,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     thFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(thFlow.getTenantId())) thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcCkFlowMapper.insertHcCkFlow(thFlow);
+                    hcBarcodeLifecycleService.onLowValueReturn301(stkIoBill, entry, inventory, headerWarehouse);
                 }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库；优先按明细 kc_no=科室库存 id 锁定行）
                     BigDecimal qty = entry.getQty();//退库数量
                     if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
@@ -1022,6 +1061,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
                     if (StringUtils.isEmpty(ksTkFlow.getTenantId())) ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
+                    FdWarehouse wh401 = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(returnWarehouseId401));
+                    hcBarcodeLifecycleService.onLowValueTk401(stkIoBill, entry, inventory, stkDepInventory, wh401);
                 } else if (billType == 501) {// 仓库调拨：审核时已生成 hc_ck_flow 转出(ZC)+转入(ZR)，勿重复补流水
                     Long outWarehouseId = stkIoBill.getWarehouseId();  // 转出仓库
                     Long inWarehouseId = stkIoBill.getDepartmentId(); // 调拨单中 department_id 存调入仓库id
@@ -1653,7 +1694,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             || !Objects.equals(oldRow.getSupplerId(), newRow.getSupplerId())
             || !Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
             || !Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
-            || !Objects.equals(oldRow.getRemark(), newRow.getRemark());
+            || !Objects.equals(oldRow.getRemark(), newRow.getRemark())
+            || !Objects.equals(oldRow.getDeliveryLineSign(), newRow.getDeliveryLineSign())
+            || !Objects.equals(oldRow.getDeliveryLineQtyCap(), newRow.getDeliveryLineQtyCap());
     }
 
     /**
@@ -1907,6 +1950,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public List<Map<String, Object>> selectListPurInventory(StkIoBill stkIoBill) {
         return stkIoBillMapper.selectListPurInventory(stkIoBill);
+    }
+
+    @Override
+    public TotalInfo selectListPurInventoryTotal(StkIoBill stkIoBill) {
+        return stkIoBillMapper.selectListPurInventoryTotal(stkIoBill);
     }
 
     @Override
@@ -2479,6 +2527,386 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
+    }
+
+    @Override
+    public StkIoBill createRkEntriesByDeliveryNo(String deliveryNo) {
+        if (StringUtils.isEmpty(deliveryNo)) {
+            throw new ServiceException("配送单号不能为空");
+        }
+        String no = deliveryNo.trim();
+        String xml = fetchDeliveryXml(no);
+        Document deliveryDoc = parseDeliveryXmlDocument(xml);
+        Map<String, String> deliveryRefMeta = extractDeliveryRefMeta(deliveryDoc);
+        List<Map<String, Object>> groupedRows = parseDeliveryXmlAndGroup(deliveryDoc);
+        if (groupedRows.isEmpty()) {
+            throw new ServiceException("配送单无可用明细数据：" + no);
+        }
+
+        String tenantId = StringUtils.isNotEmpty(SecurityUtils.getCustomerId())
+            ? SecurityUtils.getCustomerId() : SecurityUtils.requiredScopedTenantIdForSql();
+        for (Map<String, Object> row : groupedRows) {
+            String lineSign = String.valueOf(row.getOrDefault("lineSign", ""));
+            BigDecimal xmlLineQty = toBigDecimal(row.get("qty"));
+            if (StringUtils.isNotEmpty(lineSign) && xmlLineQty.compareTo(BigDecimal.ZERO) > 0) {
+                StkDeliveryLineCap capRow = new StkDeliveryLineCap();
+                capRow.setId(UUID7.generateUUID7());
+                capRow.setTenantId(tenantId);
+                capRow.setDeliveryNo(no);
+                capRow.setLineSign(lineSign);
+                capRow.setQtyCap(xmlLineQty);
+                stkDeliveryLineCapMapper.upsertMaxCap(capRow);
+            }
+        }
+
+        StkIoBill stkIoBill = new StkIoBill();
+        stkIoBill.setBillType(101);
+        stkIoBill.setRefBillNo(no);
+        applyDeliveryRefMetaToInboundHeader(stkIoBill, deliveryRefMeta);
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        List<String> missCodes = new ArrayList<>();
+        List<String> exhaustedCodes = new ArrayList<>();
+        for (Map<String, Object> row : groupedRows) {
+            String code = String.valueOf(row.get("code"));
+            if (StringUtils.isEmpty(code)) {
+                continue;
+            }
+            FdMaterial material = fdMaterialMapper.selectFdMaterialByMainBarcode(code);
+            if (material == null) {
+                missCodes.add(code);
+                continue;
+            }
+            String lineSign = String.valueOf(row.getOrDefault("lineSign", ""));
+            BigDecimal xmlLineQty = toBigDecimal(row.get("qty"));
+            BigDecimal unitPrice = toBigDecimal(row.get("unitPrice"));
+            if (unitPrice.compareTo(BigDecimal.ZERO) == 0 && material.getPrice() != null) {
+                unitPrice = material.getPrice();
+            }
+            StkDeliveryLineCap capRow = StringUtils.isNotEmpty(lineSign)
+                ? stkDeliveryLineCapMapper.selectByUk(tenantId, no, lineSign) : null;
+            BigDecimal cap = capRow != null && capRow.getQtyCap() != null ? capRow.getQtyCap() : xmlLineQty;
+            BigDecimal used = StringUtils.isNotEmpty(lineSign)
+                ? stkIoBillMapper.sumInboundQtyByDeliveryLine(tenantId, no, lineSign, null) : BigDecimal.ZERO;
+            if (used == null) {
+                used = BigDecimal.ZERO;
+            }
+            BigDecimal remaining = cap.subtract(used);
+            BigDecimal takeQty = xmlLineQty.min(remaining);
+            if (takeQty.compareTo(BigDecimal.ZERO) <= 0) {
+                exhaustedCodes.add(code);
+                continue;
+            }
+            StkIoBillEntry e = new StkIoBillEntry();
+            e.setMaterialId(material.getId());
+            e.setMaterial(material);
+            e.setQty(takeQty);
+            e.setUnitPrice(unitPrice);
+            e.setAmt(takeQty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
+            e.setBatchNumber(String.valueOf(row.getOrDefault("batchNumber", "")));
+            if (StringUtils.isNotEmpty(lineSign)) {
+                e.setDeliveryLineSign(lineSign);
+                e.setDeliveryLineQtyCap(cap);
+            }
+            Object beginTimeVal = row.get("beginTime");
+            if (beginTimeVal != null && StringUtils.isNotEmpty(String.valueOf(beginTimeVal))
+                && !"null".equalsIgnoreCase(String.valueOf(beginTimeVal)))
+            {
+                e.setBeginTime(DateUtils.parseDate(beginTimeVal));
+            }
+            Object endTimeVal = row.get("endTime");
+            if (endTimeVal != null && StringUtils.isNotEmpty(String.valueOf(endTimeVal))
+                && !"null".equalsIgnoreCase(String.valueOf(endTimeVal)))
+            {
+                e.setEndTime(DateUtils.parseDate(endTimeVal));
+            }
+            entryList.add(e);
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("配送单明细未匹配到本地耗材档案或各行可入数量已满，无法生成入库明细");
+        }
+        stkIoBill.setStkIoBillEntryList(entryList);
+        List<String> remarkParts = new ArrayList<>();
+        if (!missCodes.isEmpty()) {
+            remarkParts.add("以下编码未匹配本地耗材档案并已跳过：" + missCodes.stream().distinct().collect(Collectors.joining(",")));
+        }
+        if (!exhaustedCodes.isEmpty()) {
+            remarkParts.add("以下编码对应配送行可入数量已满并已跳过：" + exhaustedCodes.stream().distinct().collect(Collectors.joining(",")));
+        }
+        if (!remarkParts.isEmpty()) {
+            stkIoBill.setRemark(String.join("；", remarkParts));
+        }
+        return stkIoBill;
+    }
+
+    /**
+     * 修改入库单时补全前端未回传的配送行元数据，便于按行校验可入上限。
+     */
+    private void mergeDeliveryLineMetaFromDb(StkIoBill stkIoBill, List<StkIoBillEntry> entryList) {
+        if (stkIoBill.getId() == null) {
+            return;
+        }
+        StkIoBill db = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+        if (db == null || db.getStkIoBillEntryList() == null) {
+            return;
+        }
+        Map<Long, StkIoBillEntry> old = db.getStkIoBillEntryList().stream()
+            .collect(Collectors.toMap(StkIoBillEntry::getId, e -> e, (a, b) -> a));
+        for (StkIoBillEntry e : entryList) {
+            if (e == null || e.getId() == null) {
+                continue;
+            }
+            StkIoBillEntry o = old.get(e.getId());
+            if (o == null) {
+                continue;
+            }
+            if (StringUtils.isEmpty(e.getDeliveryLineSign()) && StringUtils.isNotEmpty(o.getDeliveryLineSign())) {
+                e.setDeliveryLineSign(o.getDeliveryLineSign());
+            }
+            if (e.getDeliveryLineQtyCap() == null && o.getDeliveryLineQtyCap() != null) {
+                e.setDeliveryLineQtyCap(o.getDeliveryLineQtyCap());
+            }
+        }
+        if (StringUtils.isEmpty(stkIoBill.getRefBillNo()) && StringUtils.isNotEmpty(db.getRefBillNo())) {
+            stkIoBill.setRefBillNo(db.getRefBillNo());
+        }
+    }
+
+    /**
+     * 校验引用同一配送单、同一拆分行签名的入库明细累计数量不超过上限（支持一单多次拆入）。
+     */
+    private void assertInboundDeliveryLineQtyWithinCap(StkIoBill bill, Long excludeBillId) {
+        if (bill == null || bill.getBillType() == null || bill.getBillType() != 101) {
+            return;
+        }
+        String deliveryNo = bill.getRefBillNo();
+        if (StringUtils.isEmpty(deliveryNo)) {
+            return;
+        }
+        List<StkIoBillEntry> entries = bill.getStkIoBillEntryList();
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(bill.getTenantId())
+            ? bill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        Map<String, BigDecimal> qtyByLine = new LinkedHashMap<>();
+        Map<String, BigDecimal> capByLine = new LinkedHashMap<>();
+        for (StkIoBillEntry e : entries) {
+            if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                continue;
+            }
+            String sign = e.getDeliveryLineSign();
+            if (StringUtils.isEmpty(sign)) {
+                continue;
+            }
+            BigDecimal q = e.getQty() != null ? e.getQty() : BigDecimal.ZERO;
+            qtyByLine.merge(sign, q, BigDecimal::add);
+            if (e.getDeliveryLineQtyCap() != null) {
+                capByLine.merge(sign, e.getDeliveryLineQtyCap(), BigDecimal::max);
+            }
+        }
+        if (qtyByLine.isEmpty()) {
+            return;
+        }
+        String dn = deliveryNo.trim();
+        for (Map.Entry<String, BigDecimal> en : qtyByLine.entrySet()) {
+            String sign = en.getKey();
+            BigDecimal requestSum = en.getValue();
+            StkDeliveryLineCap capRow = stkDeliveryLineCapMapper.selectByUk(tenantId, dn, sign);
+            BigDecimal cap = capRow != null && capRow.getQtyCap() != null ? capRow.getQtyCap() : capByLine.get(sign);
+            if (cap == null) {
+                continue;
+            }
+            BigDecimal used = stkIoBillMapper.sumInboundQtyByDeliveryLine(tenantId, dn, sign, excludeBillId);
+            if (used == null) {
+                used = BigDecimal.ZERO;
+            }
+            if (used.add(requestSum).compareTo(cap) > 0) {
+                throw new ServiceException(String.format(
+                    "配送单「%s」存在拆分行已超过可入上限：其他单已占 %s，本单合计 %s，上限 %s",
+                    dn, used.toPlainString(), requestSum.toPlainString(), cap.toPlainString()));
+            }
+        }
+    }
+
+    private String fetchDeliveryXml(String deliveryNo) {
+        try {
+            String url = buildInterfaceBaseUrl() + "/api/spd/delivery/download";
+            String param = "deliveryNo=" + URLEncoder.encode(deliveryNo, "UTF-8");
+            String xml = HttpUtils.sendGet(url, param, "UTF-8");
+            if (StringUtils.isEmpty(xml) || !xml.contains("<LIST>")) {
+                throw new ServiceException("未获取到有效配送单明细数据：" + deliveryNo);
+            }
+            return xml;
+        } catch (Exception e) {
+            throw new ServiceException("获取配送单明细失败：" + e.getMessage());
+        }
+    }
+
+    private String buildInterfaceBaseUrl()
+    {
+        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
+        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
+        if (StringUtils.isEmpty(ip)) {
+            ip = DEFAULT_INTERFACE_IP;
+        }
+        if (!port.matches("\\d{1,5}")) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        int portNum = Integer.parseInt(port);
+        if (portNum < 1 || portNum > 65535) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        return "http://" + ip + ":" + port;
+    }
+
+    private static Document parseDeliveryXmlDocument(String xml) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setExpandEntityReferences(false);
+            factory.setNamespaceAware(false);
+            return factory.newDocumentBuilder()
+                .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new ServiceException("解析配送单数据失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 从配送单 XML 的 {@code HEADER} 或首行 {@code LIST} 提取仓库/供应商/科室引用快照。
+     */
+    private static Map<String, String> extractDeliveryRefMeta(Document doc) {
+        Map<String, String> m = new LinkedHashMap<>();
+        if (doc == null) {
+            return m;
+        }
+        NodeList headers = doc.getElementsByTagName("HEADER");
+        Element scope = headers.getLength() > 0 ? (Element) headers.item(0) : null;
+        if (scope == null) {
+            NodeList lists = doc.getElementsByTagName("LIST");
+            if (lists.getLength() > 0) {
+                scope = (Element) lists.item(0);
+            }
+        }
+        if (scope == null) {
+            return m;
+        }
+        putXmlChildText(scope, m, "SRC_WH_ID");
+        putXmlChildText(scope, m, "SRC_WH_NAME");
+        putXmlChildText(scope, m, "SRC_SUP_ID");
+        putXmlChildText(scope, m, "SRC_SUP_NAME");
+        putXmlChildText(scope, m, "SRC_DEPT_ID");
+        putXmlChildText(scope, m, "SRC_DEPT_NAME");
+        return m;
+    }
+
+    private static void putXmlChildText(Element parent, Map<String, String> out, String tag) {
+        NodeList nl = parent.getElementsByTagName(tag);
+        if (nl == null || nl.getLength() == 0 || nl.item(0) == null) {
+            return;
+        }
+        String t = nl.item(0).getTextContent();
+        if (t == null) {
+            return;
+        }
+        t = t.trim();
+        if (!t.isEmpty()) {
+            out.put(tag, t);
+        }
+    }
+
+    private void applyDeliveryRefMetaToInboundHeader(StkIoBill bill, Map<String, String> ref) {
+        if (bill == null || ref == null || ref.isEmpty()) {
+            return;
+        }
+        bill.setDeliveryRefWarehouseId(trimToNull(ref.get("SRC_WH_ID")));
+        bill.setDeliveryRefWarehouseName(trimToNull(ref.get("SRC_WH_NAME")));
+        bill.setDeliveryRefSupplierId(trimToNull(ref.get("SRC_SUP_ID")));
+        bill.setDeliveryRefSupplierName(trimToNull(ref.get("SRC_SUP_NAME")));
+        bill.setDeliveryRefDeptId(trimToNull(ref.get("SRC_DEPT_ID")));
+        bill.setDeliveryRefDeptName(trimToNull(ref.get("SRC_DEPT_NAME")));
+        Long wid = parseLongSafe(ref.get("SRC_WH_ID"));
+        if (wid != null) {
+            bill.setWarehouseId(wid);
+        }
+        Long sid = parseLongSafe(ref.get("SRC_SUP_ID"));
+        if (sid != null) {
+            bill.setSupplerId(sid);
+        }
+        Long did = parseLongSafe(ref.get("SRC_DEPT_ID"));
+        if (did != null) {
+            bill.setDepartmentId(did);
+        }
+    }
+
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private List<Map<String, Object>> parseDeliveryXmlAndGroup(Document doc) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        try {
+            NodeList rows = doc.getElementsByTagName("LIST");
+            Map<String, Map<String, Object>> grouped = new LinkedHashMap<>();
+            for (int i = 0; i < rows.getLength(); i++) {
+                Element row = (Element) rows.item(i);
+                String code = xmlTagValue(row, "CODE");
+                if (StringUtils.isEmpty(code)) {
+                    continue;
+                }
+                BigDecimal qty = toBigDecimal(xmlTagValue(row, "SL"));
+                BigDecimal unitPrice = toBigDecimal(xmlTagValue(row, "DJ"));
+                String batchNumber = xmlTagValue(row, "PH");
+                String endTime = xmlTagValue(row, "YXQ");
+                String beginTime = xmlTagValue(row, "SCRQ");
+                String key = code + "|" + unitPrice.toPlainString() + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                Map<String, Object> agg = grouped.get(key);
+                if (agg == null) {
+                    agg = new HashMap<>();
+                    agg.put("lineSign", key);
+                    agg.put("code", code);
+                    agg.put("qty", BigDecimal.ZERO);
+                    agg.put("unitPrice", unitPrice);
+                    agg.put("batchNumber", batchNumber);
+                    agg.put("endTime", endTime);
+                    agg.put("beginTime", beginTime);
+                    grouped.put(key, agg);
+                }
+                BigDecimal sum = toBigDecimal(agg.get("qty")).add(qty);
+                agg.put("qty", sum);
+            }
+            result.addAll(grouped.values());
+            return result;
+        } catch (Exception e) {
+            throw new ServiceException("解析配送单数据失败：" + e.getMessage());
+        }
+    }
+
+    private static String xmlTagValue(Element row, String tagName) {
+        NodeList nodes = row.getElementsByTagName(tagName);
+        if (nodes == null || nodes.getLength() == 0 || nodes.item(0) == null) {
+            return "";
+        }
+        String val = nodes.item(0).getTextContent();
+        return val == null ? "" : val.trim();
+    }
+
+    private static BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        String txt = String.valueOf(value).trim();
+        if (txt.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(txt);
+        } catch (Exception ignore) {
+            return BigDecimal.ZERO;
+        }
     }
 
     @Override

@@ -36,4 +36,6 @@ public interface HisInpatientChargeMirrorMapper
             @Param("processBy") String processBy);
 
     HisInpatientChargeMirror selectByIdAndTenant(@Param("tenantId") String tenantId, @Param("id") String id);
+
+    String selectMirrorIdByHisChargeId(@Param("tenantId") String tenantId, @Param("hisChargeId") String hisChargeId);
 }

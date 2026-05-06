@@ -22,6 +22,7 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.foundation.domain.FdWarehouseCategory;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
+import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdWarehouseCategoryService;
 
 /**
@@ -34,6 +35,9 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
 {
     @Autowired
     private FdWarehouseCategoryMapper fdWarehouseCategoryMapper;
+
+    @Autowired
+    private FoundationSnapshotRecorder foundationSnapshotRecorder;
 
     @Autowired
     protected Validator validator;
@@ -164,7 +168,15 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         if (StringUtils.isEmpty(fdWarehouseCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         }
-        return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
+        int n = fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
+        if (n > 0)
+        {
+            FdWarehouseCategory after = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(fdWarehouseCategory.getWarehouseCategoryId());
+            String logOp = StringUtils.isNotEmpty(fdWarehouseCategory.getUpdateBy()) ? fdWarehouseCategory.getUpdateBy() : SecurityUtils.getUserIdStr();
+            foundationSnapshotRecorder.record(before.getTenantId(), "WAREHOUSE_CATEGORY",
+                String.valueOf(fdWarehouseCategory.getWarehouseCategoryId()), before, after, logOp);
+        }
+        return n;
     }
 
     /**

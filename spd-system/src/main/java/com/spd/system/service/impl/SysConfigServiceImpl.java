@@ -131,6 +131,7 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public int insertConfig(SysConfig config)
     {
+        validateInterfaceConfig(config);
         int row = configMapper.insertConfig(config);
         if (row > 0)
         {
@@ -152,6 +153,7 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public int updateConfig(SysConfig config)
     {
+        validateInterfaceConfig(config);
         SysConfig temp = configMapper.selectConfigById(config.getConfigId());
         if (!StringUtils.equals(temp.getConfigKey(), config.getConfigKey()))
         {
@@ -268,5 +270,47 @@ public class SysConfigServiceImpl implements ISysConfigService
     private String getCacheKey(String configKey)
     {
         return CacheConstants.SYS_CONFIG_KEY + configKey;
+    }
+
+    /**
+     * 前置机接口参数校验，防止误填导致接口调用失败
+     */
+    private void validateInterfaceConfig(SysConfig config)
+    {
+        if (config == null || StringUtils.isEmpty(config.getConfigKey()))
+        {
+            return;
+        }
+        String key = StringUtils.trim(config.getConfigKey());
+        String value = StringUtils.trim(config.getConfigValue());
+        if ("spd.interface.ip".equals(key))
+        {
+            if (StringUtils.isEmpty(value))
+            {
+                throw new ServiceException("参数 spd.interface.ip 不能为空");
+            }
+            // 支持 IPv4 / 域名 / localhost（不含协议和端口）
+            String hostRegex = "^(localhost|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*))$";
+            if (!value.matches(hostRegex))
+            {
+                throw new ServiceException("参数 spd.interface.ip 格式不正确，请填写IP、域名或localhost（不含协议和端口）");
+            }
+        }
+        if ("spd.interface.port".equals(key))
+        {
+            if (StringUtils.isEmpty(value))
+            {
+                throw new ServiceException("参数 spd.interface.port 不能为空");
+            }
+            if (!value.matches("^\\d{1,5}$"))
+            {
+                throw new ServiceException("参数 spd.interface.port 格式不正确，请填写1-65535的数字");
+            }
+            int port = Integer.parseInt(value);
+            if (port < 1 || port > 65535)
+            {
+                throw new ServiceException("参数 spd.interface.port 超出范围，请填写1-65535");
+            }
+        }
     }
 }

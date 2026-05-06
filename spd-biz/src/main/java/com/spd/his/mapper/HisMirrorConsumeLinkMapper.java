@@ -21,4 +21,14 @@ public interface HisMirrorConsumeLinkMapper
      */
     List<HisMirrorConsumeRecordVo> selectConsumeRecordsByMirrorRow(@Param("tenantId") String tenantId,
         @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId);
+
+    /**
+     * 退费候选：尚有余量可返还的消耗关联行（低值 dep_inventory 非空；高值 gz_dep_inventory 非空）
+     */
+    List<HisMirrorConsumeLink> selectCandidateLinksForRefund(@Param("tenantId") String tenantId,
+        @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId,
+        @Param("valueLevel") String valueLevel);
+
+    int increaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
+        @Param("updateBy") String updateBy);
 }

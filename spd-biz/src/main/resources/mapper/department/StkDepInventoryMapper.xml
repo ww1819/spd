@@ -41,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="settlementType"    column="settlement_type"    />
         <result property="mainBarcode"    column="main_barcode"    />
         <result property="subBarcode"    column="sub_barcode"    />
+        <result property="lvInhospitalPackageCode" column="lv_inhospital_package_code" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="material"    column="id" javaType="FdMaterial" resultMap="materialResult" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
@@ -92,7 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
 			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
 			stk.del_flag, stk.delete_by, stk.delete_time,
-			stk.main_barcode, stk.sub_barcode, stk.factory_id,
+			stk.main_barcode, stk.sub_barcode, stk.lv_inhospital_package_code, stk.factory_id,
 			wh.id whId, wh.code whCode, wh.name warehouseName,
 			ff.factory_id ff_id, ff.factory_name ff_name,
 			d.id dId,d.code departmentCode,d.name departmentName,
@@ -223,6 +224,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="batchNumber != null">batch_number,</if>
             <if test="mainBarcode != null">main_barcode,</if>
             <if test="subBarcode != null">sub_barcode,</if>
+            <if test="lvInhospitalPackageCode != null and lvInhospitalPackageCode != ''">lv_inhospital_package_code,</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status,</if>
             <if test="billId != null">bill_id,</if>
             <if test="billEntryId != null">bill_entry_id,</if>
@@ -256,6 +258,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="batchNumber != null">#{batchNumber},</if>
             <if test="mainBarcode != null">#{mainBarcode},</if>
             <if test="subBarcode != null">#{subBarcode},</if>
+            <if test="lvInhospitalPackageCode != null and lvInhospitalPackageCode != ''">#{lvInhospitalPackageCode},</if>
             <if test="receiptConfirmStatus != null">#{receiptConfirmStatus},</if>
             <if test="billId != null">#{billId},</if>
             <if test="billEntryId != null">#{billEntryId},</if>
@@ -294,6 +297,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="batchNumber != null">batch_number = #{batchNumber},</if>
             <if test="mainBarcode != null">main_barcode = #{mainBarcode},</if>
             <if test="subBarcode != null">sub_barcode = #{subBarcode},</if>
+            <if test="lvInhospitalPackageCode != null">lv_inhospital_package_code = #{lvInhospitalPackageCode},</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status = #{receiptConfirmStatus},</if>
             <if test="billId != null">bill_id = #{billId},</if>
             <if test="billEntryId != null">bill_entry_id = #{billEntryId},</if>

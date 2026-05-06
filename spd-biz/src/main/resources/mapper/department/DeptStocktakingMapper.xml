@@ -16,6 +16,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="stockType"    column="stock_type"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="tenantId"    column="tenant_id"    />
+        <result property="uuidId"    column="uuid_id"    />
+        <result property="auditAdjustsInventory"    column="audit_adjusts_inventory"    />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -109,8 +112,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectDeptStocktakingVo">
-        select stk.id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
-				stk.stock_status, stk.user_id stk_user_id, stk.stock_type, stk.del_flag,stk.audit_date, stk.reject_reason, stk.create_by, stk.create_time,
+        select stk.id, stk.uuid_id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
+				stk.stock_status, stk.user_id as user_id, stk.stock_type, stk.audit_adjusts_inventory, stk.del_flag, stk.tenant_id, stk.audit_date, stk.reject_reason, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,
 				<!-- 盈亏金额：库里有 profit_amount 则用；科室盘点前端多写 amt 不写 profit_amount，故用 (盘点数-账面)*单价 兜底 -->
 				COALESCE((select SUM(IFNULL(entry.profit_amount,
@@ -203,6 +206,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="isMonthInit != null">is_month_init,</if>
+            <if test="uuidId != null">uuid_id,</if>
+            <if test="auditAdjustsInventory != null">audit_adjusts_inventory,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -223,6 +228,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="isMonthInit != null">#{isMonthInit},</if>
+            <if test="uuidId != null">#{uuidId},</if>
+            <if test="auditAdjustsInventory != null">#{auditAdjustsInventory},</if>
             #{scopedTenantId},
          </trim>
     </insert>
@@ -248,6 +255,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
+            <if test="uuidId != null">uuid_id = #{uuidId},</if>
+            <if test="auditAdjustsInventory != null">audit_adjusts_inventory = #{auditAdjustsInventory},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>

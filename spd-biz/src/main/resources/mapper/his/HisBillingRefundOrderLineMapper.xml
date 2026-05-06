@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisBillingRefundOrderLineMapper">
+
+    <insert id="insertBatch">
+        insert into his_billing_refund_order_line (
+            id, tenant_id, refund_order_id, consume_link_id, return_qty,
+            dep_inventory_id, gz_dep_inventory_id, in_hospital_code, batch_no, end_date_snapshot,
+            remark, del_flag, create_by, create_time, update_by, update_time
+        ) values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.refundOrderId}, #{e.consumeLinkId}, #{e.returnQty},
+            #{e.depInventoryId}, #{e.gzDepInventoryId}, #{e.inHospitalCode}, #{e.batchNo}, #{e.endDateSnapshot},
+            #{e.remark}, ifnull(#{e.delFlag}, 0), #{e.createBy}, #{e.createTime}, #{e.updateBy}, #{e.updateTime})
+        </foreach>
+    </insert>
+</mapper>

@@ -19,6 +19,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.gz.domain.GzOrder;
+import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
 import com.spd.gz.service.IGzOrderService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -59,6 +60,17 @@ public class GzOrderController extends BaseController
         List<GzOrder> list = gzOrderService.selectGzOrderList(gzOrder);
         ExcelUtil<GzOrder> util = new ExcelUtil<GzOrder>(GzOrder.class);
         util.exportExcel(response, list, "高值备货入库数据");
+    }
+
+    /**
+     * 主单下院内码明细（打印条码：备货库存为 0 或无库存行时仍可取审核生成的院内码）
+     */
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query')")
+    @GetMapping("/{id}/inhospitalcodeList")
+    public AjaxResult inhospitalcodeList(@PathVariable("id") Long id)
+    {
+        List<GzOrderEntryInhospitalcodeList> list = gzOrderService.selectInhospitalcodeListByParentId(id);
+        return success(list);
     }
 
     /**

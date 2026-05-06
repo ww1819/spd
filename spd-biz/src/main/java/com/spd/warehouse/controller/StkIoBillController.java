@@ -2,9 +2,13 @@ package com.spd.warehouse.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.net.URLEncoder;
 import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.http.HttpUtils;
+import com.spd.system.service.ISysConfigService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +32,15 @@ import com.spd.common.core.page.TableDataInfo;
 @RequestMapping("/warehouse/warehouse")
 public class StkIoBillController extends BaseController
 {
+    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
+    private static final String DEFAULT_INTERFACE_PORT = "8088";
+
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
+
+    @Autowired
+    private ISysConfigService sysConfigService;
 
     /**
      * 查询入库列表
@@ -128,6 +138,41 @@ public class StkIoBillController extends BaseController
         return success(stkIoBill1);
     }
 
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createRkEntriesByDingdan')")
+    @GetMapping("/queryZsDelivery")
+    public AjaxResult queryZsDelivery(@RequestParam String keyword) {
+        if (StringUtils.isEmpty(keyword)) {
+            return AjaxResult.error("配送单号或输入码不能为空");
+        }
+        try {
+            String url = buildInterfaceBaseUrl() + "/api/spd/delivery/query";
+            String param = "keyword=" + URLEncoder.encode(keyword, "UTF-8");
+            String result = HttpUtils.sendGet(url, param);
+            if (StringUtils.isEmpty(result)) {
+                return AjaxResult.error("配送单查询失败：接口无响应");
+            }
+            JSONObject jsonResult = JSONObject.parseObject(result);
+            Integer code = jsonResult.getInteger("code");
+            if (code != null && code == 200) {
+                return success(jsonResult.get("data"));
+            }
+            String msg = jsonResult.getString("msg");
+            return AjaxResult.error(StringUtils.isNotEmpty(msg) ? msg : "配送单查询失败");
+        } catch (Exception e) {
+            return AjaxResult.error("配送单查询失败：" + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:createRkEntriesByDingdan')")
+    @GetMapping("/createRkEntriesByDeliveryNo")
+    public AjaxResult createRkEntriesByDeliveryNo(@RequestParam String deliveryNo) {
+        if (StringUtils.isEmpty(deliveryNo)) {
+            return AjaxResult.error("配送单号不能为空");
+        }
+        StkIoBill stkIoBill = stkIoBillService.createRkEntriesByDeliveryNo(deliveryNo);
+        return success(stkIoBill);
+    }
+
     /**
      * 按科室汇总出库总金额（数据可视化大屏用）
      * @return 列表项：departmentId, departmentName, outboundAmount
@@ -136,5 +181,22 @@ public class StkIoBillController extends BaseController
     public AjaxResult outboundSummaryByDepartment() {
         List<Map<String, Object>> list = stkIoBillService.selectOutboundSummaryByDepartment();
         return success(list);
+    }
+
+    private String buildInterfaceBaseUrl()
+    {
+        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
+        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
+        if (StringUtils.isEmpty(ip)) {
+            ip = DEFAULT_INTERFACE_IP;
+        }
+        if (!port.matches("\\d{1,5}")) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        int portNum = Integer.parseInt(port);
+        if (portNum < 1 || portNum > 65535) {
+            port = DEFAULT_INTERFACE_PORT;
+        }
+        return "http://" + ip + ":" + port;
     }
 }

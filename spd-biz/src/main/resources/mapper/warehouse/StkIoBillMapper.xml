@@ -68,6 +68,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="dApplyId"    column="d_apply_id"    />
         <result property="whWarehouseApplyId"    column="wh_warehouse_apply_id"    />
         <result property="whWarehouseApplyBillNo"    column="wh_warehouse_apply_bill_no"    />
+        <result property="deliveryRefWarehouseId"    column="delivery_ref_warehouse_id"    />
+        <result property="deliveryRefWarehouseName"    column="delivery_ref_warehouse_name"    />
+        <result property="deliveryRefSupplierId"    column="delivery_ref_supplier_id"    />
+        <result property="deliveryRefSupplierName"    column="delivery_ref_supplier_name"    />
+        <result property="deliveryRefDeptId"    column="delivery_ref_dept_id"    />
+        <result property="deliveryRefDeptName"    column="delivery_ref_dept_name"    />
 
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -157,6 +163,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseName"    column="warehouseName"    />
         <result property="settlementType"    column="sub_settlement_type"    />
         <result property="whApplyEntryId"    column="sub_wh_apply_entry_id"    />
+        <result property="deliveryLineSign" column="sub_delivery_line_sign" />
+        <result property="deliveryLineQtyCap" column="sub_delivery_line_qty_cap" />
+        <result property="fixedPackageBarcode" column="sub_fixed_package_barcode" />
         <association property="material" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -235,6 +244,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
+				stk.delivery_ref_warehouse_id,stk.delivery_ref_warehouse_name,stk.delivery_ref_supplier_id,
+				stk.delivery_ref_supplier_name,stk.delivery_ref_dept_id,stk.delivery_ref_dept_name,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
@@ -717,6 +728,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.tenant_id, a.delete_by, a.delete_time, a.settlement_type, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.d_apply_id, a.wh_warehouse_apply_id, a.wh_warehouse_apply_bill_no,
+                a.delivery_ref_warehouse_id, a.delivery_ref_warehouse_name, a.delivery_ref_supplier_id,
+                a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
 				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,a.audit_by,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.bill_no as sub_bill_no, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
@@ -726,6 +739,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.del_flag as sub_del_flag, b.tenant_id as sub_tenant_id, b.delete_by as sub_delete_by, b.delete_time as sub_delete_time,
                 b.remark as sub_remark, b.kc_no as sub_kc_no, b.stk_inventory_id as sub_stk_inventory_id, b.dep_inventory_id as sub_dep_inventory_id, b.warehouse_id as sub_warehouse_id, b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.suppler_id as sub_suppler_id, b.settlement_type as sub_settlement_type,
                 b.wh_apply_entry_id as sub_wh_apply_entry_id,
+                b.delivery_line_sign as sub_delivery_line_sign, b.delivery_line_qty_cap as sub_delivery_line_qty_cap,
+                b.fixed_package_barcode as sub_fixed_package_barcode,
                 au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,
                wh.id as wId, wh.code as warehouseCode, wh.name as warehouseName,
@@ -793,6 +808,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null and dApplyId != ''">d_apply_id,</if>
             <if test="whWarehouseApplyId != null and whWarehouseApplyId != ''">wh_warehouse_apply_id,</if>
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">wh_warehouse_apply_bill_no,</if>
+            <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">delivery_ref_warehouse_id,</if>
+            <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">delivery_ref_warehouse_name,</if>
+            <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">delivery_ref_supplier_id,</if>
+            <if test="deliveryRefSupplierName != null and deliveryRefSupplierName != ''">delivery_ref_supplier_name,</if>
+            <if test="deliveryRefDeptId != null and deliveryRefDeptId != ''">delivery_ref_dept_id,</if>
+            <if test="deliveryRefDeptName != null and deliveryRefDeptName != ''">delivery_ref_dept_name,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">#{billNo},</if>
@@ -827,6 +848,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null and dApplyId != ''">#{dApplyId},</if>
             <if test="whWarehouseApplyId != null and whWarehouseApplyId != ''">#{whWarehouseApplyId},</if>
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">#{whWarehouseApplyBillNo},</if>
+            <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">#{deliveryRefWarehouseId},</if>
+            <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">#{deliveryRefWarehouseName},</if>
+            <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">#{deliveryRefSupplierId},</if>
+            <if test="deliveryRefSupplierName != null and deliveryRefSupplierName != ''">#{deliveryRefSupplierName},</if>
+            <if test="deliveryRefDeptId != null and deliveryRefDeptId != ''">#{deliveryRefDeptId},</if>
+            <if test="deliveryRefDeptName != null and deliveryRefDeptName != ''">#{deliveryRefDeptName},</if>
          </trim>
     </insert>
 
@@ -868,6 +895,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null">d_apply_id = #{dApplyId},</if>
             <if test="whWarehouseApplyId != null">wh_warehouse_apply_id = #{whWarehouseApplyId},</if>
             <if test="whWarehouseApplyBillNo != null">wh_warehouse_apply_bill_no = #{whWarehouseApplyBillNo},</if>
+            <if test="deliveryRefWarehouseId != null">delivery_ref_warehouse_id = #{deliveryRefWarehouseId},</if>
+            <if test="deliveryRefWarehouseName != null">delivery_ref_warehouse_name = #{deliveryRefWarehouseName},</if>
+            <if test="deliveryRefSupplierId != null">delivery_ref_supplier_id = #{deliveryRefSupplierId},</if>
+            <if test="deliveryRefSupplierName != null">delivery_ref_supplier_name = #{deliveryRefSupplierName},</if>
+            <if test="deliveryRefDeptId != null">delivery_ref_dept_id = #{deliveryRefDeptId},</if>
+            <if test="deliveryRefDeptName != null">delivery_ref_dept_name = #{deliveryRefDeptName},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
@@ -919,7 +952,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model,
                material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time,
                del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode,
-               suppler_id, settlement_type, wh_apply_entry_id, tenant_id, create_by, create_time, update_by, update_time,
+               suppler_id, settlement_type, wh_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode, tenant_id, create_by, create_time, update_by, update_time,
                delete_by, delete_time
         from stk_io_bill_entry
         where paren_id = #{parenId}
@@ -957,6 +990,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id = #{supplerId},</if>
             <if test="settlementType != null">settlement_type = #{settlementType},</if>
             <if test="whApplyEntryId != null">wh_apply_entry_id = #{whApplyEntryId},</if>
+            <if test="deliveryLineSign != null">delivery_line_sign = #{deliveryLineSign},</if>
+            <if test="deliveryLineQtyCap != null">delivery_line_qty_cap = #{deliveryLineQtyCap},</if>
+            <if test="fixedPackageBarcode != null">fixed_package_barcode = #{fixedPackageBarcode},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -971,9 +1007,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchStkIoBillEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, tenant_id) values
+        insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parenId}, #{item.billNo}, #{item.commodityId}, #{item.materialId}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, COALESCE(#{item.delFlag}, 0), #{item.remark}, #{item.kcNo}, #{item.stkInventoryId}, #{item.depInventoryId}, #{item.warehouseId}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.settlementType}, #{item.whApplyEntryId}, #{scopedTenantId})
+            (#{item.parenId}, #{item.billNo}, #{item.commodityId}, #{item.materialId}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, COALESCE(#{item.delFlag}, 0), #{item.remark}, #{item.kcNo}, #{item.stkInventoryId}, #{item.depInventoryId}, #{item.warehouseId}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.settlementType}, #{item.whApplyEntryId}, #{item.deliveryLineSign}, #{item.deliveryLineQtyCap}, #{item.fixedPackageBarcode}, #{scopedTenantId})
         </foreach>
     </insert>
 
@@ -1053,12 +1089,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 batchNo,batchNumber,beginTime,endTime,materialSpeci,materialModel,unitName,factoryName,
                 financeCategoryName,departmentName,warehouseName,supplierCode,supplierName
         from (
-            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                    stk.bill_type billType,b.qty materialQty, b.price price,
-                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,
+                    (case when stk.bill_type = 301 then -abs(IFNULL(b.qty, 0)) else abs(IFNULL(b.qty, 0)) end) materialQty,
+                    b.price price,
+                    (case when stk.bill_type = 301 then -abs(IFNULL(b.amt, 0)) else abs(IFNULL(b.amt, 0)) end) materialAmt,
+                    b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
@@ -1071,12 +1110,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,301) and stk.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
-            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                    stk.bill_type billType,b.qty materialQty, b.unit_price price,
-                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,
+                    (case when stk.bill_type = 201 then -abs(IFNULL(b.qty, 0)) else abs(IFNULL(b.qty, 0)) end) materialQty,
+                    b.unit_price price,
+                    (case when stk.bill_type = 201 then -abs(IFNULL(b.amt, 0)) else abs(IFNULL(b.amt, 0)) end) materialAmt,
+                    b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
@@ -1090,12 +1132,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
             -- 调拨单：调出仓库记录（数量为负数，表示出库）
-            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                    stk.bill_type billType,-b.qty materialQty, b.unit_price price,
-                    -b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,-abs(IFNULL(b.qty, 0)) materialQty, b.unit_price price,
+                    -abs(IFNULL(b.amt, 0)) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
@@ -1109,12 +1151,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
             union
             -- 调拨单：调入仓库记录（数量为正数，表示入库）
-            select stk.id,m.code materialCode,m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
-                    stk.bill_type billType,b.qty materialQty, b.unit_price price,
-                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,abs(IFNULL(b.qty, 0)) materialQty, b.unit_price price,
+                    abs(IFNULL(b.amt, 0)) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, tw.name warehouseName,s.code supplierCode,s.name supplierName
+                    d.name departmentName, tw.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
             from stk_io_bill stk
             left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on stk.department_id = d.id
@@ -1128,12 +1170,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union
-            select a.id,m.code materialCode,m.name materialName, a.stock_no billNo, a.stock_date billDate,
+            select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo, a.stock_date billDate,
                     a.stock_type billType,b.qty materialQty, b.price price,
                     b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
-                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName
+                    d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
             from stk_io_stocktaking a
             left join stk_io_stocktaking_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_department d on a.department_id = d.id
@@ -1147,10 +1189,115 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ) t
         <where>
             <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
-            <if test="materialName != null "> and materialName like concat('%', #{materialName}, '%')</if>
-            <if test="warehouseName != null "> and warehouseName like concat('%', #{warehouseName}, '%')</if>
-            <if test="beginDate != null "> and billDate &gt;= #{beginDate}</if>
-            <if test="endDate != null "> and billDate &lt;= #{endDate}</if>
+            <if test="materialName != null and materialName != ''">
+                and (materialName like concat('%', #{materialName}, '%')
+                     or materialCode like concat('%', #{materialName}, '%')
+                     or materialReferredName like concat('%', #{materialName}, '%'))
+            </if>
+            <if test="supplierKeyword != null and supplierKeyword != ''">
+                and (supplierCode like concat('%', #{supplierKeyword}, '%')
+                     or supplierName like concat('%', #{supplierKeyword}, '%')
+                     or supplierReferredCode like concat('%', #{supplierKeyword}, '%'))
+            </if>
+            <if test="materialSpeciLike != null and materialSpeciLike != ''"> and materialSpeci like concat('%', #{materialSpeciLike}, '%')</if>
+            <if test="materialModelLike != null and materialModelLike != ''"> and materialModel like concat('%', #{materialModelLike}, '%')</if>
+            <if test="warehouseName != null and warehouseName != ''"> and warehouseName like concat('%', #{warehouseName}, '%')</if>
+            <if test="beginDate != null"> and billDate &gt;= #{beginDate}</if>
+            <if test="endDate != null"> and billDate &lt;= #{endDate}</if>
+            <if test="params.billTypeList != null and params.billTypeList.size() > 0">
+                and billType in
+                <foreach collection="params.billTypeList" item="type" open="(" separator="," close=")">
+                    #{type}
+                </foreach>
+            </if>
+            <if test="(params.billTypeList == null or params.billTypeList.size() == 0) and billType != null">
+                and billType = #{billType}
+            </if>
+        </where>
+        order by billDate desc, id desc
+    </select>
+
+    <select id="selectListPurInventoryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            COALESCE(sum(materialQty), 0) totalQty,
+            COALESCE(sum(materialAmt), 0) totalAmt
+        from (
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,
+                    (case when stk.bill_type = 301 then -abs(IFNULL(b.qty, 0)) else abs(IFNULL(b.qty, 0)) end) materialQty,
+                    (case when stk.bill_type = 301 then -abs(IFNULL(b.amt, 0)) else abs(IFNULL(b.amt, 0)) end) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (101,301) and stk.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+            union all
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,
+                    (case when stk.bill_type = 201 then -abs(IFNULL(b.qty, 0)) else abs(IFNULL(b.qty, 0)) end) materialQty,
+                    (case when stk.bill_type = 201 then -abs(IFNULL(b.amt, 0)) else abs(IFNULL(b.amt, 0)) end) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = COALESCE(NULLIF(TRIM(b.suppler_id), ''), stk.suppler_id)
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type in (201,401) and stk.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+            union all
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,-abs(IFNULL(b.qty, 0)) materialQty,-abs(IFNULL(b.amt, 0)) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+            left join fd_warehouse w on stk.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+            union all
+            select stk.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, stk.bill_no billNo, stk.bill_date billDate,
+                    stk.bill_type billType,abs(IFNULL(b.qty, 0)) materialQty,abs(IFNULL(b.amt, 0)) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,tw.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_io_bill stk
+            left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+            left join fd_warehouse tw on stk.department_id = tw.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
+            union all
+            select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo, a.stock_date billDate,
+                    a.stock_type billType,IFNULL(b.qty, 0) materialQty,IFNULL(b.amt, 0) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_io_stocktaking a
+            left join stk_io_stocktaking_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
+            left join fd_warehouse w on a.warehouse_id = w.id
+            left join fd_material m on b.material_id = m.id
+            left join fd_supplier s on s.id = m.supplier_id
+            where a.del_flag != 1 and a.stock_status = 2 and a.tenant_id = #{scopedTenantId}
+        ) t
+        <where>
+            <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
+            <if test="materialName != null and materialName != ''">
+                and (materialName like concat('%', #{materialName}, '%')
+                    or materialCode like concat('%', #{materialName}, '%')
+                    or materialReferredName like concat('%', #{materialName}, '%'))
+            </if>
+            <if test="supplierKeyword != null and supplierKeyword != ''">
+                and (supplierCode like concat('%', #{supplierKeyword}, '%')
+                    or supplierName like concat('%', #{supplierKeyword}, '%')
+                    or supplierReferredCode like concat('%', #{supplierKeyword}, '%'))
+            </if>
+            <if test="materialSpeciLike != null and materialSpeciLike != ''"> and materialSpeci like concat('%', #{materialSpeciLike}, '%')</if>
+            <if test="materialModelLike != null and materialModelLike != ''"> and materialModel like concat('%', #{materialModelLike}, '%')</if>
+            <if test="warehouseName != null and warehouseName != ''"> and warehouseName like concat('%', #{warehouseName}, '%')</if>
+            <if test="beginDate != null"> and billDate &gt;= #{beginDate}</if>
+            <if test="endDate != null"> and billDate &lt;= #{endDate}</if>
             <if test="params.billTypeList != null and params.billTypeList.size() > 0">
                 and billType in
                 <foreach collection="params.billTypeList" item="type" open="(" separator="," close=")">
@@ -1286,6 +1433,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             b.main_barcode as sub_main_barcode,
             b.sub_barcode as sub_sub_barcode,
             b.suppler_id as sub_suppler_id,
+            b.delivery_line_sign as sub_delivery_line_sign,
+            b.delivery_line_qty_cap as sub_delivery_line_qty_cap,
+            b.fixed_package_barcode as sub_fixed_package_barcode,
             m.id as mId,
             m.code as materialCode,
             m.name as materialName,
@@ -1726,5 +1876,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                         THEN ROUND(b.amt / b.qty, 6) ELSE NULL END),
                     0)
             )) &gt; 0.0000001
+    </select>
+
+    <select id="sumInboundQtyByDeliveryLine" resultType="java.math.BigDecimal">
+        select coalesce(sum(e.qty), 0)
+        from stk_io_bill_entry e
+        inner join stk_io_bill b on e.paren_id = b.id
+        where b.tenant_id = #{tenantId}
+          and b.ref_bill_no = #{deliveryNo}
+          and b.bill_type = 101
+          and (b.del_flag is null or b.del_flag = 0)
+          and (e.del_flag is null or e.del_flag != 1)
+          and e.delivery_line_sign = #{lineSign}
+        <if test="excludeBillId != null">
+          and b.id != #{excludeBillId}
+        </if>
     </select>
 </mapper>

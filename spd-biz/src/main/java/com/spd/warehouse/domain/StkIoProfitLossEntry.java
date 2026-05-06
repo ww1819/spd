@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.spd.common.annotation.Excel;
 import com.spd.common.core.domain.BaseEntity;
 import com.spd.foundation.domain.FdMaterial;
 
@@ -58,6 +57,28 @@ public class StkIoProfitLossEntry extends BaseEntity {
     /** 供应商ID（出退库单明细内的供应商id） */
     private String supplerId;
 
+    private String entryUuid;
+    private String stocktakingLineUuid;
+    private String origBatchNo;
+    private Long origBatchId;
+    /** SURPLUS / LOSS */
+    private String plKind;
+    private String materialNameSnap;
+    private String materialSpeciSnap;
+    private String warehouseNameSnap;
+    private Long surplusStkBatchId;
+    private Long resultStkInventoryId;
+    /** 科室库存明细 id（盘亏扣减目标，biz_scope=DEP） */
+    private Long depInventoryId;
+    /** 盘盈审核生成的科室库存 id */
+    private Long resultDepInventoryId;
+    /** 科室名称快照 */
+    private String departmentNameSnap;
+    /** 盘盈可退库仓库（快照） */
+    private Long returnWarehouseId;
+    /** 租户ID */
+    private String tenantId;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getParenId() { return parenId; }
@@ -96,4 +117,49 @@ public class StkIoProfitLossEntry extends BaseEntity {
     public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
     public String getSupplerId() { return supplerId; }
     public void setSupplerId(String supplerId) { this.supplerId = supplerId; }
+
+    public String getEntryUuid() { return entryUuid; }
+    public void setEntryUuid(String entryUuid) { this.entryUuid = entryUuid; }
+
+    public String getStocktakingLineUuid() { return stocktakingLineUuid; }
+    public void setStocktakingLineUuid(String stocktakingLineUuid) { this.stocktakingLineUuid = stocktakingLineUuid; }
+
+    public String getOrigBatchNo() { return origBatchNo; }
+    public void setOrigBatchNo(String origBatchNo) { this.origBatchNo = origBatchNo; }
+
+    public Long getOrigBatchId() { return origBatchId; }
+    public void setOrigBatchId(Long origBatchId) { this.origBatchId = origBatchId; }
+
+    public String getPlKind() { return plKind; }
+    public void setPlKind(String plKind) { this.plKind = plKind; }
+
+    public String getMaterialNameSnap() { return materialNameSnap; }
+    public void setMaterialNameSnap(String materialNameSnap) { this.materialNameSnap = materialNameSnap; }
+
+    public String getMaterialSpeciSnap() { return materialSpeciSnap; }
+    public void setMaterialSpeciSnap(String materialSpeciSnap) { this.materialSpeciSnap = materialSpeciSnap; }
+
+    public String getWarehouseNameSnap() { return warehouseNameSnap; }
+    public void setWarehouseNameSnap(String warehouseNameSnap) { this.warehouseNameSnap = warehouseNameSnap; }
+
+    public Long getSurplusStkBatchId() { return surplusStkBatchId; }
+    public void setSurplusStkBatchId(Long surplusStkBatchId) { this.surplusStkBatchId = surplusStkBatchId; }
+
+    public Long getResultStkInventoryId() { return resultStkInventoryId; }
+    public void setResultStkInventoryId(Long resultStkInventoryId) { this.resultStkInventoryId = resultStkInventoryId; }
+
+    public Long getDepInventoryId() { return depInventoryId; }
+    public void setDepInventoryId(Long depInventoryId) { this.depInventoryId = depInventoryId; }
+
+    public Long getResultDepInventoryId() { return resultDepInventoryId; }
+    public void setResultDepInventoryId(Long resultDepInventoryId) { this.resultDepInventoryId = resultDepInventoryId; }
+
+    public String getDepartmentNameSnap() { return departmentNameSnap; }
+    public void setDepartmentNameSnap(String departmentNameSnap) { this.departmentNameSnap = departmentNameSnap; }
+
+    public Long getReturnWarehouseId() { return returnWarehouseId; }
+    public void setReturnWarehouseId(Long returnWarehouseId) { this.returnWarehouseId = returnWarehouseId; }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 }

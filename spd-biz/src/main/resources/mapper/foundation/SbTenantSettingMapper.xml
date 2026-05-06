@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SbTenantSettingMapper">
+
+    <select id="selectByTenantAndKey" resultType="com.spd.foundation.domain.SbTenantSetting">
+        select id, tenant_id as tenantId, setting_key as settingKey, setting_value as settingValue, remark,
+               del_flag as delFlag, create_by as createBy, create_time as createTime,
+               update_by as updateBy, update_time as updateTime, delete_by as deleteBy, delete_time as deleteTime
+        from sb_tenant_setting
+        where tenant_id = #{tenantId} and setting_key = #{settingKey} and ifnull(del_flag, 0) = 0
+        limit 1
+    </select>
+
+    <insert id="insertSbTenantSetting">
+        insert into sb_tenant_setting (
+            id, tenant_id, setting_key, setting_value, remark, del_flag,
+            create_by, create_time, update_by, update_time
+        ) values (
+            #{id}, #{tenantId}, #{settingKey}, #{settingValue}, #{remark}, ifnull(#{delFlag}, 0),
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
+        )
+    </insert>
+
+    <update id="updateSbTenantSetting">
+        update sb_tenant_setting
+        <set>
+            <if test="settingValue != null">setting_value = #{settingValue},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </set>
+        where tenant_id = #{tenantId} and setting_key = #{settingKey} and ifnull(del_flag, 0) = 0
+    </update>
+</mapper>

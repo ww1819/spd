@@ -38,6 +38,10 @@ spd:
     addressEnabled: false
     # 验证码类型 math 数字计算 char 字符验证
     captchaType: math
+    # 服务器interface配置（推送订单/配送单查询下载）
+    interface:
+        # 建议测试环境通过环境变量 SPD_INTERFACE_URI 注入
+        uri: ${SPD_INTERFACE_URI:http://192.168.3.76:8080}
 
 
 # 数据源配置

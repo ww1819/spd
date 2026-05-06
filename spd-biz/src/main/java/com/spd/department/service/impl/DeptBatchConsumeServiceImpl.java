@@ -32,6 +32,7 @@ import com.spd.department.domain.DeptBatchConsumeEntry;
 import com.spd.department.mapper.DeptBatchConsumeMapper;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IDeptBatchConsumeService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 
 /**
  * 科室批量消耗Service业务层处理
@@ -52,6 +53,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     private HcKsFlowMapper hcKsFlowMapper;
     @Autowired
     private GzDepInventoryMapper gzDepInventoryMapper;
+
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     /**
      * 查询科室批量消耗
@@ -365,6 +369,18 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Transactional
     public DeptBatchConsume reverseConsume(DeptBatchConsumeReverseReq req, String operator)
     {
+        return reverseConsumeInternal(req, operator, false);
+    }
+
+    @Override
+    @Transactional
+    public DeptBatchConsume reverseConsumeForBillingRefund(DeptBatchConsumeReverseReq req, String operator)
+    {
+        return reverseConsumeInternal(req, operator, true);
+    }
+
+    private DeptBatchConsume reverseConsumeInternal(DeptBatchConsumeReverseReq req, String operator, boolean allowHisMirrorSource)
+    {
         if (req == null || req.getConsumeId() == null) {
             throw new ServiceException("反消耗失败：来源消耗单不能为空");
         }
@@ -372,7 +388,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (srcBill == null) {
             throw new ServiceException("反消耗失败：来源消耗单不存在");
         }
-        if (srcBill.getDisallowReverse() != null && srcBill.getDisallowReverse().intValue() == 1) {
+        if (!allowHisMirrorSource && srcBill.getDisallowReverse() != null && srcBill.getDisallowReverse().intValue() == 1) {
             throw new ServiceException("反消耗失败：该单来源于HIS计费镜像消耗，禁止手工退消耗");
         }
         if (srcBill.getConsumeBillStatus() == null || srcBill.getConsumeBillStatus() != 2) {
@@ -579,6 +595,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
                 flow.setCreateTime(now);
                 flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
                 hcKsFlowMapper.insertHcKsFlow(flow);
+                hcBarcodeLifecycleService.onDeptBatchConsumeGz(bill, entry, gz);
             }
             else if (entry.getDepInventoryId() != null) {
                 StkDepInventory depInv = stkDepInventoryMapper.selectStkDepInventoryById(entry.getDepInventoryId());
@@ -629,6 +646,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
                 flow.setCreateTime(now);
                 flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
                 hcKsFlowMapper.insertHcKsFlow(flow);
+                hcBarcodeLifecycleService.onDeptBatchConsumeLv(bill, entry, depInv);
             }
             else {
                 throw new ServiceException(String.format("消耗审核失败：明细耗材[%s]缺少来源库存（科室低值库存或高值科室库存）", entry.getMaterialId()));

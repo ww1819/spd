@@ -51,7 +51,7 @@ public interface StkIoStocktakingMapper
      * @param id 盘点主键
      * @return 结果
      */
-    public int deleteStkIoStocktakingById(Long id);
+    public int deleteStkIoStocktakingById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除盘点
@@ -59,7 +59,7 @@ public interface StkIoStocktakingMapper
      * @param ids 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteStkIoStocktakingByIds(Long[] ids);
+    public int deleteStkIoStocktakingByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
 
     /** 批量逻辑删除盘点明细（设置 delete_by、delete_time） */
     public int deleteStkIoStocktakingEntryByParenIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
@@ -89,7 +89,7 @@ public interface StkIoStocktakingMapper
     /**
      * 软删盘点明细：同一父单下、id 不在保留列表中的明细
      */
-    int deleteStkIoStocktakingEntryByParenIdExceptIds(@Param("parenId") Long parenId, @Param("keepIds") List<Long> keepIds);
+    int deleteStkIoStocktakingEntryByParenIdExceptIds(@Param("parenId") Long parenId, @Param("keepIds") List<Long> keepIds, @Param("deleteBy") String deleteBy);
 
     /**
      * 查询当天最大流水号

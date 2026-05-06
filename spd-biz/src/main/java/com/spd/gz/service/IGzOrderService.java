@@ -2,6 +2,7 @@ package com.spd.gz.service;
 
 import java.util.List;
 import com.spd.gz.domain.GzOrder;
+import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
 
 /**
  * 高值入库Service接口
@@ -64,4 +65,9 @@ public interface IGzOrderService
      * @return 出库单号列表
      */
     List<String> selectOutboundOrderNosByInHospitalCode(String inHospitalCode);
+
+    /**
+     * 备货主单下院内码明细（打印条码兜底，不依赖库存数量）
+     */
+    List<GzOrderEntryInhospitalcodeList> selectInhospitalcodeListByParentId(Long orderId);
 }

@@ -107,6 +107,16 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "可退库仓库ID")
     private Long returnWarehouseId;
 
+    /** 明细业务主键 UUID7 */
+    private String entryUuid;
+    /** 账面批次 stk_batch.id 快照 */
+    private Long origBatchId;
+    /** 账面批次号快照 */
+    private String origBatchNoSnapshot;
+
+    /** 租户ID */
+    private String tenantId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -276,6 +286,18 @@ public class StkIoStocktakingEntry extends BaseEntity
 
     public Long getReturnWarehouseId() { return returnWarehouseId; }
     public void setReturnWarehouseId(Long returnWarehouseId) { this.returnWarehouseId = returnWarehouseId; }
+
+    public String getEntryUuid() { return entryUuid; }
+    public void setEntryUuid(String entryUuid) { this.entryUuid = entryUuid; }
+
+    public Long getOrigBatchId() { return origBatchId; }
+    public void setOrigBatchId(Long origBatchId) { this.origBatchId = origBatchId; }
+
+    public String getOrigBatchNoSnapshot() { return origBatchNoSnapshot; }
+    public void setOrigBatchNoSnapshot(String origBatchNoSnapshot) { this.origBatchNoSnapshot = origBatchNoSnapshot; }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
     @Override
     public String toString() {

@@ -155,6 +155,9 @@ public class StkInventory extends BaseEntity
     @Excel(name = "高值耗材辅条码")
     private String subBarcode;
 
+    /** 低值定数包院内码（入库审核生成） */
+    private String lvInhospitalPackageCode;
+
     /** 制单人昵称（关联入库单制单人 sys_user.nick_name） */
     private String createrName;
 
@@ -517,6 +520,9 @@ public class StkInventory extends BaseEntity
     public void setMainBarcode(String mainBarcode) { this.mainBarcode = mainBarcode; }
     public String getSubBarcode() { return subBarcode; }
     public void setSubBarcode(String subBarcode) { this.subBarcode = subBarcode; }
+
+    public String getLvInhospitalPackageCode() { return lvInhospitalPackageCode; }
+    public void setLvInhospitalPackageCode(String lvInhospitalPackageCode) { this.lvInhospitalPackageCode = lvInhospitalPackageCode; }
 
     public String getCreaterName() {
         return createrName;

@@ -20,6 +20,7 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
+import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdFinanceCategoryService;
 
 /**
@@ -33,6 +34,9 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
 {
     @Autowired
     private FdFinanceCategoryMapper fdFinanceCategoryMapper;
+
+    @Autowired
+    private FoundationSnapshotRecorder foundationSnapshotRecorder;
 
     @Autowired
     protected Validator validator;
@@ -171,7 +175,15 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         {
             fdFinanceCategory.setUpdateBy(SecurityUtils.getUserIdStr());
         }
-        return fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
+        int n = fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
+        if (n > 0)
+        {
+            FdFinanceCategory after = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(fdFinanceCategory.getFinanceCategoryId());
+            String logOp = StringUtils.isNotEmpty(fdFinanceCategory.getUpdateBy()) ? fdFinanceCategory.getUpdateBy() : SecurityUtils.getUserIdStr();
+            foundationSnapshotRecorder.record(before.getTenantId(), "FINANCE_CATEGORY",
+                String.valueOf(fdFinanceCategory.getFinanceCategoryId()), before, after, logOp);
+        }
+        return n;
     }
 
 //    /**

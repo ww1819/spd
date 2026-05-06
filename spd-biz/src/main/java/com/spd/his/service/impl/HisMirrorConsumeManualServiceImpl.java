@@ -19,7 +19,7 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.HisMatchTextUtils;
 import com.spd.common.utils.SecurityUtils;
-import com.spd.common.utils.uuid.IdUtils;
+import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.domain.DeptBatchConsumeEntry;
 import com.spd.department.domain.StkDepInventory;
@@ -165,7 +165,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 AllocPiece p = gPieces.get(i);
                 DeptBatchConsumeEntry e = persisted.get(i);
                 HisMirrorConsumeLink lk = new HisMirrorConsumeLink();
-                lk.setId(IdUtils.fastUUID());
+                lk.setId(UUID7.generateUUID7());
                 lk.setTenantId(tenantId);
                 lk.setVisitKind(visitKind);
                 lk.setMirrorRowId(p.mirrorRowId);
@@ -173,6 +173,11 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 lk.setDeptBatchConsumeId(consumeId);
                 lk.setDeptBatchConsumeEntryId(e.getId());
                 lk.setAllocQty(p.take);
+                lk.setDepInventoryId(p.inv.getId());
+                lk.setStkDepEndDate(p.inv.getEndDate());
+                lk.setReturnedQty(BigDecimal.ZERO);
+                lk.setRefundableRemainingQty(p.take);
+                lk.setDelFlag(0);
                 lk.setCreateTime(linkTime);
                 linkBuffer.add(lk);
             }
@@ -355,7 +360,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         for (int i = 0; i < persisted.size(); i++)
         {
             HisMirrorConsumeLink lk = new HisMirrorConsumeLink();
-            lk.setId(IdUtils.fastUUID());
+            lk.setId(UUID7.generateUUID7());
             lk.setTenantId(tenantId);
             lk.setVisitKind(visitKind);
             lk.setMirrorRowId(mirrorRowId);
@@ -363,6 +368,13 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             lk.setDeptBatchConsumeId(consumeId);
             lk.setDeptBatchConsumeEntryId(persisted.get(i).getId());
             lk.setAllocQty(persisted.get(i).getQty());
+            Long gzPk = persisted.get(i).getGzDepInventoryId();
+            GzDepInventory gzOne = gzPk != null ? gzDepInventoryMapper.selectGzDepInventoryById(gzPk) : null;
+            lk.setGzDepInventoryId(gzPk);
+            lk.setInHospitalCode(gzOne != null ? gzOne.getInHospitalCode() : null);
+            lk.setReturnedQty(BigDecimal.ZERO);
+            lk.setRefundableRemainingQty(persisted.get(i).getQty());
+            lk.setDelFlag(0);
             lk.setCreateTime(linkTime);
             links.add(lk);
         }

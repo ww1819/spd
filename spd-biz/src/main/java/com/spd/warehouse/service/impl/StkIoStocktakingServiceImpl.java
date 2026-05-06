@@ -1,20 +1,24 @@
 package com.spd.warehouse.service.impl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
-import com.spd.common.utils.rule.FillRuleUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.util.ArrayList;
 import com.spd.common.utils.StringUtils;
-import org.springframework.transaction.annotation.Transactional;
-import com.spd.warehouse.domain.StkIoStocktakingEntry;
-import com.spd.warehouse.mapper.StkIoStocktakingMapper;
+import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.common.utils.uuid.UUID7;
+import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoStocktaking;
+import com.spd.warehouse.domain.StkIoStocktakingEntry;
+import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 
 /**
@@ -28,6 +32,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 {
     @Autowired
     private StkIoStocktakingMapper stkIoStocktakingMapper;
+
+    @Autowired
+    private StkInventoryMapper stkInventoryMapper;
 
     /**
      * 查询盘点
@@ -75,6 +82,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
         }
+        if (StringUtils.isEmpty(stkIoStocktaking.getUuidId())) {
+            stkIoStocktaking.setUuidId(UUID7.generateUUID7());
+        }
+        if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
+            stkIoStocktaking.setAuditAdjustsInventory(0);
+        }
         int rows = stkIoStocktakingMapper.insertStkIoStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
         return rows;
@@ -103,12 +116,15 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         Long parenId = stkIoStocktaking.getId();
         List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
         List<Long> keepIds = new ArrayList<>();
+        String opUser = SecurityUtils.getUserIdStr();
         if (StringUtils.isNotNull(entryList)) {
             for (StkIoStocktakingEntry entry : entryList) {
                 entry.setParenId(parenId);
                 if (StringUtils.isEmpty(entry.getBatchNo())) {
                     entry.setBatchNo(getBatchNumber());
                 }
+                boolean isNew = entry.getId() == null;
+                prepareStocktakingEntry(stkIoStocktaking, entry, isNew);
                 if (entry.getId() != null) {
                     stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
                     keepIds.add(entry.getId());
@@ -116,7 +132,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                     stkIoStocktakingMapper.insertStkIoStocktakingEntrySingle(entry);
                 }
             }
-            stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIdExceptIds(parenId, keepIds);
+            stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIdExceptIds(parenId, keepIds, opUser);
         }
         return stkIoStocktakingMapper.updateStkIoStocktaking(stkIoStocktaking);
     }
@@ -137,9 +153,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 SecurityUtils.ensureTenantAccess(existing.getTenantId());
             }
         }
-        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        String deleteBy = SecurityUtils.getUserIdStr();
         stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIds(ids, deleteBy);
-        return stkIoStocktakingMapper.deleteStkIoStocktakingByIds(ids);
+        return stkIoStocktakingMapper.deleteStkIoStocktakingByIds(ids, deleteBy);
     }
 
     /**
@@ -156,9 +172,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
         }
-        String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
+        String deleteBy = SecurityUtils.getUserIdStr();
         stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenId(id, deleteBy);
-        return stkIoStocktakingMapper.deleteStkIoStocktakingById(id);
+        return stkIoStocktakingMapper.deleteStkIoStocktakingById(id, deleteBy);
     }
 
     /**
@@ -205,6 +221,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 if(StringUtils.isEmpty(stkIoStocktakingEntry.getBatchNo())){
                     stkIoStocktakingEntry.setBatchNo(getBatchNumber());
                 }
+                prepareStocktakingEntry(stkIoStocktaking, stkIoStocktakingEntry, true);
                 list.add(stkIoStocktakingEntry);
             }
             if (list.size() > 0)
@@ -219,5 +236,47 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         String createNo = FillRuleUtil.createBatchNo();
         String batchNo = str + createNo;
         return batchNo;
+    }
+
+    /**
+     * 保存前：明细 UUID、租户、审计字段；有 kc_no 时回填账面批次快照（供盘亏/盈亏追溯）。
+     */
+    private void prepareStocktakingEntry(StkIoStocktaking parent, StkIoStocktakingEntry entry, boolean newLine) {
+        enrichOrigBatchFromInventory(entry);
+        if (StringUtils.isEmpty(entry.getEntryUuid())) {
+            entry.setEntryUuid(UUID7.generateUUID7());
+        }
+        String tid = StringUtils.isNotEmpty(parent.getTenantId()) ? parent.getTenantId() : SecurityUtils.getCustomerId();
+        entry.setTenantId(tid);
+        if (entry.getDelFlag() == null) {
+            entry.setDelFlag(0);
+        }
+        Date now = DateUtils.getNowDate();
+        String user = SecurityUtils.getUserIdStr();
+        if (newLine) {
+            entry.setCreateTime(now);
+            entry.setCreateBy(user);
+        }
+        entry.setUpdateTime(now);
+        entry.setUpdateBy(user);
+    }
+
+    private void enrichOrigBatchFromInventory(StkIoStocktakingEntry entry) {
+        if (entry.getKcNo() == null) {
+            return;
+        }
+        if (entry.getOrigBatchId() != null && StringUtils.isNotEmpty(entry.getOrigBatchNoSnapshot())) {
+            return;
+        }
+        StkInventory inv = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
+        if (inv == null) {
+            return;
+        }
+        if (entry.getOrigBatchId() == null) {
+            entry.setOrigBatchId(inv.getBatchId());
+        }
+        if (StringUtils.isEmpty(entry.getOrigBatchNoSnapshot())) {
+            entry.setOrigBatchNoSnapshot(inv.getBatchNo());
+        }
     }
 }

@@ -5,17 +5,22 @@
     <insert id="insertBatch">
         insert into his_mirror_consume_link (
             id, tenant_id, visit_kind, mirror_row_id, fetch_batch_id,
-            dept_batch_consume_id, dept_batch_consume_entry_id, alloc_qty, create_time
+            dept_batch_consume_id, dept_batch_consume_entry_id, alloc_qty,
+            dep_inventory_id, gz_dep_inventory_id, stk_dep_end_date, in_hospital_code,
+            returned_qty, refundable_remaining_qty, create_time, del_flag
         ) values
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.mirrorRowId}, #{e.fetchBatchId},
-            #{e.deptBatchConsumeId}, #{e.deptBatchConsumeEntryId}, #{e.allocQty}, #{e.createTime})
+            #{e.deptBatchConsumeId}, #{e.deptBatchConsumeEntryId}, #{e.allocQty},
+            #{e.depInventoryId}, #{e.gzDepInventoryId}, #{e.stkDepEndDate}, #{e.inHospitalCode},
+            ifnull(#{e.returnedQty}, 0), #{e.refundableRemainingQty}, #{e.createTime}, ifnull(#{e.delFlag}, 0))
         </foreach>
     </insert>
 
     <select id="sumAllocQtyForMirrorRow" resultType="java.math.BigDecimal">
         select coalesce(sum(l.alloc_qty), 0) from his_mirror_consume_link l
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
     </select>
 
     <select id="selectDistinctBillSourcesForMirror" resultType="java.lang.String">
@@ -23,6 +28,7 @@
         from his_mirror_consume_link l
         inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id and ifnull(h.del_flag, 0) = 0
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
     </select>
 
     <select id="selectConsumeRecordsByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorConsumeRecordVo">
@@ -53,6 +59,38 @@
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
           and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
         order by l.create_time desc, l.id desc
     </select>
+
+    <select id="selectCandidateLinksForRefund" resultType="com.spd.his.domain.HisMirrorConsumeLink">
+        select
+            id, tenant_id as tenantId, visit_kind as visitKind, mirror_row_id as mirrorRowId, fetch_batch_id as fetchBatchId,
+            dept_batch_consume_id as deptBatchConsumeId, dept_batch_consume_entry_id as deptBatchConsumeEntryId,
+            alloc_qty as allocQty, dep_inventory_id as depInventoryId, gz_dep_inventory_id as gzDepInventoryId,
+            stk_dep_end_date as stkDepEndDate, in_hospital_code as inHospitalCode,
+            returned_qty as returnedQty, refundable_remaining_qty as refundableRemainingQty,
+            create_time as createTime
+        from his_mirror_consume_link
+        where tenant_id = #{tenantId}
+          and visit_kind = #{visitKind}
+          and mirror_row_id = #{mirrorRowId}
+          and ifnull(del_flag, 0) = 0
+          and coalesce(refundable_remaining_qty, alloc_qty - ifnull(returned_qty, 0)) > 0
+        <if test="valueLevel == '2'">
+          and dep_inventory_id is not null
+        </if>
+        <if test="valueLevel == '1'">
+          and gz_dep_inventory_id is not null
+        </if>
+    </select>
+
+    <update id="increaseReturnedQtyById">
+        update his_mirror_consume_link
+        set returned_qty = ifnull(returned_qty, 0) + #{delta},
+            refundable_remaining_qty = ifnull(alloc_qty, 0) - (ifnull(returned_qty, 0) + #{delta}),
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id} and ifnull(del_flag, 0) = 0
+    </update>
 </mapper>

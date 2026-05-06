@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.hc.mapper.HcBarcodeTraceMapper">
+
+    <insert id="insertStkLvIoInhospitalBarcode" parameterType="com.spd.hc.domain.StkLvIoInhospitalBarcode">
+        insert into stk_lv_io_inhospital_barcode(
+            id, tenant_id, io_direction, stk_io_bill_id, stk_io_bill_no, stk_io_bill_type, stk_io_bill_entry_id,
+            warehouse_id, warehouse_code, warehouse_name, department_id, department_code, department_name,
+            material_id, material_code, material_name, material_speci, material_model, material_unit_name,
+            factory_id, factory_name, supplier_id, supplier_name, batch_no, batch_number, begin_time, end_time,
+            unit_price, qty_in_package, package_index, package_total, in_hospital_code, fixed_package_barcode,
+            stk_inventory_id, stk_dep_inventory_id, hc_barcode_master_id, audit_by, audit_time, remark,
+            del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{ioDirection}, #{stkIoBillId}, #{stkIoBillNo}, #{stkIoBillType}, #{stkIoBillEntryId},
+            #{warehouseId}, #{warehouseCode}, #{warehouseName}, #{departmentId}, #{departmentCode}, #{departmentName},
+            #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{materialUnitName},
+            #{factoryId}, #{factoryName}, #{supplierId}, #{supplierName}, #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime},
+            #{unitPrice}, #{qtyInPackage}, #{packageIndex}, #{packageTotal}, #{inHospitalCode}, #{fixedPackageBarcode},
+            #{stkInventoryId}, #{stkDepInventoryId}, #{hcBarcodeMasterId}, #{auditBy}, #{auditTime}, #{remark},
+            #{delFlag}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <update id="updateHcBarcodeMasterCurrentState" parameterType="com.spd.hc.domain.HcBarcodeMaster">
+        update hc_barcode_master
+        set current_holder_type = #{currentHolderType,jdbcType=VARCHAR},
+            current_warehouse_id = #{currentWarehouseId,jdbcType=VARCHAR},
+            current_department_id = #{currentDepartmentId,jdbcType=VARCHAR},
+            status = #{status,jdbcType=VARCHAR},
+            update_by = #{updateBy,jdbcType=VARCHAR},
+            update_time = now()
+        where id = #{id}
+          and tenant_id = #{tenantId}
+          and del_flag = 0
+    </update>
+
+    <insert id="insertHcBarcodeMaster" parameterType="com.spd.hc.domain.HcBarcodeMaster">
+        insert into hc_barcode_master(
+            id, tenant_id, barcode_value, value_level, business_type_code, business_type_name,
+            source_table, source_row_id, bill_domain, bill_id, bill_no, bill_type, bill_entry_id,
+            material_id, material_code, material_name, material_speci, material_model, material_unit_name,
+            factory_id, factory_name, supplier_id, supplier_name, warehouse_id, warehouse_name,
+            department_id, department_name, batch_no, batch_number, begin_time, end_time,
+            master_barcode, secondary_barcode, fixed_package_qty, current_holder_type,
+            current_warehouse_id, current_department_id, status, del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{barcodeValue}, #{valueLevel}, #{businessTypeCode}, #{businessTypeName},
+            #{sourceTable}, #{sourceRowId}, #{billDomain}, #{billId}, #{billNo}, #{billType}, #{billEntryId},
+            #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{materialUnitName},
+            #{factoryId}, #{factoryName}, #{supplierId}, #{supplierName}, #{warehouseId}, #{warehouseName},
+            #{departmentId}, #{departmentName}, #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime},
+            #{masterBarcode}, #{secondaryBarcode}, #{fixedPackageQty}, #{currentHolderType},
+            #{currentWarehouseId}, #{currentDepartmentId}, #{status}, #{delFlag}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <insert id="insertHcBarcodeFlow" parameterType="com.spd.hc.domain.HcBarcodeFlow">
+        insert into hc_barcode_flow(
+            id, tenant_id, hc_barcode_master_id, barcode_value, value_level, seq_no, event_code, event_name, event_time,
+            bill_domain, bill_id, bill_no, bill_entry_id, from_warehouse_id, to_warehouse_id, from_department_id, to_department_id,
+            qty, material_name, material_speci, material_model, operator_id, operator_name, remark,
+            del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{hcBarcodeMasterId}, #{barcodeValue}, #{valueLevel}, #{seqNo}, #{eventCode}, #{eventName}, #{eventTime},
+            #{billDomain}, #{billId}, #{billNo}, #{billEntryId}, #{fromWarehouseId}, #{toWarehouseId}, #{fromDepartmentId}, #{toDepartmentId},
+            #{qty}, #{materialName}, #{materialSpeci}, #{materialModel}, #{operatorId}, #{operatorName}, #{remark},
+            #{delFlag}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <insert id="insertGzWhFlow" parameterType="com.spd.gz.domain.GzWhFlow">
+        insert into gz_wh_flow(
+            id, tenant_id, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, warehouse_id, warehouse_name,
+            material_id, material_code, material_name, material_speci, material_model, batch_no, batch_number, batch_id,
+            qty, unit_price, amt, begin_time, end_time, supplier_id, supplier_name, factory_id, factory_name,
+            gz_depot_inventory_id, in_hospital_code, master_barcode, secondary_barcode, lx, flow_time, origin_business_type,
+            del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{warehouseId}, #{warehouseName},
+            #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{batchNo}, #{batchNumber}, #{batchId},
+            #{qty}, #{unitPrice}, #{amt}, #{beginTime}, #{endTime}, #{supplierId}, #{supplierName}, #{factoryId}, #{factoryName},
+            #{gzDepotInventoryId}, #{inHospitalCode}, #{masterBarcode}, #{secondaryBarcode}, #{lx}, #{flowTime}, #{originBusinessType},
+            #{delFlag}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <insert id="insertGzDepFlow" parameterType="com.spd.gz.domain.GzDepFlow">
+        insert into gz_dep_flow(
+            id, tenant_id, bill_id, bill_no, entry_id, department_id, department_name, warehouse_id, warehouse_name,
+            material_id, material_code, material_name, material_speci, material_model, batch_no, batch_number, batch_id,
+            qty, unit_price, amt, begin_time, end_time, supplier_id, supplier_name, factory_id, factory_name,
+            gz_dep_inventory_id, in_hospital_code, master_barcode, secondary_barcode, lx, flow_time, origin_business_type,
+            del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{billId}, #{billNo}, #{entryId}, #{departmentId}, #{departmentName}, #{warehouseId}, #{warehouseName},
+            #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{batchNo}, #{batchNumber}, #{batchId},
+            #{qty}, #{unitPrice}, #{amt}, #{beginTime}, #{endTime}, #{supplierId}, #{supplierName}, #{factoryId}, #{factoryName},
+            #{gzDepInventoryId}, #{inHospitalCode}, #{masterBarcode}, #{secondaryBarcode}, #{lx}, #{flowTime}, #{originBusinessType},
+            #{delFlag}, #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectHcBarcodeMasterList" resultType="com.spd.hc.domain.HcBarcodeMaster">
+        select * from hc_barcode_master
+        where del_flag = 0
+          and tenant_id = #{tenantId}
+        <if test="barcodeValue != null and barcodeValue != ''">
+            and barcode_value like concat('%', #{barcodeValue}, '%')
+        </if>
+        <if test="valueLevel != null and valueLevel != ''">
+            and value_level = #{valueLevel}
+        </if>
+        <if test="businessTypeCode != null and businessTypeCode != ''">
+            and business_type_code = #{businessTypeCode}
+        </if>
+        <if test="billNo != null and billNo != ''">
+            and bill_no like concat('%', #{billNo}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            and material_name like concat('%', #{materialName}, '%')
+        </if>
+        order by create_time desc
+    </select>
+
+    <select id="selectHcBarcodeFlowList" resultType="com.spd.hc.domain.HcBarcodeFlow">
+        select * from hc_barcode_flow
+        where del_flag = 0
+          and tenant_id = #{tenantId}
+        <if test="hcBarcodeMasterId != null and hcBarcodeMasterId != ''">
+            and hc_barcode_master_id = #{hcBarcodeMasterId}
+        </if>
+        <if test="barcodeValue != null and barcodeValue != ''">
+            and barcode_value like concat('%', #{barcodeValue}, '%')
+        </if>
+        order by event_time desc, id desc
+    </select>
+
+    <select id="selectHcBarcodeMasterByTenantAndBarcode" resultType="com.spd.hc.domain.HcBarcodeMaster">
+        select * from hc_barcode_master
+        where tenant_id = #{tenantId}
+          and barcode_value = #{barcodeValue}
+          and del_flag = 0
+        limit 1
+    </select>
+
+    <select id="selectHcBarcodeMasterById" resultType="com.spd.hc.domain.HcBarcodeMaster">
+        select * from hc_barcode_master
+        where tenant_id = #{tenantId}
+          and id = #{id}
+          and del_flag = 0
+        limit 1
+    </select>
+
+    <select id="selectNextFlowSeq" resultType="int">
+        select ifnull(max(seq_no), 0) + 1 from hc_barcode_flow
+        where tenant_id = #{tenantId}
+          and hc_barcode_master_id = #{hcBarcodeMasterId}
+          and del_flag = 0
+    </select>
+</mapper>

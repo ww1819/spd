@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SpdFoundationDataSnapshotMapper">
+
+    <insert id="insert">
+        insert into spd_foundation_data_snapshot(id, tenant_id, entity_type, entity_id, before_json, after_json, create_by, create_time)
+        values (#{id}, #{tenantId}, #{entityType}, #{entityId}, #{beforeJson}, #{afterJson}, #{createBy}, now())
+    </insert>
+
+    <select id="selectList" resultType="com.spd.foundation.domain.SpdFoundationDataSnapshot">
+        select id, tenant_id as tenantId, entity_type as entityType, entity_id as entityId,
+               before_json as beforeJson, after_json as afterJson, create_by as createBy, create_time as createTime
+        from spd_foundation_data_snapshot
+        where tenant_id = #{tenantId}
+        <if test="entityType != null and entityType != ''">and entity_type = #{entityType}</if>
+        <if test="entityId != null and entityId != ''">and entity_id = #{entityId}</if>
+        order by create_time desc
+        limit 200
+    </select>
+</mapper>

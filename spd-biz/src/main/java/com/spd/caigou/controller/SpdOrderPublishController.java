@@ -1,30 +1,29 @@
 package com.spd.caigou.controller;
 
+import com.spd.caigou.service.IPremiseOrderPublishService;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 采购订单发布（调用前置机 scminterface）
+ * 采购订单发布（调用前置机 scminterface；具体 ids / payload / auto 见 {@link IPremiseOrderPublishService}）
  */
 @RestController
 @RequestMapping("/spd/order")
 public class SpdOrderPublishController extends BaseController
 {
-    /** 服务器 interface 接口 URL，沿用耗材档案推送的配置 */
-    @Value("${spd.interface.url:http://localhost:8088}")
-    private String interfaceUrl;
+    @Autowired
+    private IPremiseOrderPublishService premiseOrderPublishService;
 
     /**
      * 发布选中的采购订单到前置机
@@ -61,33 +60,13 @@ public class SpdOrderPublishController extends BaseController
                 return error("订单ID列表不能为空");
             }
 
-            // 拼接前置机 scminterface 的订单发布接口地址
-            String url = interfaceUrl;
-            if (!url.endsWith("/"))
+            AjaxResult r = premiseOrderPublishService.publish(ids);
+            if (r.isSuccess())
             {
-                url += "/";
+                return success(r.get(AjaxResult.DATA_TAG));
             }
-            url += "api/spd/order/publish";
-
-            Map<String, Object> requestData = new HashMap<>();
-            requestData.put("ids", ids);
-
-            String jsonData = com.alibaba.fastjson2.JSON.toJSONString(requestData);
-            String result = com.spd.common.utils.http.HttpUtils
-                    .sendPost(url, jsonData, "application/json;charset=UTF-8");
-
-            com.alibaba.fastjson2.JSONObject jsonResult = com.alibaba.fastjson2.JSON.parseObject(result);
-            Integer code = jsonResult.getInteger("code");
-            String msg = jsonResult.getString("msg");
-
-            if (code != null && code == 200)
-            {
-                return success(jsonResult.get("data"));
-            }
-            else
-            {
-                return error(msg != null ? msg : "发布失败");
-            }
+            Object msg = r.get(AjaxResult.MSG_TAG);
+            return error(msg != null ? msg.toString() : "发布失败");
         }
         catch (Exception e)
         {

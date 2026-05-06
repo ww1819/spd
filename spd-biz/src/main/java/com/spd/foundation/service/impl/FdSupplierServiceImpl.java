@@ -27,6 +27,7 @@ import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdSupplierChangeLog;
 import com.spd.foundation.mapper.FdSupplierChangeLogMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdSupplierService;
 
 /**
@@ -43,6 +44,9 @@ public class FdSupplierServiceImpl implements IFdSupplierService
 
     @Autowired
     private FdSupplierChangeLogMapper fdSupplierChangeLogMapper;
+
+    @Autowired
+    private FoundationSnapshotRecorder foundationSnapshotRecorder;
 
     @Autowired
     protected Validator validator;
@@ -158,6 +162,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             FdSupplier after = fdSupplierMapper.selectFdSupplierById(fdSupplier.getId());
             String logOp = StringUtils.isNotEmpty(fdSupplier.getUpdateBy()) ? fdSupplier.getUpdateBy() : SecurityUtils.getUserIdStr();
             recordSupplierFieldChanges(before, after, logOp);
+            foundationSnapshotRecorder.record(before.getTenantId(), "SUPPLIER", String.valueOf(fdSupplier.getId()), before, after, logOp);
         }
         return n;
     }
@@ -216,6 +221,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
             fdSupplierMapper.updateFdSupplier(supplier);
             FdSupplier after = fdSupplierMapper.selectFdSupplierById(id);
             recordSupplierFieldChanges(before, after, op);
+            foundationSnapshotRecorder.record(before.getTenantId(), "SUPPLIER", String.valueOf(id), before, after, op);
         }
     }
 

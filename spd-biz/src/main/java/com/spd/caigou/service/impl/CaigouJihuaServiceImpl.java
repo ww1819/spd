@@ -14,10 +14,14 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzBillEntryChangeLog;
 import com.spd.warehouse.mapper.StkBillEntryChangeLogMapper;
+import com.spd.department.domain.HcKsFlow;
+import com.spd.department.mapper.HcKsFlowMapper;
+import com.spd.warehouse.domain.HcCkFlow;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.mapper.HcCkFlowMapper;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
@@ -62,6 +66,12 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Autowired
     private StkBillEntryChangeLogMapper stkBillEntryChangeLogMapper;
 
+    @Autowired
+    private HcCkFlowMapper hcCkFlowMapper;
+
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
+
     /**
      * supplerId 字符串转 Long
      */
@@ -74,6 +84,17 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private Long resolveFlowSupplierCaigou(StkIoBill bill, StkInventory inv) {
+        if (inv != null && inv.getSupplierId() != null) {
+            return inv.getSupplierId();
+        }
+        return bill != null ? bill.getSupplerId() : null;
+    }
+
+    private Long resolveFlowFactoryCaigou(StkInventory inv) {
+        return inv != null ? inv.getFactoryId() : null;
     }
 
     /**
@@ -269,6 +290,37 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     }
                     InventoryMaterialSnapshotHelper.fillWarehouseRow(stkInventory, entry, fdMaterialMapper, stkIoBill.getTenantId());
                     stkInventoryMapper.insertStkInventory(stkInventory);
+                    BigDecimal rkAmt = stkInventory.getUnitPrice() != null && entry.getQty() != null
+                        ? entry.getQty().multiply(stkInventory.getUnitPrice())
+                        : (entry.getAmt() != null ? entry.getAmt() : BigDecimal.ZERO);
+                    HcCkFlow rkFlow = new HcCkFlow();
+                    rkFlow.setBillId(stkIoBill.getId());
+                    rkFlow.setEntryId(entry.getId());
+                    rkFlow.setWarehouseId(stkIoBill.getWarehouseId());
+                    rkFlow.setMaterialId(entry.getMaterialId());
+                    rkFlow.setBatchNo(entry.getBatchNo());
+                    rkFlow.setBatchNumber(entry.getBatchNumber());
+                    rkFlow.setQty(entry.getQty());
+                    rkFlow.setUnitPrice(stkInventory.getUnitPrice());
+                    rkFlow.setAmt(rkAmt);
+                    rkFlow.setBeginTime(entry.getBeginTime());
+                    rkFlow.setEndTime(entry.getEndTime());
+                    rkFlow.setMainBarcode(entry.getMainBarcode());
+                    rkFlow.setSubBarcode(entry.getSubBarcode());
+                    rkFlow.setSupplierId(resolveFlowSupplierCaigou(stkIoBill, stkInventory));
+                    rkFlow.setFactoryId(resolveFlowFactoryCaigou(stkInventory));
+                    rkFlow.setLx("RK");
+                    rkFlow.setBatchId(stkInventory.getBatchId());
+                    rkFlow.setOriginBusinessType("采购计划审核入库");
+                    rkFlow.setKcNo(stkInventory.getId());
+                    rkFlow.setFlowTime(new Date());
+                    rkFlow.setDelFlag(0);
+                    rkFlow.setCreateTime(new Date());
+                    rkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+                    if (StringUtils.isEmpty(rkFlow.getTenantId())) {
+                        rkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    hcCkFlowMapper.insertHcCkFlow(rkFlow);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -297,6 +349,35 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
 
                     //按批次号查询，不存在新增，则更新
                     updateDepInventory(inventory,stkIoBill,entry);
+
+                    HcCkFlow ckFlow = new HcCkFlow();
+                    ckFlow.setBillId(stkIoBill.getId());
+                    ckFlow.setEntryId(entry.getId());
+                    ckFlow.setWarehouseId(stkIoBill.getWarehouseId());
+                    ckFlow.setMaterialId(entry.getMaterialId());
+                    ckFlow.setBatchNo(entry.getBatchNo());
+                    ckFlow.setBatchNumber(entry.getBatchNumber());
+                    ckFlow.setQty(entry.getQty());
+                    ckFlow.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : inventory.getUnitPrice());
+                    ckFlow.setAmt(entry.getAmt());
+                    ckFlow.setBeginTime(entry.getBeginTime());
+                    ckFlow.setEndTime(entry.getEndTime());
+                    ckFlow.setMainBarcode(inventory.getMainBarcode());
+                    ckFlow.setSubBarcode(inventory.getSubBarcode());
+                    ckFlow.setSupplierId(resolveFlowSupplierCaigou(stkIoBill, inventory));
+                    ckFlow.setFactoryId(resolveFlowFactoryCaigou(inventory));
+                    ckFlow.setLx("CK");
+                    ckFlow.setBatchId(inventory.getBatchId());
+                    ckFlow.setOriginBusinessType("采购计划审核出库");
+                    ckFlow.setKcNo(inventory.getId());
+                    ckFlow.setFlowTime(new Date());
+                    ckFlow.setDelFlag(0);
+                    ckFlow.setCreateTime(new Date());
+                    ckFlow.setCreateBy(SecurityUtils.getUserIdStr());
+                    if (StringUtils.isEmpty(ckFlow.getTenantId())) {
+                        ckFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    hcCkFlowMapper.insertHcCkFlow(ckFlow);
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
                     BigDecimal qty = entry.getQty();
@@ -319,6 +400,34 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                         //更新库存明细表
                         stkInventoryMapper.updateStkInventory(inventory);
+                        HcCkFlow thFlow = new HcCkFlow();
+                        thFlow.setBillId(stkIoBill.getId());
+                        thFlow.setEntryId(entry.getId());
+                        thFlow.setWarehouseId(stkIoBill.getWarehouseId() != null ? stkIoBill.getWarehouseId() : inventory.getWarehouseId());
+                        thFlow.setMaterialId(entry.getMaterialId());
+                        thFlow.setBatchNo(entry.getBatchNo());
+                        thFlow.setBatchNumber(entry.getBatchNumber());
+                        thFlow.setQty(entry.getQty());
+                        thFlow.setUnitPrice(inventory.getUnitPrice());
+                        thFlow.setAmt(entry.getAmt());
+                        thFlow.setBeginTime(entry.getBeginTime());
+                        thFlow.setEndTime(entry.getEndTime());
+                        thFlow.setSupplierId(resolveFlowSupplierCaigou(stkIoBill, inventory));
+                        thFlow.setFactoryId(resolveFlowFactoryCaigou(inventory));
+                        thFlow.setMainBarcode(inventory.getMainBarcode());
+                        thFlow.setSubBarcode(inventory.getSubBarcode());
+                        thFlow.setLx("TH");
+                        thFlow.setBatchId(inventory.getBatchId());
+                        thFlow.setOriginBusinessType("采购计划审核退货");
+                        thFlow.setKcNo(inventory.getId());
+                        thFlow.setFlowTime(new Date());
+                        thFlow.setDelFlag(0);
+                        thFlow.setCreateTime(new Date());
+                        thFlow.setCreateBy(SecurityUtils.getUserIdStr());
+                        if (StringUtils.isEmpty(thFlow.getTenantId())) {
+                            thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                        }
+                        hcCkFlowMapper.insertHcCkFlow(thFlow);
                     }
 
                 }else if(billType == 401){//退库（优先按明细 kc_no=科室库存 id；否则按批次号）
@@ -429,6 +538,72 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setUpdateTime(new Date());
                     inventory.setUpdateBy(SecurityUtils.getUserIdStr());
                     stkInventoryMapper.updateStkInventory(inventory);
+
+                    BigDecimal unitPriceTk = inventory.getUnitPrice() != null ? inventory.getUnitPrice() : BigDecimal.ZERO;
+                    BigDecimal returnAmtTk = entry.getAmt() != null ? entry.getAmt() : qty.multiply(unitPriceTk);
+                    BigDecimal depUnitPriceTk = stkDepInventory.getUnitPrice() != null
+                        ? stkDepInventory.getUnitPrice()
+                        : (entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice());
+
+                    HcCkFlow tkFlow = new HcCkFlow();
+                    tkFlow.setBillId(stkIoBill.getId());
+                    tkFlow.setEntryId(entry.getId());
+                    tkFlow.setWarehouseId(returnWarehouseId);
+                    tkFlow.setMaterialId(entry.getMaterialId());
+                    tkFlow.setBatchNo(entry.getBatchNo());
+                    tkFlow.setBatchNumber(entry.getBatchNumber());
+                    tkFlow.setQty(entry.getQty());
+                    tkFlow.setUnitPrice(unitPriceTk);
+                    tkFlow.setAmt(returnAmtTk);
+                    tkFlow.setBeginTime(entry.getBeginTime());
+                    tkFlow.setEndTime(entry.getEndTime());
+                    tkFlow.setSupplierId(resolveFlowSupplierCaigou(stkIoBill, inventory));
+                    tkFlow.setFactoryId(resolveFlowFactoryCaigou(inventory));
+                    tkFlow.setMainBarcode(inventory.getMainBarcode());
+                    tkFlow.setSubBarcode(inventory.getSubBarcode());
+                    tkFlow.setLx("TK");
+                    tkFlow.setBatchId(inventory.getBatchId());
+                    tkFlow.setOriginBusinessType("采购计划审核退库");
+                    tkFlow.setKcNo(inventory.getId());
+                    tkFlow.setFlowTime(new Date());
+                    tkFlow.setDelFlag(0);
+                    tkFlow.setCreateTime(new Date());
+                    tkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+                    if (StringUtils.isEmpty(tkFlow.getTenantId())) {
+                        tkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    hcCkFlowMapper.insertHcCkFlow(tkFlow);
+
+                    HcKsFlow ksTkFlow = new HcKsFlow();
+                    ksTkFlow.setBillId(stkIoBill.getId());
+                    ksTkFlow.setEntryId(entry.getId());
+                    ksTkFlow.setDepartmentId(stkIoBill.getDepartmentId());
+                    ksTkFlow.setWarehouseId(returnWarehouseId);
+                    ksTkFlow.setMaterialId(entry.getMaterialId());
+                    ksTkFlow.setBatchNo(entry.getBatchNo());
+                    ksTkFlow.setBatchNumber(entry.getBatchNumber());
+                    ksTkFlow.setBatchId(inventory.getBatchId());
+                    ksTkFlow.setQty(entry.getQty());
+                    ksTkFlow.setUnitPrice(depUnitPriceTk);
+                    ksTkFlow.setAmt(depUnitPriceTk != null ? qty.multiply(depUnitPriceTk) : returnAmtTk);
+                    ksTkFlow.setBeginTime(entry.getBeginTime());
+                    ksTkFlow.setEndTime(entry.getEndTime());
+                    Long ksSup = resolveFlowSupplierCaigou(stkIoBill, inventory);
+                    ksTkFlow.setSupplierId(ksSup != null ? String.valueOf(ksSup) : null);
+                    ksTkFlow.setFactoryId(resolveFlowFactoryCaigou(inventory));
+                    ksTkFlow.setMainBarcode(inventory.getMainBarcode());
+                    ksTkFlow.setSubBarcode(inventory.getSubBarcode());
+                    ksTkFlow.setKcNo(stkDepInventory.getId());
+                    ksTkFlow.setLx("TK");
+                    ksTkFlow.setOriginBusinessType("采购计划审核退库");
+                    ksTkFlow.setFlowTime(new Date());
+                    ksTkFlow.setDelFlag(0);
+                    ksTkFlow.setCreateTime(new Date());
+                    ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+                    if (StringUtils.isEmpty(ksTkFlow.getTenantId())) {
+                        ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
+                    }
+                    hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
                 }
             }
         }

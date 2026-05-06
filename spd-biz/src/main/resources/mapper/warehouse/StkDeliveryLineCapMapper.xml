@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.warehouse.mapper.StkDeliveryLineCapMapper">
+
+    <select id="selectByUk" resultType="com.spd.warehouse.domain.StkDeliveryLineCap">
+        select id, tenant_id as tenantId, delivery_no as deliveryNo, line_sign as lineSign,
+               qty_cap as qtyCap, create_time as createTime, update_time as updateTime
+        from stk_delivery_line_cap
+        where tenant_id = #{tenantId}
+          and delivery_no = #{deliveryNo}
+          and line_sign = #{lineSign}
+        limit 1
+    </select>
+
+    <insert id="upsertMaxCap">
+        insert into stk_delivery_line_cap (id, tenant_id, delivery_no, line_sign, qty_cap)
+        values (#{id}, #{tenantId}, #{deliveryNo}, #{lineSign}, #{qtyCap})
+        on duplicate key update
+            qty_cap = greatest(qty_cap, #{qtyCap})
+    </insert>
+</mapper>

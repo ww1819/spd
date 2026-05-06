@@ -20,6 +20,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="settlementType"    column="settlement_type"    />
         <result property="remark"    column="remark"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="lvAuditGenInhospitalIn" column="lv_audit_gen_inhospital_in" />
+        <result property="lvAuditGenInhospitalOut" column="lv_audit_gen_inhospital_out" />
     </resultMap>
 
     <resultMap type="FdWarehouse" id="FdUserWarehouseResult">
@@ -30,7 +32,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdWarehouseVo">
         select id, code, name, create_by, create_time, update_by, update_time,warehouse_person,warehouse_phone,warehouse_status,
-        COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark,tenant_id from fd_warehouse
+        COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark,tenant_id,
+        lv_audit_gen_inhospital_in, lv_audit_gen_inhospital_out from fd_warehouse
     </sql>
 
     <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id，而登录已用 TenantEnum 新 ID） -->
@@ -149,6 +152,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type,</if>
             <if test="settlementType != null and settlementType != ''">settlement_type,</if>
             <if test="remark != null">remark,</if>
+            <if test="lvAuditGenInhospitalIn != null">lv_audit_gen_inhospital_in,</if>
+            <if test="lvAuditGenInhospitalOut != null">lv_audit_gen_inhospital_out,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -165,6 +170,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">#{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="lvAuditGenInhospitalIn != null">#{lvAuditGenInhospitalIn},</if>
+            <if test="lvAuditGenInhospitalOut != null">#{lvAuditGenInhospitalOut},</if>
             #{insertTenantId},
          </trim>
     </insert>
@@ -186,6 +193,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseType != null and warehouseType != ''">warehouse_type = #{warehouseType},</if>
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="lvAuditGenInhospitalIn != null">lv_audit_gen_inhospital_in = #{lvAuditGenInhospitalIn},</if>
+            <if test="lvAuditGenInhospitalOut != null">lv_audit_gen_inhospital_out = #{lvAuditGenInhospitalOut},</if>
         </trim>
         where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </update>

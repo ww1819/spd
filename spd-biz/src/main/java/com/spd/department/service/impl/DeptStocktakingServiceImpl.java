@@ -9,7 +9,9 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -49,6 +51,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
+
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
 
     /**
      * 查询科室盘点
@@ -91,6 +96,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
+        if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
+            stkIoStocktaking.setAuditAdjustsInventory(0);
+        }
         int rows = deptStocktakingMapper.insertDeptStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
         return rows;
@@ -194,8 +202,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
         }
 
-        //更新科室库存
-        updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
+        // audit_adjusts_inventory=1：审核直接变更科室库存；=0：仅过账，由科室盈亏单处理库存
+        if (stkIoStocktaking.getAuditAdjustsInventory() != null && stkIoStocktaking.getAuditAdjustsInventory() == 1) {
+            updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
+        }
 
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);

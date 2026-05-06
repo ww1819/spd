@@ -26,6 +26,19 @@ public class GzOrderEntryInhospitalcodeList {
     private String updateBy;
     private Date updateTime;
     private String tenantId;
+    /** 快照与归属 */
+    private String materialName;
+    private String materialSpeci;
+    private String materialModel;
+    private String materialUnitName;
+    private Long factoryId;
+    private String factoryName;
+    private String supplierName;
+    private String warehouseName;
+    private String financeCategoryName;
+    private String registerNo;
+    private String brandName;
+    private String hcBarcodeMasterId;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -71,4 +84,29 @@ public class GzOrderEntryInhospitalcodeList {
     public void setUpdateTime(Date updateTime) { this.updateTime = updateTime; }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getMaterialName() { return materialName; }
+    public void setMaterialName(String materialName) { this.materialName = materialName; }
+    public String getMaterialSpeci() { return materialSpeci; }
+    public void setMaterialSpeci(String materialSpeci) { this.materialSpeci = materialSpeci; }
+    public String getMaterialModel() { return materialModel; }
+    public void setMaterialModel(String materialModel) { this.materialModel = materialModel; }
+    public String getMaterialUnitName() { return materialUnitName; }
+    public void setMaterialUnitName(String materialUnitName) { this.materialUnitName = materialUnitName; }
+    public Long getFactoryId() { return factoryId; }
+    public void setFactoryId(Long factoryId) { this.factoryId = factoryId; }
+    public String getFactoryName() { return factoryName; }
+    public void setFactoryName(String factoryName) { this.factoryName = factoryName; }
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+    public String getWarehouseName() { return warehouseName; }
+    public void setWarehouseName(String warehouseName) { this.warehouseName = warehouseName; }
+    public String getFinanceCategoryName() { return financeCategoryName; }
+    public void setFinanceCategoryName(String financeCategoryName) { this.financeCategoryName = financeCategoryName; }
+    public String getRegisterNo() { return registerNo; }
+    public void setRegisterNo(String registerNo) { this.registerNo = registerNo; }
+    public String getBrandName() { return brandName; }
+    public void setBrandName(String brandName) { this.brandName = brandName; }
+    public String getHcBarcodeMasterId() { return hcBarcodeMasterId; }
+    public void setHcBarcodeMasterId(String hcBarcodeMasterId) { this.hcBarcodeMasterId = hcBarcodeMasterId; }
 }

@@ -140,6 +140,21 @@ public class PurchaseOrder extends BaseEntity
     /** 结束日期（查询用） */
     private String endDate;
 
+    /** 平台采购订单主键（推送成功后回写） */
+    private Long scmOrderId;
+    /** 平台订单编号 */
+    private String scmOrderNo;
+    /** 推送状态 0未推送 1成功 2失败 */
+    private String pushStatus;
+    /** 最近一次推送时间 */
+    private Date pushTime;
+    /** 最近一次推送失败原因 */
+    private String pushErrorMsg;
+    /** 推送快照：平台医院编码 */
+    private String scmHospitalCode;
+    /** 推送快照：平台供应商编码 */
+    private String scmSupplierCode;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -439,6 +454,76 @@ public class PurchaseOrder extends BaseEntity
         this.endDate = endDate;
     }
 
+    public Long getScmOrderId()
+    {
+        return scmOrderId;
+    }
+
+    public void setScmOrderId(Long scmOrderId)
+    {
+        this.scmOrderId = scmOrderId;
+    }
+
+    public String getScmOrderNo()
+    {
+        return scmOrderNo;
+    }
+
+    public void setScmOrderNo(String scmOrderNo)
+    {
+        this.scmOrderNo = scmOrderNo;
+    }
+
+    public String getPushStatus()
+    {
+        return pushStatus;
+    }
+
+    public void setPushStatus(String pushStatus)
+    {
+        this.pushStatus = pushStatus;
+    }
+
+    public Date getPushTime()
+    {
+        return pushTime;
+    }
+
+    public void setPushTime(Date pushTime)
+    {
+        this.pushTime = pushTime;
+    }
+
+    public String getPushErrorMsg()
+    {
+        return pushErrorMsg;
+    }
+
+    public void setPushErrorMsg(String pushErrorMsg)
+    {
+        this.pushErrorMsg = pushErrorMsg;
+    }
+
+    public String getScmHospitalCode()
+    {
+        return scmHospitalCode;
+    }
+
+    public void setScmHospitalCode(String scmHospitalCode)
+    {
+        this.scmHospitalCode = scmHospitalCode;
+    }
+
+    public String getScmSupplierCode()
+    {
+        return scmSupplierCode;
+    }
+
+    public void setScmSupplierCode(String scmSupplierCode)
+    {
+        this.scmSupplierCode = scmSupplierCode;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -470,6 +555,13 @@ public class PurchaseOrder extends BaseEntity
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
+            .append("scmOrderId", getScmOrderId())
+            .append("scmOrderNo", getScmOrderNo())
+            .append("pushStatus", getPushStatus())
+            .append("pushTime", getPushTime())
+            .append("pushErrorMsg", getPushErrorMsg())
+            .append("scmHospitalCode", getScmHospitalCode())
+            .append("scmSupplierCode", getScmSupplierCode())
             .toString();
     }
 }
