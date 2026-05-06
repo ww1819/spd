@@ -68,6 +68,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="dApplyId"    column="d_apply_id"    />
         <result property="whWarehouseApplyId"    column="wh_warehouse_apply_id"    />
         <result property="whWarehouseApplyBillNo"    column="wh_warehouse_apply_bill_no"    />
+        <result property="deliveryRefWarehouseId"    column="delivery_ref_warehouse_id"    />
+        <result property="deliveryRefWarehouseName"    column="delivery_ref_warehouse_name"    />
+        <result property="deliveryRefSupplierId"    column="delivery_ref_supplier_id"    />
+        <result property="deliveryRefSupplierName"    column="delivery_ref_supplier_name"    />
+        <result property="deliveryRefDeptId"    column="delivery_ref_dept_id"    />
+        <result property="deliveryRefDeptName"    column="delivery_ref_dept_name"    />
 
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -238,6 +244,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
+				stk.delivery_ref_warehouse_id,stk.delivery_ref_warehouse_name,stk.delivery_ref_supplier_id,
+				stk.delivery_ref_supplier_name,stk.delivery_ref_dept_id,stk.delivery_ref_dept_name,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
@@ -720,6 +728,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.tenant_id, a.delete_by, a.delete_time, a.settlement_type, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.d_apply_id, a.wh_warehouse_apply_id, a.wh_warehouse_apply_bill_no,
+                a.delivery_ref_warehouse_id, a.delivery_ref_warehouse_name, a.delivery_ref_supplier_id,
+                a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
 				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,a.audit_by,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.bill_no as sub_bill_no, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
@@ -798,6 +808,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null and dApplyId != ''">d_apply_id,</if>
             <if test="whWarehouseApplyId != null and whWarehouseApplyId != ''">wh_warehouse_apply_id,</if>
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">wh_warehouse_apply_bill_no,</if>
+            <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">delivery_ref_warehouse_id,</if>
+            <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">delivery_ref_warehouse_name,</if>
+            <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">delivery_ref_supplier_id,</if>
+            <if test="deliveryRefSupplierName != null and deliveryRefSupplierName != ''">delivery_ref_supplier_name,</if>
+            <if test="deliveryRefDeptId != null and deliveryRefDeptId != ''">delivery_ref_dept_id,</if>
+            <if test="deliveryRefDeptName != null and deliveryRefDeptName != ''">delivery_ref_dept_name,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="billNo != null and billNo != ''">#{billNo},</if>
@@ -832,6 +848,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null and dApplyId != ''">#{dApplyId},</if>
             <if test="whWarehouseApplyId != null and whWarehouseApplyId != ''">#{whWarehouseApplyId},</if>
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">#{whWarehouseApplyBillNo},</if>
+            <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">#{deliveryRefWarehouseId},</if>
+            <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">#{deliveryRefWarehouseName},</if>
+            <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">#{deliveryRefSupplierId},</if>
+            <if test="deliveryRefSupplierName != null and deliveryRefSupplierName != ''">#{deliveryRefSupplierName},</if>
+            <if test="deliveryRefDeptId != null and deliveryRefDeptId != ''">#{deliveryRefDeptId},</if>
+            <if test="deliveryRefDeptName != null and deliveryRefDeptName != ''">#{deliveryRefDeptName},</if>
          </trim>
     </insert>
 
@@ -873,6 +895,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null">d_apply_id = #{dApplyId},</if>
             <if test="whWarehouseApplyId != null">wh_warehouse_apply_id = #{whWarehouseApplyId},</if>
             <if test="whWarehouseApplyBillNo != null">wh_warehouse_apply_bill_no = #{whWarehouseApplyBillNo},</if>
+            <if test="deliveryRefWarehouseId != null">delivery_ref_warehouse_id = #{deliveryRefWarehouseId},</if>
+            <if test="deliveryRefWarehouseName != null">delivery_ref_warehouse_name = #{deliveryRefWarehouseName},</if>
+            <if test="deliveryRefSupplierId != null">delivery_ref_supplier_id = #{deliveryRefSupplierId},</if>
+            <if test="deliveryRefSupplierName != null">delivery_ref_supplier_name = #{deliveryRefSupplierName},</if>
+            <if test="deliveryRefDeptId != null">delivery_ref_dept_id = #{deliveryRefDeptId},</if>
+            <if test="deliveryRefDeptName != null">delivery_ref_dept_name = #{deliveryRefDeptName},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>

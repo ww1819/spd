@@ -271,6 +271,22 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             dto.put("warehouseId", po.getWarehouseId());
             dto.put("warehouseName", po.getWarehouse() != null ? po.getWarehouse().getName() : null);
             dto.put("departmentId", po.getDepartmentId());
+            if (po.getDepartmentId() != null)
+            {
+                dto.put("applyDeptIdStr", String.valueOf(po.getDepartmentId()));
+            }
+            if (po.getWarehouseId() != null)
+            {
+                dto.put("warehouseIdStr", String.valueOf(po.getWarehouseId()));
+            }
+            if (po.getSupplierId() != null)
+            {
+                dto.put("supplierIdStr", String.valueOf(po.getSupplierId()));
+            }
+            if (po.getDepartment() != null && StringUtils.isNotEmpty(po.getDepartment().getName()))
+            {
+                dto.put("applyDepartmentName", po.getDepartment().getName());
+            }
             dto.put("orderDate", po.getOrderDate());
             dto.put("totalAmount", po.getTotalAmount());
             dto.put("orderStatus", po.getOrderStatus());

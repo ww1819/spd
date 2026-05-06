@@ -244,6 +244,19 @@ public class StkIoBill extends BaseEntity
     /** 库房申请单号（冗余，写关联表） */
     private String whWarehouseApplyBillNo;
 
+    /** 引用配送单入库：配送侧仓库ID快照（varchar） */
+    private String deliveryRefWarehouseId;
+    /** 引用配送单入库：配送侧仓库名称 */
+    private String deliveryRefWarehouseName;
+    /** 引用配送单入库：配送侧供应商ID快照 */
+    private String deliveryRefSupplierId;
+    /** 引用配送单入库：配送侧供应商名称 */
+    private String deliveryRefSupplierName;
+    /** 引用配送单入库：配送侧申请科室ID快照 */
+    private String deliveryRefDeptId;
+    /** 引用配送单入库：配送侧申请科室名称 */
+    private String deliveryRefDeptName;
+
     /**
      * 订单ID
      */
@@ -790,6 +803,66 @@ public class StkIoBill extends BaseEntity
 
     public void setWhWarehouseApplyBillNo(String whWarehouseApplyBillNo) {
         this.whWarehouseApplyBillNo = whWarehouseApplyBillNo;
+    }
+
+    public String getDeliveryRefWarehouseId()
+    {
+        return deliveryRefWarehouseId;
+    }
+
+    public void setDeliveryRefWarehouseId(String deliveryRefWarehouseId)
+    {
+        this.deliveryRefWarehouseId = deliveryRefWarehouseId;
+    }
+
+    public String getDeliveryRefWarehouseName()
+    {
+        return deliveryRefWarehouseName;
+    }
+
+    public void setDeliveryRefWarehouseName(String deliveryRefWarehouseName)
+    {
+        this.deliveryRefWarehouseName = deliveryRefWarehouseName;
+    }
+
+    public String getDeliveryRefSupplierId()
+    {
+        return deliveryRefSupplierId;
+    }
+
+    public void setDeliveryRefSupplierId(String deliveryRefSupplierId)
+    {
+        this.deliveryRefSupplierId = deliveryRefSupplierId;
+    }
+
+    public String getDeliveryRefSupplierName()
+    {
+        return deliveryRefSupplierName;
+    }
+
+    public void setDeliveryRefSupplierName(String deliveryRefSupplierName)
+    {
+        this.deliveryRefSupplierName = deliveryRefSupplierName;
+    }
+
+    public String getDeliveryRefDeptId()
+    {
+        return deliveryRefDeptId;
+    }
+
+    public void setDeliveryRefDeptId(String deliveryRefDeptId)
+    {
+        this.deliveryRefDeptId = deliveryRefDeptId;
+    }
+
+    public String getDeliveryRefDeptName()
+    {
+        return deliveryRefDeptName;
+    }
+
+    public void setDeliveryRefDeptName(String deliveryRefDeptName)
+    {
+        this.deliveryRefDeptName = deliveryRefDeptName;
     }
 
     public String getDingdanId() {

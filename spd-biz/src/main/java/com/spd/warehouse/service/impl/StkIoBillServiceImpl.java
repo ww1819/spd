@@ -2536,7 +2536,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         String no = deliveryNo.trim();
         String xml = fetchDeliveryXml(no);
-        List<Map<String, Object>> groupedRows = parseDeliveryXmlAndGroup(xml);
+        Document deliveryDoc = parseDeliveryXmlDocument(xml);
+        Map<String, String> deliveryRefMeta = extractDeliveryRefMeta(deliveryDoc);
+        List<Map<String, Object>> groupedRows = parseDeliveryXmlAndGroup(deliveryDoc);
         if (groupedRows.isEmpty()) {
             throw new ServiceException("配送单无可用明细数据：" + no);
         }
@@ -2560,6 +2562,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         StkIoBill stkIoBill = new StkIoBill();
         stkIoBill.setBillType(101);
         stkIoBill.setRefBillNo(no);
+        applyDeliveryRefMetaToInboundHeader(stkIoBill, deliveryRefMeta);
         List<StkIoBillEntry> entryList = new ArrayList<>();
         List<String> missCodes = new ArrayList<>();
         List<String> exhaustedCodes = new ArrayList<>();
@@ -2756,14 +2759,96 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return "http://" + ip + ":" + port;
     }
 
-    private List<Map<String, Object>> parseDeliveryXmlAndGroup(String xml) {
-        List<Map<String, Object>> result = new ArrayList<>();
+    private static Document parseDeliveryXmlDocument(String xml) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setExpandEntityReferences(false);
             factory.setNamespaceAware(false);
-            Document doc = factory.newDocumentBuilder()
+            return factory.newDocumentBuilder()
                 .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new ServiceException("解析配送单数据失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 从配送单 XML 的 {@code HEADER} 或首行 {@code LIST} 提取仓库/供应商/科室引用快照。
+     */
+    private static Map<String, String> extractDeliveryRefMeta(Document doc) {
+        Map<String, String> m = new LinkedHashMap<>();
+        if (doc == null) {
+            return m;
+        }
+        NodeList headers = doc.getElementsByTagName("HEADER");
+        Element scope = headers.getLength() > 0 ? (Element) headers.item(0) : null;
+        if (scope == null) {
+            NodeList lists = doc.getElementsByTagName("LIST");
+            if (lists.getLength() > 0) {
+                scope = (Element) lists.item(0);
+            }
+        }
+        if (scope == null) {
+            return m;
+        }
+        putXmlChildText(scope, m, "SRC_WH_ID");
+        putXmlChildText(scope, m, "SRC_WH_NAME");
+        putXmlChildText(scope, m, "SRC_SUP_ID");
+        putXmlChildText(scope, m, "SRC_SUP_NAME");
+        putXmlChildText(scope, m, "SRC_DEPT_ID");
+        putXmlChildText(scope, m, "SRC_DEPT_NAME");
+        return m;
+    }
+
+    private static void putXmlChildText(Element parent, Map<String, String> out, String tag) {
+        NodeList nl = parent.getElementsByTagName(tag);
+        if (nl == null || nl.getLength() == 0 || nl.item(0) == null) {
+            return;
+        }
+        String t = nl.item(0).getTextContent();
+        if (t == null) {
+            return;
+        }
+        t = t.trim();
+        if (!t.isEmpty()) {
+            out.put(tag, t);
+        }
+    }
+
+    private void applyDeliveryRefMetaToInboundHeader(StkIoBill bill, Map<String, String> ref) {
+        if (bill == null || ref == null || ref.isEmpty()) {
+            return;
+        }
+        bill.setDeliveryRefWarehouseId(trimToNull(ref.get("SRC_WH_ID")));
+        bill.setDeliveryRefWarehouseName(trimToNull(ref.get("SRC_WH_NAME")));
+        bill.setDeliveryRefSupplierId(trimToNull(ref.get("SRC_SUP_ID")));
+        bill.setDeliveryRefSupplierName(trimToNull(ref.get("SRC_SUP_NAME")));
+        bill.setDeliveryRefDeptId(trimToNull(ref.get("SRC_DEPT_ID")));
+        bill.setDeliveryRefDeptName(trimToNull(ref.get("SRC_DEPT_NAME")));
+        Long wid = parseLongSafe(ref.get("SRC_WH_ID"));
+        if (wid != null) {
+            bill.setWarehouseId(wid);
+        }
+        Long sid = parseLongSafe(ref.get("SRC_SUP_ID"));
+        if (sid != null) {
+            bill.setSupplerId(sid);
+        }
+        Long did = parseLongSafe(ref.get("SRC_DEPT_ID"));
+        if (did != null) {
+            bill.setDepartmentId(did);
+        }
+    }
+
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private List<Map<String, Object>> parseDeliveryXmlAndGroup(Document doc) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        try {
             NodeList rows = doc.getElementsByTagName("LIST");
             Map<String, Map<String, Object>> grouped = new LinkedHashMap<>();
             for (int i = 0; i < rows.getLength(); i++) {

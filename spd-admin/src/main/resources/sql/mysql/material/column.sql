@@ -666,6 +666,18 @@ CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_id', 'varchar(36)', '�
 /
 CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_bill_no', 'varchar(64)', '库房申请单号（冗余）', NULL);
 /
+CALL add_table_column('stk_io_bill', 'delivery_ref_warehouse_id', 'varchar(128)', '引用配送单入库：仓库ID快照', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delivery_ref_warehouse_name', 'varchar(256)', '引用配送单入库：仓库名称快照', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delivery_ref_supplier_id', 'varchar(128)', '引用配送单入库：供应商ID快照', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delivery_ref_supplier_name', 'varchar(256)', '引用配送单入库：供应商名称快照', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delivery_ref_dept_id', 'varchar(128)', '引用配送单入库：申请科室ID快照', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delivery_ref_dept_name', 'varchar(256)', '引用配送单入库：申请科室名称快照', NULL);
+/
 CALL add_table_column('stk_io_bill_entry', 'wh_apply_entry_id', 'varchar(36)', '库房申请单明细ID（引用出库时回填）', NULL);
 /
 CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自入库单）', NULL);
