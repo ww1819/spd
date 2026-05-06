@@ -88,6 +88,16 @@ public interface StkDepInventoryMapper
     StkDepInventory selectStkDepInventoryOne(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
 
     /**
+     * 科室盘点审核用：按批次号+仓库查科室库存（含未收货确认），避免与退库口径混淆
+     */
+    StkDepInventory selectStkDepInventoryOneForStocktaking(@Param("batchNo") String batchNo, @Param("warehouseId") Long warehouseId);
+
+    /**
+     * 科室盘点审核：按批次号+科室ID定位科室库存（不依赖明细上的仓库是否与出库一致）
+     */
+    StkDepInventory selectStkDepInventoryByBatchAndDeptForStocktaking(@Param("batchNo") String batchNo, @Param("departmentId") Long departmentId);
+
+    /**
      * 根据批次号查询科室库存实际数量
      * @param batchNo
      * @param warehouseId

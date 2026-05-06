@@ -112,8 +112,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select stk.id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
 				stk.stock_status, stk.user_id stk_user_id, stk.stock_type, stk.del_flag,stk.audit_date, stk.reject_reason, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,
-				COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
-				COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
+				<!-- 盈亏金额：库里有 profit_amount 则用；科室盘点前端多写 amt 不写 profit_amount，故用 (盘点数-账面)*单价 兜底 -->
+				COALESCE((select SUM(IFNULL(entry.profit_amount,
+					(IFNULL(entry.stock_qty,0) - IFNULL(entry.qty,0)) * IFNULL(entry.unit_price, IFNULL(entry.price,0))
+				)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
+				<!-- 总金额：优先汇总明细 amt（与页面金额列一致），其次 stock_amount -->
+				COALESCE((select SUM(IFNULL(entry.amt, IFNULL(entry.stock_amount, 0))) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName
@@ -146,8 +150,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
                 a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
-                COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
-                COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
+                COALESCE((select SUM(IFNULL(entry.profit_amount,
+                    (IFNULL(entry.stock_qty,0) - IFNULL(entry.qty,0)) * IFNULL(entry.unit_price, IFNULL(entry.price,0))
+                )) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
+                COALESCE((select SUM(IFNULL(entry.amt, IFNULL(entry.stock_amount, 0))) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
                 s.id as sId, s.code as supplierCode, s.name as supplierName,
                 d.id as dId, d.code as departmentCode, d.name as departmentName,
                 w.id as wId, w.code as warehouseCode, w.name as warehouseName,

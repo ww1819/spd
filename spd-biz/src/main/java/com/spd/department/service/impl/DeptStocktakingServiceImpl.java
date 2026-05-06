@@ -134,6 +134,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     keepIds.add(entry.getId());
                 } else {
                     deptStocktakingMapper.insertDeptStocktakingEntrySingle(entry);
+                    // 必须加入 keepIds，否则 deleteDeptStocktakingEntryByParenIdExceptIds 会把刚插入的明细全部软删
+                    if (entry.getId() != null) {
+                        keepIds.add(entry.getId());
+                    }
                 }
             }
             deptStocktakingMapper.deleteDeptStocktakingEntryByParenIdExceptIds(parenId, keepIds);
@@ -184,12 +188,19 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
 
         List<StkIoStocktakingEntry> stkIoStocktakingEntryList = stkIoStocktaking.getStkIoStocktakingEntryList();
+        if (stkIoStocktaking.getStockType() != null && stkIoStocktaking.getStockType() == 502) {
+            if (stkIoStocktakingEntryList == null || stkIoStocktakingEntryList.isEmpty()) {
+                throw new ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
+            }
+        }
 
         //更新科室库存
         updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
 
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktaking.setUpdateTime(new Date());
 
         int res = deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
         return res;
@@ -228,126 +239,180 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
      */
     private void updateDepInventory(StkIoStocktaking stkIoStocktaking, List<StkIoStocktakingEntry> stkIoStocktakingEntryList){
         Integer stockType = stkIoStocktaking.getStockType();
+        if (stockType == null || stkIoStocktakingEntryList == null) {
+            return;
+        }
 
-        for(StkIoStocktakingEntry entry : stkIoStocktakingEntryList){
-            if(entry.getQty() != null && BigDecimal.ZERO.compareTo(entry.getQty()) != 0){
+        for (StkIoStocktakingEntry entry : stkIoStocktakingEntryList) {
+            if (stockType == 501) {
+                if (entry.getQty() == null || BigDecimal.ZERO.compareTo(entry.getQty()) == 0) {
+                    continue;
+                }
+                //期初
+                StkDepInventory stkDepInventory = new StkDepInventory();
+                stkDepInventory.setBatchNo(entry.getBatchNo());
+                stkDepInventory.setMaterialId(entry.getMaterialId());
+                stkDepInventory.setDepartmentId(stkIoStocktaking.getDepartmentId());
+                stkDepInventory.setWarehouseId(entry.getReturnWarehouseId());
+                stkDepInventory.setQty(entry.getQty());
+                // 优先使用 unitPrice，如果为空则使用 price
+                BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                stkDepInventory.setUnitPrice(unitPrice);
+                stkDepInventory.setAmt(unitPrice != null ? entry.getQty().multiply(unitPrice) : BigDecimal.ZERO);
+                stkDepInventory.setMaterialDate(new Date());
+                stkDepInventory.setWarehouseDate(new Date());
+                stkDepInventory.setMaterialNo(entry.getBatchNumber());
+                // batch_number 为产品生产批号；batch_no 为系统追溯批次号
+                stkDepInventory.setBatchNumber(entry.getBatchNumber());
+                stkDepInventory.setBeginDate(entry.getBeginTime());
+                stkDepInventory.setEndDate(entry.getEndTime());
+                // 科室盘点审核后视为已收货确认，避免退库时被 receipt_confirm_status=0 拦截
+                stkDepInventory.setReceiptConfirmStatus(1);
+                // 生成/补齐批次字典并回填科室库存 batch_id
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                if (material == null) {
+                    throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+                }
+                StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
+                if (stkBatch != null && stkBatch.getId() != null) {
+                    stkDepInventory.setBatchId(stkBatch.getId());
+                    ensureWarehouseQtyZeroInventory(entry, stkBatch);
+                }
+                stkDepInventory.setCreateTime(new Date());
+                stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
 
-                if(stockType == 501){//期初
-                    StkDepInventory stkDepInventory = new StkDepInventory();
-                    stkDepInventory.setBatchNo(entry.getBatchNo());
-                    stkDepInventory.setMaterialId(entry.getMaterialId());
-                    stkDepInventory.setDepartmentId(stkIoStocktaking.getDepartmentId());
-                    stkDepInventory.setWarehouseId(entry.getReturnWarehouseId());
-                    stkDepInventory.setQty(entry.getQty());
-                    // 优先使用 unitPrice，如果为空则使用 price
-                    BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-                    stkDepInventory.setUnitPrice(unitPrice);
-                    stkDepInventory.setAmt(unitPrice != null ? entry.getQty().multiply(unitPrice) : BigDecimal.ZERO);
-                    stkDepInventory.setMaterialDate(new Date());
-                    stkDepInventory.setWarehouseDate(new Date());
-                    stkDepInventory.setMaterialNo(entry.getBatchNumber());
-                    // batch_number 为产品生产批号；batch_no 为系统追溯批次号
-                    stkDepInventory.setBatchNumber(entry.getBatchNumber());
-                    stkDepInventory.setBeginDate(entry.getBeginTime());
-                    stkDepInventory.setEndDate(entry.getEndTime());
-                    // 科室盘点审核后视为已收货确认，避免退库时被 receipt_confirm_status=0 拦截
-                    stkDepInventory.setReceiptConfirmStatus(1);
-                    // 生成/补齐批次字典并回填科室库存 batch_id
-                    FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-                    if (material == null) {
-                        throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+                stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
+            } else if (stockType == 502) {
+                //盘点：需处理账面为 0 的盘盈行（原逻辑仅处理 qty!=0 会整行跳过）
+                String batchNo = entry.getBatchNo();
+                if (StringUtils.isEmpty(batchNo)) {
+                    throw new ServiceException("盘点明细缺少批次号，无法审核。");
+                }
+                BigDecimal bookQty = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+                BigDecimal stockQty = entry.getStockQty() != null ? entry.getStockQty() : BigDecimal.ZERO;
+                if (bookQty.compareTo(BigDecimal.ZERO) == 0 && stockQty.compareTo(BigDecimal.ZERO) == 0) {
+                    continue;
+                }
+
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                if (material == null) {
+                    throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+                }
+
+                // 先按明细仓库查；科室库存行的 warehouse_id 来自出库，可能与产品档案默认仓不一致，再按「科室+批次」回退
+                Long warehouseId = entry.getReturnWarehouseId();
+                StkDepInventory depInventory = null;
+                if (warehouseId != null) {
+                    depInventory = stkDepInventoryMapper.selectStkDepInventoryOneForStocktaking(batchNo, warehouseId);
+                }
+                Long departmentId = stkIoStocktaking.getDepartmentId();
+                if (depInventory == null && departmentId != null) {
+                    depInventory = stkDepInventoryMapper.selectStkDepInventoryByBatchAndDeptForStocktaking(batchNo, departmentId);
+                }
+                if (depInventory != null && depInventory.getWarehouseId() != null) {
+                    entry.setReturnWarehouseId(depInventory.getWarehouseId());
+                    warehouseId = depInventory.getWarehouseId();
+                } else {
+                    fillReturnWarehouseIdByMaterial(entry);
+                    warehouseId = entry.getReturnWarehouseId();
+                }
+                if (warehouseId == null) {
+                    throw new ServiceException("盘点明细缺少所属仓库（且科室下未找到该批次库存），无法审核。");
+                }
+                if (depInventory == null) {
+                    if (stockQty.compareTo(bookQty) <= 0) {
+                        throw new ServiceException(String.format(
+                            "科室库存批次号：%s，在本盘点科室下不存在；若为盘盈请保证盘点数量大于账面库存。"
+                                + "若从科室库存带出明细，请勿依赖产品默认仓库，应保存后重试或重新从科室库存选择。", batchNo));
                     }
-                    StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
-                    if (stkBatch != null && stkBatch.getId() != null) {
-                        stkDepInventory.setBatchId(stkBatch.getId());
-                        ensureWarehouseQtyZeroInventory(entry, stkBatch);
-                    }
-                    stkDepInventory.setCreateTime(new Date());
-                    stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
+                    insertStkDepInventoryProfitFromDeptStocktaking(stkIoStocktaking, entry, material, stockQty);
+                    continue;
+                }
 
-                    stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
-                }else if(stockType == 502){//盘点
-                    String batchNo = entry.getBatchNo();
-                    Long warehouseId = entry.getReturnWarehouseId();
-                    BigDecimal stockQty = entry.getStockQty();//盘点数量
-                    BigDecimal qty = entry.getQty();//库存数量
+                StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
+                if (stkBatch != null && stkBatch.getId() != null && depInventory.getBatchId() == null) {
+                    depInventory.setBatchId(stkBatch.getId());
+                }
 
-                    StkDepInventory depInventory = stkDepInventoryMapper.selectStkDepInventoryOne(batchNo, warehouseId);
-
-                    if(depInventory == null){
-                        throw new ServiceException(String.format("科室库存批次号：%s，不存在!", batchNo));
-                    }
-
-                    // 补齐批次字典关联，便于追溯展示
-                    FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-                    if (material == null) {
-                        throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
-                    }
-                    StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
-                    if (stkBatch != null && stkBatch.getId() != null && depInventory.getBatchId() == null) {
-                        depInventory.setBatchId(stkBatch.getId());
-                    }
-
-                    boolean isProfit = stockQty.compareTo(qty) > 0;
-                    if(stockQty.compareTo(qty) == 0){
-                        depInventory.setReceiptConfirmStatus(1);
-                        if (depInventory.getWarehouseId() == null) {
-                            depInventory.setWarehouseId(warehouseId);
-                        }
-                        if (depInventory.getBatchNumber() == null) {
-                            depInventory.setBatchNumber(entry.getBatchNumber());
-                        }
-                        if (depInventory.getBatchId() != null && depInventory.getBatchId().compareTo(0L) != 0) {
-                            // 不强制额外写金额/数量，仅更新已确认/批次关联（如有）
-                        }
-                        stkDepInventoryMapper.updateStkDepInventory(depInventory);
-                        continue;
-                    }
-
-                    BigDecimal totalQty = BigDecimal.ZERO;
-                    BigDecimal totalAmt = BigDecimal.ZERO;
-
-                    if(stockQty.compareTo(qty) > 0){
-                        BigDecimal stkQty = stockQty.subtract(qty);//最终盘点数
-                        //库存数量+最终盘点数
-                        totalQty = totalQty.add(depInventory.getQty().add(stkQty));
-                        // 优先使用 unitPrice，如果为空则使用 price
-                        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-                        totalAmt = totalAmt.add(depInventory.getQty().add(stkQty).multiply(unitPrice));
-                    }else{
-                        totalQty = totalQty.add(stockQty);//取盘点数
-                        // 优先使用 unitPrice，如果为空则使用 price
-                        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-                        totalAmt = totalAmt.add(stockQty.multiply(unitPrice));
-                    }
-                    depInventory.setQty(totalQty);
-                    depInventory.setAmt(totalAmt);
-                    // 优先使用 unitPrice，如果为空则使用 price
-                    BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-                    depInventory.setUnitPrice(unitPrice);
-                    depInventory.setWarehouseDate(new Date());
-                    // 盘点审核视为已收货确认，确保后续可退库
+                boolean isProfit = stockQty.compareTo(bookQty) > 0;
+                if (stockQty.compareTo(bookQty) == 0) {
                     depInventory.setReceiptConfirmStatus(1);
                     if (depInventory.getWarehouseId() == null) {
                         depInventory.setWarehouseId(warehouseId);
                     }
-                    if (stkBatch != null && stkBatch.getId() != null) {
-                        depInventory.setBatchId(stkBatch.getId());
-                    }
                     if (depInventory.getBatchNumber() == null) {
                         depInventory.setBatchNumber(entry.getBatchNumber());
                     }
-                    // 盘盈时补齐仓库 qty=0 库存记录+批次对象，供退库/追溯使用
-                    if (isProfit) {
-                        ensureWarehouseQtyZeroInventory(entry, stkBatch);
-                    }
-                    depInventory.setUpdateTime(new Date());
-                    depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
-
                     stkDepInventoryMapper.updateStkDepInventory(depInventory);
+                    continue;
                 }
+
+                BigDecimal totalQty;
+                BigDecimal totalAmt;
+                BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+
+                if (stockQty.compareTo(bookQty) > 0) {
+                    BigDecimal stkQty = stockQty.subtract(bookQty);
+                    totalQty = depInventory.getQty().add(stkQty);
+                    totalAmt = unitPrice != null ? totalQty.multiply(unitPrice) : BigDecimal.ZERO;
+                } else {
+                    totalQty = stockQty;
+                    totalAmt = unitPrice != null ? stockQty.multiply(unitPrice) : BigDecimal.ZERO;
+                }
+                depInventory.setQty(totalQty);
+                depInventory.setAmt(totalAmt);
+                depInventory.setUnitPrice(unitPrice);
+                depInventory.setWarehouseDate(new Date());
+                depInventory.setReceiptConfirmStatus(1);
+                if (depInventory.getWarehouseId() == null) {
+                    depInventory.setWarehouseId(warehouseId);
+                }
+                if (stkBatch != null && stkBatch.getId() != null) {
+                    depInventory.setBatchId(stkBatch.getId());
+                }
+                if (depInventory.getBatchNumber() == null) {
+                    depInventory.setBatchNumber(entry.getBatchNumber());
+                }
+                if (isProfit) {
+                    ensureWarehouseQtyZeroInventory(entry, stkBatch);
+                }
+                depInventory.setUpdateTime(new Date());
+                depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+
+                stkDepInventoryMapper.updateStkDepInventory(depInventory);
             }
         }
+    }
+
+    /**
+     * 科室盘点盘盈且科室尚无该批次库存行时，新增 stk_dep_inventory（数量为盘点实盘）
+     */
+    private void insertStkDepInventoryProfitFromDeptStocktaking(StkIoStocktaking stkIoStocktaking, StkIoStocktakingEntry entry,
+            FdMaterial material, BigDecimal finalQty) {
+        StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
+        StkDepInventory stkDepInventory = new StkDepInventory();
+        stkDepInventory.setBatchNo(entry.getBatchNo());
+        stkDepInventory.setMaterialId(entry.getMaterialId());
+        stkDepInventory.setDepartmentId(stkIoStocktaking.getDepartmentId());
+        stkDepInventory.setWarehouseId(entry.getReturnWarehouseId());
+        stkDepInventory.setQty(finalQty);
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        stkDepInventory.setUnitPrice(unitPrice);
+        stkDepInventory.setAmt(unitPrice != null ? finalQty.multiply(unitPrice) : BigDecimal.ZERO);
+        stkDepInventory.setMaterialDate(new Date());
+        stkDepInventory.setWarehouseDate(new Date());
+        stkDepInventory.setMaterialNo(entry.getBatchNumber());
+        stkDepInventory.setBatchNumber(entry.getBatchNumber());
+        stkDepInventory.setBeginDate(entry.getBeginTime());
+        stkDepInventory.setEndDate(entry.getEndTime());
+        stkDepInventory.setReceiptConfirmStatus(1);
+        if (stkBatch != null && stkBatch.getId() != null) {
+            stkDepInventory.setBatchId(stkBatch.getId());
+            ensureWarehouseQtyZeroInventory(entry, stkBatch);
+        }
+        stkDepInventory.setCreateTime(new Date());
+        stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
+        stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
     }
 
     /**
@@ -430,7 +495,14 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             originBusinessType = "科室期初盘盈";
             originFlowLx = "PY";
         } else {
-            boolean isProfit = entry.getProfitQty() != null && entry.getProfitQty().compareTo(BigDecimal.ZERO) > 0;
+            boolean isProfit;
+            if (entry.getProfitQty() != null) {
+                isProfit = entry.getProfitQty().compareTo(BigDecimal.ZERO) > 0;
+            } else {
+                BigDecimal sq = entry.getStockQty() != null ? entry.getStockQty() : BigDecimal.ZERO;
+                BigDecimal bq = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+                isProfit = sq.compareTo(bq) > 0;
+            }
             if (isProfit) {
                 batchSource = "科室盘盈";
                 originBusinessType = "科室盘盈";

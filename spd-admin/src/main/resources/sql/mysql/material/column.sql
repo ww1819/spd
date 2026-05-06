@@ -1455,6 +1455,8 @@ CALL add_table_column('stk_io_stocktaking_entry', 'delete_time', 'datetime', '�
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id', 'bigint', '明细对应供应商ID（盘盈时必填）', NULL);
 /
+CALL add_table_column('stk_io_stocktaking_entry', 'return_warehouse_id', 'bigint', '可退库/所属仓库ID', NULL);
+/
 /* stk_io_stocktaking_entry：数量/金额/批号等与 material/table.sql 对齐 */
 CALL add_table_column('stk_io_stocktaking_entry', 'kc_no', 'bigint', '库存明细id', NULL);
 /

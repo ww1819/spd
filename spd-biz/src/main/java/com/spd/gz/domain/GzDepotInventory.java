@@ -113,6 +113,12 @@ public class GzDepotInventory extends BaseEntity
     /** 查询参数：入库单号（模糊查询） */
     private String orderNo;
 
+    /**
+     * 查询参数：为 true 时不过滤库存数量（包含 qty=0，用于补打高值条码等场景）。
+     * 默认 null/false 仍只查 qty&gt;0，与原有列表行为一致。
+     */
+    private Boolean includeZeroQty;
+
     /** 备货单ID */
     private Long orderId;
 
@@ -337,6 +343,14 @@ public class GzDepotInventory extends BaseEntity
         return orderNo;
     }
 
+    public Boolean getIncludeZeroQty() {
+        return includeZeroQty;
+    }
+
+    public void setIncludeZeroQty(Boolean includeZeroQty) {
+        this.includeZeroQty = includeZeroQty;
+    }
+
     public Long getOrderId() {
         return orderId;
     }
@@ -384,6 +398,7 @@ public class GzDepotInventory extends BaseEntity
             .append("materialName", getMaterialName())
             .append("orderId", getOrderId())
             .append("orderNo", getOrderNo())
+            .append("includeZeroQty", getIncludeZeroQty())
             .append("orderEntryId", getOrderEntryId())
             .append("inhospitalcodeListId", getInhospitalcodeListId())
             .toString();
