@@ -1,6 +1,7 @@
 package com.spd.department.mapper;
 
 import java.util.List;
+import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import org.apache.ibatis.annotations.Mapper;
@@ -33,6 +34,11 @@ public interface DeptStocktakingMapper
      * @return 科室盘点集合
      */
     public List<StkIoStocktaking> selectDeptStocktakingList(StkIoStocktaking stkIoStocktaking);
+
+    /**
+     * 科室盘点导出：主单与明细左连接，一条明细一行（与列表相同筛选条件）
+     */
+    List<DeptStocktakingExportRow> selectDeptStocktakingExportList(StkIoStocktaking stkIoStocktaking);
 
     /**
      * 新增科室盘点
