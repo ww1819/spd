@@ -149,6 +149,75 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.stock_date desc, stk.stock_no desc
     </select>
 
+    <!-- 导出：主单 + 明细扁平化（无明细时仍导出主单行，明细列为空） -->
+    <select id="selectDeptStocktakingExportList" parameterType="StkIoStocktaking" resultType="com.spd.department.vo.DeptStocktakingExportRow">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            stk.stock_no as stockNo,
+            stk.stock_date as stockDate,
+            s.name as supplierName,
+            d.code as departmentCode,
+            d.name as departmentName,
+            w.name as warehouseName,
+            case stk.stock_status when 1 then '未审核' when 2 then '已审核' else ifnull(cast(stk.stock_status as char), '') end as stockStatusLabel,
+            coalesce((
+                select sum(ifnull(entry.profit_amount,
+                    (ifnull(entry.stock_qty,0) - ifnull(entry.qty,0)) * ifnull(entry.unit_price, ifnull(entry.price,0))
+                )) from stk_io_stocktaking_entry entry
+                where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)
+            ), 0) as stocktakingProfitAmount,
+            coalesce((
+                select sum(ifnull(entry.amt, ifnull(entry.stock_amount, 0))) from stk_io_stocktaking_entry entry
+                where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)
+            ), 0) as stocktakingTotalAmount,
+            stk.remark as stocktakingRemark,
+            stk.create_by as createBy,
+            stk.create_time as createTime,
+            stk.audit_date as auditDate,
+            stk.reject_reason as rejectReason,
+            m.code as materialCode,
+            m.name as materialName,
+            m.speci as materialSpeci,
+            m.model as materialModel,
+            u.unit_name as unitName,
+            b.unit_price as unitPrice,
+            b.qty as bookQty,
+            b.stock_qty as stockQty,
+            b.amt as amt,
+            (ifnull(b.stock_qty,0) - ifnull(b.qty,0)) as profitQty,
+            ifnull(b.profit_amount, (ifnull(b.stock_qty,0) - ifnull(b.qty,0)) * ifnull(b.unit_price, ifnull(b.price,0))) as profitAmount,
+            b.batch_no as batchNo,
+            b.batch_number as batchNumber,
+            b.begin_time as beginTime,
+            b.end_time as endTime,
+            f.factory_name as factoryName,
+            ms.name as materialSupplierName,
+            b.remark as entryRemark
+        from stk_io_stocktaking stk
+        left join stk_io_stocktaking_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on stk.suppler_id = s.id
+        left join fd_department d on stk.department_id = d.id
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on b.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier ms on m.supplier_id = ms.id
+        where stk.del_flag != 1
+        and stk.tenant_id = #{scopedTenantId}
+        and stk.department_id is not null
+        and (stk.warehouse_id is null or stk.warehouse_id = 0)
+        <if test="stockNo != null  and stockNo != ''"> and stk.stock_no like concat('%', #{stockNo}, '%')</if>
+        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="stockDate != null "> and stk.stock_date = #{stockDate}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="stockStatus != null "> and stk.stock_status = #{stockStatus}</if>
+        <if test="stockType != null "> and stk.stock_type = #{stockType}</if>
+        <if test="auditDate != null "> and stk.audit_date = #{auditDate}</if>
+        <if test="beginDate != null "> and stk.stock_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.stock_date &lt;= #{endDate}</if>
+        order by stk.stock_date desc, stk.stock_no desc, b.id asc
+    </select>
+
     <select id="selectDeptStocktakingById" parameterType="Long" resultMap="DeptStocktakingStkIoStocktakingEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,

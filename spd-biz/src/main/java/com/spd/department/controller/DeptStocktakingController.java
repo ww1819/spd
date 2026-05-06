@@ -20,6 +20,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.department.service.IDeptStocktakingService;
+import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
@@ -51,14 +52,24 @@ public class DeptStocktakingController extends BaseController
     /**
      * 导出科室盘点列表
      */
-    @PreAuthorize("@ss.hasPermi('department:stocktaking:export')")
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:export') or @ss.hasPermi('department:stocktakingAudit:export')")
     @Log(title = "科室盘点", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, StkIoStocktaking stkIoStocktaking)
     {
-        List<StkIoStocktaking> list = deptStocktakingService.selectDeptStocktakingList(stkIoStocktaking);
-        ExcelUtil<StkIoStocktaking> util = new ExcelUtil<StkIoStocktaking>(StkIoStocktaking.class);
-        util.exportExcel(response, list, "科室盘点数据");
+        List<DeptStocktakingExportRow> list = deptStocktakingService.selectDeptStocktakingExportList(stkIoStocktaking);
+        ExcelUtil<DeptStocktakingExportRow> util = new ExcelUtil<DeptStocktakingExportRow>(DeptStocktakingExportRow.class);
+        util.exportExcel(response, list, "科室盘点明细");
+    }
+
+    /**
+     * 科室盘点导出明细数据（JSON，供前端生成与「库存明细查询」一致版式的 xlsx；路径不可为 /exportRows，避免与 /{id} 冲突）
+     */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:export') or @ss.hasPermi('department:stocktakingAudit:export')")
+    @GetMapping("/export/rows")
+    public AjaxResult exportRows(StkIoStocktaking stkIoStocktaking)
+    {
+        return success(deptStocktakingService.selectDeptStocktakingExportList(stkIoStocktaking));
     }
 
     /**

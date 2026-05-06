@@ -20,6 +20,7 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.department.mapper.DeptStocktakingMapper;
+import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +81,13 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         // 确保只查询科室盘点，不查询仓库盘点
         stkIoStocktaking.setWarehouseId(null);
         return deptStocktakingMapper.selectDeptStocktakingList(stkIoStocktaking);
+    }
+
+    @Override
+    public List<DeptStocktakingExportRow> selectDeptStocktakingExportList(StkIoStocktaking stkIoStocktaking)
+    {
+        stkIoStocktaking.setWarehouseId(null);
+        return deptStocktakingMapper.selectDeptStocktakingExportList(stkIoStocktaking);
     }
 
     /**

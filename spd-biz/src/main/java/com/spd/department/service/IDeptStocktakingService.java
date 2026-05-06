@@ -1,6 +1,7 @@
 package com.spd.department.service;
 
 import java.util.List;
+import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.warehouse.domain.StkIoStocktaking;
 
 /**
@@ -26,6 +27,11 @@ public interface IDeptStocktakingService
      * @return 科室盘点集合
      */
     public List<StkIoStocktaking> selectDeptStocktakingList(StkIoStocktaking stkIoStocktaking);
+
+    /**
+     * 科室盘点导出数据（含明细行）
+     */
+    List<DeptStocktakingExportRow> selectDeptStocktakingExportList(StkIoStocktaking stkIoStocktaking);
 
     /**
      * 新增科室盘点
