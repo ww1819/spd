@@ -11,11 +11,15 @@
     </select>
 
     <select id="selectListByTenantId" resultType="com.spd.caigou.domain.SpdScmSupplierBind">
-        select id, tenant_id as tenantId, supplier_id as supplierId, scm_supplier_code as scmSupplierCode, remark,
-               del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
-        from spd_scm_supplier_bind
-        where tenant_id = #{tenantId} and (del_flag is null or del_flag = '' or del_flag = '0')
-        order by supplier_id
+        select b.id, b.tenant_id as tenantId, b.supplier_id as supplierId, b.scm_supplier_code as scmSupplierCode, b.remark,
+               b.del_flag as delFlag, b.create_by as createBy, b.create_time as createTime, b.update_by as updateBy, b.update_time as updateTime,
+               fs.name as supplierName
+        from spd_scm_supplier_bind b
+        left join fd_supplier fs on fs.id = cast(nullif(trim(b.supplier_id), '') as unsigned)
+            and fs.tenant_id = b.tenant_id
+            and (fs.del_flag = 0 or fs.del_flag is null)
+        where b.tenant_id = #{tenantId} and (b.del_flag is null or b.del_flag = '' or b.del_flag = '0')
+        order by b.supplier_id
     </select>
 
     <select id="selectSupplierCode" resultType="java.lang.String">
