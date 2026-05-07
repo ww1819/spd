@@ -1,6 +1,9 @@
 package com.spd.caigou.service.impl;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -84,9 +87,17 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
     }
 
     @Override
-    public List<SpdScmSupplierBind> listSupplierBinds()
+    public List<SpdScmSupplierBind> listSupplierBinds(String spdSupplierCode, String scmSupplierCode, String referredCode)
     {
-        return spdScmSupplierBindMapper.selectListByTenantId(tenantId());
+        return spdScmSupplierBindMapper.selectListByTenantId(tenantId(),
+                emptyToNull(StringUtils.trim(spdSupplierCode)),
+                emptyToNull(StringUtils.trim(scmSupplierCode)),
+                emptyToNull(StringUtils.trim(referredCode)));
+    }
+
+    private static String emptyToNull(String s)
+    {
+        return StringUtils.isEmpty(s) ? null : s;
     }
 
     @Override
@@ -104,19 +115,9 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
         String tid = tenantId();
         String sid = String.valueOf(supplierId);
         String user = SecurityUtils.getUsername();
-        SpdScmSupplierBind existing = spdScmSupplierBindMapper.selectByTenantAndSupplier(tid, sid);
-        if (existing == null)
-        {
-            SpdScmSupplierBind row = new SpdScmSupplierBind();
-            row.setId(IdUtils.fastUUID());
-            row.setTenantId(tid);
-            row.setSupplierId(sid);
-            row.setScmSupplierCode(scmSupplierCode.trim());
-            row.setRemark(remark);
-            row.setCreateBy(user);
-            spdScmSupplierBindMapper.insert(row);
-        }
-        else
+        // 同一租户下每个 SPD 供应商仅一条对照（表 uk：tenant_id + supplier_id）；允许多家 SPD 共用同一平台编码
+        SpdScmSupplierBind active = spdScmSupplierBindMapper.selectByTenantAndSupplier(tid, sid);
+        if (active != null)
         {
             SpdScmSupplierBind row = new SpdScmSupplierBind();
             row.setTenantId(tid);
@@ -125,6 +126,52 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
             row.setRemark(remark);
             row.setUpdateBy(user);
             spdScmSupplierBindMapper.updateByTenantAndSupplier(row);
+            return;
         }
+        SpdScmSupplierBind anyDel = spdScmSupplierBindMapper.selectByTenantAndSupplierAnyDel(tid, sid);
+        if (anyDel != null)
+        {
+            SpdScmSupplierBind row = new SpdScmSupplierBind();
+            row.setTenantId(tid);
+            row.setSupplierId(sid);
+            row.setScmSupplierCode(scmSupplierCode.trim());
+            row.setRemark(remark);
+            row.setUpdateBy(user);
+            spdScmSupplierBindMapper.updateReviveByTenantAndSupplier(row);
+            return;
+        }
+        SpdScmSupplierBind row = new SpdScmSupplierBind();
+        row.setId(IdUtils.fastUUID());
+        row.setTenantId(tid);
+        row.setSupplierId(sid);
+        row.setScmSupplierCode(scmSupplierCode.trim());
+        row.setRemark(remark);
+        row.setCreateBy(user);
+        spdScmSupplierBindMapper.insert(row);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int removeSupplierBinds(Set<Long> supplierIds)
+    {
+        if (supplierIds == null || supplierIds.isEmpty())
+        {
+            throw new ServiceException("请选择要删除的供应商绑定");
+        }
+        LinkedHashSet<String> sidStr = new LinkedHashSet<>();
+        for (Long id : supplierIds)
+        {
+            if (id != null)
+            {
+                sidStr.add(String.valueOf(id));
+            }
+        }
+        if (sidStr.isEmpty())
+        {
+            throw new ServiceException("请选择要删除的供应商绑定");
+        }
+        String tid = tenantId();
+        String user = SecurityUtils.getUsername();
+        return spdScmSupplierBindMapper.logicalDeleteByTenantAndSupplierIds(tid, new ArrayList<>(sidStr), user);
     }
 }

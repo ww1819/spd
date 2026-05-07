@@ -15,20 +15,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 import com.alibaba.druid.pool.DruidDataSource;
-import com.spd.framework.config.properties.SqlInitProperties;
 
 /**
  * 启动时按顺序执行 SQL 脚本：table → column → view → trigger → procedure。
  * 脚本内用单独一行的「/」分隔每条要执行的语句，按「/」分次执行。
+ * <p>配置项与类同处一处，避免 DevTools RestartClassLoader 与独立 {@code SqlInitProperties} 类加载不一致导致 NoClassDefFoundError。</p>
  *
  * @author spd
  */
 @Component
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "spd.sql.init", name = "enabled", havingValue = "true")
+@ConfigurationProperties(prefix = "spd.sql.init")
 public class SqlInitRunner implements ApplicationRunner
 {
     private static final Logger log = LoggerFactory.getLogger(SqlInitRunner.class);
@@ -36,33 +38,69 @@ public class SqlInitRunner implements ApplicationRunner
     private static final String[] SCRIPT_ORDER = { "table.sql", "column.sql", "view.sql", "trigger.sql", "procedure.sql", "function.sql", "menu.sql", "data_integrity.sql" };
 
     private final DataSource masterDataSource;
-    private final SqlInitProperties properties;
     private final ResourceLoader resourceLoader;
+
+    /** 是否启用启动时执行 SQL 脚本（与 {@code spd.sql.init.enabled} 一致，供绑定） */
+    private boolean enabled = true;
+
+    /** 脚本根路径，如 classpath:sql/mysql/ 或 file:./sql/mysql/ */
+    private String location = "classpath:sql/mysql/";
+
+    /** 某脚本执行失败是否中断应用启动 */
+    private boolean failOnError = false;
 
     public SqlInitRunner(
             @Qualifier("masterDataSource") DataSource masterDataSource,
-            SqlInitProperties properties,
             ResourceLoader resourceLoader)
     {
         this.masterDataSource = masterDataSource;
-        this.properties = properties;
         this.resourceLoader = resourceLoader;
+    }
+
+    public boolean isEnabled()
+    {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled)
+    {
+        this.enabled = enabled;
+    }
+
+    public String getLocation()
+    {
+        return location;
+    }
+
+    public void setLocation(String location)
+    {
+        this.location = location;
+    }
+
+    public boolean isFailOnError()
+    {
+        return failOnError;
+    }
+
+    public void setFailOnError(boolean failOnError)
+    {
+        this.failOnError = failOnError;
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception
     {
-        if (!properties.isEnabled())
+        if (!enabled)
         {
             return;
         }
-        String location = normalizeLocation(properties.getLocation());
-        boolean failOnError = properties.isFailOnError();
+        String loc = normalizeLocation(location);
+        boolean fail = failOnError;
 
         // 材料管理
         for (String scriptName : SCRIPT_ORDER)
         {
-            String path = location + "material/" + scriptName;
+            String path = loc + "material/" + scriptName;
             Resource resource = resourceLoader.getResource(path);
             if (!resource.exists())
             {
@@ -74,13 +112,13 @@ public class SqlInitRunner implements ApplicationRunner
             {
                 String content = readResource(resource);
                 List<String> statements = parseStatements(content);
-                executeStatements(statements, scriptName, failOnError);
+                executeStatements(statements, scriptName, fail);
                 log.info("材料管理SQL 脚本执行完成: {}", scriptName);
             }
             catch (Exception e)
             {
                 log.error("材料管理SQL 脚本执行失败: {}", scriptName, e);
-                if (failOnError)
+                if (fail)
                 {
                     throw e;
                 }
@@ -89,31 +127,31 @@ public class SqlInitRunner implements ApplicationRunner
 
         // 设备管理
         for (String scriptName : SCRIPT_ORDER)
+        {
+            String path = loc + "equipment/" + scriptName;
+            Resource resource = resourceLoader.getResource(path);
+            if (!resource.exists())
             {
-                String path = location + "equipment/" + scriptName;
-                Resource resource = resourceLoader.getResource(path);
-                if (!resource.exists())
+                log.debug("设备管理SQL 脚本不存在，跳过: {}", path);
+                continue;
+            }
+
+            try
+            {
+                String content = readResource(resource);
+                List<String> statements = parseStatements(content);
+                executeStatements(statements, scriptName, fail);
+                log.info("设备管理SQL 脚本执行完成: {}", scriptName);
+            }
+            catch (Exception e)
+            {
+                log.error("设备管理SQL 脚本执行失败: {}", scriptName, e);
+                if (fail)
                 {
-                    log.debug("设备管理SQL 脚本不存在，跳过: {}", path);
-                    continue;
-                }
-    
-                try
-                {
-                    String content = readResource(resource);
-                    List<String> statements = parseStatements(content);
-                    executeStatements(statements, scriptName, failOnError);
-                    log.info("设备管理SQL 脚本执行完成: {}", scriptName);
-                }
-                catch (Exception e)
-                {
-                    log.error("设备管理SQL 脚本执行失败: {}", scriptName, e);
-                    if (failOnError)
-                    {
-                        throw e;
-                    }
+                    throw e;
                 }
             }
+        }
     }
 
     private static String normalizeLocation(String location)

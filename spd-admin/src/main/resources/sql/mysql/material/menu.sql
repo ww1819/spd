@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(挂系统设置 path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(含 caigou:scmBind:remove 删除；path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -3917,7 +3917,7 @@ UPDATE sys_menu f
 JOIN sys_menu c ON c.menu_type = 'C' AND c.component = 'caigou/scmBind/index'
 SET f.parent_id = c.menu_id
 WHERE f.menu_type = 'F'
-  AND f.perms IN ('caigou:scmBind:query', 'caigou:scmBind:edit')
+  AND f.perms IN ('caigou:scmBind:query', 'caigou:scmBind:edit', 'caigou:scmBind:remove')
   AND f.parent_id <> c.menu_id;
 /
 
@@ -3959,6 +3959,26 @@ SELECT
 FROM DUAL
 WHERE @scm_bind_c IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_c AND perms = 'caigou:scmBind:edit');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '云平台绑定删除',
+  @scm_bind_c,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'caigou:scmBind:remove', '#',
+  'admin', NOW(), '1', NOW(), '供应商平台编码绑定逻辑删除（单条/批量）；DELETE /caigou/scmBind/supplier/{ids}',
+  '0', '1'
+FROM DUAL
+WHERE @scm_bind_c IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_c AND perms = 'caigou:scmBind:remove');
 /
 
 -- ---------- 基础资料：平台供应商信息、主数据变更快照 ----------
@@ -6950,6 +6970,7 @@ JOIN sys_menu m
     'caigou:scmBind:list',
     'caigou:scmBind:query',
     'caigou:scmBind:edit',
+    'caigou:scmBind:remove',
     'inWarehouse:apply:list',
     'inWarehouse:apply:query',
     'inWarehouse:apply:export',

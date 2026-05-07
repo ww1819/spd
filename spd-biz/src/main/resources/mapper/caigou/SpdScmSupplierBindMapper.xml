@@ -10,15 +10,32 @@
         limit 1
     </select>
 
+    <select id="selectByTenantAndSupplierAnyDel" resultType="com.spd.caigou.domain.SpdScmSupplierBind">
+        select id, tenant_id as tenantId, supplier_id as supplierId, scm_supplier_code as scmSupplierCode, remark,
+               del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy, update_time as updateTime
+        from spd_scm_supplier_bind
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+        limit 1
+    </select>
+
     <select id="selectListByTenantId" resultType="com.spd.caigou.domain.SpdScmSupplierBind">
         select b.id, b.tenant_id as tenantId, b.supplier_id as supplierId, b.scm_supplier_code as scmSupplierCode, b.remark,
                b.del_flag as delFlag, b.create_by as createBy, b.create_time as createTime, b.update_by as updateBy, b.update_time as updateTime,
-               fs.name as supplierName
+               fs.name as supplierName, fs.code as supplierCode
         from spd_scm_supplier_bind b
         left join fd_supplier fs on fs.id = cast(nullif(trim(b.supplier_id), '') as unsigned)
             and fs.tenant_id = b.tenant_id
             and (fs.del_flag = 0 or fs.del_flag is null)
         where b.tenant_id = #{tenantId} and (b.del_flag is null or b.del_flag = '' or b.del_flag = '0')
+        <if test="spdSupplierCode != null and spdSupplierCode != ''">
+            and fs.code like concat('%', #{spdSupplierCode}, '%')
+        </if>
+        <if test="scmSupplierCode != null and scmSupplierCode != ''">
+            and b.scm_supplier_code like concat('%', #{scmSupplierCode}, '%')
+        </if>
+        <if test="referredCode != null and referredCode != ''">
+            and fs.referred_code like concat('%', #{referredCode}, '%')
+        </if>
         order by b.supplier_id
     </select>
 
@@ -42,5 +59,28 @@
             update_by = #{updateBy},
             update_time = now()
         where tenant_id = #{tenantId} and supplier_id = #{supplierId} and (del_flag is null or del_flag = '' or del_flag = '0')
+    </update>
+
+    <update id="updateReviveByTenantAndSupplier" parameterType="com.spd.caigou.domain.SpdScmSupplierBind">
+        update spd_scm_supplier_bind
+        set scm_supplier_code = #{scmSupplierCode},
+            remark = #{remark},
+            del_flag = '0',
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+    </update>
+
+    <update id="logicalDeleteByTenantAndSupplierIds">
+        update spd_scm_supplier_bind
+        set del_flag = '1',
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and (del_flag is null or del_flag = '' or del_flag = '0')
+          and supplier_id in
+        <foreach collection="supplierIds" item="sid" open="(" separator="," close=")">
+            #{sid}
+        </foreach>
     </update>
 </mapper>
