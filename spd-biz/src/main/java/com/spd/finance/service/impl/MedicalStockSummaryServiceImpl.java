@@ -1,6 +1,7 @@
 package com.spd.finance.service.impl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,46 @@ public class MedicalStockSummaryServiceImpl implements IMedicalStockSummaryServi
 
     @Autowired
     private IStkIoBillService stkIoBillService;
+
+    @Override
+    public void preparePagedSummaryQuery(StkIoBill query, int pageNum, int pageSize)
+    {
+        if (query == null)
+        {
+            return;
+        }
+        ensureQuery(query);
+        int pn = Math.max(1, pageNum);
+        int ps = Math.min(500, Math.max(1, pageSize));
+        query.getParams().put("medicalSummaryOffset", (pn - 1) * ps);
+        query.getParams().put("medicalSummaryLimit", ps);
+    }
+
+    @Override
+    public long countInboundSummary(StkIoBill query)
+    {
+        return stkIoBillMapper.countMedicalInboundSummary(ensureQuery(query));
+    }
+
+    @Override
+    public long countOutboundSummary(StkIoBill query)
+    {
+        return stkIoBillMapper.countMedicalOutboundSummary(ensureQuery(query));
+    }
+
+    @Override
+    public BigDecimal sumInboundAmount(StkIoBill query)
+    {
+        BigDecimal v = stkIoBillMapper.sumMedicalInboundSummaryAmount(ensureQuery(query));
+        return v != null ? v.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    public BigDecimal sumOutboundAmount(StkIoBill query)
+    {
+        BigDecimal v = stkIoBillMapper.sumMedicalOutboundSummaryAmount(ensureQuery(query));
+        return v != null ? v.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+    }
 
     @Override
     public List<MedicalInboundSummaryVo> listInboundSummary(StkIoBill query)

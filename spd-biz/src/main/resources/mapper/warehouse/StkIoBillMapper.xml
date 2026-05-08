@@ -2004,14 +2004,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
-    <!-- 卫材入库汇总（基于出库单 201）：日期 + 供应商 + 材料类别 + 金额 -->
+    <!-- 卫材出退库汇总公用：与耗材出退库一致 bill_type 201/401；出库为正、退库为负；金额优先明细 amt，否则 qty×单价（单价缺省时按 amt/qty 推算） -->
+    <sql id="medicalConsumableSignedLineAmt">
+        (case when stk.bill_type = 401 then -1 else 1 end) * IFNULL(b.amt,
+            IFNULL(b.qty, 0) * IFNULL(
+                IFNULL(b.unit_price,
+                    CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &lt;&gt; 0
+                    THEN ROUND(b.amt / b.qty, 6) ELSE NULL END),
+                0))
+    </sql>
+
+    <!-- 卫材入库汇总（耗材出退库 201/401，出库为正退库为负）：日期 + 供应商 + 材料类别 + 金额；外层查询便于 PageHelper 在聚合后对结果集 LIMIT -->
     <select id="selectMedicalInboundSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select t.statDate, t.supplierName, t.materialCategoryName, t.amount
+        from (
         select
             DATE_FORMAT(stk.audit_date, '%Y-%m-%d') as statDate,
             IFNULL(MAX(COALESCE(s_line.name, s_bill.name)), '未指定供应商') as supplierName,
             IFNULL(NULLIF(TRIM(MAX(mc.material_category_name)), ''), '未识别分类') as materialCategoryName,
-            ROUND(SUM(IFNULL(b.amt, IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0))), 2) as amount
+            ROUND(SUM(<include refid="medicalConsumableSignedLineAmt"/>), 2) as amount
         from stk_io_bill stk
         inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         inner join fd_material m on m.id = b.material_id
@@ -2024,7 +2036,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on w.id = stk.warehouse_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
-          and stk.bill_type = 201
+          and stk.bill_type in (201, 401)
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
@@ -2053,17 +2065,119 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by DATE_FORMAT(stk.audit_date, '%Y-%m-%d'),
                  IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
                  (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
-        order by statDate asc, supplierName asc, materialCategoryName asc
+        ) t
+        order by t.statDate asc, t.supplierName asc, t.materialCategoryName asc
+        <if test="params != null and params.medicalSummaryOffset != null and params.medicalSummaryLimit != null">
+        LIMIT #{params.medicalSummaryOffset}, #{params.medicalSummaryLimit}
+        </if>
     </select>
 
-    <!-- 卫材出库汇总（基于出库单 201）：日期 + 科室 + 材料类别 + 金额 + 单位 + 是否高值 -->
+    <select id="countMedicalInboundSummary" parameterType="StkIoBill" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from (
+        select 1
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on m.id = b.material_id
+        left join fd_material_category mc on mc.material_category_id = m.material_category_id
+            and mc.tenant_id = stk.tenant_id
+            and (mc.del_flag is null or mc.del_flag != 1)
+        left join fd_supplier s_line on s_line.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else null end)
+        left join fd_supplier s_bill on s_bill.id = stk.suppler_id
+        left join fd_department d on d.id = stk.department_id
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+        <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <if test="warehouseKeyword != null and warehouseKeyword != ''">
+            and (w.code like concat('%', #{warehouseKeyword}, '%')
+                 or w.name like concat('%', #{warehouseKeyword}, '%')
+                 or w.referred_name like concat('%', #{warehouseKeyword}, '%'))
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            and ((s_line.code like concat('%', #{supplierKeyword}, '%')
+                  or s_line.name like concat('%', #{supplierKeyword}, '%')
+                  or s_line.referred_code like concat('%', #{supplierKeyword}, '%'))
+                 or (s_bill.code like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.name like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.referred_code like concat('%', #{supplierKeyword}, '%')))
+        </if>
+        <if test="departmentKeyword != null and departmentKeyword != ''">
+            and (d.code like concat('%', #{departmentKeyword}, '%')
+                 or d.name like concat('%', #{departmentKeyword}, '%')
+                 or d.referred_name like concat('%', #{departmentKeyword}, '%'))
+        </if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+        group by DATE_FORMAT(stk.audit_date, '%Y-%m-%d'),
+                 IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
+                 (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
+        ) g
+    </select>
+
+    <select id="sumMedicalInboundSummaryAmount" parameterType="StkIoBill" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ROUND(COALESCE(SUM(agg.amount), 0), 2) from (
+        select ROUND(SUM(<include refid="medicalConsumableSignedLineAmt"/>), 2) as amount
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on m.id = b.material_id
+        left join fd_material_category mc on mc.material_category_id = m.material_category_id
+            and mc.tenant_id = stk.tenant_id
+            and (mc.del_flag is null or mc.del_flag != 1)
+        left join fd_supplier s_line on s_line.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else null end)
+        left join fd_supplier s_bill on s_bill.id = stk.suppler_id
+        left join fd_department d on d.id = stk.department_id
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+        <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <if test="warehouseKeyword != null and warehouseKeyword != ''">
+            and (w.code like concat('%', #{warehouseKeyword}, '%')
+                 or w.name like concat('%', #{warehouseKeyword}, '%')
+                 or w.referred_name like concat('%', #{warehouseKeyword}, '%'))
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            and ((s_line.code like concat('%', #{supplierKeyword}, '%')
+                  or s_line.name like concat('%', #{supplierKeyword}, '%')
+                  or s_line.referred_code like concat('%', #{supplierKeyword}, '%'))
+                 or (s_bill.code like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.name like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.referred_code like concat('%', #{supplierKeyword}, '%')))
+        </if>
+        <if test="departmentKeyword != null and departmentKeyword != ''">
+            and (d.code like concat('%', #{departmentKeyword}, '%')
+                 or d.name like concat('%', #{departmentKeyword}, '%')
+                 or d.referred_name like concat('%', #{departmentKeyword}, '%'))
+        </if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+        group by DATE_FORMAT(stk.audit_date, '%Y-%m-%d'),
+                 IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
+                 (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
+        ) agg
+    </select>
+
+    <!-- 卫材出库汇总（耗材出退库 201/401，出库为正退库为负）：日期 + 科室 + 材料类别 + 金额 + 单位 + 是否高值；外层查询便于 PageHelper 在聚合后对结果集 LIMIT -->
     <select id="selectMedicalOutboundSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select t.statDate, t.departmentName, t.materialCategoryName, t.amount, t.unitName, t.isGzText
+        from (
         select
             DATE_FORMAT(stk.audit_date, '%Y-%m-%d') as statDate,
             IFNULL(MAX(d.name), '未指定科室') as departmentName,
             IFNULL(NULLIF(TRIM(MAX(mc.material_category_name)), ''), '未识别分类') as materialCategoryName,
-            ROUND(SUM(IFNULL(b.amt, IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0))), 2) as amount,
+            ROUND(SUM(<include refid="medicalConsumableSignedLineAmt"/>), 2) as amount,
             '其他' as unitName,
             CASE WHEN MAX(IFNULL(m.is_gz, '2')) = '1' THEN '是' ELSE '否' END as isGzText
         from stk_io_bill stk
@@ -2078,7 +2192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s_bill on s_bill.id = stk.suppler_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
-          and stk.bill_type = 201
+          and stk.bill_type in (201, 401)
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
@@ -2108,6 +2222,108 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
                  stk.department_id,
                  IFNULL(m.is_gz, '2')
-        order by statDate asc, departmentName asc, materialCategoryName asc
+        ) t
+        order by t.statDate asc, t.departmentName asc, t.materialCategoryName asc
+        <if test="params != null and params.medicalSummaryOffset != null and params.medicalSummaryLimit != null">
+        LIMIT #{params.medicalSummaryOffset}, #{params.medicalSummaryLimit}
+        </if>
+    </select>
+
+    <select id="countMedicalOutboundSummary" parameterType="StkIoBill" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from (
+        select 1
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on m.id = b.material_id
+        left join fd_material_category mc on mc.material_category_id = m.material_category_id
+            and mc.tenant_id = stk.tenant_id
+            and (mc.del_flag is null or mc.del_flag != 1)
+        left join fd_department d on d.id = stk.department_id
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        left join fd_supplier s_line on s_line.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else null end)
+        left join fd_supplier s_bill on s_bill.id = stk.suppler_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+        <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <if test="warehouseKeyword != null and warehouseKeyword != ''">
+            and (w.code like concat('%', #{warehouseKeyword}, '%')
+                 or w.name like concat('%', #{warehouseKeyword}, '%')
+                 or w.referred_name like concat('%', #{warehouseKeyword}, '%'))
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            and ((s_line.code like concat('%', #{supplierKeyword}, '%')
+                  or s_line.name like concat('%', #{supplierKeyword}, '%')
+                  or s_line.referred_code like concat('%', #{supplierKeyword}, '%'))
+                 or (s_bill.code like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.name like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.referred_code like concat('%', #{supplierKeyword}, '%')))
+        </if>
+        <if test="departmentKeyword != null and departmentKeyword != ''">
+            and (d.code like concat('%', #{departmentKeyword}, '%')
+                 or d.name like concat('%', #{departmentKeyword}, '%')
+                 or d.referred_name like concat('%', #{departmentKeyword}, '%'))
+        </if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+        group by DATE_FORMAT(stk.audit_date, '%Y-%m-%d'),
+                 IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
+                 stk.department_id,
+                 IFNULL(m.is_gz, '2')
+        ) g
+    </select>
+
+    <select id="sumMedicalOutboundSummaryAmount" parameterType="StkIoBill" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ROUND(COALESCE(SUM(agg.amount), 0), 2) from (
+        select ROUND(SUM(<include refid="medicalConsumableSignedLineAmt"/>), 2) as amount
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on m.id = b.material_id
+        left join fd_material_category mc on mc.material_category_id = m.material_category_id
+            and mc.tenant_id = stk.tenant_id
+            and (mc.del_flag is null or mc.del_flag != 1)
+        left join fd_department d on d.id = stk.department_id
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        left join fd_supplier s_line on s_line.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else null end)
+        left join fd_supplier s_bill on s_bill.id = stk.suppler_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+        <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <if test="warehouseKeyword != null and warehouseKeyword != ''">
+            and (w.code like concat('%', #{warehouseKeyword}, '%')
+                 or w.name like concat('%', #{warehouseKeyword}, '%')
+                 or w.referred_name like concat('%', #{warehouseKeyword}, '%'))
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            and ((s_line.code like concat('%', #{supplierKeyword}, '%')
+                  or s_line.name like concat('%', #{supplierKeyword}, '%')
+                  or s_line.referred_code like concat('%', #{supplierKeyword}, '%'))
+                 or (s_bill.code like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.name like concat('%', #{supplierKeyword}, '%')
+                  or s_bill.referred_code like concat('%', #{supplierKeyword}, '%')))
+        </if>
+        <if test="departmentKeyword != null and departmentKeyword != ''">
+            and (d.code like concat('%', #{departmentKeyword}, '%')
+                 or d.name like concat('%', #{departmentKeyword}, '%')
+                 or d.referred_name like concat('%', #{departmentKeyword}, '%'))
+        </if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+        group by DATE_FORMAT(stk.audit_date, '%Y-%m-%d'),
+                 IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
+                 stk.department_id,
+                 IFNULL(m.is_gz, '2')
+        ) agg
     </select>
 </mapper>

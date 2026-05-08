@@ -347,14 +347,34 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectFinanceSettlementSupplierSummary(StkIoBill stkIoBill);
 
     /**
-     * 卫材入库汇总（取出库单数据）：按 日期+供应商+材料类别 聚合金额
+     * 卫材入库汇总（耗材出退库 bill_type 201/401）：按 日期+供应商+材料类别 聚合金额；出库为正、退库为负
      */
     List<Map<String, Object>> selectMedicalInboundSummary(StkIoBill stkIoBill);
 
     /**
-     * 卫材出库汇总（取出库单数据）：按 日期+科室+材料类别+单位+是否高值 聚合金额
+     * 卫材入库汇总聚合行数（与 {@link #selectMedicalInboundSummary} 分组口径一致）
+     */
+    long countMedicalInboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材入库汇总：在相同筛选与分组口径下，对聚合后各行的金额求和（含退库负值）
+     */
+    BigDecimal sumMedicalInboundSummaryAmount(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总（耗材出退库 bill_type 201/401）：按 日期+科室+材料类别+单位+是否高值 聚合金额；出库为正、退库为负
      */
     List<Map<String, Object>> selectMedicalOutboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总聚合行数（与 {@link #selectMedicalOutboundSummary} 分组口径一致）
+     */
+    long countMedicalOutboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总：在相同筛选与分组口径下，对聚合后各行的金额求和（含退库负值）
+     */
+    BigDecimal sumMedicalOutboundSummaryAmount(StkIoBill stkIoBill);
 
     /**
      * 按配送单引用行汇总已制入库单明细数量（不含逻辑删除；可排除指定主表用于修改单自检）

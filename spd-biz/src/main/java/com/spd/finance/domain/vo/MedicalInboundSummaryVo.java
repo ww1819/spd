@@ -3,6 +3,7 @@ package com.spd.finance.domain.vo;
 import java.math.BigDecimal;
 
 import com.spd.common.annotation.Excel;
+import com.spd.common.annotation.Excel.ColumnType;
 
 /**
  * 卫材入库汇总（统计口径：耗材出库数据）
@@ -18,7 +19,7 @@ public class MedicalInboundSummaryVo
     @Excel(name = "材料类别", width = 25)
     private String materialCategoryName;
 
-    @Excel(name = "金额", width = 18)
+    @Excel(name = "金额", width = 18, cellType = ColumnType.NUMERIC, scale = 2, roundingMode = BigDecimal.ROUND_HALF_UP, isStatistics = true)
     private BigDecimal amount;
 
     public String getStatDate()
