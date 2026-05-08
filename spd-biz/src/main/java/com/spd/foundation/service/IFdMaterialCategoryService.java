@@ -58,4 +58,19 @@ public interface IFdMaterialCategoryService
      * @return 结果
      */
     public int deleteFdMaterialCategoryByMaterialCategoryId(String materialCategoryId);
+
+    /**
+     * 批量更新材料类别拼音简码
+     *
+     * @param materialCategoryIds 材料类别ID集合
+     * @return 结果
+     */
+    public int updatePinyinCodeByMaterialCategoryIds(String[] materialCategoryIds);
+
+    /**
+     * 全量更新材料类别拼音简码
+     *
+     * @return 结果
+     */
+    public int updatePinyinCodeForAllMaterialCategory();
 }
