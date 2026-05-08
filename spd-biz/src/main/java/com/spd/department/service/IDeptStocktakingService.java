@@ -1,7 +1,9 @@
 package com.spd.department.service;
 
 import java.util.List;
+import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
+import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.domain.StkIoStocktaking;
 
 /**
@@ -71,6 +73,12 @@ public interface IDeptStocktakingService
      * @return
      */
     int auditDeptStocktaking(String id);
+
+    /** 审核前校验：盘点明细库存数量 vs 当前科室账面库存 */
+    List<StocktakingQtyMismatchVo> checkStocktakingQtyMismatch(String id);
+
+    /** 审核（含库存不一致时用户确认后的数量调整） */
+    int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList);
 
     /**
      * 驳回科室盘点信息

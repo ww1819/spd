@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
@@ -23,7 +24,9 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.department.mapper.DeptStocktakingMapper;
+import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
+import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -212,6 +215,12 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     @Transactional
     @Override
     public int auditDeptStocktaking(String id) {
+        return auditDeptStocktaking(id, null);
+    }
+
+    @Transactional
+    @Override
+    public int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList) {
         StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
         if(stkIoStocktaking == null){
             throw new ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
@@ -222,6 +231,11 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             if (stkIoStocktakingEntryList == null || stkIoStocktakingEntryList.isEmpty()) {
                 throw new ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
             }
+        }
+        applyQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
+        List<StocktakingQtyMismatchVo> mismatches = buildQtyMismatches(stkIoStocktaking);
+        if (!mismatches.isEmpty()) {
+            throw new ServiceException("盘点明细库存数量与当前科室账面库存不一致，请先逐条确认后再审核。");
         }
 
         // audit_adjusts_inventory=1：审核直接变更科室库存；=0：仅过账，由科室盈亏单处理库存
@@ -236,6 +250,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
         int res = deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
         return res;
+    }
+
+    @Override
+    public List<StocktakingQtyMismatchVo> checkStocktakingQtyMismatch(String id) {
+        StkIoStocktaking bill = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
+        if (bill == null) {
+            throw new ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
+        }
+        return buildQtyMismatches(bill);
     }
 
     /**
@@ -557,6 +580,82 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         if (!Objects.equals(left, right)) {
             throw new ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
         }
+    }
+
+    private void applyQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
+        if (bill == null || adjustList == null || adjustList.isEmpty() || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        Map<Long, StocktakingQtyAdjustDto> adjustMap = adjustList.stream()
+            .filter(a -> a != null && a.getEntryId() != null)
+            .collect(Collectors.toMap(StocktakingQtyAdjustDto::getEntryId, a -> a, (a, b) -> b));
+        if (adjustMap.isEmpty()) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getId() == null) {
+                continue;
+            }
+            StocktakingQtyAdjustDto adjust = adjustMap.get(entry.getId());
+            if (adjust == null) {
+                continue;
+            }
+            BigDecimal currentQty = queryCurrentDepInventoryQty(bill, entry);
+            if (currentQty == null) {
+                currentQty = BigDecimal.ZERO;
+            }
+            entry.setQty(currentQty);
+            entry.setStockQty(adjust.getStockQty() == null ? currentQty : adjust.getStockQty());
+            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
+            deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+        }
+    }
+
+    private List<StocktakingQtyMismatchVo> buildQtyMismatches(StkIoStocktaking bill) {
+        List<StocktakingQtyMismatchVo> out = new ArrayList<>();
+        if (bill == null || bill.getStkIoStocktakingEntryList() == null) {
+            return out;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getId() == null) {
+                continue;
+            }
+            BigDecimal detailQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal currentQty = queryCurrentDepInventoryQty(bill, entry);
+            if (currentQty == null) {
+                currentQty = BigDecimal.ZERO;
+            }
+            if (detailQty.compareTo(currentQty) != 0) {
+                StocktakingQtyMismatchVo r = new StocktakingQtyMismatchVo();
+                r.setEntryId(entry.getId());
+                r.setMaterialName(entry.getMaterial() != null ? entry.getMaterial().getName() : null);
+                r.setBatchNo(entry.getBatchNo());
+                r.setDetailQty(detailQty);
+                r.setCurrentQty(currentQty);
+                r.setStockQty(entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty());
+                out.add(r);
+            }
+        }
+        return out;
+    }
+
+    private BigDecimal queryCurrentDepInventoryQty(StkIoStocktaking bill, StkIoStocktakingEntry entry) {
+        if (entry == null) {
+            return BigDecimal.ZERO;
+        }
+        StkDepInventory depInventory = null;
+        if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+            try {
+                depInventory = stkDepInventoryMapper.selectStkDepInventoryById(Long.valueOf(entry.getDepInventoryId().trim()));
+            } catch (Exception ignore) {
+                // ignore and fallback by batch+dept
+            }
+        }
+        if (depInventory == null && StringUtils.isNotEmpty(entry.getBatchNo()) && bill != null && bill.getDepartmentId() != null) {
+            depInventory = stkDepInventoryMapper.selectStkDepInventoryByBatchAndDeptForStocktaking(entry.getBatchNo(), bill.getDepartmentId());
+        }
+        return depInventory == null || depInventory.getQty() == null ? BigDecimal.ZERO : depInventory.getQty();
     }
 
     private StkBatch ensureStkBatchByStocktaking(StkIoStocktaking stkIoStocktaking, StkIoStocktakingEntry entry, FdMaterial material) {

@@ -4,6 +4,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.department.service.IDeptStocktakingService;
+import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -129,8 +131,21 @@ public class DeptStocktakingController extends BaseController
     @PutMapping("/auditStocktaking")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = deptStocktakingService.auditDeptStocktaking(json.getString("id"));
+        List<StocktakingQtyAdjustDto> adjustList = null;
+        JSONArray arr = json.getJSONArray("qtyAdjustList");
+        if (arr != null && !arr.isEmpty()) {
+            adjustList = arr.toJavaList(StocktakingQtyAdjustDto.class);
+        }
+        int result = deptStocktakingService.auditDeptStocktaking(json.getString("id"), adjustList);
         return toAjax(result);
+    }
+
+    /** 审核前：校验盘点明细库存数量是否与当前科室账面库存一致 */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:audit') or @ss.hasPermi('department:stocktakingAudit:audit')")
+    @PostMapping("/auditStocktaking/checkQty")
+    public AjaxResult checkAuditQty(@RequestBody JSONObject json)
+    {
+        return success(deptStocktakingService.checkStocktakingQtyMismatch(json.getString("id")));
     }
 
     /**
