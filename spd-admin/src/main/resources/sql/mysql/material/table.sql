@@ -6,7 +6,7 @@
 -- 按「/」分段，每段一条语句执行
 /
 
-CREATE TABLE `fd_material_category` (
+CREATE TABLE IF NOT EXISTS `fd_material_category` (
   `material_category_id` varchar(36) NOT NULL COMMENT 'ID(UUID7)',
   `parent_id` varchar(36) DEFAULT NULL COMMENT '上级分类ID',
   `material_category_code` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别编码',

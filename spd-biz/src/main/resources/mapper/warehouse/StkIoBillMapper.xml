@@ -1953,7 +1953,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             IFNULL(MAX(d.name), '未指定科室') as departmentName,
             IFNULL(NULLIF(TRIM(MAX(mc.material_category_name)), ''), '未识别分类') as materialCategoryName,
             ROUND(SUM(IFNULL(b.amt, IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0))), 2) as amount,
-            IFNULL(MAX(u.unit_name), '') as unitName,
+            '其他' as unitName,
             CASE WHEN MAX(IFNULL(m.is_gz, '2')) = '1' THEN '是' ELSE '否' END as isGzText
         from stk_io_bill stk
         inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
@@ -1961,7 +1961,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material_category mc on mc.material_category_id = m.material_category_id
             and mc.tenant_id = stk.tenant_id
             and (mc.del_flag is null or mc.del_flag != 1)
-        left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department d on d.id = stk.department_id
         left join fd_warehouse w on w.id = stk.warehouse_id
         left join fd_supplier s_line on s_line.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else null end)
@@ -1997,7 +1996,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by DATE_FORMAT(stk.audit_date, '%Y-%m-%d'),
                  IFNULL(NULLIF(TRIM(mc.material_category_name), ''), '未识别分类'),
                  stk.department_id,
-                 m.unit_id,
                  IFNULL(m.is_gz, '2')
         order by statDate asc, departmentName asc, materialCategoryName asc
     </select>

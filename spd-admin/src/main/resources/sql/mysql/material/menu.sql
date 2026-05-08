@@ -123,7 +123,7 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  3195, '卫材入出库导出', 3193, 2, '#', '', NULL,
+  3883, '卫材入出库导出', 3193, 2, '#', '', NULL,
   1, 0, 'F', '0', '0', 'finance:medicalStockSummary:export', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '0'
