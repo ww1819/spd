@@ -17,6 +17,7 @@ import com.spd.his.mapper.HisExternalDbMapper;
 
 /**
  * 按租户解析 HIS 外联 JDBC（主库 sys_his_external_db）；支持 SQLSERVER / MYSQL（MYSQL 须在表中配置自定义区间 SQL）。
+ * 住院/门诊区间 SQL 的两个 ? 建议绑定为字符串（yyyy-MM-dd HH:mm:ss）：下界含、上界不含，与 charge_date 直接比较。
  */
 @Component
 public class HisTenantJdbcAccess

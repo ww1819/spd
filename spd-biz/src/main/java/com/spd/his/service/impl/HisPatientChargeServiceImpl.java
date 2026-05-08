@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -70,6 +71,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private static final int HIS_ID_QUERY_BATCH = 400;
     private static final int INSERT_BATCH_SIZE = 80;
     private static final String KIND_IN = "INPATIENT";
+
+    /** HIS 区间查询占位符绑定格式（字符串比较，与内置 SQL 一致） */
+    private static final DateTimeFormatter HIS_FETCH_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
     private HisTenantJdbcAccess hisTenantJdbcAccess;
@@ -569,32 +573,54 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         if (body == null || StringUtils.isAnyEmpty(body.getBeginDate(), body.getEndDate()))
         {
-            throw new ServiceException("请指定抓取开始日期与结束日期");
+            throw new ServiceException("请指定抓取开始时间与结束时间");
         }
-        LocalDate begin;
-        LocalDate end;
-        try
+        LocalDateTime startInclusive = parseFetchLowerBound(body.getBeginDate().trim());
+        LocalDateTime endInclusive = parseFetchUpperBound(body.getEndDate().trim());
+        if (endInclusive.isBefore(startInclusive))
         {
-            begin = LocalDate.parse(body.getBeginDate().trim());
-            end = LocalDate.parse(body.getEndDate().trim());
+            throw new ServiceException("结束时间不能早于开始时间");
         }
-        catch (Exception e)
-        {
-            throw new ServiceException("日期格式须为 yyyy-MM-dd");
-        }
-        if (end.isBefore(begin))
-        {
-            throw new ServiceException("结束日期不能早于开始日期");
-        }
-        long spanDays = ChronoUnit.DAYS.between(begin, end) + 1;
+        long spanDays = ChronoUnit.DAYS.between(startInclusive.toLocalDate(), endInclusive.toLocalDate()) + 1;
         int maxDays = Math.max(1, hisSqlServerProperties.getFetch().getMaxRangeDays());
         if (spanDays > maxDays)
         {
             throw new ServiceException("单次抓取跨度不能超过 " + maxDays + " 天，请缩小时间范围");
         }
-        LocalDateTime start = begin.atStartOfDay();
-        LocalDateTime endExclusive = end.plusDays(1).atStartOfDay();
-        return new LocalDateTime[] { start, endExclusive };
+        LocalDateTime endExclusive = endInclusive.plusSeconds(1);
+        return new LocalDateTime[] { startInclusive, endExclusive };
+    }
+
+    private static LocalDateTime parseFetchLowerBound(String raw)
+    {
+        try
+        {
+            if (raw.length() <= 10)
+            {
+                return LocalDate.parse(raw).atStartOfDay();
+            }
+            return LocalDateTime.parse(raw, HIS_FETCH_TIME_FMT);
+        }
+        catch (DateTimeParseException e)
+        {
+            throw new ServiceException("开始时间格式须为 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss");
+        }
+    }
+
+    private static LocalDateTime parseFetchUpperBound(String raw)
+    {
+        try
+        {
+            if (raw.length() <= 10)
+            {
+                return LocalDate.parse(raw).atTime(23, 59, 59);
+            }
+            return LocalDateTime.parse(raw, HIS_FETCH_TIME_FMT);
+        }
+        catch (DateTimeParseException e)
+        {
+            throw new ServiceException("结束时间格式须为 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss");
+        }
     }
 
     private List<HisInpatientChargeMirror> queryInpatientChunk(
@@ -602,13 +628,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         LocalDateTime chunkStart, LocalDateTime chunkEndExcl,
         String tenantId, String batchId, String createBy, Date createTime)
     {
-        Timestamp t0 = Timestamp.valueOf(chunkStart);
-        Timestamp t1 = Timestamp.valueOf(chunkEndExcl);
+        String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
+        String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisInpatientChargeMirror> rm = (rs, rowNum) -> mapInpatientRow(rs, tenantId, batchId, createBy, createTime);
         return hisDb.getJdbcTemplate().query(hisDb.getInpatientRangeSql(), ps ->
         {
-            ps.setTimestamp(1, t0);
-            ps.setTimestamp(2, t1);
+            ps.setString(1, lo);
+            ps.setString(2, hi);
         }, rm);
     }
 
@@ -650,13 +676,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         LocalDateTime chunkStart, LocalDateTime chunkEndExcl,
         String tenantId, String batchId, String createBy, Date createTime)
     {
-        Timestamp t0 = Timestamp.valueOf(chunkStart);
-        Timestamp t1 = Timestamp.valueOf(chunkEndExcl);
+        String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
+        String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisOutpatientChargeMirror> rm = (rs, rowNum) -> mapOutpatientRow(rs, tenantId, batchId, createBy, createTime);
         return hisDb.getJdbcTemplate().query(hisDb.getOutpatientRangeSql(), ps ->
         {
-            ps.setTimestamp(1, t0);
-            ps.setTimestamp(2, t1);
+            ps.setString(1, lo);
+            ps.setString(2, hi);
         }, rm);
     }
 
