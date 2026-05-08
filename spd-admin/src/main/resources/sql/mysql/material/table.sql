@@ -2451,6 +2451,56 @@ CREATE TABLE IF NOT EXISTS `his_outpatient_charge_mirror` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS门诊患者耗材计费镜像';
 /
 
+-- HIS 患者计费镜像统一表（住院+门诊合并行，与分表主键 id 一致；列表查询用；历史数据见 upgrade_his_patient_charge_mirror_unified.sql）
+CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
+  `id` varchar(36) NOT NULL COMMENT '与住院/门诊镜像表主键相同',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
+  `his_inpatient_charge_id` varchar(32) DEFAULT NULL COMMENT 'HIS住院计费明细主键',
+  `his_outpatient_charge_id` varchar(32) DEFAULT NULL COMMENT 'HIS门诊计费明细主键',
+  `his_inpatient_charge_id_tf` varchar(32) DEFAULT NULL COMMENT '住院退费关联ID',
+  `his_outpatient_charge_id_tf` varchar(32) DEFAULT NULL COMMENT '门诊退费关联ID',
+  `patient_id` varchar(32) DEFAULT NULL,
+  `patient_name` varchar(128) DEFAULT NULL,
+  `inpatient_no` varchar(64) DEFAULT NULL,
+  `outpatient_no` varchar(64) DEFAULT NULL,
+  `dept_code` varchar(32) DEFAULT NULL COMMENT '住院费用科室编码',
+  `dept_name` varchar(128) DEFAULT NULL,
+  `clinic_code` varchar(32) DEFAULT NULL COMMENT '门诊就诊编码',
+  `clinic_name` varchar(128) DEFAULT NULL,
+  `doctor_id` varchar(32) DEFAULT NULL,
+  `doctor_name` varchar(128) DEFAULT NULL,
+  `charge_item_id` varchar(64) DEFAULT NULL,
+  `item_name` varchar(512) DEFAULT NULL,
+  `spec_model` varchar(128) DEFAULT NULL,
+  `batch_no` varchar(128) DEFAULT NULL,
+  `expire_date` varchar(64) DEFAULT NULL,
+  `use_date` datetime DEFAULT NULL COMMENT '住院使用时间',
+  `charge_date_display` varchar(64) DEFAULT NULL COMMENT '计费时间原始展示',
+  `charge_at` datetime DEFAULT NULL COMMENT '计费时间(排序与区间筛选)',
+  `quantity` decimal(18,6) DEFAULT NULL,
+  `unit_price` decimal(18,6) DEFAULT NULL,
+  `total_amount` decimal(18,6) DEFAULT NULL,
+  `charge_operator` varchar(128) DEFAULT NULL,
+  `payment_type` varchar(32) DEFAULT NULL,
+  `receipt_no` varchar(64) DEFAULT NULL,
+  `remark` varchar(512) DEFAULT NULL,
+  `row_fingerprint` varchar(64) DEFAULT NULL,
+  `process_status` varchar(32) NOT NULL DEFAULT 'PENDING_CONSUME',
+  `process_type` varchar(32) DEFAULT NULL,
+  `process_time` datetime DEFAULT NULL,
+  `process_by` varchar(64) DEFAULT NULL,
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hpcm_unified_list` (`tenant_id`,`visit_kind`,`charge_at`),
+  KEY `idx_hpcm_unified_tenant_at` (`tenant_id`,`charge_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS患者计费镜像统一表';
+/
+
 -- HIS 计费抓取批次日志
 CREATE TABLE IF NOT EXISTS `his_charge_fetch_batch` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID',

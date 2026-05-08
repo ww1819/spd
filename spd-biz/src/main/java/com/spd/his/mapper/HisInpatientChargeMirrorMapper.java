@@ -4,8 +4,6 @@ import java.util.Date;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.spd.his.domain.HisInpatientChargeMirror;
-import com.spd.his.domain.dto.HisPatientChargeAllQuery;
-import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisIdFingerprint;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 
@@ -14,9 +12,6 @@ public interface HisInpatientChargeMirrorMapper
     int insertBatch(@Param("list") List<HisInpatientChargeMirror> list);
 
     List<HisIdFingerprint> selectFingerprintsByHisIds(@Param("tenantId") String tenantId, @Param("hisIds") List<String> hisIds);
-
-    List<HisInpatientChargeMirror> selectMirrorList(HisInpatientChargeMirror query);
-    List<HisPatientChargeDetailRow> selectAllMirrorList(HisPatientChargeAllQuery query);
 
     List<HisPatientChargeSummaryRow> selectSummary(
             @Param("tenantId") String tenantId,

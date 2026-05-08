@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisMirrorStockAggregateMapper">
+
+    <select id="selectGzStockByPairKeys" resultType="com.spd.his.domain.dto.HisMirrorStockLocItemQty">
+        select concat(trim(d.his_id), '|', trim(fm.his_charge_item_id)) as pairKey,
+               sum(ifnull(gdi.qty, 0)) as qty
+        from gz_dep_inventory gdi
+        join fd_department d
+          on d.id = gdi.department_id
+         and d.tenant_id = gdi.tenant_id
+         and (d.del_flag = 0 or d.del_flag is null)
+        join fd_material fm
+          on fm.id = gdi.material_id
+         and fm.tenant_id = gdi.tenant_id
+         and (fm.del_flag = 0 or fm.del_flag is null)
+        where (gdi.del_flag = 0 or gdi.del_flag is null)
+          and d.his_id is not null and trim(d.his_id) != ''
+          and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+          and gdi.tenant_id = #{tenantId}
+          and concat(trim(d.his_id), '|', trim(fm.his_charge_item_id)) in
+        <foreach collection="pairKeys" item="pk" open="(" separator="," close=")">#{pk}</foreach>
+        group by trim(d.his_id), trim(fm.his_charge_item_id)
+    </select>
+
+    <select id="selectStkStockByPairKeys" resultType="com.spd.his.domain.dto.HisMirrorStockLocItemQty">
+        select concat(trim(d.his_id), '|', trim(fm.his_charge_item_id)) as pairKey,
+               sum(ifnull(sdi.qty, 0)) as qty
+        from stk_dep_inventory sdi
+        join fd_department d
+          on d.id = sdi.department_id
+         and d.tenant_id = sdi.tenant_id
+         and (d.del_flag = 0 or d.del_flag is null)
+        join fd_material fm
+          on fm.id = sdi.material_id
+         and fm.tenant_id = sdi.tenant_id
+         and (fm.del_flag = 0 or fm.del_flag is null)
+        where (sdi.del_flag = 0 or sdi.del_flag is null)
+          and d.his_id is not null and trim(d.his_id) != ''
+          and fm.his_charge_item_id is not null and trim(fm.his_charge_item_id) != ''
+          and sdi.tenant_id = #{tenantId}
+          and concat(trim(d.his_id), '|', trim(fm.his_charge_item_id)) in
+        <foreach collection="pairKeys" item="pk" open="(" separator="," close=")">#{pk}</foreach>
+        group by trim(d.his_id), trim(fm.his_charge_item_id)
+    </select>
+</mapper>
