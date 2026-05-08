@@ -328,6 +328,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     depInventory = stkDepInventoryMapper.selectStkDepInventoryByBatchAndDeptForStocktaking(batchNo, departmentId);
                 }
                 if (depInventory != null && depInventory.getWarehouseId() != null) {
+                    entry.setDepInventoryId(String.valueOf(depInventory.getId()));
                     entry.setReturnWarehouseId(depInventory.getWarehouseId());
                     warehouseId = depInventory.getWarehouseId();
                 } else {

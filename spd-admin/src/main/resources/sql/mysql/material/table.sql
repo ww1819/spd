@@ -1851,6 +1851,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
   `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
   `kc_no` bigint DEFAULT NULL COMMENT '库存明细id',
+  `dep_inventory_id` varchar(64) DEFAULT NULL COMMENT '科室库存明细id(stk_dep_inventory.id)',
   `orig_batch_id` bigint DEFAULT NULL COMMENT '账面批次stk_batch.id快照',
   `orig_batch_no_snapshot` varchar(100) DEFAULT NULL COMMENT '账面批次号快照',
   `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',

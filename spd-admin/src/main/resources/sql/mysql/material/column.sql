@@ -1490,6 +1490,8 @@ CALL add_table_column('stk_io_stocktaking_entry', 'return_warehouse_id', 'bigint
 /* stk_io_stocktaking_entry：数量/金额/批号等与 material/table.sql 对齐 */
 CALL add_table_column('stk_io_stocktaking_entry', 'kc_no', 'bigint', '库存明细id', NULL);
 /
+CALL add_table_column('stk_io_stocktaking_entry', 'dep_inventory_id', 'varchar(64)', '科室库存明细id(stk_dep_inventory.id)', NULL);
+/
 CALL add_table_column('stk_io_stocktaking_entry', 'stock_qty', 'decimal(18,2)', '盘点数量', NULL);
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'profit_qty', 'decimal(18,2)', '盈亏数量', NULL);
