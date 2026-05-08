@@ -19,6 +19,10 @@ public class FdMaterialCategory extends BaseEntity
     private String materialCategoryId;
     /** 上级分类ID */
     private String parentId;
+    /** 上级分类编码 */
+    private String parentCode;
+    /** 上级分类名称 */
+    private String parentName;
 
     /** 耗材分类编码 */
     @Excel(name = "耗材分类编码")
@@ -62,6 +66,24 @@ public class FdMaterialCategory extends BaseEntity
     public String getParentId()
     {
         return parentId;
+    }
+    public void setParentCode(String parentCode)
+    {
+        this.parentCode = parentCode;
+    }
+
+    public String getParentCode()
+    {
+        return parentCode;
+    }
+    public void setParentName(String parentName)
+    {
+        this.parentName = parentName;
+    }
+
+    public String getParentName()
+    {
+        return parentName;
     }
     public void setMaterialCategoryCode(String materialCategoryCode) 
     {
@@ -126,6 +148,8 @@ public class FdMaterialCategory extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("materialCategoryId", getMaterialCategoryId())
             .append("parentId", getParentId())
+            .append("parentCode", getParentCode())
+            .append("parentName", getParentName())
             .append("materialCategoryCode", getMaterialCategoryCode())
             .append("materialCategoryName", getMaterialCategoryName())
             .append("pinyinCode", getPinyinCode())
