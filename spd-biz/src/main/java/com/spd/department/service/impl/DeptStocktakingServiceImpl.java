@@ -1,17 +1,20 @@
 package com.spd.department.service.impl;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
-import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
-import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -52,9 +55,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
-
-    @Autowired
-    private HcKsFlowMapper hcKsFlowMapper;
 
     /**
      * 查询科室盘点
@@ -100,6 +100,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     @Override
     public int insertDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
+        validateAndNormalizeEntries(stkIoStocktaking, null);
         stkIoStocktaking.setStockNo(getNumber());
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
         // 确保warehouseId为null，表示这是科室盘点
@@ -135,6 +136,21 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
         Long parenId = stkIoStocktaking.getId();
+        StkIoStocktaking oldBill = deptStocktakingMapper.selectDeptStocktakingById(parenId);
+        if (oldBill != null && oldBill.getStkIoStocktakingEntryList() != null
+            && !oldBill.getStkIoStocktakingEntryList().isEmpty()
+            && !Objects.equals(oldBill.getDepartmentId(), stkIoStocktaking.getDepartmentId())) {
+            throw new ServiceException("盘点单存在明细后不允许变更科室，请先清空明细再调整。");
+        }
+        Map<Long, StkIoStocktakingEntry> oldEntryMap = new HashMap<>();
+        if (oldBill != null && oldBill.getStkIoStocktakingEntryList() != null) {
+            for (StkIoStocktakingEntry old : oldBill.getStkIoStocktakingEntryList()) {
+                if (old != null && old.getId() != null) {
+                    oldEntryMap.put(old.getId(), old);
+                }
+            }
+        }
+        validateAndNormalizeEntries(stkIoStocktaking, oldEntryMap);
         List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
         List<Long> keepIds = new ArrayList<>();
         if (StringUtils.isNotNull(entryList)) {
@@ -143,8 +159,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if (StringUtils.isEmpty(entry.getBatchNo())) {
                     entry.setBatchNo(getBatchNumber());
                 }
-                // 补齐盘盈明细的可退库仓库：从产品档案默认所属仓库获取
-                fillReturnWarehouseIdByMaterial(entry);
                 if (entry.getId() != null) {
                     deptStocktakingMapper.updateDeptStocktakingEntry(entry);
                     keepIds.add(entry.getId());
@@ -332,7 +346,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     entry.setReturnWarehouseId(depInventory.getWarehouseId());
                     warehouseId = depInventory.getWarehouseId();
                 } else {
-                    fillReturnWarehouseIdByMaterial(entry);
                     warehouseId = entry.getReturnWarehouseId();
                 }
                 if (warehouseId == null) {
@@ -452,8 +465,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if(StringUtils.isEmpty(stkIoStocktakingEntry.getBatchNo())){
                     stkIoStocktakingEntry.setBatchNo(getBatchNumber());
                 }
-                // 补齐盘盈明细的可退库仓库：从产品档案默认所属仓库获取
-                fillReturnWarehouseIdByMaterial(stkIoStocktakingEntry);
                 list.add(stkIoStocktakingEntry);
             }
             if (list.size() > 0)
@@ -463,28 +474,89 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
     }
 
-    /**
-     * 补齐盘盈明细的可退库仓库ID：
-     * 1) 从产品档案 fd_material.default_warehouse_id 取值
-     * 2) 缺失则直接拦截，要求库房先维护产品档案
-     */
-    private void fillReturnWarehouseIdByMaterial(StkIoStocktakingEntry entry) {
-        if (entry == null || entry.getMaterialId() == null) {
+    private void validateAndNormalizeEntries(StkIoStocktaking bill, Map<Long, StkIoStocktakingEntry> oldEntryMap) {
+        if (bill == null || bill.getStkIoStocktakingEntryList() == null) {
             return;
         }
-        Long current = entry.getReturnWarehouseId();
-        if (current != null) {
-            return;
+        Set<String> depInventoryIdSeen = new HashSet<>();
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null) {
+                continue;
+            }
+            if (entry.getMaterialId() == null) {
+                throw new ServiceException("盘点明细缺少耗材，无法保存。");
+            }
+            FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            if (material == null) {
+                throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+            }
+            // 供应商仅允许取产品档案，前端不允许手工改
+            if (material.getSupplierId() == null) {
+                throw new ServiceException(String.format("耗材[%s]产品档案未维护供应商，无法新增盘盈明细。", material.getName()));
+            }
+            entry.setSupplierId(material.getSupplierId());
+
+            if (entry.getStockQty() == null) {
+                entry.setStockQty(BigDecimal.ZERO);
+            }
+            if (entry.getBeginTime() != null && entry.getEndTime() != null
+                && entry.getEndTime().before(entry.getBeginTime())) {
+                throw new ServiceException("盘点明细有效期不能早于生产日期。");
+            }
+            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
+
+            // 来源科室库存的明细只允许盘亏/平，不允许盘盈
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+                String depInventoryIdKey = String.valueOf(entry.getDepInventoryId()).trim();
+                if (depInventoryIdSeen.contains(depInventoryIdKey)) {
+                    throw new ServiceException("同一科室库存明细不允许重复加入盘点单。");
+                }
+                depInventoryIdSeen.add(depInventoryIdKey);
+                BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+                if (entry.getStockQty().compareTo(bookQty) > 0) {
+                    throw new ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
+                }
+            } else {
+                // 新增盘盈行必须录入批号、生产日期、有效期、所属仓库
+                if (entry.getId() == null) {
+                    if (entry.getReturnWarehouseId() == null || StringUtils.isEmpty(entry.getBatchNumber())
+                        || entry.getBeginTime() == null || entry.getEndTime() == null) {
+                        throw new ServiceException("新增盘盈明细必须录入归属仓库、批号、生产日期、有效期。");
+                    }
+                }
+            }
+
+            if (oldEntryMap != null && entry.getId() != null) {
+                StkIoStocktakingEntry old = oldEntryMap.get(entry.getId());
+                if (old == null) {
+                    throw new ServiceException("存在无法识别的历史明细，禁止保存。");
+                }
+                // 除盘点数量外，其余字段不允许编辑
+                assertNoChange("耗材", old.getMaterialId(), entry.getMaterialId());
+                assertNoChange("库存数量", old.getQty(), entry.getQty());
+                assertNoChange("单价", old.getUnitPrice(), entry.getUnitPrice());
+                assertNoChange("批次号", old.getBatchNo(), entry.getBatchNo());
+                assertNoChange("批号", old.getBatchNumber(), entry.getBatchNumber());
+                assertNoChange("生产日期", old.getBeginTime(), entry.getBeginTime());
+                assertNoChange("有效期", old.getEndTime(), entry.getEndTime());
+                assertNoChange("所属仓库", old.getReturnWarehouseId(), entry.getReturnWarehouseId());
+                assertNoChange("备注", old.getRemark(), entry.getRemark());
+                assertNoChange("科室库存ID", old.getDepInventoryId(), entry.getDepInventoryId());
+            }
         }
-        FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-        if (material == null) {
-            throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+    }
+
+    private void assertNoChange(String fieldName, Object oldVal, Object newVal) {
+        Object left = oldVal;
+        Object right = newVal;
+        if (oldVal instanceof String || newVal instanceof String) {
+            left = oldVal == null ? "" : String.valueOf(oldVal).trim();
+            right = newVal == null ? "" : String.valueOf(newVal).trim();
         }
-        Long defaultWarehouseId = material.getDefaultWarehouseId();
-        if (defaultWarehouseId == null || defaultWarehouseId == 0) {
-            throw new ServiceException("产品档案未维护默认所属仓库ID，请联系库房维护后再生成该产品档案的明细数据。");
+        if (!Objects.equals(left, right)) {
+            throw new ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
         }
-        entry.setReturnWarehouseId(defaultWarehouseId);
     }
 
     private StkBatch ensureStkBatchByStocktaking(StkIoStocktaking stkIoStocktaking, StkIoStocktakingEntry entry, FdMaterial material) {
