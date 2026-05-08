@@ -52,6 +52,97 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+-- ---------- 3.y) 财务管理：卫材入出库汇总（统计口径：耗材出库数据）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3193, '卫材入出库汇总', 1065, 6, 'medicalStockSummary', 'finance/medicalStockSummary/index', NULL,
+  1, 0, 'C', '0', '0', 'finance:medicalStockSummary:list', 'chart',
+  'admin', NOW(), '1', NOW(), '包含卫材入库/卫材出库两张报表，均基于耗材出库数据统计',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/medicalStockSummary/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3193)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3194, '卫材入出库查询', 3193, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:medicalStockSummary:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=3193 AND perms='finance:medicalStockSummary:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3194)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3195, '卫材入出库导出', 3193, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:medicalStockSummary:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=3193 AND perms='finance:medicalStockSummary:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3195)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -6133,6 +6224,10 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND com
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 SET @mat_cat_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/materialCategory/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT (SELECT IFNULL(MAX(menu_id), 1000) + 1 FROM sys_menu), '物资分类查询', @mat_cat_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:query');
 /
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3443, '物资分类新增', @mat_cat_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'

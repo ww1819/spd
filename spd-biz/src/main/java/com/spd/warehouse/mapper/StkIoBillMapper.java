@@ -347,6 +347,16 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectFinanceSettlementSupplierSummary(StkIoBill stkIoBill);
 
     /**
+     * 卫材入库汇总（取出库单数据）：按 日期+供应商+材料类别 聚合金额
+     */
+    List<Map<String, Object>> selectMedicalInboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总（取出库单数据）：按 日期+科室+材料类别+单位+是否高值 聚合金额
+     */
+    List<Map<String, Object>> selectMedicalOutboundSummary(StkIoBill stkIoBill);
+
+    /**
      * 按配送单引用行汇总已制入库单明细数量（不含逻辑删除；可排除指定主表用于修改单自检）
      */
     BigDecimal sumInboundQtyByDeliveryLine(@Param("tenantId") String tenantId,

@@ -213,6 +213,10 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：供应商关键字（名称/编码/简码） */
     private String supplierKeyword;
+    /** 查询参数：仓库关键字（编码/名称/简拼） */
+    private String warehouseKeyword;
+    /** 查询参数：科室关键字（编码/名称/简拼） */
+    private String departmentKeyword;
 
     /** 查询参数：是否过滤“上期=0且本期入出=0”的供应商（1=过滤） */
     private Integer excludeZeroNoBiz;
@@ -544,6 +548,22 @@ public class StkIoBill extends BaseEntity
 
     public void setSupplierKeyword(String supplierKeyword) {
         this.supplierKeyword = supplierKeyword;
+    }
+
+    public String getWarehouseKeyword() {
+        return warehouseKeyword;
+    }
+
+    public void setWarehouseKeyword(String warehouseKeyword) {
+        this.warehouseKeyword = warehouseKeyword;
+    }
+
+    public String getDepartmentKeyword() {
+        return departmentKeyword;
+    }
+
+    public void setDepartmentKeyword(String departmentKeyword) {
+        this.departmentKeyword = departmentKeyword;
     }
 
     public Integer getExcludeZeroNoBiz() {
