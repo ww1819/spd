@@ -6,6 +6,7 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.uuid.UUID7;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdMaterialCategoryMapper;
@@ -31,7 +32,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
      * @return 耗材分类维护
      */
     @Override
-    public FdMaterialCategory selectFdMaterialCategoryByMaterialCategoryId(Long materialCategoryId)
+    public FdMaterialCategory selectFdMaterialCategoryByMaterialCategoryId(String materialCategoryId)
     {
         return fdMaterialCategoryMapper.selectFdMaterialCategoryByMaterialCategoryId(materialCategoryId);
     }
@@ -60,6 +61,9 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
     @Override
     public int insertFdMaterialCategory(FdMaterialCategory fdMaterialCategory)
     {
+        if (StringUtils.isEmpty(fdMaterialCategory.getMaterialCategoryId())) {
+            fdMaterialCategory.setMaterialCategoryId(UUID7.generateUUID7());
+        }
         fdMaterialCategory.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdMaterialCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterialCategory.setCreateBy(SecurityUtils.getUserIdStr());
@@ -105,7 +109,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
      * @return 结果
      */
     @Override
-    public int deleteFdMaterialCategoryByMaterialCategoryId(Long materialCategoryId)
+    public int deleteFdMaterialCategoryByMaterialCategoryId(String materialCategoryId)
     {
         FdMaterialCategory fdMaterialCategory = fdMaterialCategoryMapper.
                 selectFdMaterialCategoryByMaterialCategoryId(materialCategoryId);

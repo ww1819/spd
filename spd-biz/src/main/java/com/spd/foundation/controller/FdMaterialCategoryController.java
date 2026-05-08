@@ -64,7 +64,7 @@ public class FdMaterialCategoryController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('foundation:materialCategory:query')")
     @GetMapping(value = "/{materialCategoryId}")
-    public AjaxResult getInfo(@PathVariable("materialCategoryId") Long materialCategoryId)
+    public AjaxResult getInfo(@PathVariable("materialCategoryId") String materialCategoryId)
     {
         return success(fdMaterialCategoryService.selectFdMaterialCategoryByMaterialCategoryId(materialCategoryId));
     }
@@ -97,7 +97,7 @@ public class FdMaterialCategoryController extends BaseController
     @PreAuthorize("@ss.hasPermi('foundation:materialCategory:remove')")
     @Log(title = "耗材分类维护", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{materialCategoryIds}")
-    public AjaxResult remove(@PathVariable Long materialCategoryIds)
+    public AjaxResult remove(@PathVariable String materialCategoryIds)
     {
         return toAjax(fdMaterialCategoryService.deleteFdMaterialCategoryByMaterialCategoryId(materialCategoryIds));
     }

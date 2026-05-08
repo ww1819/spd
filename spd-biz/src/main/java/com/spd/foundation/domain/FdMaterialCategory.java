@@ -16,7 +16,9 @@ public class FdMaterialCategory extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     /** ID */
-    private Long materialCategoryId;
+    private String materialCategoryId;
+    /** 上级分类ID */
+    private String parentId;
 
     /** 耗材分类编码 */
     @Excel(name = "耗材分类编码")
@@ -25,6 +27,9 @@ public class FdMaterialCategory extends BaseEntity
     /** 耗材分类名称 */
     @Excel(name = "耗材分类名称")
     private String materialCategoryName;
+    /** 拼音简码 */
+    @Excel(name = "拼音简码")
+    private String pinyinCode;
 
     /** 耗材分类地址 */
     @Excel(name = "耗材分类地址")
@@ -40,14 +45,23 @@ public class FdMaterialCategory extends BaseEntity
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
-    public void setMaterialCategoryId(Long materialCategoryId) 
+    public void setMaterialCategoryId(String materialCategoryId) 
     {
         this.materialCategoryId = materialCategoryId;
     }
 
-    public Long getMaterialCategoryId() 
+    public String getMaterialCategoryId() 
     {
         return materialCategoryId;
+    }
+    public void setParentId(String parentId)
+    {
+        this.parentId = parentId;
+    }
+
+    public String getParentId()
+    {
+        return parentId;
     }
     public void setMaterialCategoryCode(String materialCategoryCode) 
     {
@@ -66,6 +80,15 @@ public class FdMaterialCategory extends BaseEntity
     public String getMaterialCategoryName() 
     {
         return materialCategoryName;
+    }
+    public void setPinyinCode(String pinyinCode)
+    {
+        this.pinyinCode = pinyinCode;
+    }
+
+    public String getPinyinCode()
+    {
+        return pinyinCode;
     }
     public void setMaterialCategoryAddress(String materialCategoryAddress) 
     {
@@ -102,8 +125,10 @@ public class FdMaterialCategory extends BaseEntity
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("materialCategoryId", getMaterialCategoryId())
+            .append("parentId", getParentId())
             .append("materialCategoryCode", getMaterialCategoryCode())
             .append("materialCategoryName", getMaterialCategoryName())
+            .append("pinyinCode", getPinyinCode())
             .append("materialCategoryAddress", getMaterialCategoryAddress())
             .append("materialCategoryContact", getMaterialCategoryContact())
             .append("delFlag", getDelFlag())

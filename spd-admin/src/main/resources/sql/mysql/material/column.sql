@@ -844,6 +844,8 @@ CALL add_table_column('fd_material', 'delete_time', 'datetime', '删除时间', 
 /
 CALL add_table_column('fd_material', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('fd_material', 'material_category_id', 'varchar(36)', '材料类别ID', NULL);
+/
 
 -- fd_material_category
 CALL add_table_column('fd_material_category', 'delete_by', 'varchar(64)', '删除者', NULL);
@@ -851,6 +853,10 @@ CALL add_table_column('fd_material_category', 'delete_by', 'varchar(64)', '删�
 CALL add_table_column('fd_material_category', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('fd_material_category', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('fd_material_category', 'parent_id', 'varchar(36)', '上级分类ID', NULL);
+/
+CALL add_table_column('fd_material_category', 'pinyin_code', 'varchar(64)', '拼音简码', NULL);
 /
 
 -- fd_supplier

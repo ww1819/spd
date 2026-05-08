@@ -6,6 +6,26 @@
 -- 按「/」分段，每段一条语句执行
 /
 
+CREATE TABLE `fd_material_category` (
+  `material_category_id` varchar(36) NOT NULL COMMENT 'ID(UUID7)',
+  `parent_id` varchar(36) DEFAULT NULL COMMENT '上级分类ID',
+  `material_category_code` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别编码',
+  `material_category_name` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别名称',
+  `pinyin_code` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '拼音简码',
+  `material_category_address` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别地址',
+  `material_category_contact` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别联系方式',
+  `del_flag` int DEFAULT '0',
+  `create_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `delete_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`material_category_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='材料类别维护，财务科报表用';
+/
+
 -- 科室主数据（科室定数等关联 fd_department.id；tenant_id 同 sb_customer.customer_id）
 CREATE TABLE IF NOT EXISTS `fd_department` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',

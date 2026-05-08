@@ -17,7 +17,7 @@ public interface IFdMaterialCategoryService
      * @param materialCategoryId 耗材分类维护主键
      * @return 耗材分类维护
      */
-    public FdMaterialCategory selectFdMaterialCategoryByMaterialCategoryId(Long materialCategoryId);
+    public FdMaterialCategory selectFdMaterialCategoryByMaterialCategoryId(String materialCategoryId);
 
     /**
      * 查询耗材分类维护列表
@@ -57,5 +57,5 @@ public interface IFdMaterialCategoryService
      * @param materialCategoryId 耗材分类维护主键
      * @return 结果
      */
-    public int deleteFdMaterialCategoryByMaterialCategoryId(Long materialCategoryId);
+    public int deleteFdMaterialCategoryByMaterialCategoryId(String materialCategoryId);
 }

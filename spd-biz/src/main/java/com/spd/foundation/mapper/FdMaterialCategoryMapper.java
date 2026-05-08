@@ -18,7 +18,7 @@ public interface FdMaterialCategoryMapper
      * @param materialCategoryId 耗材分类维护主键
      * @return 耗材分类维护
      */
-    public FdMaterialCategory selectFdMaterialCategoryByMaterialCategoryId(Long materialCategoryId);
+    public FdMaterialCategory selectFdMaterialCategoryByMaterialCategoryId(String materialCategoryId);
 
     /**
      * 查询耗材分类维护列表
@@ -45,8 +45,8 @@ public interface FdMaterialCategoryMapper
     public int updateFdMaterialCategory(FdMaterialCategory fdMaterialCategory);
 
     /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
-    public int deleteFdMaterialCategoryByMaterialCategoryId(@Param("materialCategoryId") Long materialCategoryId, @Param("deleteBy") String deleteBy);
+    public int deleteFdMaterialCategoryByMaterialCategoryId(@Param("materialCategoryId") String materialCategoryId, @Param("deleteBy") String deleteBy);
 
     /** 批量逻辑删除 */
-    public int deleteFdMaterialCategoryByMaterialCategoryIds(@Param("materialCategoryIds") Long[] materialCategoryIds, @Param("deleteBy") String deleteBy);
+    public int deleteFdMaterialCategoryByMaterialCategoryIds(@Param("materialCategoryIds") String[] materialCategoryIds, @Param("deleteBy") String deleteBy);
 }
