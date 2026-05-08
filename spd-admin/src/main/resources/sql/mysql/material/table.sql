@@ -1861,6 +1861,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `stock_qty` decimal(18,2) DEFAULT NULL COMMENT '盘点数量',
   `profit_qty` decimal(18,2) DEFAULT NULL COMMENT '盈亏数量',
+  `profit_loss_flag` varchar(16) DEFAULT NULL COMMENT '盈亏标志(PROFIT/LOSS/EQUAL)',
   `stock_amount` decimal(18,2) DEFAULT NULL COMMENT '盘点金额',
   `profit_amount` decimal(18,2) DEFAULT NULL COMMENT '盈亏金额',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',

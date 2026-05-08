@@ -83,6 +83,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     /** 盈亏数量 */
     @Excel(name = "盈亏数量")
     private BigDecimal profitQty;
+    /** 盈亏标志：PROFIT/LOSS/EQUAL */
+    private String profitLossFlag;
 
     /** 盘点金额 */
     @Excel(name = "盘点金额")
@@ -256,6 +258,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     public void setProfitQty(BigDecimal profitQty) {
         this.profitQty = profitQty;
     }
+    public String getProfitLossFlag() { return profitLossFlag; }
+    public void setProfitLossFlag(String profitLossFlag) { this.profitLossFlag = profitLossFlag; }
 
     public BigDecimal getStockAmount() {
         return stockAmount;
@@ -324,6 +328,7 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("remark", getRemark())
             .append("stockQty", getStockQty())
             .append("profitQty", getProfitQty())
+            .append("profitLossFlag", getProfitLossFlag())
             .append("stockAmount", getStockAmount())
             .append("profitAmount", getProfitAmount())
             .append("returnWarehouseId", getReturnWarehouseId())

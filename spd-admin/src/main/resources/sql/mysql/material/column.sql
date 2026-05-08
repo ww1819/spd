@@ -1496,6 +1496,8 @@ CALL add_table_column('stk_io_stocktaking_entry', 'stock_qty', 'decimal(18,2)', 
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'profit_qty', 'decimal(18,2)', '盈亏数量', NULL);
 /
+CALL add_table_column('stk_io_stocktaking_entry', 'profit_loss_flag', 'varchar(16)', '盈亏标志(PROFIT/LOSS/EQUAL)', NULL);
+/
 CALL add_table_column('stk_io_stocktaking_entry', 'stock_amount', 'decimal(18,2)', '盘点金额', NULL);
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'profit_amount', 'decimal(18,2)', '盈亏金额', NULL);

@@ -109,7 +109,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
         if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
-            stkIoStocktaking.setAuditAdjustsInventory(0);
+            stkIoStocktaking.setAuditAdjustsInventory(1);
         }
         int rows = deptStocktakingMapper.insertDeptStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
@@ -162,6 +162,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if (StringUtils.isEmpty(entry.getBatchNo())) {
                     entry.setBatchNo(getBatchNumber());
                 }
+                fillProfitLossFlag(entry);
                 if (entry.getId() != null) {
                     deptStocktakingMapper.updateDeptStocktakingEntry(entry);
                     keepIds.add(entry.getId());
@@ -238,10 +239,12 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             throw new ServiceException("盘点明细库存数量与当前科室账面库存不一致，请先逐条确认后再审核。");
         }
 
-        // audit_adjusts_inventory=1：审核直接变更科室库存；=0：仅过账，由科室盈亏单处理库存
-        if (stkIoStocktaking.getAuditAdjustsInventory() != null && stkIoStocktaking.getAuditAdjustsInventory() == 1) {
-            updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
+        // 科室盘点审核默认直接回写科室库存与批次，避免出现“已审核但无库存落账”。
+        if (stkIoStocktaking.getAuditAdjustsInventory() == null || stkIoStocktaking.getAuditAdjustsInventory() == 0) {
+            stkIoStocktaking.setAuditAdjustsInventory(1);
         }
+        updateDepInventory(stkIoStocktaking, stkIoStocktakingEntryList);
+        verifyProfitEntriesInventoryAndBatch(stkIoStocktaking, stkIoStocktakingEntryList);
 
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);
@@ -250,6 +253,56 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
         int res = deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
         return res;
+    }
+
+    /**
+     * 审核后兜底校验：盘盈明细必须已生成科室库存，且库存必须关联到有效批次。
+     * 不满足即抛错回滚，避免出现“已审核但库存/批次未落账”。
+     */
+    private void verifyProfitEntriesInventoryAndBatch(StkIoStocktaking bill, List<StkIoStocktakingEntry> entryList) {
+        if (bill == null || entryList == null || bill.getStockType() == null || bill.getStockType() != 502) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : entryList) {
+            if (entry == null) {
+                continue;
+            }
+            BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal stockQty = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+            if (stockQty.compareTo(bookQty) <= 0) {
+                continue;
+            }
+            StkDepInventory depInventory = null;
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+                try {
+                    depInventory = stkDepInventoryMapper.selectStkDepInventoryById(Long.valueOf(entry.getDepInventoryId().trim()));
+                } catch (Exception ignore) {
+                    // fallback below
+                }
+            }
+            if (depInventory == null && StringUtils.isNotEmpty(entry.getBatchNo()) && bill.getDepartmentId() != null) {
+                depInventory = stkDepInventoryMapper.selectStkDepInventoryByBatchAndDeptForStocktaking(entry.getBatchNo(), bill.getDepartmentId());
+            }
+            if (depInventory == null || depInventory.getId() == null) {
+                throw new ServiceException(String.format("盘盈明细审核后未生成科室库存，耗材ID：%s，批次号：%s",
+                    entry.getMaterialId(), entry.getBatchNo()));
+            }
+            if (StringUtils.isEmpty(entry.getDepInventoryId()) && entry.getId() != null) {
+                entry.setDepInventoryId(String.valueOf(depInventory.getId()));
+                deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+            }
+            if (depInventory.getBatchId() == null) {
+                StkBatch batch = StringUtils.isEmpty(entry.getBatchNo()) ? null : stkBatchMapper.selectByBatchNo(entry.getBatchNo());
+                if (batch == null || batch.getId() == null) {
+                    throw new ServiceException(String.format("盘盈明细审核后未生成批次对象，耗材ID：%s，批次号：%s",
+                        entry.getMaterialId(), entry.getBatchNo()));
+                }
+                depInventory.setBatchId(batch.getId());
+                depInventory.setUpdateTime(new Date());
+                depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+                stkDepInventoryMapper.updateStkDepInventory(depInventory);
+            }
+        }
     }
 
     @Override
@@ -380,7 +433,11 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                             "科室库存批次号：%s，在本盘点科室下不存在；若为盘盈请保证盘点数量大于账面库存。"
                                 + "若从科室库存带出明细，请勿依赖产品默认仓库，应保存后重试或重新从科室库存选择。", batchNo));
                     }
-                    insertStkDepInventoryProfitFromDeptStocktaking(stkIoStocktaking, entry, material, stockQty);
+                    StkDepInventory created = insertStkDepInventoryProfitFromDeptStocktaking(stkIoStocktaking, entry, material, stockQty);
+                    if (created != null && created.getId() != null && entry.getId() != null) {
+                        entry.setDepInventoryId(String.valueOf(created.getId()));
+                        deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+                    }
                     continue;
                 }
 
@@ -442,7 +499,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     /**
      * 科室盘点盘盈且科室尚无该批次库存行时，新增 stk_dep_inventory（数量为盘点实盘）
      */
-    private void insertStkDepInventoryProfitFromDeptStocktaking(StkIoStocktaking stkIoStocktaking, StkIoStocktakingEntry entry,
+    private StkDepInventory insertStkDepInventoryProfitFromDeptStocktaking(StkIoStocktaking stkIoStocktaking, StkIoStocktakingEntry entry,
             FdMaterial material, BigDecimal finalQty) {
         StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
         StkDepInventory stkDepInventory = new StkDepInventory();
@@ -468,6 +525,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkDepInventory.setCreateTime(new Date());
         stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
         stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
+        return stkDepInventory;
     }
 
     /**
@@ -488,6 +546,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if(StringUtils.isEmpty(stkIoStocktakingEntry.getBatchNo())){
                     stkIoStocktakingEntry.setBatchNo(getBatchNumber());
                 }
+                fillProfitLossFlag(stkIoStocktakingEntry);
                 list.add(stkIoStocktakingEntry);
             }
             if (list.size() > 0)
@@ -528,6 +587,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
             BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
             entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
+            fillProfitLossFlag(entry);
 
             // 来源科室库存的明细只允许盘亏/平，不允许盘盈
             if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
@@ -544,8 +604,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 // 新增盘盈行必须录入批号、生产日期、有效期、所属仓库
                 if (entry.getId() == null) {
                     if (entry.getReturnWarehouseId() == null || StringUtils.isEmpty(entry.getBatchNumber())
-                        || entry.getBeginTime() == null || entry.getEndTime() == null) {
-                        throw new ServiceException("新增盘盈明细必须录入归属仓库、批号、生产日期、有效期。");
+                        || entry.getEndTime() == null) {
+                        throw new ServiceException("新增盘盈明细必须录入归属仓库、批号、有效期。");
                     }
                 }
             }
@@ -608,7 +668,24 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             entry.setStockQty(adjust.getStockQty() == null ? currentQty : adjust.getStockQty());
             BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
             entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
+            fillProfitLossFlag(entry);
             deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+        }
+    }
+
+    private void fillProfitLossFlag(StkIoStocktakingEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+        BigDecimal stockQty = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+        int cmp = stockQty.compareTo(bookQty);
+        if (cmp > 0) {
+            entry.setProfitLossFlag("PROFIT");
+        } else if (cmp < 0) {
+            entry.setProfitLossFlag("LOSS");
+        } else {
+            entry.setProfitLossFlag("EQUAL");
         }
     }
 
