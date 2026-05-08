@@ -54,6 +54,8 @@ public class InventorySummaryVo {
 
     /** 计费（耗材档案 is_billing） */
     private String isBilling;
+    /** 产品档案启停用（fd_material.is_use：1启用，2停用） */
+    private String materialIsUse;
 
     /** 注册证号 */
     private String registerNo;
@@ -172,6 +174,14 @@ public class InventorySummaryVo {
 
     public void setIsBilling(String isBilling) {
         this.isBilling = isBilling;
+    }
+
+    public String getMaterialIsUse() {
+        return materialIsUse;
+    }
+
+    public void setMaterialIsUse(String materialIsUse) {
+        this.materialIsUse = materialIsUse;
     }
 
     public String getRegisterNo() {

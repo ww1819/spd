@@ -72,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci" column="m_speci" />
         <result property="model" column="m_model" />
         <result property="registerNo" column="m_registerNo" />
+        <result property="isUse" column="m_is_use" />
         <association property="fdUnit" javaType="FdUnit" resultMap="depInvFdUnitResult" />
     </resultMap>
     <resultMap id="depInvFdUnitResult" type="FdUnit">
@@ -99,6 +100,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
 			m.speci m_speci, m.model m_model, m.register_no m_registerNo,
+            m.is_use m_is_use,
 			u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
                s.id sId,s.code supplierCode,s.name supplierName,
                coalesce(stk.begin_time, (select entry.begin_time from stk_io_bill_entry entry 
@@ -129,7 +131,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="stkDepInventoryListWhere">
         where stk.qty &gt; 0
         and (stk.del_flag = 0 or stk.del_flag is null)
-        and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
+        and (m.id is null or (m.del_flag is null or m.del_flag != 1))
         <if test="params != null and params.scopeUserId != null">
             and stk.department_id in (
                 select ud.department_id
@@ -145,6 +147,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             )
         </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="materialIsUse != null and materialIsUse != ''"> and (m.id is null or m.is_use = #{materialIsUse})</if>
         <if test="materialKeyword != null and materialKeyword != ''">
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
@@ -400,6 +403,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="inventorySummaryWhere">
         stk.qty &gt; 0
           and (stk.del_flag = 0 or stk.del_flag is null)
+          and (m.id is null or (m.del_flag is null or m.del_flag != 1))
         <if test="params != null and params.scopeUserId != null">
             and stk.department_id in (
                 select ud.department_id
@@ -415,6 +419,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             )
         </if>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
+        <if test="materialIsUse != null and materialIsUse != ''"> and (m.id is null or m.is_use = #{materialIsUse})</if>
         <if test="materialKeyword != null and materialKeyword != ''">
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
@@ -447,6 +452,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             MAX(ff.factory_name) as factoryName,
             MAX(msup.name) as supplierName,
             MAX(m.is_billing) as isBilling,
+            MAX(m.is_use) as materialIsUse,
             MAX(m.register_no) as registerNo,
             MAX(m.period_date) as periodDate
         from stk_dep_inventory stk
