@@ -66,6 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci"    column="m_speci"    />
         <result property="model"    column="m_model"    />
         <result property="registerNo"    column="m_registerNo"    />
+        <result property="isUse"    column="m_is_use"    />
         <result property="isBilling"    column="m_isBilling"    />
         <result property="periodDate"    column="m_periodDate"    />
         <result property="packageSpeci"    column="m_packageSpeci"    />
@@ -112,6 +113,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				m.id mId,m.code materialCode,m.name materialName,
 				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
 				m.unit_id m_unitId, m.factory_id m_factoryId, m.supplier_id m_supplierId,
+				m.is_use m_is_use,
 				m.is_billing m_isBilling, m.period_date m_periodDate,
 				m.package_speci m_packageSpeci, m.is_way m_isWay,
 				u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
@@ -144,6 +146,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 选库存/选耗材：不展示已删除或已停用的产品档案（m 为空时保留行，避免脏数据整行消失） -->
     <sql id="stkInventoryMaterialActive">
         and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
+    </sql>
+
+    <!-- 库存报表（明细/汇总/预警等）：不剔除已停用产品档案；仍排除已逻辑删除的产品档案 -->
+    <sql id="stkInventoryMaterialReportVisible">
+        and (m.id is null or (m.del_flag is null or m.del_flag != 1))
+    </sql>
+
+    <!-- 产品档案启停用筛选（fd_material.is_use：1=启用，2=停用）；无档案行保留 -->
+    <sql id="stkInventoryMaterialIsUseQuery">
+        <if test="materialIsUse != null and materialIsUse != ''">
+            and (m.id is null or m.is_use = #{materialIsUse})
+        </if>
     </sql>
 
     <sql id="selectStkInventoryTotalVo">
@@ -213,7 +227,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkInventoryVo"/>
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{tenantId}
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialReportVisible"/>
+        <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -246,7 +261,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectStkInventoryTotalVo"/>
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{tenantId}
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialReportVisible"/>
+        <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -291,7 +307,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                ROUND(SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))), 2) materialAmt,
                MAX(w.name) warehouseName,
                MAX(f.factory_name) factoryName,
-               MAX(s.name) supplierName
+               MAX(s.name) supplierName,
+               MAX(m.is_use) materialIsUse
         from stk_inventory stk
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_supplier s on stk.supplier_id = s.id
@@ -300,7 +317,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialReportVisible"/>
+        <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -342,7 +360,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on f.factory_id = m.factory_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialReportVisible"/>
+        <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -561,9 +580,53 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
-    <!-- 库存预警列表：占位查询（返回空集），避免 /listInventoryAlert 被 /{id} 匹配 -->
+    <!-- 库存预警：按耗材+仓库汇总；无安全库存字段时 safetyStock=0；预警=已停用产品档案仍有库存 -->
     <select id="selectInventoryAlertList" parameterType="StkInventory" resultType="java.util.HashMap">
-        select stk.id from stk_inventory stk where stk.tenant_id = #{tenantId} and 1=0
+        select
+            MIN(stk.id) AS id,
+            MAX(IFNULL(m.code, '')) AS materialCode,
+            MAX(IFNULL(m.name, '')) AS materialName,
+            MAX(IFNULL(m.speci, '')) AS materialSpeci,
+            MAX(IFNULL(m.model, '')) AS materialModel,
+            MAX(IFNULL(u.unit_name, '')) AS unitName,
+            MAX(IFNULL(w.name, '')) AS warehouseName,
+            SUM(IFNULL(stk.qty, 0)) AS currentQty,
+            CAST(0 AS DECIMAL(18, 4)) AS safetyStock,
+            CASE
+                WHEN MAX(IFNULL(m.is_use, '')) = '2' AND SUM(IFNULL(stk.qty, 0)) > 0 THEN 1
+                ELSE 0
+            END AS alertStatus,
+            MAX(IFNULL(f.factory_name, '')) AS factoryName,
+            MAX(IFNULL(m.is_use, '')) AS materialIsUse
+        from stk_inventory stk
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on stk.material_id = m.id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory f on f.factory_id = m.factory_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        <include refid="stkInventoryMaterialReportVisible"/>
+        <include refid="stkInventoryMaterialIsUseQuery"/>
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="materialName != null and materialName != ''">
+            and (IFNULL(m.name, '') like concat('%', #{materialName}, '%')
+                 or IFNULL(m.code, '') like concat('%', #{materialName}, '%')
+                 or IFNULL(m.referred_name, '') like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="supplierId != null"> and stk.supplier_id = #{supplierId} </if>
+        group by stk.material_id, stk.warehouse_id
+        having SUM(IFNULL(stk.qty, 0)) > 0
+        <if test="alertStatus == 1 or alertStatus == '1'">
+            and MAX(IFNULL(m.is_use, '')) = '2'
+        </if>
+        <if test="alertStatus == 0 or alertStatus == '0'">
+            and NOT (MAX(IFNULL(m.is_use, '')) = '2' AND SUM(IFNULL(stk.qty, 0)) > 0)
+        </if>
+        order by
+            CASE WHEN MAX(IFNULL(m.is_use, '')) = '2' AND SUM(IFNULL(stk.qty, 0)) > 0 THEN 1 ELSE 0 END desc,
+            MAX(IFNULL(m.code, '')),
+            MAX(IFNULL(w.name, ''))
     </select>
 
     <!-- 有效期预警表列表：根据预警天数查询近效期库存明细 -->
@@ -583,18 +646,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             DATEDIFF(stk.end_time, CURDATE()) daysRemaining,
             IFNULL(stk.qty, 0) qty,
             IFNULL(f.factory_name, '') factoryName,
-            IFNULL(s.name, '') supplierName
+            IFNULL(s.name, '') supplierName,
+            IFNULL(m.is_use, '') materialIsUse
         from stk_inventory stk
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_supplier s on stk.supplier_id = s.id
         left join fd_material m on stk.material_id = m.id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory f on f.factory_id = m.factory_id
-        where stk.qty &gt; 0
+        where (stk.del_flag = 0 or stk.del_flag is null)
+        and stk.qty &gt; 0
         and stk.end_time IS NOT NULL
         and (m.id IS NULL OR m.del_flag IS NULL OR m.del_flag != 1)
-        and (m.id IS NULL OR m.is_use IS NULL OR m.is_use = '' OR m.is_use != '2')
         and stk.tenant_id = #{tenantId}
+        <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="daysToExpiry != null">
         <![CDATA[
         and DATEDIFF(stk.end_time, CURDATE()) <= #{daysToExpiry}

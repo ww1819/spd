@@ -135,6 +135,9 @@ public class StkInventoryController extends BaseController
                 Object supplierNameObj = map.get("supplierName");
                 inventoryVo.setSupplierName(supplierNameObj == null ? "" : supplierNameObj.toString());
 
+                Object materialIsUseObj = map.get("materialIsUse");
+                inventoryVo.setMaterialIsUse(materialIsUseObj == null ? "" : materialIsUseObj.toString());
+
                 summaryVoList.add(inventoryVo);
 
                 BigDecimal materialQty = Convert.toBigDecimal(map.get("materialQty"), BigDecimal.ZERO);

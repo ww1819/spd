@@ -46,6 +46,9 @@ public class StkInventorySummaryVo {
     /** 供应商 */
     private String supplierName;
 
+    /** 产品档案启停用（fd_material.is_use：1=启用，2=停用） */
+    private String materialIsUse;
+
     public Long getId() {
         return id;
     }
@@ -140,6 +143,14 @@ public class StkInventorySummaryVo {
 
     public void setSupplierName(String supplierName) {
         this.supplierName = supplierName;
+    }
+
+    public String getMaterialIsUse() {
+        return materialIsUse;
+    }
+
+    public void setMaterialIsUse(String materialIsUse) {
+        this.materialIsUse = materialIsUse;
     }
 
     @Override
