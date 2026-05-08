@@ -469,6 +469,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
         <choose>
             <when test="billStatus != null">
                 and stk.bill_status = #{billStatus}
@@ -518,6 +533,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
 
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
@@ -536,6 +566,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
           and stk.bill_type in (101,301)
@@ -547,6 +579,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
         <choose>
             <when test="billStatus != null">
                 and stk.bill_status = #{billStatus}
@@ -602,6 +649,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         GROUP BY stk.id, m.code, m.name, stk.bill_type,
@@ -651,6 +713,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
         <choose>
             <when test="billStatus != null"> and stk.bill_status = #{billStatus}</when>
             <otherwise> and stk.bill_status = 2</otherwise>
@@ -672,6 +749,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{scopedTenantId}
         and stk.bill_type in (201,401)
@@ -682,6 +761,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
         <choose>
             <when test="billStatus != null">
                 and stk.bill_status = #{billStatus}
@@ -708,6 +802,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where (stk.del_flag = 0 or stk.del_flag is null)
         and stk.tenant_id = #{scopedTenantId}
         and stk.bill_type in (201,401)
@@ -720,6 +816,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
     </select>

@@ -220,6 +220,16 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：是否过滤“上期=0且本期入出=0”的供应商（1=过滤） */
     private Integer excludeZeroNoBiz;
+    /** 查询参数：财务分类关键字（编码/名称/简拼） */
+    private String financeCategoryKeyword;
+    /** 查询参数：库房分类关键字（编码/名称/简拼） */
+    private String warehouseCategoryKeyword;
+    /** 查询参数：是否高值（1=是 2=否） */
+    private String isGz;
+    /** 查询参数：财务分类多选 */
+    private Long[] financeCategoryIds;
+    /** 查询参数：库房分类多选 */
+    private Long[] warehouseCategoryIds;
 
     /** 查询参数：批号 */
     private String batchNo;
@@ -572,6 +582,46 @@ public class StkIoBill extends BaseEntity
 
     public void setExcludeZeroNoBiz(Integer excludeZeroNoBiz) {
         this.excludeZeroNoBiz = excludeZeroNoBiz;
+    }
+
+    public String getFinanceCategoryKeyword() {
+        return financeCategoryKeyword;
+    }
+
+    public void setFinanceCategoryKeyword(String financeCategoryKeyword) {
+        this.financeCategoryKeyword = financeCategoryKeyword;
+    }
+
+    public String getWarehouseCategoryKeyword() {
+        return warehouseCategoryKeyword;
+    }
+
+    public void setWarehouseCategoryKeyword(String warehouseCategoryKeyword) {
+        this.warehouseCategoryKeyword = warehouseCategoryKeyword;
+    }
+
+    public String getIsGz() {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz) {
+        this.isGz = isGz;
+    }
+
+    public Long[] getFinanceCategoryIds() {
+        return financeCategoryIds;
+    }
+
+    public void setFinanceCategoryIds(Long[] financeCategoryIds) {
+        this.financeCategoryIds = financeCategoryIds;
+    }
+
+    public Long[] getWarehouseCategoryIds() {
+        return warehouseCategoryIds;
+    }
+
+    public void setWarehouseCategoryIds(Long[] warehouseCategoryIds) {
+        this.warehouseCategoryIds = warehouseCategoryIds;
     }
 
     public String getBatchNo() {
