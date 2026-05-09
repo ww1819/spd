@@ -347,6 +347,11 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectFinanceSettlementSupplierSummary(StkIoBill stkIoBill);
 
     /**
+     * 财务结算汇总表二：按科室聚合出退库金额；产品档案 storeroom_id 12 普通耗材、11 高值耗材、13 试剂（出退库 201/401）
+     */
+    List<Map<String, Object>> selectFinanceDeptConsumablePickupSummary(StkIoBill stkIoBill);
+
+    /**
      * 卫材入库汇总（耗材出退库 bill_type 201/401）：按 日期+供应商+材料类别 聚合金额；出库为正、退库为负
      */
     List<Map<String, Object>> selectMedicalInboundSummary(StkIoBill stkIoBill);

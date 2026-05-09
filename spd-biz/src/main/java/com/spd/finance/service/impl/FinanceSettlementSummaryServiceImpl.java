@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.spd.common.utils.StringUtils;
+import com.spd.finance.domain.vo.FinanceDeptConsumablePickupRowVo;
 import com.spd.finance.domain.vo.FinanceSettlementSummaryBundleVo;
 import com.spd.finance.domain.vo.FinanceSettlementSummaryRowVo;
 import com.spd.finance.service.IFinanceSettlementSummaryService;
@@ -40,6 +41,7 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         }
         stkIoBillService.applyCtkDepartmentScopeToQuery(query);
         List<Map<String, Object>> raw = stkIoBillMapper.selectFinanceSettlementSupplierSummary(query);
+        List<Map<String, Object>> rawDept = stkIoBillMapper.selectFinanceDeptConsumablePickupSummary(query);
 
         List<FinanceSettlementSummaryRowVo> material = new ArrayList<>();
         List<FinanceSettlementSummaryRowVo> reagent = new ArrayList<>();
@@ -86,6 +88,32 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         reagent.sort(byName);
         unrecognized.sort(byName);
 
+        List<FinanceDeptConsumablePickupRowVo> deptRows = new ArrayList<>();
+        Comparator<FinanceDeptConsumablePickupRowVo> byDeptName = (a, b) ->
+            zh.compare(StringUtils.nvl(a.getDepartmentName(), ""), StringUtils.nvl(b.getDepartmentName(), ""));
+        if (rawDept != null)
+        {
+            for (Map<String, Object> row : rawDept)
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+                FinanceDeptConsumablePickupRowVo dr = new FinanceDeptConsumablePickupRowVo();
+                Object did = row.get("departmentId");
+                if (did instanceof Number)
+                {
+                    dr.setDepartmentId(((Number) did).longValue());
+                }
+                dr.setDepartmentName(row.get("departmentName") != null ? row.get("departmentName").toString() : "");
+                dr.setPlainConsumablesAmt(toBigDecimal(row.get("plainConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
+                dr.setHighValueConsumablesAmt(toBigDecimal(row.get("highValueConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
+                dr.setReagentAmt(toBigDecimal(row.get("reagentAmt")).setScale(2, RoundingMode.HALF_UP));
+                deptRows.add(dr);
+            }
+        }
+        deptRows.sort(byDeptName);
+
         FinanceSettlementSummaryBundleVo bundle = new FinanceSettlementSummaryBundleVo();
         bundle.setMaterialSuppliers(material);
         bundle.setMaterialWholesaleTotal(materialSum.setScale(2, RoundingMode.HALF_UP));
@@ -93,6 +121,7 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         bundle.setReagentWholesaleTotal(reagentSum.setScale(2, RoundingMode.HALF_UP));
         bundle.setUnrecognizedSuppliers(unrecognized);
         bundle.setUnrecognizedWholesaleTotal(unrecognizedSum.setScale(2, RoundingMode.HALF_UP));
+        bundle.setDeptConsumablePickupRows(deptRows);
         return bundle;
     }
 

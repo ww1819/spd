@@ -797,7 +797,7 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
--- ---------- 3.x) 财务管理：财务结算汇总（出退库按供货单位 / 材料·试剂）----------
+-- ---------- 3.x) 财务管理：财务结算汇总（同页表一供货单位汇总 + 表二科室领取统计；出退库 201/401）----------
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -807,7 +807,7 @@ INSERT INTO sys_menu (
 SELECT
   3191, '财务结算汇总', 1065, 5, 'settlementSummary', 'finance/settlementSummary/index', NULL,
   1, 0, 'C', '0', '0', 'finance:settlementSummary:list', 'documentation',
-  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '出退库按库房分类汇总材料/试剂供货单位批发金额',
+  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '表一：出退库按供货单位汇总材料/试剂批发金额；表二：科室出退库按 storeroom_id 11/12/13 汇总',
   '0', '0'
 FROM DUAL
 WHERE
@@ -843,7 +843,7 @@ INSERT INTO sys_menu (
 SELECT
   3192, '财务结算汇总导出', 3191, 1, '#', '', NULL,
   1, 0, 'F', '0', '0', 'finance:settlementSummary:export', '#',
-  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '前端导出 xlsx',
+  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '表一、表二前端导出 xlsx',
   '0', '0'
 FROM DUAL
 WHERE

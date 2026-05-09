@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 财务结算汇总表：材料、试剂、未识别分类（库房分类未维护或非 11/12/13）及合计
+ * 财务结算汇总表：材料、试剂、未识别分类（库房分类未维护或非 11/12/13）及合计；表二为科室领取器材药品统计行
  */
 public class FinanceSettlementSummaryBundleVo
 {
@@ -16,6 +16,9 @@ public class FinanceSettlementSummaryBundleVo
     /** 库房分类为空或其它 id 的供货单位明细 */
     private List<FinanceSettlementSummaryRowVo> unrecognizedSuppliers = new ArrayList<>();
     private BigDecimal unrecognizedWholesaleTotal = BigDecimal.ZERO;
+
+    /** 表二：按科室汇总（storeroom_id 12/11/13 对应普通耗材/高值耗材/试剂） */
+    private List<FinanceDeptConsumablePickupRowVo> deptConsumablePickupRows = new ArrayList<>();
 
     public List<FinanceSettlementSummaryRowVo> getMaterialSuppliers()
     {
@@ -75,5 +78,15 @@ public class FinanceSettlementSummaryBundleVo
     public void setUnrecognizedWholesaleTotal(BigDecimal unrecognizedWholesaleTotal)
     {
         this.unrecognizedWholesaleTotal = unrecognizedWholesaleTotal != null ? unrecognizedWholesaleTotal : BigDecimal.ZERO;
+    }
+
+    public List<FinanceDeptConsumablePickupRowVo> getDeptConsumablePickupRows()
+    {
+        return deptConsumablePickupRows;
+    }
+
+    public void setDeptConsumablePickupRows(List<FinanceDeptConsumablePickupRowVo> deptConsumablePickupRows)
+    {
+        this.deptConsumablePickupRows = deptConsumablePickupRows != null ? deptConsumablePickupRows : new ArrayList<>();
     }
 }

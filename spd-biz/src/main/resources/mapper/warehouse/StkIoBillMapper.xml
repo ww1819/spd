@@ -1989,6 +1989,66 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             )) &gt; 0.0000001
     </select>
 
+    <!-- 财务结算汇总表二：按科室；普通耗材=产品档案 storeroom_id 12、高值=11、试剂=13（与表一材料/试剂库房分类 id 口径一致）；出库 201 为正、退库 401 为负；金额=单价×数量 -->
+    <select id="selectFinanceDeptConsumablePickupSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            stk.department_id as departmentId,
+            COALESCE(MAX(TRIM(d.name)), '未指定科室') as departmentName,
+            ROUND(SUM(
+                case when m.storeroom_id = 12 then
+                    (case when stk.bill_type = 401 then -1 else 1 end)
+                    * IFNULL(b.qty, 0)
+                    * IFNULL(
+                        IFNULL(b.unit_price,
+                            CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &lt;&gt; 0
+                            THEN ROUND(b.amt / b.qty, 6) ELSE NULL END),
+                        0)
+                else 0 end
+            ), 2) as plainConsumablesAmt,
+            ROUND(SUM(
+                case when m.storeroom_id = 11 then
+                    (case when stk.bill_type = 401 then -1 else 1 end)
+                    * IFNULL(b.qty, 0)
+                    * IFNULL(
+                        IFNULL(b.unit_price,
+                            CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &lt;&gt; 0
+                            THEN ROUND(b.amt / b.qty, 6) ELSE NULL END),
+                        0)
+                else 0 end
+            ), 2) as highValueConsumablesAmt,
+            ROUND(SUM(
+                case when m.storeroom_id = 13 then
+                    (case when stk.bill_type = 401 then -1 else 1 end)
+                    * IFNULL(b.qty, 0)
+                    * IFNULL(
+                        IFNULL(b.unit_price,
+                            CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &lt;&gt; 0
+                            THEN ROUND(b.amt / b.qty, 6) ELSE NULL END),
+                        0)
+                else 0 end
+            ), 2) as reagentAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on b.material_id = m.id
+        left join fd_department d on stk.department_id = d.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
+        <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
+        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+        group by stk.department_id
+        having ABS(IFNULL(plainConsumablesAmt, 0)) + ABS(IFNULL(highValueConsumablesAmt, 0)) + ABS(IFNULL(reagentAmt, 0)) &gt; 0.0000001
+    </select>
+
     <select id="sumInboundQtyByDeliveryLine" resultType="java.math.BigDecimal">
         select coalesce(sum(e.qty), 0)
         from stk_io_bill_entry e
