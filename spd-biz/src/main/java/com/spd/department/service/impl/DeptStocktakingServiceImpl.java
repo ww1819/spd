@@ -506,6 +506,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkDepInventory.setBatchNo(entry.getBatchNo());
         stkDepInventory.setMaterialId(entry.getMaterialId());
         stkDepInventory.setDepartmentId(stkIoStocktaking.getDepartmentId());
+        if (entry.getReturnWarehouseId() == null) {
+            throw new ServiceException("盘盈明细缺少归属仓库。");
+        }
         stkDepInventory.setWarehouseId(entry.getReturnWarehouseId());
         stkDepInventory.setQty(finalQty);
         BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
@@ -601,7 +604,11 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     throw new ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
                 }
             } else {
-                // 新增盘盈行必须录入批号、生产日期、有效期、所属仓库
+                // 衡水市第三人民医院租户：盘盈明细归属仓库默认 10（与前端一致，退库目标仓）
+                if (entry.getReturnWarehouseId() == null && "hengsui-third-001".equals(SecurityUtils.getCustomerId())) {
+                    entry.setReturnWarehouseId(10L);
+                }
+                // 新增盘盈行必须录入归属仓库、批号、有效期（退库退货依赖明细目标仓库）
                 if (entry.getId() == null) {
                     if (entry.getReturnWarehouseId() == null || StringUtils.isEmpty(entry.getBatchNumber())
                         || entry.getEndTime() == null) {
@@ -609,6 +616,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     }
                 }
             }
+
+            fillStocktakingEntryRefStrings(bill, entry);
 
             if (oldEntryMap != null && entry.getId() != null) {
                 StkIoStocktakingEntry old = oldEntryMap.get(entry.getId());
@@ -687,6 +696,23 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         } else {
             entry.setProfitLossFlag("EQUAL");
         }
+    }
+
+    /** 盘点明细行 varchar 快照：科室/仓库库存id、仓库/科室/供应商 */
+    private void fillStocktakingEntryRefStrings(StkIoStocktaking bill, StkIoStocktakingEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        if (entry.getKcNo() != null) {
+            entry.setKcNoStr(String.valueOf(entry.getKcNo()));
+        }
+        if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+            entry.setDepInventoryId(String.valueOf(entry.getDepInventoryId()).trim());
+        }
+        Long wh = entry.getReturnWarehouseId() != null ? entry.getReturnWarehouseId() : bill.getWarehouseId();
+        entry.setWarehouseIdStr(wh != null ? String.valueOf(wh) : null);
+        entry.setDepartmentIdStr(bill.getDepartmentId() != null ? String.valueOf(bill.getDepartmentId()) : null);
+        entry.setSupplierIdStr(entry.getSupplierId() != null ? String.valueOf(entry.getSupplierId()) : null);
     }
 
     private List<StocktakingQtyMismatchVo> buildQtyMismatches(StkIoStocktaking bill) {

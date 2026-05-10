@@ -2339,6 +2339,14 @@ CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_id', 'bigint', '�
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_no_snapshot', 'varchar(100)', '账面批次号快照', null);
 /
+CALL add_table_column('stk_io_stocktaking_entry', 'kc_no_str', 'varchar(64)', '仓库库存明细ID(字符串)', null);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID明细快照', null);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'department_id_str', 'varchar(64)', '科室ID明细快照', null);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id_str', 'varchar(64)', '供应商ID明细快照', null);
+/
 CALL add_table_column('stk_io_profit_loss', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
 /
 CALL add_table_column('stk_io_profit_loss', 'stocktaking_uuid', 'varchar(36)', '关联盘点单uuid', null);

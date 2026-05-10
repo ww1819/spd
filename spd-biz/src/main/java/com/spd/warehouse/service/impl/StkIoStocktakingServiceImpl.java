@@ -1,8 +1,11 @@
 package com.spd.warehouse.service.impl;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +17,8 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.uuid.UUID7;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
@@ -35,6 +40,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
+
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
 
     /**
      * 查询盘点
@@ -88,6 +96,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
             stkIoStocktaking.setAuditAdjustsInventory(0);
         }
+        validateWarehouseStocktakingEntries(stkIoStocktaking);
         int rows = stkIoStocktakingMapper.insertStkIoStocktaking(stkIoStocktaking);
         insertStkIoStocktakingEntry(stkIoStocktaking);
         return rows;
@@ -113,6 +122,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
+        validateWarehouseStocktakingEntries(stkIoStocktaking);
         Long parenId = stkIoStocktaking.getId();
         List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
         List<Long> keepIds = new ArrayList<>();
@@ -259,6 +269,107 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
         entry.setUpdateTime(now);
         entry.setUpdateBy(user);
+        fillStocktakingEntryRefStrings(parent, entry);
+    }
+
+    /**
+     * 仓库盘点（stock_type=501）：有 kc_no 的明细为账面库存行，仅允许盘亏/平；无 kc_no 为盘盈（字典），不要求手工选归属仓库。
+     */
+    private void validateWarehouseStocktakingEntries(StkIoStocktaking bill) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != 501
+            || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        if (bill.getWarehouseId() == null) {
+            throw new ServiceException("仓库盘点必须选择仓库。");
+        }
+        Set<String> kcSeen = new HashSet<>();
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null) {
+                continue;
+            }
+            if (entry.getMaterialId() == null) {
+                throw new ServiceException("盘点明细缺少耗材。");
+            }
+            FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            if (material == null) {
+                throw new ServiceException(String.format("耗材ID：%s，产品档案不存在。", entry.getMaterialId()));
+            }
+            if (entry.getKcNo() != null) {
+                String kck = String.valueOf(entry.getKcNo());
+                if (kcSeen.contains(kck)) {
+                    throw new ServiceException("同一仓库库存明细不允许重复加入盘点单。");
+                }
+                kcSeen.add(kck);
+                if (entry.getStockQty() == null) {
+                    entry.setStockQty(entry.getQty());
+                }
+                BigDecimal book = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+                if (entry.getStockQty().compareTo(book) > 0) {
+                    throw new ServiceException("来源于仓库库存的明细仅允许盘亏或持平，不允许盘盈。");
+                }
+            } else {
+                if (entry.getStockQty() == null || entry.getStockQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ServiceException("新增盘盈明细必须填写大于 0 的盘点数量。");
+                }
+                if (StringUtils.isEmpty(entry.getBatchNumber()) || entry.getEndTime() == null) {
+                    throw new ServiceException("新增盘盈明细必须录入批号、有效期。");
+                }
+                if (material.getSupplierId() == null) {
+                    throw new ServiceException(String.format("耗材[%s]未维护供应商，无法盘盈。", material.getName()));
+                }
+                entry.setSupplierId(material.getSupplierId());
+                if (entry.getReturnWarehouseId() == null) {
+                    Long dw = material.getDefaultWarehouseId() != null ? material.getDefaultWarehouseId() : material.getWarehouseId();
+                    entry.setReturnWarehouseId(dw);
+                }
+                if (entry.getQty() == null) {
+                    entry.setQty(BigDecimal.ZERO);
+                }
+                BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+                if (unitPrice == null) {
+                    unitPrice = material.getPrice() != null ? material.getPrice() : material.getSalePrice();
+                }
+                entry.setUnitPrice(unitPrice);
+                entry.setPrice(unitPrice);
+            }
+            BigDecimal upAll = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            if (upAll != null && entry.getStockQty() != null) {
+                entry.setAmt(entry.getStockQty().multiply(upAll));
+            }
+            fillProfitLossFlagWarehouse(entry);
+        }
+    }
+
+    private void fillProfitLossFlagWarehouse(StkIoStocktakingEntry entry) {
+        BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+        BigDecimal stockQty = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+        int cmp = stockQty.compareTo(bookQty);
+        if (cmp > 0) {
+            entry.setProfitLossFlag("PROFIT");
+        } else if (cmp < 0) {
+            entry.setProfitLossFlag("LOSS");
+        } else {
+            entry.setProfitLossFlag("EQUAL");
+        }
+    }
+
+    private void fillStocktakingEntryRefStrings(StkIoStocktaking bill, StkIoStocktakingEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        if (entry.getKcNo() != null) {
+            entry.setKcNoStr(String.valueOf(entry.getKcNo()));
+        } else {
+            entry.setKcNoStr(null);
+        }
+        if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+            entry.setDepInventoryId(String.valueOf(entry.getDepInventoryId()).trim());
+        }
+        Long wh = bill.getWarehouseId() != null ? bill.getWarehouseId() : entry.getReturnWarehouseId();
+        entry.setWarehouseIdStr(wh != null ? String.valueOf(wh) : null);
+        entry.setDepartmentIdStr(bill.getDepartmentId() != null ? String.valueOf(bill.getDepartmentId()) : null);
+        entry.setSupplierIdStr(entry.getSupplierId() != null ? String.valueOf(entry.getSupplierId()) : null);
     }
 
     private void enrichOrigBatchFromInventory(StkIoStocktakingEntry entry) {
