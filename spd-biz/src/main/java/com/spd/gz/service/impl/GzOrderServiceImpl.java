@@ -396,6 +396,7 @@ public class GzOrderServiceImpl implements IGzOrderService
                 gzOrderEntry.setCreateTime(now);
                 gzOrderEntry.setUpdateBy(userId);
                 gzOrderEntry.setUpdateTime(now);
+                alignGzOrderEntryStrSnapshots(gzOrder, gzOrderEntry);
                 list.add(gzOrderEntry);
             }
             if (list.size() > 0)
@@ -403,6 +404,15 @@ public class GzOrderServiceImpl implements IGzOrderService
                 gzOrderMapper.batchGzOrderEntry(list);
             }
         }
+    }
+
+    private void alignGzOrderEntryStrSnapshots(GzOrder order, GzOrderEntry e) {
+        if (order == null || e == null) {
+            return;
+        }
+        e.setWarehouseIdStr(e.getWarehouseId() != null ? String.valueOf(e.getWarehouseId()) : null);
+        e.setSupplierIdStr(e.getSupplierId() != null ? String.valueOf(e.getSupplierId()) : null);
+        e.setDepartmentIdStr(order.getDepartmentId() != null ? String.valueOf(order.getDepartmentId()) : null);
     }
 
     /**
@@ -452,6 +462,7 @@ public class GzOrderServiceImpl implements IGzOrderService
                 entry.setBillNo(gzOrder.getOrderNo());
                 entry.setUpdateBy(userId);
                 entry.setUpdateTime(now);
+                alignGzOrderEntryStrSnapshots(gzOrder, entry);
 
                 if (entry.getId() != null) {
                     GzOrderEntry old = oldEntryMap.get(entry.getId());
@@ -465,6 +476,7 @@ public class GzOrderServiceImpl implements IGzOrderService
                 } else {
                     entry.setCreateBy(userId);
                     entry.setCreateTime(now);
+                    alignGzOrderEntryStrSnapshots(gzOrder, entry);
                     newList.add(entry);
                     log.info("GZ_ORDER_ENTRY_CHANGE INSERT billId={}, entry={}", parenId, JSON.toJSONString(entry));
                     saveEntryChangeLog("GZ_ORDER", parenId, "GZ_ORDER_ENTRY", null, "INSERT", null, entry, userId, gzOrder.getTenantId());
@@ -524,7 +536,10 @@ public class GzOrderServiceImpl implements IGzOrderService
             || !java.util.Objects.equals(oldRow.getSupplierId(), newRow.getSupplierId())
             || !java.util.Objects.equals(oldRow.getWarehouseId(), newRow.getWarehouseId())
             || !java.util.Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
-            || !java.util.Objects.equals(oldRow.getRemark(), newRow.getRemark());
+            || !java.util.Objects.equals(oldRow.getRemark(), newRow.getRemark())
+            || !java.util.Objects.equals(oldRow.getWarehouseIdStr(), newRow.getWarehouseIdStr())
+            || !java.util.Objects.equals(oldRow.getSupplierIdStr(), newRow.getSupplierIdStr())
+            || !java.util.Objects.equals(oldRow.getDepartmentIdStr(), newRow.getDepartmentIdStr());
     }
 
     public String getBatchNumber() {

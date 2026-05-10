@@ -49,6 +49,12 @@ public class HcCkFlow extends BaseEntity {
     private Date endTime;
     /** 供应商ID */
     private Long supplierId;
+    /** 仓库ID（varchar 快照，与 bigint 冗余一致） */
+    private String warehouseIdStr;
+    /** 供应商ID（varchar 快照） */
+    private String supplierIdStr;
+    /** 科室ID（varchar 快照） */
+    private String departmentIdStr;
     /** 生产厂家ID（fd_factory.factory_id） */
     private Long factoryId;
     /** 关联仓库库存id */
@@ -102,6 +108,12 @@ public class HcCkFlow extends BaseEntity {
     public void setEndTime(Date endTime) { this.endTime = endTime; }
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public String getWarehouseIdStr() { return warehouseIdStr; }
+    public void setWarehouseIdStr(String warehouseIdStr) { this.warehouseIdStr = warehouseIdStr; }
+    public String getSupplierIdStr() { return supplierIdStr; }
+    public void setSupplierIdStr(String supplierIdStr) { this.supplierIdStr = supplierIdStr; }
+    public String getDepartmentIdStr() { return departmentIdStr; }
+    public void setDepartmentIdStr(String departmentIdStr) { this.departmentIdStr = departmentIdStr; }
     public Long getFactoryId() { return factoryId; }
     public void setFactoryId(Long factoryId) { this.factoryId = factoryId; }
     public Long getKcNo() { return kcNo; }

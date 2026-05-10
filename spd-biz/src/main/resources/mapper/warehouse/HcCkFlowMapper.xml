@@ -13,6 +13,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="refBillId != null">ref_bill_id,</if>
             <if test="refEntryId != null">ref_entry_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="warehouseIdStr != null">warehouse_id_str,</if>
+            <if test="supplierIdStr != null">supplier_id_str,</if>
+            <if test="departmentIdStr != null">department_id_str,</if>
             <if test="materialId != null">material_id,</if>
             <if test="batchNo != null">batch_no,</if>
             <if test="batchNumber != null">batch_number,</if>
@@ -45,6 +48,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="refBillId != null">#{refBillId},</if>
             <if test="refEntryId != null">#{refEntryId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="warehouseIdStr != null">#{warehouseIdStr},</if>
+            <if test="supplierIdStr != null">#{supplierIdStr},</if>
+            <if test="departmentIdStr != null">#{departmentIdStr},</if>
             <if test="materialId != null">#{materialId},</if>
             <if test="batchNo != null">#{batchNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>

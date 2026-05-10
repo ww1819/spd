@@ -2382,6 +2382,32 @@ CALL add_table_column('stk_io_profit_loss_entry', 'surplus_stk_batch_id', 'bigin
 CALL add_table_column('stk_io_profit_loss_entry', 'result_stk_inventory_id', 'bigint', '盘盈生成stk_inventory.id', null);
 /
 
+-- ========== 出入库明细/流水/高值明细：单号与仓库供应商科室 varchar 快照 ==========
+CALL add_table_column('stk_io_bill_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID快照(varchar)', null);
+/
+CALL add_table_column('stk_io_bill_entry', 'supplier_id_str', 'varchar(64)', '供应商ID快照(varchar)', null);
+/
+CALL add_table_column('stk_io_bill_entry', 'department_id_str', 'varchar(64)', '科室ID快照(varchar)', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'warehouse_id_str', 'varchar(64)', '仓库ID(varchar快照)', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'supplier_id_str', 'varchar(64)', '供应商ID(varchar快照)', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'department_id_str', 'varchar(64)', '科室ID(varchar快照)', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'warehouse_id_str', 'varchar(64)', '仓库ID(varchar快照)', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'department_id_str', 'varchar(64)', '科室ID(varchar快照)', null);
+/
+CALL add_table_column('gz_order_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID快照(varchar)', null);
+/
+CALL add_table_column('gz_order_entry', 'supplier_id_str', 'varchar(64)', '供应商ID快照(varchar)', null);
+/
+CALL add_table_column('gz_order_entry', 'department_id_str', 'varchar(64)', '科室ID快照(varchar)', null);
+/
+CALL add_table_column('gz_wh_flow', 'department_id', 'varchar(64)', '科室ID快照', null);
+/
+
 -- ========== spd_scm_* 绑定表：del_flag 与全局一致（1=删除；历史若为 2 则迁为 1）==========
 UPDATE spd_scm_tenant_bind SET del_flag = '1' WHERE del_flag = '2';
 /

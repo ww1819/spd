@@ -71,13 +71,13 @@
 
     <insert id="insertGzWhFlow" parameterType="com.spd.gz.domain.GzWhFlow">
         insert into gz_wh_flow(
-            id, tenant_id, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, warehouse_id, warehouse_name,
+            id, tenant_id, bill_id, bill_no, entry_id, ref_bill_id, ref_entry_id, warehouse_id, warehouse_name, department_id,
             material_id, material_code, material_name, material_speci, material_model, batch_no, batch_number, batch_id,
             qty, unit_price, amt, begin_time, end_time, supplier_id, supplier_name, factory_id, factory_name,
             gz_depot_inventory_id, in_hospital_code, master_barcode, secondary_barcode, lx, flow_time, origin_business_type,
             del_flag, create_by, create_time
         ) values (
-            #{id}, #{tenantId}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{warehouseId}, #{warehouseName},
+            #{id}, #{tenantId}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{warehouseId}, #{warehouseName}, #{departmentId},
             #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{batchNo}, #{batchNumber}, #{batchId},
             #{qty}, #{unitPrice}, #{amt}, #{beginTime}, #{endTime}, #{supplierId}, #{supplierName}, #{factoryId}, #{factoryName},
             #{gzDepotInventoryId}, #{inHospitalCode}, #{masterBarcode}, #{secondaryBarcode}, #{lx}, #{flowTime}, #{originBusinessType},

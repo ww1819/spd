@@ -13,6 +13,7 @@ public class GzWhFlow {
     private String refEntryId;
     private String warehouseId;
     private String warehouseName;
+    private String departmentId;
     private String materialId;
     private String materialCode;
     private String materialName;
@@ -63,6 +64,8 @@ public class GzWhFlow {
     public void setWarehouseId(String warehouseId) { this.warehouseId = warehouseId; }
     public String getWarehouseName() { return warehouseName; }
     public void setWarehouseName(String warehouseName) { this.warehouseName = warehouseName; }
+    public String getDepartmentId() { return departmentId; }
+    public void setDepartmentId(String departmentId) { this.departmentId = departmentId; }
     public String getMaterialId() { return materialId; }
     public void setMaterialId(String materialId) { this.materialId = materialId; }
     public String getMaterialCode() { return materialCode; }

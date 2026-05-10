@@ -164,6 +164,13 @@ public class StkIoBillEntry extends BaseEntity
     /** 定数包条码（低值出库/退库/退货行） */
     private String fixedPackageBarcode;
 
+    /** 仓库ID快照（varchar，与表头或库存行一致） */
+    private String warehouseIdStr;
+    /** 供应商ID快照（varchar） */
+    private String supplierIdStr;
+    /** 科室ID快照（varchar） */
+    private String departmentIdStr;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -516,6 +523,30 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setFixedPackageBarcode(String fixedPackageBarcode) {
         this.fixedPackageBarcode = fixedPackageBarcode;
+    }
+
+    public String getWarehouseIdStr() {
+        return warehouseIdStr;
+    }
+
+    public void setWarehouseIdStr(String warehouseIdStr) {
+        this.warehouseIdStr = warehouseIdStr;
+    }
+
+    public String getSupplierIdStr() {
+        return supplierIdStr;
+    }
+
+    public void setSupplierIdStr(String supplierIdStr) {
+        this.supplierIdStr = supplierIdStr;
+    }
+
+    public String getDepartmentIdStr() {
+        return departmentIdStr;
+    }
+
+    public void setDepartmentIdStr(String departmentIdStr) {
+        this.departmentIdStr = departmentIdStr;
     }
 
     @Override
