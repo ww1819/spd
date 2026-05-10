@@ -315,6 +315,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
+    <update id="updateGzOrderEntrySupplierIdByParenId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_order_entry
+        set supplier_id = #{supplierId},
+            update_by = #{updateBy},
+            update_time = now()
+        where paren_id = #{parenId}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
+    </update>
+
     <select id="selectActiveOrderEntryIdsByParenId" resultType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id from gz_order_entry

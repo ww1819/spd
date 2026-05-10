@@ -176,6 +176,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
         syncGzOrderEntry(gzOrder);
+        alignActiveGzOrderEntriesSupplierFromHeader(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);
     }
 
@@ -212,6 +213,13 @@ public class GzOrderServiceImpl implements IGzOrderService
         if(gzOrder == null){
             throw new ServiceException(String.format("高值入库业务ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        alignActiveGzOrderEntriesSupplierFromHeader(gzOrder);
+        gzOrder = gzOrderMapper.selectGzOrderById(billId);
+        if (gzOrder == null) {
+            throw new ServiceException(String.format("高值入库业务ID：%s，不存在!", id));
+        }
+        SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
         if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
             throw new ServiceException(String.format("高值入库单 %s 无明细，无法审核", id));
@@ -395,6 +403,17 @@ public class GzOrderServiceImpl implements IGzOrderService
                 gzOrderMapper.batchGzOrderEntry(list);
             }
         }
+    }
+
+    /**
+     * 主表供应商为权威：将未删除明细 supplier_id 与主表 suppler_id 对齐（仅主表变更、明细未带全等场景）
+     */
+    private void alignActiveGzOrderEntriesSupplierFromHeader(GzOrder gzOrder) {
+        if (gzOrder == null || gzOrder.getId() == null || gzOrder.getSupplerId() == null) {
+            return;
+        }
+        gzOrderMapper.updateGzOrderEntrySupplierIdByParenId(gzOrder.getId(), gzOrder.getSupplerId(),
+            SecurityUtils.getUserIdStr());
     }
 
     /**

@@ -1142,6 +1142,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
+    <update id="updateInboundEntrySupplerByParenId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry
+        set suppler_id = #{supplerId},
+            update_by = #{updateBy},
+            update_time = now()
+        where paren_id = #{parenId}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
+    </update>
+
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill

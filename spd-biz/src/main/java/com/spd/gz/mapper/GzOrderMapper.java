@@ -92,6 +92,12 @@ public interface GzOrderMapper
     int updateGzOrderEntryById(GzOrderEntry entry);
 
     /**
+     * 将主单下未删除明细的 supplier_id 统一为主表供应商（备货验收等以主表为准）
+     */
+    int updateGzOrderEntrySupplierIdByParenId(@Param("parenId") Long parenId, @Param("supplierId") Long supplierId,
+        @Param("updateBy") String updateBy);
+
+    /**
      * 主单下备货院内码明细（gz_order_entry_inhospitalcode_list）
      */
     List<GzOrderEntryInhospitalcodeList> selectInhospitalcodeListByParentId(@Param("parentId") Long parentId);

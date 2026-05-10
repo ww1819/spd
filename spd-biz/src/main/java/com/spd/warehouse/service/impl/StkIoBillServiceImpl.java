@@ -358,7 +358,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
             syncStkIoBillEntry(stkIoBill);
         }
-        return stkIoBillMapper.updateStkIoBill(stkIoBill);
+        int rows = stkIoBillMapper.updateStkIoBill(stkIoBill);
+        if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101 && stkIoBill.getSupplerId() != null
+            && stkIoBill.getId() != null && (entryList == null || entryList.isEmpty())) {
+            persistInboundEntrySupplerToDb(stkIoBill);
+        }
+        return rows;
     }
 
 //    /**
@@ -444,6 +449,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         assertReferencedQtyWithinLimits(stkIoBill, stkIoBill.getId());
 
         normalizeInboundSupplierFields(stkIoBill);
+        persistInboundEntrySupplerToDb(stkIoBill);
 
         //更新库存   
         updateInventory(stkIoBill,stkIoBillEntryList);
@@ -537,40 +543,71 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     /**
-     * 入库保存/审核前：补全明细与主表供应商，保证库存、批次、仓库流水一致
+     * 入库保存/审核前：补全明细与主表供应商，保证库存、批次、仓库流水一致。
+     * 主表 suppler_id 有值时以主表为准，明细一律对齐；主表为空时明细空则按行解析（明细→耗材档案），明细一致则回填主表。
      */
     private void normalizeInboundSupplierFields(StkIoBill bill) {
         if (bill == null || bill.getBillType() == null || bill.getBillType() != 101) {
             return;
         }
         List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
+        if (bill.getSupplerId() != null) {
+            String headerSid = String.valueOf(bill.getSupplerId());
+            if (list != null) {
+                for (StkIoBillEntry e : list) {
+                    if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                        continue;
+                    }
+                    e.setSupplerId(headerSid);
+                }
+            }
+            return;
+        }
         if (list == null) {
             return;
         }
         for (StkIoBillEntry e : list) {
+            if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                continue;
+            }
             Long line = resolveInboundLineSupplierId(bill, e);
             if (line != null && StringUtils.isEmpty(e.getSupplerId())) {
                 e.setSupplerId(String.valueOf(line));
             }
         }
-        if (bill.getSupplerId() == null) {
-            Long unified = null;
-            for (StkIoBillEntry e : list) {
-                Long line = resolveInboundLineSupplierId(bill, e);
-                if (line == null) {
-                    continue;
-                }
-                if (unified == null) {
-                    unified = line;
-                } else if (!unified.equals(line)) {
-                    unified = null;
-                    break;
-                }
+        Long unified = null;
+        for (StkIoBillEntry e : list) {
+            if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                continue;
             }
-            if (unified != null) {
-                bill.setSupplerId(unified);
+            Long line = resolveInboundLineSupplierId(bill, e);
+            if (line == null) {
+                continue;
+            }
+            if (unified == null) {
+                unified = line;
+            } else if (!unified.equals(line)) {
+                unified = null;
+                break;
             }
         }
+        if (unified != null) {
+            bill.setSupplerId(unified);
+        }
+    }
+
+    /**
+     * 入库单已落库后：将未删除明细的 suppler_id 批量写为主表供应商（审核路径、仅改主表等）
+     */
+    private void persistInboundEntrySupplerToDb(StkIoBill bill) {
+        if (bill == null || bill.getId() == null || bill.getBillType() == null || bill.getBillType().intValue() != 101) {
+            return;
+        }
+        if (bill.getSupplerId() == null) {
+            return;
+        }
+        stkIoBillMapper.updateInboundEntrySupplerByParenId(bill.getId(), String.valueOf(bill.getSupplerId()),
+            SecurityUtils.getUserIdStr());
     }
 
     /** 出库/退库制单：从仓库库存回填明细 suppler_id，便于对账与流水兜底 */

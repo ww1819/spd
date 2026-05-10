@@ -161,6 +161,12 @@ public interface StkIoBillMapper
     int updateStkIoBillEntryDepInventoryRef(@Param("id") Long id, @Param("depInventoryId") Long depInventoryId);
 
     /**
+     * 入库单（bill_type=101）：将主单下未删除明细的 suppler_id 统一为主表供应商（与主表一致）
+     */
+    int updateInboundEntrySupplerByParenId(@Param("parenId") Long parenId, @Param("supplerId") String supplerId,
+        @Param("updateBy") String updateBy);
+
+    /**
      * 查询出入库明细表耗材是否存在
      * @param id 耗材ID
      * @return
