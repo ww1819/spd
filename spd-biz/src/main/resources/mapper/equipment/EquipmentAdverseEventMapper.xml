@@ -76,7 +76,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="logicalDeleteRemoved">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update equipment_adverse_event
-        set del_flag = '2',
+        set del_flag = '1',
             delete_by = #{deleteBy},
             delete_time = now(),
             update_by = #{deleteBy},
@@ -95,7 +95,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="logicalDeleteByEquipmentIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update equipment_adverse_event
-        set del_flag = '2',
+        set del_flag = '1',
             delete_by = #{deleteBy},
             delete_time = now(),
             update_by = #{deleteBy},

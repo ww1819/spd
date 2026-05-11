@@ -415,6 +415,7 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
 
     /**
      * 与主表同事务：按提交列表增删改不良事件子表（null 表示不调整子表）。
+     * 子表 {@code del_flag}：0 未删除，1 已删除（逻辑删除时置 1 并写 delete_by/delete_time）。
      */
     private void syncAdverseEventsAfterSave(EquipmentInfo equipmentInfo)
     {

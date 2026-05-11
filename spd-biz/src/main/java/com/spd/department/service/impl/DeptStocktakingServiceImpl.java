@@ -639,7 +639,27 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
     }
 
+    /**
+     * 校验历史明细字段未被篡改。注意：DB/MyBatis 多为 {@link BigDecimal}，前端 JSON 经 Jackson 后常见 {@link Integer}/{@link Long}/{@link Double}，
+     * 若仍用 {@link Objects#equals} 会把「0」与「0.00」或 {@link BigDecimal} 与 {@link Integer} 判为不等，误报「库存数量不允许编辑」。
+     */
     private void assertNoChange(String fieldName, Object oldVal, Object newVal) {
+        if (Objects.equals(oldVal, newVal)) {
+            return;
+        }
+        BigDecimal bdOld = toBigDecimalForAudit(oldVal);
+        BigDecimal bdNew = toBigDecimalForAudit(newVal);
+        if (bdOld != null && bdNew != null && bdOld.compareTo(bdNew) == 0) {
+            return;
+        }
+        // 更新请求体未带「库存数量」「单价」时视为未修改（与旧值一致）
+        if (newVal == null && bdOld != null && ("库存数量".equals(fieldName) || "单价".equals(fieldName))) {
+            return;
+        }
+        if (oldVal instanceof Date && newVal instanceof Date
+            && ((Date) oldVal).getTime() == ((Date) newVal).getTime()) {
+            return;
+        }
         Object left = oldVal;
         Object right = newVal;
         if (oldVal instanceof String || newVal instanceof String) {
@@ -649,6 +669,31 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         if (!Objects.equals(left, right)) {
             throw new ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
         }
+    }
+
+    /** 可参与数值比对的类型转为 BigDecimal；无法解析或非数值类型返回 null */
+    private static BigDecimal toBigDecimalForAudit(Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof BigDecimal) {
+            return (BigDecimal) o;
+        }
+        if (o instanceof Number) {
+            return new BigDecimal(((Number) o).toString());
+        }
+        if (o instanceof String) {
+            String s = ((String) o).trim();
+            if (s.isEmpty()) {
+                return null;
+            }
+            try {
+                return new BigDecimal(s);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private void applyQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {

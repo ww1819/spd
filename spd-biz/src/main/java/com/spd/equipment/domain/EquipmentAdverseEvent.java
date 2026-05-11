@@ -43,7 +43,7 @@ public class EquipmentAdverseEvent extends BaseEntity
 
     private String handlingResult;
 
-    /** 删除标志（0 存在 2 删除） */
+    /** 删除标志（0 未删除，1 已删除） */
     private String delFlag;
 
     public String getId()
