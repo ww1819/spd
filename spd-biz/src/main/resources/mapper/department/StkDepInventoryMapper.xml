@@ -429,6 +429,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
+        <if test="receiptConfirmStatus != null"> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
         <if test="supplierId != null and supplierId != ''"> and m.supplier_id = #{supplierId}</if>
         <!-- 业务日期：按科室库存行入库日期 warehouse_date 筛选（与明细列表排序字段一致） -->
         <if test="beginDate != null"> and stk.warehouse_date is not null and DATE(stk.warehouse_date) &gt;= DATE(#{beginDate})</if>

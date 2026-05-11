@@ -2,6 +2,7 @@ package com.spd.warehouse.controller;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
@@ -159,6 +160,21 @@ public class StkInventoryController extends BaseController
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
         return getDataTable(summaryVoList,totalInfo, total);
+    }
+
+    /**
+     * 仓库盘点盘盈弹窗：按仓库+耗材聚合的库存数量（与 {@link #listInventorySummary} 同源 SQL），全量返回不分页。
+     */
+    @PreAuthorize("@ss.hasPermi('warehouse:inventory:list')")
+    @GetMapping("/stocktakingProfitQtySummary")
+    public AjaxResult stocktakingProfitQtySummary(StkInventory stkInventory)
+    {
+        if (stkInventory == null || stkInventory.getWarehouseId() == null)
+        {
+            return error("仓库不能为空");
+        }
+        List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
+        return success(mapList != null ? mapList : Collections.emptyList());
     }
 
     /**
