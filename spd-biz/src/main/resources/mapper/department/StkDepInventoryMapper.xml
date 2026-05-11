@@ -129,9 +129,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 与列表查询条件一致，供列表与全量合计共用 -->
     <sql id="stkDepInventoryListWhere">
-        where stk.qty &gt; 0
-        and (stk.del_flag = 0 or stk.del_flag is null)
+        where (stk.del_flag = 0 or stk.del_flag is null)
         and (m.id is null or (m.del_flag is null or m.del_flag != 1))
+        <choose>
+            <when test="id != null">
+                and stk.id = #{id}
+            </when>
+            <otherwise>
+                and stk.qty &gt; 0
+            </otherwise>
+        </choose>
         <if test="params != null and params.scopeUserId != null">
             and stk.department_id in (
                 select ud.department_id

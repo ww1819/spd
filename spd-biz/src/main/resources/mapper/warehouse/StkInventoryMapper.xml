@@ -254,6 +254,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </choose>
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="id != null"> and stk.id = #{id}</if>
         order by stk.warehouse_date desc
     </select>
 
@@ -288,6 +289,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </choose>
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="id != null"> and stk.id = #{id}</if>
         order by stk.warehouse_date desc
     </select>
 

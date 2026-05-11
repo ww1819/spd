@@ -1,6 +1,9 @@
 package com.spd.warehouse.service;
 
 import java.util.List;
+
+import com.spd.department.dto.StocktakingQtyAdjustDto;
+import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.domain.StkIoStocktaking;
 
 /**
@@ -60,11 +63,16 @@ public interface IStkIoStocktakingService
     public int deleteStkIoStocktakingById(Long id);
 
     /**
-     * 审核盘点信息
-     * @param id
-     * @return
+     * 审核盘点信息（可选：逐条确认后传入 qtyAdjustList 同步账面库存并回写盘点数量）
+     * @param id 盘点主键
+     * @param adjustList 与 stk_inventory 不一致时的调整项，可为 null
      */
-    int auditStkIoBill(String id);
+    int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList);
+
+    /**
+     * 仓库盘点（stock_type=501）审核前：明细库存数量与当前仓库库存是否一致
+     */
+    List<StocktakingQtyMismatchVo> checkWhStocktakingQtyMismatch(String id);
 
     /**
      * 月结处理

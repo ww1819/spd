@@ -83,6 +83,39 @@ public class StkInventoryController extends BaseController
     }
 
     /**
+     * 弹窗/盘点等对账：仅需登录，查询逻辑与 {@link #list} 一致（租户由 Service 注入），避免无 warehouse:inventory:list 时 403。
+     * 支持按主键 id 精确查一条（替代 GET /warehouse/inventory/:id 的 query 权限）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/list")
+    public TableDataInfo pickList(StkInventory stkInventory)
+    {
+        startPage();
+        List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (StkInventory inventory : list) {
+                if (inventory.getQty() != null) {
+                    subTotalQty = subTotalQty.add(inventory.getQty());
+                }
+                if (inventory.getAmt() != null) {
+                    subTotalAmt = subTotalAmt.add(inventory.getAmt());
+                }
+            }
+        }
+
+        TotalInfo totalInfo = stkInventoryService.selectStkInventoryListTotal(stkInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<StkInventory>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
+    }
+
+    /**
      * 查询库存明细汇总列表
      */
     @GetMapping("/listInventorySummary")
@@ -168,6 +201,21 @@ public class StkInventoryController extends BaseController
     @PreAuthorize("@ss.hasPermi('warehouse:inventory:list')")
     @GetMapping("/stocktakingProfitQtySummary")
     public AjaxResult stocktakingProfitQtySummary(StkInventory stkInventory)
+    {
+        if (stkInventory == null || stkInventory.getWarehouseId() == null)
+        {
+            return error("仓库不能为空");
+        }
+        List<Map<String, Object>> mapList = stkInventoryService.selectStkInventoryListSummary(stkInventory);
+        return success(mapList != null ? mapList : Collections.emptyList());
+    }
+
+    /**
+     * 仓库盘点盘盈弹窗「当前库存」：与 {@link #stocktakingProfitQtySummary} 同源，仅需登录。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/stocktakingProfitQtySummary")
+    public AjaxResult pickStocktakingProfitQtySummary(StkInventory stkInventory)
     {
         if (stkInventory == null || stkInventory.getWarehouseId() == null)
         {
