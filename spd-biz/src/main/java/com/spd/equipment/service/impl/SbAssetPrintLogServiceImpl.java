@@ -36,7 +36,7 @@ public class SbAssetPrintLogServiceImpl implements ISbAssetPrintLogService {
     @Override
     public int insert(SbAssetPrintLog row) {
         if (StringUtils.isEmpty(row.getCustomerId())) {
-            row.setCustomerId(SecurityUtils.getCustomerId());
+            row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());

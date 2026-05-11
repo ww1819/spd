@@ -33,7 +33,7 @@ public class SbAssetCategoryServiceImpl implements ISbAssetCategoryService {
 
     @Override
     public int insert(SbAssetCategory row) {
-        if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         if (StringUtils.isNotEmpty(row.getCategoryName())) row.setCategoryPinyin(PinyinUtils.getPinyinInitials(row.getCategoryName()));
         row.setId(UUID7.generateUUID7());
         row.setDelFlag(0);

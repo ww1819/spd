@@ -41,7 +41,7 @@ public class SbAssetPrintTaskItemServiceImpl implements ISbAssetPrintTaskItemSer
     @Override
     public int insert(SbAssetPrintTaskItem row) {
         if (StringUtils.isEmpty(row.getCustomerId())) {
-            row.setCustomerId(SecurityUtils.getCustomerId());
+            row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());
@@ -67,7 +67,7 @@ public class SbAssetPrintTaskItemServiceImpl implements ISbAssetPrintTaskItemSer
     public int insertBatch(List<SbAssetPrintTaskItem> list) {
         if (list == null || list.isEmpty()) return 0;
         String createBy = SecurityUtils.getUserIdStr();
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         java.util.Date now = DateUtils.getNowDate();
         for (SbAssetPrintTaskItem item : list) {
             if (StringUtils.isEmpty(item.getId())) item.setId(UUID7.generateUUID7());
