@@ -568,33 +568,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
                 gz.setUpdateTime(now);
                 gzDepInventoryMapper.updateGzDepInventory(gz);
 
-                HcKsFlow flow = new HcKsFlow();
-                flow.setBillId(bill.getId());
-                flow.setEntryId(entry.getId());
-                flow.setDepartmentId(bill.getDepartmentId());
-                flow.setWarehouseId(entry.getWarehouseId());
-                flow.setMaterialId(entry.getMaterialId());
-                flow.setBatchNo(entry.getBatchNo());
-                flow.setBatchNumber(entry.getBatchNumer());
-                flow.setBatchId(entry.getBatchId());
-                flow.setQty(entry.getQty());
-                flow.setUnitPrice(entry.getUnitPrice());
-                flow.setAmt(entry.getAmt());
-                flow.setBeginTime(entry.getBeginTime());
-                flow.setEndTime(entry.getEndTime());
-                flow.setSupplierId(entry.getSupplierId());
-                flow.setFactoryId(entry.getFactoryId());
-                flow.setKcNo(entry.getGzDepInventoryId());
-                flow.setLx(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "XH" : "TXH");
-                flow.setFlowTime(now);
-                flow.setOriginBusinessType(entry.getQty().compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗(高值)" : "科室退消耗(高值)");
-                flow.setDelFlag(0);
-                flow.setMainBarcode(entry.getMainBarcode());
-                flow.setSubBarcode(entry.getSubBarcode());
-                flow.setCreateBy(user);
-                flow.setCreateTime(now);
-                flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
-                hcKsFlowMapper.insertHcKsFlow(flow);
+                // 高值科室库存变动写入 gz_dep_flow（由条码生命周期服务统一落库，含无条码主档时的科室流水）
                 hcBarcodeLifecycleService.onDeptBatchConsumeGz(bill, entry, gz);
             }
             else if (entry.getDepInventoryId() != null) {

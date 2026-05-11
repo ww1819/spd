@@ -1017,10 +1017,14 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
 
     @Override
     public void onDeptBatchConsumeGz(DeptBatchConsume bill, DeptBatchConsumeEntry entry, GzDepInventory gzLine) {
-        if (bill == null || gzLine == null || StringUtils.isEmpty(gzLine.getInHospitalCode())) {
+        if (bill == null || gzLine == null) {
             return;
         }
         try {
+            insertGzDepFlowForDeptBatchConsume(bill, entry, gzLine);
+            if (StringUtils.isEmpty(gzLine.getInHospitalCode())) {
+                return;
+            }
             String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId();
             HcBarcodeMaster master = hcBarcodeTraceMapper.selectHcBarcodeMasterByTenantAndBarcode(tenantId, gzLine.getInHospitalCode().trim());
             if (master == null) {
@@ -1034,6 +1038,90 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         } catch (Exception e) {
             log.warn("onDeptBatchConsumeGz failed billId={}", bill.getId(), e);
         }
+    }
+
+    /** 高值科室库存变动：写入 gz_dep_flow（与条码主档是否存在无关）。 */
+    private void insertGzDepFlowForDeptBatchConsume(DeptBatchConsume bill, DeptBatchConsumeEntry entry, GzDepInventory gzLine) {
+        if (entry == null || gzLine == null) {
+            return;
+        }
+        BigDecimal signedQty = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+        if (signedQty.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId();
+        Long deptId = bill.getDepartmentId() != null ? bill.getDepartmentId() : gzLine.getDepartmentId();
+        Long whId = entry.getWarehouseId() != null ? entry.getWarehouseId() : bill.getWarehouseId();
+        Date now = new Date();
+        GzDepFlow df = new GzDepFlow();
+        df.setId(UUID7.generateUUID7());
+        df.setTenantId(tenantId);
+        df.setBillId(bill.getId() != null ? String.valueOf(bill.getId()) : null);
+        df.setBillNo(bill.getConsumeBillNo());
+        df.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
+        df.setDepartmentId(str(deptId));
+        df.setDepartmentName(resolveDepartmentName(deptId));
+        df.setWarehouseId(str(whId));
+        if (whId != null) {
+            FdWarehouse w = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(whId));
+            if (w != null) {
+                df.setWarehouseName(w.getName());
+            }
+        }
+        df.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : str(gzLine.getMaterialId()));
+        if (entry.getMaterialId() != null) {
+            FdMaterial mat = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            if (mat != null) {
+                df.setMaterialCode(mat.getMaterialCode());
+                df.setMaterialName(mat.getMaterialName());
+                df.setMaterialSpeci(mat.getMaterialSpeci());
+                df.setMaterialModel(mat.getMaterialModel());
+            }
+        }
+        if (StringUtils.isEmpty(df.getMaterialName())) {
+            if (StringUtils.isNotEmpty(entry.getMaterialName())) {
+                df.setMaterialName(entry.getMaterialName());
+            }
+            else if (StringUtils.isNotEmpty(gzLine.getMaterialName())) {
+                df.setMaterialName(gzLine.getMaterialName());
+            }
+        }
+        df.setBatchNo(StringUtils.isNotEmpty(entry.getBatchNo()) ? entry.getBatchNo() : gzLine.getBatchNo());
+        df.setBatchNumber(entry.getBatchNumer());
+        df.setBatchId(entry.getBatchId() != null ? String.valueOf(entry.getBatchId()) : null);
+        df.setQty(signedQty.abs());
+        BigDecimal unitPx = entry.getUnitPrice() != null ? entry.getUnitPrice() : gzLine.getUnitPrice();
+        df.setUnitPrice(unitPx);
+        if (unitPx != null) {
+            df.setAmt(unitPx.multiply(signedQty.abs()));
+        }
+        df.setBeginTime(entry.getBeginTime() != null ? entry.getBeginTime() : gzLine.getMaterialDate());
+        df.setEndTime(entry.getEndTime() != null ? entry.getEndTime() : gzLine.getEndTime());
+        String supStr = StringUtils.isNotEmpty(entry.getSupplierId()) ? entry.getSupplierId()
+            : (gzLine.getSupplierId() != null ? String.valueOf(gzLine.getSupplierId()) : null);
+        df.setSupplierId(supStr);
+        if (StringUtils.isNotEmpty(supStr)) {
+            try {
+                df.setSupplierName(resolveSupplierName(Long.parseLong(supStr.trim())));
+            }
+            catch (NumberFormatException ignored) {
+            }
+        }
+        if (entry.getFactoryId() != null) {
+            df.setFactoryId(String.valueOf(entry.getFactoryId()));
+            df.setFactoryName(resolveFactoryName(entry.getFactoryId()));
+        }
+        df.setInHospitalCode(gzLine.getInHospitalCode());
+        df.setMasterBarcode(StringUtils.isNotEmpty(entry.getMainBarcode()) ? entry.getMainBarcode() : gzLine.getMasterBarcode());
+        df.setSecondaryBarcode(StringUtils.isNotEmpty(entry.getSubBarcode()) ? entry.getSubBarcode() : gzLine.getSecondaryBarcode());
+        df.setGzDepInventoryId(gzLine.getId() != null ? String.valueOf(gzLine.getId()) : null);
+        df.setLx(signedQty.compareTo(BigDecimal.ZERO) > 0 ? "XH" : "TXH");
+        df.setFlowTime(now);
+        df.setOriginBusinessType(signedQty.compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗(高值)" : "科室退消耗(高值)");
+        df.setDelFlag(0);
+        df.setCreateBy(uid());
+        df.setCreateTime(now);
+        hcBarcodeTraceMapper.insertGzDepFlow(df);
     }
 
     @Override
