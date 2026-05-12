@@ -1595,7 +1595,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   KEY `idx_hc_ck_supplier` (`supplier_id`),
   KEY `idx_hc_ck_factory` (`factory_id`),
   KEY `idx_hc_ck_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库流水表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='仓库流水表';
 /
 
 CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
@@ -1648,7 +1648,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   KEY `idx_hc_ks_wh` (`warehouse_id`),
   KEY `idx_hc_ks_factory` (`factory_id`),
   KEY `idx_hc_ks_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室流水表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='科室流水表';
 /
 
 CREATE TABLE IF NOT EXISTS `stk_inventory` (
@@ -2996,7 +2996,7 @@ CREATE TABLE IF NOT EXISTS `gz_wh_flow` (
   `warehouse_id` varchar(64) DEFAULT NULL COMMENT '仓库ID',
   `warehouse_name` varchar(200) DEFAULT NULL COMMENT '仓库名称快照',
   `department_id` varchar(64) DEFAULT NULL COMMENT '科室ID快照',
-  `department_name` varchar(200) DEFAULT NULL COMMENT '科室名称快照',
+  `department_name` varchar(200) DEFAULT NULL COMMENT '科室名称快照（与 gz_dep_flow 一致）',
   `material_id` varchar(64) DEFAULT NULL COMMENT '耗材ID',
   `material_code` varchar(128) DEFAULT NULL COMMENT '耗材编码快照',
   `material_name` varchar(256) DEFAULT NULL COMMENT '产品名称快照',
@@ -3032,7 +3032,7 @@ CREATE TABLE IF NOT EXISTS `gz_wh_flow` (
   KEY `idx_gz_wh_flow_tenant_time` (`tenant_id`,`flow_time`),
   KEY `idx_gz_wh_flow_bill` (`tenant_id`,`bill_id`),
   KEY `idx_gz_wh_flow_code` (`tenant_id`,`in_hospital_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值仓库流水';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='高值仓库流水';
 /
 
 -- 高值：科室流水（与 t_hc_ks_flow 并存，专记高值科室侧流转）
@@ -3081,7 +3081,7 @@ CREATE TABLE IF NOT EXISTS `gz_dep_flow` (
   KEY `idx_gz_dep_flow_tenant_time` (`tenant_id`,`flow_time`),
   KEY `idx_gz_dep_flow_bill` (`tenant_id`,`bill_id`),
   KEY `idx_gz_dep_flow_code` (`tenant_id`,`in_hospital_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值科室流水';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='高值科室流水';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

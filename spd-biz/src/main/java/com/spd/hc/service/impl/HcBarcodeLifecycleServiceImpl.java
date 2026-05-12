@@ -713,6 +713,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setEntryId(orderEntry != null && orderEntry.getId() != null ? String.valueOf(orderEntry.getId()) : null);
             wf.setWarehouseId(order.getWarehouseId() != null ? String.valueOf(order.getWarehouseId()) : null);
             wf.setDepartmentId(order.getDepartmentId() != null ? String.valueOf(order.getDepartmentId()) : null);
+            wf.setDepartmentName(resolveDepartmentName(order.getDepartmentId()));
             wf.setWarehouseName(inhospitalRow.getWarehouseName());
             wf.setMaterialId(orderEntry != null && orderEntry.getMaterialId() != null ? String.valueOf(orderEntry.getMaterialId()) : null);
             wf.setMaterialName(inhospitalRow.getMaterialName());
@@ -821,6 +822,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
             wf.setWarehouseId(shipment.getWarehouseId() != null ? String.valueOf(shipment.getWarehouseId()) : null);
             wf.setDepartmentId(shipment.getDepartmentId() != null ? String.valueOf(shipment.getDepartmentId()) : null);
+            wf.setDepartmentName(resolveDepartmentName(shipment.getDepartmentId()));
             wf.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : null);
             wf.setBatchNo(entry.getBatchNo());
             wf.setBatchNumber(entry.getBatchNumber());
@@ -874,6 +876,8 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setBillNo(bill.getGoodsNo());
             wf.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
             wf.setWarehouseId(bill.getWarehouseId() != null ? String.valueOf(bill.getWarehouseId()) : null);
+            wf.setDepartmentId(bill.getDepartmentId() != null ? String.valueOf(bill.getDepartmentId()) : null);
+            wf.setDepartmentName(resolveDepartmentName(bill.getDepartmentId()));
             wf.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : null);
             wf.setBatchNo(entry.getBatchNo());
             wf.setQty(entry.getQty());
@@ -912,6 +916,8 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setBillNo(bill.getGoodsNo());
             wf.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
             wf.setWarehouseId(bill.getWarehouseId() != null ? String.valueOf(bill.getWarehouseId()) : null);
+            wf.setDepartmentId(bill.getDepartmentId() != null ? String.valueOf(bill.getDepartmentId()) : null);
+            wf.setDepartmentName(resolveDepartmentName(bill.getDepartmentId()));
             wf.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : null);
             wf.setBatchNo(entry.getBatchNo());
             wf.setQty(entry.getQty());
