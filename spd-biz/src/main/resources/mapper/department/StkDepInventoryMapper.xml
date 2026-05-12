@@ -125,6 +125,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on stk.supplier_id = CONVERT(s.id, CHAR)
     </sql>
 
+    <!-- 与列表 select 中 end_time 口径一致：表体 endDate 用于近效期筛选 -->
+    <sql id="depInvCoalescedEndTimeExpr">
+        COALESCE(stk.end_time, (select entry.end_time from stk_io_bill_entry entry
+                inner join stk_io_bill bill on bill.id = entry.paren_id
+                where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id
+                and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0
+                order by bill.id desc limit 1))
+    </sql>
+
+    <sql id="depInvCoalescedBeginTimeExpr">
+        COALESCE(stk.begin_time, (select entry.begin_time from stk_io_bill_entry entry
+                inner join stk_io_bill bill on bill.id = entry.paren_id
+                where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id
+                and entry.del_flag = 0 and bill.bill_type = 201 and bill.del_flag = 0
+                order by bill.id desc limit 1))
+    </sql>
+
+    <sql id="stkDepNearExpiryReminderFrom">
+        from stk_dep_inventory stk
+        left join fd_material m on stk.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+    </sql>
+
     <!-- 与列表查询条件一致，供列表与全量合计共用 -->
     <sql id="stkDepInventoryListWhere">
         where stk.qty &gt; 0
@@ -165,12 +188,73 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="supplierId != null and supplierId != ''"> and (stk.supplier_id = #{supplierId} or stk.supplier_id = cast(#{supplierId} as char))</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
+        <if test="depInventoryAlertOnly != null and (depInventoryAlertOnly == 1 or depInventoryAlertOnly == '1')">
+            and exists (
+                select 1 from dep_inventory_warning w
+                where (w.del_flag = 0 or w.del_flag is null)
+                  and w.tenant_id = stk.tenant_id
+                  and w.department_id = stk.department_id
+                  and w.material_id = stk.material_id
+                  and (
+                    (w.min_qty_warning is not null and ifnull((
+                        select sum(s2.qty) from stk_dep_inventory s2
+                        left join fd_material mm on mm.id = s2.material_id
+                        where (s2.del_flag = 0 or s2.del_flag is null)
+                          and s2.tenant_id = stk.tenant_id
+                          and s2.department_id = stk.department_id
+                          and s2.material_id = stk.material_id
+                          and ifnull(s2.qty, 0) &gt; 0
+                          and (mm.id is null or ((mm.del_flag is null or mm.del_flag != 1) and (mm.is_use is null or mm.is_use = '' or mm.is_use != '2')))
+                    ), 0) &lt; w.min_qty_warning)
+                    or (w.max_qty_warning is not null and w.max_qty_warning &gt; 0 and ifnull((
+                        select sum(s3.qty) from stk_dep_inventory s3
+                        left join fd_material mm3 on mm3.id = s3.material_id
+                        where (s3.del_flag = 0 or s3.del_flag is null)
+                          and s3.tenant_id = stk.tenant_id
+                          and s3.department_id = stk.department_id
+                          and s3.material_id = stk.material_id
+                          and ifnull(s3.qty, 0) &gt; 0
+                          and (mm3.id is null or ((mm3.del_flag is null or mm3.del_flag != 1) and (mm3.is_use is null or mm3.is_use = '' or mm3.is_use != '2')))
+                    ), 0) &gt; w.max_qty_warning)
+                  )
+            )
+        </if>
+        <if test="depInventoryNearExpiryDays != null">
+            and (<include refid="depInvCoalescedEndTimeExpr"/>) is not null
+            and datediff((<include refid="depInvCoalescedEndTimeExpr"/>), curdate()) &gt;= 0
+            and datediff((<include refid="depInvCoalescedEndTimeExpr"/>), curdate()) &lt;= #{depInventoryNearExpiryDays}
+        </if>
     </sql>
 
     <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
         <include refid="selectStkDepInventoryVo"/>
         <include refid="stkDepInventoryListWhere"/>
         order by stk.warehouse_date desc
+    </select>
+
+    <select id="selectDepartmentNearExpiryReminderList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentNearExpiryReminderRowVo">
+        select
+            IFNULL(m.code, '') as materialCode,
+            IFNULL(m.name, '') as materialName,
+            IFNULL(m.speci, '') as materialSpeci,
+            IFNULL(m.model, '') as materialModel,
+            IFNULL(u.unit_name, '') as unitName,
+            IFNULL(stk.qty, 0) as qty,
+            IFNULL(stk.amt, 0) as amt,
+            datediff((<include refid="depInvCoalescedEndTimeExpr"/>), curdate()) as daysToExpiry,
+            (<include refid="depInvCoalescedBeginTimeExpr"/>) as produceDate,
+            (<include refid="depInvCoalescedEndTimeExpr"/>) as expiryDate,
+            stk.warehouse_date as warehouseDate
+        <include refid="stkDepNearExpiryReminderFrom"/>
+        <include refid="stkDepInventoryListWhere"/>
+        order by (<include refid="depInvCoalescedEndTimeExpr"/>) asc, stk.id asc
+        limit 500
+    </select>
+
+    <select id="countDepartmentNearExpiryReminder" parameterType="StkDepInventory" resultType="java.lang.Long">
+        select count(1)
+        <include refid="stkDepNearExpiryReminderFrom"/>
+        <include refid="stkDepInventoryListWhere"/>
     </select>
 
     <select id="selectStkDepInventoryListTotal" parameterType="StkDepInventory" resultType="com.spd.common.core.page.TotalInfo">

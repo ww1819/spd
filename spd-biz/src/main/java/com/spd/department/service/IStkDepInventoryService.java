@@ -5,6 +5,7 @@ import com.spd.common.core.page.TotalInfo;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
+import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
 
 /**
  * 科室库存Service接口
@@ -86,4 +87,11 @@ public interface IStkDepInventoryService
     TotalInfo selectInventorySummaryListTotal(StkDepInventory stkDepInventory);
 
     TotalInfo selectDepartmentInOutDetailListTotal(StkDepInventory stkDepInventory);
+
+    /**
+     * 消息提醒：科室近效期库存明细（与科室库存查询近效期 Tab 一致，最多 500 条）
+     */
+    List<DepartmentNearExpiryReminderRowVo> selectDepartmentNearExpiryReminderMonitorList();
+
+    long countDepartmentNearExpiryReminderMonitor();
 }

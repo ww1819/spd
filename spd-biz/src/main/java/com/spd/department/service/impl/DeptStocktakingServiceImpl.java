@@ -18,11 +18,9 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.StkBatch;
-import com.spd.warehouse.domain.StkInventory;
 import com.spd.department.mapper.DeptStocktakingMapper;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.warehouse.mapper.StkBatchMapper;
-import com.spd.warehouse.mapper.StkInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,9 +47,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
     @Autowired
     private StkBatchMapper stkBatchMapper;
-
-    @Autowired
-    private StkInventoryMapper stkInventoryMapper;
 
     @Autowired
     private HcKsFlowMapper hcKsFlowMapper;
@@ -294,7 +289,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
                 if (stkBatch != null && stkBatch.getId() != null) {
                     stkDepInventory.setBatchId(stkBatch.getId());
-                    ensureWarehouseQtyZeroInventory(entry, stkBatch);
+                    // 科室盘点只维护科室库存 stk_dep_inventory，不向 stk_inventory 写入占位行，避免「库存明细查询」出现与仓库无关的 0 库存行
                 }
                 stkDepInventory.setCreateTime(new Date());
                 stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
@@ -352,7 +347,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     depInventory.setBatchId(stkBatch.getId());
                 }
 
-                boolean isProfit = stockQty.compareTo(bookQty) > 0;
                 if (stockQty.compareTo(bookQty) == 0) {
                     depInventory.setReceiptConfirmStatus(1);
                     if (depInventory.getWarehouseId() == null) {
@@ -391,9 +385,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if (depInventory.getBatchNumber() == null) {
                     depInventory.setBatchNumber(entry.getBatchNumber());
                 }
-                if (isProfit) {
-                    ensureWarehouseQtyZeroInventory(entry, stkBatch);
-                }
                 depInventory.setUpdateTime(new Date());
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
@@ -426,7 +417,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkDepInventory.setReceiptConfirmStatus(1);
         if (stkBatch != null && stkBatch.getId() != null) {
             stkDepInventory.setBatchId(stkBatch.getId());
-            ensureWarehouseQtyZeroInventory(entry, stkBatch);
         }
         stkDepInventory.setCreateTime(new Date());
         stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
@@ -565,45 +555,6 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
         stkBatchMapper.insertStkBatch(b);
         return stkBatchMapper.selectByBatchNo(entry.getBatchNo());
-    }
-
-    private void ensureWarehouseQtyZeroInventory(StkIoStocktakingEntry entry, StkBatch stkBatch) {
-        if (entry == null || stkBatch == null || stkBatch.getId() == null) {
-            return;
-        }
-        Long warehouseId = entry.getReturnWarehouseId();
-        if (warehouseId == null) {
-            return;
-        }
-        StkInventory inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(entry.getBatchNo(), warehouseId);
-        if (inventory != null) {
-            // 缺少批次对象表ID时补齐（不强制覆盖数量/金额）
-            if (inventory.getBatchId() == null) {
-                inventory.setBatchId(stkBatch.getId());
-                stkInventoryMapper.updateStkInventory(inventory);
-            }
-            return;
-        }
-
-        StkInventory inv = new StkInventory();
-        inv.setQty(BigDecimal.ZERO);
-        inv.setMaterialId(entry.getMaterialId());
-        inv.setWarehouseId(warehouseId);
-        inv.setUnitPrice(stkBatch.getUnitPrice());
-        inv.setAmt(BigDecimal.ZERO);
-        inv.setBatchNo(entry.getBatchNo());
-        inv.setBatchId(stkBatch.getId());
-        inv.setMaterialNo(entry.getBatchNumber());
-        inv.setMaterialDate(new Date());
-        inv.setWarehouseDate(new Date());
-        inv.setSupplierId(stkBatch.getSupplierId());
-        inv.setBeginTime(entry.getBeginTime());
-        inv.setEndTime(entry.getEndTime());
-        inv.setBatchNumber(entry.getBatchNumber());
-        if (StringUtils.isEmpty(inv.getTenantId())) {
-            inv.setTenantId(SecurityUtils.getCustomerId());
-        }
-        stkInventoryMapper.insertStkInventory(inv);
     }
 
     public String getBatchNumber() {

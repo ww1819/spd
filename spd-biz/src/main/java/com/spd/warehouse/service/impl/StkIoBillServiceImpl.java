@@ -263,6 +263,33 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return stkIoBillMapper.selectStkIoBillList(stkIoBill);
     }
 
+    @Override
+    public List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList()
+    {
+        StkIoBill q = new StkIoBill();
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            q.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkIoBillMapper.selectDepartmentUnreceivedReceiptReminderList(q);
+    }
+
+    @Override
+    public long countDepartmentUnreceivedReceiptReminder()
+    {
+        StkIoBill q = new StkIoBill();
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            q.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        Long n = stkIoBillMapper.countDepartmentUnreceivedReceiptReminder(q);
+        return n != null ? n.longValue() : 0L;
+    }
+
     /**
      * 新增入库
      *

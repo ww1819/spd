@@ -108,12 +108,18 @@ public class FdMaterialController extends BaseController
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/listDeptSafe")
-    public List<Map<String, Object>> listDeptSafe(@RequestParam(value = "name", required = false) String name)
+    public List<Map<String, Object>> listDeptSafe(
+        @RequestParam(value = "name", required = false) String name,
+        @RequestParam(value = "isGz", required = false) String isGz)
     {
         FdMaterial query = new FdMaterial();
         if (StringUtils.isNotEmpty(name))
         {
             query.setName(name.trim());
+        }
+        if (StringUtils.isNotEmpty(isGz))
+        {
+            query.setIsGz(isGz);
         }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         // 业务选耗材：再次排除已删除、已停用（与定数申购等入口一致，避免仅 SQL 时遗漏）
@@ -141,6 +147,7 @@ public class FdMaterialController extends BaseController
             item.put("speci", material.getSpeci());
             item.put("model", material.getModel());
             item.put("brand", material.getBrand());
+            item.put("isGz", material.getIsGz());
             safeList.add(item);
         }
         return safeList;

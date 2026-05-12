@@ -405,4 +405,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="purchaseBillStatus != null"> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
         <include refid="depPurchaseDepartmentScopeFilter"/>
     </select>
+
+    <!-- 与 selectDepPurchaseApplyList 条件一致，仅统计主表行数（首页仓库提醒等） -->
+    <select id="selectDepPurchaseApplyBillCount" parameterType="DepPurchaseApply" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from dep_purchase_apply dpa
+        <where>
+            and dpa.tenant_id = #{scopedTenantId}
+            <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
+            <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
+            <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
+            <if test="userId != null "> and dpa.user_id = #{userId}</if>
+            <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
+            <if test="urgencyLevel != null "> and dpa.urgency_level = #{urgencyLevel}</if>
+            <if test="expectedDeliveryDate != null "> and dpa.expected_delivery_date = #{expectedDeliveryDate}</if>
+            <if test="excludeReferenced != null and excludeReferenced == true"> and not exists (
+                select 1 from purchase_plan_entry_dep_apply r
+                inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
+                where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
+            )</if>
+            <include refid="depPurchaseDepartmentScopeFilter"/>
+            and (dpa.del_flag = 0 or dpa.del_flag is null)
+        </where>
+    </select>
+
+    <!-- 消息提醒：科室申购单（待审核/已审核），排除 plan_status=2 驳回；已审核时间用 update_time（审核通过时更新） -->
+    <select id="selectWarehouseReminderPurchaseMonitorList" parameterType="DepPurchaseApply" resultType="com.spd.department.vo.WarehousePurchaseReminderRowVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            dpa.id as id,
+            dpa.purchase_bill_no as purchaseBillNo,
+            dpa.create_time as createTime,
+            d.name as departmentName,
+            dpa.total_amount as totalAmount,
+            COALESCE(NULLIF(TRIM(cu.nick_name), ''), cu.user_name) as creatorName,
+            dpa.purchase_bill_status as purchaseBillStatus,
+            case when dpa.purchase_bill_status = 2 then dpa.update_time else null end as lastPurchaseAuditDate
+        from dep_purchase_apply dpa
+        left join fd_department d on dpa.department_id = d.id
+        left join sys_user cu on dpa.create_by = cu.user_id
+        <where>
+            and dpa.tenant_id = #{scopedTenantId}
+            and (dpa.del_flag = 0 or dpa.del_flag is null)
+            and dpa.purchase_bill_status in (1, 2)
+            and (dpa.plan_status is null or dpa.plan_status != 2)
+            <include refid="depPurchaseDepartmentScopeFilter"/>
+        </where>
+        order by dpa.create_time desc
+        limit 500
+    </select>
 </mapper>

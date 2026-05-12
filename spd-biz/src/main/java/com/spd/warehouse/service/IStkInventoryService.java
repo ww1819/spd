@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkInventory;
+import com.spd.warehouse.vo.WarehouseNearExpiryReminderRowVo;
 
 /**
  * 库存明细Service接口
@@ -100,10 +101,25 @@ public interface IStkInventoryService
     List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory);
 
     /**
+     * 消息提醒：库存预警明细（与库存查询「库存预警」一致，仅「预警」行，最多 500 条）
+     */
+    List<Map<String, Object>> selectWarehouseInventoryAlertReminderList();
+
+    /** 消息提醒：库存预警行数（仅「预警」） */
+    int countWarehouseInventoryAlertReminderLines();
+
+    /**
      * 有效期预警表列表
      * @param stkInventory 查询条件
      * @return 有效期预警列表
      */
     List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory);
+
+    /**
+     * 消息提醒：近效期库存明细（有效期 0～30 天内）
+     */
+    List<WarehouseNearExpiryReminderRowVo> selectWarehouseNearExpiryReminderList();
+
+    int countWarehouseNearExpiryReminderLines();
 
 }

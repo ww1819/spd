@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
 import com.spd.department.vo.BasApplyOutboundRefVo;
+import com.spd.department.vo.WarehouseApplyReminderRowVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -93,4 +94,14 @@ public interface BasApplyMapper
      * 按条件汇总申领明细数量（首页今日统计等）
      */
     BigDecimal selectBasApplyEntryQtySum(BasApply basApply);
+
+    /**
+     * 按条件统计申领主表单据数（与列表筛选、科室范围一致）
+     */
+    int selectBasApplyBillCount(BasApply basApply);
+
+    /**
+     * 消息提醒：申领单（SL、待审核+已审核）及关联已审核出库最新审核时间（科室数据范围与 selectBasApplyList 一致）
+     */
+    List<WarehouseApplyReminderRowVo> selectWarehouseReminderApplyMonitorList(BasApply basApply);
 }

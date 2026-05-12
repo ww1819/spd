@@ -353,4 +353,11 @@ public interface StkIoBillMapper
         @Param("deliveryNo") String deliveryNo,
         @Param("lineSign") String lineSign,
         @Param("excludeBillId") Long excludeBillId);
+
+    /**
+     * 科室消息提醒：已审核出库(bill_type=201,bill_status=2)、收货未确认，与收货确认列表口径一致，最多 500 条
+     */
+    List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList(StkIoBill stkIoBill);
+
+    Long countDepartmentUnreceivedReceiptReminder(StkIoBill stkIoBill);
 }
