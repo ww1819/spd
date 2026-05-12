@@ -320,6 +320,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if (StringUtils.isEmpty(rkFlow.getTenantId())) {
                         rkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(rkFlow, stkIoBill, entry, stkIoBill.getWarehouseId(), resolveFlowSupplierCaigou(stkIoBill, stkInventory), stkIoBill.getDepartmentId(), fdMaterialMapper);
                     hcCkFlowMapper.insertHcCkFlow(rkFlow);
                 }else if(billType == 201){//出库
                     String batchNo = entry.getBatchNo();
@@ -377,6 +378,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if (StringUtils.isEmpty(ckFlow.getTenantId())) {
                         ckFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(ckFlow, stkIoBill, entry, stkIoBill.getWarehouseId(), resolveFlowSupplierCaigou(stkIoBill, inventory), stkIoBill.getDepartmentId(), fdMaterialMapper);
                     hcCkFlowMapper.insertHcCkFlow(ckFlow);
                 }else if(billType == 301){//退货
                     String batchNo = entry.getBatchNo();
@@ -427,6 +429,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         if (StringUtils.isEmpty(thFlow.getTenantId())) {
                             thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                         }
+                        InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(thFlow, stkIoBill, entry, thFlow.getWarehouseId(), resolveFlowSupplierCaigou(stkIoBill, inventory), stkIoBill.getDepartmentId(), fdMaterialMapper);
                         hcCkFlowMapper.insertHcCkFlow(thFlow);
                     }
 
@@ -572,6 +575,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if (StringUtils.isEmpty(tkFlow.getTenantId())) {
                         tkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(tkFlow, stkIoBill, entry, returnWarehouseId, resolveFlowSupplierCaigou(stkIoBill, inventory), stkIoBill.getDepartmentId(), fdMaterialMapper);
                     hcCkFlowMapper.insertHcCkFlow(tkFlow);
 
                     HcKsFlow ksTkFlow = new HcKsFlow();
@@ -603,6 +607,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     if (StringUtils.isEmpty(ksTkFlow.getTenantId())) {
                         ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
+                    InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterStkIo(ksTkFlow, stkIoBill, entry, returnWarehouseId, stkIoBill.getDepartmentId(), fdMaterialMapper);
                     hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
                 }
             }

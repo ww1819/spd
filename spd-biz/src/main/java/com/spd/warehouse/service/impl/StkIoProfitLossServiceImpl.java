@@ -52,6 +52,7 @@ import com.spd.warehouse.mapper.StkIoProfitLossMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoProfitLossService;
 import com.spd.common.core.page.TotalInfo;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
 /**
@@ -400,9 +401,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setDelFlag(0);
                 flow.setCreateTime(now);
                 flow.setCreateBy(username);
+                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
                 hcCkFlowMapper.insertHcCkFlow(flow);
-            }
-            else {
                 // 盘盈：写入 stk_batch + stk_inventory，流水 lx=PY
                 StkInventory invProbe = null;
                 if (entry.getKcNo() != null) {
@@ -452,6 +452,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setDelFlag(0);
                 flow.setCreateTime(now);
                 flow.setCreateBy(username);
+                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
                 hcCkFlowMapper.insertHcCkFlow(flow);
 
                 stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), newInv.getId(), null);
@@ -582,6 +583,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             ksFlow.setDelFlag(0);
             ksFlow.setCreateTime(now);
             ksFlow.setCreateBy(username);
+            InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, flowWh, fdMaterialMapper);
             hcKsFlowMapper.insertHcKsFlow(ksFlow);
             return;
         }
@@ -636,6 +638,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         ksFlow.setDelFlag(0);
         ksFlow.setCreateTime(now);
         ksFlow.setCreateBy(username);
+        InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, returnWhId, fdMaterialMapper);
         hcKsFlowMapper.insertHcKsFlow(ksFlow);
 
         stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), null, newDep.getId());

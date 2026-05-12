@@ -2407,6 +2407,54 @@ CALL add_table_column('t_hc_ks_flow', 'warehouse_id_str', 'varchar(64)', '仓库
 /
 CALL add_table_column('t_hc_ks_flow', 'department_id_str', 'varchar(64)', '科室ID(varchar快照)', null);
 /
+
+-- ========== 低值流水 t_hc_ck_flow / t_hc_ks_flow：varchar 形态外键/快照（与高值 gz_*_flow 对账维度对齐）==========
+CALL add_table_column('t_hc_ck_flow', 'bill_no', 'varchar(128)', '业务单号快照', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'bill_id_str', 'varchar(64)', '主单ID varchar（与 bill_id 冗余，兼容非纯数字主键）', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'entry_id_str', 'varchar(64)', '明细ID varchar（与 entry_id 冗余）', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'material_id_str', 'varchar(64)', '耗材ID varchar（与 material_id 冗余）', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'kc_no_str', 'varchar(64)', '仓库库存明细 stk_inventory.id varchar', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'batch_id_str', 'varchar(64)', '批次 stk_batch.id varchar', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'factory_id_str', 'varchar(64)', '生产厂家 fd_factory.factory_id varchar', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'bill_no', 'varchar(128)', '业务单号快照', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'bill_id_str', 'varchar(64)', '主单ID varchar（与 bill_id 冗余）', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'entry_id_str', 'varchar(64)', '明细ID varchar（与 entry_id 冗余）', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'material_id_str', 'varchar(64)', '耗材ID varchar（与 material_id 冗余）', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'kc_no_str', 'varchar(64)', '科室库存明细 stk_dep_inventory.id varchar', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'batch_id_str', 'varchar(64)', '批次 stk_batch.id varchar', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'factory_id_str', 'varchar(64)', '生产厂家 fd_factory.factory_id varchar', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+/
+CALL add_table_column('gz_wh_flow', 'department_name', 'varchar(200)', '科室名称快照（与 gz_dep_flow 一致）', null);
+/
+
+-- ========== 低值流水：科室 bigint + 耗材编码/名称快照 ==========
+CALL add_table_column('t_hc_ck_flow', 'department_id', 'bigint', '科室ID（仓库流水按科室统计，可为空）', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'material_code', 'varchar(128)', '耗材编码快照', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'material_name', 'varchar(256)', '耗材名称快照', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'material_code', 'varchar(128)', '耗材编码快照', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'material_name', 'varchar(256)', '耗材名称快照', null);
+/
 CALL add_table_column('gz_order_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID快照(varchar)', null);
 /
 CALL add_table_column('gz_order_entry', 'supplier_id_str', 'varchar(64)', '供应商ID快照(varchar)', null);

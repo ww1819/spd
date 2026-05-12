@@ -33,6 +33,7 @@ import com.spd.department.mapper.DeptBatchConsumeMapper;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.hc.service.IHcBarcodeLifecycleService;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 
 /**
  * 科室批量消耗Service业务层处理
@@ -619,6 +620,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
                 flow.setCreateBy(user);
                 flow.setCreateTime(now);
                 flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+                InventoryMaterialSnapshotHelper.enrichHcKsFlowDeptBatchConsume(flow, bill, entry, fdMaterialMapper);
                 hcKsFlowMapper.insertHcKsFlow(flow);
                 hcBarcodeLifecycleService.onDeptBatchConsumeLv(bill, entry, depInv);
             }
