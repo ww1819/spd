@@ -264,6 +264,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
             entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlagWarehouse(entry);
+            if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                entry.setStockNo(bill.getStockNo());
+            }
             stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
         }
     }
@@ -367,6 +370,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         entry.setUpdateTime(now);
         entry.setUpdateBy(user);
         fillStocktakingEntryRefStrings(parent, entry);
+        if (StringUtils.isNotEmpty(parent.getStockNo())) {
+            entry.setStockNo(parent.getStockNo());
+        }
     }
 
     /**

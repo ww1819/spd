@@ -29,6 +29,7 @@ import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
+
+    @Autowired
+    private StkIoStocktakingMapper stkIoStocktakingMapper;
 
     /**
      * 查询科室盘点
@@ -103,9 +107,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     @Override
     public int insertDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
-        validateAndNormalizeEntries(stkIoStocktaking, null);
         stkIoStocktaking.setStockNo(getNumber());
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        validateAndNormalizeEntries(stkIoStocktaking, null);
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
         if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
@@ -456,6 +460,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                         depInventory.setBatchNumber(entry.getBatchNumber());
                     }
                     stkDepInventoryMapper.updateStkDepInventory(depInventory);
+                    if (entry.getId() != null) {
+                        deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+                    }
                     continue;
                 }
 
@@ -492,6 +499,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
                 stkDepInventoryMapper.updateStkDepInventory(depInventory);
+                if (isProfit && entry.getId() != null) {
+                    Long kc = entry.getKcNo();
+                    String kcStr = StringUtils.isNotEmpty(entry.getKcNoStr()) ? entry.getKcNoStr()
+                        : (kc != null ? String.valueOf(kc) : null);
+                    String depId = StringUtils.isNotEmpty(entry.getDepInventoryId()) ? entry.getDepInventoryId().trim()
+                        : (depInventory.getId() != null ? String.valueOf(depInventory.getId()) : null);
+                    stkIoStocktakingMapper.updateStocktakingEntryPostingInventoryRef(
+                        entry.getId(), kc, kcStr, depId, SecurityUtils.getUserIdStr());
+                }
             }
         }
     }
@@ -567,6 +583,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
             if (entry == null) {
                 continue;
+            }
+            if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                entry.setStockNo(bill.getStockNo());
             }
             if (entry.getMaterialId() == null) {
                 throw new ServiceException("盘点明细缺少耗材，无法保存。");
@@ -902,6 +921,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 inventory.setBatchId(stkBatch.getId());
                 stkInventoryMapper.updateStkInventory(inventory);
             }
+            if (inventory.getId() != null) {
+                entry.setKcNo(inventory.getId());
+                entry.setKcNoStr(String.valueOf(inventory.getId()));
+            }
             return;
         }
 
@@ -924,6 +947,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             inv.setTenantId(SecurityUtils.getCustomerId());
         }
         stkInventoryMapper.insertStkInventory(inv);
+        if (inv.getId() != null) {
+            entry.setKcNo(inv.getId());
+            entry.setKcNoStr(String.valueOf(inv.getId()));
+        }
     }
 
     public String getBatchNumber() {

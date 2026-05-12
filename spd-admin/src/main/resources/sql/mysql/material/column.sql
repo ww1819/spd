@@ -2347,6 +2347,8 @@ CALL add_table_column('stk_io_stocktaking_entry', 'department_id_str', 'varchar(
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id_str', 'varchar(64)', '供应商ID明细快照', null);
 /
+CALL add_table_column('stk_io_stocktaking_entry', 'stock_no', 'varchar(64)', '盘点单号(冗余主表，便于按单号查明细)', NULL);
+/
 CALL add_table_column('stk_io_profit_loss', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
 /
 CALL add_table_column('stk_io_profit_loss', 'stocktaking_uuid', 'varchar(36)', '关联盘点单uuid', null);

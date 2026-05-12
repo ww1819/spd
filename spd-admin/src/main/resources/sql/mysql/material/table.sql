@@ -1895,6 +1895,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `entry_uuid` varchar(36) DEFAULT NULL COMMENT '明细业务主键UUID7',
   `paren_id` bigint NOT NULL COMMENT '主表ID',
+  `stock_no` varchar(64) DEFAULT NULL COMMENT '盘点单号(冗余 stk_io_stocktaking.stock_no，便于按单号查明细)',
   `commodity_id` bigint DEFAULT NULL COMMENT '商品ID',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
   `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
@@ -1934,6 +1935,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_ste_entry_uuid` (`entry_uuid`),
   KEY `idx_stk_ste_paren` (`paren_id`),
+  KEY `idx_stk_ste_stock_no` (`stock_no`),
   KEY `idx_stk_ste_material` (`material_id`),
   KEY `idx_stk_ste_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库盘点单明细表';
