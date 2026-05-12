@@ -219,3 +219,8 @@ CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
   KEY `idx_fd_dept_log_time` (`change_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
 /
+
+-- ========== 设备不良事件（equipment_adverse_event）==========
+-- 整表 DDL 在 equipment/table.sql（CREATE TABLE IF NOT EXISTS `equipment_adverse_event` …）。
+-- 存量库若从未执行过 table.sql 中该段，请直接执行 table.sql 对应建表语句；勿用本文件 add_table_column 拼整表。
+-- equipment_info 无需为不良事件增加列；关联通过子表 equipment_adverse_event.equipment_id 完成。

@@ -782,5 +782,5 @@ CREATE TABLE IF NOT EXISTS `equipment_adverse_event` (
 /
 
 -- ========== 覆盖说明（扫描结论）==========
--- 设备侧业务表已全部包含于上文；若后续新增表，请同步本文件并补充 equipment/column.sql 与相关 Mapper。
+-- 设备侧业务表已全部包含于上文；新增整表请追加本文件；新增字段请追加 equipment/column.sql（add_table_column）；菜单与权限请追加 equipment/menu.sql。
 /
