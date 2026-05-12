@@ -112,7 +112,7 @@ public class FdWarehouseCategoryController extends BaseController
     {
         ExcelUtil<FdWarehouseCategory> util = new ExcelUtil<FdWarehouseCategory>(FdWarehouseCategory.class);
         List<FdWarehouseCategory> list = util.importExcel(file.getInputStream());
-        String message = fdWarehouseCategoryService.importWarehouseCategory(list, updateSupport, getUsername(), confirm);
+        String message = fdWarehouseCategoryService.importWarehouseCategory(list, updateSupport, getUserIdStr(), confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
 
@@ -186,7 +186,7 @@ public class FdWarehouseCategoryController extends BaseController
             FdWarehouseCategory existing = fdWarehouseCategoryService.selectFdWarehouseCategoryByWarehouseCategoryId(row.getWarehouseCategoryId());
             existing.setWarehouseCategoryName(row.getWarehouseCategoryName().trim());
             existing.setReferredName(PinyinUtils.getPinyinInitials(existing.getWarehouseCategoryName()));
-            existing.setUpdateBy(getUsername());
+            existing.setUpdateBy(getUserIdStr());
             fdWarehouseCategoryService.updateFdWarehouseCategory(existing);
             successNum++;
         }

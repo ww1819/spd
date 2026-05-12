@@ -132,7 +132,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
 
     @Override
     public int deleteFixedNumberById(String id) {
-        String operator = SecurityUtils.getUsername();
+        String operator = SecurityUtils.getUserIdStr();
         if (operator == null) {
             operator = "";
         }
@@ -149,7 +149,7 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
-        String operator = SecurityUtils.getUsername();
+        String operator = SecurityUtils.getUserIdStr();
         if (operator == null) {
             operator = "";
         }

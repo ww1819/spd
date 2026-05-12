@@ -35,7 +35,7 @@ public class SysPrintDocRowsServiceImpl implements ISysPrintDocRowsService
         String kind = row.getDocKind() != null ? row.getDocKind().trim().toUpperCase() : "";
         row.setDocKind(kind);
         SysPrintDocRows existing = sysPrintDocRowsMapper.selectByDocKind(kind);
-        String user = SecurityUtils.getUsername();
+        String user = SecurityUtils.getUserIdStr();
         if (existing == null)
         {
             row.setCreateBy(user);

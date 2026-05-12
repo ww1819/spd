@@ -247,7 +247,7 @@ public class FixedNumberController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FixedNumberSaveRequest fixedNumber)
     {
-        fixedNumberService.saveFixedNumber(fixedNumber, getUsername());
+        fixedNumberService.saveFixedNumber(fixedNumber, getUserIdStr());
         return AjaxResult.success("保存成功");
     }
 

@@ -120,7 +120,7 @@ public class FdEquipmentDictController extends BaseController
     {
         ExcelUtil<FdEquipmentDict> util = new ExcelUtil<FdEquipmentDict>(FdEquipmentDict.class);
         List<FdEquipmentDict> fdEquipmentDictList = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdEquipmentDictService.importFdEquipmentDict(fdEquipmentDictList, updateSupport, operName);
         return success(message);
     }

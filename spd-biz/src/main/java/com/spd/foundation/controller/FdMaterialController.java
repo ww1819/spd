@@ -339,7 +339,7 @@ public class FdMaterialController extends BaseController
             return error("耗材不存在");
         }
         db.setHisChargeItemId(chargeItemId);
-        db.setUpdateBy(getUsername());
+        db.setUpdateBy(getUserIdStr());
         return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
@@ -366,7 +366,7 @@ public class FdMaterialController extends BaseController
             return error("耗材不存在");
         }
         db.setHisChargeItemId(null);
-        db.setUpdateBy(getUsername());
+        db.setUpdateBy(getUserIdStr());
         return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
@@ -543,7 +543,7 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
         List<FdMaterial> fdmaterialList = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdMaterialService.importFdMaterial(fdmaterialList, updateSupport, operName);
         return success(message);
     }
@@ -615,7 +615,7 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
         List<MaterialImportAddDto> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdMaterialService.importMaterialImportAdd(list, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
@@ -628,7 +628,7 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<MaterialImportUpdateDto> util = new ExcelUtil<>(MaterialImportUpdateDto.class);
         List<MaterialImportUpdateDto> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdMaterialService.importMaterialImportUpdate(list, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }

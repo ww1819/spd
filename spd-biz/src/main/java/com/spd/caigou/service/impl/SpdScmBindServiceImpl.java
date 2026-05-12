@@ -53,7 +53,7 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
             throw new ServiceException("平台医院编码不能为空");
         }
         String tid = tenantId();
-        String user = SecurityUtils.getUsername();
+        String user = SecurityUtils.getUserIdStr();
         SpdScmTenantBind existing = spdScmTenantBindMapper.selectByTenantId(tid);
         if (existing == null)
         {
@@ -114,7 +114,7 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
         }
         String tid = tenantId();
         String sid = String.valueOf(supplierId);
-        String user = SecurityUtils.getUsername();
+        String user = SecurityUtils.getUserIdStr();
         // 同一租户下每个 SPD 供应商仅一条对照（表 uk：tenant_id + supplier_id）；允许多家 SPD 共用同一平台编码
         SpdScmSupplierBind active = spdScmSupplierBindMapper.selectByTenantAndSupplier(tid, sid);
         if (active != null)
@@ -171,7 +171,7 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
             throw new ServiceException("请选择要删除的供应商绑定");
         }
         String tid = tenantId();
-        String user = SecurityUtils.getUsername();
+        String user = SecurityUtils.getUserIdStr();
         return spdScmSupplierBindMapper.logicalDeleteByTenantAndSupplierIds(tid, new ArrayList<>(sidStr), user);
     }
 }

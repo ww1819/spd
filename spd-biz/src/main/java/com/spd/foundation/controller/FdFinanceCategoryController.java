@@ -102,7 +102,7 @@ public class FdFinanceCategoryController extends BaseController
     {
         ExcelUtil<FdFinanceCategory> util = new ExcelUtil<FdFinanceCategory>(FdFinanceCategory.class);
         List<FdFinanceCategory> list = util.importExcel(file.getInputStream());
-        String message = fdFinanceCategoryService.importFinanceCategory(list, updateSupport, getUsername(), confirm);
+        String message = fdFinanceCategoryService.importFinanceCategory(list, updateSupport, getUserIdStr(), confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
 
@@ -176,7 +176,7 @@ public class FdFinanceCategoryController extends BaseController
             FdFinanceCategory existing = fdFinanceCategoryService.selectFdFinanceCategoryByFinanceCategoryId(row.getFinanceCategoryId());
             existing.setFinanceCategoryName(row.getFinanceCategoryName().trim());
             existing.setReferredName(PinyinUtils.getPinyinInitials(existing.getFinanceCategoryName()));
-            existing.setUpdateBy(getUsername());
+            existing.setUpdateBy(getUserIdStr());
             fdFinanceCategoryService.updateFdFinanceCategory(existing);
             successNum++;
         }

@@ -295,7 +295,7 @@ public class FdDepartmentController extends BaseController
     {
         ExcelUtil<FdDepartment> util = new ExcelUtil<FdDepartment>(FdDepartment.class);
         List<FdDepartment> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdDepartmentService.importFdDepartment(list, updateSupport, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
@@ -373,7 +373,7 @@ public class FdDepartmentController extends BaseController
             FdDepartment existing = fdDepartmentService.selectFdDepartmentById(String.valueOf(row.getId()));
             existing.setName(row.getName().trim());
             existing.setReferredName(PinyinUtils.getPinyinInitials(existing.getName()));
-            existing.setUpdateBy(getUsername());
+            existing.setUpdateBy(getUserIdStr());
             fdDepartmentService.updateFdDepartment(existing);
             successNum++;
         }

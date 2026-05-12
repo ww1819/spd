@@ -298,6 +298,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
      */
     @Override
     public int auditPurchaseApply(String id, String auditBy) {
+        auditBy = SecurityUtils.getUserIdStr();
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
         if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
@@ -350,6 +351,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
      */
     @Override
     public int confirmReceipt(String id, String confirmBy) {
+        confirmBy = SecurityUtils.getUserIdStr();
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
         if(depPurchaseApply == null){
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));

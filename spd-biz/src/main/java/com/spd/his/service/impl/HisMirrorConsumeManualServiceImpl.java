@@ -125,7 +125,6 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         vo.setMirrorLineSkippedZeroQty(skipped);
         List<HisMirrorConsumeLink> linkBuffer = new ArrayList<>();
         Date linkTime = DateUtils.getNowDate();
-        String auditName = SecurityUtils.getUsername();
         String createBy = SecurityUtils.getUserIdStr();
         for (Map.Entry<String, List<AllocPiece>> en : groups.entrySet())
         {
@@ -157,7 +156,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 throw new ServiceException("生成消耗主单失败");
             }
             vo.getConsumeBillIds().add(consumeId);
-            deptBatchConsumeService.auditConsume(String.valueOf(consumeId), auditName);
+            deptBatchConsumeService.auditConsume(String.valueOf(consumeId), createBy);
             List<DeptBatchConsumeEntry> persisted = bill.getDeptBatchConsumeEntryList();
             if (persisted == null || persisted.size() != gPieces.size())
             {
@@ -353,8 +352,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException("生成消耗主单失败");
         }
-        String auditName = SecurityUtils.getUsername();
-        deptBatchConsumeService.auditConsume(String.valueOf(consumeId), auditName);
+        deptBatchConsumeService.auditConsume(String.valueOf(consumeId), createBy);
         List<DeptBatchConsumeEntry> persisted = bill.getDeptBatchConsumeEntryList();
         if (persisted == null || persisted.size() != entries.size())
         {
@@ -426,18 +424,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
 
     private String currentMirrorProcessBy()
     {
-        try
-        {
-            com.spd.common.core.domain.model.LoginUser lu = SecurityUtils.getLoginUser();
-            if (lu != null && lu.getUser() != null && StringUtils.isNotBlank(lu.getUser().getNickName()))
-            {
-                return lu.getUser().getNickName();
-            }
-        }
-        catch (Exception ignored)
-        {
-        }
-        return SecurityUtils.getUsername();
+        return SecurityUtils.getUserIdStr();
     }
 
     private String resolveVisitKind(String raw)
