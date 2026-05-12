@@ -151,12 +151,6 @@ public class StkInventory extends BaseEntity
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
-    /** 查询参数：库存预警状态（1=仅低于下限或高于上限，0=仅范围内，空=全部监测行） */
-    private String alertStatus;
-
-    /** 查询参数：产品档案启停用（fd_material.is_use，与库存预警/有效期等筛选一致） */
-    private String materialIsUse;
-
     @Excel(name = "批号")
     private String batchNumber;
 
@@ -496,22 +490,6 @@ public class StkInventory extends BaseEntity
 
     public void setDaysToExpiry(Integer daysToExpiry) {
         this.daysToExpiry = daysToExpiry;
-    }
-
-    public String getAlertStatus() {
-        return alertStatus;
-    }
-
-    public void setAlertStatus(String alertStatus) {
-        this.alertStatus = alertStatus;
-    }
-
-    public String getMaterialIsUse() {
-        return materialIsUse;
-    }
-
-    public void setMaterialIsUse(String materialIsUse) {
-        this.materialIsUse = materialIsUse;
     }
 
     @Override

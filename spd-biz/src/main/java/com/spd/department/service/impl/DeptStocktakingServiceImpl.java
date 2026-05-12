@@ -22,6 +22,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.StkBatch;
+import com.spd.warehouse.domain.StkInventory;
 import com.spd.department.mapper.DeptStocktakingMapper;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
@@ -494,7 +495,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
                 stkDepInventoryMapper.updateStkDepInventory(depInventory);
-                if (isProfit && entry.getId() != null) {
+                if (stockQty.compareTo(bookQty) > 0 && entry.getId() != null) {
                     Long kc = entry.getKcNo();
                     String kcStr = StringUtils.isNotEmpty(entry.getKcNoStr()) ? entry.getKcNoStr()
                         : (kc != null ? String.valueOf(kc) : null);
