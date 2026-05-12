@@ -161,6 +161,12 @@ public interface StkIoBillMapper
     int updateStkIoBillEntryDepInventoryRef(@Param("id") Long id, @Param("depInventoryId") Long depInventoryId);
 
     /**
+     * 入库单（bill_type=101）：将主单下未删除明细的 suppler_id 统一为主表供应商（与主表一致）
+     */
+    int updateInboundEntrySupplerByParenId(@Param("parenId") Long parenId, @Param("supplerId") String supplerId,
+        @Param("updateBy") String updateBy);
+
+    /**
      * 查询出入库明细表耗材是否存在
      * @param id 耗材ID
      * @return
@@ -345,6 +351,41 @@ public interface StkIoBillMapper
      * 财务结算汇总：按材料/试剂 + 供货单位聚合批发金额（出退库 201/401，单价×数量）
      */
     List<Map<String, Object>> selectFinanceSettlementSupplierSummary(StkIoBill stkIoBill);
+
+    /**
+     * 财务结算汇总表二：按科室聚合出退库金额；产品档案 storeroom_id 12 普通耗材、11 高值耗材、13 试剂（出退库 201/401）
+     */
+    List<Map<String, Object>> selectFinanceDeptConsumablePickupSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材入库汇总（耗材出退库 bill_type 201/401）：按 日期+供应商+材料类别 聚合金额；出库为正、退库为负
+     */
+    List<Map<String, Object>> selectMedicalInboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材入库汇总聚合行数（与 {@link #selectMedicalInboundSummary} 分组口径一致）
+     */
+    long countMedicalInboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材入库汇总：在相同筛选与分组口径下，对聚合后各行的金额求和（含退库负值）
+     */
+    BigDecimal sumMedicalInboundSummaryAmount(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总（耗材出退库 bill_type 201/401）：按 日期+科室+材料类别+单位+是否高值 聚合金额；出库为正、退库为负
+     */
+    List<Map<String, Object>> selectMedicalOutboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总聚合行数（与 {@link #selectMedicalOutboundSummary} 分组口径一致）
+     */
+    long countMedicalOutboundSummary(StkIoBill stkIoBill);
+
+    /**
+     * 卫材出库汇总：在相同筛选与分组口径下，对聚合后各行的金额求和（含退库负值）
+     */
+    BigDecimal sumMedicalOutboundSummaryAmount(StkIoBill stkIoBill);
 
     /**
      * 按配送单引用行汇总已制入库单明细数量（不含逻辑删除；可排除指定主表用于修改单自检）

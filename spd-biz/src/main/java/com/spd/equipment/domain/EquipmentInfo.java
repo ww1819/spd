@@ -170,6 +170,9 @@ public class EquipmentInfo extends BaseEntity
     @JsonProperty("attachedMaterials")
     private List<String> attachedMaterialsList;
 
+    /** 不良事件明细（持久化至 equipment_adverse_event） */
+    private List<EquipmentAdverseEvent> adverseEventList;
+
     /** 效益分析（0否 1是） */
     @Excel(name = "效益分析", readConverterExp = "0=否,1=是")
     private String benefitAnalysis;
@@ -699,6 +702,16 @@ public class EquipmentInfo extends BaseEntity
     public List<String> getAttachedMaterialsList() 
     {
         return attachedMaterialsList;
+    }
+
+    public List<EquipmentAdverseEvent> getAdverseEventList()
+    {
+        return adverseEventList;
+    }
+
+    public void setAdverseEventList(List<EquipmentAdverseEvent> adverseEventList)
+    {
+        this.adverseEventList = adverseEventList;
     }
 
     public void setBenefitAnalysis(String benefitAnalysis) 

@@ -1,15 +1,19 @@
 package com.spd.caigou.controller;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.spd.caigou.domain.SpdScmSupplierBind;
@@ -50,9 +54,12 @@ public class CaigouScmBindController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('caigou:scmBind:query')")
     @GetMapping("/supplier/list")
-    public AjaxResult listSupplierBinds()
+    public AjaxResult listSupplierBinds(
+            @RequestParam(value = "spdSupplierCode", required = false) String spdSupplierCode,
+            @RequestParam(value = "scmSupplierCode", required = false) String scmSupplierCode,
+            @RequestParam(value = "referredCode", required = false) String referredCode)
     {
-        List<SpdScmSupplierBind> list = spdScmBindService.listSupplierBinds();
+        List<SpdScmSupplierBind> list = spdScmBindService.listSupplierBinds(spdSupplierCode, scmSupplierCode, referredCode);
         return success(list);
     }
 
@@ -82,5 +89,42 @@ public class CaigouScmBindController extends BaseController
         }
         spdScmBindService.saveSupplierBind(supplierId, code, remark);
         return success();
+    }
+
+    /**
+     * 逻辑删除供应商绑定；路径支持单个 ID 或多个逗号分隔，如 1306 或 1305,1306
+     */
+    @Log(title = "云平台供应商编码绑定", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('caigou:scmBind:remove')")
+    @DeleteMapping("/supplier/{supplierIds}")
+    public AjaxResult removeSupplierBinds(@PathVariable("supplierIds") String supplierIds)
+    {
+        if (StringUtils.isEmpty(supplierIds))
+        {
+            return error("supplierIds 不能为空");
+        }
+        Set<Long> idSet = new LinkedHashSet<>();
+        for (String part : supplierIds.split(","))
+        {
+            String p = StringUtils.trim(part);
+            if (StringUtils.isEmpty(p))
+            {
+                continue;
+            }
+            try
+            {
+                idSet.add(Long.parseLong(p));
+            }
+            catch (NumberFormatException e)
+            {
+                return error("无效的供应商ID：" + p);
+            }
+        }
+        if (idSet.isEmpty())
+        {
+            return error("supplierIds 不能为空");
+        }
+        int rows = spdScmBindService.removeSupplierBinds(idSet);
+        return toAjax(rows);
     }
 }

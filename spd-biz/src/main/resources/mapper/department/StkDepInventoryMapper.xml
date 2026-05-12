@@ -72,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci" column="m_speci" />
         <result property="model" column="m_model" />
         <result property="registerNo" column="m_registerNo" />
+        <result property="isUse" column="m_is_use" />
         <association property="fdUnit" javaType="FdUnit" resultMap="depInvFdUnitResult" />
     </resultMap>
     <resultMap id="depInvFdUnitResult" type="FdUnit">
@@ -99,6 +100,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			d.id dId,d.code departmentCode,d.name departmentName,
 			m.id mId,m.code materialCode,m.name materialName,
 			m.speci m_speci, m.model m_model, m.register_no m_registerNo,
+            m.is_use m_is_use,
 			u.unit_id u_id, u.unit_code u_code, u.unit_name u_name,
                s.id sId,s.code supplierCode,s.name supplierName,
                coalesce(stk.begin_time, (select entry.begin_time from stk_io_bill_entry entry 
@@ -150,9 +152,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 与列表查询条件一致，供列表与全量合计共用 -->
     <sql id="stkDepInventoryListWhere">
-        where stk.qty &gt; 0
-        and (stk.del_flag = 0 or stk.del_flag is null)
-        and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
+        where (stk.del_flag = 0 or stk.del_flag is null)
+        and (m.id is null or (m.del_flag is null or m.del_flag != 1))
+        <choose>
+            <when test="id != null">
+                and stk.id = #{id}
+            </when>
+            <otherwise>
+                and stk.qty &gt; 0
+            </otherwise>
+        </choose>
         <if test="params != null and params.scopeUserId != null">
             and stk.department_id in (
                 select ud.department_id
@@ -168,6 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             )
         </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="materialIsUse != null and materialIsUse != ''"> and (m.id is null or m.is_use = #{materialIsUse})</if>
         <if test="materialKeyword != null and materialKeyword != ''">
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
@@ -484,6 +494,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="inventorySummaryWhere">
         stk.qty &gt; 0
           and (stk.del_flag = 0 or stk.del_flag is null)
+          and (m.id is null or (m.del_flag is null or m.del_flag != 1))
         <if test="params != null and params.scopeUserId != null">
             and stk.department_id in (
                 select ud.department_id
@@ -499,6 +510,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             )
         </if>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
+        <if test="materialIsUse != null and materialIsUse != ''"> and (m.id is null or m.is_use = #{materialIsUse})</if>
         <if test="materialKeyword != null and materialKeyword != ''">
             and (
                 m.name like concat('%', #{materialKeyword}, '%')
@@ -508,6 +520,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="tenantId != null and tenantId != ''"> and (stk.tenant_id = #{tenantId})</if>
+        <if test="receiptConfirmStatus != null"> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
         <if test="supplierId != null and supplierId != ''"> and m.supplier_id = #{supplierId}</if>
         <!-- 业务日期：按科室库存行入库日期 warehouse_date 筛选（与明细列表排序字段一致） -->
         <if test="beginDate != null"> and stk.warehouse_date is not null and DATE(stk.warehouse_date) &gt;= DATE(#{beginDate})</if>
@@ -531,6 +544,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             MAX(ff.factory_name) as factoryName,
             MAX(msup.name) as supplierName,
             MAX(m.is_billing) as isBilling,
+            MAX(m.is_use) as materialIsUse,
             MAX(m.register_no) as registerNo,
             MAX(m.period_date) as periodDate
         from stk_dep_inventory stk

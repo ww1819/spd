@@ -117,6 +117,48 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001389');
 /
 
+-- 设备信息菜单：与后端 Controller 权限前缀一致（equipment:info:*），修正历史 equipment:equipmentInfo:list
+UPDATE sb_menu SET perms = 'equipment:info:list' WHERE menu_id = '01900000-0000-7000-8000-000000001389';
+/
+
+-- 设备信息：按钮权限（与 spd-sb equipmentInfo、EquipmentInfoController 一致）
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001901', '设备信息查询', '01900000-0000-7000-8000-000000001389', 1, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:query', '#', '0', '1', '0', 'admin', NOW(), '设备信息查询', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001901');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001902', '设备信息新增', '01900000-0000-7000-8000-000000001389', 2, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:add', '#', '0', '1', '0', 'admin', NOW(), '设备信息新增', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001902');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001903', '设备信息修改', '01900000-0000-7000-8000-000000001389', 3, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:edit', '#', '0', '0', '0', 'admin', NOW(), '设备信息修改', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001903');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001904', '设备信息删除', '01900000-0000-7000-8000-000000001389', 4, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:remove', '#', '0', '0', '0', 'admin', NOW(), '设备信息删除', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001904');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001905', '设备信息导出', '01900000-0000-7000-8000-000000001389', 5, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:export', '#', '0', '0', '0', 'admin', NOW(), '设备信息导出', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001905');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001906', '设备信息导入', '01900000-0000-7000-8000-000000001389', 6, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:import', '#', '0', '1', '0', 'admin', NOW(), '设备信息导入', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001906');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001907', '设备信息统计', '01900000-0000-7000-8000-000000001389', 7, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:statistics', '#', '0', '0', '0', 'admin', NOW(), '设备信息统计', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001907');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-000000001908', '设备信息打印', '01900000-0000-7000-8000-000000001389', 8, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:info:print', '#', '0', '0', '0', 'admin', NOW(), '设备信息打印（前端按钮，后端可按需配置接口权限）', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-000000001908');
+/
+
+-- 设备管理员角色：授予「设备信息」下全部按钮（含本段新增 equipment:info:*）
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id)
+SELECT '01900000-0000-7000-8000-000000000001', m.menu_id
+FROM sb_menu m
+WHERE m.parent_id = '01900000-0000-7000-8000-000000001389'
+  AND m.menu_type = 'F'
+  AND NOT EXISTS (
+    SELECT 1 FROM sb_role_menu rm
+    WHERE rm.role_id = '01900000-0000-7000-8000-000000000001' AND rm.menu_id = m.menu_id
+  );
+/
+
 -- 设备管理子菜单：资产台账
 INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
 SELECT '01900000-0000-7000-8000-00000000d001', '资产台账', '01900000-0000-7000-8000-000000001388', 0, 'assetLedger', 'equipment/assetLedger/index', '1', '0', 'C', '0', '0', 'equipment:assetLedger:list', 'money', '0', '1', '0', 'admin', NOW(), '资产台账', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000d001');
@@ -3383,6 +3425,43 @@ UPDATE sb_menu SET is_platform_only = '1' WHERE menu_id IN (
   '01900000-0000-7000-8000-000000001457',
   '01900000-0000-7000-8000-00000000cb5e','01900000-0000-7000-8000-00000000cb5f','01900000-0000-7000-8000-00000000cb60'
 );
+/
+
+-- 设备管理子菜单：设备配件（独立表/接口，禁止走耗材出入库）
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb70', '设备配件', '01900000-0000-7000-8000-000000001388', 99, 'equipmentAccessory', 'equipment/equipmentAccessory/index', '1', '0', 'C', '0', '0', 'equipment:accessory:list', 'component', '0', '1', '0', 'admin', NOW(), '设备配件主数据/库存/出入库', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb70');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb71', '配件查询', '01900000-0000-7000-8000-00000000cb70', 1, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:accessory:query', '#', '0', '1', '0', 'admin', NOW(), '配件查询', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb71');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb72', '配件新增', '01900000-0000-7000-8000-00000000cb70', 2, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:accessory:add', '#', '0', '1', '0', 'admin', NOW(), '配件新增', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb72');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb73', '配件修改', '01900000-0000-7000-8000-00000000cb70', 3, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:accessory:edit', '#', '0', '1', '0', 'admin', NOW(), '配件修改', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb73');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb74', '配件删除', '01900000-0000-7000-8000-00000000cb70', 4, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:accessory:remove', '#', '0', '1', '0', 'admin', NOW(), '配件删除', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb74');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb75', '配件出入库查询', '01900000-0000-7000-8000-00000000cb70', 5, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:accessory:io:list', '#', '0', '1', '0', 'admin', NOW(), '配件出入库查询', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb75');
+/
+INSERT INTO sb_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, is_platform_only, default_open_to_customer, del_flag, create_by, create_time, remark, update_by, update_time, delete_by, delete_time)
+SELECT '01900000-0000-7000-8000-00000000cb76', '配件出入库登记', '01900000-0000-7000-8000-00000000cb70', 6, '#', NULL, '1', '0', 'F', '0', '0', 'equipment:accessory:io:add', '#', '0', '1', '0', 'admin', NOW(), '配件出入库登记', NULL, NULL, NULL, NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sb_menu WHERE menu_id = '01900000-0000-7000-8000-00000000cb76');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb70');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb71');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb72');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb73');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb74');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb75');
+/
+INSERT IGNORE INTO sb_role_menu (role_id, menu_id) VALUES ('01900000-0000-7000-8000-000000000001', '01900000-0000-7000-8000-00000000cb76');
 /
 
 -- 设备菜单图标说明（图标对应 spd-sb/src/assets/icons/svg/*.svg，按钮 F 类型通常为 # 不显示）

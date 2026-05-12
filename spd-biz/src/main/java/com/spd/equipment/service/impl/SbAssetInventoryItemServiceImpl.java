@@ -41,7 +41,7 @@ public class SbAssetInventoryItemServiceImpl implements ISbAssetInventoryItemSer
     @Override
     public int insert(SbAssetInventoryItem row) {
         if (StringUtils.isEmpty(row.getCustomerId())) {
-            row.setCustomerId(SecurityUtils.getCustomerId());
+            row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());
@@ -67,7 +67,7 @@ public class SbAssetInventoryItemServiceImpl implements ISbAssetInventoryItemSer
     public int insertBatch(List<SbAssetInventoryItem> list) {
         if (list == null || list.isEmpty()) return 0;
         String createBy = SecurityUtils.getUserIdStr();
-        String customerId = SecurityUtils.getCustomerId();
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         java.util.Date now = DateUtils.getNowDate();
         for (SbAssetInventoryItem item : list) {
             if (StringUtils.isEmpty(item.getId())) item.setId(UUID7.generateUUID7());

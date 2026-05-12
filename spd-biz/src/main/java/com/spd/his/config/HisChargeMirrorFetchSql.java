@@ -1,7 +1,8 @@
 package com.spd.his.config;
 
 /**
- * HIS 计费镜像抓取：SQL Server 内置视图 SQL（两个参数均为 datetime：窗口起含、止不含）。
+ * HIS 计费镜像抓取：SQL Server 内置视图 SQL。
+ * 两个占位符由 JDBC 以字符串绑定（格式 yyyy-MM-dd HH:mm:ss）：下界含、上界不含，与 charge_date 字符串比较。
  */
 public final class HisChargeMirrorFetchSql
 {
@@ -16,8 +17,8 @@ public final class HisChargeMirrorFetchSql
             + "FROM dbo.v_inpatient_consumable_charge "
             + "WHERE charge_date IS NOT NULL "
             + "AND LTRIM(RTRIM(charge_date)) <> '' "
-            + "AND charge_date >= CONVERT(varchar(19), ?, 120) "
-            + "AND charge_date < CONVERT(varchar(19), ?, 120)";
+            + "AND charge_date >= ? "
+            + "AND charge_date < ?";
 
     public static final String SQLSERVER_OUTPATIENT_RANGE =
         "SELECT outpatient_charge_id, outpatient_charge_id_tf, patient_id, patient_name, outpatient_no, clinic_code, clinic_name, "
@@ -26,6 +27,6 @@ public final class HisChargeMirrorFetchSql
             + "FROM dbo.v_outpatient_consumable_charge "
             + "WHERE charge_date IS NOT NULL "
             + "AND LTRIM(RTRIM(charge_date)) <> '' "
-            + "AND charge_date >= CONVERT(varchar(19), ?, 120) "
-            + "AND charge_date < CONVERT(varchar(19), ?, 120)";
+            + "AND charge_date >= ? "
+            + "AND charge_date < ?";
 }

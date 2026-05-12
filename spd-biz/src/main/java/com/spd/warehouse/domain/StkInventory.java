@@ -142,6 +142,12 @@ public class StkInventory extends BaseEntity
     /** 查询参数：是否计费（前端 1=是、0=否；库表 fd_material.is_billing：1=计费，2=不计费） */
     private String isBilling;
 
+    /** 查询参数：产品档案启停用（fd_material.is_use：1=启用，2=停用）；库存报表筛选 */
+    private String materialIsUse;
+
+    /** 查询参数：库存预警状态（1=预警，0=正常） */
+    private String alertStatus;
+
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
@@ -466,6 +472,22 @@ public class StkInventory extends BaseEntity
 
     public void setIsBilling(String isBilling) {
         this.isBilling = isBilling;
+    }
+
+    public String getMaterialIsUse() {
+        return materialIsUse;
+    }
+
+    public void setMaterialIsUse(String materialIsUse) {
+        this.materialIsUse = materialIsUse;
+    }
+
+    public String getAlertStatus() {
+        return alertStatus;
+    }
+
+    public void setAlertStatus(String alertStatus) {
+        this.alertStatus = alertStatus;
     }
 
     public Integer getDaysToExpiry() {

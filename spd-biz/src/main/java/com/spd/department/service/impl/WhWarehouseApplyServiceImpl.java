@@ -117,9 +117,8 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
                 need = need.subtract(take);
             }
             if (need.compareTo(ZERO) > 0) {
-                throw new ServiceException(String.format(
-                    "审核失败：耗材ID %s 在指定仓库（仓库ID %s）内可用库存不足，还差 %s（已按先入先出）",
-                    e.getMaterialId(), stockWh, need.stripTrailingZeros().toPlainString()));
+                // 科室申请审核不拦截可用库存不足：仅按当前可分配库存生成仓库申请明细，剩余数量不阻断审核。
+                continue;
             }
         }
         if (byWarehouse.isEmpty()) {

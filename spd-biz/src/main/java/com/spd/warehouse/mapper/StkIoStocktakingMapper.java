@@ -105,4 +105,13 @@ public interface StkIoStocktakingMapper
      * @return
      */
     List<StkIoStocktaking> getMonthHandleDataList(@Param("beginDate")String beginDate,@Param("endDate") String endDate);
+
+    /**
+     * 审核落账后仅回写明细上的仓库库存 id / 科室库存 id（避免整行 update 将未传字段置空）
+     */
+    int updateStocktakingEntryPostingInventoryRef(@Param("entryId") Long entryId,
+        @Param("kcNo") Long kcNo,
+        @Param("kcNoStr") String kcNoStr,
+        @Param("depInventoryId") String depInventoryId,
+        @Param("updateBy") String updateBy);
 }

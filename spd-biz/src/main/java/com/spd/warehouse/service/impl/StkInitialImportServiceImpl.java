@@ -25,6 +25,7 @@ import com.spd.warehouse.domain.*;
 import com.spd.warehouse.domain.dto.InitialImportExcelRow;
 import com.spd.warehouse.mapper.*;
 import com.spd.warehouse.service.IStkInitialImportService;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -429,6 +430,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             flow.setDelFlag(0);
             flow.setCreateTime(auditTime);
             flow.setCreateBy(username);
+            InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterInitial(flow, main, entry, fdMaterialMapper);
             hcCkFlowMapper.insertHcCkFlow(flow);
         }
 

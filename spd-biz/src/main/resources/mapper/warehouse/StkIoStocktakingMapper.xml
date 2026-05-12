@@ -58,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="StkIoStocktakingEntry" id="StkIoStocktakingEntryResult">
         <result property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
+        <result property="stockNo"    column="sub_stock_no"    />
         <result property="commodityId"    column="sub_commodity_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="unitPrice"    column="sub_unit_price"    />
@@ -66,6 +67,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="amt"    column="sub_amt"    />
         <result property="batchNo"    column="sub_batch_no"    />
         <result property="kcNo"    column="sub_kc_no"    />
+        <result property="kcNoStr" column="sub_kc_no_str" />
+        <result property="depInventoryId" column="sub_dep_inventory_id" />
+        <result property="warehouseIdStr" column="sub_warehouse_id_str" />
+        <result property="departmentIdStr" column="sub_department_id_str" />
+        <result property="supplierIdStr" column="sub_supplier_id_str" />
         <result property="batchNumber"    column="sub_batch_number"    />
         <result property="beginTime"    column="sub_begin_time"    />
         <result property="endTime"    column="sub_end_time"    />
@@ -73,11 +79,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="sub_remark"    />
         <result property="stockQty"    column="sub_stock_qty"    />
         <result property="profitQty"    column="sub_profit_qty"    />
+        <result property="profitLossFlag" column="sub_profit_loss_flag" />
         <result property="stockAmount"    column="sub_stock_amount"    />
         <result property="profitAmount"    column="sub_profit_amount"    />
         <result property="mainBarcode"    column="sub_main_barcode"    />
         <result property="subBarcode"    column="sub_sub_barcode"    />
         <result property="supplierId"    column="sub_supplier_id"    />
+        <result property="returnWarehouseId" column="sub_return_warehouse_id" />
         <result property="entryUuid"    column="sub_entry_uuid"    />
         <result property="origBatchId"    column="sub_orig_batch_id"    />
         <result property="origBatchNoSnapshot"    column="sub_orig_batch_no_snap"    />
@@ -157,13 +165,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 s.id as sId, s.code as supplierCode, s.name as supplierName,
                 d.id as dId, d.code as departmentCode, d.name as departmentName,
                 w.id as wId, w.code as warehouseCode, w.name as warehouseName,
-                b.id as sub_id, b.entry_uuid as sub_entry_uuid, b.paren_id as sub_paren_id, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
-                b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.kc_no as sub_kc_no,
+                b.id as sub_id, b.entry_uuid as sub_entry_uuid, b.paren_id as sub_paren_id, b.stock_no as sub_stock_no, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
+                b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.kc_no as sub_kc_no, b.kc_no_str as sub_kc_no_str, b.dep_inventory_id as sub_dep_inventory_id,
+                b.warehouse_id_str as sub_warehouse_id_str, b.department_id_str as sub_department_id_str, b.supplier_id_str as sub_supplier_id_str,
                 b.orig_batch_id as sub_orig_batch_id, b.orig_batch_no_snapshot as sub_orig_batch_no_snap,
                 b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.tenant_id as sub_tenant_id,
                 b.del_flag as sub_del_flag, b.remark as sub_remark,b.stock_qty as sub_stock_qty,b.profit_qty as sub_profit_qty,
+                b.profit_loss_flag as sub_profit_loss_flag,
                 b.stock_amount as sub_stock_amount,b.profit_amount as sub_profit_amount,
                 b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.supplier_id as sub_supplier_id,
+                b.return_warehouse_id as sub_return_warehouse_id,
                 m.id as mId, m.code as materialCode, m.name as materialName,
                 m.speci as m_speci, m.model as m_model, m.register_no as m_registerNo,
                 m.unit_id as m_unitId, m.factory_id as m_factoryId, m.supplier_id as m_supplierId,
@@ -288,27 +299,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateStkIoStocktakingEntry" parameterType="StkIoStocktakingEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_stocktaking_entry
-        set paren_id = #{parenId}, entry_uuid = #{entryUuid}, commodity_id = #{commodityId}, material_id = #{materialId}, unit_price = #{unitPrice},
-            qty = #{qty}, price = #{price}, amt = #{amt}, batch_no = #{batchNo}, kc_no = #{kcNo},
+        set paren_id = #{parenId}, entry_uuid = #{entryUuid}, stock_no = #{stockNo}, commodity_id = #{commodityId}, material_id = #{materialId}, unit_price = #{unitPrice},
+            qty = #{qty}, price = #{price}, amt = #{amt}, batch_no = #{batchNo}, kc_no = #{kcNo}, kc_no_str = #{kcNoStr}, dep_inventory_id = #{depInventoryId},
+            warehouse_id_str = #{warehouseIdStr}, department_id_str = #{departmentIdStr}, supplier_id_str = #{supplierIdStr},
             orig_batch_id = #{origBatchId}, orig_batch_no_snapshot = #{origBatchNoSnapshot},
             batch_number = #{batchNumber},
             begin_time = #{beginTime}, end_time = #{endTime}, del_flag = #{delFlag}, remark = #{remark},
-            stock_qty = #{stockQty}, profit_qty = #{profitQty}, stock_amount = #{stockAmount}, profit_amount = #{profitAmount},
-            main_barcode = #{mainBarcode}, sub_barcode = #{subBarcode}, supplier_id = #{supplierId},
+            stock_qty = #{stockQty}, profit_qty = #{profitQty}, profit_loss_flag = #{profitLossFlag}, stock_amount = #{stockAmount}, profit_amount = #{profitAmount},
+            main_barcode = #{mainBarcode}, sub_barcode = #{subBarcode}, supplier_id = #{supplierId}, return_warehouse_id = #{returnWarehouseId},
+            kc_no_str = #{kcNoStr}, warehouse_id_str = #{warehouseIdStr}, department_id_str = #{departmentIdStr}, supplier_id_str = #{supplierIdStr},
             update_by = #{updateBy}, update_time = #{updateTime}
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <insert id="insertStkIoStocktakingEntrySingle" parameterType="StkIoStocktakingEntry" useGeneratedKeys="true" keyProperty="id">
         insert into stk_io_stocktaking_entry(
-            entry_uuid, paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no,
+            entry_uuid, paren_id, stock_no, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, kc_no_str, dep_inventory_id,
+            warehouse_id_str, department_id_str, supplier_id_str,
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
-            stock_qty, profit_qty, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id,
+            stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id,
             tenant_id, create_by, create_time, update_by, update_time)
         values (
-            #{entryUuid}, #{parenId}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo},
+            #{entryUuid}, #{parenId}, #{stockNo}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{kcNoStr}, #{depInventoryId},
+            #{warehouseIdStr}, #{departmentIdStr}, #{supplierIdStr},
             #{origBatchId}, #{origBatchNoSnapshot}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark},
-            #{stockQty}, #{profitQty}, #{stockAmount}, #{profitAmount}, #{mainBarcode}, #{subBarcode}, #{supplierId},
+            #{stockQty}, #{profitQty}, #{profitLossFlag}, #{stockAmount}, #{profitAmount}, #{mainBarcode}, #{subBarcode}, #{supplierId}, #{returnWarehouseId},
             #{tenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
 
@@ -323,15 +338,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchStkIoStocktakingEntry">
         insert into stk_io_stocktaking_entry(
-            entry_uuid, paren_id, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no,
+            entry_uuid, paren_id, stock_no, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, kc_no_str, dep_inventory_id,
+            warehouse_id_str, department_id_str, supplier_id_str,
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
-            stock_qty, profit_qty, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id,
+            stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id,
             tenant_id, create_by, create_time, update_by, update_time)
         values
         <foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.entryUuid}, #{item.parenId}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo},
+            ( #{item.entryUuid}, #{item.parenId}, #{item.stockNo}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo}, #{item.kcNoStr}, #{item.depInventoryId},
+              #{item.warehouseIdStr}, #{item.departmentIdStr}, #{item.supplierIdStr},
               #{item.origBatchId}, #{item.origBatchNoSnapshot}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark},
-              #{item.stockQty}, #{item.profitQty}, #{item.stockAmount}, #{item.profitAmount}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplierId},
+              #{item.stockQty}, #{item.profitQty}, #{item.profitLossFlag}, #{item.stockAmount}, #{item.profitAmount}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplierId}, #{item.returnWarehouseId},
               #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
     </insert>
@@ -347,4 +364,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select * from stk_io_stocktaking
         where stock_date &gt;= #{beginDate} and stock_date &lt;= #{endDate} and tenant_id = #{scopedTenantId}
     </select>
+
+    <update id="updateStocktakingEntryPostingInventoryRef">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_stocktaking_entry
+        <set>
+            <if test="kcNo != null">kc_no = #{kcNo},</if>
+            <if test="kcNoStr != null and kcNoStr != ''">kc_no_str = #{kcNoStr},</if>
+            <if test="depInventoryId != null and depInventoryId != ''">dep_inventory_id = #{depInventoryId},</if>
+            update_by = #{updateBy},
+            update_time = now()
+        </set>
+        where id = #{entryId} and tenant_id = #{scopedTenantId} and (del_flag is null or del_flag != 1)
+    </update>
 </mapper>

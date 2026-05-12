@@ -25,6 +25,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="useName"    column="use_name"    />
         <result property="factoryId"    column="factory_id"    />
         <result property="storeroomId"    column="storeroom_id"    />
+        <result property="materialCategoryId"    column="material_category_id"    />
         <result property="financeCategoryId"    column="finance_category_id"    />
         <result property="unitId"    column="unit_id"    />
         <result property="registerName"    column="register_name"    />
@@ -74,6 +75,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="fdWarehouseCategory"    column="storeroom_id" javaType="FdWarehouseCategory" resultMap="fdWarehouseCategoryResult" />
         <association property="fdUnit"    column="id" javaType="FdUnit" resultMap="fdUnitResult" />
         <association property="fdFinanceCategory"    column="finance_category_id" javaType="FdFinanceCategory" resultMap="fdFinanceCategoryResult" />
+        <association property="fdMaterialCategory"    column="material_category_id" javaType="FdMaterialCategory" resultMap="fdMaterialCategoryResult" />
         <association property="fdLocation"    column="location_id" javaType="FdLocation" resultMap="fdLocationResult" />
     </resultMap>
 
@@ -101,6 +103,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="financeCategoryName"  column="cwfl_name"   />
     </resultMap>
 
+    <resultMap id="fdMaterialCategoryResult" type="FdMaterialCategory">
+        <id     property="materialCategoryId"    column="mcid"     />
+        <result property="materialCategoryCode"  column="mc_code"   />
+        <result property="materialCategoryName"  column="mc_name"   />
+    </resultMap>
+
     <resultMap id="fdUnitResult" type="FdUnit">
         <id     property="unitId"    column="uid"     />
         <result property="unitCode"  column="u_code"   />
@@ -115,7 +123,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectFdMaterialVo">
         select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
             m.price, m.default_warehouse_id as default_warehouse_id, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
-            m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.finance_category_id, m.unit_id,
+            m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.material_category_id, m.finance_category_id, m.unit_id,
             m.his_id,
             m.his_charge_item_id,
             hci.item_name as his_charge_item_name,
@@ -140,6 +148,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             w.warehouse_category_id wid, w.warehouse_category_code w_code,w.warehouse_category_name w_name,
             f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
             u.unit_id uid,u.unit_code u_code,u.unit_name u_name,cwfl.finance_category_code cwfl_code,cwfl.finance_category_name cwfl_name,
+            mc.material_category_id mcid, mc.material_category_code mc_code, mc.material_category_name mc_name,
             l.location_id lid, l.location_name l_name
         from fd_material m
         left join fd_supplier s on m.supplier_id = s.id
@@ -147,6 +156,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category cwfl on m.finance_category_id = cwfl.finance_category_id
+        left join fd_material_category mc on m.material_category_id = mc.material_category_id
+            and mc.tenant_id = m.tenant_id
+            and (mc.del_flag is null or mc.del_flag != 1)
         left join fd_location l on m.location_id = l.location_id
         left join his_charge_item_mirror hci on hci.tenant_id = m.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
@@ -184,6 +196,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
         <if test="storeroomId != null "> and m.storeroom_id = #{storeroomId}</if>
+        <if test="materialCategoryId != null and materialCategoryId != ''"> and m.material_category_id = #{materialCategoryId}</if>
         <if test="warehouseId != null and (skipWarehouseFixedNumberExists == null or skipWarehouseFixedNumberExists != true)">
             and exists (
                 select 1
@@ -286,6 +299,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="useName != null">use_name,</if>
             <if test="factoryId != null">factory_id,</if>
             <if test="storeroomId != null">storeroom_id,</if>
+            <if test="materialCategoryId != null and materialCategoryId != ''">material_category_id,</if>
             <if test="financeCategoryId != null">finance_category_id,</if>
             <if test="unitId != null">unit_id,</if>
             <if test="registerName != null">register_name,</if>
@@ -346,6 +360,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="useName != null">#{useName},</if>
             <if test="factoryId != null">#{factoryId},</if>
             <if test="storeroomId != null">#{storeroomId},</if>
+            <if test="materialCategoryId != null and materialCategoryId != ''">#{materialCategoryId},</if>
             <if test="financeCategoryId != null">#{financeCategoryId},</if>
             <if test="unitId != null">#{unitId},</if>
             <if test="registerName != null">#{registerName},</if>
@@ -412,6 +427,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="useName != null">use_name = #{useName},</if>
             <if test="factoryId != null">factory_id = #{factoryId},</if>
             <if test="storeroomId != null">storeroom_id = #{storeroomId},</if>
+            <if test="materialCategoryId != null">material_category_id = #{materialCategoryId},</if>
             <if test="financeCategoryId != null">finance_category_id = #{financeCategoryId},</if>
             <if test="unitId != null">unit_id = #{unitId},</if>
             <if test="registerName != null">register_name = #{registerName},</if>

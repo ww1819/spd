@@ -71,7 +71,7 @@ public class SbCustomerAssetLedgerServiceImpl implements ISbCustomerAssetLedgerS
 
     @Override
     public int insert(SbCustomerAssetLedger row) {
-        if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         row.setId(UUID7.generateUUID7());
         row.setDelFlag(0);
         row.setCreateTime(DateUtils.getNowDate());

@@ -41,7 +41,7 @@ public class SbAssetInventoryItemPrintServiceImpl implements ISbAssetInventoryIt
     @Override
     public int insert(SbAssetInventoryItemPrint row) {
         if (StringUtils.isEmpty(row.getCustomerId())) {
-            row.setCustomerId(SecurityUtils.getCustomerId());
+            row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());

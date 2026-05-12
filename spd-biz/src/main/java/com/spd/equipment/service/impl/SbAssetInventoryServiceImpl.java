@@ -69,7 +69,7 @@ public class SbAssetInventoryServiceImpl implements ISbAssetInventoryService {
     @Override
     public int insert(SbAssetInventory row) {
         if (StringUtils.isEmpty(row.getCustomerId())) {
-            row.setCustomerId(SecurityUtils.getCustomerId());
+            row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());

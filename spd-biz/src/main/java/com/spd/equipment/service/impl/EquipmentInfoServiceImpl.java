@@ -1,16 +1,21 @@
 package com.spd.equipment.service.impl;
 
+import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.spd.equipment.mapper.EquipmentInfoMapper;
+import com.spd.equipment.mapper.EquipmentAdverseEventMapper;
 import com.spd.equipment.domain.EquipmentInfo;
+import com.spd.equipment.domain.EquipmentAdverseEvent;
 import com.spd.equipment.service.IEquipmentInfoService;
 import com.spd.common.utils.DateUtils;
 import org.slf4j.Logger;
@@ -29,6 +34,9 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
     
     @Autowired
     private EquipmentInfoMapper equipmentInfoMapper;
+
+    @Autowired
+    private EquipmentAdverseEventMapper equipmentAdverseEventMapper;
 
     /**
      * 查询设备信息管理
@@ -51,6 +59,7 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
                 equipmentInfo.setAttachedMaterialsList(new ArrayList<>());
             }
         }
+        fillAdverseEventList(equipmentInfo);
         return equipmentInfo;
     }
 
@@ -88,6 +97,7 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int insertEquipmentInfo(EquipmentInfo equipmentInfo)
     {
                         // 生成UUID作为主键
@@ -107,7 +117,9 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
                 }
                 
                 equipmentInfo.setCreateTime(DateUtils.getNowDate());
-        return equipmentInfoMapper.insertEquipmentInfo(equipmentInfo);
+        int rows = equipmentInfoMapper.insertEquipmentInfo(equipmentInfo);
+        syncAdverseEventsAfterSave(equipmentInfo);
+        return rows;
     }
 
     /**
@@ -117,6 +129,7 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateEquipmentInfo(EquipmentInfo equipmentInfo)
     {
         // 处理附属资料列表转JSON
@@ -130,7 +143,9 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
         }
         
         equipmentInfo.setUpdateTime(DateUtils.getNowDate());
-        return equipmentInfoMapper.updateEquipmentInfo(equipmentInfo);
+        int rows = equipmentInfoMapper.updateEquipmentInfo(equipmentInfo);
+        syncAdverseEventsAfterSave(equipmentInfo);
+        return rows;
     }
 
     /**
@@ -142,6 +157,10 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
     @Override
     public int deleteEquipmentInfoByIds(String[] ids)
     {
+        if (ids != null && ids.length > 0)
+        {
+            equipmentAdverseEventMapper.logicalDeleteByEquipmentIds(ids, SecurityUtils.getUserIdStr());
+        }
         return equipmentInfoMapper.deleteEquipmentInfoByIds(ids);
     }
 
@@ -154,6 +173,10 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
     @Override
     public int deleteEquipmentInfoById(String id)
     {
+        if (StringUtils.isNotEmpty(id))
+        {
+            equipmentAdverseEventMapper.logicalDeleteByEquipmentIds(new String[] { id }, SecurityUtils.getUserIdStr());
+        }
         return equipmentInfoMapper.deleteEquipmentInfoById(id);
     }
 
@@ -166,7 +189,31 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
     @Override
     public EquipmentInfo selectEquipmentInfoByAssetCode(String assetCode)
     {
-        return equipmentInfoMapper.selectEquipmentInfoByAssetCode(assetCode);
+        EquipmentInfo equipmentInfo = equipmentInfoMapper.selectEquipmentInfoByAssetCode(assetCode);
+        if (equipmentInfo == null)
+        {
+            return null;
+        }
+        if (equipmentInfo.getAttachedMaterials() != null)
+        {
+            try
+            {
+                ObjectMapper objectMapper = new ObjectMapper();
+                List<String> attachedMaterialsList = objectMapper.readValue(equipmentInfo.getAttachedMaterials(),
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                equipmentInfo.setAttachedMaterialsList(attachedMaterialsList);
+            }
+            catch (Exception e)
+            {
+                equipmentInfo.setAttachedMaterialsList(new ArrayList<>());
+            }
+        }
+        else
+        {
+            equipmentInfo.setAttachedMaterialsList(new ArrayList<>());
+        }
+        fillAdverseEventList(equipmentInfo);
+        return equipmentInfo;
     }
 
     /**
@@ -356,6 +403,121 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
      * 
      * @return 8位数字编码，不会返回null
      */
+    private void fillAdverseEventList(EquipmentInfo equipmentInfo)
+    {
+        if (equipmentInfo == null || StringUtils.isEmpty(equipmentInfo.getId()))
+        {
+            return;
+        }
+        List<EquipmentAdverseEvent> list = equipmentAdverseEventMapper.selectByEquipmentId(equipmentInfo.getId());
+        equipmentInfo.setAdverseEventList(list != null ? list : new ArrayList<>());
+    }
+
+    /**
+     * 与主表同事务：按提交列表增删改不良事件子表（null 表示不调整子表）。
+     * 子表 {@code del_flag}：0 未删除，1 已删除（逻辑删除时置 1 并写 delete_by/delete_time）。
+     */
+    private void syncAdverseEventsAfterSave(EquipmentInfo equipmentInfo)
+    {
+        if (equipmentInfo == null || StringUtils.isEmpty(equipmentInfo.getId())
+                || equipmentInfo.getAdverseEventList() == null)
+        {
+            return;
+        }
+        String equipmentId = equipmentInfo.getId();
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
+        Date now = DateUtils.getNowDate();
+        String oper = SecurityUtils.getUserIdStr();
+
+        List<EquipmentAdverseEvent> toPersist = new ArrayList<>();
+        for (EquipmentAdverseEvent row : equipmentInfo.getAdverseEventList())
+        {
+            if (hasAdverseRowContent(row))
+            {
+                toPersist.add(row);
+            }
+        }
+
+        List<String> keepIds = new ArrayList<>();
+        for (EquipmentAdverseEvent row : toPersist)
+        {
+            if (StringUtils.isNotEmpty(row.getId()))
+            {
+                keepIds.add(row.getId());
+            }
+        }
+        equipmentAdverseEventMapper.logicalDeleteRemoved(equipmentId, keepIds, oper);
+
+        for (EquipmentAdverseEvent row : toPersist)
+        {
+            if (StringUtils.isEmpty(row.getId()))
+            {
+                row.setId(UUID7.generateUUID7());
+                row.setEquipmentId(equipmentId);
+                row.setTenantId(tenantId);
+                row.setDelFlag("0");
+                row.setCreateBy(oper);
+                row.setCreateTime(now);
+                row.setUpdateBy(oper);
+                row.setUpdateTime(now);
+                equipmentAdverseEventMapper.insertEquipmentAdverseEvent(row);
+            }
+            else
+            {
+                row.setEquipmentId(equipmentId);
+                row.setTenantId(tenantId);
+                row.setUpdateBy(oper);
+                row.setUpdateTime(now);
+                equipmentAdverseEventMapper.updateEquipmentAdverseEvent(row);
+            }
+        }
+    }
+
+    private boolean hasAdverseRowContent(EquipmentAdverseEvent e)
+    {
+        if (e == null)
+        {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(e.getEventCode()))
+        {
+            return true;
+        }
+        if (StringUtils.isNotEmpty(e.getArchiveCode()))
+        {
+            return true;
+        }
+        if (e.getEventDate() != null)
+        {
+            return true;
+        }
+        if (e.getReporter() != null)
+        {
+            return true;
+        }
+        if (StringUtils.isNotEmpty(e.getEventType()))
+        {
+            return true;
+        }
+        if (StringUtils.isNotEmpty(e.getEventLevel()))
+        {
+            return true;
+        }
+        if (StringUtils.isNotEmpty(e.getEventDescription()))
+        {
+            return true;
+        }
+        if (StringUtils.isNotEmpty(e.getHandlingMeasures()))
+        {
+            return true;
+        }
+        if (StringUtils.isNotEmpty(e.getHandlingResult()))
+        {
+            return true;
+        }
+        return StringUtils.isNotEmpty(e.getRemark());
+    }
+
     private String generateAssetCode()
     {
         try

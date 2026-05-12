@@ -7,9 +7,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +27,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.PageUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.IdUtils;
@@ -34,6 +37,7 @@ import com.spd.his.config.HisTenantJdbcAccess;
 import com.spd.his.domain.HisChargeFetchBatch;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
+import com.spd.his.domain.HisPatientChargeMirrorUnified;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisIdFingerprint;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
@@ -41,6 +45,7 @@ import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.mapper.HisChargeFetchBatchMapper;
 import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
 import com.spd.his.domain.dto.HisMirrorHighApplyBody;
@@ -54,11 +59,14 @@ import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
+import com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.his.service.support.HisMirrorStockEnricher;
+import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
 import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.system.service.ITenantScopeService;
 
@@ -71,6 +79,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private static final int INSERT_BATCH_SIZE = 80;
     private static final String KIND_IN = "INPATIENT";
 
+    /** HIS 区间查询占位符绑定格式（字符串比较，与内置 SQL 一致） */
+    private static final DateTimeFormatter HIS_FETCH_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Autowired
     private HisTenantJdbcAccess hisTenantJdbcAccess;
 
@@ -82,6 +93,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisOutpatientChargeMirrorMapper hisOutpatientChargeMirrorMapper;
+
+    @Autowired
+    private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+
+    @Autowired
+    private HisMirrorStockEnricher hisMirrorStockEnricher;
 
     @Autowired
     private HisChargeFetchBatchMapper hisChargeFetchBatchMapper;
@@ -312,6 +329,34 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return v.isEmpty() || "2".equals(v);
     }
 
+    /**
+     * 统一表该租户无数据但住院/门诊镜像有历史数据时，从镜像回填统一表（与升级脚本逻辑一致），避免列表全空。
+     */
+    private void ensureUnifiedMirrorBackfill(String tenantId)
+    {
+        if (StringUtils.isEmpty(tenantId))
+        {
+            return;
+        }
+        if (hisPatientChargeMirrorUnifiedMapper.countByTenantId(tenantId) > 0)
+        {
+            return;
+        }
+        synchronized (("pcm-unified-backfill-" + tenantId).intern())
+        {
+            if (hisPatientChargeMirrorUnifiedMapper.countByTenantId(tenantId) > 0)
+            {
+                return;
+            }
+            if (hisPatientChargeMirrorUnifiedMapper.countMirrorSourceRowsByTenant(tenantId) <= 0)
+            {
+                return;
+            }
+            hisPatientChargeMirrorUnifiedMapper.backfillInpatientFromMirror(tenantId);
+            hisPatientChargeMirrorUnifiedMapper.backfillOutpatientFromMirror(tenantId);
+        }
+    }
+
     @Override
     public List<HisInpatientChargeMirror> selectInpatientMirrorList(HisInpatientChargeMirror query)
     {
@@ -325,8 +370,18 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
+        ensureUnifiedMirrorBackfill(customerId);
         PageUtils.startPage();
-        return hisInpatientChargeMirrorMapper.selectMirrorList(query);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
+        List<HisPatientChargeMirrorUnified> unified = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
+        hisMirrorStockEnricher.enrichUnifiedList(customerId, unified);
+        List<HisInpatientChargeMirror> out = new ArrayList<>(unified.size());
+        for (HisPatientChargeMirrorUnified u : unified)
+        {
+            out.add(HisPatientChargeMirrorUnifiedSupport.toInpatientMirror(u));
+        }
+        sortInpatientPageByStockIfNeeded(out, query);
+        return out;
     }
 
     @Override
@@ -342,8 +397,18 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
+        ensureUnifiedMirrorBackfill(customerId);
         PageUtils.startPage();
-        return hisOutpatientChargeMirrorMapper.selectMirrorList(query);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
+        List<HisPatientChargeMirrorUnified> unified = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
+        hisMirrorStockEnricher.enrichUnifiedList(customerId, unified);
+        List<HisOutpatientChargeMirror> out = new ArrayList<>(unified.size());
+        for (HisPatientChargeMirrorUnified u : unified)
+        {
+            out.add(HisPatientChargeMirrorUnifiedSupport.toOutpatientMirror(u));
+        }
+        sortOutpatientPageByStockIfNeeded(out, query);
+        return out;
     }
 
     @Override
@@ -359,8 +424,18 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
         }
+        ensureUnifiedMirrorBackfill(customerId);
         PageUtils.startPage();
-        return hisInpatientChargeMirrorMapper.selectAllMirrorList(q);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
+        List<HisPatientChargeMirrorUnified> unified = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
+        hisMirrorStockEnricher.enrichUnifiedList(customerId, unified);
+        List<HisPatientChargeDetailRow> out = new ArrayList<>(unified.size());
+        for (HisPatientChargeMirrorUnified u : unified)
+        {
+            out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
+        }
+        sortDetailPageByStockIfNeeded(out, q);
+        return out;
     }
 
     @Override
@@ -569,32 +644,54 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         if (body == null || StringUtils.isAnyEmpty(body.getBeginDate(), body.getEndDate()))
         {
-            throw new ServiceException("请指定抓取开始日期与结束日期");
+            throw new ServiceException("请指定抓取开始时间与结束时间");
         }
-        LocalDate begin;
-        LocalDate end;
-        try
+        LocalDateTime startInclusive = parseFetchLowerBound(body.getBeginDate().trim());
+        LocalDateTime endInclusive = parseFetchUpperBound(body.getEndDate().trim());
+        if (endInclusive.isBefore(startInclusive))
         {
-            begin = LocalDate.parse(body.getBeginDate().trim());
-            end = LocalDate.parse(body.getEndDate().trim());
+            throw new ServiceException("结束时间不能早于开始时间");
         }
-        catch (Exception e)
-        {
-            throw new ServiceException("日期格式须为 yyyy-MM-dd");
-        }
-        if (end.isBefore(begin))
-        {
-            throw new ServiceException("结束日期不能早于开始日期");
-        }
-        long spanDays = ChronoUnit.DAYS.between(begin, end) + 1;
+        long spanDays = ChronoUnit.DAYS.between(startInclusive.toLocalDate(), endInclusive.toLocalDate()) + 1;
         int maxDays = Math.max(1, hisSqlServerProperties.getFetch().getMaxRangeDays());
         if (spanDays > maxDays)
         {
             throw new ServiceException("单次抓取跨度不能超过 " + maxDays + " 天，请缩小时间范围");
         }
-        LocalDateTime start = begin.atStartOfDay();
-        LocalDateTime endExclusive = end.plusDays(1).atStartOfDay();
-        return new LocalDateTime[] { start, endExclusive };
+        LocalDateTime endExclusive = endInclusive.plusSeconds(1);
+        return new LocalDateTime[] { startInclusive, endExclusive };
+    }
+
+    private static LocalDateTime parseFetchLowerBound(String raw)
+    {
+        try
+        {
+            if (raw.length() <= 10)
+            {
+                return LocalDate.parse(raw).atStartOfDay();
+            }
+            return LocalDateTime.parse(raw, HIS_FETCH_TIME_FMT);
+        }
+        catch (DateTimeParseException e)
+        {
+            throw new ServiceException("开始时间格式须为 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss");
+        }
+    }
+
+    private static LocalDateTime parseFetchUpperBound(String raw)
+    {
+        try
+        {
+            if (raw.length() <= 10)
+            {
+                return LocalDate.parse(raw).atTime(23, 59, 59);
+            }
+            return LocalDateTime.parse(raw, HIS_FETCH_TIME_FMT);
+        }
+        catch (DateTimeParseException e)
+        {
+            throw new ServiceException("结束时间格式须为 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss");
+        }
     }
 
     private List<HisInpatientChargeMirror> queryInpatientChunk(
@@ -602,13 +699,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         LocalDateTime chunkStart, LocalDateTime chunkEndExcl,
         String tenantId, String batchId, String createBy, Date createTime)
     {
-        Timestamp t0 = Timestamp.valueOf(chunkStart);
-        Timestamp t1 = Timestamp.valueOf(chunkEndExcl);
+        String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
+        String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisInpatientChargeMirror> rm = (rs, rowNum) -> mapInpatientRow(rs, tenantId, batchId, createBy, createTime);
         return hisDb.getJdbcTemplate().query(hisDb.getInpatientRangeSql(), ps ->
         {
-            ps.setTimestamp(1, t0);
-            ps.setTimestamp(2, t1);
+            ps.setString(1, lo);
+            ps.setString(2, hi);
         }, rm);
     }
 
@@ -650,13 +747,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         LocalDateTime chunkStart, LocalDateTime chunkEndExcl,
         String tenantId, String batchId, String createBy, Date createTime)
     {
-        Timestamp t0 = Timestamp.valueOf(chunkStart);
-        Timestamp t1 = Timestamp.valueOf(chunkEndExcl);
+        String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
+        String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisOutpatientChargeMirror> rm = (rs, rowNum) -> mapOutpatientRow(rs, tenantId, batchId, createBy, createTime);
         return hisDb.getJdbcTemplate().query(hisDb.getOutpatientRangeSql(), ps ->
         {
-            ps.setTimestamp(1, t0);
-            ps.setTimestamp(2, t1);
+            ps.setString(1, lo);
+            ps.setString(2, hi);
         }, rm);
     }
 
@@ -837,7 +934,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         for (int i = 0; i < rows.size(); i += INSERT_BATCH_SIZE)
         {
             int end = Math.min(i + INSERT_BATCH_SIZE, rows.size());
-            hisInpatientChargeMirrorMapper.insertBatch(rows.subList(i, end));
+            List<HisInpatientChargeMirror> slice = rows.subList(i, end);
+            hisInpatientChargeMirrorMapper.insertBatch(slice);
+            insertUnifiedInpatientSlice(slice);
         }
     }
 
@@ -846,8 +945,128 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         for (int i = 0; i < rows.size(); i += INSERT_BATCH_SIZE)
         {
             int end = Math.min(i + INSERT_BATCH_SIZE, rows.size());
-            hisOutpatientChargeMirrorMapper.insertBatch(rows.subList(i, end));
+            List<HisOutpatientChargeMirror> slice = rows.subList(i, end);
+            hisOutpatientChargeMirrorMapper.insertBatch(slice);
+            insertUnifiedOutpatientSlice(slice);
         }
+    }
+
+    private void insertUnifiedInpatientSlice(List<HisInpatientChargeMirror> slice)
+    {
+        if (slice == null || slice.isEmpty())
+        {
+            return;
+        }
+        List<HisPatientChargeMirrorUnified> list = new ArrayList<>(slice.size());
+        for (HisInpatientChargeMirror e : slice)
+        {
+            list.add(HisPatientChargeMirrorUnifiedSupport.fromInpatient(e));
+        }
+        hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
+    }
+
+    private void insertUnifiedOutpatientSlice(List<HisOutpatientChargeMirror> slice)
+    {
+        if (slice == null || slice.isEmpty())
+        {
+            return;
+        }
+        List<HisPatientChargeMirrorUnified> list = new ArrayList<>(slice.size());
+        for (HisOutpatientChargeMirror e : slice)
+        {
+            list.add(HisPatientChargeMirrorUnifiedSupport.fromOutpatient(e));
+        }
+        hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
+    }
+
+    /** 库存列已移出 SQL：仅对当前页按库存列做二次排序（跨页全局排序需另行物化）。 */
+    private static void sortInpatientPageByStockIfNeeded(List<HisInpatientChargeMirror> rows, HisInpatientChargeMirror query)
+    {
+        if (rows == null || rows.isEmpty() || query == null)
+        {
+            return;
+        }
+        String col = query.getOrderByColumn();
+        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
+        {
+            return;
+        }
+        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
+        Comparator<HisInpatientChargeMirror> c = "highValueStockQty".equals(col)
+            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
+            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
+        if (!asc)
+        {
+            c = c.reversed();
+        }
+        c = c.thenComparing((a, b) -> compareDateDesc(a.getChargeDate(), b.getChargeDate()))
+            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
+        rows.sort(c);
+    }
+
+    private static void sortOutpatientPageByStockIfNeeded(List<HisOutpatientChargeMirror> rows, HisOutpatientChargeMirror query)
+    {
+        if (rows == null || rows.isEmpty() || query == null)
+        {
+            return;
+        }
+        String col = query.getOrderByColumn();
+        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
+        {
+            return;
+        }
+        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
+        Comparator<HisOutpatientChargeMirror> c = "highValueStockQty".equals(col)
+            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
+            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
+        if (!asc)
+        {
+            c = c.reversed();
+        }
+        c = c.thenComparing((a, b) -> compareDateDesc(DateUtils.parseDate(a.getChargeDate()), DateUtils.parseDate(b.getChargeDate())))
+            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
+        rows.sort(c);
+    }
+
+    private static void sortDetailPageByStockIfNeeded(List<HisPatientChargeDetailRow> rows, HisPatientChargeAllQuery query)
+    {
+        if (rows == null || rows.isEmpty() || query == null)
+        {
+            return;
+        }
+        String col = query.getOrderByColumn();
+        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
+        {
+            return;
+        }
+        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
+        Comparator<HisPatientChargeDetailRow> c = "highValueStockQty".equals(col)
+            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
+            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
+        if (!asc)
+        {
+            c = c.reversed();
+        }
+        c = c.thenComparing((a, b) -> compareDateDesc(a.getChargeDate(), b.getChargeDate()))
+            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
+        rows.sort(c);
+    }
+
+    private static int compareDateDesc(Date a, Date b)
+    {
+        if (a == null && b == null)
+        {
+            return 0;
+        }
+        if (a == null)
+        {
+            return 1;
+        }
+        if (b == null)
+        {
+            return -1;
+        }
+        return b.compareTo(a);
     }
 
     private static String fingerprintInpatient(HisInpatientChargeMirror e)

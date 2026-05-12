@@ -6,8 +6,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <resultMap type="FdMaterialCategory" id="FdMaterialCategoryResult">
         <result property="materialCategoryId"    column="material_category_id"    />
+        <result property="parentId"    column="parent_id"    />
+        <result property="parentCode"    column="parent_code"    />
+        <result property="parentName"    column="parent_name"    />
         <result property="materialCategoryCode"    column="material_category_code"    />
         <result property="materialCategoryName"    column="material_category_name"    />
+        <result property="pinyinCode"    column="pinyin_code"    />
         <result property="materialCategoryAddress"    column="material_category_address"    />
         <result property="materialCategoryContact"    column="material_category_contact"    />
         <result property="delFlag"    column="del_flag"    />
@@ -21,32 +25,43 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdMaterialCategoryVo">
-        select material_category_id, material_category_code, material_category_name, material_category_address, material_category_contact, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time, tenant_id from fd_material_category
+        select
+            c.material_category_id, c.parent_id, p.material_category_code as parent_code, p.material_category_name as parent_name,
+            c.material_category_code, c.material_category_name, c.pinyin_code,
+            c.material_category_address, c.material_category_contact, c.del_flag,
+            c.create_by, c.create_time, c.update_by, c.update_time, c.delete_by, c.delete_time, c.tenant_id
+        from fd_material_category c
+        left join fd_material_category p on p.material_category_id = c.parent_id and p.tenant_id = c.tenant_id and p.del_flag != 1
     </sql>
 
     <select id="selectFdMaterialCategoryList" parameterType="FdMaterialCategory" resultMap="FdMaterialCategoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialCategoryVo"/>
-        where del_flag != 1
-        and tenant_id = #{scopedTenantId}
-        <if test="materialCategoryCode != null  and materialCategoryCode != ''"> and material_category_code = #{materialCategoryCode}</if>
-        <if test="materialCategoryName != null  and materialCategoryName != ''"> and material_category_name like concat('%', #{materialCategoryName}, '%')</if>
-        <if test="materialCategoryAddress != null  and materialCategoryAddress != ''"> and material_category_address = #{materialCategoryAddress}</if>
-        <if test="materialCategoryContact != null  and materialCategoryContact != ''"> and material_category_contact = #{materialCategoryContact}</if>
+        where c.del_flag != 1
+        and c.tenant_id = #{scopedTenantId}
+        <if test="parentId != null and parentId != ''"> and c.parent_id = #{parentId}</if>
+        <if test="materialCategoryCode != null  and materialCategoryCode != ''"> and c.material_category_code = #{materialCategoryCode}</if>
+        <if test="materialCategoryName != null  and materialCategoryName != ''"> and c.material_category_name like concat('%', #{materialCategoryName}, '%')</if>
+        <if test="pinyinCode != null and pinyinCode != ''"> and c.pinyin_code like concat('%', #{pinyinCode}, '%')</if>
+        <if test="materialCategoryAddress != null  and materialCategoryAddress != ''"> and c.material_category_address = #{materialCategoryAddress}</if>
+        <if test="materialCategoryContact != null  and materialCategoryContact != ''"> and c.material_category_contact = #{materialCategoryContact}</if>
     </select>
 
-    <select id="selectFdMaterialCategoryByMaterialCategoryId" parameterType="Long" resultMap="FdMaterialCategoryResult">
+    <select id="selectFdMaterialCategoryByMaterialCategoryId" parameterType="String" resultMap="FdMaterialCategoryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialCategoryVo"/>
-        where material_category_id = #{materialCategoryId} and tenant_id = #{scopedTenantId}
+        where c.material_category_id = #{materialCategoryId} and c.tenant_id = #{scopedTenantId}
     </select>
 
-    <insert id="insertFdMaterialCategory" parameterType="FdMaterialCategory" useGeneratedKeys="true" keyProperty="materialCategoryId">
+    <insert id="insertFdMaterialCategory" parameterType="FdMaterialCategory">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_material_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="materialCategoryId != null and materialCategoryId != ''">material_category_id,</if>
+            <if test="parentId != null and parentId != ''">parent_id,</if>
             <if test="materialCategoryCode != null and materialCategoryCode != ''">material_category_code,</if>
             <if test="materialCategoryName != null and materialCategoryName != ''">material_category_name,</if>
+            <if test="pinyinCode != null and pinyinCode != ''">pinyin_code,</if>
             <if test="materialCategoryAddress != null">material_category_address,</if>
             <if test="materialCategoryContact != null">material_category_contact,</if>
             <if test="delFlag != null">del_flag,</if>
@@ -57,8 +72,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="materialCategoryId != null and materialCategoryId != ''">#{materialCategoryId},</if>
+            <if test="parentId != null and parentId != ''">#{parentId},</if>
             <if test="materialCategoryCode != null and materialCategoryCode != ''">#{materialCategoryCode},</if>
             <if test="materialCategoryName != null and materialCategoryName != ''">#{materialCategoryName},</if>
+            <if test="pinyinCode != null and pinyinCode != ''">#{pinyinCode},</if>
             <if test="materialCategoryAddress != null">#{materialCategoryAddress},</if>
             <if test="materialCategoryContact != null">#{materialCategoryContact},</if>
             <if test="delFlag != null">#{delFlag},</if>
@@ -74,8 +92,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_material_category
         <trim prefix="SET" suffixOverrides=",">
+            <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="materialCategoryCode != null and materialCategoryCode != ''">material_category_code = #{materialCategoryCode},</if>
             <if test="materialCategoryName != null and materialCategoryName != ''">material_category_name = #{materialCategoryName},</if>
+            <if test="pinyinCode != null">pinyin_code = #{pinyinCode},</if>
             <if test="materialCategoryAddress != null">material_category_address = #{materialCategoryAddress},</if>
             <if test="materialCategoryContact != null">material_category_contact = #{materialCategoryContact},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>

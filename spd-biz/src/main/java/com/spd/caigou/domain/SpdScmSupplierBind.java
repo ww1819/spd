@@ -11,6 +11,10 @@ public class SpdScmSupplierBind
     private String id;
     private String tenantId;
     private String supplierId;
+    /** 展示用：关联 fd_supplier.name，不落库 */
+    private String supplierName;
+    /** 展示用：关联 fd_supplier.code（SPD 供应商编码），不落库 */
+    private String supplierCode;
     private String scmSupplierCode;
     private String remark;
     /** 删除标志：0 正常，1 删除 */
@@ -48,6 +52,26 @@ public class SpdScmSupplierBind
     public void setSupplierId(String supplierId)
     {
         this.supplierId = supplierId;
+    }
+
+    public String getSupplierName()
+    {
+        return supplierName;
+    }
+
+    public void setSupplierName(String supplierName)
+    {
+        this.supplierName = supplierName;
+    }
+
+    public String getSupplierCode()
+    {
+        return supplierCode;
+    }
+
+    public void setSupplierCode(String supplierCode)
+    {
+        this.supplierCode = supplierCode;
     }
 
     public String getScmSupplierCode()

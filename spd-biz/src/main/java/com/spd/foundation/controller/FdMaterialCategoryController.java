@@ -1,6 +1,7 @@
 package com.spd.foundation.controller;
 
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +65,7 @@ public class FdMaterialCategoryController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('foundation:materialCategory:query')")
     @GetMapping(value = "/{materialCategoryId}")
-    public AjaxResult getInfo(@PathVariable("materialCategoryId") Long materialCategoryId)
+    public AjaxResult getInfo(@PathVariable("materialCategoryId") String materialCategoryId)
     {
         return success(fdMaterialCategoryService.selectFdMaterialCategoryByMaterialCategoryId(materialCategoryId));
     }
@@ -92,12 +93,35 @@ public class FdMaterialCategoryController extends BaseController
     }
 
     /**
+     * 批量更新材料类别拼音简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:materialCategory:edit')")
+    @Log(title = "耗材分类维护", businessType = BusinessType.UPDATE)
+    @PutMapping("/updatePinyinCodeBatch")
+    public AjaxResult updatePinyinCodeBatch(@RequestBody Map<String, String[]> params)
+    {
+        String[] materialCategoryIds = params == null ? null : params.get("materialCategoryIds");
+        return toAjax(fdMaterialCategoryService.updatePinyinCodeByMaterialCategoryIds(materialCategoryIds));
+    }
+
+    /**
+     * 全量更新材料类别拼音简码
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:materialCategory:edit')")
+    @Log(title = "耗材分类维护", businessType = BusinessType.UPDATE)
+    @PutMapping("/updatePinyinCodeAll")
+    public AjaxResult updatePinyinCodeAll()
+    {
+        return toAjax(fdMaterialCategoryService.updatePinyinCodeForAllMaterialCategory());
+    }
+
+    /**
      * 删除耗材分类维护
      */
     @PreAuthorize("@ss.hasPermi('foundation:materialCategory:remove')")
     @Log(title = "耗材分类维护", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{materialCategoryIds}")
-    public AjaxResult remove(@PathVariable Long materialCategoryIds)
+    public AjaxResult remove(@PathVariable String materialCategoryIds)
     {
         return toAjax(fdMaterialCategoryService.deleteFdMaterialCategoryByMaterialCategoryId(materialCategoryIds));
     }

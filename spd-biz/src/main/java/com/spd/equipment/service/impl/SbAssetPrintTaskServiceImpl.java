@@ -40,7 +40,7 @@ public class SbAssetPrintTaskServiceImpl implements ISbAssetPrintTaskService {
 
     @Override
     public String generateTaskNo(String customerId) {
-        if (StringUtils.isEmpty(customerId)) customerId = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(customerId)) customerId = SecurityUtils.requiredScopedTenantIdForSql();
         String datePrefix = "DYRW" + DateUtils.dateTimeNow("yyyyMMdd");
         Integer maxSeq = mapper.selectMaxTaskNoSeqToday(customerId, datePrefix);
         int next = (maxSeq == null ? 0 : maxSeq) + 1;
@@ -50,7 +50,7 @@ public class SbAssetPrintTaskServiceImpl implements ISbAssetPrintTaskService {
     @Override
     public int insert(SbAssetPrintTask row) {
         if (StringUtils.isEmpty(row.getCustomerId())) {
-            row.setCustomerId(SecurityUtils.getCustomerId());
+            row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());

@@ -12,6 +12,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="entryId != null">entry_id,</if>
             <if test="departmentId != null">department_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="warehouseIdStr != null">warehouse_id_str,</if>
+            <if test="departmentIdStr != null">department_id_str,</if>
+            <if test="materialCode != null">material_code,</if>
+            <if test="materialName != null">material_name,</if>
+            <if test="billNo != null">bill_no,</if>
+            <if test="billIdStr != null">bill_id_str,</if>
+            <if test="entryIdStr != null">entry_id_str,</if>
+            <if test="materialIdStr != null">material_id_str,</if>
+            <if test="kcNoStr != null">kc_no_str,</if>
+            <if test="batchIdStr != null">batch_id_str,</if>
+            <if test="factoryIdStr != null">factory_id_str,</if>
+            <if test="supplierName != null">supplier_name,</if>
             <if test="materialId != null">material_id,</if>
             <if test="batchNo != null">batch_no,</if>
             <if test="batchNumber != null">batch_number,</if>
@@ -43,6 +55,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="entryId != null">#{entryId},</if>
             <if test="departmentId != null">#{departmentId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="warehouseIdStr != null">#{warehouseIdStr},</if>
+            <if test="departmentIdStr != null">#{departmentIdStr},</if>
+            <if test="materialCode != null">#{materialCode},</if>
+            <if test="materialName != null">#{materialName},</if>
+            <if test="billNo != null">#{billNo},</if>
+            <if test="billIdStr != null">#{billIdStr},</if>
+            <if test="entryIdStr != null">#{entryIdStr},</if>
+            <if test="materialIdStr != null">#{materialIdStr},</if>
+            <if test="kcNoStr != null">#{kcNoStr},</if>
+            <if test="batchIdStr != null">#{batchIdStr},</if>
+            <if test="factoryIdStr != null">#{factoryIdStr},</if>
+            <if test="supplierName != null">#{supplierName},</if>
             <if test="materialId != null">#{materialId},</if>
             <if test="batchNo != null">#{batchNo},</if>
             <if test="batchNumber != null">#{batchNumber},</if>

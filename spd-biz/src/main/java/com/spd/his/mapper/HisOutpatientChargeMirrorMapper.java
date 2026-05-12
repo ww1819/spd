@@ -13,8 +13,6 @@ public interface HisOutpatientChargeMirrorMapper
 
     List<HisIdFingerprint> selectFingerprintsByHisIds(@Param("tenantId") String tenantId, @Param("hisIds") List<String> hisIds);
 
-    List<HisOutpatientChargeMirror> selectMirrorList(HisOutpatientChargeMirror query);
-
     List<HisPatientChargeSummaryRow> selectSummary(
             @Param("tenantId") String tenantId,
             @Param("beginChargeDate") String beginChargeDate,

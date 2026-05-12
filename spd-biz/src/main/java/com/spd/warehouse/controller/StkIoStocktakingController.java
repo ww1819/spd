@@ -3,6 +3,7 @@ package com.spd.warehouse.controller;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.department.dto.StocktakingQtyAdjustDto;
 
 /**
  * 盘点Controller
@@ -112,7 +114,20 @@ public class StkIoStocktakingController extends BaseController
     @PutMapping("/auditStocktaking")
     public AjaxResult audit(@RequestBody JSONObject json)
     {
-        int result = stkIoStocktakingService.auditStkIoBill(json.getString("id"));
+        List<StocktakingQtyAdjustDto> adjustList = null;
+        JSONArray arr = json.getJSONArray("qtyAdjustList");
+        if (arr != null && !arr.isEmpty()) {
+            adjustList = arr.toJavaList(StocktakingQtyAdjustDto.class);
+        }
+        int result = stkIoStocktakingService.auditStkIoBill(json.getString("id"), adjustList);
         return toAjax(result);
+    }
+
+    /** 审核前：仓库盘点（501）明细库存数量与 stk_inventory 是否一致 */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:audit')")
+    @PostMapping("/auditStocktaking/checkQty")
+    public AjaxResult checkAuditQty(@RequestBody JSONObject json)
+    {
+        return success(stkIoStocktakingService.checkWhStocktakingQtyMismatch(json.getString("id")));
     }
 }

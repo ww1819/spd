@@ -36,6 +36,8 @@ import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.StkDepInventoryMapper;
+import com.spd.department.domain.HcKsFlow;
+import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.warehouse.domain.HcCkFlow;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
@@ -50,6 +52,7 @@ import com.spd.warehouse.mapper.StkIoProfitLossMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoProfitLossService;
 import com.spd.common.core.page.TotalInfo;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
 /**
@@ -76,6 +79,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
     private StkInventoryMapper stkInventoryMapper;
     @Autowired
     private HcCkFlowMapper hcCkFlowMapper;
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
     @Autowired
     private StkBatchMapper stkBatchMapper;
     @Autowired
@@ -396,9 +401,9 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setDelFlag(0);
                 flow.setCreateTime(now);
                 flow.setCreateBy(username);
+                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
                 hcCkFlowMapper.insertHcCkFlow(flow);
-            }
-            else {
+            } else {
                 // 盘盈：写入 stk_batch + stk_inventory，流水 lx=PY
                 StkInventory invProbe = null;
                 if (entry.getKcNo() != null) {
@@ -448,9 +453,11 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setDelFlag(0);
                 flow.setCreateTime(now);
                 flow.setCreateBy(username);
+                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
                 hcCkFlowMapper.insertHcCkFlow(flow);
 
                 stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), newInv.getId(), null);
+                syncSourceStocktakingEntryInventoryRefs(entry, newInv.getId(), null, username);
             }
         }
 
@@ -552,35 +559,34 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             depInv.setUpdateBy(username);
             stkDepInventoryMapper.updateStkDepInventory(depInv);
 
-            HcCkFlow flow = new HcCkFlow();
-            flow.setBillId(bill.getId());
-            flow.setEntryId(entry.getId());
             Long flowWh = depInv.getWarehouseId() != null ? depInv.getWarehouseId() : entry.getReturnWarehouseId();
-            flow.setWarehouseId(flowWh);
-            flow.setMaterialId(entry.getMaterialId());
-            flow.setBatchNo(batchNo);
-            flow.setBatchNumber(entry.getBatchNumber());
-            flow.setQty(absQty);
-            flow.setUnitPrice(entry.getUnitPrice());
-            flow.setAmt(entry.getProfitAmount() != null ? entry.getProfitAmount().abs() : null);
-            flow.setBeginTime(entry.getBeginTime());
-            flow.setEndTime(entry.getEndTime());
-            flow.setMainBarcode(entry.getMainBarcode() != null ? entry.getMainBarcode() : depInv.getMainBarcode());
-            flow.setSubBarcode(entry.getSubBarcode() != null ? entry.getSubBarcode() : depInv.getSubBarcode());
-            Long supId = depInv.getSupplierId() != null ? parseSupplierIdLong(depInv.getSupplierId()) : parseSupplierIdLong(entry.getSupplerId());
-            flow.setSupplierId(supId);
-            flow.setLx("PK");
-            flow.setBatchId(depInv.getBatchId());
-            flow.setOriginBusinessType("科室盘亏");
-            flow.setKcNo(depInv.getId());
-            flow.setFlowTime(now);
-            flow.setDelFlag(0);
-            flow.setCreateTime(now);
-            flow.setCreateBy(username);
-            if (StringUtils.isEmpty(flow.getTenantId())) {
-                flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
-            }
-            hcCkFlowMapper.insertHcCkFlow(flow);
+            HcKsFlow ksFlow = new HcKsFlow();
+            ksFlow.setBillId(bill.getId());
+            ksFlow.setEntryId(entry.getId());
+            ksFlow.setDepartmentId(bill.getDepartmentId());
+            ksFlow.setWarehouseId(flowWh);
+            ksFlow.setMaterialId(entry.getMaterialId());
+            ksFlow.setBatchNo(batchNo);
+            ksFlow.setBatchNumber(entry.getBatchNumber());
+            ksFlow.setQty(absQty);
+            ksFlow.setUnitPrice(entry.getUnitPrice());
+            ksFlow.setAmt(entry.getProfitAmount() != null ? entry.getProfitAmount().abs() : null);
+            ksFlow.setBeginTime(entry.getBeginTime());
+            ksFlow.setEndTime(entry.getEndTime());
+            ksFlow.setMainBarcode(entry.getMainBarcode() != null ? entry.getMainBarcode() : depInv.getMainBarcode());
+            ksFlow.setSubBarcode(entry.getSubBarcode() != null ? entry.getSubBarcode() : depInv.getSubBarcode());
+            ksFlow.setSupplierId(StringUtils.isNotEmpty(depInv.getSupplierId()) ? depInv.getSupplierId() : entry.getSupplerId());
+            ksFlow.setFactoryId(depInv.getFactoryId());
+            ksFlow.setLx("PK");
+            ksFlow.setBatchId(depInv.getBatchId());
+            ksFlow.setOriginBusinessType("科室盘亏");
+            ksFlow.setKcNo(depInv.getId());
+            ksFlow.setFlowTime(now);
+            ksFlow.setDelFlag(0);
+            ksFlow.setCreateTime(now);
+            ksFlow.setCreateBy(username);
+            InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, flowWh, fdMaterialMapper);
+            hcKsFlowMapper.insertHcKsFlow(ksFlow);
             return;
         }
 
@@ -607,38 +613,55 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         StkDepInventory newDep = buildStkDepInventoryForProfit(bill, entry, stkBatch, addQty, returnWhId, now, username);
         stkDepInventoryMapper.insertStkDepInventory(newDep);
 
-        HcCkFlow flow = new HcCkFlow();
-        flow.setBillId(bill.getId());
-        flow.setEntryId(entry.getId());
-        flow.setWarehouseId(returnWhId);
-        flow.setMaterialId(entry.getMaterialId());
-        flow.setBatchNo(batchNo);
-        flow.setBatchNumber(entry.getBatchNumber());
-        flow.setQty(addQty);
-        flow.setUnitPrice(entry.getUnitPrice());
-        flow.setAmt(entry.getProfitAmount());
-        flow.setBeginTime(entry.getBeginTime());
-        flow.setEndTime(entry.getEndTime());
-        flow.setMainBarcode(entry.getMainBarcode());
-        flow.setSubBarcode(entry.getSubBarcode());
-        flow.setSupplierId(parseSupplierIdLong(entry.getSupplerId()));
+        HcKsFlow ksFlow = new HcKsFlow();
+        ksFlow.setBillId(bill.getId());
+        ksFlow.setEntryId(entry.getId());
+        ksFlow.setDepartmentId(bill.getDepartmentId());
+        ksFlow.setWarehouseId(returnWhId);
+        ksFlow.setMaterialId(entry.getMaterialId());
+        ksFlow.setBatchNo(batchNo);
+        ksFlow.setBatchNumber(entry.getBatchNumber());
+        ksFlow.setQty(addQty);
+        ksFlow.setUnitPrice(entry.getUnitPrice());
+        ksFlow.setAmt(entry.getProfitAmount());
+        ksFlow.setBeginTime(entry.getBeginTime());
+        ksFlow.setEndTime(entry.getEndTime());
+        ksFlow.setMainBarcode(entry.getMainBarcode());
+        ksFlow.setSubBarcode(entry.getSubBarcode());
+        ksFlow.setSupplierId(entry.getSupplerId());
         if (stkBatch.getFactoryId() != null) {
-            flow.setFactoryId(stkBatch.getFactoryId());
+            ksFlow.setFactoryId(stkBatch.getFactoryId());
         }
-        flow.setLx("PY");
-        flow.setBatchId(stkBatch.getId());
-        flow.setOriginBusinessType("科室盘盈入库");
-        flow.setKcNo(newDep.getId());
-        flow.setFlowTime(now);
-        flow.setDelFlag(0);
-        flow.setCreateTime(now);
-        flow.setCreateBy(username);
-        if (StringUtils.isEmpty(flow.getTenantId())) {
-            flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
-        }
-        hcCkFlowMapper.insertHcCkFlow(flow);
+        ksFlow.setLx("PY");
+        ksFlow.setBatchId(stkBatch.getId());
+        ksFlow.setOriginBusinessType("科室盘盈入库");
+        ksFlow.setKcNo(newDep.getId());
+        ksFlow.setFlowTime(now);
+        ksFlow.setDelFlag(0);
+        ksFlow.setCreateTime(now);
+        ksFlow.setCreateBy(username);
+        InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, returnWhId, fdMaterialMapper);
+        hcKsFlowMapper.insertHcKsFlow(ksFlow);
 
         stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), null, newDep.getId());
+        syncSourceStocktakingEntryInventoryRefs(entry, null, newDep.getId(), username);
+    }
+
+    /**
+     * 盈亏审核生成库存后，回写来源盘点明细上的 kc_no / dep_inventory_id，便于按明细追溯实物行。
+     */
+    private void syncSourceStocktakingEntryInventoryRefs(StkIoProfitLossEntry plEntry, Long resultStkInventoryId,
+        Long resultDepInventoryId, String username) {
+        if (plEntry == null || plEntry.getStocktakingEntryId() == null) {
+            return;
+        }
+        if (resultStkInventoryId == null && resultDepInventoryId == null) {
+            return;
+        }
+        String kcStr = resultStkInventoryId != null ? String.valueOf(resultStkInventoryId) : null;
+        String depStr = resultDepInventoryId != null ? String.valueOf(resultDepInventoryId) : null;
+        stkIoStocktakingMapper.updateStocktakingEntryPostingInventoryRef(
+            plEntry.getStocktakingEntryId(), resultStkInventoryId, kcStr, depStr, username);
     }
 
     private Long resolveReturnWarehouseForDeptSurplus(StkIoProfitLossEntry entry) {

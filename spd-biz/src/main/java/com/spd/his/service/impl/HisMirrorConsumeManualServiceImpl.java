@@ -46,6 +46,7 @@ import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisChargeItemMirrorMapper;
 import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 
 @Service
@@ -82,6 +83,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private IDeptBatchConsumeService deptBatchConsumeService;
     @Autowired
     private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
+    @Autowired
+    private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -195,6 +198,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
                 STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
         }
+        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
+            STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
         vo.setConsumeBillCount(vo.getConsumeBillIds().size());
         vo.setConsumeEntryCount(pieces.size());
         vo.setLinkRowCount(linkBuffer.size());
@@ -394,6 +399,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
                 newStatus, PROC_TYPE_HIGH, procTime, procBy);
         }
+        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
+            newStatus, PROC_TYPE_HIGH, procTime, procBy);
         HisMirrorHighApplyResultVo vo = new HisMirrorHighApplyResultVo();
         vo.setConsumeBillId(consumeId);
         vo.setAppliedQty(applySum);

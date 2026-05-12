@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(挂系统设置 path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(含 caigou:scmBind:remove 删除；path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -45,6 +45,97 @@ ON DUPLICATE KEY UPDATE
   icon = VALUES(icon),
   create_by = VALUES(create_by),
   create_time = VALUES(create_time),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+-- ---------- 3.y) 财务管理：卫材入出库汇总（统计口径：耗材出库数据）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3193, '卫材入出库汇总', 1065, 6, 'medicalStockSummary', 'finance/medicalStockSummary/index', NULL,
+  1, 0, 'C', '0', '0', 'finance:medicalStockSummary:list', 'chart',
+  'admin', NOW(), '1', NOW(), '包含卫材入库/卫材出库两张报表，均基于耗材出库数据统计',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND component='finance/medicalStockSummary/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3193)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  `query` = VALUES(`query`),
+  is_frame = VALUES(is_frame),
+  is_cache = VALUES(is_cache),
+  menu_type = VALUES(menu_type),
+  visible = VALUES(visible),
+  status = VALUES(status),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3194, '卫材入出库查询', 3193, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:medicalStockSummary:query', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=3193 AND perms='finance:medicalStockSummary:query')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3194)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
+  update_by = VALUES(update_by),
+  update_time = VALUES(update_time),
+  remark = VALUES(remark),
+  is_platform = VALUES(is_platform),
+  default_open_to_customer = VALUES(default_open_to_customer);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3883, '卫材入出库导出', 3193, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'finance:medicalStockSummary:export', '#',
+  'admin', NOW(), '1', NOW(), '',
+  '0', '0'
+FROM DUAL
+WHERE
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=3193 AND perms='finance:medicalStockSummary:export')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3195)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  perms = VALUES(perms),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
   remark = VALUES(remark),
@@ -706,7 +797,7 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
--- ---------- 3.x) 财务管理：财务结算汇总（出退库按供货单位 / 材料·试剂）----------
+-- ---------- 3.x) 财务管理：财务结算汇总（同页表一供货单位汇总 + 表二科室领取统计；出退库 201/401）----------
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -716,7 +807,7 @@ INSERT INTO sys_menu (
 SELECT
   3191, '财务结算汇总', 1065, 5, 'settlementSummary', 'finance/settlementSummary/index', NULL,
   1, 0, 'C', '0', '0', 'finance:settlementSummary:list', 'documentation',
-  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '出退库按库房分类汇总材料/试剂供货单位批发金额',
+  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '表一：出退库按供货单位汇总材料/试剂批发金额；表二：科室出退库按 storeroom_id 11/12/13 汇总',
   '0', '0'
 FROM DUAL
 WHERE
@@ -752,7 +843,7 @@ INSERT INTO sys_menu (
 SELECT
   3192, '财务结算汇总导出', 3191, 1, '#', '', NULL,
   1, 0, 'F', '0', '0', 'finance:settlementSummary:export', '#',
-  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '前端导出 xlsx',
+  'admin', '2026-04-23 00:00:00', '1', '2026-04-23 00:00:00', '表一、表二前端导出 xlsx',
   '0', '0'
 FROM DUAL
 WHERE
@@ -3917,7 +4008,7 @@ UPDATE sys_menu f
 JOIN sys_menu c ON c.menu_type = 'C' AND c.component = 'caigou/scmBind/index'
 SET f.parent_id = c.menu_id
 WHERE f.menu_type = 'F'
-  AND f.perms IN ('caigou:scmBind:query', 'caigou:scmBind:edit')
+  AND f.perms IN ('caigou:scmBind:query', 'caigou:scmBind:edit', 'caigou:scmBind:remove')
   AND f.parent_id <> c.menu_id;
 /
 
@@ -3959,6 +4050,26 @@ SELECT
 FROM DUAL
 WHERE @scm_bind_c IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_c AND perms = 'caigou:scmBind:edit');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '云平台绑定删除',
+  @scm_bind_c,
+  3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'caigou:scmBind:remove', '#',
+  'admin', NOW(), '1', NOW(), '供应商平台编码绑定逻辑删除（单条/批量）；DELETE /caigou/scmBind/supplier/{ids}',
+  '0', '1'
+FROM DUAL
+WHERE @scm_bind_c IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @scm_bind_c AND perms = 'caigou:scmBind:remove');
 /
 
 -- ---------- 基础资料：平台供应商信息、主数据变更快照 ----------
@@ -6115,6 +6226,10 @@ ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent
 SET @mat_cat_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/materialCategory/index' ORDER BY menu_id DESC LIMIT 1);
 /
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT (SELECT IFNULL(MAX(menu_id), 1000) + 1 FROM sys_menu), '物资分类查询', @mat_cat_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:query');
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3443, '物资分类新增', @mat_cat_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:materialCategory:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
 FROM DUAL WHERE @mat_cat_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @mat_cat_menu AND perms = 'foundation:materialCategory:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3443))
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
@@ -6950,6 +7065,7 @@ JOIN sys_menu m
     'caigou:scmBind:list',
     'caigou:scmBind:query',
     'caigou:scmBind:edit',
+    'caigou:scmBind:remove',
     'inWarehouse:apply:list',
     'inWarehouse:apply:query',
     'inWarehouse:apply:export',

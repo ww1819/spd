@@ -26,6 +26,10 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "父类ID")
     private Long parenId;
 
+    /** 盘点单号（冗余主表 stock_no，便于按单号直接查明细） */
+    @Excel(name = "盘点单号")
+    private String stockNo;
+
     /** 商品ID */
     @Excel(name = "商品ID")
     private Long commodityId;
@@ -56,6 +60,16 @@ public class StkIoStocktakingEntry extends BaseEntity
 
     /** 库存明细id（盘点时取自stk_inventory.id） */
     private Long kcNo;
+    /** 仓库库存明细id字符串快照（与 kc_no 对应） */
+    private String kcNoStr;
+    /** 科室库存明细id（科室盘点取自stk_dep_inventory.id，varchar兼容历史异构键） */
+    private String depInventoryId;
+    /** 仓库ID明细行快照（varchar） */
+    private String warehouseIdStr;
+    /** 科室ID明细行快照（varchar） */
+    private String departmentIdStr;
+    /** 供应商ID明细行快照（varchar） */
+    private String supplierIdStr;
 
     /** 批号 */
     @Excel(name = "批号")
@@ -81,6 +95,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     /** 盈亏数量 */
     @Excel(name = "盈亏数量")
     private BigDecimal profitQty;
+    /** 盈亏标志：PROFIT/LOSS/EQUAL */
+    private String profitLossFlag;
 
     /** 盘点金额 */
     @Excel(name = "盘点金额")
@@ -135,6 +151,17 @@ public class StkIoStocktakingEntry extends BaseEntity
     {
         return parenId;
     }
+
+    public String getStockNo()
+    {
+        return stockNo;
+    }
+
+    public void setStockNo(String stockNo)
+    {
+        this.stockNo = stockNo;
+    }
+
     public void setCommodityId(Long commodityId)
     {
         this.commodityId = commodityId;
@@ -200,6 +227,16 @@ public class StkIoStocktakingEntry extends BaseEntity
     }
     public Long getKcNo() { return kcNo; }
     public void setKcNo(Long kcNo) { this.kcNo = kcNo; }
+    public String getKcNoStr() { return kcNoStr; }
+    public void setKcNoStr(String kcNoStr) { this.kcNoStr = kcNoStr; }
+    public String getDepInventoryId() { return depInventoryId; }
+    public void setDepInventoryId(String depInventoryId) { this.depInventoryId = depInventoryId; }
+    public String getWarehouseIdStr() { return warehouseIdStr; }
+    public void setWarehouseIdStr(String warehouseIdStr) { this.warehouseIdStr = warehouseIdStr; }
+    public String getDepartmentIdStr() { return departmentIdStr; }
+    public void setDepartmentIdStr(String departmentIdStr) { this.departmentIdStr = departmentIdStr; }
+    public String getSupplierIdStr() { return supplierIdStr; }
+    public void setSupplierIdStr(String supplierIdStr) { this.supplierIdStr = supplierIdStr; }
     public void setBatchNumber(String batchNumber)
     {
         this.batchNumber = batchNumber;
@@ -252,6 +289,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     public void setProfitQty(BigDecimal profitQty) {
         this.profitQty = profitQty;
     }
+    public String getProfitLossFlag() { return profitLossFlag; }
+    public void setProfitLossFlag(String profitLossFlag) { this.profitLossFlag = profitLossFlag; }
 
     public BigDecimal getStockAmount() {
         return stockAmount;
@@ -304,6 +343,7 @@ public class StkIoStocktakingEntry extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("parenId", getParenId())
+            .append("stockNo", getStockNo())
             .append("commodityId", getCommodityId())
             .append("materialId", getMaterialId())
             .append("unitPrice", getUnitPrice())
@@ -312,6 +352,11 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("amt", getAmt())
             .append("batchNo", getBatchNo())
             .append("kcNo", getKcNo())
+            .append("kcNoStr", getKcNoStr())
+            .append("depInventoryId", getDepInventoryId())
+            .append("warehouseIdStr", getWarehouseIdStr())
+            .append("departmentIdStr", getDepartmentIdStr())
+            .append("supplierIdStr", getSupplierIdStr())
             .append("batchNumber", getBatchNumber())
             .append("beginTime", getBeginTime())
             .append("endTime", getEndTime())
@@ -319,6 +364,7 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("remark", getRemark())
             .append("stockQty", getStockQty())
             .append("profitQty", getProfitQty())
+            .append("profitLossFlag", getProfitLossFlag())
             .append("stockAmount", getStockAmount())
             .append("profitAmount", getProfitAmount())
             .append("returnWarehouseId", getReturnWarehouseId())

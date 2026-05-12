@@ -33,7 +33,7 @@ public class SbEquipmentBrandServiceImpl implements ISbEquipmentBrandService {
 
     @Override
     public int insert(SbEquipmentBrand row) {
-        if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(row.getCustomerId())) row.setCustomerId(SecurityUtils.requiredScopedTenantIdForSql());
         if (StringUtils.isNotEmpty(row.getName())) row.setNamePinyin(PinyinUtils.getPinyinInitials(row.getName()));
         row.setId(UUID7.generateUUID7());
         row.setDelFlag(0);

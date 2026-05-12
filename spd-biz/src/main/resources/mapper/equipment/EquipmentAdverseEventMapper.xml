@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.equipment.mapper.EquipmentAdverseEventMapper">
+
+    <resultMap type="EquipmentAdverseEvent" id="EquipmentAdverseEventResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="equipmentId" column="equipment_id"/>
+        <result property="eventCode" column="event_code"/>
+        <result property="archiveCode" column="archive_code"/>
+        <result property="eventDate" column="event_date"/>
+        <result property="reporter" column="reporter"/>
+        <result property="eventType" column="event_type"/>
+        <result property="eventLevel" column="event_level"/>
+        <result property="eventDescription" column="event_description"/>
+        <result property="handlingMeasures" column="handling_measures"/>
+        <result property="handlingResult" column="handling_result"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+    </resultMap>
+
+    <sql id="selectColumns">
+        id, tenant_id, equipment_id, event_code, archive_code, event_date, reporter, event_type, event_level,
+        event_description, handling_measures, handling_result, remark, del_flag,
+        create_by, create_time, update_by, update_time, delete_by, delete_time
+    </sql>
+
+    <select id="selectByEquipmentId" resultMap="EquipmentAdverseEventResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select <include refid="selectColumns"/>
+        from equipment_adverse_event
+        where tenant_id = #{scopedTenantId}
+          and equipment_id = #{equipmentId}
+          and del_flag = '0'
+        order by create_time asc, id asc
+    </select>
+
+    <insert id="insertEquipmentAdverseEvent">
+        insert into equipment_adverse_event (
+            id, tenant_id, equipment_id, event_code, archive_code, event_date, reporter, event_type, event_level,
+            event_description, handling_measures, handling_result, remark, del_flag,
+            create_by, create_time, update_by, update_time
+        ) values (
+            #{id}, #{tenantId}, #{equipmentId}, #{eventCode}, #{archiveCode}, #{eventDate}, #{reporter}, #{eventType}, #{eventLevel},
+            #{eventDescription}, #{handlingMeasures}, #{handlingResult}, #{remark}, #{delFlag},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
+        )
+    </insert>
+
+    <update id="updateEquipmentAdverseEvent">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update equipment_adverse_event
+        set event_code = #{eventCode},
+            archive_code = #{archiveCode},
+            event_date = #{eventDate},
+            reporter = #{reporter},
+            event_type = #{eventType},
+            event_level = #{eventLevel},
+            event_description = #{eventDescription},
+            handling_measures = #{handlingMeasures},
+            handling_result = #{handlingResult},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        where id = #{id} and tenant_id = #{scopedTenantId} and del_flag = '0'
+    </update>
+
+    <update id="logicalDeleteRemoved">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update equipment_adverse_event
+        set del_flag = '1',
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where equipment_id = #{equipmentId}
+          and tenant_id = #{scopedTenantId}
+          and del_flag = '0'
+        <if test="keepIds != null and keepIds.size() > 0">
+            and id not in
+            <foreach collection="keepIds" item="kid" open="(" separator="," close=")">
+                #{kid}
+            </foreach>
+        </if>
+    </update>
+
+    <update id="logicalDeleteByEquipmentIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update equipment_adverse_event
+        set del_flag = '1',
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where tenant_id = #{scopedTenantId}
+          and del_flag = '0'
+          and equipment_id in
+        <foreach item="eid" collection="equipmentIds" open="(" separator="," close=")">
+            #{eid}
+        </foreach>
+    </update>
+</mapper>

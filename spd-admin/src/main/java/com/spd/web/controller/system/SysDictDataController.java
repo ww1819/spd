@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
-import com.spd.common.core.domain.entity.SysDictData;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.StringUtils;
@@ -42,20 +41,21 @@ public class SysDictDataController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:dict:list')")
     @GetMapping("/list")
-    public TableDataInfo list(SysDictData dictData)
+    public TableDataInfo list(com.spd.common.core.domain.entity.SysDictData dictData)
     {
         startPage();
-        List<SysDictData> list = dictDataService.selectDictDataList(dictData);
+        List<com.spd.common.core.domain.entity.SysDictData> list = dictDataService.selectDictDataList(dictData);
         return getDataTable(list);
     }
 
     @Log(title = "字典数据", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('system:dict:export')")
     @PostMapping("/export")
-    public void export(HttpServletResponse response, SysDictData dictData)
+    public void export(HttpServletResponse response, com.spd.common.core.domain.entity.SysDictData dictData)
     {
-        List<SysDictData> list = dictDataService.selectDictDataList(dictData);
-        ExcelUtil<SysDictData> util = new ExcelUtil<SysDictData>(SysDictData.class);
+        List<com.spd.common.core.domain.entity.SysDictData> list = dictDataService.selectDictDataList(dictData);
+        ExcelUtil<com.spd.common.core.domain.entity.SysDictData> util =
+            new ExcelUtil<com.spd.common.core.domain.entity.SysDictData>(com.spd.common.core.domain.entity.SysDictData.class);
         util.exportExcel(response, list, "字典数据");
     }
 
@@ -75,10 +75,10 @@ public class SysDictDataController extends BaseController
     @GetMapping(value = "/type/{dictType}")
     public AjaxResult dictType(@PathVariable String dictType)
     {
-        List<SysDictData> data = dictTypeService.selectDictDataByType(dictType);
+        List<com.spd.common.core.domain.entity.SysDictData> data = dictTypeService.selectDictDataByType(dictType);
         if (StringUtils.isNull(data))
         {
-            data = new ArrayList<SysDictData>();
+            data = new ArrayList<com.spd.common.core.domain.entity.SysDictData>();
         }
         return success(data);
     }
@@ -89,7 +89,7 @@ public class SysDictDataController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:dict:add')")
     @Log(title = "字典数据", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@Validated @RequestBody SysDictData dict)
+    public AjaxResult add(@Validated @RequestBody com.spd.common.core.domain.entity.SysDictData dict)
     {
         dict.setCreateBy(getUserIdStr());
         return toAjax(dictDataService.insertDictData(dict));
@@ -101,7 +101,7 @@ public class SysDictDataController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:dict:edit')")
     @Log(title = "字典数据", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@Validated @RequestBody SysDictData dict)
+    public AjaxResult edit(@Validated @RequestBody com.spd.common.core.domain.entity.SysDictData dict)
     {
         dict.setUpdateBy(getUserIdStr());
         return toAjax(dictDataService.updateDictData(dict));

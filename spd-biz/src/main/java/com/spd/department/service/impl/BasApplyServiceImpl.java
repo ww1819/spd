@@ -28,6 +28,7 @@ import com.spd.warehouse.domain.HcCkFlow;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.mapper.HcCkFlowMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
 import com.spd.department.service.IWhWarehouseApplyService;
@@ -571,7 +572,7 @@ public class BasApplyServiceImpl implements IBasApplyService
 
             insertKsTransferFlow(basApply, e, src, outDeptId, need, unitPrice, "科室转出", "KSZC");
             insertKsTransferFlow(basApply, e, tgtExisting, inDeptId, need, unitPrice, "科室转入", "KSZR");
-            insertHcCkTransferPairForWarehouse(basApply, e, src, need, unitPrice);
+            insertHcCkTransferPairForWarehouse(basApply, e, src, need, unitPrice, outDeptId, inDeptId);
         }
     }
 
@@ -580,7 +581,7 @@ public class BasApplyServiceImpl implements IBasApplyService
      * lx 使用 KSZC/KSZR，与仓库间调拨的 ZC/ZR 区分。
      */
     private void insertHcCkTransferPairForWarehouse(BasApply basApply, BasApplyEntry entry,
-        StkDepInventory srcRow, BigDecimal qty, BigDecimal deptUnitPrice) {
+        StkDepInventory srcRow, BigDecimal qty, BigDecimal deptUnitPrice, Long outDeptId, Long inDeptId) {
         if (srcRow == null || srcRow.getWarehouseId() == null) {
             throw new ServiceException("转科明细归属仓库不能为空，无法生成仓库流水");
         }
@@ -641,6 +642,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         zc.setCreateTime(flowTime);
         zc.setCreateBy(uid);
         zc.setTenantId(tenantId);
+        InventoryMaterialSnapshotHelper.enrichHcCkFlowBasApplyTransfer(zc, basApply, entry, whId, supplierId, outDeptId, fdMaterialMapper);
         hcCkFlowMapper.insertHcCkFlow(zc);
 
         HcCkFlow zr = new HcCkFlow();
@@ -668,6 +670,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         zr.setCreateTime(flowTime);
         zr.setCreateBy(uid);
         zr.setTenantId(tenantId);
+        InventoryMaterialSnapshotHelper.enrichHcCkFlowBasApplyTransfer(zr, basApply, entry, whId, supplierId, inDeptId, fdMaterialMapper);
         hcCkFlowMapper.insertHcCkFlow(zr);
     }
 
@@ -720,6 +723,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         flow.setCreateTime(new Date());
         flow.setCreateBy(SecurityUtils.getUserIdStr());
         flow.setTenantId(StringUtils.isNotEmpty(basApply.getTenantId()) ? basApply.getTenantId() : SecurityUtils.getCustomerId());
+        InventoryMaterialSnapshotHelper.enrichHcKsFlowBasApply(flow, basApply, entry, fdMaterialMapper);
         hcKsFlowMapper.insertHcKsFlow(flow);
     }
 

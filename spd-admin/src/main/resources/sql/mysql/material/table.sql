@@ -6,6 +6,26 @@
 -- 按「/」分段，每段一条语句执行
 /
 
+CREATE TABLE IF NOT EXISTS `fd_material_category` (
+  `material_category_id` varchar(36) NOT NULL COMMENT 'ID(UUID7)',
+  `parent_id` varchar(36) DEFAULT NULL COMMENT '上级分类ID',
+  `material_category_code` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别编码',
+  `material_category_name` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别名称',
+  `pinyin_code` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '拼音简码',
+  `material_category_address` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别地址',
+  `material_category_contact` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '材料类别联系方式',
+  `del_flag` int DEFAULT '0',
+  `create_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `delete_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`material_category_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='材料类别维护，财务科报表用';
+/
+
 -- 科室主数据（科室定数等关联 fd_department.id；tenant_id 同 sb_customer.customer_id）
 CREATE TABLE IF NOT EXISTS `fd_department` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -872,6 +892,9 @@ CREATE TABLE IF NOT EXISTS `gz_order_entry` (
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
   `bill_no` varchar(64) DEFAULT NULL COMMENT '单号冗余',
+  `warehouse_id_str` varchar(64) DEFAULT NULL COMMENT '仓库ID快照(varchar)',
+  `supplier_id_str` varchar(64) DEFAULT NULL COMMENT '供应商ID快照(varchar)',
+  `department_id_str` varchar(64) DEFAULT NULL COMMENT '科室ID快照(varchar)',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
@@ -1386,6 +1409,9 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `stk_inventory_id` bigint DEFAULT NULL COMMENT '仓库库存明细主键 stk_inventory.id（入库审核、出库制单/审核来源仓行等）',
   `dep_inventory_id` bigint DEFAULT NULL COMMENT '科室库存明细主键 stk_dep_inventory.id（出库审核后、收货确认、退库等）',
   `fixed_package_barcode` varchar(200) DEFAULT NULL COMMENT '定数包条码（低值出库/退库/退货行，与院内码或GS1关联）',
+  `warehouse_id_str` varchar(64) DEFAULT NULL COMMENT '仓库ID快照(varchar)',
+  `supplier_id_str` varchar(64) DEFAULT NULL COMMENT '供应商ID快照(varchar)',
+  `department_id_str` varchar(64) DEFAULT NULL COMMENT '科室ID快照(varchar)',
   PRIMARY KEY (`id`),
   KEY `idx_stk_io_entry_paren` (`paren_id`),
   KEY `idx_stk_io_entry_material` (`material_id`),
@@ -1544,6 +1570,20 @@ CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
   `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID（fd_factory.factory_id，冗余追溯）',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `warehouse_id_str` varchar(64) DEFAULT NULL COMMENT '仓库ID(varchar快照)',
+  `supplier_id_str` varchar(64) DEFAULT NULL COMMENT '供应商ID(varchar快照)',
+  `department_id_str` varchar(64) DEFAULT NULL COMMENT '科室ID(varchar快照)',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID（仓库流水按科室统计，可为空）',
+  `material_code` varchar(128) DEFAULT NULL COMMENT '耗材编码快照',
+  `material_name` varchar(256) DEFAULT NULL COMMENT '耗材名称快照',
+  `bill_no` varchar(128) DEFAULT NULL COMMENT '业务单号快照',
+  `bill_id_str` varchar(64) DEFAULT NULL COMMENT '主单ID varchar（与 bill_id 冗余）',
+  `entry_id_str` varchar(64) DEFAULT NULL COMMENT '明细ID varchar（与 entry_id 冗余）',
+  `material_id_str` varchar(64) DEFAULT NULL COMMENT '耗材ID varchar（与 material_id 冗余）',
+  `kc_no_str` varchar(64) DEFAULT NULL COMMENT '仓库库存明细 stk_inventory.id varchar',
+  `batch_id_str` varchar(64) DEFAULT NULL COMMENT '批次 stk_batch.id varchar',
+  `factory_id_str` varchar(64) DEFAULT NULL COMMENT '生产厂家ID varchar',
+  `supplier_name` varchar(256) DEFAULT NULL COMMENT '供应商名称快照',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -1555,7 +1595,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   KEY `idx_hc_ck_supplier` (`supplier_id`),
   KEY `idx_hc_ck_factory` (`factory_id`),
   KEY `idx_hc_ck_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库流水表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='仓库流水表';
 /
 
 CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
@@ -1585,6 +1625,18 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
   `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID（fd_factory.factory_id，冗余追溯）',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `warehouse_id_str` varchar(64) DEFAULT NULL COMMENT '仓库ID(varchar快照)',
+  `department_id_str` varchar(64) DEFAULT NULL COMMENT '科室ID(varchar快照)',
+  `bill_no` varchar(128) DEFAULT NULL COMMENT '业务单号快照',
+  `bill_id_str` varchar(64) DEFAULT NULL COMMENT '主单ID varchar（与 bill_id 冗余）',
+  `entry_id_str` varchar(64) DEFAULT NULL COMMENT '明细ID varchar（与 entry_id 冗余）',
+  `material_id_str` varchar(64) DEFAULT NULL COMMENT '耗材ID varchar（与 material_id 冗余）',
+  `kc_no_str` varchar(64) DEFAULT NULL COMMENT '科室库存明细 stk_dep_inventory.id varchar',
+  `batch_id_str` varchar(64) DEFAULT NULL COMMENT '批次 stk_batch.id varchar',
+  `factory_id_str` varchar(64) DEFAULT NULL COMMENT '生产厂家ID varchar',
+  `supplier_name` varchar(256) DEFAULT NULL COMMENT '供应商名称快照',
+  `material_code` varchar(128) DEFAULT NULL COMMENT '耗材编码快照',
+  `material_name` varchar(256) DEFAULT NULL COMMENT '耗材名称快照',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -1596,7 +1648,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   KEY `idx_hc_ks_wh` (`warehouse_id`),
   KEY `idx_hc_ks_factory` (`factory_id`),
   KEY `idx_hc_ks_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室流水表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='科室流水表';
 /
 
 CREATE TABLE IF NOT EXISTS `stk_inventory` (
@@ -1843,6 +1895,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `entry_uuid` varchar(36) DEFAULT NULL COMMENT '明细业务主键UUID7',
   `paren_id` bigint NOT NULL COMMENT '主表ID',
+  `stock_no` varchar(64) DEFAULT NULL COMMENT '盘点单号(冗余 stk_io_stocktaking.stock_no，便于按单号查明细)',
   `commodity_id` bigint DEFAULT NULL COMMENT '商品ID',
   `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
   `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
@@ -1851,6 +1904,11 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
   `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
   `kc_no` bigint DEFAULT NULL COMMENT '库存明细id',
+  `kc_no_str` varchar(64) DEFAULT NULL COMMENT '仓库库存明细ID(字符串，与kc_no对应)',
+  `dep_inventory_id` varchar(64) DEFAULT NULL COMMENT '科室库存明细id(stk_dep_inventory.id)',
+  `warehouse_id_str` varchar(64) DEFAULT NULL COMMENT '仓库ID(明细行快照varchar)',
+  `department_id_str` varchar(64) DEFAULT NULL COMMENT '科室ID(明细行快照varchar)',
+  `supplier_id_str` varchar(64) DEFAULT NULL COMMENT '供应商ID(明细行快照varchar)',
   `orig_batch_id` bigint DEFAULT NULL COMMENT '账面批次stk_batch.id快照',
   `orig_batch_no_snapshot` varchar(100) DEFAULT NULL COMMENT '账面批次号快照',
   `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
@@ -1860,6 +1918,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `stock_qty` decimal(18,2) DEFAULT NULL COMMENT '盘点数量',
   `profit_qty` decimal(18,2) DEFAULT NULL COMMENT '盈亏数量',
+  `profit_loss_flag` varchar(16) DEFAULT NULL COMMENT '盈亏标志(PROFIT/LOSS/EQUAL)',
   `stock_amount` decimal(18,2) DEFAULT NULL COMMENT '盘点金额',
   `profit_amount` decimal(18,2) DEFAULT NULL COMMENT '盈亏金额',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '高值主条码',
@@ -1876,6 +1935,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_ste_entry_uuid` (`entry_uuid`),
   KEY `idx_stk_ste_paren` (`paren_id`),
+  KEY `idx_stk_ste_stock_no` (`stock_no`),
   KEY `idx_stk_ste_material` (`material_id`),
   KEY `idx_stk_ste_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库盘点单明细表';
@@ -2339,8 +2399,8 @@ CREATE TABLE IF NOT EXISTS `sys_his_external_db` (
   `username` varchar(128) NOT NULL COMMENT '账号',
   `password` varchar(512) DEFAULT NULL COMMENT '口令',
   `enabled` char(1) NOT NULL DEFAULT '1' COMMENT '0停用 1启用',
-  `sql_inpatient_range` mediumtext COMMENT '住院区间查询SQL，两个?为起止时间；SQLSERVER可空走内置',
-  `sql_outpatient_range` mediumtext COMMENT '门诊区间查询SQL，两个?为起止时间；SQLSERVER可空走内置',
+  `sql_inpatient_range` mediumtext COMMENT '住院区间查询SQL，两个?为字符串起止(yyyy-MM-dd HH:mm:ss)下含上不含；SQLSERVER可空走内置',
+  `sql_outpatient_range` mediumtext COMMENT '门诊区间查询SQL，两个?为字符串起止(yyyy-MM-dd HH:mm:ss)下含上不含；SQLSERVER可空走内置',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`tenant_id`),
@@ -2449,6 +2509,56 @@ CREATE TABLE IF NOT EXISTS `his_outpatient_charge_mirror` (
   KEY `idx_his_out_mirror_fetch_batch` (`fetch_batch_id`),
   KEY `idx_his_out_mirror_charge_item` (`tenant_id`,`charge_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS门诊患者耗材计费镜像';
+/
+
+-- HIS 患者计费镜像统一表（住院+门诊合并行，与分表主键 id 一致；列表查询用；历史数据见 upgrade_his_patient_charge_mirror_unified.sql）
+CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
+  `id` varchar(36) NOT NULL COMMENT '与住院/门诊镜像表主键相同',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
+  `his_inpatient_charge_id` varchar(32) DEFAULT NULL COMMENT 'HIS住院计费明细主键',
+  `his_outpatient_charge_id` varchar(32) DEFAULT NULL COMMENT 'HIS门诊计费明细主键',
+  `his_inpatient_charge_id_tf` varchar(32) DEFAULT NULL COMMENT '住院退费关联ID',
+  `his_outpatient_charge_id_tf` varchar(32) DEFAULT NULL COMMENT '门诊退费关联ID',
+  `patient_id` varchar(32) DEFAULT NULL,
+  `patient_name` varchar(128) DEFAULT NULL,
+  `inpatient_no` varchar(64) DEFAULT NULL,
+  `outpatient_no` varchar(64) DEFAULT NULL,
+  `dept_code` varchar(32) DEFAULT NULL COMMENT '住院费用科室编码',
+  `dept_name` varchar(128) DEFAULT NULL,
+  `clinic_code` varchar(32) DEFAULT NULL COMMENT '门诊就诊编码',
+  `clinic_name` varchar(128) DEFAULT NULL,
+  `doctor_id` varchar(32) DEFAULT NULL,
+  `doctor_name` varchar(128) DEFAULT NULL,
+  `charge_item_id` varchar(64) DEFAULT NULL,
+  `item_name` varchar(512) DEFAULT NULL,
+  `spec_model` varchar(128) DEFAULT NULL,
+  `batch_no` varchar(128) DEFAULT NULL,
+  `expire_date` varchar(64) DEFAULT NULL,
+  `use_date` datetime DEFAULT NULL COMMENT '住院使用时间',
+  `charge_date_display` varchar(64) DEFAULT NULL COMMENT '计费时间原始展示',
+  `charge_at` datetime DEFAULT NULL COMMENT '计费时间(排序与区间筛选)',
+  `quantity` decimal(18,6) DEFAULT NULL,
+  `unit_price` decimal(18,6) DEFAULT NULL,
+  `total_amount` decimal(18,6) DEFAULT NULL,
+  `charge_operator` varchar(128) DEFAULT NULL,
+  `payment_type` varchar(32) DEFAULT NULL,
+  `receipt_no` varchar(64) DEFAULT NULL,
+  `remark` varchar(512) DEFAULT NULL,
+  `row_fingerprint` varchar(64) DEFAULT NULL,
+  `process_status` varchar(32) NOT NULL DEFAULT 'PENDING_CONSUME',
+  `process_type` varchar(32) DEFAULT NULL,
+  `process_time` datetime DEFAULT NULL,
+  `process_by` varchar(64) DEFAULT NULL,
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hpcm_unified_list` (`tenant_id`,`visit_kind`,`charge_at`),
+  KEY `idx_hpcm_unified_tenant_at` (`tenant_id`,`charge_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS患者计费镜像统一表';
 /
 
 -- HIS 计费抓取批次日志
@@ -2887,6 +2997,8 @@ CREATE TABLE IF NOT EXISTS `gz_wh_flow` (
   `ref_entry_id` varchar(36) DEFAULT NULL COMMENT '关联明细UUID（若有）',
   `warehouse_id` varchar(64) DEFAULT NULL COMMENT '仓库ID',
   `warehouse_name` varchar(200) DEFAULT NULL COMMENT '仓库名称快照',
+  `department_id` varchar(64) DEFAULT NULL COMMENT '科室ID快照',
+  `department_name` varchar(200) DEFAULT NULL COMMENT '科室名称快照（与 gz_dep_flow 一致）',
   `material_id` varchar(64) DEFAULT NULL COMMENT '耗材ID',
   `material_code` varchar(128) DEFAULT NULL COMMENT '耗材编码快照',
   `material_name` varchar(256) DEFAULT NULL COMMENT '产品名称快照',
@@ -2922,7 +3034,7 @@ CREATE TABLE IF NOT EXISTS `gz_wh_flow` (
   KEY `idx_gz_wh_flow_tenant_time` (`tenant_id`,`flow_time`),
   KEY `idx_gz_wh_flow_bill` (`tenant_id`,`bill_id`),
   KEY `idx_gz_wh_flow_code` (`tenant_id`,`in_hospital_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值仓库流水';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='高值仓库流水';
 /
 
 -- 高值：科室流水（与 t_hc_ks_flow 并存，专记高值科室侧流转）
@@ -2971,7 +3083,7 @@ CREATE TABLE IF NOT EXISTS `gz_dep_flow` (
   KEY `idx_gz_dep_flow_tenant_time` (`tenant_id`,`flow_time`),
   KEY `idx_gz_dep_flow_bill` (`tenant_id`,`bill_id`),
   KEY `idx_gz_dep_flow_code` (`tenant_id`,`in_hospital_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值科室流水';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='高值科室流水';
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

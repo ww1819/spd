@@ -79,6 +79,9 @@ public class FdMaterial extends BaseEntity
     /** 库房分类ID */
     @Excel(name = "库房分类")
     private Long storeroomId;
+    /** 材料类别ID（关联 fd_material_category.material_category_id） */
+    @Excel(name = "材料类别")
+    private String materialCategoryId;
 
     /** 产品档案默认所属仓库ID（用于科室盘盈可退库仓库） */
     @Excel(name = "默认所属仓库ID")
@@ -219,6 +222,8 @@ public class FdMaterial extends BaseEntity
     /** 财务分类对象 */
     @Excel(name = "财务分类", width = 22, align = HorizontalAlignment.LEFT, targetAttr = "financeCategoryName", type = Excel.Type.EXPORT)
     private FdFinanceCategory fdFinanceCategory;
+    /** 材料类别对象 */
+    private FdMaterialCategory fdMaterialCategory;
 
     /** 单位分类对象 */
     private FdUnit fdUnit;

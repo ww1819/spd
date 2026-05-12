@@ -32,6 +32,8 @@ public class StkDepInventory extends BaseEntity
 
     /** 查询参数：耗材关键字（名称/编码模糊） */
     private String materialKeyword;
+    /** 查询参数：产品档案启停用（fd_material.is_use：1启用，2停用） */
+    private String materialIsUse;
 
     /** 产品名称（表 material_name，快照） */
     private String snapMaterialName;
@@ -191,6 +193,14 @@ public class StkDepInventory extends BaseEntity
 
     public void setMaterialKeyword(String materialKeyword) {
         this.materialKeyword = materialKeyword;
+    }
+
+    public String getMaterialIsUse() {
+        return materialIsUse;
+    }
+
+    public void setMaterialIsUse(String materialIsUse) {
+        this.materialIsUse = materialIsUse;
     }
 
     public String getSnapMaterialName() {

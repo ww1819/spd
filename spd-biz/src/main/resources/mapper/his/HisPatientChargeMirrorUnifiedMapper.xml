@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper">
+
+    <sql id="unifiedDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and exists (
+                select 1 from fd_department dscope
+                where (dscope.del_flag = 0 or dscope.del_flag is null)
+                  and dscope.tenant_id = #{tenantId}
+                  and (
+                    (m.visit_kind = 'INPATIENT' and trim(dscope.his_id) = trim(m.dept_code))
+                    or
+                    (m.visit_kind = 'OUTPATIENT' and trim(dscope.his_id) = trim(m.clinic_code))
+                  )
+                  and dscope.id in (
+                    select distinct x.did from (
+                        select cast(upd.dept_id as unsigned) as did
+                        from sb_user_permission_dept upd
+                        where upd.user_id = #{params.scopeDeptUserId}
+                          and ifnull(upd.del_flag, '0') = '0'
+                        <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+                          and upd.customer_id = #{params.scopeDeptCustomerId}
+                        </if>
+                        union
+                        select ud.department_id as did
+                        from sys_user_department ud
+                        where ud.user_id = #{params.scopeDeptUserId}
+                          and (ud.status = 0 or ud.status = '0' or ud.status is null)
+                    ) x
+                    where x.did is not null
+                  )
+            )
+        </if>
+    </sql>
+
+    <resultMap type="com.spd.his.domain.HisPatientChargeMirrorUnified" id="UnifiedResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="visitKind" column="visit_kind"/>
+        <result property="fetchBatchId" column="fetch_batch_id"/>
+        <result property="hisInpatientChargeId" column="his_inpatient_charge_id"/>
+        <result property="hisOutpatientChargeId" column="his_outpatient_charge_id"/>
+        <result property="hisInpatientChargeIdTf" column="his_inpatient_charge_id_tf"/>
+        <result property="hisOutpatientChargeIdTf" column="his_outpatient_charge_id_tf"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="patientName" column="patient_name"/>
+        <result property="inpatientNo" column="inpatient_no"/>
+        <result property="outpatientNo" column="outpatient_no"/>
+        <result property="deptCode" column="dept_code"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="clinicCode" column="clinic_code"/>
+        <result property="clinicName" column="clinic_name"/>
+        <result property="doctorId" column="doctor_id"/>
+        <result property="doctorName" column="doctor_name"/>
+        <result property="chargeItemId" column="charge_item_id"/>
+        <result property="itemName" column="item_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="expireDate" column="expire_date"/>
+        <result property="useDate" column="use_date"/>
+        <result property="chargeDateDisplay" column="charge_date_display"/>
+        <result property="chargeAt" column="charge_at"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="chargeOperator" column="charge_operator"/>
+        <result property="paymentType" column="payment_type"/>
+        <result property="receiptNo" column="receipt_no"/>
+        <result property="remark" column="remark"/>
+        <result property="rowFingerprint" column="row_fingerprint"/>
+        <result property="processStatus" column="process_status"/>
+        <result property="processType" column="process_type"/>
+        <result property="processTime" column="process_time"/>
+        <result property="processBy" column="process_by"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="valueLevel" column="value_level"/>
+    </resultMap>
+
+    <select id="countByTenantId" resultType="long">
+        select count(*) from his_patient_charge_mirror_unified where tenant_id = #{tenantId}
+    </select>
+
+    <select id="countMirrorSourceRowsByTenant" resultType="long">
+        select
+            ifnull((select count(*) from his_inpatient_charge_mirror where tenant_id = #{tenantId}), 0)
+          + ifnull((select count(*) from his_outpatient_charge_mirror where tenant_id = #{tenantId}), 0)
+    </select>
+
+    <insert id="backfillInpatientFromMirror">
+        insert into his_patient_charge_mirror_unified (
+            id, tenant_id, visit_kind, fetch_batch_id,
+            his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
+            patient_id, patient_name, inpatient_no, outpatient_no,
+            dept_code, dept_name, clinic_code, clinic_name,
+            doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
+            use_date, charge_date_display, charge_at,
+            quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
+            process_status, process_type, process_time, process_by, create_by, create_time, update_by, update_time
+        )
+        select
+            m.id, m.tenant_id, 'INPATIENT', m.fetch_batch_id,
+            m.his_inpatient_charge_id, null, m.his_inpatient_charge_id_tf, null,
+            m.patient_id, m.patient_name, m.inpatient_no, null,
+            m.dept_code, m.dept_name, null, null,
+            m.doctor_id, m.doctor_name, m.charge_item_id, m.item_name, m.spec_model, m.batch_no, m.expire_date,
+            case when m.use_date is null or trim(ifnull(m.use_date,'')) = '' then null else str_to_date(left(trim(m.use_date), 19), '%Y-%m-%d %H:%i:%s') end,
+            left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 64),
+            coalesce(
+                str_to_date(left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 19), '%Y-%m-%d %H:%i:%s'),
+                str_to_date(concat(left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 10), ' 00:00:00'), '%Y-%m-%d %H:%i:%s'),
+                cast(m.charge_date as datetime)
+            ),
+            m.quantity, m.unit_price, m.total_amount, m.charge_operator, null, null, m.remark, m.row_fingerprint,
+            m.process_status, m.process_type, m.process_time, m.process_by, m.create_by, m.create_time, m.update_by, m.update_time
+        from his_inpatient_charge_mirror m
+        where m.tenant_id = #{tenantId}
+          and not exists (select 1 from his_patient_charge_mirror_unified u where u.id = m.id)
+    </insert>
+
+    <insert id="backfillOutpatientFromMirror">
+        insert into his_patient_charge_mirror_unified (
+            id, tenant_id, visit_kind, fetch_batch_id,
+            his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
+            patient_id, patient_name, inpatient_no, outpatient_no,
+            dept_code, dept_name, clinic_code, clinic_name,
+            doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
+            use_date, charge_date_display, charge_at,
+            quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
+            process_status, process_type, process_time, process_by, create_by, create_time, update_by, update_time
+        )
+        select
+            m.id, m.tenant_id, 'OUTPATIENT', m.fetch_batch_id,
+            null, m.his_outpatient_charge_id, null, m.his_outpatient_charge_id_tf,
+            m.patient_id, m.patient_name, null, m.outpatient_no,
+            null, null, m.clinic_code, m.clinic_name,
+            m.doctor_id, m.doctor_name, m.charge_item_id, m.item_name, m.spec_model, m.batch_no, m.expire_date,
+            null,
+            left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 64),
+            coalesce(
+                str_to_date(left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 19), '%Y-%m-%d %H:%i:%s'),
+                str_to_date(concat(left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 10), ' 00:00:00'), '%Y-%m-%d %H:%i:%s')
+            ),
+            m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
+            m.process_status, m.process_type, m.process_time, m.process_by, m.create_by, m.create_time, m.update_by, m.update_time
+        from his_outpatient_charge_mirror m
+        where m.tenant_id = #{tenantId}
+          and not exists (select 1 from his_patient_charge_mirror_unified u where u.id = m.id)
+    </insert>
+
+    <insert id="insertBatch">
+        insert into his_patient_charge_mirror_unified (
+            id, tenant_id, visit_kind, fetch_batch_id,
+            his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
+            patient_id, patient_name, inpatient_no, outpatient_no,
+            dept_code, dept_name, clinic_code, clinic_name,
+            doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
+            use_date, charge_date_display, charge_at,
+            quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
+            process_status, process_type, process_time, process_by, create_by, create_time
+        ) values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.fetchBatchId},
+            #{e.hisInpatientChargeId}, #{e.hisOutpatientChargeId}, #{e.hisInpatientChargeIdTf}, #{e.hisOutpatientChargeIdTf},
+            #{e.patientId}, #{e.patientName}, #{e.inpatientNo}, #{e.outpatientNo},
+            #{e.deptCode}, #{e.deptName}, #{e.clinicCode}, #{e.clinicName},
+            #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel}, #{e.batchNo}, #{e.expireDate},
+            #{e.useDate}, #{e.chargeDateDisplay}, #{e.chargeAt},
+            #{e.quantity}, #{e.unitPrice}, #{e.totalAmount}, #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint},
+            #{e.processStatus}, #{e.processType}, #{e.processTime}, #{e.processBy}, #{e.createBy}, #{e.createTime})
+        </foreach>
+    </insert>
+
+    <update id="updateMirrorProcessByIds">
+        update his_patient_charge_mirror_unified set
+            process_status = #{processStatus},
+            process_type = #{processType},
+            process_time = #{processTime},
+            process_by = #{processBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+        and id in
+        <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
+    </update>
+
+    <select id="selectList" resultMap="UnifiedResult">
+        select
+            m.*,
+            cim.value_level as value_level
+        from his_patient_charge_mirror_unified m
+        left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+            and trim(cim.charge_item_id) = trim(m.charge_item_id)
+            and (cim.deleted_flag is null or cim.deleted_flag = 0)
+        where m.tenant_id = #{tenantId}
+        <if test="visitKind != null and visitKind != ''"> and m.visit_kind = #{visitKind}</if>
+        <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
+        <if test='"INPATIENT".equals(visitKind) and inpatientNo != null'>
+            and m.inpatient_no like concat('%', #{inpatientNo}, '%')
+        </if>
+        <if test='"OUTPATIENT".equals(visitKind) and outpatientNo != null'>
+            and m.outpatient_no like concat('%', #{outpatientNo}, '%')
+        </if>
+        <if test="(visitKind == null or visitKind == '') and visitNo != null and visitNo != ''">
+            and (m.inpatient_no like concat('%', #{visitNo}, '%') or m.outpatient_no like concat('%', #{visitNo}, '%'))
+        </if>
+        <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+        <if test="chargeIdTf != null and chargeIdTf != ''">
+            <choose>
+                <when test='"INPATIENT".equals(visitKind)'>
+                    and trim(ifnull(m.his_inpatient_charge_id_tf,'')) = trim(#{chargeIdTf})
+                </when>
+                <when test='"OUTPATIENT".equals(visitKind)'>
+                    and trim(ifnull(m.his_outpatient_charge_id_tf,'')) = trim(#{chargeIdTf})
+                </when>
+                <otherwise>
+                    and (
+                        (m.visit_kind = 'INPATIENT' and trim(ifnull(m.his_inpatient_charge_id_tf,'')) = trim(#{chargeIdTf}))
+                        or (m.visit_kind = 'OUTPATIENT' and trim(ifnull(m.his_outpatient_charge_id_tf,'')) = trim(#{chargeIdTf}))
+                    )
+                </otherwise>
+            </choose>
+        </if>
+        <if test="departmentId != null">
+            and exists (
+                select 1 from fd_department dsel
+                where (dsel.del_flag = 0 or dsel.del_flag is null)
+                  and dsel.tenant_id = #{tenantId}
+                  and dsel.id = #{departmentId}
+                  and (
+                    (m.visit_kind = 'INPATIENT' and trim(dsel.his_id) = trim(m.dept_code))
+                    or (m.visit_kind = 'OUTPATIENT' and trim(dsel.his_id) = trim(m.clinic_code))
+                  )
+            )
+        </if>
+        <if test='processed != null and processed == "Y"'>
+            and m.process_status != 'PENDING_CONSUME'
+        </if>
+        <if test='processed != null and processed == "N"'>
+            and m.process_status = 'PENDING_CONSUME'
+        </if>
+        <if test="beginChargeDate != null"> and m.charge_at &gt;= #{beginChargeDate}</if>
+        <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
+        <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
+        <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
+        <if test="valueLevel != null and valueLevel != ''"> and trim(ifnull(cim.value_level,'')) = trim(#{valueLevel})</if>
+        <if test='"INPATIENT".equals(visitKind) and deptNameLike != null'>
+            and m.dept_name like concat('%', #{deptNameLike}, '%')
+        </if>
+        <if test='"OUTPATIENT".equals(visitKind) and clinicNameLike != null'>
+            and m.clinic_name like concat('%', #{clinicNameLike}, '%')
+        </if>
+        <if test="(visitKind == null or visitKind == '') and deptNameLike != null and deptNameLike != ''">
+            and (m.dept_name like concat('%', #{deptNameLike}, '%') or m.clinic_name like concat('%', #{deptNameLike}, '%'))
+        </if>
+        <include refid="unifiedDepartmentScopeFilter"/>
+        order by m.charge_at desc, m.id desc
+    </select>
+</mapper>

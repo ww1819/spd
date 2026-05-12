@@ -73,6 +73,13 @@ public class GzOrderEntry extends BaseEntity
     /** 单号冗余 */
     private String billNo;
 
+    /** 仓库ID快照（varchar） */
+    private String warehouseIdStr;
+    /** 供应商ID快照（varchar） */
+    private String supplierIdStr;
+    /** 科室ID快照（varchar） */
+    private String departmentIdStr;
+
     /** 引用备货验收主表ID（前端传入，非表字段） */
     private String refSrcAcceptanceId;
     /** 引用验收单号 */
@@ -192,6 +199,13 @@ public class GzOrderEntry extends BaseEntity
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
     public String getBillNo() { return billNo; }
     public void setBillNo(String billNo) { this.billNo = billNo; }
+
+    public String getWarehouseIdStr() { return warehouseIdStr; }
+    public void setWarehouseIdStr(String warehouseIdStr) { this.warehouseIdStr = warehouseIdStr; }
+    public String getSupplierIdStr() { return supplierIdStr; }
+    public void setSupplierIdStr(String supplierIdStr) { this.supplierIdStr = supplierIdStr; }
+    public String getDepartmentIdStr() { return departmentIdStr; }
+    public void setDepartmentIdStr(String departmentIdStr) { this.departmentIdStr = departmentIdStr; }
 
     public String getRefSrcAcceptanceId() { return refSrcAcceptanceId; }
     public void setRefSrcAcceptanceId(String refSrcAcceptanceId) { this.refSrcAcceptanceId = refSrcAcceptanceId; }

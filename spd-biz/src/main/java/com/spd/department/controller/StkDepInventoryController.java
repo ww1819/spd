@@ -1,6 +1,7 @@
 package com.spd.department.controller;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 
 import com.github.pagehelper.PageInfo;
@@ -110,6 +111,23 @@ public class StkDepInventoryController extends BaseController
     public TableDataInfo pickList(StkDepInventory stkDepInventory)
     {
         return listStkDepInventoryTable(stkDepInventory);
+    }
+
+    /**
+     * 弹窗/盘点：按科室+耗材聚合的库存数量（SQL SUM），全量返回，避免前端分页逐页累加与后端账面不一致。
+     * 权限与 {@link #pickList} 一致；支持 receiptConfirmStatus 等与库存汇总相同的查询条件。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/summary")
+    public AjaxResult pickSummary(StkDepInventory stkDepInventory)
+    {
+        applyDepartmentAndWarehouseScopeOrDeny(stkDepInventory);
+        if (stkDepInventory.getDepartmentId() == null)
+        {
+            return error("科室不能为空");
+        }
+        List<InventorySummaryVo> list = stkDepInventoryService.selectInventorySummaryList(stkDepInventory);
+        return success(list != null ? list : Collections.emptyList());
     }
 
     /**
