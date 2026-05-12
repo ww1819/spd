@@ -13,7 +13,9 @@ import java.util.stream.Collectors;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -28,6 +30,7 @@ import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +63,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
     @Autowired
     private StkIoStocktakingMapper stkIoStocktakingMapper;
+
+    @Autowired
+    private HcKsFlowMapper hcKsFlowMapper;
 
     /**
      * 查询科室盘点
@@ -166,9 +172,11 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 }
                 fillProfitLossFlag(entry);
                 if (entry.getId() != null) {
+                    applyStocktakingEntryAuditFields(entry, false);
                     deptStocktakingMapper.updateDeptStocktakingEntry(entry);
                     keepIds.add(entry.getId());
                 } else {
+                    applyStocktakingEntryAuditFields(entry, true);
                     deptStocktakingMapper.insertDeptStocktakingEntrySingle(entry);
                     // 必须加入 keepIds，否则 deleteDeptStocktakingEntryByParenIdExceptIds 会把刚插入的明细全部软删
                     if (entry.getId() != null) {
@@ -291,6 +299,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
             if (StringUtils.isEmpty(entry.getDepInventoryId()) && entry.getId() != null) {
                 entry.setDepInventoryId(String.valueOf(depInventory.getId()));
+                applyStocktakingEntryAuditFields(entry, false);
                 deptStocktakingMapper.updateDeptStocktakingEntry(entry);
             }
             if (depInventory.getBatchId() == null) {
@@ -353,6 +362,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             return;
         }
 
+        Date flowNow = new Date();
+        String flowUser = SecurityUtils.getUserIdStr();
         for (StkIoStocktakingEntry entry : stkIoStocktakingEntryList) {
             if (stockType == 501) {
                 if (entry.getQty() == null || BigDecimal.ZERO.compareTo(entry.getQty()) == 0) {
@@ -392,6 +403,11 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
 
                 stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
+                if (stkDepInventory.getId() != null && entry.getQty() != null
+                    && entry.getQty().compareTo(BigDecimal.ZERO) > 0) {
+                    insertHcKsFlowDeptStocktakingLine(stkIoStocktaking, entry, stkDepInventory, entry.getReturnWarehouseId(),
+                        entry.getQty(), "PY", "科室盘点期初", flowNow, flowUser);
+                }
             } else if (stockType == 502) {
                 //盘点：需处理账面为 0 的盘盈行（原逻辑仅处理 qty!=0 会整行跳过）
                 String batchNo = entry.getBatchNo();
@@ -449,7 +465,13 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     StkDepInventory created = insertStkDepInventoryProfitFromDeptStocktaking(stkIoStocktaking, entry, material, stockQty);
                     if (created != null && created.getId() != null && entry.getId() != null) {
                         entry.setDepInventoryId(String.valueOf(created.getId()));
+                        applyStocktakingEntryAuditFields(entry, false);
                         deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+                    }
+                    if (created != null && created.getId() != null && stockQty != null
+                        && stockQty.compareTo(BigDecimal.ZERO) > 0) {
+                        insertHcKsFlowDeptStocktakingLine(stkIoStocktaking, entry, created, created.getWarehouseId(),
+                            stockQty, "PY", "科室盘点盘盈入库", flowNow, flowUser);
                     }
                     continue;
                 }
@@ -469,10 +491,13 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     }
                     stkDepInventoryMapper.updateStkDepInventory(depInventory);
                     if (entry.getId() != null) {
+                        applyStocktakingEntryAuditFields(entry, false);
                         deptStocktakingMapper.updateDeptStocktakingEntry(entry);
                     }
                     continue;
                 }
+
+                BigDecimal oldQty = depInventory.getQty() != null ? depInventory.getQty() : BigDecimal.ZERO;
 
                 BigDecimal totalQty;
                 BigDecimal totalAmt;
@@ -504,6 +529,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
                 stkDepInventoryMapper.updateStkDepInventory(depInventory);
+
+                BigDecimal delta = totalQty.subtract(oldQty);
+                if (delta.compareTo(BigDecimal.ZERO) != 0) {
+                    String lx = delta.compareTo(BigDecimal.ZERO) > 0 ? "PY" : "PK";
+                    String origin = delta.compareTo(BigDecimal.ZERO) > 0 ? "科室盘点盘盈" : "科室盘点盘亏";
+                    insertHcKsFlowDeptStocktakingLine(stkIoStocktaking, entry, depInventory, warehouseId,
+                        delta.abs(), lx, origin, flowNow, flowUser);
+                }
+
                 if (stockQty.compareTo(bookQty) > 0 && entry.getId() != null) {
                     Long kc = entry.getKcNo();
                     String kcStr = StringUtils.isNotEmpty(entry.getKcNoStr()) ? entry.getKcNoStr()
@@ -515,6 +549,56 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 }
             }
         }
+    }
+
+    /**
+     * 科室盘点审核（直接改 stk_dep_inventory）时写入科室流水，与科室盈亏单审核口径一致（lx=PK/PY）。
+     */
+    private void insertHcKsFlowDeptStocktakingLine(StkIoStocktaking bill, StkIoStocktakingEntry entry, StkDepInventory dep,
+            Long resolvedWarehouseId, BigDecimal absQty, String lx, String originBusinessType, Date now, String username) {
+        if (bill == null || entry == null || dep == null || dep.getId() == null
+            || absQty == null || absQty.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        if (entry.getId() == null || bill.getId() == null) {
+            return;
+        }
+        Long flowWh = resolvedWarehouseId != null ? resolvedWarehouseId : dep.getWarehouseId();
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        if (unitPrice == null) {
+            unitPrice = dep.getUnitPrice();
+        }
+        HcKsFlow ks = new HcKsFlow();
+        ks.setBillId(bill.getId());
+        ks.setEntryId(entry.getId());
+        ks.setDepartmentId(bill.getDepartmentId());
+        ks.setWarehouseId(flowWh);
+        ks.setMaterialId(entry.getMaterialId());
+        ks.setBatchNo(entry.getBatchNo());
+        ks.setBatchNumber(entry.getBatchNumber());
+        ks.setQty(absQty);
+        ks.setUnitPrice(unitPrice);
+        ks.setAmt(unitPrice != null ? absQty.multiply(unitPrice) : null);
+        ks.setBeginTime(entry.getBeginTime());
+        ks.setEndTime(entry.getEndTime());
+        ks.setMainBarcode(entry.getMainBarcode() != null ? entry.getMainBarcode() : dep.getMainBarcode());
+        ks.setSubBarcode(entry.getSubBarcode() != null ? entry.getSubBarcode() : dep.getSubBarcode());
+        if (StringUtils.isNotEmpty(dep.getSupplierId())) {
+            ks.setSupplierId(dep.getSupplierId());
+        } else if (entry.getSupplierId() != null) {
+            ks.setSupplierId(String.valueOf(entry.getSupplierId()));
+        }
+        ks.setFactoryId(dep.getFactoryId());
+        ks.setBatchId(dep.getBatchId());
+        ks.setLx(lx);
+        ks.setOriginBusinessType(originBusinessType);
+        ks.setKcNo(dep.getId());
+        ks.setFlowTime(now);
+        ks.setDelFlag(0);
+        ks.setCreateTime(now);
+        ks.setCreateBy(username);
+        InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterDeptStocktaking(ks, bill, entry, flowWh, fdMaterialMapper);
+        hcKsFlowMapper.insertHcKsFlow(ks);
     }
 
     /**
@@ -570,6 +654,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     stkIoStocktakingEntry.setBatchNo(getBatchNumber());
                 }
                 fillProfitLossFlag(stkIoStocktakingEntry);
+                applyStocktakingEntryAuditFields(stkIoStocktakingEntry, true);
                 list.add(stkIoStocktakingEntry);
             }
             if (list.size() > 0)
@@ -746,8 +831,26 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
             entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlag(entry);
+            applyStocktakingEntryAuditFields(entry, false);
             deptStocktakingMapper.updateDeptStocktakingEntry(entry);
         }
+    }
+
+    /**
+     * 盘点明细审计字段：新增行写 create/update；修改行仅刷新 update。
+     */
+    private void applyStocktakingEntryAuditFields(StkIoStocktakingEntry entry, boolean newLine) {
+        if (entry == null) {
+            return;
+        }
+        Date now = new Date();
+        String user = SecurityUtils.getUserIdStr();
+        if (newLine) {
+            entry.setCreateTime(now);
+            entry.setCreateBy(user);
+        }
+        entry.setUpdateTime(now);
+        entry.setUpdateBy(user);
     }
 
     private void fillProfitLossFlag(StkIoStocktakingEntry entry) {
