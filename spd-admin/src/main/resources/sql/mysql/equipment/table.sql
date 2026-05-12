@@ -752,11 +752,11 @@ CREATE TABLE IF NOT EXISTS `sys_data_backup_config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据备份配置';
 /
 
--- 设备不良事件子表（与 equipment_info 一对多；主键 UUID7，varchar(36)）
+-- 设备不良事件子表（与 equipment_info 一对多；主键 UUID7 固定36位含连字符，varchar(36)）
 CREATE TABLE IF NOT EXISTS `equipment_adverse_event` (
-  `id` varchar(36) NOT NULL COMMENT '主键(UUID7，与 Java UUID7 生成策略一致，可为32位无连字符或36位带连字符)',
+  `id` varchar(36) NOT NULL COMMENT '主键(UUID7，36位含连字符；Java 使用 UUID7.generateUUID7())',
   `tenant_id` varchar(36) NOT NULL COMMENT '租户ID(同 sb_customer.customer_id / equipment_info.tenant_id)',
-  `equipment_id` varchar(36) NOT NULL COMMENT '设备主键(equipment_info.id)，varchar 外键',
+  `equipment_id` varchar(36) NOT NULL COMMENT '设备主键 varchar 外键(equipment_info.id，现存可为32位无连字符)',
   `event_code` varchar(128) DEFAULT NULL COMMENT '事件编码',
   `archive_code` varchar(128) DEFAULT NULL COMMENT '当前设备档案编码(行内)',
   `event_date` date DEFAULT NULL COMMENT '事件日期',

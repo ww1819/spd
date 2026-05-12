@@ -452,7 +452,7 @@ public class EquipmentInfoServiceImpl implements IEquipmentInfoService
         {
             if (StringUtils.isEmpty(row.getId()))
             {
-                row.setId(UUID7.generateUUID7Simple());
+                row.setId(UUID7.generateUUID7());
                 row.setEquipmentId(equipmentId);
                 row.setTenantId(tenantId);
                 row.setDelFlag("0");

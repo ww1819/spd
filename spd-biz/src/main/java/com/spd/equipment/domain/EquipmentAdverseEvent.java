@@ -13,13 +13,13 @@ public class EquipmentAdverseEvent extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
-    /** 主键 UUID7（32 位无连字符） */
+    /** 主键 UUID7，36 位含连字符，对应 {@code UUID7.generateUUID7()} */
     private String id;
 
     /** 租户 ID（varchar，与 equipment_info.tenant_id 一致） */
     private String tenantId;
 
-    /** 设备主键（varchar 外键 equipment_info.id） */
+    /** 设备主键（varchar 外键，引用 equipment_info.id） */
     private String equipmentId;
 
     private String eventCode;
