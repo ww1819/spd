@@ -1078,10 +1078,10 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         if (entry.getMaterialId() != null) {
             FdMaterial mat = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
             if (mat != null) {
-                df.setMaterialCode(mat.getMaterialCode());
-                df.setMaterialName(mat.getMaterialName());
-                df.setMaterialSpeci(mat.getMaterialSpeci());
-                df.setMaterialModel(mat.getMaterialModel());
+                df.setMaterialCode(mat.getCode());
+                df.setMaterialName(mat.getName());
+                df.setMaterialSpeci(mat.getSpeci());
+                df.setMaterialModel(mat.getModel());
             }
         }
         if (StringUtils.isEmpty(df.getMaterialName())) {

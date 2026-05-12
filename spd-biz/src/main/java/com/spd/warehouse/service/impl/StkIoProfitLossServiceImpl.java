@@ -426,7 +426,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 StkInventory newInv = buildStkInventoryForProfit(bill, entry, stkBatch, addQty, now, username);
                 stkInventoryMapper.insertStkInventory(newInv);
 
-                HcCkFlow flow = new HcCkFlow();
+                flow = new HcCkFlow();
                 flow.setBillId(bill.getId());
                 flow.setEntryId(entry.getId());
                 flow.setWarehouseId(warehouseId);
