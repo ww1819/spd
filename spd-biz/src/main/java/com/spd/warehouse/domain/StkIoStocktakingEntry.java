@@ -42,8 +42,8 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "单价")
     private BigDecimal unitPrice;
 
-    /** 数量 */
-    @Excel(name = "数量")
+    /** 账面库存数量：制单/保存时明细上的库存结存（与 stk_inventory / stk_dep_inventory 对应时点一致）；盈亏对比中的「账面」 */
+    @Excel(name = "账面数量")
     private BigDecimal qty;
 
     /** 价格 */
@@ -88,7 +88,7 @@ public class StkIoStocktakingEntry extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
-    /** 盘点数量 */
+    /** 盘点（实盘）数量：现场清点数量；盈亏 = stock_qty − qty（与账面比较） */
     @Excel(name = "盘点数量")
     private BigDecimal stockQty;
 

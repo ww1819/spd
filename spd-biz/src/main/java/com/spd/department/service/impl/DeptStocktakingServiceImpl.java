@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.spd.common.exception.ServiceException;
-import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -108,7 +106,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     public int insertDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setStockNo(getNumber());
-        stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        stkIoStocktaking.setCreateTime(new Date());
         validateAndNormalizeEntries(stkIoStocktaking, null);
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
@@ -139,7 +137,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     @Override
     public int updateDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
-        stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
+        stkIoStocktaking.setUpdateTime(new Date());
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
         Long parenId = stkIoStocktaking.getId();
@@ -147,7 +145,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         if (oldBill != null && oldBill.getStkIoStocktakingEntryList() != null
             && !oldBill.getStkIoStocktakingEntryList().isEmpty()
             && !Objects.equals(oldBill.getDepartmentId(), stkIoStocktaking.getDepartmentId())) {
-            throw new ServiceException("盘点单存在明细后不允许变更科室，请先清空明细再调整。");
+            throw new com.spd.common.exception.ServiceException("盘点单存在明细后不允许变更科室，请先清空明细再调整。");
         }
         Map<Long, StkIoStocktakingEntry> oldEntryMap = new HashMap<>();
         if (oldBill != null && oldBill.getStkIoStocktakingEntryList() != null) {
@@ -228,19 +226,19 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     public int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList) {
         StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
         if(stkIoStocktaking == null){
-            throw new ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
+            throw new com.spd.common.exception.ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
         }
 
         List<StkIoStocktakingEntry> stkIoStocktakingEntryList = stkIoStocktaking.getStkIoStocktakingEntryList();
         if (stkIoStocktaking.getStockType() != null && stkIoStocktaking.getStockType() == 502) {
             if (stkIoStocktakingEntryList == null || stkIoStocktakingEntryList.isEmpty()) {
-                throw new ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
+                throw new com.spd.common.exception.ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
             }
         }
         applyQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
         List<StocktakingQtyMismatchVo> mismatches = buildQtyMismatches(stkIoStocktaking);
         if (!mismatches.isEmpty()) {
-            throw new ServiceException("盘点明细库存数量与当前科室账面库存不一致，请先逐条确认后再审核。");
+            throw new com.spd.common.exception.ServiceException("盘点明细库存数量与当前科室账面库存不一致，请先逐条确认后再审核。");
         }
 
         // 科室盘点审核默认直接回写科室库存与批次，避免出现“已审核但无库存落账”。
@@ -288,7 +286,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 depInventory = stkDepInventoryMapper.selectStkDepInventoryByBatchAndDeptForStocktaking(entry.getBatchNo(), bill.getDepartmentId());
             }
             if (depInventory == null || depInventory.getId() == null) {
-                throw new ServiceException(String.format("盘盈明细审核后未生成科室库存，耗材ID：%s，批次号：%s",
+                throw new com.spd.common.exception.ServiceException(String.format("盘盈明细审核后未生成科室库存，耗材ID：%s，批次号：%s",
                     entry.getMaterialId(), entry.getBatchNo()));
             }
             if (StringUtils.isEmpty(entry.getDepInventoryId()) && entry.getId() != null) {
@@ -298,7 +296,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             if (depInventory.getBatchId() == null) {
                 StkBatch batch = StringUtils.isEmpty(entry.getBatchNo()) ? null : stkBatchMapper.selectByBatchNo(entry.getBatchNo());
                 if (batch == null || batch.getId() == null) {
-                    throw new ServiceException(String.format("盘盈明细审核后未生成批次对象，耗材ID：%s，批次号：%s",
+                    throw new com.spd.common.exception.ServiceException(String.format("盘盈明细审核后未生成批次对象，耗材ID：%s，批次号：%s",
                         entry.getMaterialId(), entry.getBatchNo()));
                 }
                 depInventory.setBatchId(batch.getId());
@@ -313,7 +311,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     public List<StocktakingQtyMismatchVo> checkStocktakingQtyMismatch(String id) {
         StkIoStocktaking bill = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
         if (bill == null) {
-            throw new ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
+            throw new com.spd.common.exception.ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
         }
         return buildQtyMismatches(bill);
     }
@@ -329,10 +327,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     public int rejectDeptStocktaking(String id, String rejectReason) {
         StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
         if(stkIoStocktaking == null){
-            throw new ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
+            throw new com.spd.common.exception.ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
         }
         if(stkIoStocktaking.getStockStatus() != 1){
-            throw new ServiceException(String.format("科室盘点业务ID：%s，状态不是未审核，无法驳回!", id));
+            throw new com.spd.common.exception.ServiceException(String.format("科室盘点业务ID：%s，状态不是未审核，无法驳回!", id));
         }
 
         stkIoStocktaking.setStockStatus(3); // 驳回状态
@@ -383,7 +381,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 // 生成/补齐批次字典并回填科室库存 batch_id
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
                 if (material == null) {
-                    throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+                    throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
                 StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
                 if (stkBatch != null && stkBatch.getId() != null) {
@@ -398,7 +396,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 //盘点：需处理账面为 0 的盘盈行（原逻辑仅处理 qty!=0 会整行跳过）
                 String batchNo = entry.getBatchNo();
                 if (StringUtils.isEmpty(batchNo)) {
-                    throw new ServiceException("盘点明细缺少批次号，无法审核。");
+                    throw new com.spd.common.exception.ServiceException("盘点明细缺少批次号，无法审核。");
                 }
                 BigDecimal bookQty = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
                 BigDecimal stockQty = entry.getStockQty() != null ? entry.getStockQty() : BigDecimal.ZERO;
@@ -408,16 +406,27 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
                 if (material == null) {
-                    throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+                    throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
 
-                // 先按明细仓库查；科室库存行的 warehouse_id 来自出库，可能与产品档案默认仓不一致，再按「科室+批次」回退
-                Long warehouseId = entry.getReturnWarehouseId();
+                Long departmentId = stkIoStocktaking.getDepartmentId();
+                // 先按明细上的科室库存主键定位（与前端选行一致）；否则同批次多行时可能更新错行，表现为盘亏未扣减
                 StkDepInventory depInventory = null;
-                if (warehouseId != null) {
+                if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+                    try {
+                        StkDepInventory byId = stkDepInventoryMapper.selectStkDepInventoryById(Long.valueOf(entry.getDepInventoryId().trim()));
+                        if (byId != null && (byId.getDelFlag() == null || byId.getDelFlag() == 0)
+                            && (departmentId == null || departmentId.equals(byId.getDepartmentId()))) {
+                            depInventory = byId;
+                        }
+                    } catch (Exception ignore) {
+                        // 回退为按批次+仓库/科室查找
+                    }
+                }
+                Long warehouseId = entry.getReturnWarehouseId();
+                if (depInventory == null && warehouseId != null) {
                     depInventory = stkDepInventoryMapper.selectStkDepInventoryOneForStocktaking(batchNo, warehouseId);
                 }
-                Long departmentId = stkIoStocktaking.getDepartmentId();
                 if (depInventory == null && departmentId != null) {
                     depInventory = stkDepInventoryMapper.selectStkDepInventoryByBatchAndDeptForStocktaking(batchNo, departmentId);
                 }
@@ -429,11 +438,11 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     warehouseId = entry.getReturnWarehouseId();
                 }
                 if (warehouseId == null) {
-                    throw new ServiceException("盘点明细缺少所属仓库（且科室下未找到该批次库存），无法审核。");
+                    throw new com.spd.common.exception.ServiceException("盘点明细缺少所属仓库（且科室下未找到该批次库存），无法审核。");
                 }
                 if (depInventory == null) {
                     if (stockQty.compareTo(bookQty) <= 0) {
-                        throw new ServiceException(String.format(
+                        throw new com.spd.common.exception.ServiceException(String.format(
                             "科室库存批次号：%s，在本盘点科室下不存在；若为盘盈请保证盘点数量大于账面库存。"
                                 + "若从科室库存带出明细，请勿依赖产品默认仓库，应保存后重试或重新从科室库存选择。", batchNo));
                     }
@@ -519,7 +528,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkDepInventory.setMaterialId(entry.getMaterialId());
         stkDepInventory.setDepartmentId(stkIoStocktaking.getDepartmentId());
         if (entry.getReturnWarehouseId() == null) {
-            throw new ServiceException("盘盈明细缺少归属仓库。");
+            throw new com.spd.common.exception.ServiceException("盘盈明细缺少归属仓库。");
         }
         stkDepInventory.setWarehouseId(entry.getReturnWarehouseId());
         stkDepInventory.setQty(finalQty);
@@ -583,15 +592,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 entry.setStockNo(bill.getStockNo());
             }
             if (entry.getMaterialId() == null) {
-                throw new ServiceException("盘点明细缺少耗材，无法保存。");
+                throw new com.spd.common.exception.ServiceException("盘点明细缺少耗材，无法保存。");
             }
             FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
             if (material == null) {
-                throw new ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
+                throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
             }
             // 供应商仅允许取产品档案，前端不允许手工改
             if (material.getSupplierId() == null) {
-                throw new ServiceException(String.format("耗材[%s]产品档案未维护供应商，无法新增盘盈明细。", material.getName()));
+                throw new com.spd.common.exception.ServiceException(String.format("耗材[%s]产品档案未维护供应商，无法新增盘盈明细。", material.getName()));
             }
             entry.setSupplierId(material.getSupplierId());
 
@@ -600,7 +609,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
             if (entry.getBeginTime() != null && entry.getEndTime() != null
                 && entry.getEndTime().before(entry.getBeginTime())) {
-                throw new ServiceException("盘点明细有效期不能早于生产日期。");
+                throw new com.spd.common.exception.ServiceException("盘点明细有效期不能早于生产日期。");
             }
             BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
             entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
@@ -610,12 +619,12 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
                 String depInventoryIdKey = String.valueOf(entry.getDepInventoryId()).trim();
                 if (depInventoryIdSeen.contains(depInventoryIdKey)) {
-                    throw new ServiceException("同一科室库存明细不允许重复加入盘点单。");
+                    throw new com.spd.common.exception.ServiceException("同一科室库存明细不允许重复加入盘点单。");
                 }
                 depInventoryIdSeen.add(depInventoryIdKey);
                 BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
                 if (entry.getStockQty().compareTo(bookQty) > 0) {
-                    throw new ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
+                    throw new com.spd.common.exception.ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
                 }
             } else {
                 // 衡水市第三人民医院租户：盘盈明细归属仓库默认 10（与前端一致，退库目标仓）
@@ -626,7 +635,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if (entry.getId() == null) {
                     if (entry.getReturnWarehouseId() == null || StringUtils.isEmpty(entry.getBatchNumber())
                         || entry.getEndTime() == null) {
-                        throw new ServiceException("新增盘盈明细必须录入归属仓库、批号、有效期。");
+                        throw new com.spd.common.exception.ServiceException("新增盘盈明细必须录入归属仓库、批号、有效期。");
                     }
                 }
             }
@@ -636,7 +645,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             if (oldEntryMap != null && entry.getId() != null) {
                 StkIoStocktakingEntry old = oldEntryMap.get(entry.getId());
                 if (old == null) {
-                    throw new ServiceException("存在无法识别的历史明细，禁止保存。");
+                    throw new com.spd.common.exception.ServiceException("存在无法识别的历史明细，禁止保存。");
                 }
                 // 除盘点数量外，其余字段不允许编辑
                 assertNoChange("耗材", old.getMaterialId(), entry.getMaterialId());
@@ -681,7 +690,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             right = newVal == null ? "" : String.valueOf(newVal).trim();
         }
         if (!Objects.equals(left, right)) {
-            throw new ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
+            throw new com.spd.common.exception.ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
         }
     }
 
