@@ -781,6 +781,93 @@ CREATE TABLE IF NOT EXISTS `equipment_adverse_event` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备不良事件';
 /
 
+-- 设备配件主数据（独立域，不走耗材 stk_io_*；主键 UUID7 36 位）
+CREATE TABLE IF NOT EXISTS `equipment_accessory` (
+  `id` varchar(36) NOT NULL COMMENT '主键(UUID7)',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID(同 equipment_info.tenant_id)',
+  `accessory_code` varchar(64) NOT NULL COMMENT '配件编码',
+  `name` varchar(200) NOT NULL COMMENT '配件名称',
+  `spec` varchar(500) DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(32) DEFAULT NULL COMMENT '单位',
+  `manufacturer_name` varchar(200) DEFAULT NULL COMMENT '生产厂商(文本)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志(0正常 1已删除)',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_eq_acc_tenant` (`tenant_id`),
+  KEY `idx_eq_acc_tenant_code` (`tenant_id`,`accessory_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备配件主数据';
+/
+
+-- 设备配件库存（按租户+配件+仓库维度）
+CREATE TABLE IF NOT EXISTS `equipment_accessory_stock` (
+  `id` varchar(36) NOT NULL COMMENT '主键(UUID7)',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `accessory_id` varchar(36) NOT NULL COMMENT '配件主键(equipment_accessory.id)',
+  `warehouse_code` varchar(64) NOT NULL DEFAULT '' COMMENT '仓库/库位编码(空串表示默认库)',
+  `quantity` decimal(18,4) NOT NULL DEFAULT 0.0000 COMMENT '库存数量',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志(0正常 1已删除)',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_eq_acc_stk` (`tenant_id`,`accessory_id`,`warehouse_code`),
+  KEY `idx_eq_acc_stk_acc` (`accessory_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备配件库存';
+/
+
+-- 设备配件出入库主表
+CREATE TABLE IF NOT EXISTS `equipment_accessory_io` (
+  `id` varchar(36) NOT NULL COMMENT '主键(UUID7)',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `io_no` varchar(64) NOT NULL COMMENT '单据号',
+  `io_type` varchar(16) NOT NULL COMMENT '类型(IN入库 OUT出库 ADJUST调整)',
+  `biz_date` date DEFAULT NULL COMMENT '业务日期',
+  `equipment_id` varchar(36) DEFAULT NULL COMMENT '关联设备(equipment_info.id，可选)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志(0正常 1已删除)',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_eq_acc_io_tenant` (`tenant_id`),
+  KEY `idx_eq_acc_io_no` (`tenant_id`,`io_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备配件出入库主表';
+/
+
+-- 设备配件出入库明细
+CREATE TABLE IF NOT EXISTS `equipment_accessory_io_entry` (
+  `id` varchar(36) NOT NULL COMMENT '主键(UUID7)',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `io_id` varchar(36) NOT NULL COMMENT '主表ID(equipment_accessory_io.id)',
+  `line_no` int(11) NOT NULL DEFAULT 1 COMMENT '行号',
+  `accessory_id` varchar(36) NOT NULL COMMENT '配件主键',
+  `warehouse_code` varchar(64) NOT NULL DEFAULT '' COMMENT '仓库/库位编码',
+  `qty` decimal(18,4) NOT NULL COMMENT '数量(正数)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int(1) NOT NULL DEFAULT 0 COMMENT '删除标志(0正常 1已删除)',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_eq_acc_ioe_io` (`io_id`),
+  KEY `idx_eq_acc_ioe_acc` (`accessory_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备配件出入库明细';
+/
+
 -- ========== 覆盖说明（扫描结论）==========
 -- 设备侧业务表已全部包含于上文；新增整表请追加本文件；新增字段请追加 equipment/column.sql（add_table_column）；菜单与权限请追加 equipment/menu.sql。
 /
