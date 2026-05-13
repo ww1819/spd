@@ -482,13 +482,11 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public boolean checkMenuNameUnique(SysMenu menu)
     {
-        Long menuId = StringUtils.isNull(menu.getMenuId()) ? -1L : menu.getMenuId();
-        SysMenu info = menuMapper.checkMenuNameUnique(menu.getMenuName(), menu.getParentId());
-        if (StringUtils.isNotNull(info) && info.getMenuId().longValue() != menuId.longValue())
-        {
-            return UserConstants.NOT_UNIQUE;
-        }
-        return UserConstants.UNIQUE;
+        // 修改时排除自身；同父级下多条同名时 limit 1 可能取到本行以外的记录，必须在 SQL 中排除 menu_id
+        Long excludeId = (menu.getMenuId() != null && menu.getMenuId() > 0L) ? menu.getMenuId() : null;
+        SysMenu info = menuMapper.checkMenuNameUnique(menu.getMenuName(), menu.getParentId(), excludeId,
+            menu.getMenuType());
+        return StringUtils.isNull(info) ? UserConstants.UNIQUE : UserConstants.NOT_UNIQUE;
     }
 
     /**

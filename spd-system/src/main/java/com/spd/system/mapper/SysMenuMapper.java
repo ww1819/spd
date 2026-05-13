@@ -142,7 +142,11 @@ public interface SysMenuMapper
      * @param parentId 父菜单ID
      * @return 结果
      */
-    public SysMenu checkMenuNameUnique(@Param("menuName") String menuName, @Param("parentId") Long parentId);
+    /**
+     * 同 parent_id 下菜单名唯一校验；excludeMenuId 非空时排除该记录（修改菜单时避免命中自身或其它同名行误判）
+     */
+    public SysMenu checkMenuNameUnique(@Param("menuName") String menuName, @Param("parentId") Long parentId,
+        @Param("excludeMenuId") Long excludeMenuId, @Param("menuType") String menuType);
 
   /**
    * 查询设备前端（sb_menu）全部菜单树

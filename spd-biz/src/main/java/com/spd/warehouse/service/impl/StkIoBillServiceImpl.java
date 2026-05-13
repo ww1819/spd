@@ -2079,6 +2079,27 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public List<Map<String, Object>> selectHomeWarehousePurchaseMonthAgg(java.util.Date beginDate, java.util.Date endDate,
+        List<Long> warehouseIds)
+    {
+        if (warehouseIds == null || warehouseIds.isEmpty() || beginDate == null || endDate == null)
+        {
+            return new java.util.ArrayList<>();
+        }
+        return stkIoBillMapper.selectHomeWarehousePurchaseMonthAgg(beginDate, endDate, warehouseIds);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(Date beginDate, Date endDate)
+    {
+        if (beginDate == null || endDate == null)
+        {
+            return new java.util.ArrayList<>();
+        }
+        return stkIoBillMapper.selectHomeDepartmentReceiveYearMonthAgg(beginDate, endDate);
+    }
+
+    @Override
     public TotalInfo selectCTKStkIoBillListSummaryTotal(StkIoBill stkIoBill) {
         if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
@@ -4616,8 +4637,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                             }
                         }
                         errors.add(docRefErrRow(rowNo, sampleEn,
-                            String.format("引用库房申请单：该申请明细本单合计最多可出库 %s，当前本单合计 %s",
-                                fmtQty(maxAllowed), fmtQty(totalQ)),
+                            String.format(
+                                "引用库房申请单出库：同一申请明细本单「数量」合计不得大于可申请数量 %s（申请数 %s，明细已作废 %s，其它出库单已占 %s）；当前本单合计 %s",
+                                fmtQty(maxAllowed), fmtQty(lineQty), fmtQty(voidQty), fmtQty(linkedOthers),
+                                fmtQty(totalQ)),
                             maxAllowed, totalQ));
                     }
                 }

@@ -1,6 +1,7 @@
 package com.spd.warehouse.mapper;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -401,4 +402,17 @@ public interface StkIoBillMapper
     List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList(StkIoBill stkIoBill);
 
     Long countDepartmentUnreceivedReceiptReminder(StkIoBill stkIoBill);
+
+    /**
+     * 首页仓库采购图：单月、多仓库聚合（入退货 + 出退库）
+     */
+    List<Map<String, Object>> selectHomeWarehousePurchaseMonthAgg(@Param("beginDate") Date beginDate,
+        @Param("endDate") Date endDate,
+        @Param("warehouseIds") List<Long> warehouseIds);
+
+    /**
+     * 首页科室使用图：按「审核月」聚合全年出退库数量/金额（租户级，不含 stkIoBillDepartmentScopeFilter）
+     */
+    List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(@Param("beginDate") Date beginDate,
+        @Param("endDate") Date endDate);
 }

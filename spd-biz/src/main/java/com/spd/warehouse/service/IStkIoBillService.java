@@ -1,6 +1,7 @@
 package com.spd.warehouse.service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -296,4 +297,13 @@ public interface IStkIoBillService
 
     long countDepartmentUnreceivedReceiptReminder();
 
+    /**
+     * 首页仓库采购图：单月、多仓库聚合（入退货 + 出退库）
+     */
+    List<Map<String, Object>> selectHomeWarehousePurchaseMonthAgg(Date beginDate, Date endDate, List<Long> warehouseIds);
+
+    /**
+     * 首页科室使用图：按审核月聚合全年出退库（租户级，不按当前用户科室数据范围过滤）
+     */
+    List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(Date beginDate, Date endDate);
 }

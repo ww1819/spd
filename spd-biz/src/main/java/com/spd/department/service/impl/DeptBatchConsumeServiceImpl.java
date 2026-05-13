@@ -336,6 +336,16 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         return deptBatchConsumeMapper.selectAuditedConsumeReportTotal(deptBatchConsume);
     }
 
+    @Override
+    public List<Map<String, Object>> selectHomeDepartmentConsumeYearMonthAgg(Date beginDate, Date endDate)
+    {
+        if (beginDate == null || endDate == null)
+        {
+            return new java.util.ArrayList<>();
+        }
+        return deptBatchConsumeMapper.selectHomeDepartmentConsumeYearMonthAgg(beginDate, endDate);
+    }
+
     /**
      * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）
      * 

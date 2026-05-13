@@ -1,5 +1,8 @@
 package com.spd.warehouse.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.net.URLEncoder;
@@ -16,7 +19,10 @@ import org.springframework.web.bind.annotation.*;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.enums.BusinessType;
+import com.spd.department.domain.DeptBatchConsume;
+import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -38,6 +44,9 @@ public class StkIoBillController extends BaseController
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
     private IStkIoBillService stkIoBillService;
+
+    @Autowired
+    private IDeptBatchConsumeService deptBatchConsumeService;
 
     @Autowired
     private ISysConfigService sysConfigService;
@@ -181,6 +190,34 @@ public class StkIoBillController extends BaseController
     public AjaxResult outboundSummaryByDepartment() {
         List<Map<String, Object>> list = stkIoBillService.selectOutboundSummaryByDepartment();
         return success(list);
+    }
+
+    /**
+     * 数据可视化大屏：当前租户下已审核入退货（验收）、出退库、科室消耗的数量与金额合计（不按个人科室数据范围过滤）。
+     */
+    @GetMapping("/biScreenConsumablesTotals")
+    public AjaxResult biScreenConsumablesTotals()
+    {
+        StkIoBill rthQ = new StkIoBill();
+        TotalInfo acceptance = stkIoBillService.selectRTHStkIoBillListTotal(rthQ);
+        StkIoBill ctkQ = new StkIoBill();
+        TotalInfo outbound = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
+        DeptBatchConsume dc = new DeptBatchConsume();
+        TotalInfo consume = deptBatchConsumeService.selectAuditedConsumeReportTotal(dc);
+
+        Map<String, Object> body = new HashMap<>(8);
+        body.put("acceptanceAmount", nzBd(acceptance != null ? acceptance.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        body.put("acceptanceQuantity", nzBd(acceptance != null ? acceptance.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        body.put("outboundAmount", nzBd(outbound != null ? outbound.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        body.put("outboundQuantity", nzBd(outbound != null ? outbound.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        body.put("consumptionAmount", nzBd(consume != null ? consume.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        body.put("consumptionQuantity", nzBd(consume != null ? consume.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        return success(body);
+    }
+
+    private static BigDecimal nzBd(BigDecimal v)
+    {
+        return v != null ? v : BigDecimal.ZERO;
     }
 
     private String buildInterfaceBaseUrl()
