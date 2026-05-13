@@ -260,7 +260,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         HisBillingRefundOrder order = buildOrderHeader(tenantId, visitKind, body, originMirrorRowId, "2", inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
 
-        String operator = SecurityUtils.getUsername();
+        String operator = SecurityUtils.getUserIdStr();
         List<HisBillingRefundOrderLine> lineRows = new ArrayList<>();
         Date now = DateUtils.getNowDate();
         String uid = SecurityUtils.getUserIdStr();
@@ -573,7 +573,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         HisBillingRefundOrder order = buildOrderHeaderHigh(tenantId, visitKind, body, originMirrorRowId, inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
 
-        String operator = SecurityUtils.getUsername();
+        String operator = SecurityUtils.getUserIdStr();
         Date now = DateUtils.getNowDate();
         String uid = SecurityUtils.getUserIdStr();
 

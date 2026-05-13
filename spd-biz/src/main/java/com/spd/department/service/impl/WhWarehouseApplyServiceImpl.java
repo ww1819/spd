@@ -1,6 +1,7 @@
 package com.spd.department.service.impl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -87,6 +88,7 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
             if (fifo == null) {
                 fifo = new ArrayList<>();
             }
+            List<AllocLine> fifoPieces = new ArrayList<>();
             for (StkInventory inv : fifo) {
                 if (need.compareTo(ZERO) <= 0) {
                     break;
@@ -113,9 +115,14 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
                 line.supplierId = inv.getSupplierId();
                 line.factoryId = inv.getFactoryId();
                 line.basApplyEntryId = e.getId();
-                byWarehouse.computeIfAbsent(line.warehouseId, k -> new ArrayList<>()).add(line);
+                fifoPieces.add(line);
                 need = need.subtract(take);
             }
+            if (fifoPieces.isEmpty()) {
+                continue;
+            }
+            AllocLine merged = mergeFifoPiecesNoBatch(fifoPieces);
+            byWarehouse.computeIfAbsent(merged.warehouseId, k -> new ArrayList<>()).add(merged);
             if (need.compareTo(ZERO) > 0) {
                 // 科室申请审核不拦截可用库存不足：仅按当前可分配库存生成仓库申请明细，剩余数量不阻断审核。
                 continue;
@@ -365,6 +372,54 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
         if (u <= 0) {
             throw new ServiceException("明细作废失败，请刷新后重试");
         }
+    }
+
+    /**
+     * 科室申领审核生成库房申请：按 FIFO 测算可分配数量，但不落库批次/库存行，
+     * 批次由出库申请引用后再由用户从库存明细中选择。
+     */
+    private static AllocLine mergeFifoPiecesNoBatch(List<AllocLine> pieces) {
+        if (pieces == null || pieces.isEmpty()) {
+            return null;
+        }
+        AllocLine m = new AllocLine();
+        m.warehouseId = pieces.get(0).warehouseId;
+        m.materialId = pieces.get(0).materialId;
+        m.basApplyEntryId = pieces.get(0).basApplyEntryId;
+        BigDecimal qty = ZERO;
+        BigDecimal amt = ZERO;
+        for (AllocLine p : pieces) {
+            if (p == null) {
+                continue;
+            }
+            qty = qty.add(p.qty != null ? p.qty : ZERO);
+            amt = amt.add(p.amt != null ? p.amt : ZERO);
+        }
+        m.qty = qty;
+        m.amt = amt;
+        if (qty.compareTo(ZERO) > 0 && amt != null) {
+            m.unitPrice = amt.divide(qty, 6, RoundingMode.HALF_UP);
+        } else {
+            m.unitPrice = pieces.get(0).unitPrice != null ? pieces.get(0).unitPrice : ZERO;
+        }
+        m.batchNo = null;
+        m.batchNumber = null;
+        m.beginTime = null;
+        m.endTime = null;
+        m.stkInventoryId = null;
+        for (AllocLine p : pieces) {
+            if (p != null && p.supplierId != null) {
+                m.supplierId = p.supplierId;
+                break;
+            }
+        }
+        for (AllocLine p : pieces) {
+            if (p != null && p.factoryId != null) {
+                m.factoryId = p.factoryId;
+                break;
+            }
+        }
+        return m;
     }
 
     private static class AllocLine {

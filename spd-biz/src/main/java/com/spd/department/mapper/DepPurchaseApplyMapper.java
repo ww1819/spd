@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.DepPurchaseApplyEntry;
+import com.spd.department.vo.WarehousePurchaseReminderRowVo;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -76,4 +77,14 @@ public interface DepPurchaseApplyMapper
      * 按条件汇总申购明细数量（首页今日统计等）
      */
     BigDecimal selectDepPurchaseApplyEntryQtySum(DepPurchaseApply depPurchaseApply);
+
+    /**
+     * 按条件统计申购主表单据数（与列表筛选、科室范围一致）
+     */
+    int selectDepPurchaseApplyBillCount(DepPurchaseApply depPurchaseApply);
+
+    /**
+     * 消息提醒：科室申购监控列表（待审核/已审核，排除驳回；科室范围与列表一致）
+     */
+    List<WarehousePurchaseReminderRowVo> selectWarehouseReminderPurchaseMonitorList(DepPurchaseApply depPurchaseApply);
 }

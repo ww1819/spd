@@ -94,6 +94,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     {
         stkIoStocktaking.setStockNo(getNumber());
         stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        // 制单人存用户ID（varchar），避免前端误传 nickName 到 create_by
+        stkIoStocktaking.setCreateBy(SecurityUtils.getUserIdStr());
+        Long opUserId = SecurityUtils.getUserId();
+        if (opUserId != null) {
+            stkIoStocktaking.setUserId(opUserId);
+        }
         if (StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -129,6 +135,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         validateWarehouseStocktakingEntries(stkIoStocktaking);
         Long parenId = stkIoStocktaking.getId();
         List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
@@ -220,6 +227,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         // 盘点单审核仅更新审核状态，不再改库存；库存变动由盈亏单审核完成
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
 
         return stkIoStocktakingMapper.updateStkIoStocktaking(stkIoStocktaking);
     }
@@ -264,6 +273,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
             entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlagWarehouse(entry);
+            if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                entry.setStockNo(bill.getStockNo());
+            }
             stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
         }
     }
@@ -367,6 +379,9 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         entry.setUpdateTime(now);
         entry.setUpdateBy(user);
         fillStocktakingEntryRefStrings(parent, entry);
+        if (StringUtils.isNotEmpty(parent.getStockNo())) {
+            entry.setStockNo(parent.getStockNo());
+        }
     }
 
     /**

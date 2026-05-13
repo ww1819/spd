@@ -15,6 +15,8 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.department.service.IStkDepInventoryService;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
+import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 科室库存Service业务层处理
@@ -29,6 +31,27 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     private StkDepInventoryMapper stkDepInventoryMapper;
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    /**
+     * 与科室库存列表一致：非租户超管按 sys_user_department / sys_user_warehouse 子查询过滤
+     */
+    private void applyDepInvListWarehouseDepartmentScope(StkDepInventory q)
+    {
+        if (q == null)
+        {
+            return;
+        }
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        if (tenantScopeService.isTenantSuper(userId, customerId))
+        {
+            return;
+        }
+        q.getParams().put("scopeUserId", userId);
+    }
 
     /**
      * 查询科室库存
@@ -187,5 +210,32 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
     public TotalInfo selectDepartmentInOutDetailListTotal(StkDepInventory stkDepInventory)
     {
         return stkDepInventoryMapper.selectDepartmentInOutDetailListTotal(stkDepInventory);
+    }
+
+    @Override
+    public List<DepartmentNearExpiryReminderRowVo> selectDepartmentNearExpiryReminderMonitorList()
+    {
+        StkDepInventory q = new StkDepInventory();
+        q.setDepInventoryNearExpiryDays(30);
+        applyDepInvListWarehouseDepartmentScope(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkDepInventoryMapper.selectDepartmentNearExpiryReminderList(q);
+    }
+
+    @Override
+    public long countDepartmentNearExpiryReminderMonitor()
+    {
+        StkDepInventory q = new StkDepInventory();
+        q.setDepInventoryNearExpiryDays(30);
+        applyDepInvListWarehouseDepartmentScope(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        Long c = stkDepInventoryMapper.countDepartmentNearExpiryReminder(q);
+        return c != null ? c.longValue() : 0L;
     }
 }

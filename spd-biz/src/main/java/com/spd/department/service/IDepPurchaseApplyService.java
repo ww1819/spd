@@ -3,6 +3,7 @@ package com.spd.department.service;
 import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.DepPurchaseApply;
+import com.spd.department.vo.WarehousePurchaseReminderRowVo;
 
 /**
  * 科室申购Service接口
@@ -35,6 +36,16 @@ public interface IDepPurchaseApplyService
      * 按条件汇总申购明细数量（首页今日统计等，一条 SQL）
      */
     BigDecimal selectDepPurchaseApplyEntryQtySum(DepPurchaseApply depPurchaseApply);
+
+    /**
+     * 待审核申购单数量：与申购列表/审核列表同一科室数据范围与租户口径。
+     */
+    long countPendingAuditPurchaseApply();
+
+    /**
+     * 消息提醒：科室申购监控列表（与 {@link #countPendingAuditPurchaseApply()} 同一科室数据范围）
+     */
+    List<WarehousePurchaseReminderRowVo> selectWarehouseReminderPurchaseMonitorList();
 
     /**
      * 新增科室申购

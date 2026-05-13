@@ -126,7 +126,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String tenantId = SecurityUtils.getCustomerId();
         HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
         String batchId = IdUtils.fastUUID();
-        String createBy = SecurityUtils.getUsername();
+        String createBy = SecurityUtils.getUserIdStr();
         Date now = new Date();
 
         int inserted = 0;
@@ -180,7 +180,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String tenantId = SecurityUtils.getCustomerId();
         HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
         String batchId = IdUtils.fastUUID();
-        String createBy = SecurityUtils.getUsername();
+        String createBy = SecurityUtils.getUserIdStr();
         Date now = new Date();
 
         int inserted = 0;

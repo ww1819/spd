@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.domain.StkInventory;
+import com.spd.warehouse.vo.WarehouseNearExpiryReminderRowVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -158,6 +159,11 @@ public interface StkInventoryMapper
     List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory);
 
     /**
+     * 库存预警条数（与 {@link #selectInventoryAlertList} 筛选条件一致，不含明细关联）
+     */
+    int countInventoryAlertList(StkInventory stkInventory);
+
+    /**
      * 有效期预警表列表
      * @param stkInventory 查询条件
      * @return 有效期预警列表
@@ -189,4 +195,18 @@ public interface StkInventoryMapper
         @Param("materialId") Long materialId,
         @Param("warehouseId") Long warehouseId);
 
+    /**
+     * 出库引用库房申请：指定仓库内按耗材近效期先出（FEFO）取可分配库存行
+     */
+    List<StkInventory> selectStkInventoryFefoForOutboundAlloc(
+        @Param("tenantId") String tenantId,
+        @Param("materialId") Long materialId,
+        @Param("warehouseId") Long warehouseId);
+
+    /**
+     * 消息提醒：仓库库存近效期（有效期距今天在 30 天及以内且未过期）
+     */
+    List<WarehouseNearExpiryReminderRowVo> selectWarehouseNearExpiryReminderList(@Param("tenantId") String tenantId);
+
+    int countWarehouseNearExpiryReminderList(@Param("tenantId") String tenantId);
 }

@@ -255,6 +255,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <if test="id != null"> and stk.id = #{id}</if>
+        <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
         order by stk.warehouse_date desc
     </select>
 
@@ -290,6 +291,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <if test="id != null"> and stk.id = #{id}</if>
+        <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
         order by stk.warehouse_date desc
     </select>
 
@@ -582,53 +584,168 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
-    <!-- 库存预警：按耗材+仓库汇总；无安全库存字段时 safetyStock=0；预警=已停用产品档案仍有库存 -->
+    <!--
+      库存预警：仓库定数监测 wh_fixed_number（监测开启）与 stk_inventory 按「耗材+仓库」汇总数量比较。
+      预警条件：当前库存 &lt; 下限，或（上限&gt;0 且 当前库存&gt;上限）。
+      安全库存列展示为定数监测「下限」；上限仅参与超量预警判断。
+    -->
     <select id="selectInventoryAlertList" parameterType="StkInventory" resultType="java.util.HashMap">
         select
-            MIN(stk.id) AS id,
-            MAX(IFNULL(m.code, '')) AS materialCode,
-            MAX(IFNULL(m.name, '')) AS materialName,
-            MAX(IFNULL(m.speci, '')) AS materialSpeci,
-            MAX(IFNULL(m.model, '')) AS materialModel,
-            MAX(IFNULL(u.unit_name, '')) AS unitName,
-            MAX(IFNULL(w.name, '')) AS warehouseName,
-            SUM(IFNULL(stk.qty, 0)) AS currentQty,
-            CAST(0 AS DECIMAL(18, 4)) AS safetyStock,
+            fn.id as id,
+            IFNULL(m.code, '') as materialCode,
+            IFNULL(m.name, '') as materialName,
+            IFNULL(m.speci, '') as materialSpeci,
+            IFNULL(m.model, '') as materialModel,
+            IFNULL(u.unit_name, '') as unitName,
+            ROUND(COALESCE(inv.qty_sum, 0), 0) as currentQty,
+            fn.lower_limit as safetyStock,
+            ROUND(IFNULL(inv.unit_price_avg, 0), 4) as unitPrice,
+            ROUND(IFNULL(inv.amt_sum, 0), 2) as totalAmt,
+            alert_line.begin_time as produceDate,
+            alert_line.end_time as expiryDate,
+            IFNULL(alert_line.batch_number, '') as batchNumber,
+            IFNULL(alert_line.batch_no, '') as batchNo,
+            IFNULL(f.factory_name, '') as factoryName,
+            IFNULL(sup_agg.supplier_names_agg, '') as supplierName,
+            IFNULL(w.name, '') as warehouseName,
+            IFNULL(m.is_use, '') as materialIsUse,
             CASE
-                WHEN MAX(IFNULL(m.is_use, '')) = '2' AND SUM(IFNULL(stk.qty, 0)) > 0 THEN 1
+                WHEN COALESCE(inv.qty_sum, 0) &lt; fn.lower_limit
+                    OR (fn.upper_limit &gt; 0 AND COALESCE(inv.qty_sum, 0) &gt; fn.upper_limit) THEN 1
                 ELSE 0
-            END AS alertStatus,
-            MAX(IFNULL(f.factory_name, '')) AS factoryName,
-            MAX(IFNULL(m.is_use, '')) AS materialIsUse
-        from stk_inventory stk
-        left join fd_warehouse w on stk.warehouse_id = w.id
-        left join fd_material m on stk.material_id = m.id
+            END as alertStatus
+        from wh_fixed_number fn
+        inner join fd_material m on m.id = fn.material_id
+        inner join fd_warehouse w on w.id = fn.warehouse_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory f on f.factory_id = m.factory_id
-        where (stk.del_flag = 0 or stk.del_flag is null)
-          and stk.tenant_id = #{tenantId}
-          and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
-        <include refid="stkInventoryMaterialReportVisible"/>
-        <include refid="stkInventoryMaterialIsUseQuery"/>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId} </if>
+        left join (
+            select stk.material_id, stk.warehouse_id,
+                SUM(IFNULL(stk.qty, 0)) as qty_sum,
+                CASE WHEN SUM(IFNULL(stk.qty, 0)) &lt;&gt; 0
+                    THEN SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))) / SUM(IFNULL(stk.qty, 0))
+                    ELSE NULL END as unit_price_avg,
+                SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))) as amt_sum
+            from stk_inventory stk
+            left join fd_material mx on stk.material_id = mx.id
+            where (stk.del_flag = 0 or stk.del_flag is null)
+              and stk.tenant_id = #{tenantId}
+              and (mx.id is null or ((mx.del_flag is null or mx.del_flag != 1) and (mx.is_use is null or mx.is_use = '' or mx.is_use != '2')))
+            group by stk.material_id, stk.warehouse_id
+        ) inv on inv.material_id = fn.material_id and inv.warehouse_id = fn.warehouse_id
+        left join (
+            select stk.material_id, stk.warehouse_id,
+                GROUP_CONCAT(DISTINCT su.name ORDER BY su.name SEPARATOR '、') as supplier_names_agg
+            from stk_inventory stk
+            inner join fd_supplier su on su.id = stk.supplier_id and stk.supplier_id is not null
+            where (stk.del_flag = 0 or stk.del_flag is null)
+              and stk.tenant_id = #{tenantId}
+              and IFNULL(TRIM(su.name), '') != ''
+            group by stk.material_id, stk.warehouse_id
+        ) sup_agg on sup_agg.material_id = fn.material_id and sup_agg.warehouse_id = fn.warehouse_id
+        left join (
+            select s.material_id, s.warehouse_id, MIN(s.id) as pick_id
+            from stk_inventory s
+            inner join (
+                select x.material_id, x.warehouse_id, MIN(x.end_time) as min_end
+                from stk_inventory x
+                left join fd_material mx2 on mx2.id = x.material_id
+                where (x.del_flag = 0 or x.del_flag is null)
+                  and x.tenant_id = #{tenantId}
+                  and IFNULL(x.qty, 0) &gt; 0
+                  and x.end_time is not null
+                  and (mx2.id is null or ((mx2.del_flag is null or mx2.del_flag != 1) and (mx2.is_use is null or mx2.is_use = '' or mx2.is_use != '2')))
+                group by x.material_id, x.warehouse_id
+            ) z on z.material_id = s.material_id and z.warehouse_id = s.warehouse_id and z.min_end = s.end_time
+            left join fd_material mx3 on mx3.id = s.material_id
+            where (s.del_flag = 0 or s.del_flag is null)
+              and s.tenant_id = #{tenantId}
+              and IFNULL(s.qty, 0) &gt; 0
+              and (mx3.id is null or ((mx3.del_flag is null or mx3.del_flag != 1) and (mx3.is_use is null or mx3.is_use = '' or mx3.is_use != '2')))
+            group by s.material_id, s.warehouse_id
+        ) alert_line_pick on alert_line_pick.material_id = fn.material_id and alert_line_pick.warehouse_id = fn.warehouse_id
+        left join stk_inventory alert_line on alert_line.id = alert_line_pick.pick_id
+        where (fn.del_flag = 0 or fn.del_flag is null)
+          and fn.tenant_id = #{tenantId}
+          and fn.monitoring = '1'
+        <include refid="stkInventoryMaterialActive"/>
+        <if test="warehouseId != null"> and fn.warehouse_id = #{warehouseId} </if>
         <if test="materialName != null and materialName != ''">
-            and (IFNULL(m.name, '') like concat('%', #{materialName}, '%')
-                 or IFNULL(m.code, '') like concat('%', #{materialName}, '%')
-                 or IFNULL(m.referred_name, '') like concat('%', #{materialName}, '%'))
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
         </if>
-        <if test="supplierId != null"> and stk.supplier_id = #{supplierId} </if>
-        group by stk.material_id, stk.warehouse_id
-        having SUM(IFNULL(stk.qty, 0)) > 0
-        <if test="alertStatus == 1 or alertStatus == '1'">
-            and MAX(IFNULL(m.is_use, '')) = '2'
+        <if test="materialIsUse != null and materialIsUse != ''"> and m.is_use = #{materialIsUse} </if>
+        <if test="supplierId != null">
+            and exists (
+                select 1 from stk_inventory sstk
+                where sstk.material_id = fn.material_id
+                  and sstk.warehouse_id = fn.warehouse_id
+                  and sstk.supplier_id = #{supplierId}
+                  and (sstk.del_flag = 0 or sstk.del_flag is null)
+                  and sstk.tenant_id = #{tenantId}
+            )
         </if>
-        <if test="alertStatus == 0 or alertStatus == '0'">
-            and NOT (MAX(IFNULL(m.is_use, '')) = '2' AND SUM(IFNULL(stk.qty, 0)) > 0)
-        </if>
+        <choose>
+            <when test="alertStatus != null and alertStatus != '' and (alertStatus == 1 or alertStatus == '1')">
+                and (COALESCE(inv.qty_sum, 0) &lt; fn.lower_limit
+                    or (fn.upper_limit &gt; 0 and COALESCE(inv.qty_sum, 0) &gt; fn.upper_limit))
+            </when>
+            <when test="alertStatus != null and alertStatus != '' and (alertStatus == 0 or alertStatus == '0')">
+                and not (COALESCE(inv.qty_sum, 0) &lt; fn.lower_limit
+                    or (fn.upper_limit &gt; 0 and COALESCE(inv.qty_sum, 0) &gt; fn.upper_limit))
+            </when>
+        </choose>
         order by
-            CASE WHEN MAX(IFNULL(m.is_use, '')) = '2' AND SUM(IFNULL(stk.qty, 0)) > 0 THEN 1 ELSE 0 END desc,
-            MAX(IFNULL(m.code, '')),
-            MAX(IFNULL(w.name, ''))
+            CASE
+                WHEN COALESCE(inv.qty_sum, 0) &lt; fn.lower_limit
+                    OR (fn.upper_limit &gt; 0 AND COALESCE(inv.qty_sum, 0) &gt; fn.upper_limit) THEN 1
+                ELSE 0
+            END desc,
+            m.code,
+            w.name
+    </select>
+
+    <select id="countInventoryAlertList" parameterType="StkInventory" resultType="int">
+        select count(1)
+        from wh_fixed_number fn
+        inner join fd_material m on m.id = fn.material_id
+        left join (
+            select stk.material_id, stk.warehouse_id, SUM(IFNULL(stk.qty, 0)) as qty_sum
+            from stk_inventory stk
+            left join fd_material mx on stk.material_id = mx.id
+            where (stk.del_flag = 0 or stk.del_flag is null)
+              and stk.tenant_id = #{tenantId}
+              and (mx.id is null or ((mx.del_flag is null or mx.del_flag != 1) and (mx.is_use is null or mx.is_use = '' or mx.is_use != '2')))
+            group by stk.material_id, stk.warehouse_id
+        ) inv on inv.material_id = fn.material_id and inv.warehouse_id = fn.warehouse_id
+        where (fn.del_flag = 0 or fn.del_flag is null)
+          and fn.tenant_id = #{tenantId}
+          and fn.monitoring = '1'
+        <include refid="stkInventoryMaterialActive"/>
+        <if test="warehouseId != null"> and fn.warehouse_id = #{warehouseId} </if>
+        <if test="materialName != null and materialName != ''">
+            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="materialIsUse != null and materialIsUse != ''"> and m.is_use = #{materialIsUse} </if>
+        <if test="supplierId != null">
+            and exists (
+                select 1 from stk_inventory sstk
+                where sstk.material_id = fn.material_id
+                  and sstk.warehouse_id = fn.warehouse_id
+                  and sstk.supplier_id = #{supplierId}
+                  and (sstk.del_flag = 0 or sstk.del_flag is null)
+                  and sstk.tenant_id = #{tenantId}
+            )
+        </if>
+        <choose>
+            <when test="alertStatus != null and alertStatus != '' and (alertStatus == 1 or alertStatus == '1')">
+                and (COALESCE(inv.qty_sum, 0) &lt; fn.lower_limit
+                    or (fn.upper_limit &gt; 0 and COALESCE(inv.qty_sum, 0) &gt; fn.upper_limit))
+            </when>
+            <when test="alertStatus != null and alertStatus != '' and (alertStatus == 0 or alertStatus == '0')">
+                and not (COALESCE(inv.qty_sum, 0) &lt; fn.lower_limit
+                    or (fn.upper_limit &gt; 0 and COALESCE(inv.qty_sum, 0) &gt; fn.upper_limit))
+            </when>
+        </choose>
     </select>
 
     <!-- 有效期预警表列表：根据预警天数查询近效期库存明细 -->
@@ -769,5 +886,62 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
         <include refid="stkInventoryMaterialActive"/>
         order by stk.warehouse_date asc, stk.id asc
+    </select>
+
+    <!-- 出库引用库房申请：近效期先出（有有效期的优先且按有效期升序，无有效期排后），同科室申领库存行筛选 -->
+    <select id="selectStkInventoryFefoForOutboundAlloc" resultMap="StkInventoryResult">
+        <include refid="selectStkInventoryVo"/>
+        where stk.qty &gt; 0
+          and (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and stk.material_id = #{materialId}
+          and stk.warehouse_id = #{warehouseId}
+          and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        <include refid="stkInventoryMaterialActive"/>
+        order by (stk.end_time is null) asc, stk.end_time asc, stk.warehouse_date asc, stk.id asc
+    </select>
+
+    <!-- 消息提醒：近效期库存（0～30 天内到期，qty>0，与库存列表相同耗材有效条件） -->
+    <select id="selectWarehouseNearExpiryReminderList" resultType="com.spd.warehouse.vo.WarehouseNearExpiryReminderRowVo">
+        select
+            IFNULL(m.code, '') as materialCode,
+            IFNULL(m.name, '') as materialName,
+            IFNULL(m.speci, '') as materialSpeci,
+            IFNULL(m.model, '') as materialModel,
+            IFNULL(stk.qty, 0) as qty,
+            IFNULL(stk.unit_price, 0) as unitPrice,
+            ROUND(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0)), 2) as amt,
+            CASE
+                WHEN stk.batch_number is not null and TRIM(stk.batch_number) != '' THEN TRIM(stk.batch_number)
+                ELSE IFNULL(stk.material_no, '')
+            END as batchNumber,
+            stk.end_time as endTime,
+            stk.begin_time as beginTime,
+            IFNULL(f.factory_name, '') as factoryName,
+            IFNULL(w.name, '') as warehouseName
+        from stk_inventory stk
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_material m on stk.material_id = m.id
+        left join fd_factory f on f.factory_id = COALESCE(stk.factory_id, m.factory_id)
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and IFNULL(stk.qty, 0) &gt; 0
+          and stk.end_time is not null
+        <include refid="stkInventoryMaterialActive"/>
+        <![CDATA[ and DATEDIFF(stk.end_time, CURDATE()) >= 0 and DATEDIFF(stk.end_time, CURDATE()) <= 30 ]]>
+        order by stk.end_time asc, stk.id asc
+        limit 500
+    </select>
+
+    <select id="countWarehouseNearExpiryReminderList" resultType="int">
+        select count(1)
+        from stk_inventory stk
+        left join fd_material m on stk.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and IFNULL(stk.qty, 0) &gt; 0
+          and stk.end_time is not null
+        <include refid="stkInventoryMaterialActive"/>
+        <![CDATA[ and DATEDIFF(stk.end_time, CURDATE()) >= 0 and DATEDIFF(stk.end_time, CURDATE()) <= 30 ]]>
     </select>
 </mapper>

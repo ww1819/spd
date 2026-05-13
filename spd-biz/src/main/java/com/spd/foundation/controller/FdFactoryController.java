@@ -111,7 +111,7 @@ public class FdFactoryController extends BaseController
     {
         ExcelUtil<FdFactory> util = new ExcelUtil<FdFactory>(FdFactory.class);
         List<FdFactory> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdFactoryService.importFdFactory(list, updateSupport, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
@@ -186,7 +186,7 @@ public class FdFactoryController extends BaseController
             FdFactory existing = fdFactoryService.selectFdFactoryByFactoryId(row.getFactoryId());
             existing.setFactoryName(row.getFactoryName().trim());
             existing.setFactoryReferredCode(PinyinUtils.getPinyinInitials(existing.getFactoryName()));
-            existing.setUpdateBy(getUsername());
+            existing.setUpdateBy(getUserIdStr());
             fdFactoryService.updateFdFactory(existing);
             successNum++;
         }

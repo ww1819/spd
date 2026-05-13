@@ -151,6 +151,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
+    /** 查询：仅返回数量大于 0 的库存行（库存选择弹窗等，与列表接口共用） */
+    private Boolean onlyPositiveQty;
+
     @Excel(name = "批号")
     private String batchNumber;
 
@@ -492,6 +495,14 @@ public class StkInventory extends BaseEntity
         this.daysToExpiry = daysToExpiry;
     }
 
+    public Boolean getOnlyPositiveQty() {
+        return onlyPositiveQty;
+    }
+
+    public void setOnlyPositiveQty(Boolean onlyPositiveQty) {
+        this.onlyPositiveQty = onlyPositiveQty;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -520,6 +531,9 @@ public class StkInventory extends BaseEntity
             .append("endDate", getEndDate())
             .append("isBilling", getIsBilling())
             .append("daysToExpiry", getDaysToExpiry())
+            .append("alertStatus", getAlertStatus())
+            .append("materialIsUse", getMaterialIsUse())
+            .append("onlyPositiveQty", getOnlyPositiveQty())
             .append("supplierId", getSupplierId())
             .append("supplier", getSupplier())
             .append("beginTime", getBeginTime())

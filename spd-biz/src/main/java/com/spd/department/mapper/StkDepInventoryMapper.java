@@ -6,6 +6,7 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
+import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -124,4 +125,11 @@ public interface StkDepInventoryMapper
     TotalInfo selectInventorySummaryListTotal(StkDepInventory stkDepInventory);
 
     TotalInfo selectDepartmentInOutDetailListTotal(StkDepInventory stkDepInventory);
+
+    /**
+     * 消息提醒：科室近效期库存行（与科室库存列表近效期筛选一致，最多 500 条）
+     */
+    List<DepartmentNearExpiryReminderRowVo> selectDepartmentNearExpiryReminderList(StkDepInventory stkDepInventory);
+
+    Long countDepartmentNearExpiryReminder(StkDepInventory stkDepInventory);
 }

@@ -263,6 +263,33 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return stkIoBillMapper.selectStkIoBillList(stkIoBill);
     }
 
+    @Override
+    public List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList()
+    {
+        StkIoBill q = new StkIoBill();
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            q.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkIoBillMapper.selectDepartmentUnreceivedReceiptReminderList(q);
+    }
+
+    @Override
+    public long countDepartmentUnreceivedReceiptReminder()
+    {
+        StkIoBill q = new StkIoBill();
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            q.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        Long n = stkIoBillMapper.countDepartmentUnreceivedReceiptReminder(q);
+        return n != null ? n.longValue() : 0L;
+    }
+
     /**
      * 新增入库
      *
@@ -2463,6 +2490,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             return null;
         }
         if (StringUtils.isNotEmpty(e.getWhApplyEntryId())) {
+            if (e.getStkInventoryId() != null) {
+                return "WHAPPLY#" + e.getWhApplyEntryId().trim() + "#STK#" + e.getStkInventoryId();
+            }
+            if (StringUtils.isNotEmpty(e.getBatchNo())) {
+                return "WHAPPLY#" + e.getWhApplyEntryId().trim() + "#BATCH#" + e.getBatchNo().trim();
+            }
             return "WHAPPLY#" + e.getWhApplyEntryId().trim();
         }
         if (e.getStkInventoryId() != null) {
@@ -2591,6 +2624,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setDApplyId(wh.getBasApplyId());
         stkIoBill.setWhWarehouseApplyId(wh.getId());
         stkIoBill.setWhWarehouseApplyBillNo(wh.getApplyBillNo());
+        String tenantId = StringUtils.isNotEmpty(wh.getTenantId())
+            ? wh.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
         List<WhWarehouseApplyEntry> list = wh.getEntryList();
         if (list == null || list.isEmpty()) {
             throw new ServiceException(String.format("仓库申请单ID：%s 无明细", whWarehouseApplyId));
@@ -2604,33 +2639,63 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (pend == null || pend.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
-            stkIoBillEntry.setMaterialId(we.getMaterialId());
-            stkIoBillEntry.setQty(pend);
-            stkIoBillEntry.setUnitPrice(we.getUnitPrice());
-            if (we.getUnitPrice() != null) {
-                stkIoBillEntry.setAmt(we.getUnitPrice().multiply(pend).setScale(2, RoundingMode.HALF_UP));
-            } else {
-                stkIoBillEntry.setAmt(we.getAmt());
+            Long lineWhId = we.getWarehouseId() != null ? we.getWarehouseId() : wh.getWarehouseId();
+            if (we.getMaterialId() == null || lineWhId == null) {
+                throw new ServiceException("库房申请明细缺少耗材或仓库，无法按近效期分配批次");
             }
-            stkIoBillEntry.setBatchNo(we.getBatchNo());
-            stkIoBillEntry.setBatchNumber(we.getBatchNumber());
-            stkIoBillEntry.setBeginTime(we.getBeginTime());
-            stkIoBillEntry.setEndTime(we.getEndTime());
-            stkIoBillEntry.setWarehouseId(we.getWarehouseId());
-            if (we.getStkInventoryId() != null) {
-                stkIoBillEntry.setStkInventoryId(we.getStkInventoryId());
-                stkIoBillEntry.setKcNo(null);
-            }
-            stkIoBillEntry.setWhApplyEntryId(we.getId());
-            if (we.getSupplierId() != null) {
-                stkIoBillEntry.setSupplerId(String.valueOf(we.getSupplierId()));
-            }
-            if (we.getMaterialId() != null) {
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(we.getMaterialId());
+            FdMaterial material = we.getMaterial() != null ? we.getMaterial()
+                : fdMaterialMapper.selectFdMaterialById(we.getMaterialId());
+            String matLabel = material != null && StringUtils.isNotEmpty(material.getName())
+                ? material.getName() : String.valueOf(we.getMaterialId());
+            List<StkInventory> invLines = stkInventoryMapper.selectStkInventoryFefoForOutboundAlloc(
+                tenantId, we.getMaterialId(), lineWhId);
+            BigDecimal need = pend;
+            for (StkInventory inv : invLines) {
+                if (need.compareTo(BigDecimal.ZERO) <= 0) {
+                    break;
+                }
+                if (inv == null) {
+                    continue;
+                }
+                BigDecimal rowQty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+                if (rowQty.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                BigDecimal take = need.min(rowQty);
+                StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
+                stkIoBillEntry.setMaterialId(we.getMaterialId());
+                stkIoBillEntry.setQty(take);
+                BigDecimal up = inv.getUnitPrice() != null ? inv.getUnitPrice() : we.getUnitPrice();
+                stkIoBillEntry.setUnitPrice(up);
+                if (up != null) {
+                    stkIoBillEntry.setAmt(up.multiply(take).setScale(2, RoundingMode.HALF_UP));
+                } else {
+                    stkIoBillEntry.setAmt(null);
+                }
+                stkIoBillEntry.setBatchNo(inv.getBatchNo());
+                stkIoBillEntry.setBatchNumber(inv.getBatchNumber());
+                stkIoBillEntry.setBeginTime(inv.getBeginTime());
+                stkIoBillEntry.setEndTime(inv.getEndTime());
+                stkIoBillEntry.setWarehouseId(lineWhId);
+                if (inv.getId() != null) {
+                    stkIoBillEntry.setStkInventoryId(inv.getId());
+                    stkIoBillEntry.setKcNo(inv.getId());
+                }
+                stkIoBillEntry.setWhApplyEntryId(we.getId());
+                if (inv.getSupplierId() != null) {
+                    stkIoBillEntry.setSupplerId(String.valueOf(inv.getSupplierId()));
+                } else if (we.getSupplierId() != null) {
+                    stkIoBillEntry.setSupplerId(String.valueOf(we.getSupplierId()));
+                }
                 stkIoBillEntry.setMaterial(material);
+                entryList.add(stkIoBillEntry);
+                need = need.subtract(take);
             }
-            entryList.add(stkIoBillEntry);
+            if (need.compareTo(BigDecimal.ZERO) > 0) {
+                throw new ServiceException(String.format(
+                    "耗材「%s」库存不足，无法按近效期凑齐可出库数量：尚需 %s（申请 %s）",
+                    matLabel, need.toPlainString(), pend.toPlainString()));
+            }
         }
         if (entryList.isEmpty()) {
             throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
@@ -4506,6 +4571,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             Integer bt = bill.getBillType();
             if (bt != null && bt.intValue() == 201)
             {
+                Map<String, BigDecimal> sumQtyByWhApplyEntry = new LinkedHashMap<>();
+                Map<String, Integer> firstRowByWhApplyEntry = new LinkedHashMap<>();
                 for (int i = 0; i < entries.size(); i++)
                 {
                     StkIoBillEntry en = entries.get(i);
@@ -4513,7 +4580,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     {
                         continue;
                     }
-                    WhWarehouseApplyEntry whEn = whWarehouseApplyMapper.selectWhWarehouseApplyEntryById(en.getWhApplyEntryId());
+                    String wid = en.getWhApplyEntryId();
+                    sumQtyByWhApplyEntry.merge(wid, nz(en.getQty()), BigDecimal::add);
+                    firstRowByWhApplyEntry.putIfAbsent(wid, i + 1);
+                }
+                for (Map.Entry<String, BigDecimal> agg : sumQtyByWhApplyEntry.entrySet())
+                {
+                    String whApplyEntryId = agg.getKey();
+                    BigDecimal totalQ = agg.getValue();
+                    WhWarehouseApplyEntry whEn = whWarehouseApplyMapper.selectWhWarehouseApplyEntryById(whApplyEntryId);
                     if (whEn == null)
                     {
                         continue;
@@ -4522,18 +4597,28 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     BigDecimal voidQty = nz(whEn.getLineVoidQty());
                     BigDecimal effective = lineQty.subtract(voidQty);
                     BigDecimal linkedOthers = nz(whWarehouseApplyMapper.sumLinkedQtyByWhApplyEntryIdExcludingCkBill(
-                        en.getWhApplyEntryId(), excludeTgtStr));
+                        whApplyEntryId, excludeTgtStr));
                     BigDecimal maxAllowed = effective.subtract(linkedOthers);
                     if (maxAllowed.compareTo(BigDecimal.ZERO) < 0)
                     {
                         maxAllowed = BigDecimal.ZERO;
                     }
-                    BigDecimal q = nz(en.getQty());
-                    if (q.compareTo(maxAllowed) > 0)
+                    if (totalQ.compareTo(maxAllowed) > 0)
                     {
-                        errors.add(docRefErrRow(i + 1, en,
-                            String.format("引用库房申请单：本行最多可出库 %s，当前 %s", fmtQty(maxAllowed), fmtQty(q)),
-                            maxAllowed, q));
+                        int rowNo = firstRowByWhApplyEntry.getOrDefault(whApplyEntryId, 1);
+                        StkIoBillEntry sampleEn = null;
+                        for (StkIoBillEntry e : entries)
+                        {
+                            if (e != null && whApplyEntryId.equals(e.getWhApplyEntryId()))
+                            {
+                                sampleEn = e;
+                                break;
+                            }
+                        }
+                        errors.add(docRefErrRow(rowNo, sampleEn,
+                            String.format("引用库房申请单：该申请明细本单合计最多可出库 %s，当前本单合计 %s",
+                                fmtQty(maxAllowed), fmtQty(totalQ)),
+                            maxAllowed, totalQ));
                     }
                 }
             }
@@ -4554,6 +4639,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     byTgtId.put(String.valueOf(en.getId()), en);
                 }
             }
+            final char sep = '\u0001';
+            Map<String, BigDecimal> sumQtyBySrcKey = new LinkedHashMap<>();
+            Map<String, Integer> firstRowBySrcKey = new LinkedHashMap<>();
+            Map<String, StkIoBillEntry> sampleEntryBySrcKey = new LinkedHashMap<>();
+            Map<String, HcDocBillRef> sampleRefBySrcKey = new LinkedHashMap<>();
             for (int i = 0; i < refs.size(); i++)
             {
                 HcDocBillRef r = refs.get(i);
@@ -4590,6 +4680,26 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         }
                     }
                 }
+                String srcKey = r.getRefType() + sep + r.getSrcBillId() + sep + r.getSrcEntryId();
+                sumQtyBySrcKey.merge(srcKey, nz(en.getQty()), BigDecimal::add);
+                if (!firstRowBySrcKey.containsKey(srcKey))
+                {
+                    firstRowBySrcKey.put(srcKey, rowNo);
+                    sampleEntryBySrcKey.put(srcKey, en);
+                    sampleRefBySrcKey.put(srcKey, r);
+                }
+            }
+            for (Map.Entry<String, BigDecimal> agg : sumQtyBySrcKey.entrySet())
+            {
+                String srcKey = agg.getKey();
+                BigDecimal totalQ = agg.getValue();
+                HcDocBillRef r = sampleRefBySrcKey.get(srcKey);
+                StkIoBillEntry en = sampleEntryBySrcKey.get(srcKey);
+                int rowNo = firstRowBySrcKey.getOrDefault(srcKey, 1);
+                if (r == null)
+                {
+                    continue;
+                }
                 Long srcBillId = parseLongSafe(r.getSrcBillId());
                 Long srcEntryId = parseLongSafe(r.getSrcEntryId());
                 if (srcBillId == null || srcEntryId == null)
@@ -4599,14 +4709,14 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 StkIoBill srcBill = stkIoBillMapper.selectStkIoBillById(srcBillId);
                 if (srcBill == null)
                 {
-                    errors.add(docRefErrRow(rowNo, en, "引用关联源单不存在或已删除", null, nz(en.getQty())));
+                    errors.add(docRefErrRow(rowNo, en, "引用关联源单不存在或已删除", null, totalQ));
                     continue;
                 }
                 SecurityUtils.ensureTenantAccess(srcBill.getTenantId());
                 StkIoBillEntry srcEntry = findStkEntryById(srcBill.getStkIoBillEntryList(), srcEntryId);
                 if (srcEntry == null)
                 {
-                    errors.add(docRefErrRow(rowNo, en, "引用关联源单明细不存在", null, nz(en.getQty())));
+                    errors.add(docRefErrRow(rowNo, en, "引用关联源单明细不存在", null, totalQ));
                     continue;
                 }
                 BigDecimal srcQty = nz(srcEntry.getQty());
@@ -4617,13 +4727,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 {
                     maxAllowed = BigDecimal.ZERO;
                 }
-                BigDecimal q = nz(en.getQty());
-                if (q.compareTo(maxAllowed) > 0)
+                if (totalQ.compareTo(maxAllowed) > 0)
                 {
                     errors.add(docRefErrRow(rowNo, en,
-                        String.format("引用源单明细可再下推数量最多为 %s（源单数量 %s，其它单据已占用 %s），当前 %s",
-                            fmtQty(maxAllowed), fmtQty(srcQty), fmtQty(usedOthers), fmtQty(q)),
-                        maxAllowed, q));
+                        String.format("引用源单明细可再下推数量最多为 %s（源单数量 %s，其它单据已占用 %s），当前本单合计 %s",
+                            fmtQty(maxAllowed), fmtQty(srcQty), fmtQty(usedOthers), fmtQty(totalQ)),
+                        maxAllowed, totalQ));
                 }
             }
         }

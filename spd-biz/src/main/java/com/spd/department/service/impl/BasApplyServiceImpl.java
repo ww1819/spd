@@ -33,6 +33,7 @@ import com.spd.department.domain.BasApply;
 import com.spd.department.service.IBasApplyService;
 import com.spd.department.service.IWhWarehouseApplyService;
 import com.spd.department.vo.BasApplyOutboundRefVo;
+import com.spd.department.vo.WarehouseApplyReminderRowVo;
 
 /**
  * 科室申领Service业务层处理
@@ -152,6 +153,32 @@ public class BasApplyServiceImpl implements IBasApplyService
         }
         BigDecimal v = basApplyMapper.selectBasApplyEntryQtySum(basApply);
         return v != null ? v : BigDecimal.ZERO;
+    }
+
+    @Override
+    public long countPendingAuditApplyRequisition()
+    {
+        BasApply basApply = new BasApply();
+        basApply.setApplyBillStatus(1);
+        basApply.setBillType(1);
+        applyDepartmentScopeToQuery(basApply);
+        if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            basApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return basApplyMapper.selectBasApplyBillCount(basApply);
+    }
+
+    @Override
+    public List<WarehouseApplyReminderRowVo> selectWarehouseReminderApplyMonitorList()
+    {
+        BasApply basApply = new BasApply();
+        basApply.setBillType(1);
+        applyDepartmentScopeToQuery(basApply);
+        if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            basApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return basApplyMapper.selectWarehouseReminderApplyMonitorList(basApply);
     }
 
     /**

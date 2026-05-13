@@ -38,6 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="successfulPrice"    column="successful_price"    />
         <result property="salePrice"    column="sale_price"    />
         <result property="packageSpeci"    column="package_speci"    />
+        <result property="minPackageQty"    column="min_package_qty"    />
         <result property="producer"    column="producer"    />
         <result property="materialLevel"    column="material_level"    />
         <result property="registerLevel"    column="register_level"    />
@@ -130,7 +131,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             hci.spec_model as his_charge_item_speci,
             hci.price as his_charge_item_price,
             m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
-            m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.producer, m.material_level,
+            m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.min_package_qty, m.producer, m.material_level,
             m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
             m.function, m.is_way, m.udi_no, m.permit_no, m.country_no, m.country_name, m.description,
             m.is_use, m.is_procure, m.is_monitor, m.is_gz,
@@ -312,6 +313,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="successfulPrice != null">successful_price,</if>
             <if test="salePrice != null">sale_price,</if>
             <if test="packageSpeci != null">package_speci,</if>
+            <if test="minPackageQty != null">min_package_qty,</if>
             <if test="producer != null">producer,</if>
             <if test="materialLevel != null">material_level,</if>
             <if test="registerLevel != null">register_level,</if>
@@ -373,6 +375,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="successfulPrice != null">#{successfulPrice},</if>
             <if test="salePrice != null">#{salePrice},</if>
             <if test="packageSpeci != null">#{packageSpeci},</if>
+            <if test="minPackageQty != null">#{minPackageQty},</if>
             <if test="producer != null">#{producer},</if>
             <if test="materialLevel != null">#{materialLevel},</if>
             <if test="registerLevel != null">#{registerLevel},</if>
@@ -440,6 +443,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="successfulPrice != null">successful_price = #{successfulPrice},</if>
             <if test="salePrice != null">sale_price = #{salePrice},</if>
             <if test="packageSpeci != null">package_speci = #{packageSpeci},</if>
+            <if test="minPackageQty != null">min_package_qty = #{minPackageQty},</if>
             <if test="producer != null">producer = #{producer},</if>
             <if test="materialLevel != null">material_level = #{materialLevel},</if>
             <if test="registerLevel != null">register_level = #{registerLevel},</if>

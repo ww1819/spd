@@ -17,6 +17,8 @@ import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.StkIoProfitLoss;
 import com.spd.warehouse.domain.StkIoProfitLossEntry;
 import com.spd.warehouse.domain.StkInventory;
+import com.spd.warehouse.domain.StkIoStocktaking;
+import com.spd.warehouse.domain.StkIoStocktakingEntry;
 
 /**
  * 仓库/科室库存行上的耗材名称、规格、型号、厂家快照（与明细或档案一致时写入）。
@@ -330,6 +332,25 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, entry != null ? entry.getMaterialNameSnap() : null, fdMaterialMapper,
+            bill != null ? bill.getTenantId() : null);
+    }
+
+    /** 科室盘点审核直接改科室库存时写入 t_hc_ks_flow 的快照与单号 */
+    public static void enrichHcKsFlowAfterDeptStocktaking(HcKsFlow f, StkIoStocktaking bill, StkIoStocktakingEntry entry,
+        Long warehouseId, FdMaterialMapper fdMaterialMapper) {
+        if (f == null) {
+            return;
+        }
+        applyHcKsFlowDeptWhSnapshots(f, warehouseId, bill != null ? bill.getDepartmentId() : null);
+        if (bill != null) {
+            String stockNo = bill.getStockNo();
+            if (stockNo != null && !stockNo.isEmpty()) {
+                f.setBillNo(stockNo);
+            }
+        }
+        applyHcKsFlowNumericStrMirrors(f);
+        fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
+            entry != null ? entry.getMaterial() : null, null, fdMaterialMapper,
             bill != null ? bill.getTenantId() : null);
     }
 

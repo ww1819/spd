@@ -16,6 +16,7 @@ import com.spd.department.domain.DepPurchaseApplyEntry;
 import com.spd.department.mapper.DepPurchaseApplyMapper;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.service.IDepPurchaseApplyService;
+import com.spd.department.vo.WarehousePurchaseReminderRowVo;
 
 /**
  * 科室申购Service业务层处理
@@ -101,6 +102,30 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         BigDecimal v = depPurchaseApplyMapper.selectDepPurchaseApplyEntryQtySum(depPurchaseApply);
         return v != null ? v : BigDecimal.ZERO;
+    }
+
+    @Override
+    public long countPendingAuditPurchaseApply()
+    {
+        DepPurchaseApply depPurchaseApply = new DepPurchaseApply();
+        depPurchaseApply.setPurchaseBillStatus(1);
+        applyDepartmentScopeToQuery(depPurchaseApply);
+        if (StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return depPurchaseApplyMapper.selectDepPurchaseApplyBillCount(depPurchaseApply);
+    }
+
+    @Override
+    public List<WarehousePurchaseReminderRowVo> selectWarehouseReminderPurchaseMonitorList()
+    {
+        DepPurchaseApply q = new DepPurchaseApply();
+        applyDepartmentScopeToQuery(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return depPurchaseApplyMapper.selectWarehouseReminderPurchaseMonitorList(q);
     }
 
     /**
@@ -273,6 +298,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
      */
     @Override
     public int auditPurchaseApply(String id, String auditBy) {
+        auditBy = SecurityUtils.getUserIdStr();
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
         if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
@@ -325,6 +351,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
      */
     @Override
     public int confirmReceipt(String id, String confirmBy) {
+        confirmBy = SecurityUtils.getUserIdStr();
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
         if(depPurchaseApply == null){
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));

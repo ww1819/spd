@@ -403,6 +403,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setCreateBy(username);
                 InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
                 hcCkFlowMapper.insertHcCkFlow(flow);
+            } else {
                 // 盘盈：写入 stk_batch + stk_inventory，流水 lx=PY
                 StkInventory invProbe = null;
                 if (entry.getKcNo() != null) {
@@ -426,7 +427,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 StkInventory newInv = buildStkInventoryForProfit(bill, entry, stkBatch, addQty, now, username);
                 stkInventoryMapper.insertStkInventory(newInv);
 
-                flow = new HcCkFlow();
+                HcCkFlow flow = new HcCkFlow();
                 flow.setBillId(bill.getId());
                 flow.setEntryId(entry.getId());
                 flow.setWarehouseId(warehouseId);
@@ -456,6 +457,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 hcCkFlowMapper.insertHcCkFlow(flow);
 
                 stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), newInv.getId(), null);
+                syncSourceStocktakingEntryInventoryRefs(entry, newInv.getId(), null, username);
             }
         }
 
@@ -642,6 +644,24 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         hcKsFlowMapper.insertHcKsFlow(ksFlow);
 
         stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), null, newDep.getId());
+        syncSourceStocktakingEntryInventoryRefs(entry, null, newDep.getId(), username);
+    }
+
+    /**
+     * 盈亏审核生成库存后，回写来源盘点明细上的 kc_no / dep_inventory_id，便于按明细追溯实物行。
+     */
+    private void syncSourceStocktakingEntryInventoryRefs(StkIoProfitLossEntry plEntry, Long resultStkInventoryId,
+        Long resultDepInventoryId, String username) {
+        if (plEntry == null || plEntry.getStocktakingEntryId() == null) {
+            return;
+        }
+        if (resultStkInventoryId == null && resultDepInventoryId == null) {
+            return;
+        }
+        String kcStr = resultStkInventoryId != null ? String.valueOf(resultStkInventoryId) : null;
+        String depStr = resultDepInventoryId != null ? String.valueOf(resultDepInventoryId) : null;
+        stkIoStocktakingMapper.updateStocktakingEntryPostingInventoryRef(
+            plEntry.getStocktakingEntryId(), resultStkInventoryId, kcStr, depStr, username);
     }
 
     private Long resolveReturnWarehouseForDeptSurplus(StkIoProfitLossEntry entry) {

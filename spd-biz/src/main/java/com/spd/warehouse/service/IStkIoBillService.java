@@ -289,4 +289,11 @@ public interface IStkIoBillService
      */
     void exportCTKOverallDetailXlsx(StkIoBill stkIoBill, HttpServletResponse response) throws IOException;
 
+    /**
+     * 消息提醒：已审核出库至科室、收货未确认（与科室收货确认列表口径一致，最多 500 条）
+     */
+    List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList();
+
+    long countDepartmentUnreceivedReceiptReminder();
+
 }

@@ -190,7 +190,7 @@ public class EquipmentInfoController extends BaseController
                            "3. 数据格式不正确\n" +
                            "请检查Excel文件，确保列名与模板完全一致，并且至少填写资产编号、资产名称、规格或型号中的一项。");
             }
-            String operName = getUsername();
+            String operName = getUserIdStr();
             if (operName == null || operName.isEmpty())
             {
                 operName = "system";

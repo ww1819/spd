@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="auditBy"    column="audit_by"    />
         <result property="isFollowFlag"    column="is_follow_flag"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -84,7 +85,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectGzOrderVo">
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
 				gz.department_id, gz.apply_department_id,
-				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
+				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, gz.audit_by,
 				gz.is_follow_flag,
 				gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
@@ -104,7 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
 				gz.department_id, gz.apply_department_id,
-				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, 
+				gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, gz.audit_by,
 				gz.is_follow_flag,
 				gz.create_by,
 				gz.create_time, gz.update_by, gz.update_time, gz.remark,
@@ -140,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         group by gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id, gz.department_id, gz.apply_department_id,
-				gz.order_status, gz.order_type, gz.del_flag, gz.tenant_id, gz.audit_date, gz.is_follow_flag,
+				gz.order_status, gz.order_type, gz.del_flag, gz.tenant_id, gz.audit_date, gz.audit_by, gz.is_follow_flag,
 				gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,
 				s.id, s.code, s.name,
 				w.id, w.code, w.name,
@@ -158,7 +159,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, 
 				a.department_id, a.apply_department_id,
 				a.order_status, a.order_type, a.del_flag,
-                a.audit_date, 
+                a.audit_date, a.audit_by,
 				a.is_follow_flag,
 				a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.tenant_id,
 				ad.id adId, ad.code adCode, ad.name adName,
@@ -231,6 +232,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderType != null">order_type = #{orderType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="isFollowFlag != null">is_follow_flag = #{isFollowFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>

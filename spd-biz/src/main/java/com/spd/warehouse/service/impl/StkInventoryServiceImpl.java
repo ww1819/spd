@@ -1,6 +1,7 @@
 package com.spd.warehouse.service.impl;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.domain.StkInventory;
+import com.spd.warehouse.vo.WarehouseNearExpiryReminderRowVo;
 import com.spd.warehouse.service.IStkInventoryService;
 
 /**
@@ -205,11 +207,50 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     }
 
     @Override
+    public List<Map<String, Object>> selectWarehouseInventoryAlertReminderList()
+    {
+        StkInventory q = new StkInventory();
+        q.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
+        q.setAlertStatus("1");
+        List<Map<String, Object>> list = stkInventoryMapper.selectInventoryAlertList(q);
+        if (list == null || list.isEmpty())
+        {
+            return list;
+        }
+        if (list.size() <= 500)
+        {
+            return list;
+        }
+        return new ArrayList<>(list.subList(0, 500));
+    }
+
+    @Override
+    public int countWarehouseInventoryAlertReminderLines()
+    {
+        StkInventory q = new StkInventory();
+        q.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
+        q.setAlertStatus("1");
+        return stkInventoryMapper.countInventoryAlertList(q);
+    }
+
+    @Override
     public List<Map<String, Object>> selectExpiryAlertList(StkInventory stkInventory) {
         if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
             stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         return stkInventoryMapper.selectExpiryAlertList(stkInventory);
+    }
+
+    @Override
+    public List<WarehouseNearExpiryReminderRowVo> selectWarehouseNearExpiryReminderList()
+    {
+        return stkInventoryMapper.selectWarehouseNearExpiryReminderList(SecurityUtils.requiredScopedTenantIdForSql());
+    }
+
+    @Override
+    public int countWarehouseNearExpiryReminderLines()
+    {
+        return stkInventoryMapper.countWarehouseNearExpiryReminderList(SecurityUtils.requiredScopedTenantIdForSql());
     }
 
 }

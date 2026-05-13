@@ -146,7 +146,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
      */
     private void validateAndWritePushCodeSnapshots(List<Long> ids)
     {
-        String updateBy = SecurityUtils.getUsername();
+        String updateBy = SecurityUtils.getUserIdStr();
         for (Long id : ids)
         {
             PurchaseOrder po = purchaseOrderService.selectPurchaseOrderById(id);
@@ -182,7 +182,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
         {
             return;
         }
-        String updateBy = SecurityUtils.getUsername();
+        String updateBy = SecurityUtils.getUserIdStr();
         boolean ok = remote != null && remote.isSuccess();
         String err = remote != null && remote.get(AjaxResult.MSG_TAG) != null ? String.valueOf(remote.get(AjaxResult.MSG_TAG)) : null;
         String status = ok ? "1" : "2";

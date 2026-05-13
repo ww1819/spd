@@ -158,6 +158,16 @@ public class StkDepInventory extends BaseEntity
     /** 低值定数包院内码（出库审核生成） */
     private String lvInhospitalPackageCode;
 
+    /**
+     * 查询参数：1 时仅返回「科室库存预警设置」中已触发下限或上限的耗材批次行（按科室+耗材汇总数量与阈值比较）
+     */
+    private Integer depInventoryAlertOnly;
+
+    /**
+     * 查询参数：非空时仅返回有效效期在「今天～今天+N 天」内到期的批次（N 为本字段值；与仓库近效期提醒 30 天口径一致）
+     */
+    private Integer depInventoryNearExpiryDays;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -392,6 +402,8 @@ public class StkDepInventory extends BaseEntity
             .append("material", getMaterial())
             .append("department", getDepartment())
             .append("tenantId", getTenantId())
+            .append("depInventoryAlertOnly", getDepInventoryAlertOnly())
+            .append("depInventoryNearExpiryDays", getDepInventoryNearExpiryDays())
             .toString();
     }
 
@@ -514,4 +526,24 @@ public class StkDepInventory extends BaseEntity
 
     public String getLvInhospitalPackageCode() { return lvInhospitalPackageCode; }
     public void setLvInhospitalPackageCode(String lvInhospitalPackageCode) { this.lvInhospitalPackageCode = lvInhospitalPackageCode; }
+
+    public Integer getDepInventoryAlertOnly()
+    {
+        return depInventoryAlertOnly;
+    }
+
+    public void setDepInventoryAlertOnly(Integer depInventoryAlertOnly)
+    {
+        this.depInventoryAlertOnly = depInventoryAlertOnly;
+    }
+
+    public Integer getDepInventoryNearExpiryDays()
+    {
+        return depInventoryNearExpiryDays;
+    }
+
+    public void setDepInventoryNearExpiryDays(Integer depInventoryNearExpiryDays)
+    {
+        this.depInventoryNearExpiryDays = depInventoryNearExpiryDays;
+    }
 }

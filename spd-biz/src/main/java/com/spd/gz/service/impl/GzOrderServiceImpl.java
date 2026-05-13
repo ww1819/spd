@@ -175,6 +175,21 @@ public class GzOrderServiceImpl implements IGzOrderService
     {
         gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
+        // 未审核(1)：保存时将制单人记为当前登录用户（与界面当前操作人一致）；已审核等不改动制单人/制单时间
+        Integer st = gzOrder.getOrderStatus();
+        if (st == null && gzOrder.getId() != null) {
+            GzOrder existing = gzOrderMapper.selectGzOrderById(gzOrder.getId());
+            if (existing != null) {
+                st = existing.getOrderStatus();
+            }
+        }
+        boolean pending = st != null && Integer.valueOf(1).equals(st);
+        if (pending) {
+            gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
+        } else {
+            gzOrder.setCreateBy(null);
+        }
+        gzOrder.setCreateTime(null);
         syncGzOrderEntry(gzOrder);
         alignActiveGzOrderEntriesSupplierFromHeader(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);

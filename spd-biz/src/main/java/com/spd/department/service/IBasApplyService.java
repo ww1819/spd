@@ -3,6 +3,7 @@ package com.spd.department.service;
 import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.BasApply;
+import com.spd.department.vo.WarehouseApplyReminderRowVo;
 
 /**
  * 科室申领Service接口
@@ -32,6 +33,16 @@ public interface IBasApplyService
      * 按条件汇总申领明细数量（首页今日统计等，一条 SQL）
      */
     BigDecimal selectBasApplyEntryQtySum(BasApply basApply);
+
+    /**
+     * 待审核申领单（bill_type=1）数量：与申领列表/审核列表同一科室数据范围与租户口径。
+     */
+    long countPendingAuditApplyRequisition();
+
+    /**
+     * 消息提醒待出库申领单列表（科室范围与申领列表一致，仅登录即可由看板接口转发）。
+     */
+    List<WarehouseApplyReminderRowVo> selectWarehouseReminderApplyMonitorList();
 
     /**
      * 按当前用户科室数据范围写入查询条件（非租户管理员须限制；须在 PageHelper.startPage 之前调用）。

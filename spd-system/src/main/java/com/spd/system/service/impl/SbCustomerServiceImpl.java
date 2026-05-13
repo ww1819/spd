@@ -731,6 +731,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   /**
    * 耗材功能重置：仅下发「客户名下」默认开放的功能菜单（{@link #resolveDefaultMaterialMenuIds}），不含平台独占菜单；
    * 若 super 岗位、super_01 或其关联、tenant_id 缺失，则自动补齐并回填租户字段，保证管理员组用户可见租户内全部仓库与科室（见 {@link com.spd.system.service.ITenantScopeService#isTenantSuper}）。
+   * 重置写入 hc_customer_menu 后，会删除该租户下所有工作组、所有用户中已不在客户菜单范围内的 sys_post_menu、hc_user_permission_menu、sys_user_menu 记录，再为 super_01 回填 sys_user_menu。
    */
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -814,6 +815,11 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (!hcUserMenus.isEmpty()) {
       hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
     }
+
+    // 与「耗材客户权限」保存一致：重置后的 hc_customer_menu 为唯一真源，清理该租户下所有岗位/用户仍挂着的越权菜单
+    sysPostMenuMapper.deletePostMenusNotInHcCustomerMenus(customerId);
+    hcUserPermissionMenuMapper.deleteHcUserPermissionMenusNotInHcCustomerMenus(customerId);
+    sysUserMenuMapper.deleteUserMenusNotInHcCustomerMenus(customerId);
 
     syncSysUserMenusForMaterial(super01.getUserId(), materialMenuIds, customerId);
   }

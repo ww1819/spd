@@ -108,12 +108,18 @@ public class FdMaterialController extends BaseController
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/listDeptSafe")
-    public List<Map<String, Object>> listDeptSafe(@RequestParam(value = "name", required = false) String name)
+    public List<Map<String, Object>> listDeptSafe(
+        @RequestParam(value = "name", required = false) String name,
+        @RequestParam(value = "isGz", required = false) String isGz)
     {
         FdMaterial query = new FdMaterial();
         if (StringUtils.isNotEmpty(name))
         {
             query.setName(name.trim());
+        }
+        if (StringUtils.isNotEmpty(isGz))
+        {
+            query.setIsGz(isGz);
         }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         // 业务选耗材：再次排除已删除、已停用（与定数申购等入口一致，避免仅 SQL 时遗漏）
@@ -141,6 +147,7 @@ public class FdMaterialController extends BaseController
             item.put("speci", material.getSpeci());
             item.put("model", material.getModel());
             item.put("brand", material.getBrand());
+            item.put("isGz", material.getIsGz());
             safeList.add(item);
         }
         return safeList;
@@ -332,7 +339,7 @@ public class FdMaterialController extends BaseController
             return error("耗材不存在");
         }
         db.setHisChargeItemId(chargeItemId);
-        db.setUpdateBy(getUsername());
+        db.setUpdateBy(getUserIdStr());
         return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
@@ -359,7 +366,7 @@ public class FdMaterialController extends BaseController
             return error("耗材不存在");
         }
         db.setHisChargeItemId(null);
-        db.setUpdateBy(getUsername());
+        db.setUpdateBy(getUserIdStr());
         return toAjax(fdMaterialService.updateFdMaterial(db));
     }
 
@@ -536,7 +543,7 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<FdMaterial> util = new ExcelUtil<FdMaterial>(FdMaterial.class);
         List<FdMaterial> fdmaterialList = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdMaterialService.importFdMaterial(fdmaterialList, updateSupport, operName);
         return success(message);
     }
@@ -608,7 +615,7 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
         List<MaterialImportAddDto> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdMaterialService.importMaterialImportAdd(list, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
@@ -621,7 +628,7 @@ public class FdMaterialController extends BaseController
     {
         ExcelUtil<MaterialImportUpdateDto> util = new ExcelUtil<>(MaterialImportUpdateDto.class);
         List<MaterialImportUpdateDto> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdMaterialService.importMaterialImportUpdate(list, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }

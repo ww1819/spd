@@ -136,6 +136,10 @@ public class FdMaterial extends BaseEntity
     @Excel(name = "包装规格")
     private String packageSpeci;
 
+    /** 最小包装数（每最小包装所含数量，如 10 支/盒；可为空） */
+    @Excel(name = "最小包装数", width = 14, align = HorizontalAlignment.RIGHT, handler = FixedDecimalExcelHandler.class, args = { "4" })
+    private BigDecimal minPackageQty;
+
     /**  产地 */
     @Excel(name = " 产地")
     private String producer;

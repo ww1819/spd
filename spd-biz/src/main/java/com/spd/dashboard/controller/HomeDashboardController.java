@@ -28,10 +28,15 @@ import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.department.domain.BasApply;
+import com.spd.department.vo.WarehouseApplyReminderRowVo;
+import com.spd.department.vo.WarehousePurchaseReminderRowVo;
+import com.spd.warehouse.vo.WarehouseNearExpiryReminderRowVo;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IBasApplyService;
 import com.spd.department.service.IDepPurchaseApplyService;
+import com.spd.department.service.IStkDepInventoryService;
+import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.service.IFdWarehouseService;
@@ -70,6 +75,9 @@ public class HomeDashboardController extends BaseController
 
     @Autowired
     private IStkInventoryService stkInventoryService;
+
+    @Autowired
+    private IStkDepInventoryService stkDepInventoryService;
 
     /**
      * 仓库采购情况图：按仓库、按月的入退货金额合计 + 出退库金额合计（与首页原逻辑一致：纯日期区间）。
@@ -315,6 +323,99 @@ public class HomeDashboardController extends BaseController
         body.put("applyCount", applySum != null ? applySum : BigDecimal.ZERO);
         body.put("purchaseCount", purchaseSum != null ? purchaseSum : BigDecimal.ZERO);
         body.put("inventoryQty", tableTotalQty(invTotal));
+        return success(body);
+    }
+
+    /**
+     * 仓库消息提醒：当前用户科室数据范围内，待审核申领单（bill_type=1）与待审核申购单单据数（与各自审核列表口径一致）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/warehouseReminderCounts")
+    public AjaxResult warehouseReminderCounts()
+    {
+        long pendingApply = basApplyService.countPendingAuditApplyRequisition();
+        long pendingPurchase = depPurchaseApplyService.countPendingAuditPurchaseApply();
+        long nearExpiryLines = stkInventoryService.countWarehouseNearExpiryReminderLines();
+        long inventoryAlertLines = stkInventoryService.countWarehouseInventoryAlertReminderLines();
+        Map<String, Object> body = new HashMap<>(8);
+        body.put("pendingApplyBillCount", pendingApply);
+        body.put("pendingPurchaseBillCount", pendingPurchase);
+        body.put("nearExpiryInventoryLineCount", nearExpiryLines);
+        body.put("inventoryAlertLineCount", inventoryAlertLines);
+        return success(body);
+    }
+
+    /**
+     * 消息提醒：待出库申领单列表（含关联已审核出库时间），仅登录；科室数据范围与申领列表一致。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/warehouseReminderApplyList")
+    public AjaxResult warehouseReminderApplyList()
+    {
+        List<WarehouseApplyReminderRowVo> list = basApplyService.selectWarehouseReminderApplyMonitorList();
+        return success(list);
+    }
+
+    /**
+     * 消息提醒：科室申购监控列表（待审核/已审核，仅登录；科室数据范围与申购审核列表一致）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/warehouseReminderPurchaseList")
+    public AjaxResult warehouseReminderPurchaseList()
+    {
+        List<WarehousePurchaseReminderRowVo> list = depPurchaseApplyService.selectWarehouseReminderPurchaseMonitorList();
+        return success(list);
+    }
+
+    /**
+     * 消息提醒：仓库库存近效期明细（有效期距今天在 30 天及以内且未过期，仅登录）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/warehouseReminderNearExpiryList")
+    public AjaxResult warehouseReminderNearExpiryList()
+    {
+        List<WarehouseNearExpiryReminderRowVo> list = stkInventoryService.selectWarehouseNearExpiryReminderList();
+        return success(list);
+    }
+
+    /**
+     * 消息提醒：库存预警明细（与库存查询「库存预警」一致，仅「预警」行，最多 500 条，仅登录）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/warehouseReminderInventoryAlertList")
+    public AjaxResult warehouseReminderInventoryAlertList()
+    {
+        List<Map<String, Object>> list = stkInventoryService.selectWarehouseInventoryAlertReminderList();
+        return success(list);
+    }
+
+    /**
+     * 科室消息提醒：未收货确认的已审核出库单（与「科室收货确认」列表口径一致；billCount 为全量计数，bills 最多 500 条）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/departmentReminderUnreceivedReceipt")
+    public AjaxResult departmentReminderUnreceivedReceipt()
+    {
+        long billCount = stkIoBillService.countDepartmentUnreceivedReceiptReminder();
+        List<StkIoBill> bills = stkIoBillService.selectDepartmentUnreceivedReceiptReminderList();
+        Map<String, Object> body = new HashMap<>(4);
+        body.put("billCount", billCount);
+        body.put("bills", bills);
+        return success(body);
+    }
+
+    /**
+     * 消息提醒：科室近效期库存明细（与科室库存查询「近效期」一致；lineCount 全量，lines 最多 500 条）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/departmentReminderNearExpiryList")
+    public AjaxResult departmentReminderNearExpiryList()
+    {
+        long lineCount = stkDepInventoryService.countDepartmentNearExpiryReminderMonitor();
+        List<DepartmentNearExpiryReminderRowVo> lines = stkDepInventoryService.selectDepartmentNearExpiryReminderMonitorList();
+        Map<String, Object> body = new HashMap<>(4);
+        body.put("lineCount", lineCount);
+        body.put("lines", lines);
         return success(body);
     }
 

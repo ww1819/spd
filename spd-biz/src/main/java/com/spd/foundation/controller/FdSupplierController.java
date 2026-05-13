@@ -155,7 +155,7 @@ public class FdSupplierController extends BaseController
     {
         ExcelUtil<FdSupplier> util = new ExcelUtil<FdSupplier>(FdSupplier.class);
         List<FdSupplier> list = util.importExcel(file.getInputStream());
-        String operName = getUsername();
+        String operName = getUserIdStr();
         String message = fdSupplierService.importFdSupplier(list, updateSupport, operName, confirm);
         return AjaxResult.success(message, ExcelUtil.buildImportCommitSummaryMap(list != null ? list.size() : 0));
     }
@@ -233,7 +233,7 @@ public class FdSupplierController extends BaseController
             FdSupplier existing = fdSupplierService.selectFdSupplierById(row.getId());
             existing.setName(row.getName().trim());
             existing.setReferredCode(PinyinUtils.getPinyinInitials(existing.getName()));
-            existing.setUpdateBy(getUsername());
+            existing.setUpdateBy(getUserIdStr());
             fdSupplierService.updateFdSupplier(existing);
             successNum++;
         }

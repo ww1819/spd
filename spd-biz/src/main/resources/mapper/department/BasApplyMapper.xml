@@ -419,4 +419,67 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billType != null"> and COALESCE(a.bill_type, 1) = #{billType}</if>
         <include refid="basApplyDepartmentScopeFilter"/>
     </select>
+
+    <!-- 与 selectBasApplyList 条件一致，仅统计主表行数（首页仓库提醒等） -->
+    <select id="selectBasApplyBillCount" parameterType="BasApply" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from bas_apply a
+        <where>
+            <if test="applyBillNo != null  and applyBillNo != ''"> and a.apply_bill_no = #{applyBillNo}</if>
+            <if test="applyBillDate != null "> and a.apply_bill_date = #{applyBillDate}</if>
+            <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null "> and a.department_id = #{departmentId}</if>
+            <if test="userId != null "> and a.user_id = #{userId}</if>
+            <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
+            <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
+            <include refid="basApplyDepartmentScopeFilter"/>
+            and a.tenant_id = #{scopedTenantId}
+            and (a.del_flag = 0 or a.del_flag is null)
+        </where>
+    </select>
+
+    <!-- 消息提醒：申领单 + 关联已审核出库（bill_type=201、bill_status=2）最新审核时间 -->
+    <select id="selectWarehouseReminderApplyMonitorList" parameterType="BasApply" resultType="com.spd.department.vo.WarehouseApplyReminderRowVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            a.id as id,
+            a.apply_bill_no as applyBillNo,
+            a.create_time as createTime,
+            d.name as departmentName,
+            COALESCE((
+                select SUM(IFNULL(entry.amt, 0))
+                from bas_apply_entry entry
+                where entry.paren_id = a.id and entry.tenant_id = a.tenant_id
+                  and (entry.del_flag is null or entry.del_flag != 1)
+            ), 0) as totalAmount,
+            COALESCE(NULLIF(TRIM(cu.nick_name), ''), cu.user_name) as creatorName,
+            a.apply_bill_status as applyBillStatus,
+            (
+                select max(b.audit_date)
+                from wh_wh_apply_ck_entry_ref r
+                inner join wh_warehouse_apply_entry e on e.id = r.wh_apply_entry_id and e.tenant_id = r.tenant_id
+                left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+                where e.bas_apply_id = cast(a.id as char)
+                  and r.tenant_id = a.tenant_id
+                  and r.del_flag = 0 and r.link_status = 1
+                  and (e.del_flag = 0 or e.del_flag is null)
+                  and b.id is not null
+                  and b.bill_type = 201
+                  and b.bill_status = 2
+                  and (b.del_flag is null or b.del_flag != 1)
+            ) as lastOutboundAuditDate
+        from bas_apply a
+        left join fd_department d on a.department_id = d.id
+        left join sys_user cu on a.create_by = cu.user_id
+        <where>
+            a.tenant_id = #{scopedTenantId}
+            and (a.del_flag = 0 or a.del_flag is null)
+            and COALESCE(a.bill_type, 1) = 1
+            and a.apply_bill_status in (1, 2)
+            and upper(a.apply_bill_no) like 'SL%'
+            <include refid="basApplyDepartmentScopeFilter"/>
+        </where>
+        order by a.create_time desc
+        limit 500
+    </select>
 </mapper>

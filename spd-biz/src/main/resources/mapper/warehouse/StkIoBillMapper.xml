@@ -291,6 +291,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and stk.tenant_id = #{scopedTenantId}
         <include refid="stkIoBillDepartmentScopeFilter"/>
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
+        <if test="refBillNo != null and refBillNo != ''"> and stk.ref_bill_no = #{refBillNo}</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
@@ -333,6 +334,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             case when stk.bill_status = 2 then stk.audit_date else null end desc,
             case when stk.bill_status = 2 then null else stk.create_time end desc,
             stk.id desc
+    </select>
+
+    <select id="selectDepartmentUnreceivedReceiptReminderList" parameterType="StkIoBill" resultMap="StkIoBillResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectStkIoBillVo"/>
+        where stk.del_flag != 1
+        and stk.tenant_id = #{scopedTenantId}
+        and stk.bill_type = 201
+        and stk.bill_status = 2
+        and stk.receipt_confirm_status = 0
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+        order by stk.audit_date desc, stk.id desc
+        limit 500
+    </select>
+
+    <select id="countDepartmentUnreceivedReceiptReminder" parameterType="StkIoBill" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from stk_io_bill stk
+        where stk.del_flag != 1
+        and stk.tenant_id = #{scopedTenantId}
+        and stk.bill_type = 201
+        and stk.bill_status = 2
+        and stk.receipt_confirm_status = 0
+        <include refid="stkIoBillDepartmentScopeFilter"/>
     </select>
 
     <!-- 出库单按单导出（bill_type=201），扁平行 -->
