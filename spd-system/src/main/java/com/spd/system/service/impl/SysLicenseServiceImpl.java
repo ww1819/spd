@@ -3,6 +3,7 @@ package com.spd.system.service.impl;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 import org.apache.commons.io.IOUtils;
@@ -13,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spd.common.constant.HttpStatus;
 import com.spd.common.exception.ServiceException;
@@ -54,7 +57,28 @@ public class SysLicenseServiceImpl implements ISysLicenseService
 
     private volatile PublicKey cachedPublicKey;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    /** 与注册码 JSON 兼容：忽略未知字段，避免历史库中多余键导致解析失败 */
+    private final ObjectMapper objectMapper = buildLicenseObjectMapper();
+
+    private static ObjectMapper buildLicenseObjectMapper()
+    {
+        ObjectMapper m = new ObjectMapper();
+        m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return m;
+    }
+
+    /** 运行时校验结果：denyCode 非空表示拦截；trustedExpiry 在已解析载荷时给出（含已过期场景便于展示） */
+    private static final class StoredEval
+    {
+        private final Integer denyCode;
+        private final Instant trustedExpiry;
+
+        private StoredEval(Integer denyCode, Instant trustedExpiry)
+        {
+            this.denyCode = denyCode;
+            this.trustedExpiry = trustedExpiry;
+        }
+    }
 
     private PublicKey getOrLoadPublicKey()
     {
@@ -126,6 +150,106 @@ public class SysLicenseServiceImpl implements ISysLicenseService
         return row;
     }
 
+    /**
+     * 校验载荷与当前系统（医院名 / 实例 ID）；与导入注册码、运行时验签共用。
+     */
+    private void validatePayloadBinding(LicensePayload payload, SysLicense row)
+    {
+        if (payload.isHospitalBinding())
+        {
+            SysConfig hospitalCfg = sysConfigService.selectConfigById(SYS_CONFIG_ID_HOSPITAL_NAME);
+            if (hospitalCfg == null || StringUtils.isEmpty(hospitalCfg.getConfigValue()))
+            {
+                throw new ServiceException("医院名称错误");
+            }
+            String dbName = LicensePayload.normalizeHospitalName(hospitalCfg.getConfigValue());
+            String licName = LicensePayload.normalizeHospitalName(payload.getHospitalName());
+            if (StringUtils.isEmpty(dbName) || !dbName.equals(licName))
+            {
+                throw new ServiceException("医院名称错误");
+            }
+        }
+        else if (LicenseCrypto.isInstanceBinding(payload))
+        {
+            if (StringUtils.isEmpty(payload.getInstanceId()) || !payload.getInstanceId().equals(row.getInstanceId()))
+            {
+                throw new ServiceException("注册码与当前数据库实例不匹配");
+            }
+        }
+        else
+        {
+            throw new ServiceException("不支持的授权版本或载荷");
+        }
+    }
+
+    /** @return null 表示绑定通过 */
+    private Integer bindingDenyOrNull(LicensePayload payload, SysLicense row)
+    {
+        try
+        {
+            validatePayloadBinding(payload, row);
+            return null;
+        }
+        catch (ServiceException e)
+        {
+            return HttpStatus.LICENSE_INVALID;
+        }
+    }
+
+    /**
+     * 从库中读取 payload_json、signature，验签并以载荷中的到期时间为准（不信任单独篡改的 expire_time 列）。
+     */
+    private StoredEval evaluateStoredLicense(SysLicense row, PublicKey publicKey)
+    {
+        if (StringUtils.isEmpty(row.getPayloadJson()) || StringUtils.isEmpty(row.getSignature()))
+        {
+            return new StoredEval(HttpStatus.LICENSE_NOT_ACTIVATED, null);
+        }
+        LicensePayload payload;
+        byte[] sigBytes;
+        try
+        {
+            payload = objectMapper.readValue(row.getPayloadJson().trim(), LicensePayload.class);
+            sigBytes = Base64.getDecoder().decode(row.getSignature().trim());
+        }
+        catch (Exception e)
+        {
+            log.debug("解析 sys_license 中 payload/signature 失败: {}", e.toString());
+            return new StoredEval(HttpStatus.LICENSE_INVALID, null);
+        }
+        try
+        {
+            if (!LicenseCrypto.verify(payload, sigBytes, publicKey))
+            {
+                return new StoredEval(HttpStatus.LICENSE_INVALID, null);
+            }
+        }
+        catch (Exception e)
+        {
+            log.debug("sys_license 验签异常: {}", e.toString());
+            return new StoredEval(HttpStatus.LICENSE_INVALID, null);
+        }
+        Integer bindDeny = bindingDenyOrNull(payload, row);
+        if (bindDeny != null)
+        {
+            return new StoredEval(bindDeny, null);
+        }
+        Instant expireInstant;
+        try
+        {
+            expireInstant = LicenseCrypto.parseExpireInstant(payload);
+        }
+        catch (Exception e)
+        {
+            return new StoredEval(HttpStatus.LICENSE_INVALID, null);
+        }
+        if (expireInstant.isBefore(Instant.now()))
+        {
+            return new StoredEval(HttpStatus.LICENSE_EXPIRED, expireInstant);
+        }
+        return new StoredEval(null, expireInstant);
+    }
+
     @Override
     public boolean isCurrentlyValid()
     {
@@ -149,16 +273,7 @@ public class SysLicenseServiceImpl implements ISysLicenseService
             log.error("读取 sys_license 失败", e);
             return HttpStatus.LICENSE_NOT_ACTIVATED;
         }
-        if (row.getExpireTime() == null)
-        {
-            return HttpStatus.LICENSE_NOT_ACTIVATED;
-        }
-        long now = System.currentTimeMillis();
-        if (row.getExpireTime().getTime() < now)
-        {
-            return HttpStatus.LICENSE_EXPIRED;
-        }
-        return null;
+        return evaluateStoredLicense(row, getOrLoadPublicKey()).denyCode;
     }
 
     @Override
@@ -173,6 +288,10 @@ public class SysLicenseServiceImpl implements ISysLicenseService
         {
             return "离线授权已过期，请导入新的注册码";
         }
+        if (Integer.valueOf(HttpStatus.LICENSE_INVALID).equals(code))
+        {
+            return "离线授权校验失败，请重新导入注册码";
+        }
         if (getOrLoadPublicKey() == null)
         {
             return "未配置离线授权公钥（license/public.pem），系统无法校验授权";
@@ -186,19 +305,38 @@ public class SysLicenseServiceImpl implements ISysLicenseService
         SysLicense row = ensureLicenseRow();
         LicenseStatusVo vo = new LicenseStatusVo();
         vo.setInstanceId(row.getInstanceId());
-        vo.setExpireTime(row.getExpireTime());
-        vo.setActivated(row.getExpireTime() != null);
-        vo.setValid(isCurrentlyValid());
+        vo.setActivated(StringUtils.isNotEmpty(row.getPayloadJson()) && StringUtils.isNotEmpty(row.getSignature()));
+        PublicKey pk = getOrLoadPublicKey();
+        if (pk != null)
+        {
+            StoredEval ev = evaluateStoredLicense(row, pk);
+            vo.setValid(ev.denyCode == null);
+            if (ev.trustedExpiry != null)
+            {
+                vo.setExpireTime(Date.from(ev.trustedExpiry));
+            }
+            else
+            {
+                vo.setExpireTime(row.getExpireTime());
+            }
+        }
+        else
+        {
+            vo.setValid(false);
+            vo.setExpireTime(row.getExpireTime());
+        }
         return vo;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void activate(String licenseCode, String customerId, String updateBy)
     {
         applyLicenseAfterVerify(licenseCode, customerId, "hc", updateBy);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void activateAnonymousFromLogin(String licenseCode, String customerId, String systemType)
     {
         applyLicenseAfterVerify(licenseCode, customerId, systemType, "login");
@@ -243,31 +381,7 @@ public class SysLicenseServiceImpl implements ISysLicenseService
             throw new ServiceException("注册码校验异常");
         }
 
-        if (payload.isHospitalBinding())
-        {
-            SysConfig hospitalCfg = sysConfigService.selectConfigById(SYS_CONFIG_ID_HOSPITAL_NAME);
-            if (hospitalCfg == null || StringUtils.isEmpty(hospitalCfg.getConfigValue()))
-            {
-                throw new ServiceException("医院名称错误");
-            }
-            String dbName = LicensePayload.normalizeHospitalName(hospitalCfg.getConfigValue());
-            String licName = LicensePayload.normalizeHospitalName(payload.getHospitalName());
-            if (StringUtils.isEmpty(dbName) || !dbName.equals(licName))
-            {
-                throw new ServiceException("医院名称错误");
-            }
-        }
-        else if (LicenseCrypto.isInstanceBinding(payload))
-        {
-            if (StringUtils.isEmpty(payload.getInstanceId()) || !payload.getInstanceId().equals(row.getInstanceId()))
-            {
-                throw new ServiceException("注册码与当前数据库实例不匹配");
-            }
-        }
-        else
-        {
-            throw new ServiceException("不支持的授权版本或载荷");
-        }
+        validatePayloadBinding(payload, row);
 
         java.time.Instant expireInstant;
         try
@@ -293,13 +407,23 @@ public class SysLicenseServiceImpl implements ISysLicenseService
             payloadJson = null;
         }
         String sigB64 = Base64.getEncoder().encodeToString(sigBytes);
-        SysLicense upd = new SysLicense();
-        upd.setId(LICENSE_ROW_ID);
-        upd.setExpireTime(expireDate);
-        upd.setPayloadJson(payloadJson);
-        upd.setSignature(sigB64);
-        upd.setUpdateBy(updateBy);
-        upd.setUpdateTime(new Date());
-        sysLicenseMapper.updateSysLicenseActivation(upd);
+        String instanceId = row.getInstanceId();
+        if (StringUtils.isEmpty(instanceId))
+        {
+            instanceId = IdUtils.fastUUID();
+        }
+        sysLicenseMapper.deleteSysLicenseById(LICENSE_ROW_ID);
+        Date now = new Date();
+        SysLicense insert = new SysLicense();
+        insert.setId(LICENSE_ROW_ID);
+        insert.setInstanceId(instanceId);
+        insert.setExpireTime(expireDate);
+        insert.setPayloadJson(payloadJson);
+        insert.setSignature(sigB64);
+        insert.setCreateBy(updateBy);
+        insert.setCreateTime(now);
+        insert.setUpdateBy(updateBy);
+        insert.setUpdateTime(now);
+        sysLicenseMapper.insertSysLicense(insert);
     }
 }

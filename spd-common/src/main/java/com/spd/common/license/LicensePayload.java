@@ -2,6 +2,7 @@ package com.spd.common.license;
 
 import java.io.Serializable;
 import java.text.Normalizer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.spd.common.utils.StringUtils;
 
 /**
@@ -76,7 +77,10 @@ public class LicensePayload implements Serializable
         this.expireAt = expireAt;
     }
 
-    /** 是否按医院名称签名的 v2 载荷 */
+    /**
+     * 是否按医院名称签名的 v2 载荷（计算属性，勿参与 JSON 序列化，否则落库后反序列化会因无 setter 失败）
+     */
+    @JsonIgnore
     public boolean isHospitalBinding()
     {
         return version >= 2 && StringUtils.isNotEmpty(hospitalName);
