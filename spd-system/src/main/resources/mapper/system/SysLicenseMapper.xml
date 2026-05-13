@@ -38,6 +38,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         )
     </insert>
 
+    <delete id="deleteSysLicenseById" parameterType="Long">
+        delete from sys_license where id = #{id}
+    </delete>
+
     <update id="updateSysLicenseActivation" parameterType="SysLicense">
         update sys_license
         set expire_time = #{expireTime},
