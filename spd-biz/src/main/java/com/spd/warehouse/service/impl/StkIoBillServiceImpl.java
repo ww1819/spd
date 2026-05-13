@@ -2079,6 +2079,27 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public List<Map<String, Object>> selectHomeWarehousePurchaseMonthAgg(java.util.Date beginDate, java.util.Date endDate,
+        List<Long> warehouseIds)
+    {
+        if (warehouseIds == null || warehouseIds.isEmpty() || beginDate == null || endDate == null)
+        {
+            return new java.util.ArrayList<>();
+        }
+        return stkIoBillMapper.selectHomeWarehousePurchaseMonthAgg(beginDate, endDate, warehouseIds);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(Date beginDate, Date endDate)
+    {
+        if (beginDate == null || endDate == null)
+        {
+            return new java.util.ArrayList<>();
+        }
+        return stkIoBillMapper.selectHomeDepartmentReceiveYearMonthAgg(beginDate, endDate);
+    }
+
+    @Override
     public TotalInfo selectCTKStkIoBillListSummaryTotal(StkIoBill stkIoBill) {
         if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());

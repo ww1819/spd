@@ -1,5 +1,6 @@
 package com.spd.department.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -86,6 +87,11 @@ public interface IDeptBatchConsumeService
      * @return 合计
      */
     TotalInfo selectAuditedConsumeReportTotal(DeptBatchConsume deptBatchConsume);
+
+    /**
+     * 首页科室使用图：按消耗单日期所在月聚合全年已审核消耗（租户级）
+     */
+    List<Map<String, Object>> selectHomeDepartmentConsumeYearMonthAgg(Date beginDate, Date endDate);
 
     /**
      * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）

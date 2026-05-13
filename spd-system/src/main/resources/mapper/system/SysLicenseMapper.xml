@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SysLicenseMapper">
+
+    <resultMap type="SysLicense" id="SysLicenseResult">
+        <id     property="id"            column="id" />
+        <result property="instanceId"   column="instance_id" />
+        <result property="expireTime"    column="expire_time" />
+        <result property="payloadJson" column="payload_json" />
+        <result property="signature"    column="signature" />
+        <result property="createBy"    column="create_by" />
+        <result property="createTime"  column="create_time" />
+        <result property="updateBy"    column="update_by" />
+        <result property="updateTime"  column="update_time" />
+        <result property="remark"      column="remark" />
+    </resultMap>
+
+    <sql id="selectSysLicenseVo">
+        select id, instance_id, expire_time, payload_json, signature,
+               create_by, create_time, update_by, update_time, remark
+        from sys_license
+    </sql>
+
+    <select id="selectSysLicenseById" parameterType="Long" resultMap="SysLicenseResult">
+        <include refid="selectSysLicenseVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertSysLicense" parameterType="SysLicense">
+        insert into sys_license (
+            id, instance_id, expire_time, payload_json, signature,
+            create_by, create_time, update_by, update_time, remark
+        ) values (
+            #{id}, #{instanceId}, #{expireTime}, #{payloadJson}, #{signature},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateSysLicenseActivation" parameterType="SysLicense">
+        update sys_license
+        set expire_time = #{expireTime},
+            payload_json = #{payloadJson},
+            signature = #{signature},
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        where id = #{id}
+    </update>
+</mapper>

@@ -2435,4 +2435,45 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  IFNULL(m.is_gz, '2')
         ) agg
     </select>
+
+    <!-- 首页仓库采购图：单月、多仓库一次聚合（与 selectRTH/CTK Total 金额数量口径一致；不按科室范围过滤） -->
+    <select id="selectHomeWarehousePurchaseMonthAgg" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select stk.warehouse_id as warehouseId,
+               coalesce(sum(case when stk.bill_type in (101, 301) then (case when stk.bill_type = 301 then -IFNULL(b.qty, 0) else IFNULL(b.qty, 0) end) else 0 end), 0) as rthQty,
+               coalesce(sum(case when stk.bill_type in (101, 301) then (case when stk.bill_type = 301 then -(IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) else (IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) end) else 0 end), 0) as rthAmt,
+               coalesce(sum(case when stk.bill_type in (201, 401) then (case when stk.bill_type = 401 then -IFNULL(b.qty, 0) else IFNULL(b.qty, 0) end) else 0 end), 0) as ctkQty,
+               coalesce(sum(case when stk.bill_type in (201, 401) then (case when stk.bill_type = 401 then -(IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) else (IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) end) else 0 end), 0) as ctkAmt
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_status = 2
+          and stk.bill_type in (101, 301, 201, 401)
+          and stk.audit_date &gt;= #{beginDate}
+          and stk.audit_date &lt;= #{endDate}
+          and stk.warehouse_id in
+          <foreach collection="warehouseIds" item="wid" open="(" separator="," close=")">
+              #{wid}
+          </foreach>
+        group by stk.warehouse_id
+    </select>
+
+    <!-- 首页科室使用图：全年按审核月聚合出退库（201/401），租户级，不包含科室数据范围条件 -->
+    <select id="selectHomeDepartmentReceiveYearMonthAgg" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select MONTH(stk.audit_date) as monthNum,
+               coalesce(sum(case when stk.bill_type = 401 then -IFNULL(b.qty, 0) else IFNULL(b.qty, 0) end), 0) as receiveQty,
+               coalesce(sum(case when stk.bill_type = 401 then -(IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0))
+                                 else (IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) end), 0) as receiveAmt
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+          and stk.audit_date &gt;= #{beginDate}
+          and stk.audit_date &lt;= #{endDate}
+        group by MONTH(stk.audit_date)
+    </select>
 </mapper>

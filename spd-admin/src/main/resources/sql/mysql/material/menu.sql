@@ -7208,6 +7208,52 @@ FROM DUAL WHERE @dept_profit_loss_c IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sy
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- ---------- 离线授权（系统管理下；与 LicenseController / 前端 system/license 一致）----------
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, remark,
+  is_platform, default_open_to_customer
+) VALUES (
+  3206, '离线授权', 1, 88, 'license', 'system/license/index', NULL,
+  1, 0, 'C', '0', '0', 'system:license:list', 'password',
+  'admin', NOW(), '系统离线授权（实例 ID 与注册码）',
+  '1', '0'
+)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  remark = VALUES(remark);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, remark,
+  is_platform, default_open_to_customer
+) VALUES (
+  3207, '激活授权', 3206, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'system:license:activate', '#',
+  'admin', NOW(), '导入注册码',
+  '1', '0'
+)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  perms = VALUES(perms),
+  remark = VALUES(remark);
+/
+
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3206);
+/
+
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3207);
+/
+
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
 FROM sb_customer c

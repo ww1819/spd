@@ -562,4 +562,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by d.id, d.name, m.id, m.code, m.name, m.speci, m.model, u.unit_id, u.unit_name, wc.warehouse_category_id, wc.warehouse_category_name
         order by SUM(e.amt) desc
     </select>
+
+    <!-- 首页科室使用图：全年按消耗单日期所在月聚合已审核消耗（与 selectAuditedConsumeReportTotal 条件一致，不按科室过滤） -->
+    <select id="selectHomeDepartmentConsumeYearMonthAgg" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select MONTH(a.consume_bill_date) as monthNum,
+               coalesce(sum(e.qty), 0) as consumeQty,
+               coalesce(sum(e.amt), 0) as consumeAmt
+        from t_hc_ks_xh a
+        inner join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and e.del_flag != 1
+        where a.del_flag != 1
+          and a.tenant_id = #{scopedTenantId}
+          and a.consume_bill_status = 2
+          and a.consume_bill_date &gt;= #{beginDate}
+          and a.consume_bill_date &lt;= #{endDate}
+        group by MONTH(a.consume_bill_date)
+    </select>
 </mapper>

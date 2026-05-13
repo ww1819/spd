@@ -15,4 +15,7 @@ spd:
       enabled: true
       location: classpath:sql/mysql/
       fail-on-error: false
+  # 离线授权公钥：留空则从 classpath:license/public.pem 读取（可为证书 PEM）
+  license:
+    publicKeyPem: ''
 

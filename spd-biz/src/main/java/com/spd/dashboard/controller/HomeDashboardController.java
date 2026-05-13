@@ -5,15 +5,16 @@ import java.math.RoundingMode;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +33,6 @@ import com.spd.department.vo.WarehouseApplyReminderRowVo;
 import com.spd.department.vo.WarehousePurchaseReminderRowVo;
 import com.spd.warehouse.vo.WarehouseNearExpiryReminderRowVo;
 import com.spd.department.domain.DepPurchaseApply;
-import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IBasApplyService;
 import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.department.service.IStkDepInventoryService;
@@ -113,6 +113,7 @@ public class HomeDashboardController extends BaseController
                 qtyMatrix[wi][mi] = BigDecimal.ZERO;
             }
         }
+        List<Long> whIds = warehouses.stream().map(FdWarehouse::getId).filter(Objects::nonNull).collect(Collectors.toList());
         ZoneId zone = ZoneId.systemDefault();
         for (int mi = 0; mi < 12; mi++)
         {
@@ -123,24 +124,35 @@ public class HomeDashboardController extends BaseController
             ZonedDateTime zEnd = last.atTime(23, 59, 59).atZone(zone);
             Date begin = Date.from(zStart.toInstant());
             Date end = Date.from(zEnd.toInstant());
+            List<Map<String, Object>> aggRows = stkIoBillService.selectHomeWarehousePurchaseMonthAgg(begin, end, whIds);
+            Map<Long, Map<String, Object>> byWh = new HashMap<>(Math.max(16, aggRows.size() * 2));
+            for (Map<String, Object> row : aggRows)
+            {
+                Long wid = toLongKey(row.get("warehouseId"));
+                if (wid != null)
+                {
+                    byWh.put(wid, row);
+                }
+            }
             for (int wi = 0; wi < whCount; wi++)
             {
                 FdWarehouse wh = warehouses.get(wi);
-                StkIoBill rthQ = new StkIoBill();
-                rthQ.setWarehouseId(wh.getId());
-                rthQ.setBeginDate(begin);
-                rthQ.setEndDate(end);
-                StkIoBill ctkQ = new StkIoBill();
-                ctkQ.setWarehouseId(wh.getId());
-                ctkQ.setBeginDate(begin);
-                ctkQ.setEndDate(end);
-                // 首页看板：按仓库汇总全租户出退库，不按当前用户科室范围过滤（否则无科室权限用户图表恒为 0）
-                TotalInfo rth = stkIoBillService.selectRTHStkIoBillListTotal(rthQ);
-                TotalInfo ctk = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
-                BigDecimal amount = nz(rth.getTotalAmt()).abs().add(nz(ctk.getTotalAmt()).abs());
-                BigDecimal qty = nz(rth.getTotalQty()).abs().add(nz(ctk.getTotalQty()).abs());
-                amtMatrix[wi][mi] = amount.setScale(2, RoundingMode.HALF_UP);
-                qtyMatrix[wi][mi] = qty.setScale(2, RoundingMode.HALF_UP);
+                Map<String, Object> row = wh.getId() != null ? byWh.get(wh.getId()) : null;
+                BigDecimal rthQty = BigDecimal.ZERO;
+                BigDecimal rthAmt = BigDecimal.ZERO;
+                BigDecimal ctkQty = BigDecimal.ZERO;
+                BigDecimal ctkAmt = BigDecimal.ZERO;
+                if (row != null)
+                {
+                    rthQty = nzBig(row.get("rthQty"));
+                    rthAmt = nzBig(row.get("rthAmt"));
+                    ctkQty = nzBig(row.get("ctkQty"));
+                    ctkAmt = nzBig(row.get("ctkAmt"));
+                }
+                BigDecimal amount = rthAmt.abs().add(ctkAmt.abs()).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal qty = rthQty.abs().add(ctkQty.abs()).setScale(2, RoundingMode.HALF_UP);
+                amtMatrix[wi][mi] = amount;
+                qtyMatrix[wi][mi] = qty;
             }
         }
         List<Map<String, Object>> whBrief = new ArrayList<>();
@@ -175,7 +187,8 @@ public class HomeDashboardController extends BaseController
     }
 
     /**
-     * 科室使用记录图：每月出退库合计（领用）+ 已审核科室消耗合计（消耗），口径同原首页。
+     * 科室使用记录图：每月出退库合计（领用）+ 已审核科室消耗合计（消耗）。
+     * 使用全年两次按月聚合查询（租户级、不含出退库科室数据范围过滤），与仓库采购图一致避免 N×12 次调用及误带 params 范围。
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/departmentUsage")
@@ -187,8 +200,6 @@ public class HomeDashboardController extends BaseController
         {
             monthLabels.add(m + "月");
         }
-        SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat dayEndFmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         BigDecimal[] receiveQty = new BigDecimal[12];
         BigDecimal[] receiveAmt = new BigDecimal[12];
         BigDecimal[] consumeQty = new BigDecimal[12];
@@ -201,36 +212,43 @@ public class HomeDashboardController extends BaseController
             consumeAmt[i] = BigDecimal.ZERO;
         }
         ZoneId zone = ZoneId.systemDefault();
-        for (int mi = 0; mi < 12; mi++)
+        LocalDate yStart = LocalDate.of(y, 1, 1);
+        LocalDate yEnd = LocalDate.of(y, 12, 31);
+        Date yearBegin = Date.from(yStart.atStartOfDay(zone).toInstant());
+        Date yearEnd = Date.from(yEnd.atTime(23, 59, 59).atZone(zone).toInstant());
+        List<Map<String, Object>> recvRows = stkIoBillService.selectHomeDepartmentReceiveYearMonthAgg(yearBegin, yearEnd);
+        List<Map<String, Object>> consRows = deptBatchConsumeService.selectHomeDepartmentConsumeYearMonthAgg(yearBegin, yearEnd);
+        if (recvRows != null)
         {
-            int month = mi + 1;
-            YearMonth ym = YearMonth.of(y, month);
-            LocalDate first = ym.atDay(1);
-            LocalDate last = ym.atEndOfMonth();
-            LocalDateTime startDt = first.atStartOfDay();
-            LocalDateTime endDt = last.atTime(23, 59, 59);
-            Date ctkBegin = Date.from(startDt.atZone(zone).toInstant());
-            Date ctkEnd = Date.from(endDt.atZone(zone).toInstant());
-            StkIoBill ctkQ = new StkIoBill();
-            ctkQ.setBeginDate(ctkBegin);
-            ctkQ.setEndDate(ctkEnd);
-            // 首页看板：租户级领用（出退库）合计，不按当前用户科室过滤
-            TotalInfo ctk = stkIoBillService.selectCTKStkIoBillListTotal(ctkQ);
-            DeptBatchConsume dc = new DeptBatchConsume();
-            try
+            for (Map<String, Object> row : recvRows)
             {
-                dc.setBeginDate(dayFmt.parse(first.toString()));
-                dc.setEndDate(dayEndFmt.parse(last.toString() + " 23:59:59"));
+                if (row == null)
+                {
+                    continue;
+                }
+                int mi = monthIndexFromAggRow(row.get("monthNum"));
+                if (mi >= 0)
+                {
+                    receiveQty[mi] = nzBig(row.get("receiveQty")).abs().setScale(2, RoundingMode.HALF_UP);
+                    receiveAmt[mi] = nzBig(row.get("receiveAmt")).abs().setScale(2, RoundingMode.HALF_UP);
+                }
             }
-            catch (ParseException e)
+        }
+        if (consRows != null)
+        {
+            for (Map<String, Object> row : consRows)
             {
-                continue;
+                if (row == null)
+                {
+                    continue;
+                }
+                int mi = monthIndexFromAggRow(row.get("monthNum"));
+                if (mi >= 0)
+                {
+                    consumeQty[mi] = nzBig(row.get("consumeQty")).setScale(2, RoundingMode.HALF_UP);
+                    consumeAmt[mi] = nzBig(row.get("consumeAmt")).setScale(2, RoundingMode.HALF_UP);
+                }
             }
-            TotalInfo consume = deptBatchConsumeService.selectAuditedConsumeReportTotal(dc);
-            receiveQty[mi] = nz(ctk.getTotalQty()).abs().setScale(2, RoundingMode.HALF_UP);
-            receiveAmt[mi] = nz(ctk.getTotalAmt()).abs().setScale(2, RoundingMode.HALF_UP);
-            consumeQty[mi] = nz(consume.getTotalQty()).setScale(2, RoundingMode.HALF_UP);
-            consumeAmt[mi] = nz(consume.getTotalAmt()).setScale(2, RoundingMode.HALF_UP);
         }
         Map<String, Object> body = new HashMap<>(8);
         body.put("year", y);
@@ -440,11 +458,89 @@ public class HomeDashboardController extends BaseController
         return Double.isFinite(n) ? n : 0d;
     }
 
-    private static BigDecimal nz(BigDecimal v)
+    /** 聚合行 monthNum（MySQL MONTH）：合法则返回 0–11 的下标，否则 -1 */
+    private static int monthIndexFromAggRow(Object monthNum)
     {
-        return v != null ? v : BigDecimal.ZERO;
+        if (monthNum == null)
+        {
+            return -1;
+        }
+        int m;
+        if (monthNum instanceof Number)
+        {
+            m = ((Number) monthNum).intValue();
+        }
+        else
+        {
+            try
+            {
+                m = Integer.parseInt(String.valueOf(monthNum));
+            }
+            catch (Exception e)
+            {
+                return -1;
+            }
+        }
+        if (m < 1 || m > 12)
+        {
+            return -1;
+        }
+        return m - 1;
     }
 
+    private static Long toLongKey(Object v)
+    {
+        if (v == null)
+        {
+            return null;
+        }
+        if (v instanceof Long)
+        {
+            return (Long) v;
+        }
+        if (v instanceof Number)
+        {
+            return ((Number) v).longValue();
+        }
+        try
+        {
+            return Long.parseLong(String.valueOf(v));
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    private static BigDecimal nzBig(Object v)
+    {
+        if (v == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        if (v instanceof BigDecimal)
+        {
+            return (BigDecimal) v;
+        }
+        if (v instanceof Number)
+        {
+            return BigDecimal.valueOf(((Number) v).doubleValue());
+        }
+        try
+        {
+            return new BigDecimal(String.valueOf(v));
+        }
+        catch (Exception e)
+        {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    /**
+     * 首页「仓库采购情况」用仓库列表。
+     * 非租户超管时优先按 sys_user_warehouse 等个人仓库范围过滤；若个人范围为空列表（未绑定仓库），
+     * 仍回退为当前租户全部仓库，避免首页图表无系列、与「今日统计」等租户级汇总口径脱节。
+     */
     private List<FdWarehouse> scopedWarehouses()
     {
         List<FdWarehouse> fdWarehouseList = fdWarehouseService.selectwarehouseAll();
@@ -453,20 +549,14 @@ public class HomeDashboardController extends BaseController
             && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
         {
             List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-            // resolveWarehouseScope 对租户超管返回 null 表示不限制；非超管不应为 null，若为空列表则无仓库权限
-            if (allowedIds != null)
+            // resolveWarehouseScope 对租户超管返回 null 表示不限制；非超管为具体 id 列表，空列表表示未绑定仓库
+            if (allowedIds != null && !allowedIds.isEmpty())
             {
-                if (allowedIds.isEmpty())
-                {
-                    fdWarehouseList = new ArrayList<>();
-                }
-                else
-                {
-                    fdWarehouseList = fdWarehouseList.stream()
-                        .filter(w -> w.getId() != null && allowedIds.contains(w.getId()))
-                        .collect(java.util.stream.Collectors.toList());
-                }
+                fdWarehouseList = fdWarehouseList.stream()
+                    .filter(w -> w.getId() != null && allowedIds.contains(w.getId()))
+                    .collect(java.util.stream.Collectors.toList());
             }
+            // allowedIds == null 或 isEmpty：null 超管已排除；empty 未绑仓库 → 保留租户全量仓库供首页展示
         }
         if (fdWarehouseList == null)
         {

@@ -532,6 +532,7 @@ public class StkInventory extends BaseEntity
             .append("isBilling", getIsBilling())
             .append("daysToExpiry", getDaysToExpiry())
             .append("alertStatus", getAlertStatus())
+            .append("excludeZeroQty", getExcludeZeroQty())
             .append("materialIsUse", getMaterialIsUse())
             .append("onlyPositiveQty", getOnlyPositiveQty())
             .append("supplierId", getSupplierId())
