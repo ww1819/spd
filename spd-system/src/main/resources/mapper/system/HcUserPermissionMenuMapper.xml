@@ -14,4 +14,19 @@
     delete from hc_user_permission_menu where user_id = #{userId} and tenant_id = #{tenantId}
   </delete>
 
+  <delete id="deleteByTenantIdAndMenuIds">
+    delete from hc_user_permission_menu
+    where tenant_id = #{tenantId}
+    and menu_id in
+    <foreach collection="menuIds" item="mid" open="(" separator="," close=")">
+      #{mid}
+    </foreach>
+  </delete>
+
+  <delete id="deleteHcUserPermissionMenusNotInHcCustomerMenus">
+    DELETE upm FROM hc_user_permission_menu upm
+    LEFT JOIN hc_customer_menu cm ON cm.tenant_id = #{tenantId} AND cm.menu_id = upm.menu_id
+    WHERE upm.tenant_id = #{tenantId} AND cm.menu_id IS NULL
+  </delete>
+
 </mapper>

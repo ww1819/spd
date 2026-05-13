@@ -52,5 +52,9 @@ public interface SysUserMenuMapper
      * @return 菜单ID列表
      */
     public List<Long> selectMenuListByUserId(Long userId);
-}
 
+    /**
+     * 耗材功能重置后：删除该租户下「用户-菜单」中已不在 hc_customer_menu 内的行（与 hc_user_permission_menu 收敛一致）
+     */
+    int deleteUserMenusNotInHcCustomerMenus(@Param("tenantId") String tenantId);
+}
