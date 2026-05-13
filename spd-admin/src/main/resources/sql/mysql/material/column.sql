@@ -4,8 +4,11 @@
  * 存储过程：add_table_column
  * 功能：安全地为指定数据表添加新字段，避免重复添加
  * 特点：1. 参数合法性校验 2. 字段存在性检查 3. 支持默认值设置 4. 友好的执行结果提示
+ * 注意：标准 MySQL 不支持 CREATE PROCEDURE IF NOT EXISTS；启动脚本按「/」分段执行，须先 DROP 再 CREATE。
  */
-CREATE PROCEDURE IF NOT EXISTS `add_table_column`(
+DROP PROCEDURE IF EXISTS `add_table_column`;
+/
+CREATE PROCEDURE `add_table_column`(
     IN p_table_name VARCHAR(64),      -- 输入参数：目标表名（必填）
     IN p_column_name VARCHAR(64),     -- 输入参数：要添加的字段名（必填）
     IN p_column_type VARCHAR(64),     -- 输入参数：字段类型（如int, varchar(255)等，必填）
