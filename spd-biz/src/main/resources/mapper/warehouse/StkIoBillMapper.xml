@@ -450,22 +450,176 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.bill_date desc
     </select>
 
+    <!-- 数据可视化大屏：按科室汇总当月出退库（201 出库 / 401 退库，金额与数量与 CTK 合计口径一致），按金额降序 -->
     <select id="selectOutboundSummaryByDepartment" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.department_id as departmentId,
-               d.name as departmentName,
-               ifnull(sum(stk.total_amount), 0) as outboundAmount,
-               ifnull(sum(e.qty), 0) as outboundQuantity
+               max(ifnull(d.name, '')) as departmentName,
+               coalesce(sum(case when stk.bill_type = 401 then -(ifnull(e.qty, 0) * ifnull(ifnull(e.unit_price, e.price), 0))
+                                else (ifnull(e.qty, 0) * ifnull(ifnull(e.unit_price, e.price), 0)) end), 0) as outboundAmount,
+               coalesce(sum(case when stk.bill_type = 401 then -ifnull(e.qty, 0) else ifnull(e.qty, 0) end), 0) as outboundQuantity
         from stk_io_bill stk
+        inner join stk_io_bill_entry e on e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
         left join fd_department d on stk.department_id = d.id
-        left join stk_io_bill_entry e on e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
-        where stk.del_flag != 1
+        where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
-          and stk.bill_type = 201
+          and stk.bill_type in (201, 401)
           and stk.bill_status = 2
           and stk.department_id is not null
-        group by stk.department_id, d.name
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
+          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+        group by stk.department_id
         order by outboundAmount desc
+    </select>
+
+    <!-- 数据可视化大屏：本月送货入库（已审核入退货 101/301）按供应商汇总金额，取前 10，按金额降序；供应商优先明细 suppler_id，否则主表 suppler_id -->
+    <select id="selectBiScreenInboundSupplierTop10" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            max(ifnull(nullif(trim(s.name), ''), '未维护供应商')) as supplierName,
+            coalesce(sum(case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(b.unit_price, 0))
+                              else (ifnull(b.qty, 0) * ifnull(b.unit_price, 0)) end), 0) as totalAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_supplier s on s.id = (
+            case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end
+        )
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (101, 301)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
+          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+        group by (
+            case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end
+        )
+        having coalesce(sum(case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(b.unit_price, 0))
+                                else (ifnull(b.qty, 0) * ifnull(b.unit_price, 0)) end), 0) &gt; 0
+        order by totalAmt desc
+        limit 10
+    </select>
+
+    <!-- 数据可视化大屏：近 20 个自然日已审核入退货（101/301）按日汇总金额；高值=耗材 is_gz=1，低值=其余 -->
+    <select id="selectBiScreenInboundDailyHighLowValue" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            date_format(stk.bill_date, '%Y-%m-%d') as statDate,
+            coalesce(sum(case when IFNULL(m.is_gz, '2') = '1' then
+                (case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                      else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end)
+                else 0 end), 0) as highValueAmt,
+            coalesce(sum(case when IFNULL(m.is_gz, '2') != '1' then
+                (case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                      else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end)
+                else 0 end), 0) as lowValueAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_material m on b.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (101, 301)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= date_sub(curdate(), interval 19 day)
+          and stk.bill_date &lt;= curdate()
+        group by date_format(stk.bill_date, '%Y-%m-%d')
+        order by date_format(stk.bill_date, '%Y-%m-%d') asc
+    </select>
+
+    <!-- 数据可视化大屏：当月已审核出退库（201/401）按单个耗材汇总金额 TOP20，退库冲减，按金额降序 -->
+    <select id="selectBiScreenOutboundMaterialMonthTop" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            ifnull(max(nullif(trim(m.name), '')), concat('未命名物资', coalesce(b.material_id, 0))) as materialName,
+            coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) as totalAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_material m on b.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
+          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+          and b.material_id is not null
+        group by b.material_id
+        having coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) &gt; 0
+        order by totalAmt desc
+        limit 20
+    </select>
+
+    <!-- 数据可视化大屏：当月已审核入退货（101/301）按耗材财务分类汇总入库金额，退库冲减，按金额降序 -->
+    <select id="selectBiScreenInboundFinanceCategoryMonth" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            case
+                when m.finance_category_id is not null then
+                    ifnull(nullif(trim(max(fc.finance_category_name)), ''), concat('财务分类#', cast(m.finance_category_id as char)))
+                else '未分类'
+            end as financeCategoryName,
+            coalesce(sum(case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) as totalAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_material m on b.material_id = m.id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (101, 301)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
+          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+        group by m.finance_category_id
+        having coalesce(sum(case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) &gt; 0
+        order by totalAmt desc
+    </select>
+
+    <!-- 数据可视化大屏：今日已审核出库单(201)笔数、今日已审核入库单(101)笔数（按单据 id 去重） -->
+    <select id="selectBiScreenTodayInboundOutboundBillCount" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            (select count(distinct stk.id)
+             from stk_io_bill stk
+             where (stk.del_flag = 0 or stk.del_flag is null)
+               and stk.tenant_id = #{scopedTenantId}
+               and stk.bill_type = 201
+               and stk.bill_status = 2
+               and stk.bill_date is not null
+               and date(stk.bill_date) = curdate()) as todayOutboundBillCount,
+            (select count(distinct stk.id)
+             from stk_io_bill stk
+             where (stk.del_flag = 0 or stk.del_flag is null)
+               and stk.tenant_id = #{scopedTenantId}
+               and stk.bill_type = 101
+               and stk.bill_status = 2
+               and stk.bill_date is not null
+               and date(stk.bill_date) = curdate()) as todayInboundBillCount
+    </select>
+
+    <!-- 数据可视化大屏：当年已审核入退货按自然月汇总金额（入库 101 / 退货入库 301，退货按绝对值展示） -->
+    <select id="selectBiScreenYearInboundReturnByMonth" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            month(stk.bill_date) as monthNum,
+            coalesce(sum(case when stk.bill_type = 101 then (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) else 0 end), 0) as inboundAmt,
+            coalesce(abs(sum(case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) else 0 end)), 0) as returnAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (101, 301)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and year(stk.bill_date) = year(curdate())
+        group by month(stk.bill_date)
+        order by month(stk.bill_date) asc
     </select>
 
     <select id="selectRTHStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">

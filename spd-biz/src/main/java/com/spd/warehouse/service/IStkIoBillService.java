@@ -134,10 +134,28 @@ public interface IStkIoBillService
 
 
     /**
-     * 按科室汇总出库总金额（出库单 bill_type=201 已审核）
-     * @return 列表项：departmentId, departmentName, outboundAmount
+     * 按科室汇总当月出退库金额与数量（bill_type 201/401，已审核；大屏科室排名等）
+     * @return 列表项：departmentId, departmentName, outboundAmount, outboundQuantity
      */
     List<Map<String, Object>> selectOutboundSummaryByDepartment();
+
+    /** 大屏：本月送货入库前十供应商（已审核入退货按供应商汇总金额降序） */
+    List<Map<String, Object>> selectBiScreenInboundSupplierTop10();
+
+    /** 大屏：近 20 天入退货按日汇总金额（高值 is_gz=1 / 低值其余） */
+    List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue();
+
+    /** 大屏：当月出退库按单个耗材汇总金额 TOP20（降序） */
+    List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop();
+
+    /** 大屏：当月入退货按财务分类汇总入库金额（降序） */
+    List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth();
+
+    /** 大屏：今日已审核出库单笔数、今日已审核入库单(101)笔数 */
+    Map<String, Object> selectBiScreenTodayInboundOutboundBillCount();
+
+    /** 大屏：当年按自然月汇总入库金额(101)、退货入库金额(301) */
+    List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth();
 
     /**
      * 查询入退货汇总列表
