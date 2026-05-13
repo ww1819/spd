@@ -182,9 +182,17 @@
 	    select count(1) from sys_menu where parent_id = #{menuId}  
 	</select>
 	
-	<select id="checkMenuNameUnique" parameterType="SysMenu" resultMap="SysMenuResult">
+	<!-- 同 parent 下：M/C/F 各自名称唯一，避免「目录/菜单」与「按钮」同名时被误判重复 -->
+	<select id="checkMenuNameUnique" resultMap="SysMenuResult">
 		<include refid="selectMenuVo"/>
-		where menu_name=#{menuName} and parent_id = #{parentId} limit 1
+		where menu_name = #{menuName} and parent_id = #{parentId}
+		<if test="menuType != null and menuType != ''">
+			and menu_type = #{menuType}
+		</if>
+		<if test="excludeMenuId != null">
+			and menu_id != #{excludeMenuId}
+		</if>
+		limit 1
 	</select>
 	
 	<update id="updateMenu" parameterType="SysMenu">
