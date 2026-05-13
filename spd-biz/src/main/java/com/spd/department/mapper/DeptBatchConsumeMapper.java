@@ -1,5 +1,6 @@
 package com.spd.department.mapper;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -149,4 +150,10 @@ public interface DeptBatchConsumeMapper
      * @return 汇总列表
      */
     List<Map<String, Object>> selectAuditedConsumeSummaryList(DeptBatchConsume deptBatchConsume);
+
+    /**
+     * 首页科室使用图：按「消耗单日期所在月」聚合全年已审核消耗数量/金额（租户级）
+     */
+    List<Map<String, Object>> selectHomeDepartmentConsumeYearMonthAgg(@Param("beginDate") Date beginDate,
+        @Param("endDate") Date endDate);
 }

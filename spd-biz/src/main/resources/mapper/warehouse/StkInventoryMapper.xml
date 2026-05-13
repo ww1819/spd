@@ -229,6 +229,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and stk.tenant_id = #{tenantId}
         <include refid="stkInventoryMaterialReportVisible"/>
         <include refid="stkInventoryMaterialIsUseQuery"/>
+        <if test="excludeZeroQty != null and excludeZeroQty == true"> and IFNULL(stk.qty, 0) &gt; 0 </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -264,6 +265,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and stk.tenant_id = #{tenantId}
         <include refid="stkInventoryMaterialReportVisible"/>
         <include refid="stkInventoryMaterialIsUseQuery"/>
+        <if test="excludeZeroQty != null and excludeZeroQty == true"> and IFNULL(stk.qty, 0) &gt; 0 </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>

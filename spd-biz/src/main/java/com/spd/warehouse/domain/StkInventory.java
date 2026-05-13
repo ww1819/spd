@@ -151,6 +151,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：预警天数（用于有效期预警查询） */
     private Integer daysToExpiry;
 
+    /** 查询：为 true 时仅返回库存数量大于 0 的明细（如出库申请「添加」选批次弹窗） */
+    private Boolean excludeZeroQty;
+
     @Excel(name = "批号")
     private String batchNumber;
 
@@ -492,6 +495,14 @@ public class StkInventory extends BaseEntity
         this.daysToExpiry = daysToExpiry;
     }
 
+    public Boolean getExcludeZeroQty() {
+        return excludeZeroQty;
+    }
+
+    public void setExcludeZeroQty(Boolean excludeZeroQty) {
+        this.excludeZeroQty = excludeZeroQty;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -521,6 +532,7 @@ public class StkInventory extends BaseEntity
             .append("isBilling", getIsBilling())
             .append("daysToExpiry", getDaysToExpiry())
             .append("alertStatus", getAlertStatus())
+            .append("excludeZeroQty", getExcludeZeroQty())
             .append("materialIsUse", getMaterialIsUse())
             .append("supplierId", getSupplierId())
             .append("supplier", getSupplier())
