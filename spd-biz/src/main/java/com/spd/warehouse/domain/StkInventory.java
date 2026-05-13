@@ -173,7 +173,8 @@ public class StkInventory extends BaseEntity
     /** 审核人昵称（关联入库单审核人 sys_user.nick_name） */
     private String auditPersonName;
 
-    private BigDecimal excludeZeroQty;
+    /** 查询参数：为 true 时仅保留数量大于 0 的库存行（与 onlyPositiveQty 语义一致，供弹窗等传参） */
+    private Boolean excludeZeroQty;
 
     public void setId(Long id)
     {
@@ -579,11 +580,11 @@ public class StkInventory extends BaseEntity
         this.auditPersonName = auditPersonName;
     }
 
-    public BigDecimal getExcludeZeroQty() {
+    public Boolean getExcludeZeroQty() {
         return excludeZeroQty;
     }
 
-    public void setExcludeZeroQty(BigDecimal excludeZeroQty) {
+    public void setExcludeZeroQty(Boolean excludeZeroQty) {
         this.excludeZeroQty = excludeZeroQty;
     }
 }
