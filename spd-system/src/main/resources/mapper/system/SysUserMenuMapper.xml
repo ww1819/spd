@@ -41,5 +41,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		select menu_id from sys_user_menu where user_id=#{userId}
 	</select>
 
+	<delete id="deleteUserMenusNotInHcCustomerMenus">
+		DELETE um FROM sys_user_menu um
+		INNER JOIN sys_user u ON u.user_id = um.user_id AND u.customer_id = #{tenantId}
+		LEFT JOIN hc_customer_menu cm ON cm.tenant_id = #{tenantId} AND cm.menu_id = um.menu_id
+		WHERE cm.menu_id IS NULL
+	</delete>
+
 </mapper>
 

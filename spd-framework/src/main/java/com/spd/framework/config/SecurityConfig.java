@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.filter.CorsFilter;
 import com.spd.framework.config.properties.PermitAllUrlProperties;
 import com.spd.framework.security.filter.JwtAuthenticationTokenFilter;
+import com.spd.framework.security.filter.LicenseEnforcementFilter;
 import com.spd.framework.security.filter.LoginUserTenantSyncFilter;
 import com.spd.framework.security.filter.TenantContextFilter;
 import com.spd.framework.security.handle.AuthenticationEntryPointImpl;
@@ -65,6 +66,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
      */
     @Autowired
     private LoginUserTenantSyncFilter loginUserTenantSyncFilter;
+
+    /**
+     * 离线授权：须在 JWT 之后、租户上下文之前，以便已存在 LoginUser
+     */
+    @Autowired
+    private LicenseEnforcementFilter licenseEnforcementFilter;
     
     /**
      * 跨域过滤器
@@ -125,7 +132,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 // 过滤请求
                 .authorizeRequests()
                 // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                .antMatchers("/login", "/register", "/captchaImage", "/getCustomerOptions").permitAll()
+                .antMatchers("/login", "/register", "/captchaImage", "/getCustomerOptions", "/license/register").permitAll()
                 // 静态资源，可匿名访问
                 .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
                 .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**").permitAll()
@@ -139,8 +146,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
         httpSecurity.addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
         // 登录态 customer_id 与库同步（须在 JWT 之后，以便 SecurityContext 中已有 LoginUser）
         httpSecurity.addFilterAfter(loginUserTenantSyncFilter, JwtAuthenticationTokenFilter.class);
-        // SaaS 租户上下文（须在 JWT 与租户同步之后，以便使用已补全的 LoginUser）
-        httpSecurity.addFilterAfter(tenantContextFilter, LoginUserTenantSyncFilter.class);
+        // 离线授权校验（须在 LoginUser 写入 SecurityContext 之后）
+        httpSecurity.addFilterAfter(licenseEnforcementFilter, LoginUserTenantSyncFilter.class);
+        // SaaS 租户上下文（须在离线授权之后，以便过期时仍可使用租户同步链路上的豁免接口）
+        httpSecurity.addFilterAfter(tenantContextFilter, LicenseEnforcementFilter.class);
         // 添加CORS filter
         httpSecurity.addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class);
         httpSecurity.addFilterBefore(corsFilter, LogoutFilter.class);

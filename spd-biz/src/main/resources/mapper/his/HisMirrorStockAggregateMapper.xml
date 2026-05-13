@@ -20,7 +20,7 @@
           and gdi.tenant_id = #{tenantId}
           and concat(trim(d.his_id), '|', trim(fm.his_charge_item_id)) in
         <foreach collection="pairKeys" item="pk" open="(" separator="," close=")">#{pk}</foreach>
-        group by trim(d.his_id), trim(fm.his_charge_item_id)
+        group by concat(trim(d.his_id), '|', trim(fm.his_charge_item_id))
     </select>
 
     <select id="selectStkStockByPairKeys" resultType="com.spd.his.domain.dto.HisMirrorStockLocItemQty">
@@ -41,6 +41,6 @@
           and sdi.tenant_id = #{tenantId}
           and concat(trim(d.his_id), '|', trim(fm.his_charge_item_id)) in
         <foreach collection="pairKeys" item="pk" open="(" separator="," close=")">#{pk}</foreach>
-        group by trim(d.his_id), trim(fm.his_charge_item_id)
+        group by concat(trim(d.his_id), '|', trim(fm.his_charge_item_id))
     </select>
 </mapper>

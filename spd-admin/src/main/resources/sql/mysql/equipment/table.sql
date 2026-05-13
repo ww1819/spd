@@ -2,7 +2,7 @@
 -- ========== 设备系统（SaaS）建表脚本 ==========
 -- 覆盖：sb_customer、客户菜单/启停、68 分类、资产台账、条码打印、资产盘点、设备端菜单/角色/工作组与用户权限等。
 -- 当前仓库内未发现额外「仅存在于 spd/sql 且未纳入本文件」的设备业务表；增量字段见 equipment/column.sql。
--- 说明：fd_department / fd_department_change_log 与耗材库共用表结构，部署时与 material/table.sql 二选一执行或保证结构一致即可。
+-- 说明：fd_department / fd_department_change_log / fd_material 等与耗材库共用表结构，部署时与 material/table.sql 二选一执行或保证结构一致即可；fd_material 全量建表见下文「耗材产品」段（与业务库 aspt 导出字段集一致，含 min_package_qty）。若历史库 fd_material 缺 min_package_qty，见文末说明用 material/column.sql 或 patch 补列。
 
 -- 客户表（SaaS 租户，主键 UUID7）
 CREATE TABLE IF NOT EXISTS `sb_customer` (
@@ -61,6 +61,79 @@ CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
   KEY `idx_fd_dept_log_dept` (`department_id`),
   KEY `idx_fd_dept_log_time` (`change_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
+/
+
+-- 耗材产品主数据（设备/耗材共用；与业务库 aspt.fd_material 字段集一致）
+CREATE TABLE IF NOT EXISTS `fd_material` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `code` varchar(50) NOT NULL COMMENT '耗材编码',
+  `name` varchar(100) DEFAULT NULL COMMENT '耗材名称',
+  `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
+  `speci` varchar(100) DEFAULT NULL COMMENT '规格',
+  `model` varchar(100) DEFAULT NULL COMMENT '型号',
+  `price` decimal(18,6) DEFAULT NULL COMMENT '价格',
+  `referred_name` varchar(100) DEFAULT NULL COMMENT '名称简码',
+  `use_name` varchar(100) DEFAULT NULL COMMENT '通用名称',
+  `factory_id` bigint DEFAULT NULL COMMENT '生产厂家ID',
+  `storeroom_id` bigint DEFAULT NULL COMMENT '库房分类ID',
+  `finance_category_id` bigint DEFAULT NULL COMMENT '财务分类ID',
+  `unit_id` bigint DEFAULT NULL COMMENT '单位ID',
+  `register_name` varchar(100) DEFAULT NULL COMMENT '注册证名称',
+  `register_no` varchar(100) DEFAULT NULL COMMENT '注册证件号',
+  `medical_name` varchar(100) DEFAULT NULL COMMENT '医保名称',
+  `medical_no` varchar(100) DEFAULT NULL COMMENT '医保编码',
+  `period_date` datetime DEFAULT NULL COMMENT '有效期',
+  `successful_type` varchar(100) DEFAULT NULL COMMENT '招标类别',
+  `successful_no` varchar(100) DEFAULT NULL COMMENT '中标号',
+  `successful_price` decimal(18,6) DEFAULT NULL COMMENT '中标价格',
+  `sale_price` decimal(18,6) DEFAULT NULL COMMENT '销售价（最小单位）',
+  `package_speci` varchar(100) DEFAULT NULL COMMENT '包装规格',
+  `producer` varchar(150) DEFAULT NULL COMMENT '产地',
+  `material_level` char(4) DEFAULT NULL COMMENT '耗材级别',
+  `register_level` char(4) DEFAULT NULL COMMENT '注册证级别',
+  `risk_level` char(4) DEFAULT NULL COMMENT '风险级别',
+  `firstaid_level` char(4) DEFAULT NULL COMMENT '急救类型',
+  `doctor_level` char(4) DEFAULT NULL COMMENT '医用级别',
+  `brand` varchar(100) DEFAULT NULL COMMENT '品牌',
+  `useto` varchar(150) DEFAULT NULL COMMENT '用途',
+  `quality` varchar(100) DEFAULT NULL COMMENT '材质',
+  `function` varchar(100) DEFAULT NULL COMMENT '功能',
+  `is_way` char(4) DEFAULT NULL COMMENT '储存方式',
+  `udi_no` varchar(100) DEFAULT NULL COMMENT 'UDI码',
+  `permit_no` varchar(100) DEFAULT NULL COMMENT '许可证编号',
+  `country_no` varchar(100) DEFAULT NULL COMMENT '国家编码',
+  `country_name` varchar(100) DEFAULT NULL COMMENT '国家医保名称',
+  `description` varchar(150) DEFAULT NULL COMMENT '商品说明',
+  `is_use` char(4) DEFAULT NULL COMMENT '使用状态（停用/在用）',
+  `is_procure` char(4) DEFAULT NULL COMMENT '带量采购（是/否）',
+  `is_monitor` char(4) DEFAULT NULL COMMENT '重点监测（是/否）',
+  `create_by` varchar(36) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(36) DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag` int DEFAULT 0 COMMENT '删除标志',
+  `is_gz` char(1) DEFAULT '2' COMMENT '是否高值（1:是，2:否）',
+  `is_follow` varchar(1) DEFAULT NULL COMMENT '是否跟台（1=是，2=否）',
+  `location_id` bigint DEFAULT NULL COMMENT '货位ID',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `his_id` varchar(100) DEFAULT NULL COMMENT 'his系统产品档案ID，或其他第三方系统产品档案ID',
+  `selection_reason` varchar(512) DEFAULT NULL COMMENT '入选原因',
+  `is_billing` char(4) DEFAULT '2' COMMENT '是否计费：1=计费,2=不计费',
+  `main_barcode` varchar(128) DEFAULT NULL COMMENT '主条码（用于扫码匹配产品档案）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `default_warehouse_id` bigint DEFAULT NULL COMMENT '产品档案默认所属仓库ID（科室盘盈可退库仓库）',
+  `his_charge_item_id` varchar(64) DEFAULT NULL COMMENT 'HIS收费项目ID（v_charge_item.charge_item_id）',
+  `is_temporary_purchase` char(4) DEFAULT '2' COMMENT '是否临购：1=是,2=否',
+  `is_service_fee` char(4) DEFAULT '2' COMMENT '是否服务费：1=是,2=否',
+  `is_sunshine_procurement` char(4) DEFAULT '2' COMMENT '是否阳采：1=是,2=否',
+  `material_category_id` varchar(36) DEFAULT NULL COMMENT '材料类别ID',
+  `min_package_qty` decimal(18,6) DEFAULT NULL COMMENT '最小包装数（每最小包装所含数量，如 10 支/盒）',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_location_id` (`location_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='耗材产品';
 /
 
 -- 客户启停用记录表（时间、操作人、启停用原因）
@@ -867,6 +940,10 @@ CREATE TABLE IF NOT EXISTS `equipment_accessory_io_entry` (
   KEY `idx_eq_acc_ioe_acc` (`accessory_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备配件出入库明细';
 /
+
+-- 若 fd_material 来自历史若依脚本且缺少 min_package_qty，请执行 material/column.sql 中
+--   CALL add_table_column('fd_material','min_package_qty',...)
+-- 或 material/patch_fd_material_min_package_qty.sql（裸 ALTER，不可重复执行）。
 
 -- ========== 覆盖说明（扫描结论）==========
 -- 设备侧业务表已全部包含于上文；新增整表请追加本文件；新增字段请追加 equipment/column.sql（add_table_column）；菜单与权限请追加 equipment/menu.sql。

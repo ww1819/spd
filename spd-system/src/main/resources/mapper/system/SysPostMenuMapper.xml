@@ -25,5 +25,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		select menu_id from sys_post_menu where post_id=#{postId}
 	</select>
 
+	<delete id="deleteByTenantIdAndMenuIds">
+		delete pm from sys_post_menu pm
+		inner join sys_post p on p.post_id = pm.post_id
+		where p.tenant_id = #{tenantId}
+		and pm.menu_id in
+		<foreach collection="menuIds" item="mid" open="(" separator="," close=")">
+			#{mid}
+		</foreach>
+	</delete>
+
+	<delete id="deletePostMenusNotInHcCustomerMenus">
+		DELETE pm FROM sys_post_menu pm
+		INNER JOIN sys_post p ON p.post_id = pm.post_id AND p.tenant_id = #{tenantId}
+		LEFT JOIN hc_customer_menu cm ON cm.tenant_id = #{tenantId} AND cm.menu_id = pm.menu_id
+		WHERE cm.menu_id IS NULL
+	</delete>
+
 </mapper>
 

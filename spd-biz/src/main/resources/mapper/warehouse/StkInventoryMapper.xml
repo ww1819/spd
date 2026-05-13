@@ -256,6 +256,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <if test="id != null"> and stk.id = #{id}</if>
+        <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
         order by stk.warehouse_date desc
     </select>
 
@@ -292,6 +293,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <if test="id != null"> and stk.id = #{id}</if>
+        <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
         order by stk.warehouse_date desc
     </select>
 
@@ -886,6 +888,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
         <include refid="stkInventoryMaterialActive"/>
         order by stk.warehouse_date asc, stk.id asc
+    </select>
+
+    <!-- 出库引用库房申请：近效期先出（有有效期的优先且按有效期升序，无有效期排后），同科室申领库存行筛选 -->
+    <select id="selectStkInventoryFefoForOutboundAlloc" resultMap="StkInventoryResult">
+        <include refid="selectStkInventoryVo"/>
+        where stk.qty &gt; 0
+          and (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and stk.material_id = #{materialId}
+          and stk.warehouse_id = #{warehouseId}
+          and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
+        <include refid="stkInventoryMaterialActive"/>
+        order by (stk.end_time is null) asc, stk.end_time asc, stk.warehouse_date asc, stk.id asc
     </select>
 
     <!-- 消息提醒：近效期库存（0～30 天内到期，qty>0，与库存列表相同耗材有效条件） -->

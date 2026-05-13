@@ -1,11 +1,14 @@
 package com.spd.web.controller.material;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +30,8 @@ import com.spd.system.domain.hc.HcCustomerStatusLog;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.HcCustomerPeriodLogMapper;
 import com.spd.system.mapper.HcCustomerStatusLogMapper;
+import com.spd.system.mapper.HcUserPermissionMenuMapper;
+import com.spd.system.mapper.SysPostMenuMapper;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ITenantDataPurgeService;
 import com.spd.common.core.domain.entity.SysMenu;
@@ -49,6 +54,10 @@ public class HcCustomerController extends BaseController {
   private ISysMenuService sysMenuService;
   @Autowired
   private HcCustomerMenuMapper hcCustomerMenuMapper;
+  @Autowired
+  private HcUserPermissionMenuMapper hcUserPermissionMenuMapper;
+  @Autowired
+  private SysPostMenuMapper sysPostMenuMapper;
   @Autowired
   private ISbCustomerService sbCustomerService;
   @Autowired
@@ -145,9 +154,10 @@ public class HcCustomerController extends BaseController {
     return success(menuIds != null ? menuIds.stream().map(String::valueOf).collect(Collectors.toList()) : new ArrayList<>());
   }
 
-  /** 耗材客户权限：保存（覆盖） */
+  /** 耗材客户权限：保存（覆盖）；收回的菜单会同步从该租户下工作组(sys_post_menu)与用户(hc_user_permission_menu)中移除 */
   @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
   @PutMapping("/menu")
+  @Transactional(rollbackFor = Exception.class)
   public AjaxResult saveMenus(@RequestParam String customerId, @RequestBody SaveMenusBody body) {
     if (StringUtils.isEmpty(customerId)) {
       return error("客户ID不能为空");
@@ -164,14 +174,31 @@ public class HcCustomerController extends BaseController {
         }
       }
     }
+    // 勾选父目录时一并写入全部子孙菜单 ID，避免 hc_customer_menu 仅有父节点导致工作组/用户授权树缺少「收货确认」等子功能
+    List<Long> oldMenuIds = hcCustomerMenuMapper.selectMenuIdsByTenantId(customerId);
+    if (oldMenuIds == null) {
+      oldMenuIds = new ArrayList<>();
+    }
+    menuIds = sysMenuService.expandMenuIdsWithDescendants(menuIds);
     for (Long menuId : menuIds) {
       SysMenu menu = sysMenuService.selectMenuById(menuId);
       if (menu != null && "1".equals(menu.getIsPlatform())) {
         throw new ServiceException("不能将平台管理菜单分配给客户，请从可分配菜单中选择");
       }
     }
-    // 勾选父目录时一并写入全部子孙菜单 ID，避免 hc_customer_menu 仅有父节点导致工作组/用户授权树缺少「收货确认」等子功能
-    menuIds = sysMenuService.expandMenuIdsWithDescendants(menuIds);
+    Set<Long> newMenuSet = new HashSet<>(menuIds);
+    List<Long> removedDirect = oldMenuIds.stream()
+        .filter(id -> id != null && id > 0 && !newMenuSet.contains(id))
+        .collect(Collectors.toList());
+    List<Long> removedExpanded = sysMenuService.expandMenuIdsWithDescendants(removedDirect);
+    List<Long> purgeMenuIds = removedExpanded.stream()
+        .filter(id -> id != null && id > 0 && !newMenuSet.contains(id))
+        .distinct()
+        .collect(Collectors.toList());
+    if (!purgeMenuIds.isEmpty()) {
+      hcUserPermissionMenuMapper.deleteByTenantIdAndMenuIds(customerId, purgeMenuIds);
+      sysPostMenuMapper.deleteByTenantIdAndMenuIds(customerId, purgeMenuIds);
+    }
     String username = SecurityUtils.getUserIdStr();
     hcCustomerMenuMapper.deleteByTenantId(customerId);
     if (!menuIds.isEmpty()) {
