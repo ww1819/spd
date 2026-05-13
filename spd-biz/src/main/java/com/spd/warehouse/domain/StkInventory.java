@@ -173,6 +173,8 @@ public class StkInventory extends BaseEntity
     /** 审核人昵称（关联入库单审核人 sys_user.nick_name） */
     private String auditPersonName;
 
+    private BigDecimal excludeZeroQty;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -575,5 +577,13 @@ public class StkInventory extends BaseEntity
 
     public void setAuditPersonName(String auditPersonName) {
         this.auditPersonName = auditPersonName;
+    }
+
+    public BigDecimal getExcludeZeroQty() {
+        return excludeZeroQty;
+    }
+
+    public void setExcludeZeroQty(BigDecimal excludeZeroQty) {
+        this.excludeZeroQty = excludeZeroQty;
     }
 }
