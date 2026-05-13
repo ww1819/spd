@@ -2055,6 +2055,36 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return stkIoBillMapper.selectOutboundSummaryByDepartment();
     }
 
+    @Override
+    public List<Map<String, Object>> selectBiScreenInboundSupplierTop10() {
+        return stkIoBillMapper.selectBiScreenInboundSupplierTop10();
+    }
+
+    @Override
+    public List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue() {
+        return stkIoBillMapper.selectBiScreenInboundDailyHighLowValue();
+    }
+
+    @Override
+    public List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop() {
+        return stkIoBillMapper.selectBiScreenOutboundMaterialMonthTop();
+    }
+
+    @Override
+    public List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth() {
+        return stkIoBillMapper.selectBiScreenInboundFinanceCategoryMonth();
+    }
+
+    @Override
+    public Map<String, Object> selectBiScreenTodayInboundOutboundBillCount() {
+        return stkIoBillMapper.selectBiScreenTodayInboundOutboundBillCount();
+    }
+
+    @Override
+    public List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth() {
+        return stkIoBillMapper.selectBiScreenYearInboundReturnByMonth();
+    }
+
     public List<Map<String, Object>> selectRTHStkIoBillSummaryList(StkIoBill stkIoBill) {
         if (stkIoBill != null && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());

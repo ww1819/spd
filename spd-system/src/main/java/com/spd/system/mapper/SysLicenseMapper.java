@@ -11,5 +11,7 @@ public interface SysLicenseMapper
 
     int insertSysLicense(SysLicense row);
 
+    int deleteSysLicenseById(Long id);
+
     int updateSysLicenseActivation(SysLicense row);
 }

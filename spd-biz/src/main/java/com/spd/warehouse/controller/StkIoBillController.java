@@ -183,8 +183,8 @@ public class StkIoBillController extends BaseController
     }
 
     /**
-     * 按科室汇总出库总金额（数据可视化大屏用）
-     * @return 列表项：departmentId, departmentName, outboundAmount
+     * 按科室汇总当月出退库金额与数量（数据可视化大屏：科室领用排名、高值消耗图等）
+     * @return 列表项：departmentId, departmentName, outboundAmount, outboundQuantity（201 为正、401 为负）
      */
     @GetMapping("/outboundSummaryByDepartment")
     public AjaxResult outboundSummaryByDepartment() {
@@ -213,6 +213,60 @@ public class StkIoBillController extends BaseController
         body.put("consumptionAmount", nzBd(consume != null ? consume.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
         body.put("consumptionQuantity", nzBd(consume != null ? consume.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
         return success(body);
+    }
+
+    /**
+     * 数据可视化大屏：本月送货入库（已审核入退货）按供应商汇总配送金额，取前 10，按金额降序。
+     */
+    @GetMapping("/biScreenInboundSupplierTop10")
+    public AjaxResult biScreenInboundSupplierTop10() {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenInboundSupplierTop10();
+        return success(list != null ? list : new java.util.ArrayList<>());
+    }
+
+    /**
+     * 数据可视化大屏：近 20 天已审核入退货按日汇总金额（高值耗材 is_gz=1 / 低值其余），用于折线+柱状图。
+     */
+    @GetMapping("/biScreenInboundDailyHighLowValue")
+    public AjaxResult biScreenInboundDailyHighLowValue() {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenInboundDailyHighLowValue();
+        return success(list != null ? list : new java.util.ArrayList<>());
+    }
+
+    /**
+     * 数据可视化大屏：当月已审核出退库按单个耗材汇总出库金额，TOP20，金额降序（耗材排行榜）。
+     */
+    @GetMapping("/biScreenOutboundMaterialMonthTop")
+    public AjaxResult biScreenOutboundMaterialMonthTop() {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenOutboundMaterialMonthTop();
+        return success(list != null ? list : new java.util.ArrayList<>());
+    }
+
+    /**
+     * 数据可视化大屏：当月已审核入退货按耗材「财务分类」汇总入库金额（退库冲减），按金额降序。
+     */
+    @GetMapping("/biScreenInboundFinanceCategoryMonth")
+    public AjaxResult biScreenInboundFinanceCategoryMonth() {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenInboundFinanceCategoryMonth();
+        return success(list != null ? list : new java.util.ArrayList<>());
+    }
+
+    /**
+     * 数据可视化大屏：今日已审核出库单（201）笔数、今日已审核入库单（101）笔数。
+     */
+    @GetMapping("/biScreenTodayInboundOutboundBillCount")
+    public AjaxResult biScreenTodayInboundOutboundBillCount() {
+        Map<String, Object> row = stkIoBillService.selectBiScreenTodayInboundOutboundBillCount();
+        return success(row != null ? row : new java.util.HashMap<>());
+    }
+
+    /**
+     * 数据可视化大屏：当年已审核入退货按自然月汇总金额（入库 101、退货入库 301），用于年度采购/入退货曲线。
+     */
+    @GetMapping("/biScreenYearInboundReturnByMonth")
+    public AjaxResult biScreenYearInboundReturnByMonth() {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenYearInboundReturnByMonth();
+        return success(list != null ? list : new java.util.ArrayList<>());
     }
 
     private static BigDecimal nzBd(BigDecimal v)

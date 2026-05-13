@@ -101,4 +101,9 @@ public class HttpStatus
      * 离线授权已过期
      */
     public static final int LICENSE_EXPIRED = 607;
+
+    /**
+     * 库中离线授权数据无效（验签失败、载荷与系统不一致或遭篡改）
+     */
+    public static final int LICENSE_INVALID = 608;
 }

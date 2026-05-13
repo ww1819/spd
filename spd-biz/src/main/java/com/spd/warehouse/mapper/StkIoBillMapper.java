@@ -54,9 +54,9 @@ public interface StkIoBillMapper
     public TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill);
 
     /**
-     * 按科室汇总出库总金额（出库单 bill_type=201 已审核 bill_status=2）
+     * 按科室汇总当月出退库金额与数量（bill_type 201/401，已审核；大屏科室排名等）
      *
-     * @return 列表项：departmentId, departmentName, outboundAmount
+     * @return 列表项：departmentId, departmentName, outboundAmount, outboundQuantity
      */
     List<Map<String, Object>> selectOutboundSummaryByDepartment();
 
@@ -415,4 +415,26 @@ public interface StkIoBillMapper
      */
     List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(@Param("beginDate") Date beginDate,
         @Param("endDate") Date endDate);
+
+    /**
+     * 数据可视化大屏：按供应商汇总已审核入退货（送货入库）数量与金额，取前 10
+     */
+    List<Map<String, Object>> selectBiScreenInboundSupplierTop10();
+
+    /**
+     * 数据可视化大屏：近 20 天入退货按日汇总金额（高值/低值耗材）
+     */
+    List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue();
+
+    /** 数据可视化大屏：当月出退库按耗材汇总金额 TOP20 */
+    List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop();
+
+    /** 数据可视化大屏：当月入退货按财务分类汇总入库金额（降序） */
+    List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth();
+
+    /** 数据可视化大屏：今日已审核出库单笔数、今日已审核入库单(101)笔数 */
+    Map<String, Object> selectBiScreenTodayInboundOutboundBillCount();
+
+    /** 数据可视化大屏：当年已审核入退货按自然月汇总（入库 101 / 退货 301） */
+    List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth();
 }
