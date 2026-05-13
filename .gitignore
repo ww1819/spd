@@ -46,3 +46,6 @@ nbdist/
 !*/build/*.html
 !*/build/*.xml
 spd-admin/src/main/resources/application-dev.yml
+
+# 离线签发 RSA 私钥（仅本地保留，勿提交）
+tools/license-generator/keys/license_signing_private_pkcs8.pem

@@ -2189,6 +2189,22 @@ CREATE TABLE IF NOT EXISTS `sys_print_setting` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='打印设置表';
 /
 
+-- 系统离线授权（整库单行，id 固定为 1；与后端 SysLicense / LicenseEnforcementFilter 一致）
+CREATE TABLE IF NOT EXISTS `sys_license` (
+  `id` bigint(20) NOT NULL COMMENT '固定为1',
+  `instance_id` varchar(64) DEFAULT NULL COMMENT '库实例ID，首次写入后不可改',
+  `expire_time` datetime DEFAULT NULL COMMENT '到期时间，NULL表示未激活',
+  `payload_json` text COMMENT '签发payload JSON',
+  `signature` text COMMENT 'Base64签名',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统离线授权';
+/
+
 -- 仓库申请单（科室申领审核通过后按仓库拆分；主键 UUID7 36 位）
 CREATE TABLE IF NOT EXISTS `wh_warehouse_apply` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位含连字符）',

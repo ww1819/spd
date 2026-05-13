@@ -193,6 +193,7 @@
         <module>spd-generator</module>
         <module>spd-common</module>
         <module>spd-biz</module>
+        <module>tools/license-generator</module>
     </modules>
     <packaging>pom</packaging>
 

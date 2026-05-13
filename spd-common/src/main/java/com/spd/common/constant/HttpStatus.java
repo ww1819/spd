@@ -91,4 +91,14 @@ public class HttpStatus
      * 系统警告消息
      */
     public static final int WARN = 601;
+
+    /**
+     * 系统未激活离线授权（勿与业务码 602/603 冲突）
+     */
+    public static final int LICENSE_NOT_ACTIVATED = 606;
+
+    /**
+     * 离线授权已过期
+     */
+    public static final int LICENSE_EXPIRED = 607;
 }
