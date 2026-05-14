@@ -20,9 +20,11 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
+import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 
 /**
@@ -93,6 +95,29 @@ public class StkIoStocktakingController extends BaseController
     public AjaxResult edit(@RequestBody StkIoStocktaking stkIoStocktaking)
     {
         return toAjax(stkIoStocktakingService.updateStkIoStocktaking(stkIoStocktaking));
+    }
+
+    /**
+     * 向已保存的仓库盘点单追加明细（新行无 id），返回完整单据
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "盘点明细追加", businessType = BusinessType.INSERT)
+    @PostMapping("/{id}/entries")
+    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody List<StkIoStocktakingEntry> entries)
+    {
+        stkIoStocktakingService.appendWarehouseStocktakingEntries(id, entries);
+        return success(stkIoStocktakingService.selectStkIoStocktakingById(id));
+    }
+
+    /**
+     * 更新盘点明细「是否已盘」（未审核单）
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "盘点明细已盘", businessType = BusinessType.UPDATE)
+    @PutMapping("/entry/counted")
+    public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
+    {
+        return toAjax(stkIoStocktakingService.updateStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
     }
 
     /**

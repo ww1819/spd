@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
+import java.util.Collections;
 import com.spd.department.service.IDeptStocktakingService;
 
 /**
@@ -690,11 +691,28 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             if (material == null) {
                 throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
             }
-            // 供应商仅允许取产品档案，前端不允许手工改
-            if (material.getSupplierId() == null) {
-                throw new com.spd.common.exception.ServiceException(String.format("耗材[%s]产品档案未维护供应商，无法新增盘盈明细。", material.getName()));
+            // 供应商：已关联科室库存的明细（含盘点初始化带出）优先取 stk_dep_inventory.supplier_id；无关联时再取产品档案。
+            // 仅「未关联科室库存」的新增盘盈行才强制要求产品档案维护供应商（否则无法生成新批次等）。
+            Long supplierFromDep = null;
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+                try {
+                    StkDepInventory depInv = stkDepInventoryMapper.selectStkDepInventoryById(
+                        Long.valueOf(entry.getDepInventoryId().trim()));
+                    if (depInv != null && StringUtils.isNotEmpty(depInv.getSupplierId())) {
+                        supplierFromDep = parseLongSupplierId(depInv.getSupplierId());
+                    }
+                } catch (Exception ignore) {
+                    // 非法 depInventoryId 时忽略，后续仍可按批次等解析
+                }
             }
-            entry.setSupplierId(material.getSupplierId());
+            Long supplierToSet = supplierFromDep != null ? supplierFromDep : material.getSupplierId();
+            if (supplierToSet != null) {
+                entry.setSupplierId(supplierToSet);
+            }
+            if (StringUtils.isEmpty(entry.getDepInventoryId()) && entry.getSupplierId() == null) {
+                throw new com.spd.common.exception.ServiceException(String.format(
+                    "耗材[%s]：产品档案未维护供应商时，请在新增盘盈明细中选择供应商后再保存。", material.getName()));
+            }
 
             if (entry.getStockQty() == null) {
                 entry.setStockQty(BigDecimal.ZERO);
@@ -809,6 +827,22 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
         }
         return null;
+    }
+
+    /** 科室库存 supplier_id 为 varchar，解析为 Long 供盘点明细 supplierId 使用 */
+    private static Long parseLongSupplierId(String raw) {
+        if (StringUtils.isEmpty(raw)) {
+            return null;
+        }
+        String s = raw.trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void applyQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
@@ -1072,5 +1106,106 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         String createNo = FillRuleUtil.createBatchNo();
         String batchNo = str + createNo;
         return batchNo;
+    }
+
+    @Transactional
+    @Override
+    public int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries) {
+        if (billId == null || newEntries == null || newEntries.isEmpty()) {
+            return 0;
+        }
+        for (StkIoStocktakingEntry e : newEntries) {
+            if (e != null && e.getId() != null) {
+                throw new com.spd.common.exception.ServiceException("追加明细必须为未落库的新行（不能带明细 id）。");
+            }
+        }
+        StkIoStocktaking head = deptStocktakingMapper.selectDeptStocktakingById(billId);
+        if (head == null) {
+            throw new com.spd.common.exception.ServiceException("盘点单不存在或无权访问。");
+        }
+        if (head.getStockType() == null || head.getStockType() != 502) {
+            throw new com.spd.common.exception.ServiceException("仅支持科室盘点单追加明细。");
+        }
+        if (head.getStockStatus() != null && head.getStockStatus() == 2) {
+            throw new com.spd.common.exception.ServiceException("已审核的盘点单不可追加明细。");
+        }
+        List<StkIoStocktakingEntry> existing = head.getStkIoStocktakingEntryList();
+        if (existing == null) {
+            existing = Collections.emptyList();
+        }
+        Set<String> usedDepKeys = new HashSet<>();
+        for (StkIoStocktakingEntry ex : existing) {
+            if (ex == null) {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(ex.getDepInventoryId())) {
+                usedDepKeys.add(String.valueOf(ex.getDepInventoryId()).trim());
+            }
+        }
+        List<StkIoStocktakingEntry> clean = new ArrayList<>();
+        for (StkIoStocktakingEntry e : newEntries) {
+            if (e == null) {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(e.getDepInventoryId())) {
+                String dk = e.getDepInventoryId().trim();
+                if (usedDepKeys.contains(dk)) {
+                    throw new com.spd.common.exception.ServiceException("同一科室库存明细不允许重复加入盘点单。");
+                }
+                usedDepKeys.add(dk);
+            }
+            clean.add(e);
+        }
+        if (clean.isEmpty()) {
+            return 0;
+        }
+        for (StkIoStocktakingEntry entry : clean) {
+            if (StringUtils.isEmpty(entry.getBatchNo())) {
+                entry.setBatchNo(getBatchNumber());
+            }
+        }
+        StkIoStocktaking slice = new StkIoStocktaking();
+        slice.setId(head.getId());
+        slice.setStockNo(head.getStockNo());
+        slice.setDepartmentId(head.getDepartmentId());
+        slice.setWarehouseId(null);
+        slice.setStockType(502);
+        slice.setTenantId(head.getTenantId());
+        slice.setStkIoStocktakingEntryList(clean);
+        validateAndNormalizeEntries(slice, null);
+        for (StkIoStocktakingEntry entry : clean) {
+            entry.setParenId(billId);
+            entry.setStockNo(head.getStockNo());
+            if (StringUtils.isEmpty(entry.getBatchNo())) {
+                entry.setBatchNo(getBatchNumber());
+            }
+            entry.setDelFlag(0);
+            fillProfitLossFlag(entry);
+            applyStocktakingEntryAuditFields(entry, true);
+            deptStocktakingMapper.insertDeptStocktakingEntrySingle(entry);
+        }
+        head.setUpdateTime(new Date());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        deptStocktakingMapper.updateDeptStocktaking(head);
+        return clean.size();
+    }
+
+    @Override
+    public int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag)
+    {
+        if (entryId == null || countedFlag == null)
+        {
+            throw new com.spd.common.exception.ServiceException("参数错误。");
+        }
+        if (countedFlag != 0 && countedFlag != 1)
+        {
+            throw new com.spd.common.exception.ServiceException("已盘标志只能为 0 或 1。");
+        }
+        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(entryId, countedFlag, 502, SecurityUtils.getUserIdStr());
+        if (n == 0)
+        {
+            throw new com.spd.common.exception.ServiceException("未找到可更新的明细（可能已审核或不属于科室盘点）。");
+        }
+        return n;
     }
 }

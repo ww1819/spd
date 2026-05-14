@@ -790,6 +790,65 @@ CREATE TABLE IF NOT EXISTS `purchase_plan_entry_dep_apply` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购计划明细关联科室申购单明细表(dep)';
 /
 
+/* 科室汇总申购（不分仓库；审核后按产品默认仓库拆分为 dep_purchase_apply） */
+/
+CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `purchase_bill_no` varchar(64) DEFAULT NULL COMMENT '汇总申购单号',
+  `purchase_bill_date` date DEFAULT NULL COMMENT '申请日期',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `user_id` bigint DEFAULT NULL COMMENT '操作人ID',
+  `purchase_bill_status` int DEFAULT NULL COMMENT '1待审核 2已审核(已拆分仓库申购) 3驳回',
+  `split_status` int NOT NULL DEFAULT 0 COMMENT '0未拆分 1已拆分',
+  `total_amount` decimal(18,2) DEFAULT NULL COMMENT '总金额',
+  `urgency_level` int DEFAULT NULL COMMENT '紧急程度',
+  `expected_delivery_date` date DEFAULT NULL COMMENT '期望到货日期',
+  `reject_reason` varchar(500) DEFAULT NULL COMMENT '驳回原因',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_dep_purchase_agg_tenant` (`tenant_id`),
+  KEY `idx_dep_purchase_agg_dept` (`department_id`),
+  KEY `idx_dep_purchase_agg_no` (`purchase_bill_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室汇总申购主表（不分仓库）';
+/
+CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg_entry` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `parent_id` varchar(36) NOT NULL COMMENT '汇总申购主表ID',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
+  `material_name` varchar(255) DEFAULT NULL COMMENT '耗材名称',
+  `material_spec` varchar(255) DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(64) DEFAULT NULL COMMENT '单位',
+  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `qty` decimal(18,2) DEFAULT NULL COMMENT '申购数量',
+  `amt` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `reason` varchar(500) DEFAULT NULL COMMENT '申购理由',
+  `supplier_name` varchar(255) DEFAULT NULL COMMENT '建议供应商',
+  `brand` varchar(128) DEFAULT NULL COMMENT '品牌',
+  `model` varchar(128) DEFAULT NULL COMMENT '型号',
+  `line_no` int DEFAULT NULL COMMENT '行号',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_dep_purchase_agg_e_paren` (`parent_id`),
+  KEY `idx_dep_purchase_agg_e_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室汇总申购明细表';
+/
+
 -- ========== 出入库、库存、批次、仓库/科室流水（与 column.sql 增量字段对齐的完整建表） ==========
 -- 主表字段名 suppler_id 与历史代码一致（非 supplier_id）
 
@@ -1925,6 +1984,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID（盘盈等）',
   `return_warehouse_id` bigint DEFAULT NULL COMMENT '可退库/所属仓库ID',
+  `counted_flag` tinyint NOT NULL DEFAULT 0 COMMENT '是否已盘 0否 1是',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',

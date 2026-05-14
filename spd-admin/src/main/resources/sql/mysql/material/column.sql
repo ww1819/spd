@@ -625,6 +625,10 @@ CALL add_table_column('gz_order', 'delete_by', 'varchar(64)', '删除者', NULL)
 /
 CALL add_table_column('gz_order', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('gz_order', 'audit_date', 'datetime', '审核时间', NULL);
+/
+CALL add_table_column('gz_order', 'audit_by', 'varchar(64)', '审核人', NULL);
+/
 CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '主条码', NULL);
 /
 CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '辅条码', NULL);
@@ -827,6 +831,10 @@ CALL add_table_column('dep_purchase_apply', 'delete_time', 'datetime', '删除�
 /
 CALL add_table_column('dep_purchase_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+/
 
 -- dep_purchase_apply_entry
 CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
@@ -842,6 +850,8 @@ CALL add_table_column('dep_purchase_apply_entry', 'delete_by', 'varchar(64)', '�
 CALL add_table_column('dep_purchase_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(36)', '来源科室汇总申购明细ID(UUID7)', NULL);
 /
 
 -- fd_material
@@ -2355,6 +2365,8 @@ CALL add_table_column('stk_io_stocktaking_entry', 'department_id_str', 'varchar(
 CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id_str', 'varchar(64)', '供应商ID明细快照', null);
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'stock_no', 'varchar(64)', '盘点单号(冗余主表，便于按单号查明细)', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'counted_flag', 'tinyint NOT NULL DEFAULT 0', '是否已盘 0否 1是', NULL);
 /
 CALL add_table_column('stk_io_profit_loss', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
 /

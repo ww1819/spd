@@ -5,6 +5,7 @@ import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.domain.StkIoStocktaking;
+import com.spd.warehouse.domain.StkIoStocktakingEntry;
 
 /**
  * 科室盘点Service接口
@@ -87,4 +88,18 @@ public interface IDeptStocktakingService
      * @return
      */
     int rejectDeptStocktaking(String id, String rejectReason);
+
+    /**
+     * 更新科室盘点明细「是否已盘」（主单须未审核且 stock_type=502）
+     */
+    int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag);
+
+    /**
+     * 未审核科室盘点：仅追加新明细（不落全量 deleteExcept），用于前端分批落库减轻整单 PUT 压力。
+     *
+     * @param billId 主单 id
+     * @param newEntries 无明细 id 的新行（可多条）
+     * @return 实际插入条数
+     */
+    int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries);
 }

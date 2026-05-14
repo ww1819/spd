@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.department.mapper.DepPurchaseApplyAggMapper">
+
+    <sql id="depPurchaseAggScopedDeptIdsSubquery">
+        select distinct x.did from (
+            select cast(upd.dept_id as unsigned) as did
+            from sb_user_permission_dept upd
+            where upd.user_id = #{params.scopeDeptUserId}
+              and ifnull(upd.del_flag, '0') = '0'
+            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+              and upd.customer_id = #{params.scopeDeptCustomerId}
+            </if>
+            union
+            select ud.department_id as did
+            from sys_user_department ud
+            where ud.user_id = #{params.scopeDeptUserId}
+              and (ud.status = 0 or ud.status = '0' or ud.status is null)
+        ) x
+        where x.did is not null
+    </sql>
+
+    <sql id="depPurchaseAggDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and m.department_id in (<include refid="depPurchaseAggScopedDeptIdsSubquery"/>)
+        </if>
+    </sql>
+
+    <resultMap type="DepPurchaseApplyAgg" id="DepPurchaseApplyAggResult">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="purchaseBillNo" column="purchase_bill_no"/>
+        <result property="purchaseBillDate" column="purchase_bill_date"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="purchaseBillStatus" column="purchase_bill_status"/>
+        <result property="splitStatus" column="split_status"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="urgencyLevel" column="urgency_level"/>
+        <result property="expectedDeliveryDate" column="expected_delivery_date"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deleteBy" column="delete_by"/>
+        <result property="deleteTime" column="delete_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <association property="department" javaType="FdDepartment">
+            <result property="id" column="d_id"/>
+            <result property="name" column="d_name"/>
+        </association>
+        <association property="user" javaType="SysUser">
+            <result property="userId" column="u_user_id"/>
+            <result property="userName" column="u_user_name"/>
+            <result property="nickName" column="u_nick_name"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="DepPurchaseApplyAggWithEntriesResult" type="DepPurchaseApplyAgg" extends="DepPurchaseApplyAggResult">
+        <collection property="entryList" notNullColumn="sub_id" javaType="java.util.List" resultMap="DepPurchaseApplyAggEntryResult"/>
+    </resultMap>
+
+    <resultMap type="DepPurchaseApplyAggEntry" id="DepPurchaseApplyAggEntryResult">
+        <id property="id" column="sub_id"/>
+        <result property="parentId" column="sub_parent_id"/>
+        <result property="tenantId" column="sub_tenant_id"/>
+        <result property="materialId" column="sub_material_id"/>
+        <result property="materialName" column="sub_material_name"/>
+        <result property="materialSpec" column="sub_material_spec"/>
+        <result property="unit" column="sub_unit"/>
+        <result property="unitPrice" column="sub_unit_price"/>
+        <result property="qty" column="sub_qty"/>
+        <result property="amt" column="sub_amt"/>
+        <result property="reason" column="sub_reason"/>
+        <result property="supplierName" column="sub_supplier_name"/>
+        <result property="brand" column="sub_brand"/>
+        <result property="model" column="sub_model"/>
+        <result property="lineNo" column="sub_line_no"/>
+        <result property="delFlag" column="sub_del_flag"/>
+        <result property="deleteBy" column="sub_delete_by"/>
+        <result property="deleteTime" column="sub_delete_time"/>
+        <result property="createBy" column="sub_create_by"/>
+        <result property="createTime" column="sub_create_time"/>
+        <result property="updateBy" column="sub_update_by"/>
+        <result property="updateTime" column="sub_update_time"/>
+        <result property="remark" column="sub_remark"/>
+        <association property="material" javaType="FdMaterial">
+            <result property="id" column="m_id"/>
+            <result property="code" column="m_code"/>
+            <result property="name" column="m_name"/>
+        </association>
+    </resultMap>
+
+    <sql id="selectDepPurchaseApplyAggVo">
+        select m.id, m.tenant_id, m.purchase_bill_no, m.purchase_bill_date, m.department_id, m.user_id,
+               m.purchase_bill_status, m.split_status, m.total_amount, m.urgency_level, m.expected_delivery_date,
+               m.reject_reason, m.del_flag, m.delete_by, m.delete_time,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               d.id as d_id, d.name as d_name,
+               u.user_id as u_user_id, u.user_name as u_user_name, u.nick_name as u_nick_name
+        from dep_purchase_apply_agg m
+        left join fd_department d on m.department_id = d.id
+        left join sys_user u on m.user_id = u.user_id
+    </sql>
+
+    <select id="selectDepPurchaseApplyAggList" parameterType="DepPurchaseApplyAgg" resultMap="DepPurchaseApplyAggResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        <include refid="selectDepPurchaseApplyAggVo"/>
+        <where>
+            m.tenant_id = #{scopedTenantId}
+            and (m.del_flag = 0 or m.del_flag is null)
+            <if test="purchaseBillNo != null and purchaseBillNo != ''">and m.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
+            <if test="purchaseBillDate != null">and m.purchase_bill_date = #{purchaseBillDate}</if>
+            <if test="departmentId != null">and m.department_id = #{departmentId}</if>
+            <if test="userId != null">and m.user_id = #{userId}</if>
+            <if test="purchaseBillStatus != null">and m.purchase_bill_status = #{purchaseBillStatus}</if>
+            <if test="splitStatus != null">and m.split_status = #{splitStatus}</if>
+            <include refid="depPurchaseAggDepartmentScopeFilter"/>
+        </where>
+        order by m.create_time desc
+    </select>
+
+    <select id="selectDepPurchaseApplyAggById" resultMap="DepPurchaseApplyAggWithEntriesResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select m.id, m.tenant_id, m.purchase_bill_no, m.purchase_bill_date, m.department_id, m.user_id,
+               m.purchase_bill_status, m.split_status, m.total_amount, m.urgency_level, m.expected_delivery_date,
+               m.reject_reason, m.del_flag, m.delete_by, m.delete_time,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               d.id as d_id, d.name as d_name,
+               u.user_id as u_user_id, u.user_name as u_user_name, u.nick_name as u_nick_name,
+               e.id as sub_id, e.parent_id as sub_parent_id, e.tenant_id as sub_tenant_id, e.material_id as sub_material_id,
+               e.material_name as sub_material_name, e.material_spec as sub_material_spec, e.unit as sub_unit,
+               e.unit_price as sub_unit_price, e.qty as sub_qty, e.amt as sub_amt, e.reason as sub_reason,
+               e.supplier_name as sub_supplier_name, e.brand as sub_brand, e.model as sub_model, e.line_no as sub_line_no,
+               e.del_flag as sub_del_flag, e.delete_by as sub_delete_by, e.delete_time as sub_delete_time,
+               e.create_by as sub_create_by, e.create_time as sub_create_time, e.update_by as sub_update_by,
+               e.update_time as sub_update_time, e.remark as sub_remark,
+               mat.id as m_id, mat.code as m_code, mat.name as m_name
+        from dep_purchase_apply_agg m
+        left join fd_department d on m.department_id = d.id
+        left join sys_user u on m.user_id = u.user_id
+        left join dep_purchase_apply_agg_entry e on e.parent_id = m.id and (e.del_flag = 0 or e.del_flag is null)
+        left join fd_material mat on e.material_id = mat.id
+        where m.id = #{id} and m.tenant_id = #{scopedTenantId}
+          and (m.del_flag = 0 or m.del_flag is null)
+    </select>
+
+    <insert id="insertDepPurchaseApplyAgg" parameterType="DepPurchaseApplyAgg">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        insert into dep_purchase_apply_agg (
+            id, tenant_id, purchase_bill_no, purchase_bill_date, department_id, user_id,
+            purchase_bill_status, split_status, total_amount, urgency_level, expected_delivery_date,
+            reject_reason, del_flag, create_by, create_time, remark
+        ) values (
+            #{id}, #{tenantId}, #{purchaseBillNo}, #{purchaseBillDate}, #{departmentId}, #{userId},
+            #{purchaseBillStatus}, #{splitStatus}, #{totalAmount}, #{urgencyLevel}, #{expectedDeliveryDate},
+            #{rejectReason}, #{delFlag}, #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateDepPurchaseApplyAgg" parameterType="DepPurchaseApplyAgg">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply_agg
+        <trim prefix="set" suffixOverrides=",">
+            <if test="purchaseBillNo != null">purchase_bill_no = #{purchaseBillNo},</if>
+            <if test="purchaseBillDate != null">purchase_bill_date = #{purchaseBillDate},</if>
+            <if test="departmentId != null">department_id = #{departmentId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="purchaseBillStatus != null">purchase_bill_status = #{purchaseBillStatus},</if>
+            <if test="splitStatus != null">split_status = #{splitStatus},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="urgencyLevel != null">urgency_level = #{urgencyLevel},</if>
+            <if test="expectedDeliveryDate != null">expected_delivery_date = #{expectedDeliveryDate},</if>
+            <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="deleteDepPurchaseApplyAggById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply_agg
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="deleteDepPurchaseApplyAggByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply_agg
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where tenant_id = #{scopedTenantId} and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="deleteDepPurchaseApplyAggEntryByParentId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply_agg_entry
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <insert id="batchInsertDepPurchaseApplyAggEntry">
+        insert into dep_purchase_apply_agg_entry (
+            id, parent_id, tenant_id, material_id, material_name, material_spec, unit, unit_price, qty, amt,
+            reason, supplier_name, brand, model, line_no, del_flag, create_by, create_time, remark
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.parentId}, #{item.tenantId}, #{item.materialId}, #{item.materialName},
+                #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt},
+                #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.lineNo},
+                #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.remark}
+            )
+        </foreach>
+    </insert>
+</mapper>

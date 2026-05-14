@@ -71,6 +71,10 @@ public class DepPurchaseApplyEntry extends BaseEntity
 
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
+
+    /** 来源科室汇总申购明细ID(UUID7) */
+    private String srcAggEntryId;
+
     /** 删除人（逻辑删除时填充） */
     private String deleteBy;
     /** 删除时间（逻辑删除时填充） */
@@ -211,6 +215,14 @@ public class DepPurchaseApplyEntry extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getSrcAggEntryId() {
+        return srcAggEntryId;
+    }
+
+    public void setSrcAggEntryId(String srcAggEntryId) {
+        this.srcAggEntryId = srcAggEntryId;
+    }
 
     public String getDeleteBy() {
         return deleteBy;
