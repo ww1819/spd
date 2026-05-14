@@ -46,6 +46,8 @@ public class HcBarcodeFlow {
     private String materialSpeci;
     @Excel(name = "型号")
     private String materialModel;
+    @Excel(name = "耗材编码")
+    private String materialCode;
     private String operatorId;
     private String operatorName;
     private String remark;
@@ -99,6 +101,8 @@ public class HcBarcodeFlow {
     public void setMaterialSpeci(String materialSpeci) { this.materialSpeci = materialSpeci; }
     public String getMaterialModel() { return materialModel; }
     public void setMaterialModel(String materialModel) { this.materialModel = materialModel; }
+    public String getMaterialCode() { return materialCode; }
+    public void setMaterialCode(String materialCode) { this.materialCode = materialCode; }
     public String getOperatorId() { return operatorId; }
     public void setOperatorId(String operatorId) { this.operatorId = operatorId; }
     public String getOperatorName() { return operatorName; }

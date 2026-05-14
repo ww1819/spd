@@ -500,6 +500,10 @@ public class SysUserController extends BaseController
             return error("修改用户'" + user.getUserName() + "'失败，邮箱账号已存在");
         }
         user.setUpdateBy(getUserIdStr());
+        if (StringUtils.isNotEmpty(user.getPassword()))
+        {
+            user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+        }
         return toAjax(userService.updateUser(user));
     }
 

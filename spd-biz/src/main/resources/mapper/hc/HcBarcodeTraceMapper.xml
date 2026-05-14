@@ -124,16 +124,20 @@
     </select>
 
     <select id="selectHcBarcodeFlowList" resultType="com.spd.hc.domain.HcBarcodeFlow">
-        select * from hc_barcode_flow
-        where del_flag = 0
-          and tenant_id = #{tenantId}
+        select f.*, m.material_code as materialCode
+        from hc_barcode_flow f
+        left join hc_barcode_master m on m.id = f.hc_barcode_master_id
+            and m.tenant_id = f.tenant_id
+            and (m.del_flag is null or m.del_flag = 0)
+        where f.del_flag = 0
+          and f.tenant_id = #{tenantId}
         <if test="hcBarcodeMasterId != null and hcBarcodeMasterId != ''">
-            and hc_barcode_master_id = #{hcBarcodeMasterId}
+            and f.hc_barcode_master_id = #{hcBarcodeMasterId}
         </if>
         <if test="barcodeValue != null and barcodeValue != ''">
-            and barcode_value like concat('%', #{barcodeValue}, '%')
+            and f.barcode_value like concat('%', #{barcodeValue}, '%')
         </if>
-        order by event_time desc, id desc
+        order by f.event_time desc, f.id desc
     </select>
 
     <select id="selectHcBarcodeMasterByTenantAndBarcode" resultType="com.spd.hc.domain.HcBarcodeMaster">
