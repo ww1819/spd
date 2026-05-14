@@ -123,6 +123,9 @@ public class StkIoStocktakingEntry extends BaseEntity
     @Excel(name = "可退库仓库ID")
     private Long returnWarehouseId;
 
+    /** 是否已盘：0 否，1 是（清点核对完毕） */
+    private Integer countedFlag;
+
     /** 明细业务主键 UUID7 */
     private String entryUuid;
     /** 账面批次 stk_batch.id 快照 */
@@ -326,6 +329,9 @@ public class StkIoStocktakingEntry extends BaseEntity
     public Long getReturnWarehouseId() { return returnWarehouseId; }
     public void setReturnWarehouseId(Long returnWarehouseId) { this.returnWarehouseId = returnWarehouseId; }
 
+    public Integer getCountedFlag() { return countedFlag; }
+    public void setCountedFlag(Integer countedFlag) { this.countedFlag = countedFlag; }
+
     public String getEntryUuid() { return entryUuid; }
     public void setEntryUuid(String entryUuid) { this.entryUuid = entryUuid; }
 
@@ -368,6 +374,7 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("stockAmount", getStockAmount())
             .append("profitAmount", getProfitAmount())
             .append("returnWarehouseId", getReturnWarehouseId())
+            .append("countedFlag", getCountedFlag())
             .append("supplierId", getSupplierId())
             .toString();
     }

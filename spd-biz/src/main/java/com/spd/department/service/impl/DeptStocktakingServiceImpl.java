@@ -1073,4 +1073,23 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         String batchNo = str + createNo;
         return batchNo;
     }
+
+    @Override
+    public int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag)
+    {
+        if (entryId == null || countedFlag == null)
+        {
+            throw new com.spd.common.exception.ServiceException("参数错误。");
+        }
+        if (countedFlag != 0 && countedFlag != 1)
+        {
+            throw new com.spd.common.exception.ServiceException("已盘标志只能为 0 或 1。");
+        }
+        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(entryId, countedFlag, 502, SecurityUtils.getUserIdStr());
+        if (n == 0)
+        {
+            throw new com.spd.common.exception.ServiceException("未找到可更新的明细（可能已审核或不属于科室盘点）。");
+        }
+        return n;
+    }
 }

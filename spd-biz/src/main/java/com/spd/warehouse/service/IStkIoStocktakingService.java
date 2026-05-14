@@ -81,4 +81,9 @@ public interface IStkIoStocktakingService
      * @return
      */
     List<StkIoStocktaking> getMonthHandleDataList(String beginDate, String endDate);
+
+    /**
+     * 更新仓库盘点明细「是否已盘」（主单须未审核且 stock_type=501）
+     */
+    int updateStocktakingEntryCountedFlag(Long entryId, Integer countedFlag);
 }

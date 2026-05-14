@@ -1984,6 +1984,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `sub_barcode` varchar(128) DEFAULT NULL COMMENT '高值辅条码',
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID（盘盈等）',
   `return_warehouse_id` bigint DEFAULT NULL COMMENT '可退库/所属仓库ID',
+  `counted_flag` tinyint NOT NULL DEFAULT 0 COMMENT '是否已盘 0否 1是',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',

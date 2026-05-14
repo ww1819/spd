@@ -86,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="subBarcode"    column="sub_sub_barcode"    />
         <result property="supplierId"    column="sub_supplier_id"    />
         <result property="returnWarehouseId" column="sub_return_warehouse_id" />
+        <result property="countedFlag" column="sub_counted_flag" />
         <result property="entryUuid"    column="sub_entry_uuid"    />
         <result property="origBatchId"    column="sub_orig_batch_id"    />
         <result property="origBatchNoSnapshot"    column="sub_orig_batch_no_snap"    />
@@ -175,6 +176,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.stock_amount as sub_stock_amount,b.profit_amount as sub_profit_amount,
                 b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.supplier_id as sub_supplier_id,
                 b.return_warehouse_id as sub_return_warehouse_id,
+                b.counted_flag as sub_counted_flag,
                 m.id as mId, m.code as materialCode, m.name as materialName,
                 m.speci as m_speci, m.model as m_model, m.register_no as m_registerNo,
                 m.unit_id as m_unitId, m.factory_id as m_factoryId, m.supplier_id as m_supplierId,
@@ -307,6 +309,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             begin_time = #{beginTime}, end_time = #{endTime}, del_flag = #{delFlag}, remark = #{remark},
             stock_qty = #{stockQty}, profit_qty = #{profitQty}, profit_loss_flag = #{profitLossFlag}, stock_amount = #{stockAmount}, profit_amount = #{profitAmount},
             main_barcode = #{mainBarcode}, sub_barcode = #{subBarcode}, supplier_id = #{supplierId}, return_warehouse_id = #{returnWarehouseId},
+            counted_flag = #{countedFlag},
             kc_no_str = #{kcNoStr}, warehouse_id_str = #{warehouseIdStr}, department_id_str = #{departmentIdStr}, supplier_id_str = #{supplierIdStr},
             update_by = #{updateBy}, update_time = #{updateTime}
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -317,13 +320,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             entry_uuid, paren_id, stock_no, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, kc_no_str, dep_inventory_id,
             warehouse_id_str, department_id_str, supplier_id_str,
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
-            stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id,
+            stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id, counted_flag,
             tenant_id, create_by, create_time, update_by, update_time)
         values (
             #{entryUuid}, #{parenId}, #{stockNo}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{kcNoStr}, #{depInventoryId},
             #{warehouseIdStr}, #{departmentIdStr}, #{supplierIdStr},
             #{origBatchId}, #{origBatchNoSnapshot}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark},
-            #{stockQty}, #{profitQty}, #{profitLossFlag}, #{stockAmount}, #{profitAmount}, #{mainBarcode}, #{subBarcode}, #{supplierId}, #{returnWarehouseId},
+            #{stockQty}, #{profitQty}, #{profitLossFlag}, #{stockAmount}, #{profitAmount}, #{mainBarcode}, #{subBarcode}, #{supplierId}, #{returnWarehouseId}, COALESCE(#{countedFlag}, 0),
             #{tenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
 
@@ -341,14 +344,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             entry_uuid, paren_id, stock_no, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, kc_no_str, dep_inventory_id,
             warehouse_id_str, department_id_str, supplier_id_str,
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
-            stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id,
+            stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id, counted_flag,
             tenant_id, create_by, create_time, update_by, update_time)
         values
         <foreach item="item" index="index" collection="list" separator=",">
             ( #{item.entryUuid}, #{item.parenId}, #{item.stockNo}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo}, #{item.kcNoStr}, #{item.depInventoryId},
               #{item.warehouseIdStr}, #{item.departmentIdStr}, #{item.supplierIdStr},
               #{item.origBatchId}, #{item.origBatchNoSnapshot}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark},
-              #{item.stockQty}, #{item.profitQty}, #{item.profitLossFlag}, #{item.stockAmount}, #{item.profitAmount}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplierId}, #{item.returnWarehouseId},
+              #{item.stockQty}, #{item.profitQty}, #{item.profitLossFlag}, #{item.stockAmount}, #{item.profitAmount}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplierId}, #{item.returnWarehouseId}, COALESCE(#{item.countedFlag}, 0),
               #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
     </insert>
@@ -376,5 +379,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_time = now()
         </set>
         where id = #{entryId} and tenant_id = #{scopedTenantId} and (del_flag is null or del_flag != 1)
+    </update>
+
+    <update id="updateStocktakingEntryCountedFlag">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_stocktaking_entry e
+        inner join stk_io_stocktaking h on h.id = e.paren_id and h.tenant_id = #{scopedTenantId}
+            and (h.del_flag is null or h.del_flag != 1)
+        set e.counted_flag = #{countedFlag},
+            e.update_by = #{updateBy},
+            e.update_time = now()
+        where e.id = #{entryId} and e.tenant_id = #{scopedTenantId}
+          and (e.del_flag is null or e.del_flag != 1)
+          and h.stock_type = #{stockType}
+          and (h.stock_status is null or h.stock_status != 2)
     </update>
 </mapper>

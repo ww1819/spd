@@ -502,4 +502,23 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             entry.setOrigBatchNoSnapshot(inv.getBatchNo());
         }
     }
+
+    @Override
+    public int updateStocktakingEntryCountedFlag(Long entryId, Integer countedFlag)
+    {
+        if (entryId == null || countedFlag == null)
+        {
+            throw new ServiceException("参数错误。");
+        }
+        if (countedFlag != 0 && countedFlag != 1)
+        {
+            throw new ServiceException("已盘标志只能为 0 或 1。");
+        }
+        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(entryId, countedFlag, STOCK_TYPE_WH_STOCKTAKING, SecurityUtils.getUserIdStr());
+        if (n == 0)
+        {
+            throw new ServiceException("未找到可更新的明细（可能已审核或不属于仓库盘点）。");
+        }
+        return n;
+    }
 }

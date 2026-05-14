@@ -23,6 +23,7 @@ import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 
 /**
@@ -93,6 +94,17 @@ public class StkIoStocktakingController extends BaseController
     public AjaxResult edit(@RequestBody StkIoStocktaking stkIoStocktaking)
     {
         return toAjax(stkIoStocktakingService.updateStkIoStocktaking(stkIoStocktaking));
+    }
+
+    /**
+     * 更新盘点明细「是否已盘」（未审核单）
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "盘点明细已盘", businessType = BusinessType.UPDATE)
+    @PutMapping("/entry/counted")
+    public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
+    {
+        return toAjax(stkIoStocktakingService.updateStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
     }
 
     /**

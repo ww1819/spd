@@ -21,6 +21,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.department.service.IDeptStocktakingService;
+import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -110,6 +111,17 @@ public class DeptStocktakingController extends BaseController
     public AjaxResult edit(@RequestBody StkIoStocktaking stkIoStocktaking)
     {
         return toAjax(deptStocktakingService.updateDeptStocktaking(stkIoStocktaking));
+    }
+
+    /**
+     * 更新盘点明细「是否已盘」（未审核单）
+     */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
+    @Log(title = "科室盘点明细已盘", businessType = BusinessType.UPDATE)
+    @PutMapping("/entry/counted")
+    public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
+    {
+        return toAjax(deptStocktakingService.updateDeptStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
     }
 
     /**

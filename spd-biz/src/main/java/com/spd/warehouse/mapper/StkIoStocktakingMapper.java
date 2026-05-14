@@ -114,4 +114,12 @@ public interface StkIoStocktakingMapper
         @Param("kcNoStr") String kcNoStr,
         @Param("depInventoryId") String depInventoryId,
         @Param("updateBy") String updateBy);
+
+    /**
+     * 仅更新明细「是否已盘」，且校验主单为指定 stock_type、未审核。
+     */
+    int updateStocktakingEntryCountedFlag(@Param("entryId") Long entryId,
+        @Param("countedFlag") Integer countedFlag,
+        @Param("stockType") Integer stockType,
+        @Param("updateBy") String updateBy);
 }

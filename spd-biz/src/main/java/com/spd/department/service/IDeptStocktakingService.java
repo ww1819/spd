@@ -87,4 +87,9 @@ public interface IDeptStocktakingService
      * @return
      */
     int rejectDeptStocktaking(String id, String rejectReason);
+
+    /**
+     * 更新科室盘点明细「是否已盘」（主单须未审核且 stock_type=502）
+     */
+    int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag);
 }
