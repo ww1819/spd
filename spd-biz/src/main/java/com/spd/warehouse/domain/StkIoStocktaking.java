@@ -60,9 +60,9 @@ public class StkIoStocktaking extends BaseEntity
     /** 删除标识 */
     private Integer delFlag;
 
-    /** 审核日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
+    /** 审核时间（与库表 audit_date 一致，含时分秒） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
 
     /** 驳回原因 */
@@ -113,6 +113,12 @@ public class StkIoStocktaking extends BaseEntity
 
     /** 仓库对象 */
     private FdWarehouse warehouse;
+
+    /** 制单人昵称（列表/详情联查 sys_user，不落库） */
+    private String createUserNickName;
+
+    /** 审核人昵称（列表/详情联查 sys_user，不落库） */
+    private String auditUserNickName;
 
     public void setId(Long id)
     {
@@ -298,6 +304,22 @@ public class StkIoStocktaking extends BaseEntity
         this.warehouse = warehouse;
     }
 
+    public String getCreateUserNickName() {
+        return createUserNickName;
+    }
+
+    public void setCreateUserNickName(String createUserNickName) {
+        this.createUserNickName = createUserNickName;
+    }
+
+    public String getAuditUserNickName() {
+        return auditUserNickName;
+    }
+
+    public void setAuditUserNickName(String auditUserNickName) {
+        this.auditUserNickName = auditUserNickName;
+    }
+
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
@@ -340,6 +362,8 @@ public class StkIoStocktaking extends BaseEntity
             .append("isMonthInit", getIsMonthInit())
             .append("profitAmount", getProfitAmount())
             .append("totalAmount", getTotalAmount())
+            .append("createUserNickName", getCreateUserNickName())
+            .append("auditUserNickName", getAuditUserNickName())
             .toString();
     }
 }
