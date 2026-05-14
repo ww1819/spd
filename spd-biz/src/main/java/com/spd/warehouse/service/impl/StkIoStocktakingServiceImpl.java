@@ -427,10 +427,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 if (StringUtils.isEmpty(entry.getBatchNumber()) || entry.getEndTime() == null) {
                     throw new ServiceException("新增盘盈明细必须录入批号、有效期。");
                 }
-                if (material.getSupplierId() == null) {
-                    throw new ServiceException(String.format("耗材[%s]未维护供应商，无法盘盈。", material.getName()));
+                if (material.getSupplierId() != null) {
+                    entry.setSupplierId(material.getSupplierId());
                 }
-                entry.setSupplierId(material.getSupplierId());
+                if (entry.getSupplierId() == null) {
+                    throw new ServiceException(String.format(
+                        "耗材[%s]：产品档案未维护供应商时，请在新增盘盈明细中选择供应商后再保存。", material.getName()));
+                }
                 if (entry.getReturnWarehouseId() == null) {
                     Long dw = material.getDefaultWarehouseId() != null ? material.getDefaultWarehouseId() : material.getWarehouseId();
                     entry.setReturnWarehouseId(dw);

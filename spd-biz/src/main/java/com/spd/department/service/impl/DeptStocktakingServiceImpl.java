@@ -690,11 +690,28 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             if (material == null) {
                 throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
             }
-            // 供应商仅允许取产品档案，前端不允许手工改
-            if (material.getSupplierId() == null) {
-                throw new com.spd.common.exception.ServiceException(String.format("耗材[%s]产品档案未维护供应商，无法新增盘盈明细。", material.getName()));
+            // 供应商：已关联科室库存的明细（含盘点初始化带出）优先取 stk_dep_inventory.supplier_id；无关联时再取产品档案。
+            // 仅「未关联科室库存」的新增盘盈行才强制要求产品档案维护供应商（否则无法生成新批次等）。
+            Long supplierFromDep = null;
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId())) {
+                try {
+                    StkDepInventory depInv = stkDepInventoryMapper.selectStkDepInventoryById(
+                        Long.valueOf(entry.getDepInventoryId().trim()));
+                    if (depInv != null && StringUtils.isNotEmpty(depInv.getSupplierId())) {
+                        supplierFromDep = parseLongSupplierId(depInv.getSupplierId());
+                    }
+                } catch (Exception ignore) {
+                    // 非法 depInventoryId 时忽略，后续仍可按批次等解析
+                }
             }
-            entry.setSupplierId(material.getSupplierId());
+            Long supplierToSet = supplierFromDep != null ? supplierFromDep : material.getSupplierId();
+            if (supplierToSet != null) {
+                entry.setSupplierId(supplierToSet);
+            }
+            if (StringUtils.isEmpty(entry.getDepInventoryId()) && entry.getSupplierId() == null) {
+                throw new com.spd.common.exception.ServiceException(String.format(
+                    "耗材[%s]：产品档案未维护供应商时，请在新增盘盈明细中选择供应商后再保存。", material.getName()));
+            }
 
             if (entry.getStockQty() == null) {
                 entry.setStockQty(BigDecimal.ZERO);
@@ -809,6 +826,22 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
         }
         return null;
+    }
+
+    /** 科室库存 supplier_id 为 varchar，解析为 Long 供盘点明细 supplierId 使用 */
+    private static Long parseLongSupplierId(String raw) {
+        if (StringUtils.isEmpty(raw)) {
+            return null;
+        }
+        String s = raw.trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void applyQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
