@@ -2630,4 +2630,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.audit_date &lt;= #{endDate}
         group by MONTH(stk.audit_date)
     </select>
+
+    <!-- 库房申请整单作废前：解除未审核出库单与申请单的关联（明细 wh_apply_entry_id） -->
+    <update id="clearWhApplyEntryIdOnDraftOutbillsByWhApplyId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry e
+        inner join stk_io_bill b on b.id = e.paren_id
+        set e.wh_apply_entry_id = null,
+            e.update_by = #{updateBy},
+            e.update_time = now()
+        where b.wh_warehouse_apply_id = #{whApplyId}
+          and b.tenant_id = #{scopedTenantId}
+          and b.bill_type = 201
+          and b.bill_status = 1
+          and (b.del_flag = 0 or b.del_flag is null)
+          and (e.del_flag = 0 or e.del_flag is null)
+    </update>
+
+    <update id="clearWhWarehouseApplyOnDraftOutbillsByWhApplyId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill
+        set wh_warehouse_apply_id = null,
+            wh_warehouse_apply_bill_no = null,
+            update_by = #{updateBy},
+            update_time = now()
+        where wh_warehouse_apply_id = #{whApplyId}
+          and tenant_id = #{scopedTenantId}
+          and bill_type = 201
+          and bill_status = 1
+          and (del_flag = 0 or del_flag is null)
+    </update>
 </mapper>

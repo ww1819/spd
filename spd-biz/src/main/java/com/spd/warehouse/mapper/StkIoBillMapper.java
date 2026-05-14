@@ -437,4 +437,10 @@ public interface StkIoBillMapper
 
     /** 数据可视化大屏：当年已审核入退货按自然月汇总（入库 101 / 退货 301） */
     List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth();
+
+    int clearWhApplyEntryIdOnDraftOutbillsByWhApplyId(@Param("whApplyId") String whApplyId,
+        @Param("updateBy") String updateBy);
+
+    int clearWhWarehouseApplyOnDraftOutbillsByWhApplyId(@Param("whApplyId") String whApplyId,
+        @Param("updateBy") String updateBy);
 }

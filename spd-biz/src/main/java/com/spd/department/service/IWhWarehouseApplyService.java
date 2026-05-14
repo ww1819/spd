@@ -18,7 +18,7 @@ public interface IWhWarehouseApplyService {
 
     List<WhWarehouseApply> selectWhWarehouseApplyList(WhWarehouseApply query);
 
-    /** 出库单引用：分页列表（仅仍有可出库数量的仓库申请单） */
+    /** 出库单引用：分页列表；ckRefSheet 见实体字段，为空时与历史一致（仍有可出库的已生效单） */
     List<WhWarehouseApply> selectWhWarehouseApplyListForOutboundCk(WhWarehouseApply query);
 
     WhWarehouseApply selectWhWarehouseApplyById(String id);
@@ -31,7 +31,7 @@ public interface IWhWarehouseApplyService {
     /** 出库单逻辑删除前：软删本单在 wh_wh_apply_ck_entry_ref 中的关联 */
     void releaseWhApplyCkRefsForOutboundBill(Long ckBillId, String tenantId);
 
-    /** 整单作废（无关联出库引用时允许） */
+    /** 整单作废：无已审核出库关联时允许；若仅有未审核出库关联则先解除关联再作废 */
     void voidWholeWhWarehouseApply(String id, String reason);
 
     /** 明细作废：增加作废数量，并记录人、时、原因 */
