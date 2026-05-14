@@ -1175,7 +1175,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         validateAndNormalizeEntries(slice, null);
         for (StkIoStocktakingEntry entry : clean) {
             entry.setParenId(billId);
-            entry.setBillNo(head.getStockNo());
+            entry.setStockNo(head.getStockNo());
             if (StringUtils.isEmpty(entry.getBatchNo())) {
                 entry.setBatchNo(getBatchNumber());
             }
