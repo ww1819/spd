@@ -3,10 +3,12 @@ package com.spd.warehouse.service.impl;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -524,6 +526,155 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException("未找到可更新的明细（可能已审核或不属于仓库盘点）。");
         }
         return n;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public StkIoStocktaking initWarehouseStocktakingFromInventory(StkIoStocktaking patch)
+    {
+        try
+        {
+            return doInitWhStocktakingFromInventory(patch);
+        }
+        catch (ServiceException e)
+        {
+            String m = e.getMessage();
+            throw new ServiceException(
+                "盘点初始化未保存单据。" + (StringUtils.isNotEmpty(m) ? (" " + m) : "")
+                    + " 请排查仓库库存及关联耗材、供应商、批次数据后重试。");
+        }
+    }
+
+    private StkIoStocktaking doInitWhStocktakingFromInventory(StkIoStocktaking patch)
+    {
+        if (patch == null || patch.getWarehouseId() == null)
+        {
+            throw new ServiceException("请先选择仓库。");
+        }
+        Long billId = patch.getId();
+        List<StkInventory> invRows = loadWhInventoryForStocktaking(patch.getWarehouseId());
+        if (invRows == null || invRows.isEmpty())
+        {
+            throw new ServiceException("当前仓库下没有可用的库存明细，无法生成盘点单。");
+        }
+        invRows.sort(Comparator
+            .comparing((StkInventory i) -> i.getMaterialId() == null ? Long.MAX_VALUE : i.getMaterialId())
+            .thenComparing(i -> i.getId() == null ? 0L : i.getId()));
+        List<StkIoStocktakingEntry> entries = new ArrayList<>();
+        for (StkInventory inv : invRows)
+        {
+            if (inv == null || inv.getId() == null)
+            {
+                continue;
+            }
+            entries.add(buildWhInitEntryFromInventory(inv));
+        }
+        if (entries.isEmpty())
+        {
+            throw new ServiceException("仓库库存明细无效或缺少主键，无法生成盘点明细。");
+        }
+        Integer stockStatus = patch.getStockStatus();
+        if (billId == null)
+        {
+            StkIoStocktaking head = new StkIoStocktaking();
+            head.setWarehouseId(patch.getWarehouseId());
+            head.setDepartmentId(patch.getDepartmentId());
+            head.setStockDate(patch.getStockDate() != null ? patch.getStockDate() : DateUtils.getNowDate());
+            head.setRemark(patch.getRemark());
+            head.setStockStatus(stockStatus != null ? stockStatus : 1);
+            head.setStockType(STOCK_TYPE_WH_STOCKTAKING);
+            head.setStkIoStocktakingEntryList(entries);
+            insertStkIoStocktaking(head);
+            return selectStkIoStocktakingById(head.getId());
+        }
+        StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
+        if (head == null)
+        {
+            throw new ServiceException("盘点单不存在或无权访问。");
+        }
+        SecurityUtils.ensureTenantAccess(head.getTenantId());
+        if (head.getStockType() == null || head.getStockType() != STOCK_TYPE_WH_STOCKTAKING)
+        {
+            throw new ServiceException("仅支持仓库盘点单进行盘点初始化。");
+        }
+        if (head.getStockStatus() != null && head.getStockStatus() == 2)
+        {
+            throw new ServiceException("已审核的盘点单不可进行盘点初始化。");
+        }
+        if (head.getStkIoStocktakingEntryList() != null && !head.getStkIoStocktakingEntryList().isEmpty())
+        {
+            throw new ServiceException("盘点单已有明细，请先删除后再进行盘点初始化。");
+        }
+        if (!Objects.equals(head.getWarehouseId(), patch.getWarehouseId()))
+        {
+            throw new ServiceException("仓库与当前盘点单不一致，请刷新页面后重试。");
+        }
+        if (patch.getStockDate() != null)
+        {
+            head.setStockDate(patch.getStockDate());
+        }
+        if (patch.getRemark() != null)
+        {
+            head.setRemark(patch.getRemark());
+        }
+        head.setStkIoStocktakingEntryList(entries);
+        validateWarehouseStocktakingEntries(head);
+        insertStkIoStocktakingEntry(head);
+        head.setUpdateTime(DateUtils.getNowDate());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktakingMapper.updateStkIoStocktaking(head);
+        return selectStkIoStocktakingById(billId);
+    }
+
+    private List<StkInventory> loadWhInventoryForStocktaking(Long warehouseId)
+    {
+        StkInventory q = new StkInventory();
+        q.setWarehouseId(warehouseId);
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkInventoryMapper.selectStkInventoryList(q);
+    }
+
+    private StkIoStocktakingEntry buildWhInitEntryFromInventory(StkInventory inv)
+    {
+        StkIoStocktakingEntry e = new StkIoStocktakingEntry();
+        e.setMaterialId(inv.getMaterialId());
+        e.setKcNo(inv.getId());
+        BigDecimal qty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+        e.setQty(qty);
+        e.setStockQty(qty);
+        BigDecimal up = inv.getUnitPrice();
+        if (up == null && inv.getMaterial() != null)
+        {
+            FdMaterial m = inv.getMaterial();
+            up = m.getPrice() != null ? m.getPrice() : m.getSalePrice();
+        }
+        e.setUnitPrice(up);
+        e.setPrice(up);
+        if (up != null)
+        {
+            e.setAmt(qty.multiply(up));
+        }
+        else
+        {
+            e.setAmt(BigDecimal.ZERO);
+        }
+        if (StringUtils.isNotEmpty(inv.getBatchNo()))
+        {
+            e.setBatchNo(inv.getBatchNo().trim());
+        }
+        String bn = StringUtils.isNotEmpty(inv.getBatchNumber()) ? inv.getBatchNumber()
+            : (StringUtils.isNotEmpty(inv.getMaterialNo()) ? inv.getMaterialNo() : "");
+        e.setBatchNumber(bn != null ? bn : "");
+        e.setBeginTime(inv.getBeginTime());
+        e.setEndTime(inv.getEndTime());
+        e.setSupplierId(inv.getSupplierId());
+        e.setCountedFlag(0);
+        e.setRemark("");
+        e.setDelFlag(0);
+        return e;
     }
 
     @Transactional

@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import com.spd.department.service.IDeptStocktakingService;
 
 /**
@@ -1106,6 +1107,139 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         String createNo = FillRuleUtil.createBatchNo();
         String batchNo = str + createNo;
         return batchNo;
+    }
+
+    private static final int STOCK_TYPE_DEPT_STOCKTAKING = 502;
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public StkIoStocktaking initDeptStocktakingFromDepInventory(StkIoStocktaking patch) {
+        try {
+            return doInitDeptStocktakingFromDepInventory(patch);
+        } catch (com.spd.common.exception.ServiceException e) {
+            String m = e.getMessage();
+            throw new com.spd.common.exception.ServiceException(
+                "盘点初始化未保存单据。" + (StringUtils.isNotEmpty(m) ? (" " + m) : "")
+                    + " 请排查科室库存（「收货确认」须为已确认、数量与批次须合理）及耗材与供应商档案后重试。");
+        }
+    }
+
+    private StkIoStocktaking doInitDeptStocktakingFromDepInventory(StkIoStocktaking patch) {
+        if (patch == null || patch.getDepartmentId() == null) {
+            throw new com.spd.common.exception.ServiceException("请先选择科室。");
+        }
+        Long billId = patch.getId();
+        List<StkDepInventory> invRows = loadDepInventoryConfirmedForStocktaking(patch.getDepartmentId());
+        if (invRows == null || invRows.isEmpty()) {
+            throw new com.spd.common.exception.ServiceException("当前科室没有「收货确认」为已确认的库存明细，无法生成盘点单。");
+        }
+        invRows.sort(Comparator
+            .comparing((StkDepInventory i) -> i.getMaterialId() == null ? Long.MAX_VALUE : i.getMaterialId())
+            .thenComparing(i -> i.getId() == null ? 0L : i.getId()));
+        List<StkIoStocktakingEntry> entries = new ArrayList<>();
+        for (StkDepInventory inv : invRows) {
+            if (inv == null || inv.getId() == null) {
+                continue;
+            }
+            entries.add(buildDeptInitEntryFromDepInventory(inv));
+        }
+        if (entries.isEmpty()) {
+            throw new com.spd.common.exception.ServiceException("科室库存明细无效或缺少主键，无法生成盘点明细。");
+        }
+        Integer stockStatus = patch.getStockStatus();
+        if (billId == null) {
+            StkIoStocktaking head = new StkIoStocktaking();
+            head.setDepartmentId(patch.getDepartmentId());
+            head.setStockDate(patch.getStockDate() != null ? patch.getStockDate() : new Date());
+            head.setRemark(patch.getRemark());
+            head.setStockStatus(stockStatus != null ? stockStatus : 1);
+            head.setStockType(STOCK_TYPE_DEPT_STOCKTAKING);
+            head.setWarehouseId(null);
+            head.setStkIoStocktakingEntryList(entries);
+            insertDeptStocktaking(head);
+            return selectDeptStocktakingById(head.getId());
+        }
+        StkIoStocktaking head = deptStocktakingMapper.selectDeptStocktakingById(billId);
+        if (head == null) {
+            throw new com.spd.common.exception.ServiceException("盘点单不存在或无权访问。");
+        }
+        if (StringUtils.isNotEmpty(head.getTenantId())) {
+            SecurityUtils.ensureTenantAccess(head.getTenantId());
+        }
+        if (head.getStockType() == null || head.getStockType() != STOCK_TYPE_DEPT_STOCKTAKING) {
+            throw new com.spd.common.exception.ServiceException("仅支持科室盘点单进行盘点初始化。");
+        }
+        if (head.getStockStatus() != null && head.getStockStatus() == 2) {
+            throw new com.spd.common.exception.ServiceException("已审核的盘点单不可进行盘点初始化。");
+        }
+        if (head.getStkIoStocktakingEntryList() != null && !head.getStkIoStocktakingEntryList().isEmpty()) {
+            throw new com.spd.common.exception.ServiceException("盘点单已有明细，请先删除后再进行盘点初始化。");
+        }
+        if (!Objects.equals(head.getDepartmentId(), patch.getDepartmentId())) {
+            throw new com.spd.common.exception.ServiceException("科室与当前盘点单不一致，请刷新页面后重试。");
+        }
+        if (patch.getStockDate() != null) {
+            head.setStockDate(patch.getStockDate());
+        }
+        if (patch.getRemark() != null) {
+            head.setRemark(patch.getRemark());
+        }
+        head.setStkIoStocktakingEntryList(entries);
+        validateAndNormalizeEntries(head, null);
+        insertStkIoStocktakingEntry(head);
+        head.setUpdateTime(new Date());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        deptStocktakingMapper.updateDeptStocktaking(head);
+        return selectDeptStocktakingById(billId);
+    }
+
+    private List<StkDepInventory> loadDepInventoryConfirmedForStocktaking(Long departmentId) {
+        StkDepInventory q = new StkDepInventory();
+        q.setDepartmentId(departmentId);
+        q.setReceiptConfirmStatus(1);
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkDepInventoryMapper.selectStkDepInventoryList(q);
+    }
+
+    private StkIoStocktakingEntry buildDeptInitEntryFromDepInventory(StkDepInventory inv) {
+        StkIoStocktakingEntry e = new StkIoStocktakingEntry();
+        e.setMaterialId(inv.getMaterialId());
+        e.setDepInventoryId(inv.getId() != null ? String.valueOf(inv.getId()) : null);
+        BigDecimal qty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+        e.setQty(qty);
+        e.setStockQty(qty);
+        BigDecimal up = inv.getUnitPrice();
+        if (up == null && inv.getMaterial() != null) {
+            FdMaterial m = inv.getMaterial();
+            up = m.getPrice() != null ? m.getPrice() : m.getSalePrice();
+        }
+        e.setUnitPrice(up);
+        e.setPrice(up);
+        if (up != null) {
+            e.setAmt(qty.multiply(up));
+        } else {
+            e.setAmt(BigDecimal.ZERO);
+        }
+        if (StringUtils.isNotEmpty(inv.getBatchNo())) {
+            e.setBatchNo(inv.getBatchNo().trim());
+        }
+        String bn = StringUtils.isNotEmpty(inv.getBatchNumber()) ? inv.getBatchNumber()
+            : (StringUtils.isNotEmpty(inv.getMaterialNo()) ? inv.getMaterialNo() : "");
+        e.setBatchNumber(bn != null ? bn : "");
+        e.setBeginTime(inv.getBeginDate() != null ? inv.getBeginDate() : inv.getMaterialDate());
+        e.setEndTime(inv.getEndDate());
+        e.setReturnWarehouseId(inv.getWarehouseId());
+        Long supId = parseLongSupplierId(inv.getSupplierId());
+        if (supId == null && inv.getSupplier() != null && inv.getSupplier().getId() != null) {
+            supId = inv.getSupplier().getId();
+        }
+        e.setSupplierId(supId);
+        e.setCountedFlag(0);
+        e.setRemark("");
+        e.setDelFlag(0);
+        return e;
     }
 
     @Transactional

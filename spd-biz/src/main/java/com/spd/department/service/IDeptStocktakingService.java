@@ -102,4 +102,11 @@ public interface IDeptStocktakingService
      * @return 实际插入条数
      */
     int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries);
+
+    /**
+     * 盘点初始化：在服务端按科室「已收货确认」库存生成主单+明细并落库；成功返回完整单据；失败整单回滚不落库。
+     *
+     * @param headPatch 主单草稿字段（id 为空则新建；非空则须为无明细的未审核科室盘点单）
+     */
+    StkIoStocktaking initDeptStocktakingFromDepInventory(StkIoStocktaking headPatch);
 }

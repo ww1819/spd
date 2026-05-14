@@ -113,6 +113,17 @@ public class DeptStocktakingController extends BaseController
     }
 
     /**
+     * 盘点初始化：服务端按科室「已收货确认」库存生成并保存主单+明细，成功后返回完整单据（失败不落库）。
+     */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:add') or @ss.hasPermi('department:stocktaking:edit')")
+    @Log(title = "科室盘点初始化", businessType = BusinessType.INSERT)
+    @PostMapping("/init-from-inventory")
+    public AjaxResult initFromDepInventory(@RequestBody StkIoStocktaking body)
+    {
+        return success(deptStocktakingService.initDeptStocktakingFromDepInventory(body));
+    }
+
+    /**
      * 修改科室盘点
      */
     @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")

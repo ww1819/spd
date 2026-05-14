@@ -87,6 +87,17 @@ public class StkIoStocktakingController extends BaseController
     }
 
     /**
+     * 仓库盘点初始化：服务端按仓库库存生成并保存主单+明细，成功后返回完整单据（失败不落库）。
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:add') or @ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "仓库盘点初始化", businessType = BusinessType.INSERT)
+    @PostMapping("/init-from-inventory")
+    public AjaxResult initFromWhInventory(@RequestBody StkIoStocktaking body)
+    {
+        return success(stkIoStocktakingService.initWarehouseStocktakingFromInventory(body));
+    }
+
+    /**
      * 修改盘点
      */
     @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")

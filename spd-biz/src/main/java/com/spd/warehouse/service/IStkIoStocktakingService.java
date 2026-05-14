@@ -92,4 +92,9 @@ public interface IStkIoStocktakingService
      * 向已存在的仓库盘点单（stock_type=501、未审核）追加明细；新行不得带明细 id。
      */
     int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries);
+
+    /**
+     * 仓库盘点初始化：在服务端按仓库库存生成主单+明细并落库；成功返回完整单据；失败整单回滚不落库。
+     */
+    StkIoStocktaking initWarehouseStocktakingFromInventory(StkIoStocktaking headPatch);
 }
