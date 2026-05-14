@@ -827,6 +827,10 @@ CALL add_table_column('dep_purchase_apply', 'delete_time', 'datetime', '删除�
 /
 CALL add_table_column('dep_purchase_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+/
 
 -- dep_purchase_apply_entry
 CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
@@ -842,6 +846,8 @@ CALL add_table_column('dep_purchase_apply_entry', 'delete_by', 'varchar(64)', '�
 CALL add_table_column('dep_purchase_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(36)', '来源科室汇总申购明细ID(UUID7)', NULL);
 /
 
 -- fd_material

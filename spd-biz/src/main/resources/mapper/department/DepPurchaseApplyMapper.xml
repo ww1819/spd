@@ -50,6 +50,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="tenantId"    column="tenant_id"    />
+        <result property="srcAggApplyId" column="src_agg_apply_id"/>
+        <result property="srcAggBillNo" column="src_agg_bill_no"/>
         <association property="warehouse" javaType="FdWarehouse">
             <result property="id" column="w_id"/>
             <result property="name" column="w_name"/>
@@ -90,6 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deleteBy"    column="sub_delete_by"    />
         <result property="deleteTime"    column="sub_delete_time"    />
         <result property="tenantId"    column="sub_tenant_id"    />
+        <result property="srcAggEntryId" column="sub_src_agg_entry_id"/>
         <result property="remark"    column="sub_remark"    />
         <association property="material" javaType="FdMaterial">
             <result property="id" column="m_id"/>
@@ -137,6 +140,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.update_time, 
             dpa.remark,
             dpa.tenant_id,
+            dpa.src_agg_apply_id,
+            dpa.src_agg_bill_no,
             w.id as w_id,
             w.name as w_name,
             u.user_id as u_user_id,
@@ -190,6 +195,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.delete_by,
             dpa.delete_time,
             dpa.tenant_id,
+            dpa.src_agg_apply_id,
+            dpa.src_agg_bill_no,
             dpa.plan_status, 
             dpa.reject_reason, 
             dpa.create_by, 
@@ -223,6 +230,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpae.delete_by as sub_delete_by,
             dpae.delete_time as sub_delete_time,
             dpae.tenant_id as sub_tenant_id,
+            dpae.src_agg_entry_id as sub_src_agg_entry_id,
             dpae.remark as sub_remark,
             m.id as m_id,
             m.code as m_code,
@@ -271,6 +279,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="srcAggApplyId != null and srcAggApplyId != ''">src_agg_apply_id,</if>
+            <if test="srcAggBillNo != null and srcAggBillNo != ''">src_agg_bill_no,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -291,6 +301,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="srcAggApplyId != null and srcAggApplyId != ''">#{srcAggApplyId},</if>
+            <if test="srcAggBillNo != null and srcAggBillNo != ''">#{srcAggBillNo},</if>
             #{scopedTenantId},
          </trim>
     </insert>
@@ -316,6 +328,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="srcAggApplyId != null">src_agg_apply_id = #{srcAggApplyId},</if>
+            <if test="srcAggBillNo != null">src_agg_bill_no = #{srcAggBillNo},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
@@ -361,6 +375,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             supplier_name,
             brand,
             model,
+            src_agg_entry_id,
             tenant_id,
             create_by,
             create_time,
@@ -383,6 +398,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 #{item.supplierName},
                 #{item.brand},
                 #{item.model},
+                #{item.srcAggEntryId},
                 #{item.tenantId},
                 #{item.createBy},
                 #{item.createTime},

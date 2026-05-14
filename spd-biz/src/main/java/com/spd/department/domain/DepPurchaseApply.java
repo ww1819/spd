@@ -92,6 +92,12 @@ public class DepPurchaseApply extends BaseEntity
     /** 租户id，客户id */
     private String tenantId;
 
+    /** 来源科室汇总申购主表ID(UUID7)，非汇总单为空 */
+    private String srcAggApplyId;
+
+    /** 来源科室汇总申购单号 */
+    private String srcAggBillNo;
+
     /** 查询时是否排除已被采购计划引用的申购单（仅查询用，非表字段） */
     private Boolean excludeReferenced;
 
@@ -308,6 +314,22 @@ public class DepPurchaseApply extends BaseEntity
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public String getSrcAggApplyId() {
+        return srcAggApplyId;
+    }
+
+    public void setSrcAggApplyId(String srcAggApplyId) {
+        this.srcAggApplyId = srcAggApplyId;
+    }
+
+    public String getSrcAggBillNo() {
+        return srcAggBillNo;
+    }
+
+    public void setSrcAggBillNo(String srcAggBillNo) {
+        this.srcAggBillNo = srcAggBillNo;
     }
 
     public Boolean getExcludeReferenced() { return excludeReferenced; }
