@@ -25,6 +25,10 @@
         <result property="updateTime" column="update_time"/>
         <result property="remark" column="remark"/>
         <result property="pendingOutboundTotal" column="pending_outbound_total"/>
+        <result property="linkedCkTotal" column="linked_ck_total"/>
+        <result property="lineVoidedEntryCount" column="line_voided_entry_count"/>
+        <result property="lastLineVoidTime" column="last_line_void_time"/>
+        <result property="lastLineVoidBy" column="last_line_void_by"/>
         <association property="warehouse" javaType="FdWarehouse" resultMap="whRes"/>
         <association property="department" javaType="FdDepartment" resultMap="deptRes"/>
     </resultMap>
@@ -264,7 +268,8 @@
         order by m.create_time desc, m.id desc
     </select>
 
-    <!-- 出库管理「引用」可选仓库申请单：已生效、未整单作废、至少一行仍有可出库数量 -->
+    <!-- 出库管理「引用」仓库申请单列表：ckRefSheet=none|partial|full|lineVoid|wholeVoid；为空时与历史一致。
+         lineVoid：已有关联出库且存在对「剩余未引用数量」的明细作废。 -->
     <select id="selectWhWarehouseApplyListForOutboundCk" parameterType="WhWarehouseApply" resultMap="WhWarehouseApplyResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select m.id, m.tenant_id, m.apply_bill_no, m.bas_apply_id, m.bas_apply_bill_no, m.warehouse_id, m.department_id,
@@ -273,55 +278,88 @@
                m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
                w.id w_id, w.name w_name, w.code w_code,
                d.id d_id, d.name d_name, d.code d_code,
-               (
-                 select coalesce(sum(greatest(0,
-                   e.qty - coalesce(e.line_void_qty, 0) - coalesce(lk.linked_qty, 0)
-                 )), 0)
-                 from wh_warehouse_apply_entry e
-                 left join (
-                     select r.wh_apply_entry_id wid,
-                            sum(case when r.del_flag = 0 and r.link_status = 1
-                                      and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
-                                 then r.ref_qty else 0 end) linked_qty
-                     from wh_wh_apply_ck_entry_ref r
-                     left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
-                     where r.tenant_id = #{scopedTenantId}
-                     group by r.wh_apply_entry_id
-                 ) lk on lk.wid = e.id
-                 where e.paren_id = m.id
-                   and e.tenant_id = m.tenant_id
-                   and (e.del_flag = 0 or e.del_flag is null)
-               ) pending_outbound_total
+               coalesce(agg.pending_sum, 0) as pending_outbound_total,
+               coalesce(agg.linked_sum, 0) as linked_ck_total,
+               coalesce(agg.line_voided_entry_count, 0) as line_voided_entry_count,
+               lst.last_line_void_time,
+               lst.last_line_void_by
         from wh_warehouse_apply m
         left join fd_warehouse w on m.warehouse_id = w.id
         left join fd_department d on m.department_id = d.id
+        left join (
+            select e.paren_id as agg_apply_id,
+                   coalesce(sum(greatest(0, e.qty - coalesce(e.line_void_qty, 0) - coalesce(lk.linked_qty, 0))), 0) as pending_sum,
+                   coalesce(sum(coalesce(lk.linked_qty, 0)), 0) as linked_sum,
+                   coalesce(sum(coalesce(e.line_void_qty, 0)), 0) as line_void_sum,
+                   sum(case when coalesce(e.line_void_qty, 0) &gt; 0 then 1 else 0 end) as line_voided_entry_count
+            from wh_warehouse_apply_entry e
+            left join (
+                select r.wh_apply_entry_id wid,
+                       sum(case when r.del_flag = 0 and r.link_status = 1
+                                 and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
+                            then r.ref_qty else 0 end) linked_qty
+                from wh_wh_apply_ck_entry_ref r
+                left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+                where r.tenant_id = #{scopedTenantId}
+                group by r.wh_apply_entry_id
+            ) lk on lk.wid = e.id
+            where (e.del_flag = 0 or e.del_flag is null)
+            group by e.paren_id
+        ) agg on agg.agg_apply_id = m.id
+        left join (
+            select e.paren_id as lst_apply_id,
+                   max(e.line_void_time) as last_line_void_time,
+                   substring_index(group_concat(e.line_void_by order by e.line_void_time desc separator '|'), '|', 1) as last_line_void_by
+            from wh_warehouse_apply_entry e
+            where (e.del_flag = 0 or e.del_flag is null)
+              and e.line_void_time is not null
+            group by e.paren_id
+        ) lst on lst.lst_apply_id = m.id
         <where>
             m.tenant_id = #{scopedTenantId}
             and (m.del_flag = 0 or m.del_flag is null)
-            and (m.void_whole_flag = 0 or m.void_whole_flag is null)
-            and m.bill_status = 2
             <if test="applyBillNo != null and applyBillNo != ''">and m.apply_bill_no like concat('%', #{applyBillNo}, '%')</if>
             <if test="basApplyBillNo != null and basApplyBillNo != ''">and m.bas_apply_bill_no like concat('%', #{basApplyBillNo}, '%')</if>
             <if test="basApplyId != null and basApplyId != ''">and m.bas_apply_id = #{basApplyId}</if>
             <if test="warehouseId != null">and m.warehouse_id = #{warehouseId}</if>
             <if test="departmentId != null">and m.department_id = #{departmentId}</if>
-            and exists (
-                select 1 from wh_warehouse_apply_entry e2
-                left join (
-                     select r.wh_apply_entry_id wid,
-                            sum(case when r.del_flag = 0 and r.link_status = 1
-                                      and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
-                                 then r.ref_qty else 0 end) linked_qty
-                     from wh_wh_apply_ck_entry_ref r
-                     left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
-                     where r.tenant_id = #{scopedTenantId}
-                     group by r.wh_apply_entry_id
-                ) lk2 on lk2.wid = e2.id
-                where e2.paren_id = m.id
-                  and e2.tenant_id = m.tenant_id
-                  and (e2.del_flag = 0 or e2.del_flag is null)
-                  and (e2.qty - coalesce(e2.line_void_qty, 0) - coalesce(lk2.linked_qty, 0)) > 0
-            )
+            <choose>
+                <when test="ckRefSheet != null and ckRefSheet == 'wholeVoid'">
+                    and coalesce(m.void_whole_flag, 0) = 1
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'lineVoid'">
+                    and (m.void_whole_flag = 0 or m.void_whole_flag is null)
+                    and m.bill_status = 2
+                    and coalesce(agg.linked_sum, 0) &gt; 0
+                    and coalesce(agg.line_void_sum, 0) &gt; 0
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'full'">
+                    and (m.void_whole_flag = 0 or m.void_whole_flag is null)
+                    and m.bill_status = 2
+                    and coalesce(agg.line_void_sum, 0) = 0
+                    and coalesce(agg.linked_sum, 0) &gt; 0
+                    and coalesce(agg.pending_sum, 0) &lt;= 0
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'partial'">
+                    and (m.void_whole_flag = 0 or m.void_whole_flag is null)
+                    and m.bill_status = 2
+                    and coalesce(agg.line_void_sum, 0) = 0
+                    and coalesce(agg.linked_sum, 0) &gt; 0
+                    and coalesce(agg.pending_sum, 0) &gt; 0
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'none'">
+                    and (m.void_whole_flag = 0 or m.void_whole_flag is null)
+                    and m.bill_status = 2
+                    and coalesce(agg.line_void_sum, 0) = 0
+                    and coalesce(agg.linked_sum, 0) = 0
+                    and coalesce(agg.pending_sum, 0) &gt; 0
+                </when>
+                <otherwise>
+                    and (m.void_whole_flag = 0 or m.void_whole_flag is null)
+                    and m.bill_status = 2
+                    and coalesce(agg.pending_sum, 0) &gt; 0
+                </otherwise>
+            </choose>
         </where>
         order by m.create_time desc, m.id desc
     </select>
@@ -333,6 +371,26 @@
           and tenant_id = #{tenantId}
           and del_flag = 0
     </update>
+
+    <update id="softDeleteCkEntryRefsByWhApplyId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update wh_wh_apply_ck_entry_ref
+        set del_flag = 1, link_status = 0, update_by = #{updateBy}, update_time = now()
+        where wh_apply_id = #{whApplyId}
+          and tenant_id = #{scopedTenantId}
+          and del_flag = 0
+    </update>
+
+    <select id="countLinkedRefsToAuditedCkByWhApplyId" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select count(*) from wh_wh_apply_ck_entry_ref r
+        inner join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+        where r.wh_apply_id = #{whApplyId}
+          and r.tenant_id = #{scopedTenantId}
+          and r.del_flag = 0 and r.link_status = 1
+          and b.bill_type = 201 and b.bill_status = 2
+          and (b.del_flag = 0 or b.del_flag is null)
+    </select>
 
     <insert id="insertWhWhApplyCkEntryRef" parameterType="com.spd.department.domain.WhWhApplyCkEntryRef">
         insert into wh_wh_apply_ck_entry_ref (

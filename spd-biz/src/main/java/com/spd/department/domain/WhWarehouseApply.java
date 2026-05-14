@@ -48,6 +48,25 @@ public class WhWarehouseApply extends BaseEntity {
     /** 列表查询：是否包含已整单作废（默认 false） */
     private Boolean includeVoidWhole;
 
+    /**
+     * 出库引用弹窗页签：none 未引用 | partial 部分引用 | full 全部引用 | lineVoid 部分作废（已出库引用且剩余未引用部分已作废） | wholeVoid 已作废。
+     * 为空时与历史一致：仅「仍有可出库」的未整单作废已生效单。
+     */
+    private String ckRefSheet;
+
+    /** 存在明细作废数量>0 的明细行数（列表聚合，非表字段） */
+    private Integer lineVoidedEntryCount;
+
+    /** 最近一次明细作废时间（非表字段） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date lastLineVoidTime;
+
+    /** 最近一次明细作废操作人（非表字段） */
+    private String lastLineVoidBy;
+
+    /** 已关联出库数量合计（非表字段） */
+    private BigDecimal linkedCkTotal;
+
     private BigDecimal totalQty;
 
     private BigDecimal totalAmt;
@@ -162,6 +181,46 @@ public class WhWarehouseApply extends BaseEntity {
 
     public void setIncludeVoidWhole(Boolean includeVoidWhole) {
         this.includeVoidWhole = includeVoidWhole;
+    }
+
+    public String getCkRefSheet() {
+        return ckRefSheet;
+    }
+
+    public void setCkRefSheet(String ckRefSheet) {
+        this.ckRefSheet = ckRefSheet;
+    }
+
+    public Integer getLineVoidedEntryCount() {
+        return lineVoidedEntryCount;
+    }
+
+    public void setLineVoidedEntryCount(Integer lineVoidedEntryCount) {
+        this.lineVoidedEntryCount = lineVoidedEntryCount;
+    }
+
+    public Date getLastLineVoidTime() {
+        return lastLineVoidTime;
+    }
+
+    public void setLastLineVoidTime(Date lastLineVoidTime) {
+        this.lastLineVoidTime = lastLineVoidTime;
+    }
+
+    public String getLastLineVoidBy() {
+        return lastLineVoidBy;
+    }
+
+    public void setLastLineVoidBy(String lastLineVoidBy) {
+        this.lastLineVoidBy = lastLineVoidBy;
+    }
+
+    public BigDecimal getLinkedCkTotal() {
+        return linkedCkTotal;
+    }
+
+    public void setLinkedCkTotal(BigDecimal linkedCkTotal) {
+        this.linkedCkTotal = linkedCkTotal;
     }
 
     public BigDecimal getTotalQty() {

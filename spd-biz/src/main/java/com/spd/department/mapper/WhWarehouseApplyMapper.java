@@ -34,7 +34,7 @@ public interface WhWarehouseApplyMapper {
 
     List<WhWarehouseApply> selectWhWarehouseApplyList(WhWarehouseApply query);
 
-    /** 出库管理引用：仅返回仍有可出库数量的仓库申请单 */
+    /** 出库管理引用：分页列表；query.ckRefSheet=none|partial|full|lineVoid|wholeVoid，为空时同历史（仍有可出库） */
     List<WhWarehouseApply> selectWhWarehouseApplyListForOutboundCk(WhWarehouseApply query);
 
     WhWarehouseApplyEntry selectWhWarehouseApplyEntryById(@Param("id") String id);
@@ -66,4 +66,9 @@ public interface WhWarehouseApplyMapper {
     int softDeleteCkEntryRefsByCkBillId(@Param("ckBillId") String ckBillId,
         @Param("tenantId") String tenantId,
         @Param("updateBy") String updateBy);
+
+    int softDeleteCkEntryRefsByWhApplyId(@Param("whApplyId") String whApplyId,
+        @Param("updateBy") String updateBy);
+
+    int countLinkedRefsToAuditedCkByWhApplyId(@Param("whApplyId") String whApplyId);
 }

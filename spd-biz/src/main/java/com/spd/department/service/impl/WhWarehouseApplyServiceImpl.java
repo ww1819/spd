@@ -319,11 +319,17 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
         if (Integer.valueOf(1).equals(m.getVoidWholeFlag())) {
             throw new ServiceException("该库房申请单已作废");
         }
-        int refCnt = whWarehouseApplyMapper.countActiveCkRefsByWhApplyId(id);
-        if (refCnt > 0) {
-            throw new ServiceException("已关联出库单，无法整单作废；请先删除或处理相关出库单后重试");
+        int audited = whWarehouseApplyMapper.countLinkedRefsToAuditedCkByWhApplyId(id);
+        if (audited > 0) {
+            throw new ServiceException("已关联已审核出库单，无法整单作废；请先处理相关出库单");
         }
         String uid = SecurityUtils.getUserIdStr();
+        int refCnt = whWarehouseApplyMapper.countActiveCkRefsByWhApplyId(id);
+        if (refCnt > 0) {
+            stkIoBillMapper.clearWhApplyEntryIdOnDraftOutbillsByWhApplyId(id, uid);
+            stkIoBillMapper.clearWhWarehouseApplyOnDraftOutbillsByWhApplyId(id, uid);
+            whWarehouseApplyMapper.softDeleteCkEntryRefsByWhApplyId(id, uid);
+        }
         int u = whWarehouseApplyMapper.updateWhWarehouseApplyVoidWhole(id, uid, DateUtils.getNowDate(), reason);
         if (u <= 0) {
             throw new ServiceException("整单作废失败，请刷新后重试");

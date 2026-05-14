@@ -4593,7 +4593,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     /**
-     * 引用库房申请 / hc_doc_bill_ref 源单时，校验本单明细数量不超过可引用数量。
+     * 引用 hc_doc_bill_ref 源单时，校验本单明细数量不超过可再下推数量。
+     * 引用库房申请单出库不再强制校验「出库数量不得超过可申请/可引用」。
      *
      * @param excludeTgtBillId 修改或审核已存在单据时传入，用于从「已占用」中排除本单旧关联
      */
@@ -4616,66 +4617,6 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         String excludeTgtStr = excludeTgtBillId != null ? String.valueOf(excludeTgtBillId) : null;
 
         List<Map<String, Object>> errors = new ArrayList<>();
-
-        if (StringUtils.isNotEmpty(bill.getWhWarehouseApplyId()))
-        {
-            Integer bt = bill.getBillType();
-            if (bt != null && bt.intValue() == 201)
-            {
-                Map<String, BigDecimal> sumQtyByWhApplyEntry = new LinkedHashMap<>();
-                Map<String, Integer> firstRowByWhApplyEntry = new LinkedHashMap<>();
-                for (int i = 0; i < entries.size(); i++)
-                {
-                    StkIoBillEntry en = entries.get(i);
-                    if (en == null || StringUtils.isEmpty(en.getWhApplyEntryId()))
-                    {
-                        continue;
-                    }
-                    String wid = en.getWhApplyEntryId();
-                    sumQtyByWhApplyEntry.merge(wid, nz(en.getQty()), BigDecimal::add);
-                    firstRowByWhApplyEntry.putIfAbsent(wid, i + 1);
-                }
-                for (Map.Entry<String, BigDecimal> agg : sumQtyByWhApplyEntry.entrySet())
-                {
-                    String whApplyEntryId = agg.getKey();
-                    BigDecimal totalQ = agg.getValue();
-                    WhWarehouseApplyEntry whEn = whWarehouseApplyMapper.selectWhWarehouseApplyEntryById(whApplyEntryId);
-                    if (whEn == null)
-                    {
-                        continue;
-                    }
-                    BigDecimal lineQty = nz(whEn.getQty());
-                    BigDecimal voidQty = nz(whEn.getLineVoidQty());
-                    BigDecimal effective = lineQty.subtract(voidQty);
-                    BigDecimal linkedOthers = nz(whWarehouseApplyMapper.sumLinkedQtyByWhApplyEntryIdExcludingCkBill(
-                        whApplyEntryId, excludeTgtStr));
-                    BigDecimal maxAllowed = effective.subtract(linkedOthers);
-                    if (maxAllowed.compareTo(BigDecimal.ZERO) < 0)
-                    {
-                        maxAllowed = BigDecimal.ZERO;
-                    }
-                    if (totalQ.compareTo(maxAllowed) > 0)
-                    {
-                        int rowNo = firstRowByWhApplyEntry.getOrDefault(whApplyEntryId, 1);
-                        StkIoBillEntry sampleEn = null;
-                        for (StkIoBillEntry e : entries)
-                        {
-                            if (e != null && whApplyEntryId.equals(e.getWhApplyEntryId()))
-                            {
-                                sampleEn = e;
-                                break;
-                            }
-                        }
-                        errors.add(docRefErrRow(rowNo, sampleEn,
-                            String.format(
-                                "引用库房申请单出库：同一申请明细本单「数量」合计不得大于可申请数量 %s（申请数 %s，明细已作废 %s，其它出库单已占 %s）；当前本单合计 %s",
-                                fmtQty(maxAllowed), fmtQty(lineQty), fmtQty(voidQty), fmtQty(linkedOthers),
-                                fmtQty(totalQ)),
-                            maxAllowed, totalQ));
-                    }
-                }
-            }
-        }
 
         List<HcDocBillRef> refs = bill.getDocRefList();
         if ((refs == null || refs.isEmpty()) && bill.getId() != null)
