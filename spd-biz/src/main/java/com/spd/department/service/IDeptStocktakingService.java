@@ -1,6 +1,7 @@
 package com.spd.department.service;
 
 import java.util.List;
+import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
@@ -90,9 +91,9 @@ public interface IDeptStocktakingService
     int rejectDeptStocktaking(String id, String rejectReason);
 
     /**
-     * 更新科室盘点明细「是否已盘」（主单须未审核且 stock_type=502）
+     * 更新科室盘点明细「是否已盘」，可选同时写入实盘数量（与前端盘点数量一致）
      */
-    int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag);
+    int updateDeptStocktakingEntryCounted(StocktakingEntryCountedDto dto);
 
     /**
      * 未审核科室盘点：仅追加新明细（不落全量 deleteExcept），用于前端分批落库减轻整单 PUT 压力。

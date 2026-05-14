@@ -24,6 +24,7 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.department.mapper.DeptStocktakingMapper;
+import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
@@ -1325,17 +1326,72 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     }
 
     @Override
-    public int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag)
+    public int updateDeptStocktakingEntryCounted(StocktakingEntryCountedDto dto)
     {
-        if (entryId == null || countedFlag == null)
+        if (dto == null || dto.getId() == null || dto.getCountedFlag() == null)
         {
             throw new com.spd.common.exception.ServiceException("参数错误。");
         }
+        Integer countedFlag = dto.getCountedFlag();
         if (countedFlag != 0 && countedFlag != 1)
         {
             throw new com.spd.common.exception.ServiceException("已盘标志只能为 0 或 1。");
         }
-        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(entryId, countedFlag, 502, SecurityUtils.getUserIdStr());
+        BigDecimal stockQtyToPersist = dto.getStockQty();
+        BigDecimal amt = null;
+        String profitLossFlag = null;
+        BigDecimal profitQty = null;
+        BigDecimal stockAmount = null;
+        BigDecimal profitAmount = null;
+        if (stockQtyToPersist != null)
+        {
+            Long parenId = stkIoStocktakingMapper.selectParenIdByStocktakingEntryId(dto.getId());
+            if (parenId == null)
+            {
+                throw new com.spd.common.exception.ServiceException("未找到盘点明细。");
+            }
+            StkIoStocktaking bill = deptStocktakingMapper.selectDeptStocktakingById(parenId);
+            if (bill == null || bill.getStockType() == null || bill.getStockType() != 502
+                || (bill.getStockStatus() != null && bill.getStockStatus() == 2))
+            {
+                throw new com.spd.common.exception.ServiceException("未找到可更新的明细（可能已审核或不属于科室盘点）。");
+            }
+            StkIoStocktakingEntry entry = null;
+            if (bill.getStkIoStocktakingEntryList() != null)
+            {
+                for (StkIoStocktakingEntry e : bill.getStkIoStocktakingEntryList())
+                {
+                    if (e != null && dto.getId().equals(e.getId()))
+                    {
+                        entry = e;
+                        break;
+                    }
+                }
+            }
+            if (entry == null)
+            {
+                throw new com.spd.common.exception.ServiceException("未找到盘点明细。");
+            }
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId()))
+            {
+                BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+                if (stockQtyToPersist.compareTo(bookQty) > 0)
+                {
+                    throw new com.spd.common.exception.ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
+                }
+            }
+            entry.setStockQty(stockQtyToPersist);
+            fillProfitLossFlag(entry);
+            profitLossFlag = entry.getProfitLossFlag();
+            BigDecimal up = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            amt = up != null ? stockQtyToPersist.multiply(up) : BigDecimal.ZERO;
+            BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            profitQty = stockQtyToPersist.subtract(bookQty);
+            stockAmount = amt;
+            profitAmount = up != null ? profitQty.multiply(up) : BigDecimal.ZERO;
+        }
+        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(dto.getId(), countedFlag, 502,
+            SecurityUtils.getUserIdStr(), stockQtyToPersist, amt, profitLossFlag, profitQty, stockAmount, profitAmount);
         if (n == 0)
         {
             throw new com.spd.common.exception.ServiceException("未找到可更新的明细（可能已审核或不属于科室盘点）。");

@@ -128,7 +128,7 @@ public class StkIoStocktakingController extends BaseController
     @PutMapping("/entry/counted")
     public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
     {
-        return toAjax(stkIoStocktakingService.updateStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
+        return toAjax(stkIoStocktakingService.updateStocktakingEntryCounted(dto));
     }
 
     /**

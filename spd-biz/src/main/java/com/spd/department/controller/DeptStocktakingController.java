@@ -142,7 +142,7 @@ public class DeptStocktakingController extends BaseController
     @PutMapping("/entry/counted")
     public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
     {
-        return toAjax(deptStocktakingService.updateDeptStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
+        return toAjax(deptStocktakingService.updateDeptStocktakingEntryCounted(dto));
     }
 
     /**

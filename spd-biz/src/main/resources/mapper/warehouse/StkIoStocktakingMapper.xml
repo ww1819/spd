@@ -389,9 +389,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         set e.counted_flag = #{countedFlag},
             e.update_by = #{updateBy},
             e.update_time = now()
+            <if test="stockQty != null">
+            , e.stock_qty = #{stockQty}
+            , e.amt = #{amt}
+            , e.profit_loss_flag = #{profitLossFlag}
+            , e.profit_qty = #{profitQty}
+            , e.stock_amount = #{stockAmount}
+            , e.profit_amount = #{profitAmount}
+            </if>
         where e.id = #{entryId} and e.tenant_id = #{scopedTenantId}
           and (e.del_flag is null or e.del_flag != 1)
           and h.stock_type = #{stockType}
           and (h.stock_status is null or h.stock_status != 2)
     </update>
+
+    <select id="selectParenIdByStocktakingEntryId" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select e.paren_id from stk_io_stocktaking_entry e
+        where e.id = #{entryId} and e.tenant_id = #{scopedTenantId}
+          and (e.del_flag is null or e.del_flag != 1)
+        limit 1
+    </select>
 </mapper>
