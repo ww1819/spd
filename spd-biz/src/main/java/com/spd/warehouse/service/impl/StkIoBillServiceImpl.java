@@ -637,21 +637,36 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             SecurityUtils.getUserIdStr());
     }
 
-    /** 出库/退库制单：从仓库库存回填明细 suppler_id，便于对账与流水兜底 */
+    /**
+     * 出库(201)等：明细 suppler_id 与仓库库存 stk_inventory.supplier_id 一致（能解析到库存行则以行为准，覆盖前端误填）。
+     * 退货(301)在 sync/insert 中已按同一解析链写入，此处供其他生成路径复用。
+     */
     private void fillOutboundEntrySupplerIdFromWarehouse(StkIoBill bill, StkIoBillEntry entry) {
-        if (entry == null || StringUtils.isEmpty(entry.getBatchNo()) || StringUtils.isNotEmpty(entry.getSupplerId())) {
+        if (entry == null) {
             return;
         }
-        Long whId = bill != null ? bill.getWarehouseId() : null;
-        StkInventory inv = null;
-        if (whId != null) {
-            inv = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(entry.getBatchNo(), whId);
-        }
-        if (inv == null) {
-            inv = stkInventoryMapper.selectStkInventoryOne(entry.getBatchNo());
-        }
+        StkInventory inv = resolveStkInventoryForOutboundLine(bill, entry);
         if (inv != null && inv.getSupplierId() != null) {
             entry.setSupplerId(String.valueOf(inv.getSupplierId()));
+        }
+    }
+
+    /** 退库(401)：明细 suppler_id 与科室库存 stk_dep_inventory.supplier_id 一致。 */
+    private void fillTk401EntrySupplerIdFromDepInventory(StkIoBill bill, StkIoBillEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        StkDepInventory dep = null;
+        Long depId = entry.resolveDepInventoryKeyForDepOps();
+        if (depId != null) {
+            dep = stkDepInventoryMapper.selectStkDepInventoryById(depId);
+        }
+        Long whId = entry.getWarehouseId() != null ? entry.getWarehouseId() : (bill != null ? bill.getWarehouseId() : null);
+        if (dep == null && StringUtils.isNotEmpty(entry.getBatchNo()) && whId != null) {
+            dep = stkDepInventoryMapper.selectStkDepInventoryOne(entry.getBatchNo().trim(), whId);
+        }
+        if (dep != null && StringUtils.isNotEmpty(dep.getSupplierId())) {
+            entry.setSupplerId(dep.getSupplierId().trim());
         }
     }
 
@@ -1030,6 +1045,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                             throw new ServiceException(String.format("退库-批次号：%s，科室库存未收货确认，不能退库!", batchNo));
                         }
                     }
+                    if (StringUtils.isNotEmpty(stkDepInventory.getSupplierId())) {
+                        entry.setSupplerId(stkDepInventory.getSupplierId().trim());
+                    }
 
                     BigDecimal stkDepInventoryQty = stkDepInventory.getQty();//科室库存实际数量
                     if(qty.compareTo(stkDepInventoryQty) > 0){
@@ -1113,7 +1131,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setAmt(returnAmt);
                     tkFlow.setBeginTime(entry.getBeginTime());
                     tkFlow.setEndTime(entry.getEndTime());
-                    Long tkSup401 = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
+                    Long tkSup401 = parseSupplerIdString(stkDepInventory.getSupplierId());
+                    if (tkSup401 == null) {
+                        tkSup401 = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
+                    }
                     tkFlow.setSupplierId(tkSup401);
                     tkFlow.setFactoryId(resolveFactoryId(inventory));
                     tkFlow.setMainBarcode(inventory.getMainBarcode());
@@ -1145,7 +1166,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksTkFlow.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : returnAmt);
                     ksTkFlow.setBeginTime(entry.getBeginTime());
                     ksTkFlow.setEndTime(entry.getEndTime());
-                    Long ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
+                    Long ksSupplierId = parseSupplerIdString(stkDepInventory.getSupplierId());
+                    if (ksSupplierId == null) {
+                        ksSupplierId = resolveStockFlowSupplierId(stkIoBill, entry, inventory);
+                    }
                     ksTkFlow.setSupplierId(ksSupplierId != null ? String.valueOf(ksSupplierId) : null);
                     ksTkFlow.setFactoryId(resolveFactoryId(inventory));
                     ksTkFlow.setMainBarcode(inventory.getMainBarcode());
@@ -1738,7 +1762,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             e.setParenId(stkIoBill.getId());
             e.setBillNo(stkIoBill.getBillNo());
             e.setDelFlag(0);
-            fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, e);
+            fillTk401EntrySupplerIdFromDepInventory(stkIoBill, e);
             e.setTenantId(tenantId);
             fillEntryMaterialSnapshot(e, tenantId);
             applyStkIoBillEntryRefSnapshots(stkIoBill, e, 401);
@@ -2200,7 +2224,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
-                fillOutboundEntrySupplerIdFromWarehouse(stkIoBill, stkIoBillEntry);
+                fillTk401EntrySupplerIdFromDepInventory(stkIoBill, stkIoBillEntry);
                 stkIoBillEntry.setTenantId(tenantId);
                 fillEntryMaterialSnapshot(stkIoBillEntry, tenantId);
                 applyStkIoBillEntryRefSnapshots(stkIoBill, stkIoBillEntry, 401);
@@ -2749,8 +2773,6 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setWhApplyEntryId(we.getId());
                 if (inv.getSupplierId() != null) {
                     stkIoBillEntry.setSupplerId(String.valueOf(inv.getSupplierId()));
-                } else if (we.getSupplierId() != null) {
-                    stkIoBillEntry.setSupplerId(String.valueOf(we.getSupplierId()));
                 }
                 stkIoBillEntry.setMaterial(material);
                 entryList.add(stkIoBillEntry);
