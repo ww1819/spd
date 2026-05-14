@@ -2666,6 +2666,26 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (Integer.valueOf(1).equals(wh.getVoidWholeFlag())) {
             throw new ServiceException("库房申请单已整单作废，不能生成出库单");
         }
+        List<WhWarehouseApplyEntry> list = wh.getEntryList();
+        if (list == null || list.isEmpty()) {
+            throw new ServiceException(String.format("仓库申请单ID：%s 无明细", whWarehouseApplyId));
+        }
+        BigDecimal sumLinkedCk = BigDecimal.ZERO;
+        BigDecimal sumLineVoidQty = BigDecimal.ZERO;
+        for (WhWarehouseApplyEntry we0 : list) {
+            if (we0 == null) {
+                continue;
+            }
+            if (we0.getLinkedCkQty() != null) {
+                sumLinkedCk = sumLinkedCk.add(we0.getLinkedCkQty());
+            }
+            if (we0.getLineVoidQty() != null) {
+                sumLineVoidQty = sumLineVoidQty.add(we0.getLineVoidQty());
+            }
+        }
+        if (sumLinkedCk.compareTo(BigDecimal.ZERO) > 0 && sumLineVoidQty.compareTo(BigDecimal.ZERO) > 0) {
+            throw new ServiceException("该库房申请单已存在出库引用且发生过明细作废（部分作废），不允许再次引用生成出库单");
+        }
         StkIoBill stkIoBill = new StkIoBill();
         stkIoBill.setWarehouseId(wh.getWarehouseId());
         stkIoBill.setDepartmentId(wh.getDepartmentId());
@@ -2677,10 +2697,6 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setWhWarehouseApplyBillNo(wh.getApplyBillNo());
         String tenantId = StringUtils.isNotEmpty(wh.getTenantId())
             ? wh.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
-        List<WhWarehouseApplyEntry> list = wh.getEntryList();
-        if (list == null || list.isEmpty()) {
-            throw new ServiceException(String.format("仓库申请单ID：%s 无明细", whWarehouseApplyId));
-        }
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (WhWarehouseApplyEntry we : list) {
             if (we == null) {
