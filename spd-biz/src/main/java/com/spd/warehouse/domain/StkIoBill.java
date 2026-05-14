@@ -213,6 +213,8 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：供应商关键字（名称/编码/简码） */
     private String supplierKeyword;
+    /** 查询参数：生产厂家关键字（编码/名称/简码） */
+    private String factoryKeyword;
     /** 查询参数：仓库关键字（编码/名称/简拼） */
     private String warehouseKeyword;
     /** 查询参数：科室关键字（编码/名称/简拼） */
@@ -233,6 +235,8 @@ public class StkIoBill extends BaseEntity
 
     /** 查询参数：批号 */
     private String batchNo;
+    /** 查询参数：明细批次号（batch_number）模糊 */
+    private String batchNumberKeyword;
 
     /** 列表排序场景：apply=申请页，audit=审核页 */
     private String sortScene;
@@ -560,6 +564,14 @@ public class StkIoBill extends BaseEntity
         this.supplierKeyword = supplierKeyword;
     }
 
+    public String getFactoryKeyword() {
+        return factoryKeyword;
+    }
+
+    public void setFactoryKeyword(String factoryKeyword) {
+        this.factoryKeyword = factoryKeyword;
+    }
+
     public String getWarehouseKeyword() {
         return warehouseKeyword;
     }
@@ -630,6 +642,14 @@ public class StkIoBill extends BaseEntity
 
     public void setBatchNo(String batchNo) {
         this.batchNo = batchNo;
+    }
+
+    public String getBatchNumberKeyword() {
+        return batchNumberKeyword;
+    }
+
+    public void setBatchNumberKeyword(String batchNumberKeyword) {
+        this.batchNumberKeyword = batchNumberKeyword;
     }
 
     public String getSortScene() {
@@ -779,6 +799,9 @@ public class StkIoBill extends BaseEntity
             .append("materialName", getMaterialName())
             .append("warehouseName", getWarehouseName())
             .append("supplierKeyword", getSupplierKeyword())
+            .append("factoryKeyword", getFactoryKeyword())
+            .append("batchNo", getBatchNo())
+            .append("batchNumberKeyword", getBatchNumberKeyword())
             .append("excludeZeroNoBiz", getExcludeZeroNoBiz())
             .append("sortScene", getSortScene())
             .append("dateQueryType", getDateQueryType())

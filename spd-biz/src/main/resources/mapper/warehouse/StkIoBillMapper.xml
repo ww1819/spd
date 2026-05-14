@@ -647,11 +647,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
+        <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="batchNo != null and batchNo != ''"> and b.batch_no like concat('%', #{batchNo}, '%')</if>
+        <if test="batchNumberKeyword != null and batchNumberKeyword != ''"> and b.batch_number like concat('%', #{batchNumberKeyword}, '%')</if>
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
@@ -711,11 +714,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
+        <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="batchNo != null and batchNo != ''"> and b.batch_no like concat('%', #{batchNo}, '%')</if>
+        <if test="batchNumberKeyword != null and batchNumberKeyword != ''"> and b.batch_number like concat('%', #{batchNumberKeyword}, '%')</if>
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
@@ -750,6 +756,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_factory f on f.factory_id = m.factory_id
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
@@ -757,11 +764,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
+        <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="materialId != null "> and m.id = #{materialId}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
         <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
+        <if test="batchNo != null and batchNo != ''"> and b.batch_no like concat('%', #{batchNo}, '%')</if>
+        <if test="batchNumberKeyword != null and batchNumberKeyword != ''"> and b.batch_number like concat('%', #{batchNumberKeyword}, '%')</if>
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
