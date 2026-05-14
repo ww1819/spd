@@ -5,6 +5,7 @@ import java.util.List;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.domain.StkIoStocktaking;
+import com.spd.warehouse.domain.StkIoStocktakingEntry;
 
 /**
  * 盘点Service接口
@@ -86,4 +87,9 @@ public interface IStkIoStocktakingService
      * 更新仓库盘点明细「是否已盘」（主单须未审核且 stock_type=501）
      */
     int updateStocktakingEntryCountedFlag(Long entryId, Integer countedFlag);
+
+    /**
+     * 向已存在的仓库盘点单（stock_type=501、未审核）追加明细；新行不得带明细 id。
+     */
+    int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries);
 }

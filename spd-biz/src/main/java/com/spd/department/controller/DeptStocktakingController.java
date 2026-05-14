@@ -20,6 +20,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
+import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.department.service.IDeptStocktakingService;
 import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
@@ -100,6 +101,15 @@ public class DeptStocktakingController extends BaseController
             return success(saved);
         }
         return toAjax(rows);
+    }
+
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
+    @Log(title = "科室盘点明细追加", businessType = BusinessType.INSERT)
+    @PostMapping("/{id}/entries")
+    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody List<StkIoStocktakingEntry> entries)
+    {
+        deptStocktakingService.appendDeptStocktakingEntries(id, entries);
+        return success(deptStocktakingService.selectDeptStocktakingById(id));
     }
 
     /**

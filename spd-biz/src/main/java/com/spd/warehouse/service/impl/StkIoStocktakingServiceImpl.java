@@ -2,6 +2,7 @@ package com.spd.warehouse.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -523,5 +524,103 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException("未找到可更新的明细（可能已审核或不属于仓库盘点）。");
         }
         return n;
+    }
+
+    @Transactional
+    @Override
+    public int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries)
+    {
+        if (billId == null || newEntries == null || newEntries.isEmpty())
+        {
+            return 0;
+        }
+        for (StkIoStocktakingEntry e : newEntries)
+        {
+            if (e != null && e.getId() != null)
+            {
+                throw new ServiceException("追加明细必须为未落库的新行（不能带明细 id）。");
+            }
+        }
+        StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
+        if (head == null)
+        {
+            throw new ServiceException("盘点单不存在或无权访问。");
+        }
+        SecurityUtils.ensureTenantAccess(head.getTenantId());
+        if (head.getStockType() == null || head.getStockType() != STOCK_TYPE_WH_STOCKTAKING)
+        {
+            throw new ServiceException("仅支持仓库盘点单追加明细。");
+        }
+        if (head.getStockStatus() != null && head.getStockStatus() == 2)
+        {
+            throw new ServiceException("已审核的盘点单不可追加明细。");
+        }
+        List<StkIoStocktakingEntry> existing = head.getStkIoStocktakingEntryList();
+        if (existing == null)
+        {
+            existing = Collections.emptyList();
+        }
+        Set<String> usedKcKeys = new HashSet<>();
+        for (StkIoStocktakingEntry ex : existing)
+        {
+            if (ex != null && ex.getKcNo() != null)
+            {
+                usedKcKeys.add(String.valueOf(ex.getKcNo()).trim());
+            }
+        }
+        List<StkIoStocktakingEntry> clean = new ArrayList<>();
+        for (StkIoStocktakingEntry e : newEntries)
+        {
+            if (e == null)
+            {
+                continue;
+            }
+            if (e.getKcNo() != null)
+            {
+                String kk = String.valueOf(e.getKcNo()).trim();
+                if (usedKcKeys.contains(kk))
+                {
+                    throw new ServiceException("同一仓库库存明细不允许重复加入盘点单。");
+                }
+                usedKcKeys.add(kk);
+            }
+            clean.add(e);
+        }
+        if (clean.isEmpty())
+        {
+            return 0;
+        }
+        for (StkIoStocktakingEntry entry : clean)
+        {
+            if (StringUtils.isEmpty(entry.getBatchNo()))
+            {
+                entry.setBatchNo(getBatchNumber());
+            }
+        }
+        StkIoStocktaking slice = new StkIoStocktaking();
+        slice.setId(head.getId());
+        slice.setStockNo(head.getStockNo());
+        slice.setWarehouseId(head.getWarehouseId());
+        slice.setDepartmentId(head.getDepartmentId());
+        slice.setStockType(STOCK_TYPE_WH_STOCKTAKING);
+        slice.setTenantId(head.getTenantId());
+        slice.setStkIoStocktakingEntryList(clean);
+        validateWarehouseStocktakingEntries(slice);
+        Date now = DateUtils.getNowDate();
+        String opUser = SecurityUtils.getUserIdStr();
+        for (StkIoStocktakingEntry entry : clean)
+        {
+            entry.setParenId(billId);
+            if (StringUtils.isEmpty(entry.getBatchNo()))
+            {
+                entry.setBatchNo(getBatchNumber());
+            }
+            prepareStocktakingEntry(head, entry, true);
+            stkIoStocktakingMapper.insertStkIoStocktakingEntrySingle(entry);
+        }
+        head.setUpdateTime(now);
+        head.setUpdateBy(opUser);
+        stkIoStocktakingMapper.updateStkIoStocktaking(head);
+        return clean.size();
     }
 }

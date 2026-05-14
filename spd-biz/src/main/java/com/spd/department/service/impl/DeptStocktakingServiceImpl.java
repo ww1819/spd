@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
+import java.util.Collections;
 import com.spd.department.service.IDeptStocktakingService;
 
 /**
@@ -1105,6 +1106,88 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         String createNo = FillRuleUtil.createBatchNo();
         String batchNo = str + createNo;
         return batchNo;
+    }
+
+    @Transactional
+    @Override
+    public int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries) {
+        if (billId == null || newEntries == null || newEntries.isEmpty()) {
+            return 0;
+        }
+        for (StkIoStocktakingEntry e : newEntries) {
+            if (e != null && e.getId() != null) {
+                throw new com.spd.common.exception.ServiceException("追加明细必须为未落库的新行（不能带明细 id）。");
+            }
+        }
+        StkIoStocktaking head = deptStocktakingMapper.selectDeptStocktakingById(billId);
+        if (head == null) {
+            throw new com.spd.common.exception.ServiceException("盘点单不存在或无权访问。");
+        }
+        if (head.getStockType() == null || head.getStockType() != 502) {
+            throw new com.spd.common.exception.ServiceException("仅支持科室盘点单追加明细。");
+        }
+        if (head.getStockStatus() != null && head.getStockStatus() == 2) {
+            throw new com.spd.common.exception.ServiceException("已审核的盘点单不可追加明细。");
+        }
+        List<StkIoStocktakingEntry> existing = head.getStkIoStocktakingEntryList();
+        if (existing == null) {
+            existing = Collections.emptyList();
+        }
+        Set<String> usedDepKeys = new HashSet<>();
+        for (StkIoStocktakingEntry ex : existing) {
+            if (ex == null) {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(ex.getDepInventoryId())) {
+                usedDepKeys.add(String.valueOf(ex.getDepInventoryId()).trim());
+            }
+        }
+        List<StkIoStocktakingEntry> clean = new ArrayList<>();
+        for (StkIoStocktakingEntry e : newEntries) {
+            if (e == null) {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(e.getDepInventoryId())) {
+                String dk = e.getDepInventoryId().trim();
+                if (usedDepKeys.contains(dk)) {
+                    throw new com.spd.common.exception.ServiceException("同一科室库存明细不允许重复加入盘点单。");
+                }
+                usedDepKeys.add(dk);
+            }
+            clean.add(e);
+        }
+        if (clean.isEmpty()) {
+            return 0;
+        }
+        for (StkIoStocktakingEntry entry : clean) {
+            if (StringUtils.isEmpty(entry.getBatchNo())) {
+                entry.setBatchNo(getBatchNumber());
+            }
+        }
+        StkIoStocktaking slice = new StkIoStocktaking();
+        slice.setId(head.getId());
+        slice.setStockNo(head.getStockNo());
+        slice.setDepartmentId(head.getDepartmentId());
+        slice.setWarehouseId(null);
+        slice.setStockType(502);
+        slice.setTenantId(head.getTenantId());
+        slice.setStkIoStocktakingEntryList(clean);
+        validateAndNormalizeEntries(slice, null);
+        for (StkIoStocktakingEntry entry : clean) {
+            entry.setParenId(billId);
+            entry.setBillNo(head.getStockNo());
+            if (StringUtils.isEmpty(entry.getBatchNo())) {
+                entry.setBatchNo(getBatchNumber());
+            }
+            entry.setDelFlag(0);
+            fillProfitLossFlag(entry);
+            applyStocktakingEntryAuditFields(entry, true);
+            deptStocktakingMapper.insertDeptStocktakingEntrySingle(entry);
+        }
+        head.setUpdateTime(new Date());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        deptStocktakingMapper.updateDeptStocktaking(head);
+        return clean.size();
     }
 
     @Override
