@@ -625,6 +625,10 @@ CALL add_table_column('gz_order', 'delete_by', 'varchar(64)', '删除者', NULL)
 /
 CALL add_table_column('gz_order', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('gz_order', 'audit_date', 'datetime', '审核时间', NULL);
+/
+CALL add_table_column('gz_order', 'audit_by', 'varchar(64)', '审核人', NULL);
+/
 CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '主条码', NULL);
 /
 CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '辅条码', NULL);
