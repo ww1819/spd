@@ -2712,8 +2712,6 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
             FdMaterial material = we.getMaterial() != null ? we.getMaterial()
                 : fdMaterialMapper.selectFdMaterialById(we.getMaterialId());
-            String matLabel = material != null && StringUtils.isNotEmpty(material.getName())
-                ? material.getName() : String.valueOf(we.getMaterialId());
             List<StkInventory> invLines = stkInventoryMapper.selectStkInventoryFefoForOutboundAlloc(
                 tenantId, we.getMaterialId(), lineWhId);
             BigDecimal need = pend;
@@ -2758,11 +2756,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 entryList.add(stkIoBillEntry);
                 need = need.subtract(take);
             }
-            if (need.compareTo(BigDecimal.ZERO) > 0) {
-                throw new ServiceException(String.format(
-                    "耗材「%s」库存不足，无法按近效期凑齐可出库数量：尚需 %s（申请 %s）",
-                    matLabel, need.toPlainString(), pend.toPlainString()));
-            }
+            /* 申请大于库存时：已按近效期带出全部可用批次，剩余不足部分不再生成明细、不抛错（部分引用） */
         }
         if (entryList.isEmpty()) {
             throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
