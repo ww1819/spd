@@ -238,8 +238,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
                 a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
-                cu.nick_name as create_user_nickname,
-                au.nick_name as audit_user_nickname,
+                (select cu.nick_name from sys_user cu where cu.user_id = a.create_by limit 1) as create_user_nickname,
+                (select au.nick_name from sys_user au where au.user_id = a.update_by limit 1) as audit_user_nickname,
                 COALESCE((select SUM(IFNULL(entry.profit_amount,
                     (IFNULL(entry.stock_qty,0) - IFNULL(entry.qty,0)) * IFNULL(entry.unit_price, IFNULL(entry.price,0))
                 )) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
@@ -266,8 +266,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 f.factory_id as f_id, f.factory_code as f_code, f.factory_name as f_name,
                 ms.id as ms_id, ms.code as ms_code, ms.name as ms_name
         from stk_io_stocktaking a
-        left join sys_user cu on a.create_by = cu.user_id
-        left join sys_user au on a.update_by = au.user_id
         left join fd_supplier s on a.suppler_id = s.id
         left join fd_department d on a.department_id = d.id
         left join fd_warehouse w on a.warehouse_id = w.id
