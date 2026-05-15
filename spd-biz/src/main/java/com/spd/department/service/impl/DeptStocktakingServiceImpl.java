@@ -418,6 +418,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 throw new com.spd.common.exception.ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
             }
         }
+        normalizeDeptStocktakingQtyToLiveBeforeAudit(stkIoStocktaking);
         applyQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
         List<StocktakingQtyMismatchVo> mismatches = buildQtyMismatches(stkIoStocktaking);
         if (!mismatches.isEmpty()) {
@@ -1078,6 +1079,44 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
     }
 
+    private void normalizeDeptStocktakingQtyToLiveBeforeAudit(StkIoStocktaking bill) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_DEPT_STOCKTAKING
+            || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getId() == null) {
+                continue;
+            }
+            BigDecimal live = queryCurrentDepInventoryQty(bill, entry);
+            if (live == null) {
+                live = BigDecimal.ZERO;
+            }
+            BigDecimal book = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            boolean changed = false;
+            if (book.compareTo(live) != 0) {
+                entry.setQty(live);
+                changed = true;
+            }
+            BigDecimal bookAfter = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal sq = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+            // 来源于科室库存的明细不允许盘盈：账面已对齐为现库存后，实盘不得大于账面
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId()) && sq.compareTo(bookAfter) > 0) {
+                entry.setStockQty(bookAfter);
+                changed = true;
+            }
+            if (changed) {
+                fillProfitLossFlag(entry);
+                computeEntryAmountFields(entry);
+                applyStocktakingEntryAuditFields(entry, false);
+                if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                    entry.setStockNo(bill.getStockNo());
+                }
+                deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+            }
+        }
+    }
+
     private void applyQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
         if (bill == null || adjustList == null || adjustList.isEmpty() || bill.getStkIoStocktakingEntryList() == null) {
             return;
@@ -1102,9 +1141,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
             entry.setQty(currentQty);
             entry.setStockQty(adjust.getStockQty() == null ? currentQty : adjust.getStockQty());
-            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-            entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlag(entry);
+            computeEntryAmountFields(entry);
             applyStocktakingEntryAuditFields(entry, false);
             deptStocktakingMapper.updateDeptStocktakingEntry(entry);
         }

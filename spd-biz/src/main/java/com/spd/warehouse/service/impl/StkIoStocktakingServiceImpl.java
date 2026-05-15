@@ -377,6 +377,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 
         Integer stockType = stkIoStocktaking.getStockType();
         if (stockType != null && stockType == STOCK_TYPE_WH_STOCKTAKING) {
+            normalizeWhStocktakingQtyToLiveBeforeAudit(stkIoStocktaking);
             applyWhQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
             List<StocktakingQtyMismatchVo> mismatches = buildWhQtyMismatches(stkIoStocktaking);
             if (!mismatches.isEmpty()) {
@@ -400,6 +401,45 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException(String.format("盘点业务ID：%s，不存在!", id));
         }
         return buildWhQtyMismatches(bill);
+    }
+
+    private void normalizeWhStocktakingQtyToLiveBeforeAudit(StkIoStocktaking bill) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING
+            || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getId() == null || entry.getKcNo() == null) {
+                continue;
+            }
+            BigDecimal live = queryCurrentWhInventoryQty(entry);
+            if (live == null) {
+                live = BigDecimal.ZERO;
+            }
+            BigDecimal book = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            boolean changed = false;
+            if (book.compareTo(live) != 0) {
+                entry.setQty(live);
+                changed = true;
+            }
+            BigDecimal bookAfter = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal sq = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+            // 来源于仓库库存的明细不允许盘盈：账面已对齐为现库存后，实盘不得大于账面
+            if (sq.compareTo(bookAfter) > 0) {
+                entry.setStockQty(bookAfter);
+                changed = true;
+            }
+            if (changed) {
+                fillProfitLossFlagWarehouse(entry);
+                computeWhEntryAmountFields(entry);
+                entry.setUpdateBy(SecurityUtils.getUserIdStr());
+                entry.setUpdateTime(DateUtils.getNowDate());
+                if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                    entry.setStockNo(bill.getStockNo());
+                }
+                stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
+            }
+        }
     }
 
     private void applyWhQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
@@ -430,9 +470,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 sq = currentQty;
             }
             entry.setStockQty(sq);
-            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-            entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlagWarehouse(entry);
+            computeWhEntryAmountFields(entry);
             if (StringUtils.isNotEmpty(bill.getStockNo())) {
                 entry.setStockNo(bill.getStockNo());
             }
