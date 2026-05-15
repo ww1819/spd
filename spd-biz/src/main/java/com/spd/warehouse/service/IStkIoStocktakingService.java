@@ -3,6 +3,7 @@ package com.spd.warehouse.service;
 import java.util.List;
 
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.domain.StkIoStocktaking;
@@ -47,6 +48,11 @@ public interface IStkIoStocktakingService
      * @return 结果
      */
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking);
+
+    /**
+     * 未审核仓库盘点精简保存：主表 + 变更明细实盘/账面/已盘。
+     */
+    StkIoStocktaking patchSaveWhStocktaking(StocktakingPatchSaveDto save);
 
     /**
      * 批量删除盘点

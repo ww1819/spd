@@ -2,6 +2,7 @@ package com.spd.department.service;
 
 import java.util.List;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
@@ -52,6 +53,11 @@ public interface IDeptStocktakingService
      * @return 结果
      */
     public int updateDeptStocktaking(StkIoStocktaking stkIoStocktaking);
+
+    /**
+     * 未审核科室盘点精简保存：主表 + 变更明细实盘/账面/已盘（不整包 replace 明细）。
+     */
+    StkIoStocktaking patchSaveDeptStocktaking(StocktakingPatchSaveDto save);
 
     /**
      * 批量删除科室盘点

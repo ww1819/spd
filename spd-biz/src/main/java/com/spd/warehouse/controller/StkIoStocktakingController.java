@@ -25,6 +25,7 @@ import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 
 /**
@@ -106,6 +107,17 @@ public class StkIoStocktakingController extends BaseController
     public AjaxResult edit(@RequestBody StkIoStocktaking stkIoStocktaking)
     {
         return toAjax(stkIoStocktakingService.updateStkIoStocktaking(stkIoStocktaking));
+    }
+
+    /**
+     * 精简保存：主表 + 变更明细的实盘/账面/已盘。
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "盘点精简保存", businessType = BusinessType.UPDATE)
+    @PutMapping("/patch-save")
+    public AjaxResult patchSave(@RequestBody StocktakingPatchSaveDto save)
+    {
+        return success(stkIoStocktakingService.patchSaveWhStocktaking(save));
     }
 
     /**

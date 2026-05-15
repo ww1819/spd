@@ -23,6 +23,7 @@ import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.department.service.IDeptStocktakingService;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -132,6 +133,17 @@ public class DeptStocktakingController extends BaseController
     public AjaxResult edit(@RequestBody StkIoStocktaking stkIoStocktaking)
     {
         return toAjax(deptStocktakingService.updateDeptStocktaking(stkIoStocktaking));
+    }
+
+    /**
+     * 精简保存：主表 + 变更明细的实盘/账面/已盘（不整包 replace 明细，避免误删与字段被空覆盖）。
+     */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
+    @Log(title = "科室盘点精简保存", businessType = BusinessType.UPDATE)
+    @PutMapping("/patch-save")
+    public AjaxResult patchSave(@RequestBody StocktakingPatchSaveDto save)
+    {
+        return success(deptStocktakingService.patchSaveDeptStocktaking(save));
     }
 
     /**
