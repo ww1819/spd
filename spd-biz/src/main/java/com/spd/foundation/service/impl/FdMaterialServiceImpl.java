@@ -414,6 +414,22 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return fdMaterialMapper.updateFdMaterial(fdMaterial);
     }
 
+    @Override
+    public int clearMaterialHisChargeItem(Long materialId)
+    {
+        if (materialId == null)
+        {
+            throw new ServiceException("耗材产品ID不能为空");
+        }
+        FdMaterial material = fdMaterialMapper.selectFdMaterialById(materialId);
+        if (material == null)
+        {
+            throw new ServiceException("耗材产品不存在");
+        }
+        SecurityUtils.ensureTenantAccess(material.getTenantId());
+        return fdMaterialMapper.clearHisChargeItemIdByMaterialId(materialId, SecurityUtils.getUserIdStr());
+    }
+
     /**
      * 衡水三院：财务分类为高值耗材时，必须勾选高值标志。
      */
