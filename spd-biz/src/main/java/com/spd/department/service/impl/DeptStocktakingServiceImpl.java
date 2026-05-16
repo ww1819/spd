@@ -538,6 +538,23 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             return;
         }
 
+        Set<Long> materialIdSet = new HashSet<>();
+        for (StkIoStocktakingEntry e : stkIoStocktakingEntryList) {
+            if (e != null && e.getMaterialId() != null) {
+                materialIdSet.add(e.getMaterialId());
+            }
+        }
+        Map<Long, FdMaterial> materialById = Collections.emptyMap();
+        if (!materialIdSet.isEmpty()) {
+            List<FdMaterial> materials = fdMaterialMapper.selectFdMaterialByIds(new ArrayList<>(materialIdSet));
+            if (materials != null && !materials.isEmpty()) {
+                materialById = materials.stream()
+                    .filter(Objects::nonNull)
+                    .filter(m -> m.getId() != null)
+                    .collect(Collectors.toMap(FdMaterial::getId, m -> m, (a, b) -> a));
+            }
+        }
+
         Date flowNow = new Date();
         String flowUser = SecurityUtils.getUserIdStr();
         for (StkIoStocktakingEntry entry : stkIoStocktakingEntryList) {
@@ -566,7 +583,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 // 科室盘点审核后视为已收货确认，避免退库时被 receipt_confirm_status=0 拦截
                 stkDepInventory.setReceiptConfirmStatus(1);
                 // 生成/补齐批次字典并回填科室库存 batch_id
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                FdMaterial material = materialById.get(entry.getMaterialId());
                 if (material == null) {
                     throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
@@ -596,7 +613,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     continue;
                 }
 
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                FdMaterial material = materialById.get(entry.getMaterialId());
                 if (material == null) {
                     throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
