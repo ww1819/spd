@@ -22,6 +22,11 @@ public interface StkIoStocktakingMapper
     public StkIoStocktaking selectStkIoStocktakingById(Long id);
 
     /**
+     * 事务内锁定盘点主表行（FOR UPDATE），用于与并发校验配合。
+     */
+    StkIoStocktaking lockStkIoStocktakingHeadById(Long id);
+
+    /**
      * 查询盘点列表
      *
      * @param stkIoStocktaking 盘点

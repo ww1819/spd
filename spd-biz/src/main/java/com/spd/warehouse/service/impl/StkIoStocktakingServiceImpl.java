@@ -36,6 +36,7 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoStocktakingService;
+import com.spd.warehouse.utils.StocktakingConcurrencyUtil;
 
 /**
  * 盘点Service业务层处理
@@ -141,12 +142,14 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
+        Long parenId = stkIoStocktaking.getId();
+        Date expectedClient = stkIoStocktaking.getUpdateTime();
+        lockAndAssertWhStocktakingVersion(parenId, expectedClient);
         stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         StkIoStocktaking existing = stkIoStocktakingMapper.selectStkIoStocktakingById(stkIoStocktaking.getId());
         ensureWhStocktakingEditable(existing);
         validateWarehouseStocktakingEntries(stkIoStocktaking);
-        Long parenId = stkIoStocktaking.getId();
         List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
         List<Long> keepIds = new ArrayList<>();
         String opUser = SecurityUtils.getUserIdStr();
@@ -179,6 +182,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException("盘点单ID不能为空。");
         }
         Long billId = save.getId();
+        lockAndAssertWhStocktakingVersion(billId, save.getExpectedUpdateTime());
         StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
         ensureWhStocktakingEditable(head);
         SecurityUtils.ensureTenantAccess(head.getTenantId());
@@ -251,6 +255,21 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         {
             throw new ServiceException("单据类型不是仓库盘点，无法保存。");
         }
+    }
+
+    private void lockAndAssertWhStocktakingVersion(Long billId, Date expectedClient)
+    {
+        if (billId == null)
+        {
+            throw new ServiceException("盘点单ID不能为空。");
+        }
+        StkIoStocktaking locked = stkIoStocktakingMapper.lockStkIoStocktakingHeadById(billId);
+        if (locked == null)
+        {
+            throw new ServiceException("盘点单不存在或已删除。");
+        }
+        SecurityUtils.ensureTenantAccess(locked.getTenantId());
+        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient, locked.getUpdateTime());
     }
 
     private void applyWhEntryQtyPatch(StkIoStocktaking bill, StkIoStocktakingEntry old,
@@ -369,8 +388,10 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
      */
     @Transactional
     @Override
-    public int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList) {
-        StkIoStocktaking stkIoStocktaking = stkIoStocktakingMapper.selectStkIoStocktakingById(Long.valueOf(id));
+    public int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList, Date expectedUpdateTime) {
+        Long billId = Long.valueOf(id);
+        lockAndAssertWhStocktakingVersion(billId, expectedUpdateTime);
+        StkIoStocktaking stkIoStocktaking = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
         if (stkIoStocktaking == null) {
             throw new ServiceException(String.format("盘点业务ID：%s，不存在!", id));
         }
@@ -705,6 +726,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public int updateStocktakingEntryCounted(StocktakingEntryCountedDto dto)
     {
@@ -717,6 +739,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         {
             throw new ServiceException("已盘标志只能为 0 或 1。");
         }
+        Long parenId = stkIoStocktakingMapper.selectParenIdByStocktakingEntryId(dto.getId());
+        if (parenId == null)
+        {
+            throw new ServiceException("未找到盘点明细。");
+        }
+        lockAndAssertWhStocktakingVersion(parenId, dto.getExpectedUpdateTime());
+
         BigDecimal stockQtyToPersist = dto.getStockQty();
         BigDecimal amt = null;
         String profitLossFlag = null;
@@ -725,11 +754,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         BigDecimal profitAmount = null;
         if (stockQtyToPersist != null)
         {
-            Long parenId = stkIoStocktakingMapper.selectParenIdByStocktakingEntryId(dto.getId());
-            if (parenId == null)
-            {
-                throw new ServiceException("未找到盘点明细。");
-            }
             StkIoStocktaking bill = stkIoStocktakingMapper.selectStkIoStocktakingById(parenId);
             if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING
                 || (bill.getStockStatus() != null && bill.getStockStatus() == 2))
@@ -843,6 +867,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             insertStkIoStocktaking(head);
             return selectStkIoStocktakingById(head.getId());
         }
+        lockAndAssertWhStocktakingVersion(billId, patch.getUpdateTime());
         StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
         if (head == null)
         {
@@ -935,12 +960,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 
     @Transactional
     @Override
-    public int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries)
+    public int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries, Date expectedUpdateTime)
     {
         if (billId == null || newEntries == null || newEntries.isEmpty())
         {
             return 0;
         }
+        lockAndAssertWhStocktakingVersion(billId, expectedUpdateTime);
         for (StkIoStocktakingEntry e : newEntries)
         {
             if (e != null && e.getId() != null)

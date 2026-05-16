@@ -433,4 +433,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and h.stock_type = #{stockType}
           and (h.stock_status is null or h.stock_status != 2)
     </update>
+
+    <select id="lockStkIoStocktakingHeadById" parameterType="Long" resultMap="StkIoStocktakingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select stk.id, stk.uuid_id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
+               stk.stock_status, stk.user_id as user_id, stk.stock_type, stk.audit_adjusts_inventory, stk.del_flag, stk.tenant_id, stk.audit_date, stk.create_by, stk.create_time,
+               stk.update_by, stk.update_time, stk.remark, stk.reject_reason, stk.is_month_init,
+               0 as profit_amount, 0 as total_amount,
+               null sId, null supplierCode, null supplierName,
+               null dId, null departmentCode, null departmentName,
+               null wId, null warehouseCode, null warehouseName
+        from stk_io_stocktaking stk
+        where stk.id = #{id} and stk.tenant_id = #{scopedTenantId}
+          and (stk.del_flag is null or stk.del_flag != 1)
+        for update
+    </select>
 </mapper>

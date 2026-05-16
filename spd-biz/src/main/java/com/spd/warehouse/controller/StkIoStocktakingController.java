@@ -1,5 +1,7 @@
 package com.spd.warehouse.controller;
 
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,8 +24,10 @@ import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.service.IStkIoStocktakingService;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.department.dto.StocktakingAppendEntriesBody;
 import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
@@ -40,6 +44,20 @@ public class StkIoStocktakingController extends BaseController
 {
     @Autowired
     private IStkIoStocktakingService stkIoStocktakingService;
+
+    private static Date parseStocktakingExpectedUpdateTime(JSONObject json)
+    {
+        if (json == null)
+        {
+            return null;
+        }
+        Object raw = json.get("expectedUpdateTime");
+        if (raw == null)
+        {
+            return null;
+        }
+        return DateUtils.parseDate(raw);
+    }
 
     /**
      * 查询盘点列表
@@ -126,9 +144,14 @@ public class StkIoStocktakingController extends BaseController
     @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
     @Log(title = "盘点明细追加", businessType = BusinessType.INSERT)
     @PostMapping("/{id}/entries")
-    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody List<StkIoStocktakingEntry> entries)
+    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody StocktakingAppendEntriesBody body)
     {
-        stkIoStocktakingService.appendWarehouseStocktakingEntries(id, entries);
+        if (body == null)
+        {
+            body = new StocktakingAppendEntriesBody();
+        }
+        List<StkIoStocktakingEntry> entries = body.getEntries() != null ? body.getEntries() : Collections.emptyList();
+        stkIoStocktakingService.appendWarehouseStocktakingEntries(id, entries, body.getExpectedUpdateTime());
         return success(stkIoStocktakingService.selectStkIoStocktakingById(id));
     }
 
@@ -167,7 +190,8 @@ public class StkIoStocktakingController extends BaseController
         if (arr != null && !arr.isEmpty()) {
             adjustList = arr.toJavaList(StocktakingQtyAdjustDto.class);
         }
-        int result = stkIoStocktakingService.auditStkIoBill(json.getString("id"), adjustList);
+        int result = stkIoStocktakingService.auditStkIoBill(json.getString("id"), adjustList,
+            parseStocktakingExpectedUpdateTime(json));
         return toAjax(result);
     }
 

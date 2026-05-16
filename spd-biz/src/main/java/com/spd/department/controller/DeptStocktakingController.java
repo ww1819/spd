@@ -1,5 +1,7 @@
 package com.spd.department.controller;
 
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,10 +24,12 @@ import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.department.service.IDeptStocktakingService;
+import com.spd.department.dto.StocktakingAppendEntriesBody;
 import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
@@ -41,6 +45,20 @@ public class DeptStocktakingController extends BaseController
 {
     @Autowired
     private IDeptStocktakingService deptStocktakingService;
+
+    private static Date parseStocktakingExpectedUpdateTime(JSONObject json)
+    {
+        if (json == null)
+        {
+            return null;
+        }
+        Object raw = json.get("expectedUpdateTime");
+        if (raw == null)
+        {
+            return null;
+        }
+        return DateUtils.parseDate(raw);
+    }
 
     /**
      * 查询科室盘点列表
@@ -107,9 +125,14 @@ public class DeptStocktakingController extends BaseController
     @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
     @Log(title = "科室盘点明细追加", businessType = BusinessType.INSERT)
     @PostMapping("/{id}/entries")
-    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody List<StkIoStocktakingEntry> entries)
+    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody StocktakingAppendEntriesBody body)
     {
-        deptStocktakingService.appendDeptStocktakingEntries(id, entries);
+        if (body == null)
+        {
+            body = new StocktakingAppendEntriesBody();
+        }
+        List<StkIoStocktakingEntry> entries = body.getEntries() != null ? body.getEntries() : Collections.emptyList();
+        deptStocktakingService.appendDeptStocktakingEntries(id, entries, body.getExpectedUpdateTime());
         return success(deptStocktakingService.selectDeptStocktakingById(id));
     }
 
@@ -181,7 +204,8 @@ public class DeptStocktakingController extends BaseController
         if (arr != null && !arr.isEmpty()) {
             adjustList = arr.toJavaList(StocktakingQtyAdjustDto.class);
         }
-        int result = deptStocktakingService.auditDeptStocktaking(json.getString("id"), adjustList);
+        int result = deptStocktakingService.auditDeptStocktaking(json.getString("id"), adjustList,
+            parseStocktakingExpectedUpdateTime(json));
         return toAjax(result);
     }
 
@@ -202,8 +226,9 @@ public class DeptStocktakingController extends BaseController
     public AjaxResult reject(@RequestBody JSONObject json)
     {
         int result = deptStocktakingService.rejectDeptStocktaking(
-            json.getString("id"), 
-            json.getString("rejectReason")
+            json.getString("id"),
+            json.getString("rejectReason"),
+            parseStocktakingExpectedUpdateTime(json)
         );
         return toAjax(result);
     }

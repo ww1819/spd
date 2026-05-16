@@ -27,6 +27,11 @@ public interface DeptStocktakingMapper
     public StkIoStocktaking selectDeptStocktakingById(Long id);
 
     /**
+     * 事务内锁定科室盘点主表行（FOR UPDATE），用于与并发校验配合。
+     */
+    StkIoStocktaking lockDeptStocktakingHeadById(Long id);
+
+    /**
      * 查询科室盘点列表
      * 只查询科室盘点（departmentId不为空，warehouseId为空）
      *

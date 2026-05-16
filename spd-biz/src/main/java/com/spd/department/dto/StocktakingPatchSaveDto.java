@@ -20,6 +20,10 @@ public class StocktakingPatchSaveDto
     /** 变更的明细；可为空表示仅保存主表 */
     private List<StocktakingEntryQtyPatchDto> entryPatches;
 
+    /** 打开或上次保存后主表 update_time，用于多人并发编辑/审核校验 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date expectedUpdateTime;
+
     public Long getId()
     {
         return id;
@@ -78,5 +82,15 @@ public class StocktakingPatchSaveDto
     public void setEntryPatches(List<StocktakingEntryQtyPatchDto> entryPatches)
     {
         this.entryPatches = entryPatches;
+    }
+
+    public Date getExpectedUpdateTime()
+    {
+        return expectedUpdateTime;
+    }
+
+    public void setExpectedUpdateTime(Date expectedUpdateTime)
+    {
+        this.expectedUpdateTime = expectedUpdateTime;
     }
 }

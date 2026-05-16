@@ -422,4 +422,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where stock_no like concat('KSPD%',#{date},'%')
         and tenant_id = #{scopedTenantId}
     </select>
+
+    <select id="lockDeptStocktakingHeadById" parameterType="Long" resultMap="DeptStocktakingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select a.id, a.uuid_id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
+               a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+               a.is_month_init, a.tenant_id, a.audit_adjusts_inventory,
+               0 as profit_amount, 0 as total_amount,
+               null as create_user_nickname, null as audit_user_nickname,
+               null sId, null supplierCode, null supplierName,
+               null dId, null departmentCode, null departmentName,
+               null wId, null warehouseCode, null warehouseName
+        from stk_io_stocktaking a
+        where a.id = #{id} and a.tenant_id = #{scopedTenantId}
+          and (a.del_flag is null or a.del_flag != 1)
+          and a.department_id is not null
+          and (a.warehouse_id is null or a.warehouse_id = 0)
+        for update
+    </select>
 </mapper>
