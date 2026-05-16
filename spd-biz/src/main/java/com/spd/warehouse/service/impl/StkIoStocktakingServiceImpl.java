@@ -101,9 +101,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     public int insertStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setStockNo(getNumber());
-        stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        java.util.Date now = DateUtils.getNowDate();
+        stkIoStocktaking.setCreateTime(now);
+        stkIoStocktaking.setUpdateTime(now);
         // 制单人存用户ID（varchar），避免前端误传 nickName 到 create_by
         stkIoStocktaking.setCreateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         Long opUserId = SecurityUtils.getUserId();
         if (opUserId != null) {
             stkIoStocktaking.setUserId(opUserId);
@@ -269,7 +272,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException("盘点单不存在或已删除。");
         }
         SecurityUtils.ensureTenantAccess(locked.getTenantId());
-        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient, locked.getUpdateTime());
+        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient,
+            StocktakingConcurrencyUtil.effectiveBillVersion(locked.getUpdateTime(), locked.getCreateTime()));
     }
 
     private void applyWhEntryQtyPatch(StkIoStocktaking bill, StkIoStocktakingEntry old,

@@ -121,9 +121,12 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     public int insertDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setStockNo(getNumber());
-        stkIoStocktaking.setCreateTime(new Date());
+        Date now = new Date();
+        stkIoStocktaking.setCreateTime(now);
+        stkIoStocktaking.setUpdateTime(now);
         // 制单人存用户ID（varchar），避免前端误传 nickName 到 create_by
         stkIoStocktaking.setCreateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         Long opUserId = SecurityUtils.getUserId();
         if (opUserId != null) {
             stkIoStocktaking.setUserId(opUserId);
@@ -317,7 +320,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         {
             SecurityUtils.ensureTenantAccess(locked.getTenantId());
         }
-        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient, locked.getUpdateTime());
+        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient,
+            StocktakingConcurrencyUtil.effectiveBillVersion(locked.getUpdateTime(), locked.getCreateTime()));
     }
 
     private void applyDeptEntryQtyPatch(StkIoStocktaking bill, StkIoStocktakingEntry old,
