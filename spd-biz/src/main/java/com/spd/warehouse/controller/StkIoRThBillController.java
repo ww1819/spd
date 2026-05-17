@@ -425,6 +425,28 @@ public class StkIoRThBillController extends BaseController
     }
 
     /**
+     * 耗材使用排名（出/退库净出库按耗材汇总）
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:list')")
+    @GetMapping("/materialUsageRank")
+    public List<com.spd.warehouse.domain.StkMaterialUsageRankVo> materialUsageRank(StkIoBill stkIoBill) {
+        return stkIoBillService.selectMaterialUsageRank(stkIoBill);
+    }
+
+    /**
+     * 导出耗材使用排名
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:export')")
+    @Log(title = "耗材使用排名", businessType = BusinessType.EXPORT)
+    @PostMapping("/materialUsageRank/export")
+    public void exportMaterialUsageRank(HttpServletResponse response, StkIoBill stkIoBill) {
+        List<com.spd.warehouse.domain.StkMaterialUsageRankVo> list = stkIoBillService.selectMaterialUsageRank(stkIoBill);
+        ExcelUtil<com.spd.warehouse.domain.StkMaterialUsageRankVo> util =
+            new ExcelUtil<com.spd.warehouse.domain.StkMaterialUsageRankVo>(com.spd.warehouse.domain.StkMaterialUsageRankVo.class);
+        util.exportExcel(response, list, "耗材使用排名");
+    }
+
+    /**
      * 出退库明细整体导出（单工作表，首行大标题 + 表头，与枣强出退库明细表版式一致；不按供应商拆文件）
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:exportOverall')")

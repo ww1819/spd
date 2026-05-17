@@ -2190,6 +2190,31 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public List<com.spd.warehouse.domain.StkMaterialUsageRankVo> selectMaterialUsageRank(StkIoBill stkIoBill) {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
+        List<com.spd.warehouse.domain.StkMaterialUsageRankVo> list = stkIoBillMapper.selectMaterialUsageRank(stkIoBill);
+        if (list == null || list.isEmpty()) {
+            return list;
+        }
+        java.math.BigDecimal totalAmt = java.math.BigDecimal.ZERO;
+        for (com.spd.warehouse.domain.StkMaterialUsageRankVo row : list) {
+            if (row.getAmount() != null) {
+                totalAmt = totalAmt.add(row.getAmount());
+            }
+        }
+        if (totalAmt.compareTo(java.math.BigDecimal.ZERO) > 0) {
+            for (com.spd.warehouse.domain.StkMaterialUsageRankVo row : list) {
+                java.math.BigDecimal amt = row.getAmount() != null ? row.getAmount() : java.math.BigDecimal.ZERO;
+                row.setRatioPercent(amt.multiply(new java.math.BigDecimal("100"))
+                    .divide(totalAmt, 2, java.math.RoundingMode.HALF_UP));
+            }
+        }
+        return list;
+    }
+
+    @Override
     public List<Map<String, Object>> selectMonthInitDataList(String beginDate,String endDate,String toStatDate,String toEndDate) {
         return stkIoBillMapper.selectMonthInitDataList(beginDate,endDate,toStatDate,toEndDate);
     }

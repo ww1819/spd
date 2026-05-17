@@ -91,4 +91,10 @@ public interface GzTraceabilityMapper
      * @return 追溯单明细集合
      */
     public List<com.spd.gz.domain.GzTraceabilityEntry> selectTraceabilityEntryList(GzTraceability gzTraceability);
+
+    /**
+     * 高值耗材使用情况报表
+     */
+    public List<com.spd.gz.domain.GzMaterialUsageReportVo> selectMaterialUsageReportList(
+        com.spd.gz.domain.GzMaterialUsageReportQuery query);
 }

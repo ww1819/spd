@@ -17,6 +17,8 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzMaterialUsageReportQuery;
+import com.spd.gz.domain.GzMaterialUsageReportVo;
 import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -134,5 +136,30 @@ public class GzTraceabilityController extends BaseController
         startPage();
         List<com.spd.gz.domain.GzTraceabilityEntry> list = gzTraceabilityService.selectTraceabilityEntryList(gzTraceability);
         return getDataTable(list);
+    }
+
+    /**
+     * 高值耗材使用情况报表
+     */
+    @PreAuthorize("@ss.hasPermi('gz:traceability:list')")
+    @GetMapping("/usageReport/list")
+    public TableDataInfo usageReportList(GzMaterialUsageReportQuery query)
+    {
+        startPage();
+        List<GzMaterialUsageReportVo> list = gzTraceabilityService.selectMaterialUsageReportList(query);
+        return getDataTable(list);
+    }
+
+    /**
+     * 导出高值耗材使用情况报表
+     */
+    @PreAuthorize("@ss.hasPermi('gz:traceability:export')")
+    @Log(title = "高值耗材使用情况报表", businessType = BusinessType.EXPORT)
+    @PostMapping("/usageReport/export")
+    public void usageReportExport(HttpServletResponse response, GzMaterialUsageReportQuery query)
+    {
+        List<GzMaterialUsageReportVo> list = gzTraceabilityService.selectMaterialUsageReportList(query);
+        ExcelUtil<GzMaterialUsageReportVo> util = new ExcelUtil<GzMaterialUsageReportVo>(GzMaterialUsageReportVo.class);
+        util.exportExcel(response, list, "高值耗材使用情况报表");
     }
 }

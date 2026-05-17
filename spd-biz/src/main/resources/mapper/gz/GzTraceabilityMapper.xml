@@ -343,4 +343,84 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by t.create_time desc, te.id desc
     </select>
 
+    <!-- 高值耗材使用情况报表：按执行科室+耗材汇总消耗与剩余 -->
+    <select id="selectMaterialUsageReportList" parameterType="com.spd.gz.domain.GzMaterialUsageReportQuery"
+            resultType="com.spd.gz.domain.GzMaterialUsageReportVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select x.department_id as departmentId,
+               x.department_name as departmentName,
+               x.material_id as materialId,
+               x.material_name as materialName,
+               x.specification as specification,
+               x.model as model,
+               x.unit_name as unitName,
+               sum(x.consume_qty) as consumeQty,
+               sum(x.remain_qty) as remainQty
+        from (
+            select t.exec_dept_id as department_id,
+                   d.name as department_name,
+                   te.material_id as material_id,
+                   coalesce(m.name, te.material_name) as material_name,
+                   coalesce(m.speci, te.specification) as specification,
+                   coalesce(m.model, te.model) as model,
+                   coalesce(fu.unit_name, te.unit) as unit_name,
+                   ifnull(te.quantity, 0) as consume_qty,
+                   0 as remain_qty
+            from gz_traceability_entry te
+            inner join gz_traceability t on te.parent_id = t.id and t.del_flag = '0'
+            left join fd_department d on d.id = t.exec_dept_id
+            left join fd_material m on m.id = te.material_id
+            left join fd_unit fu on fu.unit_id = m.unit_id
+            left join gz_dep_inventory gdi on gdi.id = te.inventory_id and gdi.del_flag != 1
+            where te.del_flag = '0'
+              and t.tenant_id = #{scopedTenantId}
+              and t.exec_dept_id is not null
+              and t.order_status = 2
+            <if test="departmentId != null"> and t.exec_dept_id = #{departmentId}</if>
+            <if test="materialId != null"> and te.material_id = #{materialId}</if>
+            <if test="materialName != null and materialName != ''">
+                and (m.name like concat('%', #{materialName}, '%') or te.material_name like concat('%', #{materialName}, '%'))
+            </if>
+            <if test="supplierId != null"> and te.supplier_id = #{supplierId}</if>
+            <if test="batchNo != null and batchNo != ''"> and te.batch_no = #{batchNo}</if>
+            <if test="materialNo != null and materialNo != ''"> and gdi.material_no = #{materialNo}</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and date(t.audit_date) >= #{beginDate} ]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and date(t.audit_date) <= #{endDate} ]]></if>
+
+            union all
+
+            select gdi.department_id as department_id,
+                   d.name as department_name,
+                   gdi.material_id as material_id,
+                   m.name as material_name,
+                   m.speci as specification,
+                   m.model as model,
+                   fu.unit_name as unit_name,
+                   0 as consume_qty,
+                   ifnull(gdi.qty, 0) as remain_qty
+            from gz_dep_inventory gdi
+            left join fd_department d on d.id = gdi.department_id
+            left join fd_material m on m.id = gdi.material_id
+            left join fd_unit fu on fu.unit_id = m.unit_id
+            where gdi.del_flag != 1
+              and gdi.tenant_id = #{scopedTenantId}
+              and gdi.department_id is not null
+              and ifnull(gdi.qty, 0) > 0
+            <if test="departmentId != null"> and gdi.department_id = #{departmentId}</if>
+            <if test="materialId != null"> and gdi.material_id = #{materialId}</if>
+            <if test="materialName != null and materialName != ''">
+                and m.name like concat('%', #{materialName}, '%')
+            </if>
+            <if test="supplierId != null"> and gdi.supplier_id = #{supplierId}</if>
+            <if test="batchNo != null and batchNo != ''"> and gdi.batch_no = #{batchNo}</if>
+            <if test="materialNo != null and materialNo != ''"> and gdi.material_no = #{materialNo}</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and date(gdi.warehouse_date) >= #{beginDate} ]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and date(gdi.warehouse_date) <= #{endDate} ]]></if>
+        ) x
+        group by x.department_id, x.department_name, x.material_id, x.material_name,
+                 x.specification, x.model, x.unit_name
+        having sum(x.consume_qty) > 0 or sum(x.remain_qty) > 0
+        order by x.department_name, x.material_name
+    </select>
+
 </mapper>

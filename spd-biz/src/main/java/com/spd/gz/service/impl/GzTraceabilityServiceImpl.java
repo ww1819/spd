@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 import com.spd.gz.domain.GzTraceabilityEntry;
 import com.spd.gz.mapper.GzTraceabilityMapper;
 import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzMaterialUsageReportQuery;
+import com.spd.gz.domain.GzMaterialUsageReportVo;
 import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.gz.domain.GzDepInventory;
@@ -330,6 +332,12 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     public List<GzTraceabilityEntry> selectTraceabilityEntryList(GzTraceability gzTraceability)
     {
         return gzTraceabilityMapper.selectTraceabilityEntryList(gzTraceability);
+    }
+
+    @Override
+    public List<GzMaterialUsageReportVo> selectMaterialUsageReportList(GzMaterialUsageReportQuery query)
+    {
+        return gzTraceabilityMapper.selectMaterialUsageReportList(query);
     }
 
     /**
