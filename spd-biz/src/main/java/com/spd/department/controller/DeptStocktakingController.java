@@ -1,5 +1,7 @@
 package com.spd.department.controller;
 
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,9 +24,12 @@ import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.department.service.IDeptStocktakingService;
+import com.spd.department.dto.StocktakingAppendEntriesBody;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 
@@ -40,6 +45,20 @@ public class DeptStocktakingController extends BaseController
 {
     @Autowired
     private IDeptStocktakingService deptStocktakingService;
+
+    private static Date parseStocktakingExpectedUpdateTime(JSONObject json)
+    {
+        if (json == null)
+        {
+            return null;
+        }
+        Object raw = json.get("expectedUpdateTime");
+        if (raw == null)
+        {
+            return null;
+        }
+        return DateUtils.parseDate(raw);
+    }
 
     /**
      * 查询科室盘点列表
@@ -106,10 +125,26 @@ public class DeptStocktakingController extends BaseController
     @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
     @Log(title = "科室盘点明细追加", businessType = BusinessType.INSERT)
     @PostMapping("/{id}/entries")
-    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody List<StkIoStocktakingEntry> entries)
+    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody StocktakingAppendEntriesBody body)
     {
-        deptStocktakingService.appendDeptStocktakingEntries(id, entries);
+        if (body == null)
+        {
+            body = new StocktakingAppendEntriesBody();
+        }
+        List<StkIoStocktakingEntry> entries = body.getEntries() != null ? body.getEntries() : Collections.emptyList();
+        deptStocktakingService.appendDeptStocktakingEntries(id, entries, body.getExpectedUpdateTime());
         return success(deptStocktakingService.selectDeptStocktakingById(id));
+    }
+
+    /**
+     * 盘点初始化：服务端按科室「已收货确认」库存生成并保存主单+明细，成功后返回完整单据（失败不落库）。
+     */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:add') or @ss.hasPermi('department:stocktaking:edit')")
+    @Log(title = "科室盘点初始化", businessType = BusinessType.INSERT)
+    @PostMapping("/init-from-inventory")
+    public AjaxResult initFromDepInventory(@RequestBody StkIoStocktaking body)
+    {
+        return success(deptStocktakingService.initDeptStocktakingFromDepInventory(body));
     }
 
     /**
@@ -124,6 +159,17 @@ public class DeptStocktakingController extends BaseController
     }
 
     /**
+     * 精简保存：主表 + 变更明细的实盘/账面/已盘（不整包 replace 明细，避免误删与字段被空覆盖）。
+     */
+    @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
+    @Log(title = "科室盘点精简保存", businessType = BusinessType.UPDATE)
+    @PutMapping("/patch-save")
+    public AjaxResult patchSave(@RequestBody StocktakingPatchSaveDto save)
+    {
+        return success(deptStocktakingService.patchSaveDeptStocktaking(save));
+    }
+
+    /**
      * 更新盘点明细「是否已盘」（未审核单）
      */
     @PreAuthorize("@ss.hasPermi('department:stocktaking:edit')")
@@ -131,7 +177,7 @@ public class DeptStocktakingController extends BaseController
     @PutMapping("/entry/counted")
     public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
     {
-        return toAjax(deptStocktakingService.updateDeptStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
+        return toAjax(deptStocktakingService.updateDeptStocktakingEntryCounted(dto));
     }
 
     /**
@@ -158,7 +204,8 @@ public class DeptStocktakingController extends BaseController
         if (arr != null && !arr.isEmpty()) {
             adjustList = arr.toJavaList(StocktakingQtyAdjustDto.class);
         }
-        int result = deptStocktakingService.auditDeptStocktaking(json.getString("id"), adjustList);
+        int result = deptStocktakingService.auditDeptStocktaking(json.getString("id"), adjustList,
+            parseStocktakingExpectedUpdateTime(json));
         return toAjax(result);
     }
 
@@ -179,8 +226,9 @@ public class DeptStocktakingController extends BaseController
     public AjaxResult reject(@RequestBody JSONObject json)
     {
         int result = deptStocktakingService.rejectDeptStocktaking(
-            json.getString("id"), 
-            json.getString("rejectReason")
+            json.getString("id"),
+            json.getString("rejectReason"),
+            parseStocktakingExpectedUpdateTime(json)
         );
         return toAjax(result);
     }

@@ -24,6 +24,9 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.department.mapper.DeptStocktakingMapper;
+import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingEntryQtyPatchDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
@@ -31,11 +34,16 @@ import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
+import com.spd.warehouse.utils.StocktakingConcurrencyUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.regex.Pattern;
 import com.spd.department.service.IDeptStocktakingService;
 
 /**
@@ -113,9 +121,12 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     public int insertDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setStockNo(getNumber());
-        stkIoStocktaking.setCreateTime(new Date());
+        Date now = new Date();
+        stkIoStocktaking.setCreateTime(now);
+        stkIoStocktaking.setUpdateTime(now);
         // 制单人存用户ID（varchar），避免前端误传 nickName 到 create_by
         stkIoStocktaking.setCreateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         Long opUserId = SecurityUtils.getUserId();
         if (opUserId != null) {
             stkIoStocktaking.setUserId(opUserId);
@@ -150,12 +161,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     @Override
     public int updateDeptStocktaking(StkIoStocktaking stkIoStocktaking)
     {
-        stkIoStocktaking.setUpdateTime(new Date());
-        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         // 确保warehouseId为null，表示这是科室盘点
         stkIoStocktaking.setWarehouseId(null);
         Long parenId = stkIoStocktaking.getId();
+        java.util.Date expectedClient = stkIoStocktaking.getUpdateTime();
+        lockAndAssertDeptStocktakingVersion(parenId, expectedClient);
+        stkIoStocktaking.setUpdateTime(new Date());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         StkIoStocktaking oldBill = deptStocktakingMapper.selectDeptStocktakingById(parenId);
+        ensureDeptStocktakingEditable(oldBill);
         if (oldBill != null && oldBill.getStkIoStocktakingEntryList() != null
             && !oldBill.getStkIoStocktakingEntryList().isEmpty()
             && !Objects.equals(oldBill.getDepartmentId(), stkIoStocktaking.getDepartmentId())) {
@@ -197,6 +211,186 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         return deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
     }
 
+    @Transactional
+    @Override
+    public StkIoStocktaking patchSaveDeptStocktaking(StocktakingPatchSaveDto save)
+    {
+        if (save == null || save.getId() == null)
+        {
+            throw new com.spd.common.exception.ServiceException("盘点单ID不能为空。");
+        }
+        Long billId = save.getId();
+        lockAndAssertDeptStocktakingVersion(billId, save.getExpectedUpdateTime());
+        StkIoStocktaking head = deptStocktakingMapper.selectDeptStocktakingById(billId);
+        ensureDeptStocktakingEditable(head);
+        SecurityUtils.ensureTenantAccess(head.getTenantId());
+
+        Map<Long, StkIoStocktakingEntry> oldEntryMap = buildEntryMap(head);
+        if (save.getDepartmentId() != null && !Objects.equals(head.getDepartmentId(), save.getDepartmentId()))
+        {
+            if (!oldEntryMap.isEmpty())
+            {
+                throw new com.spd.common.exception.ServiceException("盘点单存在明细后不允许变更科室，请先清空明细再调整。");
+            }
+            head.setDepartmentId(save.getDepartmentId());
+        }
+        if (save.getStockDate() != null)
+        {
+            head.setStockDate(save.getStockDate());
+        }
+        if (save.getRemark() != null)
+        {
+            head.setRemark(save.getRemark());
+        }
+        if (save.getIsMonthInit() != null)
+        {
+            head.setIsMonthInit(save.getIsMonthInit());
+        }
+        head.setUpdateTime(new Date());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        head.setWarehouseId(null);
+        deptStocktakingMapper.updateDeptStocktaking(head);
+
+        List<StocktakingEntryQtyPatchDto> patches = save.getEntryPatches();
+        if (patches != null && !patches.isEmpty())
+        {
+            String opUser = SecurityUtils.getUserIdStr();
+            for (StocktakingEntryQtyPatchDto patch : patches)
+            {
+                if (patch == null || patch.getId() == null)
+                {
+                    continue;
+                }
+                StkIoStocktakingEntry old = oldEntryMap.get(patch.getId());
+                if (old == null)
+                {
+                    throw new com.spd.common.exception.ServiceException("存在无法识别的历史明细，禁止保存。");
+                }
+                applyDeptEntryQtyPatch(head, old, patch, opUser);
+            }
+        }
+        return deptStocktakingMapper.selectDeptStocktakingById(billId);
+    }
+
+    private Map<Long, StkIoStocktakingEntry> buildEntryMap(StkIoStocktaking bill)
+    {
+        Map<Long, StkIoStocktakingEntry> map = new HashMap<>();
+        if (bill != null && bill.getStkIoStocktakingEntryList() != null)
+        {
+            for (StkIoStocktakingEntry e : bill.getStkIoStocktakingEntryList())
+            {
+                if (e != null && e.getId() != null)
+                {
+                    map.put(e.getId(), e);
+                }
+            }
+        }
+        return map;
+    }
+
+    private void ensureDeptStocktakingEditable(StkIoStocktaking bill)
+    {
+        if (bill == null)
+        {
+            throw new com.spd.common.exception.ServiceException("盘点单不存在或无权访问。");
+        }
+        if (bill.getStockStatus() != null && bill.getStockStatus() == 2)
+        {
+            throw new com.spd.common.exception.ServiceException("已审核的盘点单不可修改。");
+        }
+        if (bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_DEPT_STOCKTAKING)
+        {
+            throw new com.spd.common.exception.ServiceException("单据类型不是科室盘点，无法保存。");
+        }
+    }
+
+    /** 事务内锁定主单并校验客户端持有的 update_time，防止多人同时改同一盘点单 */
+    private void lockAndAssertDeptStocktakingVersion(Long billId, java.util.Date expectedClient)
+    {
+        if (billId == null)
+        {
+            throw new com.spd.common.exception.ServiceException("盘点单ID不能为空。");
+        }
+        StkIoStocktaking locked = deptStocktakingMapper.lockDeptStocktakingHeadById(billId);
+        if (locked == null)
+        {
+            throw new com.spd.common.exception.ServiceException("盘点单不存在或已删除。");
+        }
+        if (StringUtils.isNotEmpty(locked.getTenantId()))
+        {
+            SecurityUtils.ensureTenantAccess(locked.getTenantId());
+        }
+        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient,
+            StocktakingConcurrencyUtil.effectiveBillVersion(locked.getUpdateTime(), locked.getCreateTime()));
+    }
+
+    private void applyDeptEntryQtyPatch(StkIoStocktaking bill, StkIoStocktakingEntry old,
+        StocktakingEntryQtyPatchDto patch, String opUser)
+    {
+        BigDecimal stockQty = patch.getStockQty();
+        if (stockQty == null)
+        {
+            stockQty = old.getStockQty() == null ? BigDecimal.ZERO : old.getStockQty();
+        }
+        BigDecimal bookQty = old.getQty() == null ? BigDecimal.ZERO : old.getQty();
+        if (patch.getBookQty() != null)
+        {
+            BigDecimal live = queryCurrentDepInventoryQty(bill, old);
+            if (patch.getBookQty().compareTo(live) != 0)
+            {
+                throw new com.spd.common.exception.ServiceException(String.format(
+                    "明细[%s]账面数量与当前科室库存不一致，请刷新后重新确认。", old.getBatchNo() != null ? old.getBatchNo() : patch.getId()));
+            }
+            bookQty = patch.getBookQty();
+        }
+        if (StringUtils.isNotEmpty(old.getDepInventoryId()) && stockQty.compareTo(bookQty) > 0)
+        {
+            throw new com.spd.common.exception.ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
+        }
+        Integer countedFlag = patch.getCountedFlag();
+        if (countedFlag != null && countedFlag != 0 && countedFlag != 1)
+        {
+            throw new com.spd.common.exception.ServiceException("已盘标志只能为 0 或 1。");
+        }
+
+        StkIoStocktakingEntry calc = new StkIoStocktakingEntry();
+        calc.setQty(bookQty);
+        calc.setStockQty(stockQty);
+        calc.setUnitPrice(old.getUnitPrice());
+        calc.setPrice(old.getPrice());
+        fillProfitLossFlag(calc);
+        computeEntryAmountFields(calc);
+
+        int n = stkIoStocktakingMapper.updateStocktakingEntryQtyPatch(old.getId(), STOCK_TYPE_DEPT_STOCKTAKING, opUser,
+            bookQty, stockQty, calc.getAmt(), calc.getProfitLossFlag(), calc.getProfitQty(),
+            calc.getStockAmount(), calc.getProfitAmount(), countedFlag);
+        if (n == 0)
+        {
+            throw new com.spd.common.exception.ServiceException("明细保存失败（可能已审核或无权访问）。");
+        }
+    }
+
+    private static void computeEntryAmountFields(StkIoStocktakingEntry entry)
+    {
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        BigDecimal stockQty = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+        BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+        BigDecimal profitQty = stockQty.subtract(bookQty);
+        entry.setProfitQty(profitQty);
+        if (unitPrice == null)
+        {
+            entry.setAmt(BigDecimal.ZERO);
+            entry.setStockAmount(BigDecimal.ZERO);
+            entry.setProfitAmount(BigDecimal.ZERO);
+        }
+        else
+        {
+            entry.setAmt(stockQty.multiply(unitPrice));
+            entry.setStockAmount(entry.getAmt());
+            entry.setProfitAmount(profitQty.multiply(unitPrice));
+        }
+    }
+
     /**
      * 批量删除科室盘点
      *
@@ -228,19 +422,13 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     /**
      * 审核科室盘点信息
      * 更新科室库存（stk_dep_inventory表）
-     * @param id
-     * @return
      */
     @Transactional
     @Override
-    public int auditDeptStocktaking(String id) {
-        return auditDeptStocktaking(id, null);
-    }
-
-    @Transactional
-    @Override
-    public int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList) {
-        StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
+    public int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList, java.util.Date expectedUpdateTime) {
+        Long billId = Long.valueOf(id);
+        lockAndAssertDeptStocktakingVersion(billId, expectedUpdateTime);
+        StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(billId);
         if(stkIoStocktaking == null){
             throw new com.spd.common.exception.ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
         }
@@ -251,6 +439,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 throw new com.spd.common.exception.ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
             }
         }
+        normalizeDeptStocktakingQtyToLiveBeforeAudit(stkIoStocktaking);
         applyQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
         List<StocktakingQtyMismatchVo> mismatches = buildQtyMismatches(stkIoStocktaking);
         if (!mismatches.isEmpty()) {
@@ -341,8 +530,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
      */
     @Transactional
     @Override
-    public int rejectDeptStocktaking(String id, String rejectReason) {
-        StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(Long.valueOf(id));
+    public int rejectDeptStocktaking(String id, String rejectReason, java.util.Date expectedUpdateTime) {
+        Long billId = Long.valueOf(id);
+        lockAndAssertDeptStocktakingVersion(billId, expectedUpdateTime);
+        StkIoStocktaking stkIoStocktaking = deptStocktakingMapper.selectDeptStocktakingById(billId);
         if(stkIoStocktaking == null){
             throw new com.spd.common.exception.ServiceException(String.format("科室盘点业务ID：%s，不存在!", id));
         }
@@ -368,6 +559,23 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         Integer stockType = stkIoStocktaking.getStockType();
         if (stockType == null || stkIoStocktakingEntryList == null) {
             return;
+        }
+
+        Set<Long> materialIdSet = new HashSet<>();
+        for (StkIoStocktakingEntry e : stkIoStocktakingEntryList) {
+            if (e != null && e.getMaterialId() != null) {
+                materialIdSet.add(e.getMaterialId());
+            }
+        }
+        Map<Long, FdMaterial> materialById = Collections.emptyMap();
+        if (!materialIdSet.isEmpty()) {
+            List<FdMaterial> materials = fdMaterialMapper.selectFdMaterialByIds(new ArrayList<>(materialIdSet));
+            if (materials != null && !materials.isEmpty()) {
+                materialById = materials.stream()
+                    .filter(Objects::nonNull)
+                    .filter(m -> m.getId() != null)
+                    .collect(Collectors.toMap(FdMaterial::getId, m -> m, (a, b) -> a));
+            }
         }
 
         Date flowNow = new Date();
@@ -398,7 +606,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 // 科室盘点审核后视为已收货确认，避免退库时被 receipt_confirm_status=0 拦截
                 stkDepInventory.setReceiptConfirmStatus(1);
                 // 生成/补齐批次字典并回填科室库存 batch_id
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                FdMaterial material = materialById.get(entry.getMaterialId());
                 if (material == null) {
                     throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
@@ -428,7 +636,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     continue;
                 }
 
-                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                FdMaterial material = materialById.get(entry.getMaterialId());
                 if (material == null) {
                     throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
@@ -776,22 +984,37 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
      * 校验历史明细字段未被篡改。注意：DB/MyBatis 多为 {@link BigDecimal}，前端 JSON 经 Jackson 后常见 {@link Integer}/{@link Long}/{@link Double}，
      * 若仍用 {@link Objects#equals} 会把「0」与「0.00」或 {@link BigDecimal} 与 {@link Integer} 判为不等，误报「库存数量不允许编辑」。
      */
+    private static final Pattern AUDIT_DATE_STRING = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}");
+
     private void assertNoChange(String fieldName, Object oldVal, Object newVal) {
-        if (Objects.equals(oldVal, newVal)) {
+        if (auditValuesEqual(oldVal, newVal, fieldName)) {
             return;
+        }
+        throw new com.spd.common.exception.ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
+    }
+
+    /**
+     * 历史明细防篡改比对。日期字段需按「yyyy-MM-dd」归一化：库中为 Date、前端 JSON 常为字符串，避免误报不允许编辑。
+     */
+    private boolean auditValuesEqual(Object oldVal, Object newVal, String fieldName) {
+        if (Objects.equals(oldVal, newVal)) {
+            return true;
         }
         BigDecimal bdOld = toBigDecimalForAudit(oldVal);
         BigDecimal bdNew = toBigDecimalForAudit(newVal);
         if (bdOld != null && bdNew != null && bdOld.compareTo(bdNew) == 0) {
-            return;
+            return true;
         }
         // 更新请求体未带「库存数量」「单价」时视为未修改（与旧值一致）
         if (newVal == null && bdOld != null && ("库存数量".equals(fieldName) || "单价".equals(fieldName))) {
-            return;
+            return true;
+        }
+        if (isDateLikeForAudit(oldVal) || isDateLikeForAudit(newVal)) {
+            return normalizeDateForAudit(oldVal).equals(normalizeDateForAudit(newVal));
         }
         if (oldVal instanceof Date && newVal instanceof Date
             && ((Date) oldVal).getTime() == ((Date) newVal).getTime()) {
-            return;
+            return true;
         }
         Object left = oldVal;
         Object right = newVal;
@@ -799,9 +1022,60 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             left = oldVal == null ? "" : String.valueOf(oldVal).trim();
             right = newVal == null ? "" : String.valueOf(newVal).trim();
         }
-        if (!Objects.equals(left, right)) {
-            throw new com.spd.common.exception.ServiceException("盘点明细字段[" + fieldName + "]不允许编辑。");
+        return Objects.equals(left, right);
+    }
+
+    private static boolean isDateLikeForAudit(Object o) {
+        if (o == null) {
+            return false;
         }
+        if (o instanceof Date) {
+            return true;
+        }
+        if (o instanceof Number) {
+            return true;
+        }
+        if (o instanceof String) {
+            String s = ((String) o).trim();
+            if (s.isEmpty()) {
+                return false;
+            }
+            return AUDIT_DATE_STRING.matcher(s.length() >= 10 ? s.substring(0, 10) : s).matches()
+                || s.contains("T") || s.contains("-") && s.length() >= 10;
+        }
+        return false;
+    }
+
+    /** 归一化为 yyyy-MM-dd；空值统一为 "" */
+    private static String normalizeDateForAudit(Object o) {
+        if (o == null) {
+            return "";
+        }
+        if (o instanceof Date) {
+            return new SimpleDateFormat("yyyy-MM-dd").format((Date) o);
+        }
+        if (o instanceof Number) {
+            return new SimpleDateFormat("yyyy-MM-dd").format(new Date(((Number) o).longValue()));
+        }
+        if (o instanceof String) {
+            String s = ((String) o).trim();
+            if (s.isEmpty()) {
+                return "";
+            }
+            if (s.length() >= 10 && Character.isDigit(s.charAt(0))) {
+                String head = s.substring(0, 10);
+                if (AUDIT_DATE_STRING.matcher(head).matches()) {
+                    return head;
+                }
+            }
+            try {
+                Date parsed = new SimpleDateFormat("yyyy-MM-dd").parse(s.length() >= 10 ? s.substring(0, 10) : s);
+                return new SimpleDateFormat("yyyy-MM-dd").format(parsed);
+            } catch (ParseException ignore) {
+                return s;
+            }
+        }
+        return String.valueOf(o).trim();
     }
 
     /** 可参与数值比对的类型转为 BigDecimal；无法解析或非数值类型返回 null */
@@ -845,6 +1119,44 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
     }
 
+    private void normalizeDeptStocktakingQtyToLiveBeforeAudit(StkIoStocktaking bill) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_DEPT_STOCKTAKING
+            || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getId() == null) {
+                continue;
+            }
+            BigDecimal live = queryCurrentDepInventoryQty(bill, entry);
+            if (live == null) {
+                live = BigDecimal.ZERO;
+            }
+            BigDecimal book = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            boolean changed = false;
+            if (book.compareTo(live) != 0) {
+                entry.setQty(live);
+                changed = true;
+            }
+            BigDecimal bookAfter = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal sq = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+            // 来源于科室库存的明细不允许盘盈：账面已对齐为现库存后，实盘不得大于账面
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId()) && sq.compareTo(bookAfter) > 0) {
+                entry.setStockQty(bookAfter);
+                changed = true;
+            }
+            if (changed) {
+                fillProfitLossFlag(entry);
+                computeEntryAmountFields(entry);
+                applyStocktakingEntryAuditFields(entry, false);
+                if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                    entry.setStockNo(bill.getStockNo());
+                }
+                deptStocktakingMapper.updateDeptStocktakingEntry(entry);
+            }
+        }
+    }
+
     private void applyQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
         if (bill == null || adjustList == null || adjustList.isEmpty() || bill.getStkIoStocktakingEntryList() == null) {
             return;
@@ -869,9 +1181,8 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
             entry.setQty(currentQty);
             entry.setStockQty(adjust.getStockQty() == null ? currentQty : adjust.getStockQty());
-            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-            entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlag(entry);
+            computeEntryAmountFields(entry);
             applyStocktakingEntryAuditFields(entry, false);
             deptStocktakingMapper.updateDeptStocktakingEntry(entry);
         }
@@ -1108,12 +1419,147 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         return batchNo;
     }
 
+    private static final int STOCK_TYPE_DEPT_STOCKTAKING = 502;
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public StkIoStocktaking initDeptStocktakingFromDepInventory(StkIoStocktaking patch) {
+        try {
+            return doInitDeptStocktakingFromDepInventory(patch);
+        } catch (com.spd.common.exception.ServiceException e) {
+            String m = e.getMessage();
+            throw new com.spd.common.exception.ServiceException(
+                "盘点初始化未保存单据。" + (StringUtils.isNotEmpty(m) ? (" " + m) : "")
+                    + " 请排查科室库存（「收货确认」须为已确认、数量与批次须合理）及耗材与供应商档案后重试。");
+        }
+    }
+
+    private StkIoStocktaking doInitDeptStocktakingFromDepInventory(StkIoStocktaking patch) {
+        if (patch == null || patch.getDepartmentId() == null) {
+            throw new com.spd.common.exception.ServiceException("请先选择科室。");
+        }
+        Long billId = patch.getId();
+        List<StkDepInventory> invRows = loadDepInventoryConfirmedForStocktaking(patch.getDepartmentId());
+        if (invRows == null || invRows.isEmpty()) {
+            throw new com.spd.common.exception.ServiceException("当前科室没有「收货确认」为已确认的库存明细，无法生成盘点单。");
+        }
+        invRows.sort(Comparator
+            .comparing((StkDepInventory i) -> i.getMaterialId() == null ? Long.MAX_VALUE : i.getMaterialId())
+            .thenComparing(i -> i.getId() == null ? 0L : i.getId()));
+        List<StkIoStocktakingEntry> entries = new ArrayList<>();
+        for (StkDepInventory inv : invRows) {
+            if (inv == null || inv.getId() == null) {
+                continue;
+            }
+            entries.add(buildDeptInitEntryFromDepInventory(inv));
+        }
+        if (entries.isEmpty()) {
+            throw new com.spd.common.exception.ServiceException("科室库存明细无效或缺少主键，无法生成盘点明细。");
+        }
+        Integer stockStatus = patch.getStockStatus();
+        if (billId == null) {
+            StkIoStocktaking head = new StkIoStocktaking();
+            head.setDepartmentId(patch.getDepartmentId());
+            head.setStockDate(patch.getStockDate() != null ? patch.getStockDate() : new Date());
+            head.setRemark(patch.getRemark());
+            head.setStockStatus(stockStatus != null ? stockStatus : 1);
+            head.setStockType(STOCK_TYPE_DEPT_STOCKTAKING);
+            head.setWarehouseId(null);
+            head.setStkIoStocktakingEntryList(entries);
+            insertDeptStocktaking(head);
+            return selectDeptStocktakingById(head.getId());
+        }
+        lockAndAssertDeptStocktakingVersion(billId, patch.getUpdateTime());
+        StkIoStocktaking head = deptStocktakingMapper.selectDeptStocktakingById(billId);
+        if (head == null) {
+            throw new com.spd.common.exception.ServiceException("盘点单不存在或无权访问。");
+        }
+        if (StringUtils.isNotEmpty(head.getTenantId())) {
+            SecurityUtils.ensureTenantAccess(head.getTenantId());
+        }
+        if (head.getStockType() == null || head.getStockType() != STOCK_TYPE_DEPT_STOCKTAKING) {
+            throw new com.spd.common.exception.ServiceException("仅支持科室盘点单进行盘点初始化。");
+        }
+        if (head.getStockStatus() != null && head.getStockStatus() == 2) {
+            throw new com.spd.common.exception.ServiceException("已审核的盘点单不可进行盘点初始化。");
+        }
+        if (head.getStkIoStocktakingEntryList() != null && !head.getStkIoStocktakingEntryList().isEmpty()) {
+            throw new com.spd.common.exception.ServiceException("盘点单已有明细，请先删除后再进行盘点初始化。");
+        }
+        if (!Objects.equals(head.getDepartmentId(), patch.getDepartmentId())) {
+            throw new com.spd.common.exception.ServiceException("科室与当前盘点单不一致，请刷新页面后重试。");
+        }
+        if (patch.getStockDate() != null) {
+            head.setStockDate(patch.getStockDate());
+        }
+        if (patch.getRemark() != null) {
+            head.setRemark(patch.getRemark());
+        }
+        head.setStkIoStocktakingEntryList(entries);
+        validateAndNormalizeEntries(head, null);
+        insertStkIoStocktakingEntry(head);
+        head.setUpdateTime(new Date());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        deptStocktakingMapper.updateDeptStocktaking(head);
+        return selectDeptStocktakingById(billId);
+    }
+
+    private List<StkDepInventory> loadDepInventoryConfirmedForStocktaking(Long departmentId) {
+        StkDepInventory q = new StkDepInventory();
+        q.setDepartmentId(departmentId);
+        q.setReceiptConfirmStatus(1);
+        if (StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkDepInventoryMapper.selectStkDepInventoryList(q);
+    }
+
+    private StkIoStocktakingEntry buildDeptInitEntryFromDepInventory(StkDepInventory inv) {
+        StkIoStocktakingEntry e = new StkIoStocktakingEntry();
+        e.setMaterialId(inv.getMaterialId());
+        e.setDepInventoryId(inv.getId() != null ? String.valueOf(inv.getId()) : null);
+        BigDecimal qty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+        e.setQty(qty);
+        e.setStockQty(qty);
+        BigDecimal up = inv.getUnitPrice();
+        if (up == null && inv.getMaterial() != null) {
+            FdMaterial m = inv.getMaterial();
+            up = m.getPrice() != null ? m.getPrice() : m.getSalePrice();
+        }
+        e.setUnitPrice(up);
+        e.setPrice(up);
+        if (up != null) {
+            e.setAmt(qty.multiply(up));
+        } else {
+            e.setAmt(BigDecimal.ZERO);
+        }
+        if (StringUtils.isNotEmpty(inv.getBatchNo())) {
+            e.setBatchNo(inv.getBatchNo().trim());
+        }
+        String bn = StringUtils.isNotEmpty(inv.getBatchNumber()) ? inv.getBatchNumber()
+            : (StringUtils.isNotEmpty(inv.getMaterialNo()) ? inv.getMaterialNo() : "");
+        e.setBatchNumber(bn != null ? bn : "");
+        e.setBeginTime(inv.getBeginDate() != null ? inv.getBeginDate() : inv.getMaterialDate());
+        e.setEndTime(inv.getEndDate());
+        e.setReturnWarehouseId(inv.getWarehouseId());
+        Long supId = parseLongSupplierId(inv.getSupplierId());
+        if (supId == null && inv.getSupplier() != null && inv.getSupplier().getId() != null) {
+            supId = inv.getSupplier().getId();
+        }
+        e.setSupplierId(supId);
+        e.setCountedFlag(0);
+        e.setRemark("");
+        e.setDelFlag(0);
+        return e;
+    }
+
     @Transactional
     @Override
-    public int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries) {
+    public int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries, java.util.Date expectedUpdateTime) {
         if (billId == null || newEntries == null || newEntries.isEmpty()) {
             return 0;
         }
+        lockAndAssertDeptStocktakingVersion(billId, expectedUpdateTime);
         for (StkIoStocktakingEntry e : newEntries) {
             if (e != null && e.getId() != null) {
                 throw new com.spd.common.exception.ServiceException("追加明细必须为未落库的新行（不能带明细 id）。");
@@ -1190,18 +1636,76 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         return clean.size();
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public int updateDeptStocktakingEntryCountedFlag(Long entryId, Integer countedFlag)
+    public int updateDeptStocktakingEntryCounted(StocktakingEntryCountedDto dto)
     {
-        if (entryId == null || countedFlag == null)
+        if (dto == null || dto.getId() == null || dto.getCountedFlag() == null)
         {
             throw new com.spd.common.exception.ServiceException("参数错误。");
         }
+        Integer countedFlag = dto.getCountedFlag();
         if (countedFlag != 0 && countedFlag != 1)
         {
             throw new com.spd.common.exception.ServiceException("已盘标志只能为 0 或 1。");
         }
-        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(entryId, countedFlag, 502, SecurityUtils.getUserIdStr());
+        Long parenId = stkIoStocktakingMapper.selectParenIdByStocktakingEntryId(dto.getId());
+        if (parenId == null)
+        {
+            throw new com.spd.common.exception.ServiceException("未找到盘点明细。");
+        }
+        lockAndAssertDeptStocktakingVersion(parenId, dto.getExpectedUpdateTime());
+
+        BigDecimal stockQtyToPersist = dto.getStockQty();
+        BigDecimal amt = null;
+        String profitLossFlag = null;
+        BigDecimal profitQty = null;
+        BigDecimal stockAmount = null;
+        BigDecimal profitAmount = null;
+        if (stockQtyToPersist != null)
+        {
+            StkIoStocktaking bill = deptStocktakingMapper.selectDeptStocktakingById(parenId);
+            if (bill == null || bill.getStockType() == null || bill.getStockType() != 502
+                || (bill.getStockStatus() != null && bill.getStockStatus() == 2))
+            {
+                throw new com.spd.common.exception.ServiceException("未找到可更新的明细（可能已审核或不属于科室盘点）。");
+            }
+            StkIoStocktakingEntry entry = null;
+            if (bill.getStkIoStocktakingEntryList() != null)
+            {
+                for (StkIoStocktakingEntry e : bill.getStkIoStocktakingEntryList())
+                {
+                    if (e != null && dto.getId().equals(e.getId()))
+                    {
+                        entry = e;
+                        break;
+                    }
+                }
+            }
+            if (entry == null)
+            {
+                throw new com.spd.common.exception.ServiceException("未找到盘点明细。");
+            }
+            if (StringUtils.isNotEmpty(entry.getDepInventoryId()))
+            {
+                BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+                if (stockQtyToPersist.compareTo(bookQty) > 0)
+                {
+                    throw new com.spd.common.exception.ServiceException("来源于科室库存的明细仅允许盘亏，不允许盘盈。");
+                }
+            }
+            entry.setStockQty(stockQtyToPersist);
+            fillProfitLossFlag(entry);
+            profitLossFlag = entry.getProfitLossFlag();
+            BigDecimal up = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            amt = up != null ? stockQtyToPersist.multiply(up) : BigDecimal.ZERO;
+            BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            profitQty = stockQtyToPersist.subtract(bookQty);
+            stockAmount = amt;
+            profitAmount = up != null ? profitQty.multiply(up) : BigDecimal.ZERO;
+        }
+        int n = stkIoStocktakingMapper.updateStocktakingEntryCountedFlag(dto.getId(), countedFlag, 502,
+            SecurityUtils.getUserIdStr(), stockQtyToPersist, amt, profitLossFlag, profitQty, stockAmount, profitAmount);
         if (n == 0)
         {
             throw new com.spd.common.exception.ServiceException("未找到可更新的明细（可能已审核或不属于科室盘点）。");

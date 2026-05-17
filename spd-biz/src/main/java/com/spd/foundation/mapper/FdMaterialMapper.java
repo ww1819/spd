@@ -97,6 +97,9 @@ public interface FdMaterialMapper
      */
     public int updateFdMaterial(FdMaterial fdMaterial);
 
+    /** 解绑 HIS 收费项目：仅清空 his_charge_item_id */
+    int clearHisChargeItemIdByMaterialId(@Param("id") Long id, @Param("updateBy") String updateBy);
+
     /** 逻辑删除（设置 del_flag、delete_by、delete_time） */
     public int deleteFdMaterialById(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 

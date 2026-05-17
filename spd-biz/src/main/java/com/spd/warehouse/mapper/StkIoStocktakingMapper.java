@@ -22,6 +22,11 @@ public interface StkIoStocktakingMapper
     public StkIoStocktaking selectStkIoStocktakingById(Long id);
 
     /**
+     * 事务内锁定盘点主表行（FOR UPDATE），用于与并发校验配合。
+     */
+    StkIoStocktaking lockStkIoStocktakingHeadById(Long id);
+
+    /**
      * 查询盘点列表
      *
      * @param stkIoStocktaking 盘点
@@ -117,9 +122,34 @@ public interface StkIoStocktakingMapper
 
     /**
      * 仅更新明细「是否已盘」，且校验主单为指定 stock_type、未审核。
+     * stockQty 非空时同时更新实盘数量、金额、盈亏标志等（由 Service 计算后传入）。
      */
     int updateStocktakingEntryCountedFlag(@Param("entryId") Long entryId,
         @Param("countedFlag") Integer countedFlag,
         @Param("stockType") Integer stockType,
-        @Param("updateBy") String updateBy);
+        @Param("updateBy") String updateBy,
+        @Param("stockQty") java.math.BigDecimal stockQty,
+        @Param("amt") java.math.BigDecimal amt,
+        @Param("profitLossFlag") String profitLossFlag,
+        @Param("profitQty") java.math.BigDecimal profitQty,
+        @Param("stockAmount") java.math.BigDecimal stockAmount,
+        @Param("profitAmount") java.math.BigDecimal profitAmount);
+
+    /** 根据明细 id 查主单 id（租户隔离） */
+    Long selectParenIdByStocktakingEntryId(@Param("entryId") Long entryId);
+
+    /**
+     * 未审核盘点单：按主键仅更新明细账面/实盘数量及盈亏金额字段（不触碰批号、日期等）。
+     */
+    int updateStocktakingEntryQtyPatch(@Param("entryId") Long entryId,
+        @Param("stockType") Integer stockType,
+        @Param("updateBy") String updateBy,
+        @Param("qty") java.math.BigDecimal qty,
+        @Param("stockQty") java.math.BigDecimal stockQty,
+        @Param("amt") java.math.BigDecimal amt,
+        @Param("profitLossFlag") String profitLossFlag,
+        @Param("profitQty") java.math.BigDecimal profitQty,
+        @Param("stockAmount") java.math.BigDecimal stockAmount,
+        @Param("profitAmount") java.math.BigDecimal profitAmount,
+        @Param("countedFlag") Integer countedFlag);
 }

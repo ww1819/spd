@@ -28,6 +28,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isMonthInit"    column="is_month_init"    />
         <result property="profitAmount"    column="profit_amount"    />
         <result property="totalAmount"    column="total_amount"    />
+        <result property="createUserNickName" column="create_user_nickname" />
+        <result property="auditUserNickName" column="audit_user_nickname" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
@@ -131,10 +133,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
 				<!-- 总金额：优先汇总明细 amt（与页面金额列一致），其次 stock_amount -->
 				COALESCE((select SUM(IFNULL(entry.amt, IFNULL(entry.stock_amount, 0))) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
+				cu.nick_name as create_user_nickname,
+				au.nick_name as audit_user_nickname,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName
         from stk_io_stocktaking stk
+        left join sys_user cu on stk.create_by = cu.user_id
+        left join sys_user au on stk.update_by = au.user_id
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
@@ -232,6 +238,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
                 a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                (select cu.nick_name from sys_user cu where cu.user_id = a.create_by limit 1) as create_user_nickname,
+                (select au.nick_name from sys_user au where au.user_id = a.update_by limit 1) as audit_user_nickname,
                 COALESCE((select SUM(IFNULL(entry.profit_amount,
                     (IFNULL(entry.stock_qty,0) - IFNULL(entry.qty,0)) * IFNULL(entry.unit_price, IFNULL(entry.price,0))
                 )) from stk_io_stocktaking_entry entry where entry.paren_id = a.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
@@ -413,5 +421,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select max(stock_no) from stk_io_stocktaking
         where stock_no like concat('KSPD%',#{date},'%')
         and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="lockDeptStocktakingHeadById" parameterType="Long" resultMap="DeptStocktakingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select a.id, a.uuid_id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
+               a.stock_type, a.del_flag, a.audit_date, a.reject_reason, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+               a.is_month_init, a.tenant_id, a.audit_adjusts_inventory,
+               0 as profit_amount, 0 as total_amount,
+               null as create_user_nickname, null as audit_user_nickname,
+               null sId, null supplierCode, null supplierName,
+               null dId, null departmentCode, null departmentName,
+               null wId, null warehouseCode, null warehouseName
+        from stk_io_stocktaking a
+        where a.id = #{id} and a.tenant_id = #{scopedTenantId}
+          and (a.del_flag is null or a.del_flag != 1)
+          and a.department_id is not null
+          and (a.warehouse_id is null or a.warehouse_id = 0)
+        for update
     </select>
 </mapper>

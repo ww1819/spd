@@ -1,7 +1,10 @@
 package com.spd.warehouse.service;
 
+import java.util.Date;
 import java.util.List;
 
+import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.warehouse.domain.StkIoStocktaking;
@@ -48,6 +51,11 @@ public interface IStkIoStocktakingService
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking);
 
     /**
+     * 未审核仓库盘点精简保存：主表 + 变更明细实盘/账面/已盘。
+     */
+    StkIoStocktaking patchSaveWhStocktaking(StocktakingPatchSaveDto save);
+
+    /**
      * 批量删除盘点
      *
      * @param ids 需要删除的盘点主键集合
@@ -65,10 +73,9 @@ public interface IStkIoStocktakingService
 
     /**
      * 审核盘点信息（可选：逐条确认后传入 qtyAdjustList 同步账面库存并回写盘点数量）
-     * @param id 盘点主键
-     * @param adjustList 与 stk_inventory 不一致时的调整项，可为 null
+     * @param expectedUpdateTime 主表更新时间，用于并发控制
      */
-    int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList);
+    int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList, Date expectedUpdateTime);
 
     /**
      * 仓库盘点（stock_type=501）审核前：明细库存数量与当前仓库库存是否一致
@@ -84,12 +91,18 @@ public interface IStkIoStocktakingService
     List<StkIoStocktaking> getMonthHandleDataList(String beginDate, String endDate);
 
     /**
-     * 更新仓库盘点明细「是否已盘」（主单须未审核且 stock_type=501）
+     * 更新仓库盘点明细「是否已盘」，可选同时写入实盘数量（主单须未审核且 stock_type=501）
      */
-    int updateStocktakingEntryCountedFlag(Long entryId, Integer countedFlag);
+    int updateStocktakingEntryCounted(StocktakingEntryCountedDto dto);
 
     /**
      * 向已存在的仓库盘点单（stock_type=501、未审核）追加明细；新行不得带明细 id。
+     * @param expectedUpdateTime 主表更新时间，用于并发控制
      */
-    int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries);
+    int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries, Date expectedUpdateTime);
+
+    /**
+     * 仓库盘点初始化：在服务端按仓库库存生成主单+明细并落库；成功返回完整单据；失败整单回滚不落库。
+     */
+    StkIoStocktaking initWarehouseStocktakingFromInventory(StkIoStocktaking headPatch);
 }

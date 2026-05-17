@@ -1,5 +1,7 @@
 package com.spd.warehouse.controller;
 
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,9 +24,12 @@ import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.service.IStkIoStocktakingService;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.department.dto.StocktakingAppendEntriesBody;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 
 /**
@@ -39,6 +44,20 @@ public class StkIoStocktakingController extends BaseController
 {
     @Autowired
     private IStkIoStocktakingService stkIoStocktakingService;
+
+    private static Date parseStocktakingExpectedUpdateTime(JSONObject json)
+    {
+        if (json == null)
+        {
+            return null;
+        }
+        Object raw = json.get("expectedUpdateTime");
+        if (raw == null)
+        {
+            return null;
+        }
+        return DateUtils.parseDate(raw);
+    }
 
     /**
      * 查询盘点列表
@@ -87,6 +106,17 @@ public class StkIoStocktakingController extends BaseController
     }
 
     /**
+     * 仓库盘点初始化：服务端按仓库库存生成并保存主单+明细，成功后返回完整单据（失败不落库）。
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:add') or @ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "仓库盘点初始化", businessType = BusinessType.INSERT)
+    @PostMapping("/init-from-inventory")
+    public AjaxResult initFromWhInventory(@RequestBody StkIoStocktaking body)
+    {
+        return success(stkIoStocktakingService.initWarehouseStocktakingFromInventory(body));
+    }
+
+    /**
      * 修改盘点
      */
     @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
@@ -98,14 +128,30 @@ public class StkIoStocktakingController extends BaseController
     }
 
     /**
+     * 精简保存：主表 + 变更明细的实盘/账面/已盘。
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
+    @Log(title = "盘点精简保存", businessType = BusinessType.UPDATE)
+    @PutMapping("/patch-save")
+    public AjaxResult patchSave(@RequestBody StocktakingPatchSaveDto save)
+    {
+        return success(stkIoStocktakingService.patchSaveWhStocktaking(save));
+    }
+
+    /**
      * 向已保存的仓库盘点单追加明细（新行无 id），返回完整单据
      */
     @PreAuthorize("@ss.hasPermi('stocktaking:in:edit')")
     @Log(title = "盘点明细追加", businessType = BusinessType.INSERT)
     @PostMapping("/{id}/entries")
-    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody List<StkIoStocktakingEntry> entries)
+    public AjaxResult appendEntries(@PathVariable("id") Long id, @RequestBody StocktakingAppendEntriesBody body)
     {
-        stkIoStocktakingService.appendWarehouseStocktakingEntries(id, entries);
+        if (body == null)
+        {
+            body = new StocktakingAppendEntriesBody();
+        }
+        List<StkIoStocktakingEntry> entries = body.getEntries() != null ? body.getEntries() : Collections.emptyList();
+        stkIoStocktakingService.appendWarehouseStocktakingEntries(id, entries, body.getExpectedUpdateTime());
         return success(stkIoStocktakingService.selectStkIoStocktakingById(id));
     }
 
@@ -117,7 +163,7 @@ public class StkIoStocktakingController extends BaseController
     @PutMapping("/entry/counted")
     public AjaxResult updateEntryCounted(@RequestBody StocktakingEntryCountedDto dto)
     {
-        return toAjax(stkIoStocktakingService.updateStocktakingEntryCountedFlag(dto.getId(), dto.getCountedFlag()));
+        return toAjax(stkIoStocktakingService.updateStocktakingEntryCounted(dto));
     }
 
     /**
@@ -144,7 +190,8 @@ public class StkIoStocktakingController extends BaseController
         if (arr != null && !arr.isEmpty()) {
             adjustList = arr.toJavaList(StocktakingQtyAdjustDto.class);
         }
-        int result = stkIoStocktakingService.auditStkIoBill(json.getString("id"), adjustList);
+        int result = stkIoStocktakingService.auditStkIoBill(json.getString("id"), adjustList,
+            parseStocktakingExpectedUpdateTime(json));
         return toAjax(result);
     }
 
