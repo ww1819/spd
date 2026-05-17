@@ -142,6 +142,22 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
     }
 
+    /** UDI 维护：去除中英文括号，便于与扫码/库存检索一致 */
+    private void sanitizeUdiNo(FdMaterial m)
+    {
+        if (m == null || m.getUdiNo() == null)
+        {
+            return;
+        }
+        String s = m.getUdiNo()
+                .replace("（", "")
+                .replace("）", "")
+                .replace("(", "")
+                .replace(")", "")
+                .trim();
+        m.setUdiNo(s.isEmpty() ? null : s);
+    }
+
     /** 产品档案字段中文名（用于变更记录） */
     private static final Map<String, String> MATERIAL_FIELD_LABELS = new LinkedHashMap<>();
     static {
@@ -249,6 +265,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public int insertFdMaterial(FdMaterial fdMaterial)
     {
+        sanitizeUdiNo(fdMaterial);
         validateMaterialForInsert(fdMaterial);
         if (StringUtils.isEmpty(fdMaterial.getTenantId())) {
             String tid = SecurityUtils.requiredScopedTenantIdForSql();
@@ -384,6 +401,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public int updateFdMaterial(FdMaterial fdMaterial)
     {
+        sanitizeUdiNo(fdMaterial);
         validateMaterialForUpdate(fdMaterial);
         Date now = DateUtils.getNowDate();
         fdMaterial.setUpdateTime(now);
