@@ -223,6 +223,40 @@ CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室档案变更记录';
 /
 
+-- ========== 科室申购 dep_purchase_apply / dep_purchase_apply_entry（与 material/column.sql 同步）==========
+-- dep_purchase_apply
+CALL add_table_column('dep_purchase_apply', 'audit_by', 'varchar(36)', '审核人', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'audit_date', 'datetime', '审核日期', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+/
+-- dep_purchase_apply_entry
+CALL add_table_column('dep_purchase_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'del_time', 'datetime', '删除时间(历史字段)', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'del_by', 'varchar(100)', '删除者(历史字段)', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(36)', '来源科室汇总申购明细ID(UUID7)', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+/
+
 -- ========== 设备不良事件（equipment_adverse_event）==========
 -- 整表 DDL 在 equipment/table.sql（CREATE TABLE IF NOT EXISTS `equipment_adverse_event` …）。
 -- 存量库若从未执行过 table.sql 中该段，请直接执行 table.sql 对应建表语句；勿用本文件 add_table_column 拼整表。

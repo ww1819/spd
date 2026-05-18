@@ -941,6 +941,83 @@ CREATE TABLE IF NOT EXISTS `equipment_accessory_io_entry` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备配件出入库明细';
 /
 
+/* 科室申购（按仓库；可由汇总申购审核按仓拆分生成，见 material/table.sql dep_purchase_apply_agg） */
+/
+CREATE TABLE IF NOT EXISTS `dep_purchase_apply` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `purchase_bill_no` varchar(50) NOT NULL COMMENT '申购单号',
+  `purchase_bill_date` date DEFAULT NULL COMMENT '申请日期',
+  `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
+  `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `user_id` bigint DEFAULT NULL COMMENT '操作人ID',
+  `purchase_bill_status` int DEFAULT 1 COMMENT '申购状态(1-待审核,2-已审核,3-已拒绝)',
+  `total_amount` decimal(10,2) DEFAULT 0.00 COMMENT '总金额',
+  `urgency_level` int DEFAULT 1 COMMENT '紧急程度(1-普通,2-紧急,3-特急)',
+  `expected_delivery_date` date DEFAULT NULL COMMENT '期望到货日期',
+  `del_flag` int DEFAULT 0 COMMENT '删除标志',
+  `plan_status` int DEFAULT 0 COMMENT '计划状态：0-未生成，1-已生成，2-驳回',
+  `reject_reason` varchar(500) DEFAULT NULL COMMENT '驳回原因',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `audit_by` varchar(36) DEFAULT NULL COMMENT '审核人',
+  `audit_date` datetime DEFAULT NULL COMMENT '审核日期',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `src_agg_apply_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购主表ID(UUID7)',
+  `src_agg_bill_no` varchar(64) DEFAULT NULL COMMENT '来源科室汇总申购单号',
+  PRIMARY KEY (`id`),
+  KEY `idx_purchase_bill_no` (`purchase_bill_no`),
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  KEY `idx_department_id` (`department_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_purchase_bill_date` (`purchase_bill_date`),
+  KEY `idx_dep_purchase_apply_tenant` (`tenant_id`),
+  KEY `idx_dep_purchase_apply_src_agg` (`src_agg_apply_id`),
+  KEY `idx_dep_purchase_apply_src_agg_no` (`src_agg_bill_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申购表';
+/
+CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `parent_id` bigint NOT NULL COMMENT '父类ID',
+  `material_id` bigint DEFAULT NULL COMMENT '耗材ID',
+  `material_name` varchar(200) DEFAULT NULL COMMENT '耗材名称',
+  `material_spec` varchar(200) DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(50) DEFAULT NULL COMMENT '单位',
+  `unit_price` decimal(10,2) DEFAULT 0.00 COMMENT '单价',
+  `qty` decimal(10,2) DEFAULT 0.00 COMMENT '申购数量',
+  `amt` decimal(10,2) DEFAULT 0.00 COMMENT '金额',
+  `reason` varchar(500) DEFAULT NULL COMMENT '申购理由',
+  `supplier_name` varchar(200) DEFAULT NULL COMMENT '建议供应商',
+  `brand` varchar(100) DEFAULT NULL COMMENT '品牌',
+  `model` varchar(100) DEFAULT NULL COMMENT '型号',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int DEFAULT 0 COMMENT '是否删除',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间(历史字段)',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者(历史字段)',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `src_agg_entry_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购明细ID(UUID7)',
+  `src_agg_apply_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购主表ID(UUID7)',
+  `src_agg_bill_no` varchar(64) DEFAULT NULL COMMENT '来源科室汇总申购单号',
+  PRIMARY KEY (`id`),
+  KEY `idx_parent_id` (`parent_id`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_dep_purchase_apply_e_tenant` (`tenant_id`),
+  KEY `idx_dep_purchase_apply_e_src_agg` (`src_agg_apply_id`),
+  KEY `idx_dep_purchase_apply_e_src_agg_entry` (`src_agg_entry_id`),
+  KEY `idx_dep_purchase_apply_e_src_agg_no` (`src_agg_bill_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申购明细表';
+/
+
 -- 若 fd_material 来自历史若依脚本且缺少 min_package_qty，请执行 material/column.sql 中
 --   CALL add_table_column('fd_material','min_package_qty',...)
 -- 或 material/patch_fd_material_min_package_qty.sql（裸 ALTER，不可重复执行）。

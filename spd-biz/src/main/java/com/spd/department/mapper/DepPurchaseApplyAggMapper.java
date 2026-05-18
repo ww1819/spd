@@ -28,6 +28,11 @@ public interface DepPurchaseApplyAggMapper {
 
     int deleteDepPurchaseApplyAggEntryByParentId(@Param("parentId") String parentId, @Param("deleteBy") String deleteBy);
 
+    int deleteDepPurchaseApplyAggEntryByIds(@Param("parentId") String parentId, @Param("ids") List<String> ids,
+        @Param("deleteBy") String deleteBy);
+
+    int updateDepPurchaseApplyAggEntry(DepPurchaseApplyAggEntry entry);
+
     int batchInsertDepPurchaseApplyAggEntry(@Param("list") List<DepPurchaseApplyAggEntry> list);
 
     /** 按条件汇总明细数量（首页统计等） */

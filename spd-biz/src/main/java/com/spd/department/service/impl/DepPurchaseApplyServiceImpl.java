@@ -310,6 +310,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setPurchaseBillStatus(2);//已审核状态
+        depPurchaseApply.setAuditBy(auditBy);
+        depPurchaseApply.setAuditDate(new Date());
         depPurchaseApply.setUpdateBy(auditBy);
         depPurchaseApply.setUpdateTime(new Date());
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);

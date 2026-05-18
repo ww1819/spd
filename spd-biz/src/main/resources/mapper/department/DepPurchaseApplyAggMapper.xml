@@ -233,6 +233,40 @@
         where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </update>
 
+    <update id="deleteDepPurchaseApplyAggEntryByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply_agg_entry
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="updateDepPurchaseApplyAggEntry" parameterType="DepPurchaseApplyAggEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply_agg_entry
+        set material_id = #{materialId},
+            material_name = #{materialName},
+            material_spec = #{materialSpec},
+            unit = #{unit},
+            unit_price = #{unitPrice},
+            qty = #{qty},
+            amt = #{amt},
+            reason = #{reason},
+            supplier_name = #{supplierName},
+            brand = #{brand},
+            model = #{model},
+            line_no = #{lineNo},
+            warehouse_id = #{warehouseId},
+            del_flag = 0,
+            delete_by = null,
+            delete_time = null,
+            update_by = #{updateBy},
+            update_time = now(),
+            remark = #{remark}
+        where id = #{id} and parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+    </update>
+
     <insert id="batchInsertDepPurchaseApplyAggEntry">
         insert into dep_purchase_apply_agg_entry (
             id, parent_id, tenant_id, material_id, material_name, material_spec, unit, unit_price, qty, amt,

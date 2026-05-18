@@ -75,6 +75,21 @@ public class DepPurchaseApplyEntry extends BaseEntity
     /** 来源科室汇总申购明细ID(UUID7) */
     private String srcAggEntryId;
 
+    /** 来源科室汇总申购主表ID(UUID7) */
+    private String srcAggApplyId;
+
+    /** 来源科室汇总申购单号 */
+    private String srcAggBillNo;
+
+    /** 删除标志 */
+    private Integer delFlag;
+
+    /** 删除时间(历史字段 del_time) */
+    private Date delTime;
+
+    /** 删除者(历史字段 del_by) */
+    private String delBy;
+
     /** 删除人（逻辑删除时填充） */
     private String deleteBy;
     /** 删除时间（逻辑删除时填充） */
@@ -222,6 +237,46 @@ public class DepPurchaseApplyEntry extends BaseEntity
 
     public void setSrcAggEntryId(String srcAggEntryId) {
         this.srcAggEntryId = srcAggEntryId;
+    }
+
+    public String getSrcAggApplyId() {
+        return srcAggApplyId;
+    }
+
+    public void setSrcAggApplyId(String srcAggApplyId) {
+        this.srcAggApplyId = srcAggApplyId;
+    }
+
+    public String getSrcAggBillNo() {
+        return srcAggBillNo;
+    }
+
+    public void setSrcAggBillNo(String srcAggBillNo) {
+        this.srcAggBillNo = srcAggBillNo;
+    }
+
+    public Integer getDelFlag() {
+        return delFlag;
+    }
+
+    public void setDelFlag(Integer delFlag) {
+        this.delFlag = delFlag;
+    }
+
+    public Date getDelTime() {
+        return delTime;
+    }
+
+    public void setDelTime(Date delTime) {
+        this.delTime = delTime;
+    }
+
+    public String getDelBy() {
+        return delBy;
+    }
+
+    public void setDelBy(String delBy) {
+        this.delBy = delBy;
     }
 
     public String getDeleteBy() {

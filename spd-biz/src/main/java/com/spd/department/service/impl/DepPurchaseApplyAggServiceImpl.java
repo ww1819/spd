@@ -3,9 +3,12 @@ package com.spd.department.service.impl;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -148,6 +151,147 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         }
     }
 
+    private String entryBusinessKey(DepPurchaseApplyAggEntry e) {
+        if (e == null || e.getMaterialId() == null) {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(e.getWarehouseId())) {
+            return e.getMaterialId() + "_" + e.getWarehouseId().trim();
+        }
+        return String.valueOf(e.getMaterialId());
+    }
+
+    private void assignNewEntryId(DepPurchaseApplyAggEntry e, Set<String> usedIds) {
+        String newId;
+        do {
+            newId = UUID7.generateUUID7();
+        } while (usedIds.contains(newId));
+        e.setId(newId);
+        usedIds.add(newId);
+    }
+
+    /**
+     * 增量保存明细：已有行按 id（或 material+warehouse 业务键）更新，新行插入，未提交的旧行逻辑删除。
+     */
+    private List<DepPurchaseApplyAggEntry> saveAggEntryListIncremental(String parentId, String tenantId,
+        List<DepPurchaseApplyAggEntry> rawList, List<DepPurchaseApplyAggEntry> dbEntries) {
+        Map<String, DepPurchaseApplyAggEntry> dbById = new HashMap<>();
+        Map<String, String> dbKeyToId = new HashMap<>();
+        if (dbEntries != null) {
+            for (DepPurchaseApplyAggEntry db : dbEntries) {
+                if (db == null || StringUtils.isEmpty(db.getId())) {
+                    continue;
+                }
+                dbById.put(db.getId(), db);
+                String key = entryBusinessKey(db);
+                if (key != null) {
+                    dbKeyToId.put(key, db.getId());
+                }
+            }
+        }
+
+        Set<String> keepIds = new HashSet<>();
+        Set<String> usedIds = new HashSet<>(dbById.keySet());
+        Set<String> usedKeys = new HashSet<>();
+        List<DepPurchaseApplyAggEntry> toInsert = new ArrayList<>();
+        List<DepPurchaseApplyAggEntry> active = new ArrayList<>();
+        String userId = SecurityUtils.getUserIdStr();
+        Date now = DateUtils.getNowDate();
+        int line = 1;
+
+        if (rawList != null) {
+            for (DepPurchaseApplyAggEntry e : rawList) {
+                if (e == null || e.getMaterialId() == null) {
+                    continue;
+                }
+                fillEntryAmt(e);
+                e.setParentId(parentId);
+                e.setTenantId(tenantId);
+                if (e.getLineNo() == null) {
+                    e.setLineNo(line);
+                }
+                line++;
+
+                String entryId = e.getId();
+                if (StringUtils.isEmpty(entryId) || parentId.equals(entryId) || !dbById.containsKey(entryId)) {
+                    String bizKey = entryBusinessKey(e);
+                    if (bizKey != null && dbKeyToId.containsKey(bizKey)) {
+                        entryId = dbKeyToId.get(bizKey);
+                        e.setId(entryId);
+                    }
+                }
+
+                if (StringUtils.isNotEmpty(entryId) && dbById.containsKey(entryId)) {
+                    String bizKey = entryBusinessKey(e);
+                    if (bizKey != null && usedKeys.contains(bizKey)) {
+                        continue;
+                    }
+                    e.setDelFlag(0);
+                    e.setUpdateBy(userId);
+                    e.setUpdateTime(now);
+                    depPurchaseApplyAggMapper.updateDepPurchaseApplyAggEntry(e);
+                    keepIds.add(entryId);
+                    usedIds.add(entryId);
+                    if (bizKey != null) {
+                        usedKeys.add(bizKey);
+                        dbKeyToId.put(bizKey, entryId);
+                    }
+                    active.add(e);
+                } else {
+                    String bizKey = entryBusinessKey(e);
+                    if (bizKey != null && (usedKeys.contains(bizKey) || dbKeyToId.containsKey(bizKey))) {
+                        continue;
+                    }
+                    e.setDelFlag(0);
+                    e.setCreateBy(userId);
+                    e.setCreateTime(now);
+                    e.setUpdateBy(null);
+                    e.setUpdateTime(null);
+                    assignNewEntryId(e, usedIds);
+                    toInsert.add(e);
+                    if (bizKey != null) {
+                        usedKeys.add(bizKey);
+                        dbKeyToId.put(bizKey, e.getId());
+                    }
+                    active.add(e);
+                }
+            }
+        }
+
+        if (!toInsert.isEmpty()) {
+            depPurchaseApplyAggMapper.batchInsertDepPurchaseApplyAggEntry(toInsert);
+            for (DepPurchaseApplyAggEntry e : toInsert) {
+                keepIds.add(e.getId());
+            }
+        }
+
+        List<String> removeIds = new ArrayList<>();
+        for (String dbId : dbById.keySet()) {
+            if (!keepIds.contains(dbId)) {
+                removeIds.add(dbId);
+            }
+        }
+        if (!removeIds.isEmpty()) {
+            depPurchaseApplyAggMapper.deleteDepPurchaseApplyAggEntryByIds(parentId, removeIds, userId);
+        }
+        return active;
+    }
+
+    private List<DepPurchaseApplyAggEntry> previewActiveEntries(List<DepPurchaseApplyAggEntry> rawList) {
+        List<DepPurchaseApplyAggEntry> active = new ArrayList<>();
+        if (rawList == null) {
+            return active;
+        }
+        for (DepPurchaseApplyAggEntry e : rawList) {
+            if (e == null || e.getMaterialId() == null) {
+                continue;
+            }
+            fillEntryAmt(e);
+            active.add(e);
+        }
+        return active;
+    }
+
     private BigDecimal sumEntryAmt(List<DepPurchaseApplyAggEntry> entries) {
         BigDecimal t = BigDecimal.ZERO;
         if (entries == null) {
@@ -191,34 +335,9 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (row.getDelFlag() == null) {
             row.setDelFlag(0);
         }
-        List<DepPurchaseApplyAggEntry> rawList = row.getEntryList();
-        List<DepPurchaseApplyAggEntry> toSave = new ArrayList<>();
-        int line = 1;
-        if (rawList != null) {
-            for (DepPurchaseApplyAggEntry e : rawList) {
-                if (e == null || e.getMaterialId() == null) {
-                    continue;
-                }
-                if (StringUtils.isEmpty(e.getId())) {
-                    e.setId(UUID7.generateUUID7());
-                }
-                e.setParentId(row.getId());
-                e.setTenantId(row.getTenantId());
-                e.setDelFlag(0);
-                e.setCreateTime(DateUtils.getNowDate());
-                e.setCreateBy(SecurityUtils.getUserIdStr());
-                if (e.getLineNo() == null) {
-                    e.setLineNo(line++);
-                }
-                fillEntryAmt(e);
-                toSave.add(e);
-            }
-        }
-        row.setTotalAmount(sumEntryAmt(toSave));
+        row.setTotalAmount(sumEntryAmt(previewActiveEntries(row.getEntryList())));
         int n = depPurchaseApplyAggMapper.insertDepPurchaseApplyAgg(row);
-        if (!toSave.isEmpty()) {
-            depPurchaseApplyAggMapper.batchInsertDepPurchaseApplyAggEntry(toSave);
-        }
+        saveAggEntryListIncremental(row.getId(), row.getTenantId(), row.getEntryList(), null);
         return n;
     }
 
@@ -247,36 +366,9 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         validateEntryWarehouse(row.getEntryList());
         row.setUpdateBy(SecurityUtils.getUserIdStr());
         row.setUpdateTime(DateUtils.getNowDate());
-        String deleteBy = SecurityUtils.getUserIdStr();
-        depPurchaseApplyAggMapper.deleteDepPurchaseApplyAggEntryByParentId(row.getId(), deleteBy);
-
-        List<DepPurchaseApplyAggEntry> rawList = row.getEntryList();
-        List<DepPurchaseApplyAggEntry> toSave = new ArrayList<>();
-        int line = 1;
-        if (rawList != null) {
-            for (DepPurchaseApplyAggEntry e : rawList) {
-                if (e == null || e.getMaterialId() == null) {
-                    continue;
-                }
-                if (StringUtils.isEmpty(e.getId())) {
-                    e.setId(UUID7.generateUUID7());
-                }
-                e.setParentId(row.getId());
-                e.setTenantId(existing.getTenantId());
-                e.setDelFlag(0);
-                e.setCreateTime(DateUtils.getNowDate());
-                e.setCreateBy(SecurityUtils.getUserIdStr());
-                if (e.getLineNo() == null) {
-                    e.setLineNo(line++);
-                }
-                fillEntryAmt(e);
-                toSave.add(e);
-            }
-        }
-        row.setTotalAmount(sumEntryAmt(toSave));
-        if (!toSave.isEmpty()) {
-            depPurchaseApplyAggMapper.batchInsertDepPurchaseApplyAggEntry(toSave);
-        }
+        List<DepPurchaseApplyAggEntry> active = saveAggEntryListIncremental(
+            row.getId(), existing.getTenantId(), row.getEntryList(), existing.getEntryList());
+        row.setTotalAmount(sumEntryAmt(active));
         return depPurchaseApplyAggMapper.updateDepPurchaseApplyAgg(row);
     }
 
@@ -316,7 +408,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         return sum;
     }
 
-    private DepPurchaseApplyEntry toDepEntry(DepPurchaseApplyAggEntry ae) {
+    private DepPurchaseApplyEntry toDepEntry(DepPurchaseApplyAgg agg, DepPurchaseApplyAggEntry ae) {
         DepPurchaseApplyEntry e = new DepPurchaseApplyEntry();
         e.setMaterialId(ae.getMaterialId());
         e.setMaterialName(ae.getMaterialName());
@@ -334,6 +426,10 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         e.setModel(ae.getModel());
         e.setRemark(ae.getRemark());
         e.setSrcAggEntryId(ae.getId());
+        if (agg != null) {
+            e.setSrcAggApplyId(agg.getId());
+            e.setSrcAggBillNo(agg.getPurchaseBillNo());
+        }
         return e;
     }
 
@@ -390,7 +486,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             List<DepPurchaseApplyEntry> depEntries = new ArrayList<>();
             for (DepPurchaseApplyAggEntry ae : group) {
                 fillEntryAmt(ae);
-                depEntries.add(toDepEntry(ae));
+                depEntries.add(toDepEntry(agg, ae));
             }
             DepPurchaseApply bill = new DepPurchaseApply();
             bill.setWarehouseId(warehouseId);
@@ -402,6 +498,8 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             bill.setRemark(agg.getRemark());
             // 汇总单已审，拆分后的科室申购单直接为已审核，沿用原采购/出库逻辑
             bill.setPurchaseBillStatus(2);
+            bill.setAuditBy(auditBy);
+            bill.setAuditDate(now);
             bill.setUpdateBy(auditBy);
             bill.setUpdateTime(now);
             bill.setSrcAggApplyId(agg.getId());

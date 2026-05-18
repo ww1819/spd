@@ -5581,9 +5581,8 @@ ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name), parent_id=VALUES(parent_id)
 /
 
 -- ---------- 20) 科室请购（department:purchase / department:purchaseAudit）----------
--- 切换至汇总申购时执行（权限不变，仅改 component/path）：
--- UPDATE sys_menu SET path='dPurchaseAgg', component='department/dPurchaseAgg/index', remark='汇总申购录入' WHERE menu_id=3342;
--- UPDATE sys_menu SET path='dPurchaseAggAudit', component='department/dPurchaseAggAudit/index', remark='汇总申购审核' WHERE menu_id=3350;
+-- 切换至汇总申购：见 patch_switch_dep_purchase_to_agg.sql
+-- 本环境常见 menu_id：录入 1530、审核 1572；种子脚本 ID：3342、3350（以 SELECT 校验为准）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3342, '科室请购', COALESCE(@department_root,1), 14, 'dPurchase', 'department/dPurchase/index', NULL, 1, 0, 'C', '0', '0', 'department:purchase:list', 'shopping', 'admin', NOW(), '1', NOW(), '科室请购申请', '0', '1'
 FROM DUAL

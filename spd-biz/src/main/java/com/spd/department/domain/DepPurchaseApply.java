@@ -77,6 +77,16 @@ public class DepPurchaseApply extends BaseEntity
     /** 驳回原因 */
     private String rejectReason;
 
+    /** 审核人 */
+    private String auditBy;
+
+    /** 审核日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date auditDate;
+
+    /** 审核人姓名（查询关联，非表字段） */
+    private String auditPersonName;
+
     /** 科室申购明细信息 */
     private List<DepPurchaseApplyEntry> depPurchaseApplyEntryList;
 
@@ -245,6 +255,30 @@ public class DepPurchaseApply extends BaseEntity
     public String getRejectReason()
     {
         return rejectReason;
+    }
+
+    public String getAuditBy() {
+        return auditBy;
+    }
+
+    public void setAuditBy(String auditBy) {
+        this.auditBy = auditBy;
+    }
+
+    public Date getAuditDate() {
+        return auditDate;
+    }
+
+    public void setAuditDate(Date auditDate) {
+        this.auditDate = auditDate;
+    }
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
     }
 
     public List<DepPurchaseApplyEntry> getDepPurchaseApplyEntryList()
