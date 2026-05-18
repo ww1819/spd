@@ -66,6 +66,7 @@ import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.his.support.HisInternalRequestContext;
 import com.spd.his.service.support.HisMirrorStockEnricher;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
 import com.spd.foundation.service.ISbTenantSettingService;
@@ -339,6 +340,39 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 }
             }
         }
+    }
+
+    @Override
+    public void processFetchBatchAuto(String tenantId, String fetchBatchId, String visitKind, Long operatorUserId)
+    {
+        if (!HisBillingTenantConstants.TENANT_HENGSHUI_THIRD.equals(tenantId))
+        {
+            return;
+        }
+        String vk = visitKind == null ? "" : visitKind.trim().toUpperCase();
+        if (!KIND_IN.equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        Long opUid = operatorUserId;
+        if (opUid == null)
+        {
+            String raw = sbTenantSettingService.getSettingValue(tenantId,
+                HisBillingTenantConstants.SETTING_INTERNAL_OPERATOR_USER_ID, "0");
+            try
+            {
+                opUid = Long.parseLong(StringUtils.trimToEmpty(raw));
+            }
+            catch (Exception e)
+            {
+                opUid = 0L;
+            }
+        }
+        Long finalOpUid = opUid;
+        HisInternalRequestContext.run(tenantId, finalOpUid, () -> {
+            maybeAutoLvConsumeAfterFetch(tenantId, fetchBatchId, vk);
+            maybeAutoRefundAfterFetch(tenantId, fetchBatchId, vk);
+        });
     }
 
     private void maybeAutoRefundAfterFetch(String tenantId, String fetchBatchId, String chargeKind)

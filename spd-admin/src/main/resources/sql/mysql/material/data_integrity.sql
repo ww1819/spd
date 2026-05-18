@@ -604,6 +604,33 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'spd.order.push.mode');
 /
 
+-- scminterface 同步计费镜像后调用 SPD 内部自动消耗/退费
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT
+  'SPD内部接口基址',
+  'spd.internal.base_url',
+  'http://127.0.0.1:8080',
+  'N',
+  'admin',
+  NOW(),
+  'scminterface 调用 SPD /his/internal/patientCharge/processFetchBatch 基址。'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'spd.internal.base_url');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT
+  'HIS计费内部接口密钥',
+  'his.internal.api_key',
+  'change-me-internal-key',
+  'N',
+  'admin',
+  NOW(),
+  'scminterface 请求头 X-Spd-Internal-Key，与 SPD 内部接口校验一致，部署时请修改。'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'his.internal.api_key');
+/
+
 SET @post_list_menu_id := (
   SELECT menu_id FROM sys_menu
   WHERE perms = 'system:post:list' AND menu_type = 'C'

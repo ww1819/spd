@@ -57,4 +57,9 @@ public interface IHisPatientChargeService
 
     /** 衡水三院：保存低值计费自动消耗开关 */
     void saveTenantBillingSetting(HisTenantBillingSettingBody body);
+
+    /**
+     * 镜像批次同步后自动处理（低值消耗 + 退费），供 scminterface 内部接口调用。
+     */
+    void processFetchBatchAuto(String tenantId, String fetchBatchId, String visitKind, Long operatorUserId);
 }
