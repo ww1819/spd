@@ -58,6 +58,9 @@ public interface IFdMaterialService
      */
     public int updateFdMaterial(FdMaterial fdMaterial);
 
+    /** 清空耗材与 HIS 收费项目对照（仅 his_charge_item_id） */
+    int clearMaterialHisChargeItem(Long materialId);
+
     /**
      * 批量删除耗材产品
      *

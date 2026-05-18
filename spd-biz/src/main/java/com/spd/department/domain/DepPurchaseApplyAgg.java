@@ -11,7 +11,7 @@ import com.spd.common.core.domain.entity.SysUser;
 import com.spd.foundation.domain.FdDepartment;
 
 /**
- * 科室汇总申购（不分仓库）主表 dep_purchase_apply_agg；审核后按仓库拆入 dep_purchase_apply。
+ * 科室汇总申购主表 dep_purchase_apply_agg；明细带仓库ID，审核后按明细仓库拆入 dep_purchase_apply。
  */
 public class DepPurchaseApplyAgg extends BaseEntity {
 
@@ -57,6 +57,17 @@ public class DepPurchaseApplyAgg extends BaseEntity {
     private FdDepartment department;
 
     private SysUser user;
+
+    /** 查询：明细所属仓库（筛选含该仓明细的汇总单） */
+    private Long warehouseId;
+
+    /** 查询：制单日期起 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date beginDate;
+
+    /** 查询：制单日期止 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date endDate;
 
     public String getId() {
         return id;
@@ -200,5 +211,29 @@ public class DepPurchaseApplyAgg extends BaseEntity {
 
     public void setUser(SysUser user) {
         this.user = user;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
+    }
+
+    public Date getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(Date beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 }

@@ -78,6 +78,8 @@
         <result property="brand" column="sub_brand"/>
         <result property="model" column="sub_model"/>
         <result property="lineNo" column="sub_line_no"/>
+        <result property="warehouseId" column="sub_warehouse_id"/>
+        <result property="warehouseName" column="sub_warehouse_name"/>
         <result property="delFlag" column="sub_del_flag"/>
         <result property="deleteBy" column="sub_delete_by"/>
         <result property="deleteTime" column="sub_delete_time"/>
@@ -117,9 +119,35 @@
             <if test="userId != null">and m.user_id = #{userId}</if>
             <if test="purchaseBillStatus != null">and m.purchase_bill_status = #{purchaseBillStatus}</if>
             <if test="splitStatus != null">and m.split_status = #{splitStatus}</if>
+            <if test="beginDate != null">and m.purchase_bill_date &gt;= #{beginDate}</if>
+            <if test="endDate != null">and m.purchase_bill_date &lt;= #{endDate}</if>
+            <if test="warehouseId != null">and exists (
+                select 1 from dep_purchase_apply_agg_entry e2
+                where e2.parent_id = m.id and (e2.del_flag = 0 or e2.del_flag is null)
+                  and e2.tenant_id = #{scopedTenantId}
+                  and cast(e2.warehouse_id as unsigned) = #{warehouseId}
+            )</if>
             <include refid="depPurchaseAggDepartmentScopeFilter"/>
         </where>
         order by m.create_time desc
+    </select>
+
+    <select id="selectAggEntryQtySum" parameterType="DepPurchaseApplyAgg" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select ifnull(sum(e.qty), 0)
+        from dep_purchase_apply_agg_entry e
+        inner join dep_purchase_apply_agg m on m.id = e.parent_id and m.tenant_id = #{scopedTenantId}
+            and (m.del_flag = 0 or m.del_flag is null)
+        where e.tenant_id = #{scopedTenantId}
+          and (e.del_flag = 0 or e.del_flag is null)
+        <if test="purchaseBillStatus != null">and m.purchase_bill_status = #{purchaseBillStatus}</if>
+        <if test="departmentId != null">and m.department_id = #{departmentId}</if>
+        <if test="beginDate != null">and m.purchase_bill_date &gt;= #{beginDate}</if>
+        <if test="endDate != null">and m.purchase_bill_date &lt;= #{endDate}</if>
+        <if test="warehouseId != null">and cast(e.warehouse_id as unsigned) = #{warehouseId}</if>
+        <if test="params != null and params.scopeDeptUserId != null">
+            and m.department_id in (<include refid="depPurchaseAggScopedDeptIdsSubquery"/>)
+        </if>
     </select>
 
     <select id="selectDepPurchaseApplyAggById" resultMap="DepPurchaseApplyAggWithEntriesResult">
@@ -134,6 +162,7 @@
                e.material_name as sub_material_name, e.material_spec as sub_material_spec, e.unit as sub_unit,
                e.unit_price as sub_unit_price, e.qty as sub_qty, e.amt as sub_amt, e.reason as sub_reason,
                e.supplier_name as sub_supplier_name, e.brand as sub_brand, e.model as sub_model, e.line_no as sub_line_no,
+               e.warehouse_id as sub_warehouse_id, wh.name as sub_warehouse_name,
                e.del_flag as sub_del_flag, e.delete_by as sub_delete_by, e.delete_time as sub_delete_time,
                e.create_by as sub_create_by, e.create_time as sub_create_time, e.update_by as sub_update_by,
                e.update_time as sub_update_time, e.remark as sub_remark,
@@ -142,6 +171,7 @@
         left join fd_department d on m.department_id = d.id
         left join sys_user u on m.user_id = u.user_id
         left join dep_purchase_apply_agg_entry e on e.parent_id = m.id and (e.del_flag = 0 or e.del_flag is null)
+        left join fd_warehouse wh on wh.id = cast(e.warehouse_id as unsigned)
         left join fd_material mat on e.material_id = mat.id
         where m.id = #{id} and m.tenant_id = #{scopedTenantId}
           and (m.del_flag = 0 or m.del_flag is null)
@@ -206,14 +236,14 @@
     <insert id="batchInsertDepPurchaseApplyAggEntry">
         insert into dep_purchase_apply_agg_entry (
             id, parent_id, tenant_id, material_id, material_name, material_spec, unit, unit_price, qty, amt,
-            reason, supplier_name, brand, model, line_no, del_flag, create_by, create_time, remark
+            reason, supplier_name, brand, model, line_no, warehouse_id, del_flag, create_by, create_time, remark
         ) values
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.id}, #{item.parentId}, #{item.tenantId}, #{item.materialId}, #{item.materialName},
                 #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt},
                 #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.lineNo},
-                #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.remark}
+                #{item.warehouseId}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.remark}
             )
         </foreach>
     </insert>

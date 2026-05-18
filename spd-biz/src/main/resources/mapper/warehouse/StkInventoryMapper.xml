@@ -395,6 +395,61 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
     </select>
 
+    <!-- 库存分布分析：按维度聚合，避免拉全量明细 -->
+    <select id="selectStkInventoryDistribution" parameterType="StkInventory" resultType="java.util.HashMap">
+        select
+        <choose>
+            <when test="distributionGroupBy == 'supplier'">
+                IFNULL(NULLIF(TRIM(s.name), ''), '未填写') as groupName
+            </when>
+            <when test="distributionGroupBy == 'factory'">
+                IFNULL(NULLIF(TRIM(f.factory_name), ''), '未填写') as groupName
+            </when>
+            <when test="distributionGroupBy == 'warehouseCategory'">
+                IFNULL(NULLIF(TRIM(wc.warehouse_category_name), ''), '未填写') as groupName
+            </when>
+            <otherwise>
+                IFNULL(NULLIF(TRIM(w.name), ''), '未填写') as groupName
+            </otherwise>
+        </choose>,
+        SUM(IFNULL(stk.qty, 0)) as qty,
+        ROUND(SUM(IFNULL(stk.amt, IFNULL(stk.qty, 0) * IFNULL(stk.unit_price, 0))), 2) as amt
+        from stk_inventory stk
+        left join fd_warehouse w on stk.warehouse_id = w.id
+        left join fd_supplier s on stk.supplier_id = s.id
+        left join fd_material m on stk.material_id = m.id
+        left join fd_factory f on f.factory_id = COALESCE(stk.factory_id, m.factory_id)
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+        <include refid="stkInventoryMaterialReportVisible"/>
+        <include refid="stkInventoryMaterialIsUseQuery"/>
+        and IFNULL(stk.qty, 0) &gt; 0
+        <if test="materialId != null "> and stk.material_id = #{materialId}</if>
+        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
+        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        group by
+        <choose>
+            <when test="distributionGroupBy == 'supplier'">
+                IFNULL(NULLIF(TRIM(s.name), ''), '未填写')
+            </when>
+            <when test="distributionGroupBy == 'factory'">
+                IFNULL(NULLIF(TRIM(f.factory_name), ''), '未填写')
+            </when>
+            <when test="distributionGroupBy == 'warehouseCategory'">
+                IFNULL(NULLIF(TRIM(wc.warehouse_category_name), ''), '未填写')
+            </when>
+            <otherwise>
+                IFNULL(NULLIF(TRIM(w.name), ''), '未填写')
+            </otherwise>
+        </choose>
+        order by qty desc
+    </select>
+
     <select id="selectStkMaterialList" parameterType="StkInventory" resultMap="StkInventoryResult">
         <include refid="selectStkInventoryMaterialVo"/>
         <where>

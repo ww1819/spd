@@ -211,6 +211,11 @@ public interface IStkIoBillService
     List<Map<String, Object>> selectPurchaseSummaryBySupplier(StkIoBill stkIoBill);
 
     /**
+     * 耗材使用排名（出/退库净出库按耗材汇总）
+     */
+    List<com.spd.warehouse.domain.StkMaterialUsageRankVo> selectMaterialUsageRank(StkIoBill stkIoBill);
+
+    /**
      * 查询月结初始化列表
      * @return
      */

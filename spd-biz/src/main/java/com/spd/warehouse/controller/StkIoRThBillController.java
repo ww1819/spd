@@ -4,6 +4,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.poi.ExcelUtil;
 import com.github.pagehelper.PageInfo;
 import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.domain.FdMaterial;
@@ -422,6 +423,28 @@ public class StkIoRThBillController extends BaseController
     @GetMapping("/purchaseSummaryBySupplier")
     public List<Map<String, Object>> purchaseSummaryBySupplier(StkIoBill stkIoBill) {
         return stkIoBillService.selectPurchaseSummaryBySupplier(stkIoBill);
+    }
+
+    /**
+     * 耗材使用排名（出/退库净出库按耗材汇总）
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:list')")
+    @GetMapping("/materialUsageRank")
+    public List<com.spd.warehouse.domain.StkMaterialUsageRankVo> materialUsageRank(StkIoBill stkIoBill) {
+        return stkIoBillService.selectMaterialUsageRank(stkIoBill);
+    }
+
+    /**
+     * 导出耗材使用排名
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:export')")
+    @Log(title = "耗材使用排名", businessType = BusinessType.EXPORT)
+    @PostMapping("/materialUsageRank/export")
+    public void exportMaterialUsageRank(HttpServletResponse response, StkIoBill stkIoBill) {
+        List<com.spd.warehouse.domain.StkMaterialUsageRankVo> list = stkIoBillService.selectMaterialUsageRank(stkIoBill);
+        ExcelUtil<com.spd.warehouse.domain.StkMaterialUsageRankVo> util =
+            new ExcelUtil<com.spd.warehouse.domain.StkMaterialUsageRankVo>(com.spd.warehouse.domain.StkMaterialUsageRankVo.class);
+        util.exportExcel(response, list, "耗材使用排名");
     }
 
     /**

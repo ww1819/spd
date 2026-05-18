@@ -790,7 +790,7 @@ CREATE TABLE IF NOT EXISTS `purchase_plan_entry_dep_apply` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购计划明细关联科室申购单明细表(dep)';
 /
 
-/* 科室汇总申购（不分仓库；审核后按产品默认仓库拆分为 dep_purchase_apply） */
+/* 科室汇总申购（主单不分仓库；明细带仓库定数仓库ID，审核后按明细仓库拆分为 dep_purchase_apply） */
 /
 CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',
@@ -835,6 +835,7 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg_entry` (
   `brand` varchar(128) DEFAULT NULL COMMENT '品牌',
   `model` varchar(128) DEFAULT NULL COMMENT '型号',
   `line_no` int DEFAULT NULL COMMENT '行号',
+  `warehouse_id` varchar(36) DEFAULT NULL COMMENT '所属仓库ID(来自仓库定数)',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',

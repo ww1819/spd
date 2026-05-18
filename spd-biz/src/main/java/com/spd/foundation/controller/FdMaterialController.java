@@ -365,9 +365,7 @@ public class FdMaterialController extends BaseController
         {
             return error("耗材不存在");
         }
-        db.setHisChargeItemId(null);
-        db.setUpdateBy(getUserIdStr());
-        return toAjax(fdMaterialService.updateFdMaterial(db));
+        return toAjax(fdMaterialService.clearMaterialHisChargeItem(materialId));
     }
 
     /**

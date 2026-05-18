@@ -26,6 +26,11 @@ public class TreeSelect implements Serializable
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<TreeSelect> children;
 
+    /**
+     * 是否可勾选（用户/工作组菜单授权：客户未开通的叶子不展示；仅有下级的目录展示但不可勾选）
+     */
+    private Boolean checkable;
+
     public TreeSelect()
     {
 
@@ -73,5 +78,15 @@ public class TreeSelect implements Serializable
     public void setChildren(List<TreeSelect> children)
     {
         this.children = children;
+    }
+
+    public Boolean getCheckable()
+    {
+        return checkable;
+    }
+
+    public void setCheckable(Boolean checkable)
+    {
+        this.checkable = checkable;
     }
 }

@@ -222,6 +222,63 @@ public class FixedNumberController extends BaseController
     }
 
     /**
+     * 科室汇总申购新增明细：查询租户下全部仓库定数（不按单仓过滤），返回耗材及所属仓库。
+     */
+    @PreAuthorize("@ss.hasPermi('department:purchase:add')")
+    @GetMapping("/listForPurchaseAgg")
+    public TableDataInfo listForPurchaseAgg(WhFixedNumber whQuery)
+    {
+        if (whQuery == null) {
+            whQuery = new WhFixedNumber();
+        }
+        whQuery.setIsGz("2");
+        startPage();
+        List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
+        long total = new PageInfo<>(list).getTotal();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (WhFixedNumber item : list) {
+            Map<String, Object> map = new HashMap<>();
+            Long mid = item.getMaterialId();
+            Long wid = item.getWarehouseId();
+            map.put("materialId", mid);
+            map.put("warehouseId", wid != null ? String.valueOf(wid) : null);
+            map.put("warehouseName", item.getWarehouse() != null ? item.getWarehouse().getName() : null);
+            if (mid != null && wid != null) {
+                map.put("id", mid + "_" + wid);
+                map.put("pickKey", mid + "_" + wid);
+            } else if (mid != null) {
+                map.put("id", String.valueOf(mid));
+                map.put("pickKey", String.valueOf(mid));
+            }
+            map.put("code", item.getMaterial() != null ? item.getMaterial().getCode() : null);
+            map.put("name", item.getMaterial() != null ? item.getMaterial().getName() : null);
+            map.put("speci", item.getMaterial() != null ? item.getMaterial().getSpeci() : null);
+            map.put("specification", item.getMaterial() != null ? item.getMaterial().getSpeci() : null);
+            map.put("model", item.getMaterial() != null ? item.getMaterial().getModel() : null);
+            map.put("registerNo", item.getRegisterNo());
+            map.put("unitName", item.getUnitName());
+            map.put("price", item.getPrice());
+            map.put("supplierName", item.getSupplierName());
+            map.put("factoryName", item.getFactoryName());
+            map.put("warehouseCategoryName", item.getWarehouseCategoryName());
+            map.put("financeCategoryName", item.getFinanceCategoryName());
+            if (item.getUnitName() != null) {
+                map.put("fdUnit", java.util.Collections.singletonMap("unitName", item.getUnitName()));
+            }
+            if (item.getSupplierName() != null) {
+                map.put("supplier", java.util.Collections.singletonMap("name", item.getSupplierName()));
+            }
+            if (item.getFactoryName() != null) {
+                map.put("fdFactory", java.util.Collections.singletonMap("factoryName", item.getFactoryName()));
+            }
+            result.add(map);
+        }
+        TableDataInfo data = getDataTable(result);
+        data.setTotal(total);
+        return data;
+    }
+
+    /**
      * 定数监测新增/维护明细：分页查询可选产品档案（POST body，避免 excludeMaterialIds 过长）。
      * 与 {@code POST /foundation/material/list} 的区别：不按「本仓库已有未删除定数行」做 EXISTS，
      * 避免与 excludeMaterialIds 叠加结果为空、或删除定数后无法再选该产品。

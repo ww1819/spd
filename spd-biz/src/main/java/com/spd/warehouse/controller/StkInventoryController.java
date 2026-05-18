@@ -30,6 +30,7 @@ import com.spd.department.availablestock.DepartmentApplyAvailableStockStrategy;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.service.IStkInventoryService;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.constant.HttpStatus;
 import com.spd.common.core.text.Convert;
@@ -113,6 +114,23 @@ public class StkInventoryController extends BaseController
         totalInfo.setSubTotalAmt(subTotalAmt);
         Long total = new PageInfo<StkInventory>(list).getTotal();
         return getDataTable(list, totalInfo, total);
+    }
+
+    /**
+     * 库存分布分析：按仓库/供应商/厂家/库房分类 SQL 聚合（避免拉全量明细导致超时）
+     */
+    @PreAuthorize("@ss.hasPermi('warehouse:inventory:list')")
+    @GetMapping("/listDistribution")
+    public AjaxResult listDistribution(StkInventory stkInventory)
+    {
+        if (stkInventory == null) {
+            stkInventory = new StkInventory();
+        }
+        if (StringUtils.isEmpty(stkInventory.getDistributionGroupBy())) {
+            stkInventory.setDistributionGroupBy("warehouse");
+        }
+        List<Map<String, Object>> list = stkInventoryService.selectStkInventoryDistribution(stkInventory);
+        return success(list);
     }
 
     /**

@@ -6,9 +6,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,8 +22,6 @@ import com.spd.department.domain.DepPurchaseApplyEntry;
 import com.spd.department.mapper.DepPurchaseApplyAggMapper;
 import com.spd.department.service.IDepPurchaseApplyAggService;
 import com.spd.department.service.IDepPurchaseApplyService;
-import com.spd.foundation.domain.FdMaterial;
-import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.system.service.ITenantScopeService;
 
 @Service
@@ -40,9 +35,6 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
 
     @Autowired
     private ITenantScopeService tenantScopeService;
-
-    @Autowired
-    private FdMaterialMapper fdMaterialMapper;
 
     private void assertDepartmentInUserScope(Long departmentId) {
         Long userId = SecurityUtils.getUserId();
@@ -87,7 +79,21 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             query.setTenantId(SecurityUtils.getCustomerId());
         }
+        applyDepartmentScopeToQuery(query);
         return depPurchaseApplyAggMapper.selectDepPurchaseApplyAggList(query);
+    }
+
+    @Override
+    public BigDecimal selectAggEntryQtySum(DepPurchaseApplyAgg query) {
+        if (query == null) {
+            query = new DepPurchaseApplyAgg();
+        }
+        if (StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
+        applyDepartmentScopeToQuery(query);
+        BigDecimal sum = depPurchaseApplyAggMapper.selectAggEntryQtySum(query);
+        return sum != null ? sum : BigDecimal.ZERO;
     }
 
     private void validateEntryQty(List<DepPurchaseApplyAggEntry> list) {
@@ -98,6 +104,34 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
                 throw new ServiceException("汇总申购明细中数量不能为空且必须大于0，请检查后保存。");
             }
+        }
+    }
+
+    private void validateEntryWarehouse(List<DepPurchaseApplyAggEntry> list) {
+        if (list == null) {
+            return;
+        }
+        for (DepPurchaseApplyAggEntry e : list) {
+            if (e.getMaterialId() == null) {
+                continue;
+            }
+            Long whId = parseWarehouseId(e.getWarehouseId());
+            if (whId == null || whId <= 0) {
+                String label = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName()
+                    : String.valueOf(e.getMaterialId());
+                throw new ServiceException("汇总申购明细【" + label + "】未关联仓库，请从仓库定数中选择耗材。");
+            }
+        }
+    }
+
+    private Long parseWarehouseId(String warehouseId) {
+        if (StringUtils.isEmpty(warehouseId)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(warehouseId.trim());
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 
@@ -134,6 +168,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             assertDepartmentInUserScope(row.getDepartmentId());
         }
         validateEntryQty(row.getEntryList());
+        validateEntryWarehouse(row.getEntryList());
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());
         }
@@ -209,6 +244,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             assertDepartmentInUserScope(row.getDepartmentId());
         }
         validateEntryQty(row.getEntryList());
+        validateEntryWarehouse(row.getEntryList());
         row.setUpdateBy(SecurityUtils.getUserIdStr());
         row.setUpdateTime(DateUtils.getNowDate());
         String deleteBy = SecurityUtils.getUserIdStr();
@@ -321,19 +357,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             throw new ServiceException("汇总申购单无有效明细，无法审核拆分");
         }
         validateEntryQty(entries);
-
-        List<Long> materialIds = entries.stream()
-            .map(DepPurchaseApplyAggEntry::getMaterialId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
-        List<FdMaterial> materials = materialIds.isEmpty() ? new ArrayList<>() : fdMaterialMapper.selectFdMaterialByIds(materialIds);
-        Map<Long, FdMaterial> matMap = new LinkedHashMap<>();
-        for (FdMaterial m : materials) {
-            if (m != null && m.getId() != null) {
-                matMap.put(m.getId(), m);
-            }
-        }
+        validateEntryWarehouse(entries);
 
         Map<Long, List<DepPurchaseApplyAggEntry>> byWh = new LinkedHashMap<>();
         List<String> missing = new ArrayList<>();
@@ -341,18 +365,17 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             if (e.getMaterialId() == null) {
                 continue;
             }
-            FdMaterial m = matMap.get(e.getMaterialId());
-            Long whId = m != null ? m.getDefaultWarehouseId() : null;
+            Long whId = parseWarehouseId(e.getWarehouseId());
             if (whId == null || whId <= 0) {
-                String label = m != null && StringUtils.isNotEmpty(m.getName()) ? m.getName()
-                    : (StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName() : String.valueOf(e.getMaterialId()));
+                String label = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName()
+                    : String.valueOf(e.getMaterialId());
                 missing.add(label);
                 continue;
             }
             byWh.computeIfAbsent(whId, k -> new ArrayList<>()).add(e);
         }
         if (!missing.isEmpty()) {
-            throw new ServiceException("以下耗材未维护默认仓库，无法按仓拆分，请在产品档案中维护 default_warehouse_id 后再审核："
+            throw new ServiceException("以下明细未关联有效仓库，无法按仓拆分，请从仓库定数重新选择："
                 + String.join("、", missing));
         }
         if (byWh.isEmpty()) {

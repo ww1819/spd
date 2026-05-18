@@ -419,8 +419,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
-            his_id = #{hisId},
-            his_charge_item_id = #{hisChargeItemId},
+            <!-- 仅当入参非空时更新，避免整包保存未带字段时将 his 对照清空 -->
+            <if test="hisId != null">his_id = #{hisId},</if>
+            <if test="hisChargeItemId != null and hisChargeItemId != ''">his_charge_item_id = #{hisChargeItemId},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="speci != null">speci = #{speci},</if>
             <if test="model != null">model = #{model},</if>
@@ -481,6 +482,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="selectionReason != null">selection_reason = #{selectionReason},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="clearHisChargeItemIdByMaterialId">
+        <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
+        update fd_material set his_charge_item_id = null,
+            update_by = #{updateBy}, update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
     </update>
 
     <delete id="deleteFdMaterialById">

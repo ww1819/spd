@@ -176,6 +176,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：为 true 时仅保留数量大于 0 的库存行（与 onlyPositiveQty 语义一致，供弹窗等传参） */
     private Boolean excludeZeroQty;
 
+    /** 库存分布分析分组维度：warehouse / supplier / factory / warehouseCategory */
+    private String distributionGroupBy;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -586,5 +589,13 @@ public class StkInventory extends BaseEntity
 
     public void setExcludeZeroQty(Boolean excludeZeroQty) {
         this.excludeZeroQty = excludeZeroQty;
+    }
+
+    public String getDistributionGroupBy() {
+        return distributionGroupBy;
+    }
+
+    public void setDistributionGroupBy(String distributionGroupBy) {
+        this.distributionGroupBy = distributionGroupBy;
     }
 }

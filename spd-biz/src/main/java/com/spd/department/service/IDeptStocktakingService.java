@@ -1,7 +1,9 @@
 package com.spd.department.service;
 
+import java.util.Date;
 import java.util.List;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.DeptStocktakingExportRow;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
@@ -54,6 +56,11 @@ public interface IDeptStocktakingService
     public int updateDeptStocktaking(StkIoStocktaking stkIoStocktaking);
 
     /**
+     * 未审核科室盘点精简保存：主表 + 变更明细实盘/账面/已盘（不整包 replace 明细）。
+     */
+    StkIoStocktaking patchSaveDeptStocktaking(StocktakingPatchSaveDto save);
+
+    /**
      * 批量删除科室盘点
      *
      * @param ids 需要删除的科室盘点主键集合
@@ -69,26 +76,20 @@ public interface IDeptStocktakingService
      */
     public int deleteDeptStocktakingById(Long id);
 
-    /**
-     * 审核科室盘点信息
-     * @param id
-     * @return
-     */
-    int auditDeptStocktaking(String id);
-
     /** 审核前校验：盘点明细库存数量 vs 当前科室账面库存 */
     List<StocktakingQtyMismatchVo> checkStocktakingQtyMismatch(String id);
 
-    /** 审核（含库存不一致时用户确认后的数量调整） */
-    int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList);
+    /**
+     * 审核科室盘点信息（含库存不一致时用户确认后的数量调整）
+     * @param expectedUpdateTime 客户端打开/上次保存后主表更新时间，用于并发控制
+     */
+    int auditDeptStocktaking(String id, List<StocktakingQtyAdjustDto> adjustList, Date expectedUpdateTime);
 
     /**
      * 驳回科室盘点信息
-     * @param id 盘点ID
-     * @param rejectReason 驳回原因
-     * @return
+     * @param expectedUpdateTime 主表更新时间，用于并发控制
      */
-    int rejectDeptStocktaking(String id, String rejectReason);
+    int rejectDeptStocktaking(String id, String rejectReason, Date expectedUpdateTime);
 
     /**
      * 更新科室盘点明细「是否已盘」，可选同时写入实盘数量（与前端盘点数量一致）
@@ -100,9 +101,10 @@ public interface IDeptStocktakingService
      *
      * @param billId 主单 id
      * @param newEntries 无明细 id 的新行（可多条）
+     * @param expectedUpdateTime 主表更新时间，用于并发控制
      * @return 实际插入条数
      */
-    int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries);
+    int appendDeptStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries, Date expectedUpdateTime);
 
     /**
      * 盘点初始化：在服务端按科室「已收货确认」库存生成主单+明细并落库；成功返回完整单据；失败整单回滚不落库。

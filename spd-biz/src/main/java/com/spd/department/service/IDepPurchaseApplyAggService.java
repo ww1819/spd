@@ -1,11 +1,12 @@
 package com.spd.department.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.spd.department.domain.DepPurchaseApplyAgg;
 
 /**
- * 科室汇总申购（不分仓库）；审核后按产品默认仓库拆分为科室申购单。
+ * 科室汇总申购（主单不分仓库；明细带仓库定数仓库ID，审核后按明细仓库拆分）。
  */
 public interface IDepPurchaseApplyAggService {
 
@@ -15,6 +16,8 @@ public interface IDepPurchaseApplyAggService {
 
     List<DepPurchaseApplyAgg> selectDepPurchaseApplyAggList(DepPurchaseApplyAgg query);
 
+    BigDecimal selectAggEntryQtySum(DepPurchaseApplyAgg query);
+
     int insertDepPurchaseApplyAgg(DepPurchaseApplyAgg row);
 
     int updateDepPurchaseApplyAgg(DepPurchaseApplyAgg row);
@@ -23,9 +26,7 @@ public interface IDepPurchaseApplyAggService {
 
     int deleteDepPurchaseApplyAggByIds(String[] ids);
 
-    /**
-     * 审核汇总单：按耗材默认仓库拆分为多张 dep_purchase_apply，并标记汇总单已拆分。
-     */
+    /** 审核汇总单：按明细仓库拆分为多张 dep_purchase_apply，并标记汇总单已拆分。 */
     int auditDepPurchaseApplyAgg(String id);
 
     int rejectDepPurchaseApplyAgg(String id, String rejectReason);

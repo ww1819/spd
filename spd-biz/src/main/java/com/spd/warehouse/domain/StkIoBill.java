@@ -228,6 +228,8 @@ public class StkIoBill extends BaseEntity
     private String warehouseCategoryKeyword;
     /** 查询参数：是否高值（1=是 2=否） */
     private String isGz;
+    /** 查询参数：是否计费（1=是 0=否，耗材档案 is_billing） */
+    private String isBilling;
     /** 查询参数：财务分类多选 */
     private Long[] financeCategoryIds;
     /** 查询参数：库房分类多选 */
@@ -618,6 +620,14 @@ public class StkIoBill extends BaseEntity
 
     public void setIsGz(String isGz) {
         this.isGz = isGz;
+    }
+
+    public String getIsBilling() {
+        return isBilling;
+    }
+
+    public void setIsBilling(String isBilling) {
+        this.isBilling = isBilling;
     }
 
     public Long[] getFinanceCategoryIds() {

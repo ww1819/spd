@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,8 @@ import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.department.dto.StocktakingEntryCountedDto;
+import com.spd.department.dto.StocktakingEntryQtyPatchDto;
+import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -33,6 +36,7 @@ import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoStocktakingService;
+import com.spd.warehouse.utils.StocktakingConcurrencyUtil;
 
 /**
  * 盘点Service业务层处理
@@ -97,9 +101,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     public int insertStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
         stkIoStocktaking.setStockNo(getNumber());
-        stkIoStocktaking.setCreateTime(DateUtils.getNowDate());
+        java.util.Date now = DateUtils.getNowDate();
+        stkIoStocktaking.setCreateTime(now);
+        stkIoStocktaking.setUpdateTime(now);
         // 制单人存用户ID（varchar），避免前端误传 nickName 到 create_by
         stkIoStocktaking.setCreateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
         Long opUserId = SecurityUtils.getUserId();
         if (opUserId != null) {
             stkIoStocktaking.setUserId(opUserId);
@@ -138,10 +145,14 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public int updateStkIoStocktaking(StkIoStocktaking stkIoStocktaking)
     {
+        Long parenId = stkIoStocktaking.getId();
+        Date expectedClient = stkIoStocktaking.getUpdateTime();
+        lockAndAssertWhStocktakingVersion(parenId, expectedClient);
         stkIoStocktaking.setUpdateTime(DateUtils.getNowDate());
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+        StkIoStocktaking existing = stkIoStocktakingMapper.selectStkIoStocktakingById(stkIoStocktaking.getId());
+        ensureWhStocktakingEditable(existing);
         validateWarehouseStocktakingEntries(stkIoStocktaking);
-        Long parenId = stkIoStocktaking.getId();
         List<StkIoStocktakingEntry> entryList = stkIoStocktaking.getStkIoStocktakingEntryList();
         List<Long> keepIds = new ArrayList<>();
         String opUser = SecurityUtils.getUserIdStr();
@@ -163,6 +174,174 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenIdExceptIds(parenId, keepIds, opUser);
         }
         return stkIoStocktakingMapper.updateStkIoStocktaking(stkIoStocktaking);
+    }
+
+    @Transactional
+    @Override
+    public StkIoStocktaking patchSaveWhStocktaking(StocktakingPatchSaveDto save)
+    {
+        if (save == null || save.getId() == null)
+        {
+            throw new ServiceException("盘点单ID不能为空。");
+        }
+        Long billId = save.getId();
+        lockAndAssertWhStocktakingVersion(billId, save.getExpectedUpdateTime());
+        StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
+        ensureWhStocktakingEditable(head);
+        SecurityUtils.ensureTenantAccess(head.getTenantId());
+
+        Map<Long, StkIoStocktakingEntry> oldEntryMap = buildWhEntryMap(head);
+        if (save.getStockDate() != null)
+        {
+            head.setStockDate(save.getStockDate());
+        }
+        if (save.getRemark() != null)
+        {
+            head.setRemark(save.getRemark());
+        }
+        if (save.getIsMonthInit() != null)
+        {
+            head.setIsMonthInit(save.getIsMonthInit());
+        }
+        head.setUpdateTime(DateUtils.getNowDate());
+        head.setUpdateBy(SecurityUtils.getUserIdStr());
+        stkIoStocktakingMapper.updateStkIoStocktaking(head);
+
+        List<StocktakingEntryQtyPatchDto> patches = save.getEntryPatches();
+        if (patches != null && !patches.isEmpty())
+        {
+            String opUser = SecurityUtils.getUserIdStr();
+            for (StocktakingEntryQtyPatchDto patch : patches)
+            {
+                if (patch == null || patch.getId() == null)
+                {
+                    continue;
+                }
+                StkIoStocktakingEntry old = oldEntryMap.get(patch.getId());
+                if (old == null)
+                {
+                    throw new ServiceException("存在无法识别的历史明细，禁止保存。");
+                }
+                applyWhEntryQtyPatch(head, old, patch, opUser);
+            }
+        }
+        return stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
+    }
+
+    private Map<Long, StkIoStocktakingEntry> buildWhEntryMap(StkIoStocktaking bill)
+    {
+        Map<Long, StkIoStocktakingEntry> map = new HashMap<>();
+        if (bill != null && bill.getStkIoStocktakingEntryList() != null)
+        {
+            for (StkIoStocktakingEntry e : bill.getStkIoStocktakingEntryList())
+            {
+                if (e != null && e.getId() != null)
+                {
+                    map.put(e.getId(), e);
+                }
+            }
+        }
+        return map;
+    }
+
+    private void ensureWhStocktakingEditable(StkIoStocktaking bill)
+    {
+        if (bill == null)
+        {
+            throw new ServiceException("盘点单不存在或无权访问。");
+        }
+        if (bill.getStockStatus() != null && bill.getStockStatus() == 2)
+        {
+            throw new ServiceException("已审核的盘点单不可修改。");
+        }
+        if (bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING)
+        {
+            throw new ServiceException("单据类型不是仓库盘点，无法保存。");
+        }
+    }
+
+    private void lockAndAssertWhStocktakingVersion(Long billId, Date expectedClient)
+    {
+        if (billId == null)
+        {
+            throw new ServiceException("盘点单ID不能为空。");
+        }
+        StkIoStocktaking locked = stkIoStocktakingMapper.lockStkIoStocktakingHeadById(billId);
+        if (locked == null)
+        {
+            throw new ServiceException("盘点单不存在或已删除。");
+        }
+        SecurityUtils.ensureTenantAccess(locked.getTenantId());
+        StocktakingConcurrencyUtil.requireExpectedUpdateTime(expectedClient,
+            StocktakingConcurrencyUtil.effectiveBillVersion(locked.getUpdateTime(), locked.getCreateTime()));
+    }
+
+    private void applyWhEntryQtyPatch(StkIoStocktaking bill, StkIoStocktakingEntry old,
+        StocktakingEntryQtyPatchDto patch, String opUser)
+    {
+        BigDecimal stockQty = patch.getStockQty();
+        if (stockQty == null)
+        {
+            stockQty = old.getStockQty() == null ? BigDecimal.ZERO : old.getStockQty();
+        }
+        BigDecimal bookQty = old.getQty() == null ? BigDecimal.ZERO : old.getQty();
+        if (patch.getBookQty() != null)
+        {
+            BigDecimal live = queryCurrentWhInventoryQty(old);
+            if (patch.getBookQty().compareTo(live) != 0)
+            {
+                throw new ServiceException(String.format(
+                    "明细[%s]账面数量与当前仓库库存不一致，请刷新后重新确认。",
+                    old.getBatchNo() != null ? old.getBatchNo() : patch.getId()));
+            }
+            bookQty = patch.getBookQty();
+        }
+        if (old.getKcNo() != null && stockQty.compareTo(bookQty) > 0)
+        {
+            throw new ServiceException("来源于仓库库存的明细仅允许盘亏或持平，不允许盘盈。");
+        }
+        Integer countedFlag = patch.getCountedFlag();
+        if (countedFlag != null && countedFlag != 0 && countedFlag != 1)
+        {
+            throw new ServiceException("已盘标志只能为 0 或 1。");
+        }
+
+        StkIoStocktakingEntry calc = new StkIoStocktakingEntry();
+        calc.setQty(bookQty);
+        calc.setStockQty(stockQty);
+        calc.setUnitPrice(old.getUnitPrice());
+        calc.setPrice(old.getPrice());
+        fillProfitLossFlagWarehouse(calc);
+        computeWhEntryAmountFields(calc);
+
+        int n = stkIoStocktakingMapper.updateStocktakingEntryQtyPatch(old.getId(), STOCK_TYPE_WH_STOCKTAKING, opUser,
+            bookQty, stockQty, calc.getAmt(), calc.getProfitLossFlag(), calc.getProfitQty(),
+            calc.getStockAmount(), calc.getProfitAmount(), countedFlag);
+        if (n == 0)
+        {
+            throw new ServiceException("明细保存失败（可能已审核或无权访问）。");
+        }
+    }
+
+    private static void computeWhEntryAmountFields(StkIoStocktakingEntry entry)
+    {
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        BigDecimal stockQty = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+        BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+        BigDecimal profitQty = stockQty.subtract(bookQty);
+        entry.setProfitQty(profitQty);
+        if (unitPrice == null)
+        {
+            entry.setAmt(BigDecimal.ZERO);
+            entry.setStockAmount(BigDecimal.ZERO);
+            entry.setProfitAmount(BigDecimal.ZERO);
+        }
+        else
+        {
+            entry.setAmt(stockQty.multiply(unitPrice));
+            entry.setStockAmount(entry.getAmt());
+            entry.setProfitAmount(profitQty.multiply(unitPrice));
+        }
     }
 
     /**
@@ -213,14 +392,17 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
      */
     @Transactional
     @Override
-    public int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList) {
-        StkIoStocktaking stkIoStocktaking = stkIoStocktakingMapper.selectStkIoStocktakingById(Long.valueOf(id));
+    public int auditStkIoBill(String id, List<StocktakingQtyAdjustDto> adjustList, Date expectedUpdateTime) {
+        Long billId = Long.valueOf(id);
+        lockAndAssertWhStocktakingVersion(billId, expectedUpdateTime);
+        StkIoStocktaking stkIoStocktaking = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
         if (stkIoStocktaking == null) {
             throw new ServiceException(String.format("盘点业务ID：%s，不存在!", id));
         }
 
         Integer stockType = stkIoStocktaking.getStockType();
         if (stockType != null && stockType == STOCK_TYPE_WH_STOCKTAKING) {
+            normalizeWhStocktakingQtyToLiveBeforeAudit(stkIoStocktaking);
             applyWhQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
             List<StocktakingQtyMismatchVo> mismatches = buildWhQtyMismatches(stkIoStocktaking);
             if (!mismatches.isEmpty()) {
@@ -244,6 +426,45 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException(String.format("盘点业务ID：%s，不存在!", id));
         }
         return buildWhQtyMismatches(bill);
+    }
+
+    private void normalizeWhStocktakingQtyToLiveBeforeAudit(StkIoStocktaking bill) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING
+            || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getId() == null || entry.getKcNo() == null) {
+                continue;
+            }
+            BigDecimal live = queryCurrentWhInventoryQty(entry);
+            if (live == null) {
+                live = BigDecimal.ZERO;
+            }
+            BigDecimal book = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            boolean changed = false;
+            if (book.compareTo(live) != 0) {
+                entry.setQty(live);
+                changed = true;
+            }
+            BigDecimal bookAfter = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal sq = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+            // 来源于仓库库存的明细不允许盘盈：账面已对齐为现库存后，实盘不得大于账面
+            if (sq.compareTo(bookAfter) > 0) {
+                entry.setStockQty(bookAfter);
+                changed = true;
+            }
+            if (changed) {
+                fillProfitLossFlagWarehouse(entry);
+                computeWhEntryAmountFields(entry);
+                entry.setUpdateBy(SecurityUtils.getUserIdStr());
+                entry.setUpdateTime(DateUtils.getNowDate());
+                if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                    entry.setStockNo(bill.getStockNo());
+                }
+                stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
+            }
+        }
     }
 
     private void applyWhQtyAdjustmentsIfNeeded(StkIoStocktaking bill, List<StocktakingQtyAdjustDto> adjustList) {
@@ -274,9 +495,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 sq = currentQty;
             }
             entry.setStockQty(sq);
-            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
-            entry.setAmt(unitPrice == null ? BigDecimal.ZERO : entry.getStockQty().multiply(unitPrice));
             fillProfitLossFlagWarehouse(entry);
+            computeWhEntryAmountFields(entry);
             if (StringUtils.isNotEmpty(bill.getStockNo())) {
                 entry.setStockNo(bill.getStockNo());
             }
@@ -510,6 +730,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public int updateStocktakingEntryCounted(StocktakingEntryCountedDto dto)
     {
@@ -522,6 +743,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         {
             throw new ServiceException("已盘标志只能为 0 或 1。");
         }
+        Long parenId = stkIoStocktakingMapper.selectParenIdByStocktakingEntryId(dto.getId());
+        if (parenId == null)
+        {
+            throw new ServiceException("未找到盘点明细。");
+        }
+        lockAndAssertWhStocktakingVersion(parenId, dto.getExpectedUpdateTime());
+
         BigDecimal stockQtyToPersist = dto.getStockQty();
         BigDecimal amt = null;
         String profitLossFlag = null;
@@ -530,11 +758,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         BigDecimal profitAmount = null;
         if (stockQtyToPersist != null)
         {
-            Long parenId = stkIoStocktakingMapper.selectParenIdByStocktakingEntryId(dto.getId());
-            if (parenId == null)
-            {
-                throw new ServiceException("未找到盘点明细。");
-            }
             StkIoStocktaking bill = stkIoStocktakingMapper.selectStkIoStocktakingById(parenId);
             if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING
                 || (bill.getStockStatus() != null && bill.getStockStatus() == 2))
@@ -648,6 +871,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             insertStkIoStocktaking(head);
             return selectStkIoStocktakingById(head.getId());
         }
+        lockAndAssertWhStocktakingVersion(billId, patch.getUpdateTime());
         StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
         if (head == null)
         {
@@ -740,12 +964,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 
     @Transactional
     @Override
-    public int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries)
+    public int appendWarehouseStocktakingEntries(Long billId, List<StkIoStocktakingEntry> newEntries, Date expectedUpdateTime)
     {
         if (billId == null || newEntries == null || newEntries.isEmpty())
         {
             return 0;
         }
+        lockAndAssertWhStocktakingVersion(billId, expectedUpdateTime);
         for (StkIoStocktakingEntry e : newEntries)
         {
             if (e != null && e.getId() != null)
