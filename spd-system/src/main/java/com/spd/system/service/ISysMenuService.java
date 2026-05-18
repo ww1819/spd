@@ -192,4 +192,9 @@ public interface ISysMenuService
    * 批量设置耗材菜单「默认对客户开放」：先全部置否，再对 menuIds 置是（平台管理菜单始终为否）
    */
   void batchSetDefaultOpenToCustomer(List<Long> menuIds);
+
+  /**
+   * 将指定菜单标记为「默认对客户开放」（仅置是，不影响其它菜单；平台管理菜单由 SQL 排除）
+   */
+  void markMenusDefaultOpenToCustomer(List<Long> menuIds);
 }

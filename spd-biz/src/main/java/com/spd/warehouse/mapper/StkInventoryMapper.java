@@ -209,4 +209,9 @@ public interface StkInventoryMapper
     List<WarehouseNearExpiryReminderRowVo> selectWarehouseNearExpiryReminderList(@Param("tenantId") String tenantId);
 
     int countWarehouseNearExpiryReminderList(@Param("tenantId") String tenantId);
+
+    /**
+     * 库存分布分析：按维度 SQL 聚合数量与金额
+     */
+    List<Map<String, Object>> selectStkInventoryDistribution(StkInventory stkInventory);
 }
