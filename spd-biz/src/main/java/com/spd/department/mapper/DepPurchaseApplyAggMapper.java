@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
+
 import com.spd.department.domain.DepPurchaseApplyAgg;
 import com.spd.department.domain.DepPurchaseApplyAggEntry;
 
@@ -27,4 +29,7 @@ public interface DepPurchaseApplyAggMapper {
     int deleteDepPurchaseApplyAggEntryByParentId(@Param("parentId") String parentId, @Param("deleteBy") String deleteBy);
 
     int batchInsertDepPurchaseApplyAggEntry(@Param("list") List<DepPurchaseApplyAggEntry> list);
+
+    /** 按条件汇总明细数量（首页统计等） */
+    BigDecimal selectAggEntryQtySum(DepPurchaseApplyAgg query);
 }

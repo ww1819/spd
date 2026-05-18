@@ -43,6 +43,12 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     private Integer lineNo;
 
+    /** 所属仓库ID（来自仓库定数 wh_fixed_number，varchar 存储） */
+    private String warehouseId;
+
+    /** 展示用，非表字段 */
+    private String warehouseName;
+
     private Integer delFlag;
 
     private String deleteBy;
@@ -169,6 +175,22 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     public void setLineNo(Integer lineNo) {
         this.lineNo = lineNo;
+    }
+
+    public String getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(String warehouseId) {
+        this.warehouseId = warehouseId;
+    }
+
+    public String getWarehouseName() {
+        return warehouseName;
+    }
+
+    public void setWarehouseName(String warehouseName) {
+        this.warehouseName = warehouseName;
     }
 
     public Integer getDelFlag() {

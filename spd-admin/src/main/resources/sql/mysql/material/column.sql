@@ -854,6 +854,10 @@ CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '�
 CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(36)', '来源科室汇总申购明细ID(UUID7)', NULL);
 /
 
+-- dep_purchase_apply_agg_entry
+CALL add_table_column('dep_purchase_apply_agg_entry', 'warehouse_id', 'varchar(36)', '所属仓库ID(来自仓库定数)', NULL);
+/
+
 -- fd_material
 CALL add_table_column('fd_material', 'delete_by', 'varchar(64)', '删除者', NULL);
 /
