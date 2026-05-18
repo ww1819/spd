@@ -122,4 +122,9 @@ public interface IStkInventoryService
 
     int countWarehouseNearExpiryReminderLines();
 
+    /**
+     * 库存分布分析：按仓库/供应商/厂家/库房分类聚合
+     */
+    List<Map<String, Object>> selectStkInventoryDistribution(StkInventory stkInventory);
+
 }

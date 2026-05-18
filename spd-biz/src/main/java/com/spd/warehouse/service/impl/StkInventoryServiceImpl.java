@@ -199,6 +199,21 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     }
 
     @Override
+    public List<Map<String, Object>> selectStkInventoryDistribution(StkInventory stkInventory) {
+        if (stkInventory == null) {
+            stkInventory = new StkInventory();
+        }
+        if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+            stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
+        }
+        if (StringUtils.isEmpty(stkInventory.getDistributionGroupBy())) {
+            stkInventory.setDistributionGroupBy("warehouse");
+        }
+        List<Map<String, Object>> list = stkInventoryMapper.selectStkInventoryDistribution(stkInventory);
+        return list != null ? list : new ArrayList<>();
+    }
+
+    @Override
     public List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory) {
         if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
             stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
