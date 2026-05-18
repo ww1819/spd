@@ -20,6 +20,10 @@ public interface HisInpatientChargeMirrorMapper
 
     List<HisInpatientChargeMirror> selectPendingByFetchBatch(@Param("tenantId") String tenantId, @Param("fetchBatchId") String fetchBatchId);
 
+    /** 本批次待自动处理的退费镜像行（含 charge_id_tf、value_level） */
+    List<HisInpatientChargeMirror> selectRefundPendingByFetchBatch(@Param("tenantId") String tenantId,
+        @Param("fetchBatchId") String fetchBatchId);
+
     int countConsumedInFetchBatch(@Param("tenantId") String tenantId, @Param("fetchBatchId") String fetchBatchId);
 
     int updateMirrorProcessByIds(

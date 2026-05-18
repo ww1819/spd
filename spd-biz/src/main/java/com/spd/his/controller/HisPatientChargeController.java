@@ -155,7 +155,7 @@ public class HisPatientChargeController extends BaseController
     }
 
     /**
-     * 衡水三院：低值计费抓取后是否自动生成消耗（开关查询）
+     * 衡水三院：计费自动处理开关（低值自动消耗、退费自动返还）
      */
     @PreAuthorize("@ss.hasPermi('department:patientCharge:billingTenantSetting')")
     @GetMapping("/tenant/billingSetting")
@@ -165,7 +165,7 @@ public class HisPatientChargeController extends BaseController
     }
 
     /**
-     * 衡水三院：保存低值计费自动消耗开关
+     * 衡水三院：保存计费自动处理开关
      */
     @PreAuthorize("@ss.hasPermi('department:patientCharge:billingTenantSetting')")
     @Log(title = "租户计费自动消耗开关", businessType = BusinessType.UPDATE)

@@ -20,6 +20,9 @@ public interface HisOutpatientChargeMirrorMapper
 
     List<HisOutpatientChargeMirror> selectPendingByFetchBatch(@Param("tenantId") String tenantId, @Param("fetchBatchId") String fetchBatchId);
 
+    List<HisOutpatientChargeMirror> selectRefundPendingByFetchBatch(@Param("tenantId") String tenantId,
+        @Param("fetchBatchId") String fetchBatchId);
+
     int countConsumedInFetchBatch(@Param("tenantId") String tenantId, @Param("fetchBatchId") String fetchBatchId);
 
     int updateMirrorProcessByIds(

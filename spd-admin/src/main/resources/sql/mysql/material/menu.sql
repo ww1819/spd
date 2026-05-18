@@ -6139,6 +6139,40 @@ FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM 
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
 /
 
+-- 23.3.2 HIS 计费自动处理（系统管理/系统设置；material/system/billingSetting/index）
+SET @hc_billing_setting_parent := COALESCE(
+  (SELECT menu_id FROM sys_menu WHERE menu_name = '系统设置' AND menu_type = 'M' ORDER BY menu_id LIMIT 1),
+  1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+) SELECT
+  3611, 'HIS计费自动处理', @hc_billing_setting_parent,
+  (SELECT IFNULL(MAX(sm.order_num), 0) + 1 FROM sys_menu sm WHERE sm.parent_id = @hc_billing_setting_parent),
+  'billingSetting', 'material/system/billingSetting/index', NULL,
+  1, 0, 'C', '0', '0', 'department:patientCharge:billingTenantSetting', 'switch',
+  'admin', NOW(), '1', NOW(), '抓取后自动低值消耗/自动退费；GET/PUT /his/patientCharge/tenant/billingSetting',
+  '0', '1'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'material/system/billingSetting/index')
+  OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3611)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  order_num = VALUES(order_num),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  icon = VALUES(icon),
+  remark = VALUES(remark),
+  default_open_to_customer = VALUES(default_open_to_customer),
+  update_time = VALUES(update_time);
+/
+
 -- 23.4 收货确认 department/receiptConfirm（ReceiptConfirmController）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3428, '收货确认', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'receiptConfirm', 'department/receiptConfirm/index', NULL, 1, 0, 'C', '0', '0', 'department:receiptConfirm:list', 'checkbox', 'admin', NOW(), '1', NOW(), '', '0', '1'

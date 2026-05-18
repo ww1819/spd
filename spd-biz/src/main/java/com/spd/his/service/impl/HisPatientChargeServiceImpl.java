@@ -63,6 +63,7 @@ import com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.constants.HisBillingTenantConstants;
+import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
 import com.spd.his.service.support.HisMirrorStockEnricher;
@@ -118,6 +119,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     @Autowired
     private ISbTenantSettingService sbTenantSettingService;
 
+    @Autowired
+    private IHisBillingRefundService hisBillingRefundService;
+
     @Override
     public HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body)
     {
@@ -169,6 +173,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setSkippedCount(skipped);
         vo.setDriftCount(drift);
         maybeAutoLvConsumeAfterFetch(tenantId, batchId, "INPATIENT");
+        maybeAutoRefundAfterFetch(tenantId, batchId, "INPATIENT");
         return vo;
     }
 
@@ -222,6 +227,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setSkippedCount(skipped);
         vo.setDriftCount(drift);
         maybeAutoLvConsumeAfterFetch(tenantId, batchId, "OUTPATIENT");
+        maybeAutoRefundAfterFetch(tenantId, batchId, "OUTPATIENT");
         return vo;
     }
 
@@ -230,9 +236,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         assertHengsuiBillingTenantOnly();
         HisTenantBillingSettingBody b = new HisTenantBillingSettingBody();
-        String v = sbTenantSettingService.getSettingValue(SecurityUtils.getCustomerId(),
+        String tenantId = SecurityUtils.getCustomerId();
+        String v = sbTenantSettingService.getSettingValue(tenantId,
             HisBillingTenantConstants.SETTING_LV_AUTO_CONSUME_ENABLED, "0");
         b.setLvAutoConsumeEnabled(v);
+        String refundOn = sbTenantSettingService.getSettingValue(tenantId,
+            HisBillingTenantConstants.SETTING_BILLING_AUTO_REFUND_ENABLED, "0");
+        b.setBillingAutoRefundEnabled(refundOn);
         return b;
     }
 
@@ -240,13 +250,21 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public void saveTenantBillingSetting(HisTenantBillingSettingBody body)
     {
         assertHengsuiBillingTenantOnly();
+        String tenantId = SecurityUtils.getCustomerId();
         String on = body == null ? "0" : StringUtils.trimToEmpty(body.getLvAutoConsumeEnabled());
         if (!"0".equals(on) && !"1".equals(on))
         {
             throw new ServiceException("lvAutoConsumeEnabled 仅支持 0 或 1");
         }
-        sbTenantSettingService.saveSettingValue(SecurityUtils.getCustomerId(),
+        sbTenantSettingService.saveSettingValue(tenantId,
             HisBillingTenantConstants.SETTING_LV_AUTO_CONSUME_ENABLED, on, "低值计费抓取后自动生成消耗");
+        String refundOn = body == null ? "0" : StringUtils.trimToEmpty(body.getBillingAutoRefundEnabled());
+        if (!"0".equals(refundOn) && !"1".equals(refundOn))
+        {
+            throw new ServiceException("billingAutoRefundEnabled 仅支持 0 或 1");
+        }
+        sbTenantSettingService.saveSettingValue(tenantId,
+            HisBillingTenantConstants.SETTING_BILLING_AUTO_REFUND_ENABLED, refundOn, "计费退费镜像抓取后自动返还库存");
     }
 
     private void assertHengsuiBillingTenantOnly()
@@ -320,6 +338,28 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                     log.warn("HIS自动低值消耗跳过 mirrorRowId={} err={}", row.getId(), e.toString());
                 }
             }
+        }
+    }
+
+    private void maybeAutoRefundAfterFetch(String tenantId, String fetchBatchId, String chargeKind)
+    {
+        if (!HisBillingTenantConstants.TENANT_HENGSHUI_THIRD.equals(tenantId))
+        {
+            return;
+        }
+        String v = sbTenantSettingService.getSettingValue(tenantId,
+            HisBillingTenantConstants.SETTING_BILLING_AUTO_REFUND_ENABLED, "0");
+        if (!"1".equals(v))
+        {
+            return;
+        }
+        try
+        {
+            hisBillingRefundService.processAutoRefundForFetchBatch(tenantId, fetchBatchId, chargeKind);
+        }
+        catch (Exception e)
+        {
+            log.warn("HIS自动退费批次处理异常 fetchBatchId={} err={}", fetchBatchId, e.toString());
         }
     }
 

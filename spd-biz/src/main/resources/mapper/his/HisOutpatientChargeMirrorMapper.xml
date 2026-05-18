@@ -92,6 +92,20 @@
             and (cim.deleted_flag is null or cim.deleted_flag = 0)
         where m.tenant_id = #{tenantId} and m.fetch_batch_id = #{fetchBatchId}
         and m.process_status = 'PENDING_CONSUME'
+        and (m.his_outpatient_charge_id_tf is null or trim(m.his_outpatient_charge_id_tf) = '')
+        order by <include refid="outpatientChargeTsExpr"/> asc, m.id asc
+    </select>
+
+    <select id="selectRefundPendingByFetchBatch" resultMap="HisOutpatientChargeMirrorResult">
+        select m.*,
+            cim.value_level as value_level
+        from his_outpatient_charge_mirror m
+        left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+            and trim(cim.charge_item_id) = trim(m.charge_item_id)
+            and (cim.deleted_flag is null or cim.deleted_flag = 0)
+        where m.tenant_id = #{tenantId} and m.fetch_batch_id = #{fetchBatchId}
+        and m.process_status = 'PENDING_CONSUME'
+        and trim(ifnull(m.his_outpatient_charge_id_tf, '')) != ''
         order by <include refid="outpatientChargeTsExpr"/> asc, m.id asc
     </select>
 

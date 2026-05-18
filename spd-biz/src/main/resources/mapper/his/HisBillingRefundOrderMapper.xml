@@ -22,4 +22,12 @@
             update_time = now()
         where tenant_id = #{tenantId} and id = #{id} and ifnull(del_flag, 0) = 0
     </update>
+
+    <select id="countDoneByRefundMirrorRowId" resultType="int">
+        select count(*) from his_billing_refund_order
+        where tenant_id = #{tenantId}
+          and refund_mirror_row_id = #{refundMirrorRowId}
+          and process_status = 'DONE'
+          and ifnull(del_flag, 0) = 0
+    </select>
 </mapper>

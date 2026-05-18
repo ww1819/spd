@@ -8,7 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.common.exception.ServiceException;
@@ -32,16 +35,21 @@ import com.spd.his.mapper.HisBillingRefundOrderMapper;
 import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.refund.LvRefundConsumeLinkOrderStrategy;
 
 @Service
 public class HisBillingRefundServiceImpl implements IHisBillingRefundService
 {
+    private static final Logger log = LoggerFactory.getLogger(HisBillingRefundServiceImpl.class);
+
     private static final String KIND_IN = "INPATIENT";
     private static final String STATUS_DONE = "DONE";
     private static final String STATUS_FAILED = "FAILED";
     private static final String STATUS_PENDING = "PENDING";
+    private static final String MIRROR_STATUS_REFUNDED = "REFUNDED";
+    private static final String MIRROR_PROC_TYPE_REFUND = "REFUND";
 
     @Autowired
     private HisInpatientChargeMirrorMapper hisInpatientChargeMirrorMapper;
@@ -57,6 +65,13 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
     private IDeptBatchConsumeService deptBatchConsumeService;
     @Autowired
     private LvRefundConsumeLinkOrderStrategy lvRefundConsumeLinkOrderStrategy;
+    @Autowired
+    private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+
+    /** 避免同类自调用导致 @Transactional 失效 */
+    @Lazy
+    @Autowired
+    private IHisBillingRefundService billingRefundService;
 
     private void assertHengsuiTenant()
     {
@@ -204,58 +219,10 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             outProbe = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, originMirrorRowId);
         }
 
-        List<HisMirrorConsumeLink> candidates = hisMirrorConsumeLinkMapper.selectCandidateLinksForRefund(
-            tenantId, visitKind, originMirrorRowId, "2");
-        if (candidates == null || candidates.isEmpty())
-        {
-            throw new ServiceException("未找到可返还的低值计费消耗关联，请确认已产生消耗且尚有可退数量");
-        }
-        List<HisMirrorConsumeLink> sorted = lvRefundConsumeLinkOrderStrategy.sortForRefund(candidates);
-
-        BigDecimal need = body.getRefundQty();
-        Map<Long, List<DeptBatchConsumeReverseReq.ReverseItem>> byConsume = new LinkedHashMap<>();
-        List<PlannedLine> planned = new ArrayList<>();
-
-        Map<Long, Map<Long, BigDecimal>> canCache = new HashMap<>();
-        for (HisMirrorConsumeLink lk : sorted)
-        {
-            if (need.compareTo(BigDecimal.ZERO) <= 0)
-            {
-                break;
-            }
-            BigDecimal linkRem = refundableOnLink(lk);
-            if (linkRem.compareTo(BigDecimal.ZERO) <= 0)
-            {
-                continue;
-            }
-            Long consumeId = lk.getDeptBatchConsumeId();
-            Long entryId = lk.getDeptBatchConsumeEntryId();
-            if (consumeId == null || entryId == null)
-            {
-                continue;
-            }
-            Map<Long, BigDecimal> canByEntry = canCache.computeIfAbsent(consumeId, this::loadCanReverseByEntry);
-            BigDecimal canEntry = canByEntry.get(entryId);
-            if (canEntry == null || canEntry.compareTo(BigDecimal.ZERO) <= 0)
-            {
-                continue;
-            }
-            BigDecimal take = need.min(linkRem).min(canEntry);
-            if (take.compareTo(BigDecimal.ZERO) <= 0)
-            {
-                continue;
-            }
-            DeptBatchConsumeReverseReq.ReverseItem it = new DeptBatchConsumeReverseReq.ReverseItem();
-            it.setSrcConsumeEntryId(entryId);
-            it.setReverseQty(take);
-            byConsume.computeIfAbsent(consumeId, k -> new ArrayList<>()).add(it);
-            planned.add(new PlannedLine(lk.getId(), take, consumeId, entryId));
-            need = need.subtract(take);
-        }
-        if (need.compareTo(BigDecimal.ZERO) > 0)
-        {
-            throw new ServiceException(String.format("退费数量超过可返还上限，剩余未分配：%s（请检查消耗关联与反消耗额度）", need));
-        }
+        RefundAllocationPlan plan = planRefundAllocation(tenantId, visitKind, originMirrorRowId, "2", body.getRefundQty());
+        Map<Long, List<DeptBatchConsumeReverseReq.ReverseItem>> byConsume = plan.byConsume;
+        List<PlannedLine> planned = plan.planned;
+        List<HisMirrorConsumeLink> candidates = plan.candidates;
 
         HisBillingRefundOrder order = buildOrderHeader(tenantId, visitKind, body, originMirrorRowId, "2", inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
@@ -300,6 +267,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             }
             hisBillingRefundOrderMapper.updateProcessStatus(tenantId, order.getId(), STATUS_DONE, null, uid);
             order.setProcessStatus(STATUS_DONE);
+            markRefundMirrorProcessed(tenantId, visitKind, body.getRefundMirrorRowId());
         }
         catch (ServiceException ex)
         {
@@ -320,6 +288,254 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             throw new ServiceException(msg);
         }
         return order;
+    }
+
+    @Override
+    public void processAutoRefundForFetchBatch(String tenantId, String fetchBatchId, String visitKind)
+    {
+        if (!HisBillingTenantConstants.TENANT_HENGSHUI_THIRD.equals(tenantId)
+            || StringUtils.isBlank(fetchBatchId) || StringUtils.isBlank(visitKind))
+        {
+            return;
+        }
+        String vk = visitKind.trim().toUpperCase();
+        if (KIND_IN.equals(vk))
+        {
+            List<HisInpatientChargeMirror> rows = hisInpatientChargeMirrorMapper.selectRefundPendingByFetchBatch(tenantId, fetchBatchId);
+            if (rows == null)
+            {
+                return;
+            }
+            for (HisInpatientChargeMirror row : rows)
+            {
+                tryAutoRefundInpatientRow(tenantId, vk, row);
+            }
+        }
+        else if ("OUTPATIENT".equals(vk))
+        {
+            List<HisOutpatientChargeMirror> rows = hisOutpatientChargeMirrorMapper.selectRefundPendingByFetchBatch(tenantId, fetchBatchId);
+            if (rows == null)
+            {
+                return;
+            }
+            for (HisOutpatientChargeMirror row : rows)
+            {
+                tryAutoRefundOutpatientRow(tenantId, vk, row);
+            }
+        }
+    }
+
+    private void tryAutoRefundInpatientRow(String tenantId, String visitKind, HisInpatientChargeMirror row)
+    {
+        if (row == null || StringUtils.isBlank(row.getId()))
+        {
+            return;
+        }
+        String originChargeId = StringUtils.trimToEmpty(row.getHisInpatientChargeIdTf());
+        if (originChargeId.isEmpty())
+        {
+            return;
+        }
+        BigDecimal refundQty = refundQtyFromMirror(row.getQuantity());
+        if (refundQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            log.warn("HIS自动退费跳过 mirrorRowId={} 退费数量为0", row.getId());
+            return;
+        }
+        if (hisBillingRefundOrderMapper.countDoneByRefundMirrorRowId(tenantId, row.getId()) > 0)
+        {
+            return;
+        }
+        try
+        {
+            if (isHighValueMirrorRow(row.getValueLevel()))
+            {
+                HisBillingRefundHighBody body = buildAutoHighRefundBody(visitKind, originChargeId, row.getId(), refundQty);
+                billingRefundService.processHighValueRefund(body);
+            }
+            else
+            {
+                HisBillingRefundLowBody body = new HisBillingRefundLowBody();
+                body.setVisitKind(visitKind);
+                body.setOriginChargeDetailId(originChargeId);
+                body.setRefundQty(refundQty);
+                body.setRefundMirrorRowId(row.getId());
+                body.setRemark("HIS计费抓取自动退费");
+                billingRefundService.processLowValueRefund(body);
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("HIS自动退费跳过 mirrorRowId={} err={}", row.getId(), e.toString());
+        }
+    }
+
+    private void tryAutoRefundOutpatientRow(String tenantId, String visitKind, HisOutpatientChargeMirror row)
+    {
+        if (row == null || StringUtils.isBlank(row.getId()))
+        {
+            return;
+        }
+        String originChargeId = StringUtils.trimToEmpty(row.getHisOutpatientChargeIdTf());
+        if (originChargeId.isEmpty())
+        {
+            return;
+        }
+        BigDecimal refundQty = refundQtyFromMirror(row.getQuantity());
+        if (refundQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            log.warn("HIS自动退费跳过 mirrorRowId={} 退费数量为0", row.getId());
+            return;
+        }
+        if (hisBillingRefundOrderMapper.countDoneByRefundMirrorRowId(tenantId, row.getId()) > 0)
+        {
+            return;
+        }
+        try
+        {
+            if (isHighValueMirrorRow(row.getValueLevel()))
+            {
+                HisBillingRefundHighBody body = buildAutoHighRefundBody(visitKind, originChargeId, row.getId(), refundQty);
+                billingRefundService.processHighValueRefund(body);
+            }
+            else
+            {
+                HisBillingRefundLowBody body = new HisBillingRefundLowBody();
+                body.setVisitKind(visitKind);
+                body.setOriginChargeDetailId(originChargeId);
+                body.setRefundQty(refundQty);
+                body.setRefundMirrorRowId(row.getId());
+                body.setRemark("HIS计费抓取自动退费");
+                billingRefundService.processLowValueRefund(body);
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("HIS自动退费跳过 mirrorRowId={} err={}", row.getId(), e.toString());
+        }
+    }
+
+    private HisBillingRefundHighBody buildAutoHighRefundBody(String visitKind, String originChargeDetailId,
+        String refundMirrorRowId, BigDecimal refundQty)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        String originMirrorRowId = resolveOriginMirrorRowId(tenantId, visitKind, originChargeDetailId);
+        RefundAllocationPlan plan = planRefundAllocation(tenantId, visitKind, originMirrorRowId, "1", refundQty);
+        List<HisBillingRefundHighLineBody> lines = new ArrayList<>();
+        for (PlannedLine pl : plan.planned)
+        {
+            HisBillingRefundHighLineBody ln = new HisBillingRefundHighLineBody();
+            ln.setConsumeLinkId(pl.linkId);
+            ln.setReturnQty(pl.delta);
+            lines.add(ln);
+        }
+        HisBillingRefundHighBody body = new HisBillingRefundHighBody();
+        body.setVisitKind(visitKind);
+        body.setOriginChargeDetailId(originChargeDetailId);
+        body.setRefundMirrorRowId(refundMirrorRowId);
+        body.setRemark("HIS计费抓取自动退费");
+        body.setLines(lines);
+        return body;
+    }
+
+    private RefundAllocationPlan planRefundAllocation(String tenantId, String visitKind, String originMirrorRowId,
+        String valueLevel, BigDecimal refundQty)
+    {
+        List<HisMirrorConsumeLink> candidates = hisMirrorConsumeLinkMapper.selectCandidateLinksForRefund(
+            tenantId, visitKind, originMirrorRowId, valueLevel);
+        if (candidates == null || candidates.isEmpty())
+        {
+            String msg = "1".equals(valueLevel)
+                ? "未找到可返还的高值计费消耗关联"
+                : "未找到可返还的低值计费消耗关联，请确认已产生消耗且尚有可退数量";
+            throw new ServiceException(msg);
+        }
+        List<HisMirrorConsumeLink> sorted = lvRefundConsumeLinkOrderStrategy.sortForRefund(candidates);
+        BigDecimal need = refundQty == null ? BigDecimal.ZERO : refundQty;
+        Map<Long, List<DeptBatchConsumeReverseReq.ReverseItem>> byConsume = new LinkedHashMap<>();
+        List<PlannedLine> planned = new ArrayList<>();
+        Map<Long, Map<Long, BigDecimal>> canCache = new HashMap<>();
+        for (HisMirrorConsumeLink lk : sorted)
+        {
+            if (need.compareTo(BigDecimal.ZERO) <= 0)
+            {
+                break;
+            }
+            BigDecimal linkRem = refundableOnLink(lk);
+            if (linkRem.compareTo(BigDecimal.ZERO) <= 0)
+            {
+                continue;
+            }
+            Long consumeId = lk.getDeptBatchConsumeId();
+            Long entryId = lk.getDeptBatchConsumeEntryId();
+            if (consumeId == null || entryId == null)
+            {
+                continue;
+            }
+            Map<Long, BigDecimal> canByEntry = canCache.computeIfAbsent(consumeId, this::loadCanReverseByEntry);
+            BigDecimal canEntry = canByEntry.get(entryId);
+            if (canEntry == null || canEntry.compareTo(BigDecimal.ZERO) <= 0)
+            {
+                continue;
+            }
+            BigDecimal take = need.min(linkRem).min(canEntry);
+            if (take.compareTo(BigDecimal.ZERO) <= 0)
+            {
+                continue;
+            }
+            DeptBatchConsumeReverseReq.ReverseItem it = new DeptBatchConsumeReverseReq.ReverseItem();
+            it.setSrcConsumeEntryId(entryId);
+            it.setReverseQty(take);
+            byConsume.computeIfAbsent(consumeId, k -> new ArrayList<>()).add(it);
+            planned.add(new PlannedLine(lk.getId(), take, consumeId, entryId));
+            need = need.subtract(take);
+        }
+        if (need.compareTo(BigDecimal.ZERO) > 0)
+        {
+            throw new ServiceException(String.format("退费数量超过可返还上限，剩余未分配：%s（请检查消耗关联与反消耗额度）", need));
+        }
+        RefundAllocationPlan plan = new RefundAllocationPlan();
+        plan.candidates = candidates;
+        plan.byConsume = byConsume;
+        plan.planned = planned;
+        return plan;
+    }
+
+    private static BigDecimal refundQtyFromMirror(BigDecimal quantity)
+    {
+        if (quantity == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        return quantity.abs();
+    }
+
+    private static boolean isHighValueMirrorRow(String valueLevel)
+    {
+        return "1".equals(StringUtils.trimToEmpty(valueLevel));
+    }
+
+    private void markRefundMirrorProcessed(String tenantId, String visitKind, String refundMirrorRowId)
+    {
+        if (StringUtils.isBlank(refundMirrorRowId))
+        {
+            return;
+        }
+        Date procTime = DateUtils.getNowDate();
+        String procBy = SecurityUtils.getUserIdStr();
+        List<String> ids = java.util.Collections.singletonList(refundMirrorRowId.trim());
+        if (KIND_IN.equals(visitKind))
+        {
+            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
+                MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy);
+        }
+        else
+        {
+            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
+                MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy);
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
+            MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy);
     }
 
     private List<DeptBatchConsumeReverseReq.ReverseItem> mergeReverseItems(List<DeptBatchConsumeReverseReq.ReverseItem> items)
@@ -630,6 +846,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             }
             hisBillingRefundOrderMapper.updateProcessStatus(tenantId, order.getId(), STATUS_DONE, null, uid);
             order.setProcessStatus(STATUS_DONE);
+            markRefundMirrorProcessed(tenantId, visitKind, body.getRefundMirrorRowId());
         }
         catch (ServiceException ex)
         {
@@ -650,6 +867,13 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             throw new ServiceException(msg);
         }
         return order;
+    }
+
+    private static class RefundAllocationPlan
+    {
+        List<HisMirrorConsumeLink> candidates;
+        Map<Long, List<DeptBatchConsumeReverseReq.ReverseItem>> byConsume;
+        List<PlannedLine> planned;
     }
 
     private static class PlannedLine

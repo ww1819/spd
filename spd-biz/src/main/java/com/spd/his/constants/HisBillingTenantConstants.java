@@ -16,4 +16,9 @@ public final class HisBillingTenantConstants
      * 低值：HIS 计费镜像抓取后是否自动生成科室消耗（0/1）
      */
     public static final String SETTING_LV_AUTO_CONSUME_ENABLED = "dept.billing.lv.auto_consume_enabled";
+
+    /**
+     * 计费退费：HIS 镜像抓取后是否自动按退费关联 ID 返还库存（反消耗）（0/1）
+     */
+    public static final String SETTING_BILLING_AUTO_REFUND_ENABLED = "dept.billing.auto_refund_enabled";
 }

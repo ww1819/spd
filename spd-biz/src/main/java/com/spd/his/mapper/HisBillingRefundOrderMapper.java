@@ -10,4 +10,8 @@ public interface HisBillingRefundOrderMapper
     int updateProcessStatus(@Param("tenantId") String tenantId, @Param("id") String id,
         @Param("processStatus") String processStatus, @Param("failReason") String failReason,
         @Param("updateBy") String updateBy);
+
+    /** 已成功处理过的退费镜像行（幂等跳过） */
+    int countDoneByRefundMirrorRowId(@Param("tenantId") String tenantId,
+        @Param("refundMirrorRowId") String refundMirrorRowId);
 }
