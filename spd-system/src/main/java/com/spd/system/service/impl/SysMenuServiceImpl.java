@@ -734,6 +734,16 @@ public class SysMenuServiceImpl implements ISysMenuService
         }
     }
 
+    @Override
+    public void markMenusDefaultOpenToCustomer(List<Long> menuIds)
+    {
+        if (menuIds == null || menuIds.isEmpty())
+        {
+            return;
+        }
+        menuMapper.batchSetDefaultOpenToCustomer(menuIds, SecurityUtils.getUserIdStr());
+    }
+
     /**
      * 获取路由名称
      * 

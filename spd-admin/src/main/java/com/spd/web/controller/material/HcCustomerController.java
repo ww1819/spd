@@ -154,7 +154,7 @@ public class HcCustomerController extends BaseController {
     return success(menuIds != null ? menuIds.stream().map(String::valueOf).collect(Collectors.toList()) : new ArrayList<>());
   }
 
-  /** 耗材客户权限：保存（覆盖）；收回的菜单会同步从该租户下工作组(sys_post_menu)与用户(hc_user_permission_menu)中移除 */
+  /** 耗材客户权限：保存（覆盖）；收回的菜单会同步从该租户下工作组(sys_post_menu)与用户(hc_user_permission_menu)中移除；本次开通的菜单会同步标记 sys_menu.default_open_to_customer=1 */
   @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
   @PutMapping("/menu")
   @Transactional(rollbackFor = Exception.class)
@@ -213,6 +213,10 @@ public class HcCustomerController extends BaseController {
         list.add(e);
       }
       hcCustomerMenuMapper.batchInsert(list);
+    }
+    // 客户授权保存时同步标记「默认对客户开放」，避免再到菜单管理单独勾选（功能重置、新租户默认授权依赖此标记）
+    if (!menuIds.isEmpty()) {
+      sysMenuService.markMenusDefaultOpenToCustomer(menuIds);
     }
     return success();
   }
