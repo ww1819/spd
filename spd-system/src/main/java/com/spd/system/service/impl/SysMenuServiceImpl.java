@@ -523,11 +523,79 @@ public class SysMenuServiceImpl implements ISysMenuService
         if (StringUtils.isEmpty(tenantId)) {
             return new ArrayList<>();
         }
-        List<SysMenu> menus = menuMapper.selectMenuTreeForPostAssign(tenantId);
+        List<SysMenu> customerMenus = menuMapper.selectMenuTreeForPostAssign(tenantId);
+        Set<Long> customerGrantedIds = new HashSet<>();
+        if (customerMenus != null)
+        {
+            for (SysMenu m : customerMenus)
+            {
+                if (m != null && m.getMenuId() != null)
+                {
+                    customerGrantedIds.add(m.getMenuId());
+                }
+            }
+        }
+        List<SysMenu> menus = customerMenus != null ? new ArrayList<>(customerMenus) : new ArrayList<>();
         // 客户 hc_customer_menu 中可能只登记了父目录，未登记子菜单「收货确认」等，需向下补齐才能在授权树中展示
         menus = appendDescendantMenusForHcAssignTree(menus);
         menus = appendAncestorMenusForHcAssignTree(menus);
-        return buildMenuTreeSelect(menus);
+        List<TreeSelect> tree = buildMenuTreeSelect(menus);
+        return pruneAssignTreeForCustomerScope(tree, customerGrantedIds);
+    }
+
+    /**
+     * 用户/工作组菜单授权树：客户未开通且无下级的节点不展示；有下级则仅作目录展示且不可勾选。
+     */
+    private List<TreeSelect> pruneAssignTreeForCustomerScope(List<TreeSelect> nodes, Set<Long> customerGrantedIds)
+    {
+        if (nodes == null || nodes.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        List<TreeSelect> result = new ArrayList<>();
+        for (TreeSelect node : nodes)
+        {
+            TreeSelect pruned = pruneAssignTreeNodeForCustomerScope(node, customerGrantedIds);
+            if (pruned != null)
+            {
+                result.add(pruned);
+            }
+        }
+        return result;
+    }
+
+    private TreeSelect pruneAssignTreeNodeForCustomerScope(TreeSelect node, Set<Long> customerGrantedIds)
+    {
+        if (node == null || node.getId() == null)
+        {
+            return null;
+        }
+        List<TreeSelect> prunedChildren = new ArrayList<>();
+        if (node.getChildren() != null)
+        {
+            for (TreeSelect child : node.getChildren())
+            {
+                TreeSelect pc = pruneAssignTreeNodeForCustomerScope(child, customerGrantedIds);
+                if (pc != null)
+                {
+                    prunedChildren.add(pc);
+                }
+            }
+        }
+        boolean granted = customerGrantedIds != null && customerGrantedIds.contains(node.getId());
+        if (granted)
+        {
+            node.setChildren(prunedChildren.isEmpty() ? null : prunedChildren);
+            node.setCheckable(Boolean.TRUE);
+            return node;
+        }
+        if (prunedChildren.isEmpty())
+        {
+            return null;
+        }
+        node.setChildren(prunedChildren);
+        node.setCheckable(Boolean.FALSE);
+        return node;
     }
 
     @Override
