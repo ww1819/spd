@@ -89,6 +89,11 @@ public interface IFdMaterialService
     void updateReferred(List<Long> ids);
 
     /**
+     * 批量修改产品档案（仅 DTO 中非空字段会写入）
+     */
+    int batchUpdateMaterials(com.spd.foundation.dto.MaterialBatchUpdateDto dto);
+
+    /**
      * 产品档案停用：更新为停用并记录停用时间、停用人、停用原因
      *
      * @param materialId 产品档案ID

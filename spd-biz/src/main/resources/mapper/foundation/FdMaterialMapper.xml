@@ -196,8 +196,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
-        <if test="storeroomId != null "> and m.storeroom_id = #{storeroomId}</if>
-        <if test="materialCategoryId != null and materialCategoryId != ''"> and m.material_category_id = #{materialCategoryId}</if>
+        <if test="storeroomIds != null and storeroomIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="storeroomIds" item="sid" open="(" separator="," close=")">#{sid}</foreach>
+        </if>
+        <if test="(storeroomIds == null or storeroomIds.length == 0) and storeroomId != null">
+            and m.storeroom_id = #{storeroomId}
+        </if>
+        <if test="materialCategoryIds != null and materialCategoryIds.length > 0">
+            and m.material_category_id in
+            <foreach collection="materialCategoryIds" item="mcid" open="(" separator="," close=")">#{mcid}</foreach>
+        </if>
+        <if test="(materialCategoryIds == null or materialCategoryIds.length == 0) and materialCategoryId != null and materialCategoryId != ''">
+            and m.material_category_id = #{materialCategoryId}
+        </if>
         <if test="warehouseId != null and (skipWarehouseFixedNumberExists == null or skipWarehouseFixedNumberExists != true)">
             and exists (
                 select 1
@@ -208,7 +220,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                   and fn.tenant_id = #{scopedTenantId}
             )
         </if>
-        <if test="financeCategoryId != null "> and m.finance_category_id = #{financeCategoryId}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcid" open="(" separator="," close=")">#{fcid}</foreach>
+        </if>
+        <if test="(financeCategoryIds == null or financeCategoryIds.length == 0) and financeCategoryId != null">
+            and m.finance_category_id = #{financeCategoryId}
+        </if>
         <if test="locationId != null "> and m.location_id = #{locationId}</if>
         <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
         <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '1' or hisBindStatus == 1)">

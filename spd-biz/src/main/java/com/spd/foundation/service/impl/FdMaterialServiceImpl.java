@@ -29,6 +29,7 @@ import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.domain.FdLocation;
 import com.spd.foundation.domain.FdWarehouseCategory;
 import com.spd.foundation.vo.MaterialTimelineVo;
+import org.springframework.transaction.annotation.Transactional;
 import com.spd.foundation.mapper.FdFactoryMapper;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
 import com.spd.foundation.mapper.FdMaterialChangeLogMapper;
@@ -860,6 +861,58 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             material.setReferredName(PinyinUtils.getPinyinInitials(name));
             fdMaterialMapper.updateFdMaterial(material);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchUpdateMaterials(com.spd.foundation.dto.MaterialBatchUpdateDto dto) {
+        if (dto == null || dto.getIds() == null || dto.getIds().isEmpty()) {
+            throw new ServiceException("请先选择要修改的产品档案");
+        }
+        if (!dto.hasAnyPatchField()) {
+            throw new ServiceException("请至少选择一项要修改的内容");
+        }
+        int count = 0;
+        for (Long id : dto.getIds()) {
+            if (id == null) {
+                continue;
+            }
+            FdMaterial old = fdMaterialMapper.selectFdMaterialById(id);
+            if (old == null) {
+                continue;
+            }
+            SecurityUtils.ensureTenantAccess(old.getTenantId());
+            FdMaterial merged = new FdMaterial();
+            merged.setId(id);
+            merged.setCode(old.getCode());
+            merged.setName(old.getName());
+            merged.setSupplierId(old.getSupplierId());
+            merged.setSpeci(old.getSpeci());
+            merged.setModel(old.getModel());
+            merged.setUnitId(old.getUnitId());
+            merged.setFactoryId(old.getFactoryId());
+            merged.setStoreroomId(dto.getStoreroomId() != null ? dto.getStoreroomId() : old.getStoreroomId());
+            merged.setFinanceCategoryId(dto.getFinanceCategoryId() != null ? dto.getFinanceCategoryId() : old.getFinanceCategoryId());
+            if (dto.getMaterialCategoryId() != null && !dto.getMaterialCategoryId().isEmpty()) {
+                merged.setMaterialCategoryId(dto.getMaterialCategoryId());
+            } else {
+                merged.setMaterialCategoryId(old.getMaterialCategoryId());
+            }
+            merged.setIsUse(StringUtils.isNotEmpty(dto.getIsUse()) ? dto.getIsUse() : old.getIsUse());
+            merged.setIsBilling(StringUtils.isNotEmpty(dto.getIsBilling()) ? dto.getIsBilling() : old.getIsBilling());
+            merged.setIsGz(StringUtils.isNotEmpty(dto.getIsGz()) ? dto.getIsGz() : old.getIsGz());
+            merged.setIsFollow(StringUtils.isNotEmpty(dto.getIsFollow()) ? dto.getIsFollow() : old.getIsFollow());
+            merged.setIsProcure(StringUtils.isNotEmpty(dto.getIsProcure()) ? dto.getIsProcure() : old.getIsProcure());
+            merged.setIsSunshineProcurement(StringUtils.isNotEmpty(dto.getIsSunshineProcurement())
+                ? dto.getIsSunshineProcurement() : old.getIsSunshineProcurement());
+            if (dto.getIsUse() != null && !dto.getIsUse().equals(old.getIsUse())) {
+                merged.setStatusChangeReason("批量修改");
+            }
+            merged.setTenantId(old.getTenantId());
+            updateFdMaterial(merged);
+            count++;
+        }
+        return count;
     }
 
     /**
