@@ -25,4 +25,7 @@ public interface FdMaterialStatusLogMapper {
      * 按产品档案ID查询启用停用记录列表（按时间倒序）
      */
     List<FdMaterialStatusLog> selectByMaterialId(@Param("materialId") Long materialId);
+
+    /** 批量写入启用/停用流水（建议每批 ≤200 条） */
+    int batchInsert(@Param("list") List<FdMaterialStatusLog> list);
 }

@@ -525,4 +525,116 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <!-- 列表筛选条件（仅 fd_material 主表，供批量修改查 ID） -->
+    <sql id="fdMaterialListWhere">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        and m.tenant_id = #{scopedTenantId}
+        <choose>
+            <when test="isUse != null and isUse != ''">
+                and m.is_use = #{isUse}
+            </when>
+            <when test="includeDisabledInList != null and includeDisabledInList == true">
+            </when>
+            <otherwise>
+                and (m.is_use is null or m.is_use = '' or m.is_use != '2')
+            </otherwise>
+        </choose>
+        <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
+        <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
+        <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
+        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%')</if>
+        <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
+        <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
+        <if test="id != null "> and m.id = #{id}</if>
+        <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
+        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
+        <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
+        <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
+        <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
+        <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
+        <if test="storeroomIds != null and storeroomIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="storeroomIds" item="sid" open="(" separator="," close=")">#{sid}</foreach>
+        </if>
+        <if test="(storeroomIds == null or storeroomIds.length == 0) and storeroomId != null">
+            and m.storeroom_id = #{storeroomId}
+        </if>
+        <if test="materialCategoryIds != null and materialCategoryIds.length > 0">
+            and m.material_category_id in
+            <foreach collection="materialCategoryIds" item="mcid" open="(" separator="," close=")">#{mcid}</foreach>
+        </if>
+        <if test="(materialCategoryIds == null or materialCategoryIds.length == 0) and materialCategoryId != null and materialCategoryId != ''">
+            and m.material_category_id = #{materialCategoryId}
+        </if>
+        <if test="warehouseId != null and (skipWarehouseFixedNumberExists == null or skipWarehouseFixedNumberExists != true)">
+            and exists (
+                select 1
+                from wh_fixed_number fn
+                where fn.material_id = m.id
+                  and fn.warehouse_id = #{warehouseId}
+                  and fn.del_flag != 1
+                  and fn.tenant_id = #{scopedTenantId}
+            )
+        </if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcid" open="(" separator="," close=")">#{fcid}</foreach>
+        </if>
+        <if test="(financeCategoryIds == null or financeCategoryIds.length == 0) and financeCategoryId != null">
+            and m.finance_category_id = #{financeCategoryId}
+        </if>
+        <if test="locationId != null "> and m.location_id = #{locationId}</if>
+        <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
+        <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '1' or hisBindStatus == 1)">
+            and m.his_charge_item_id is not null
+            and m.his_charge_item_id != ''
+        </if>
+        <if test="hisBindStatus != null and hisBindStatus != '' and (hisBindStatus == '0' or hisBindStatus == 0)">
+            and (m.his_charge_item_id is null or m.his_charge_item_id = '')
+        </if>
+        <if test="beginDate != null "> and m.create_time &gt;= #{beginDate}</if>
+        <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
+        <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0"> and m.id not in <foreach collection="excludeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+        <if test="includeMaterialIdList != null and includeMaterialIdList.size() > 0"> and m.id in <foreach collection="includeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+    </sql>
+
+    <select id="selectFdMaterialIdList" parameterType="FdMaterial" resultType="java.lang.Long">
+        select m.id from fd_material m
+        where m.del_flag != 1
+        <include refid="fdMaterialListWhere"/>
+    </select>
+
+    <select id="selectIdsForIsUseChangeByIds" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id from fd_material
+        where tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+          and (is_use is null or is_use = '' or is_use != #{newIsUse})
+    </select>
+
+    <update id="batchPatchFdMaterialByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_material
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="patch.storeroomId != null">storeroom_id = #{patch.storeroomId},</if>
+            <if test="patch.financeCategoryId != null">finance_category_id = #{patch.financeCategoryId},</if>
+            <if test="patch.materialCategoryId != null and patch.materialCategoryId != ''">material_category_id = #{patch.materialCategoryId},</if>
+            <if test="patch.isUse != null and patch.isUse != ''">is_use = #{patch.isUse},</if>
+            <if test="patch.isBilling != null and patch.isBilling != ''">is_billing = #{patch.isBilling},</if>
+            <if test="patch.isGz != null and patch.isGz != ''">is_gz = #{patch.isGz},</if>
+            <if test="patch.isFollow != null and patch.isFollow != ''">is_follow = #{patch.isFollow},</if>
+            <if test="patch.isProcure != null and patch.isProcure != ''">is_procure = #{patch.isProcure},</if>
+            <if test="patch.isSunshineProcurement != null and patch.isSunshineProcurement != ''">is_sunshine_procurement = #{patch.isSunshineProcurement},</if>
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+        </trim>
+        where tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
 </mapper>

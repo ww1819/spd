@@ -1,7 +1,9 @@
 package com.spd.foundation.mapper;
 
+import java.util.Date;
 import java.util.List;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.dto.MaterialBatchUpdateDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -105,4 +107,17 @@ public interface FdMaterialMapper
 
     /** 批量逻辑删除 */
     public int deleteFdMaterialByIds(@Param("ids") Long[] ids, @Param("deleteBy") String deleteBy);
+
+    /** 按列表相同条件仅查主键（批量修改「更新全部」用，无多表关联） */
+    List<Long> selectFdMaterialIdList(FdMaterial fdMaterial);
+
+    /** 批量按 ID 补丁更新（单条 SQL，ids 建议 ≤500） */
+    int batchPatchFdMaterialByIds(@Param("patch") MaterialBatchUpdateDto patch,
+                                  @Param("ids") List<Long> ids,
+                                  @Param("updateBy") String updateBy,
+                                  @Param("updateTime") Date updateTime);
+
+    /** 查询 ids 中使用状态与目标值不一致的主键（批量写启用停用流水前） */
+    List<Long> selectIdsForIsUseChangeByIds(@Param("ids") List<Long> ids,
+                                            @Param("newIsUse") String newIsUse);
 }
