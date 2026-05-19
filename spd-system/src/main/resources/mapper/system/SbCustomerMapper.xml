@@ -40,6 +40,20 @@
     order by create_time desc
   </select>
 
+  <select id="selectActiveHcCustomersForMenuGrant" resultMap="SbCustomerResult">
+    <include refid="selectSbCustomerVo"/>
+    where delete_time is null
+      and (hc_status = '0' or hc_status is null or hc_status = '')
+    <if test="keyword != null and keyword != ''">
+      and (
+        customer_name like concat('%', #{keyword}, '%')
+        or customer_code like concat('%', #{keyword}, '%')
+        or customer_id like concat('%', #{keyword}, '%')
+      )
+    </if>
+    order by customer_name asc
+  </select>
+
   <select id="selectSbCustomerById" parameterType="String" resultMap="SbCustomerResult">
     <include refid="selectSbCustomerVo"/>
     where customer_id = #{customerId} and delete_time is null
