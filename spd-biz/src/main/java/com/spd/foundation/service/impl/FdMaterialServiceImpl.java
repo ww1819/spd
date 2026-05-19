@@ -866,14 +866,42 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchUpdateMaterials(com.spd.foundation.dto.MaterialBatchUpdateDto dto) {
-        if (dto == null || dto.getIds() == null || dto.getIds().isEmpty()) {
-            throw new ServiceException("请先选择要修改的产品档案");
+        if (dto == null) {
+            throw new ServiceException("请求参数不能为空");
         }
         if (!dto.hasAnyPatchField()) {
             throw new ServiceException("请至少选择一项要修改的内容");
         }
+        List<Long> targetIds;
+        if (Boolean.TRUE.equals(dto.getUpdateAll())) {
+            com.spd.foundation.domain.FdMaterial query = dto.getQueryCriteria();
+            if (query == null) {
+                throw new ServiceException("查询条件不能为空");
+            }
+            if (query.getIncludeDisabledInList() == null) {
+                query.setIncludeDisabledInList(true);
+            }
+            List<com.spd.foundation.domain.FdMaterial> matched =
+                fdMaterialMapper.selectFdMaterialList(query);
+            targetIds = new java.util.ArrayList<>();
+            if (matched != null) {
+                for (com.spd.foundation.domain.FdMaterial m : matched) {
+                    if (m != null && m.getId() != null) {
+                        targetIds.add(m.getId());
+                    }
+                }
+            }
+            if (targetIds.isEmpty()) {
+                throw new ServiceException("当前查询条件下没有可更新的产品档案");
+            }
+        } else {
+            if (dto.getIds() == null || dto.getIds().isEmpty()) {
+                throw new ServiceException("请先选择要修改的产品档案");
+            }
+            targetIds = dto.getIds();
+        }
         int count = 0;
-        for (Long id : dto.getIds()) {
+        for (Long id : targetIds) {
             if (id == null) {
                 continue;
             }

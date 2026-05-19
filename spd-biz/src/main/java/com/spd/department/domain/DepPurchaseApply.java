@@ -87,6 +87,9 @@ public class DepPurchaseApply extends BaseEntity
     /** 审核人姓名（查询关联，非表字段） */
     private String auditPersonName;
 
+    /** 制单人姓名（查询关联，非表字段） */
+    private String createrPersonName;
+
     /** 科室申购明细信息 */
     private List<DepPurchaseApplyEntry> depPurchaseApplyEntryList;
 
@@ -309,6 +312,14 @@ public class DepPurchaseApply extends BaseEntity
 
     public void setAuditPersonName(String auditPersonName) {
         this.auditPersonName = auditPersonName;
+    }
+
+    public String getCreaterPersonName() {
+        return createrPersonName;
+    }
+
+    public void setCreaterPersonName(String createrPersonName) {
+        this.createrPersonName = createrPersonName;
     }
 
     public List<DepPurchaseApplyEntry> getDepPurchaseApplyEntryList()

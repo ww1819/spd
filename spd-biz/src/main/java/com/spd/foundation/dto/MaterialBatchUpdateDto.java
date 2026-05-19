@@ -1,5 +1,6 @@
 package com.spd.foundation.dto;
 
+import com.spd.foundation.domain.FdMaterial;
 import java.util.List;
 
 /**
@@ -8,6 +9,12 @@ import java.util.List;
 public class MaterialBatchUpdateDto {
 
     private List<Long> ids;
+
+    /** true：按 queryCriteria 更新当前查询结果全部；false/null：仅更新 ids */
+    private Boolean updateAll;
+
+    /** updateAll=true 时使用的列表查询条件（与 /foundation/material/list 一致） */
+    private FdMaterial queryCriteria;
 
     private Long storeroomId;
 
@@ -35,6 +42,22 @@ public class MaterialBatchUpdateDto {
 
     public void setIds(List<Long> ids) {
         this.ids = ids;
+    }
+
+    public Boolean getUpdateAll() {
+        return updateAll;
+    }
+
+    public void setUpdateAll(Boolean updateAll) {
+        this.updateAll = updateAll;
+    }
+
+    public FdMaterial getQueryCriteria() {
+        return queryCriteria;
+    }
+
+    public void setQueryCriteria(FdMaterial queryCriteria) {
+        this.queryCriteria = queryCriteria;
     }
 
     public Long getStoreroomId() {
