@@ -136,7 +136,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user u on a.user_id = u.user_id
         left join fd_department d on a.department_id = d.id
         left join sys_user cu on a.create_by = cu.user_id
-        left join sys_user au on a.audit_by = au.user_name
+        left join sys_user au on au.user_id = cast(nullif(trim(a.audit_by), '') as unsigned)
     </sql>
 
     <select id="selectDeptBatchConsumeList" parameterType="DeptBatchConsume" resultMap="DeptBatchConsumeResult">
@@ -181,7 +181,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
         from t_hc_ks_xh a
         left join t_hc_ks_xh_entry b on b.paren_id = a.id and b.del_flag != 1
-        left join sys_user au on a.audit_by = au.user_name
+        left join sys_user au on au.user_id = cast(nullif(trim(a.audit_by), '') as unsigned)
         left join sys_user cu on a.create_by = cu.user_id
         left join fd_material m on b.material_id = m.id
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}

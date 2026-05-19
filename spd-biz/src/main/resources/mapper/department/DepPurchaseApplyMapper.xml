@@ -171,11 +171,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.src_agg_bill_no,
             w.id as w_id,
             w.name as w_name,
-            coalesce(u.user_id, u_cn.user_id, dpa.user_id) as u_user_id,
-            coalesce(u.user_name, u_cn.user_name) as u_user_name,
-            coalesce(u.nick_name, u_cn.nick_name) as u_nick_name,
-            coalesce(nullif(trim(u.nick_name), ''), u.user_name,
-                nullif(trim(u_cn.nick_name), ''), u_cn.user_name) as creater_person_name,
+            u.user_id as u_user_id,
+            u.user_name as u_user_name,
+            u.nick_name as u_nick_name,
+            coalesce(nullif(trim(u.nick_name), ''), u.user_name) as creater_person_name,
             coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
             d.id as d_id,
             d.name as d_name
@@ -185,10 +184,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.user_id,
             case when dpa.create_by regexp '^[0-9]+$' then cast(dpa.create_by as unsigned) else null end
         )
-        left join sys_user u_cn on u.user_id is null
-            and dpa.create_by is not null and trim(dpa.create_by) != ''
-            and dpa.create_by not regexp '^[0-9]+$'
-            and u_cn.user_name = dpa.create_by
         left join sys_user au on au.user_id = (
             case
                 when dpa.purchase_bill_status = 2
@@ -257,11 +252,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.remark,
             w.id as w_id,
             w.name as w_name,
-            coalesce(u.user_id, u_cn.user_id, dpa.user_id) as u_user_id,
-            coalesce(u.user_name, u_cn.user_name) as u_user_name,
-            coalesce(u.nick_name, u_cn.nick_name) as u_nick_name,
-            coalesce(nullif(trim(u.nick_name), ''), u.user_name,
-                nullif(trim(u_cn.nick_name), ''), u_cn.user_name) as creater_person_name,
+            u.user_id as u_user_id,
+            u.user_name as u_user_name,
+            u.nick_name as u_nick_name,
+            coalesce(nullif(trim(u.nick_name), ''), u.user_name) as creater_person_name,
             coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
             d.id as d_id,
             d.name as d_name,
@@ -309,10 +303,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.user_id,
             case when dpa.create_by regexp '^[0-9]+$' then cast(dpa.create_by as unsigned) else null end
         )
-        left join sys_user u_cn on u.user_id is null
-            and dpa.create_by is not null and trim(dpa.create_by) != ''
-            and dpa.create_by not regexp '^[0-9]+$'
-            and u_cn.user_name = dpa.create_by
         left join sys_user au on au.user_id = (
             case
                 when dpa.purchase_bill_status = 2
