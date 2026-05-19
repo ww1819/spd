@@ -98,6 +98,23 @@ public class DepPurchaseApplyEntry extends BaseEntity
     /** 耗材对象 */
     private FdMaterial material;
 
+    /** 明细作废状态：0正常 1已作废 */
+    private Integer lineVoidStatus;
+
+    private BigDecimal lineVoidQty;
+
+    private String lineVoidBy;
+
+    private Date lineVoidTime;
+
+    private String lineVoidReason;
+
+    /** 已关联出库数量（含待审核与已审核） */
+    private BigDecimal linkedCkQty;
+
+    /** 待出库数量 = 申购数量 - 已作废 - 已关联出库 */
+    private BigDecimal pendingOutboundQty;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -303,6 +320,62 @@ public class DepPurchaseApplyEntry extends BaseEntity
     public FdMaterial getMaterial() 
     {
         return material;
+    }
+
+    public Integer getLineVoidStatus() {
+        return lineVoidStatus;
+    }
+
+    public void setLineVoidStatus(Integer lineVoidStatus) {
+        this.lineVoidStatus = lineVoidStatus;
+    }
+
+    public BigDecimal getLineVoidQty() {
+        return lineVoidQty;
+    }
+
+    public void setLineVoidQty(BigDecimal lineVoidQty) {
+        this.lineVoidQty = lineVoidQty;
+    }
+
+    public String getLineVoidBy() {
+        return lineVoidBy;
+    }
+
+    public void setLineVoidBy(String lineVoidBy) {
+        this.lineVoidBy = lineVoidBy;
+    }
+
+    public Date getLineVoidTime() {
+        return lineVoidTime;
+    }
+
+    public void setLineVoidTime(Date lineVoidTime) {
+        this.lineVoidTime = lineVoidTime;
+    }
+
+    public String getLineVoidReason() {
+        return lineVoidReason;
+    }
+
+    public void setLineVoidReason(String lineVoidReason) {
+        this.lineVoidReason = lineVoidReason;
+    }
+
+    public BigDecimal getLinkedCkQty() {
+        return linkedCkQty;
+    }
+
+    public void setLinkedCkQty(BigDecimal linkedCkQty) {
+        this.linkedCkQty = linkedCkQty;
+    }
+
+    public BigDecimal getPendingOutboundQty() {
+        return pendingOutboundQty;
+    }
+
+    public void setPendingOutboundQty(BigDecimal pendingOutboundQty) {
+        this.pendingOutboundQty = pendingOutboundQty;
     }
 
     @Override

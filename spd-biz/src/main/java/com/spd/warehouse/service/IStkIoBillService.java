@@ -244,6 +244,12 @@ public interface IStkIoBillService
     StkIoBill createCkEntriesByWhApply(String whWarehouseApplyId);
 
     /**
+     * 引用科室申购单生成出库明细草稿
+     * @param depPurchaseApplyId 科室申购主表 ID
+     */
+    StkIoBill createCkEntriesByDepPurchaseApply(Long depPurchaseApplyId);
+
+    /**
      * 引用入库单生成出库明细
      * @param rkApplyId 入库单id
      * @return

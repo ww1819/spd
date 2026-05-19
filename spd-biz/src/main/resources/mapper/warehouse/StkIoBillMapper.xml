@@ -68,6 +68,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="dApplyId"    column="d_apply_id"    />
         <result property="whWarehouseApplyId"    column="wh_warehouse_apply_id"    />
         <result property="whWarehouseApplyBillNo"    column="wh_warehouse_apply_bill_no"    />
+        <result property="depPurchaseApplyId"    column="dep_purchase_apply_id"    />
+        <result property="depPurchaseApplyBillNo"    column="dep_purchase_apply_bill_no"    />
         <result property="deliveryRefWarehouseId"    column="delivery_ref_warehouse_id"    />
         <result property="deliveryRefWarehouseName"    column="delivery_ref_warehouse_name"    />
         <result property="deliveryRefSupplierId"    column="delivery_ref_supplier_id"    />
@@ -163,6 +165,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseName"    column="warehouseName"    />
         <result property="settlementType"    column="sub_settlement_type"    />
         <result property="whApplyEntryId"    column="sub_wh_apply_entry_id"    />
+        <result property="depPurApplyEntryId"    column="sub_dep_pur_apply_entry_id"    />
         <result property="deliveryLineSign" column="sub_delivery_line_sign" />
         <result property="deliveryLineQtyCap" column="sub_delivery_line_qty_cap" />
         <result property="fixedPackageBarcode" column="sub_fixed_package_barcode" />
@@ -1046,6 +1049,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.tenant_id, a.delete_by, a.delete_time, a.settlement_type, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.d_apply_id, a.wh_warehouse_apply_id, a.wh_warehouse_apply_bill_no,
+                a.dep_purchase_apply_id, a.dep_purchase_apply_bill_no,
                 a.delivery_ref_warehouse_id, a.delivery_ref_warehouse_name, a.delivery_ref_supplier_id,
                 a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
@@ -1057,6 +1061,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.del_flag as sub_del_flag, b.tenant_id as sub_tenant_id, b.delete_by as sub_delete_by, b.delete_time as sub_delete_time,
                 b.remark as sub_remark, b.kc_no as sub_kc_no, b.stk_inventory_id as sub_stk_inventory_id, b.dep_inventory_id as sub_dep_inventory_id, b.warehouse_id as sub_warehouse_id, b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.suppler_id as sub_suppler_id, b.settlement_type as sub_settlement_type,
                 b.wh_apply_entry_id as sub_wh_apply_entry_id,
+                b.dep_pur_apply_entry_id as sub_dep_pur_apply_entry_id,
                 b.delivery_line_sign as sub_delivery_line_sign, b.delivery_line_qty_cap as sub_delivery_line_qty_cap,
                 b.fixed_package_barcode as sub_fixed_package_barcode,
                 b.warehouse_id_str as sub_warehouse_id_str, b.supplier_id_str as sub_supplier_id_str, b.department_id_str as sub_department_id_str,
@@ -1127,6 +1132,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null and dApplyId != ''">d_apply_id,</if>
             <if test="whWarehouseApplyId != null and whWarehouseApplyId != ''">wh_warehouse_apply_id,</if>
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">wh_warehouse_apply_bill_no,</if>
+            <if test="depPurchaseApplyId != null">dep_purchase_apply_id,</if>
+            <if test="depPurchaseApplyBillNo != null and depPurchaseApplyBillNo != ''">dep_purchase_apply_bill_no,</if>
             <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">delivery_ref_warehouse_id,</if>
             <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">delivery_ref_warehouse_name,</if>
             <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">delivery_ref_supplier_id,</if>
@@ -1167,6 +1174,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null and dApplyId != ''">#{dApplyId},</if>
             <if test="whWarehouseApplyId != null and whWarehouseApplyId != ''">#{whWarehouseApplyId},</if>
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">#{whWarehouseApplyBillNo},</if>
+            <if test="depPurchaseApplyId != null">#{depPurchaseApplyId},</if>
+            <if test="depPurchaseApplyBillNo != null and depPurchaseApplyBillNo != ''">#{depPurchaseApplyBillNo},</if>
             <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">#{deliveryRefWarehouseId},</if>
             <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">#{deliveryRefWarehouseName},</if>
             <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">#{deliveryRefSupplierId},</if>
@@ -1214,6 +1223,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dApplyId != null">d_apply_id = #{dApplyId},</if>
             <if test="whWarehouseApplyId != null">wh_warehouse_apply_id = #{whWarehouseApplyId},</if>
             <if test="whWarehouseApplyBillNo != null">wh_warehouse_apply_bill_no = #{whWarehouseApplyBillNo},</if>
+            <if test="depPurchaseApplyId != null">dep_purchase_apply_id = #{depPurchaseApplyId},</if>
+            <if test="depPurchaseApplyBillNo != null">dep_purchase_apply_bill_no = #{depPurchaseApplyBillNo},</if>
             <if test="deliveryRefWarehouseId != null">delivery_ref_warehouse_id = #{deliveryRefWarehouseId},</if>
             <if test="deliveryRefWarehouseName != null">delivery_ref_warehouse_name = #{deliveryRefWarehouseName},</if>
             <if test="deliveryRefSupplierId != null">delivery_ref_supplier_id = #{deliveryRefSupplierId},</if>
@@ -1271,7 +1282,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model,
                material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time,
                del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode,
-               suppler_id, settlement_type, wh_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode,
+               suppler_id, settlement_type, wh_apply_entry_id, dep_pur_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode,
                warehouse_id_str, supplier_id_str, department_id_str,
                tenant_id, create_by, create_time, update_by, update_time,
                delete_by, delete_time
@@ -1311,6 +1322,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplerId != null">suppler_id = #{supplerId},</if>
             <if test="settlementType != null">settlement_type = #{settlementType},</if>
             <if test="whApplyEntryId != null">wh_apply_entry_id = #{whApplyEntryId},</if>
+            <if test="depPurApplyEntryId != null">dep_pur_apply_entry_id = #{depPurApplyEntryId},</if>
             <if test="deliveryLineSign != null">delivery_line_sign = #{deliveryLineSign},</if>
             <if test="deliveryLineQtyCap != null">delivery_line_qty_cap = #{deliveryLineQtyCap},</if>
             <if test="fixedPackageBarcode != null">fixed_package_barcode = #{fixedPackageBarcode},</if>
@@ -1331,9 +1343,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchStkIoBillEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode, warehouse_id_str, supplier_id_str, department_id_str, tenant_id) values
+        insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, dep_pur_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode, warehouse_id_str, supplier_id_str, department_id_str, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parenId}, #{item.billNo}, #{item.commodityId}, #{item.materialId}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, COALESCE(#{item.delFlag}, 0), #{item.remark}, #{item.kcNo}, #{item.stkInventoryId}, #{item.depInventoryId}, #{item.warehouseId}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.settlementType}, #{item.whApplyEntryId}, #{item.deliveryLineSign}, #{item.deliveryLineQtyCap}, #{item.fixedPackageBarcode}, #{item.warehouseIdStr}, #{item.supplierIdStr}, #{item.departmentIdStr}, #{scopedTenantId})
+            (#{item.parenId}, #{item.billNo}, #{item.commodityId}, #{item.materialId}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, COALESCE(#{item.delFlag}, 0), #{item.remark}, #{item.kcNo}, #{item.stkInventoryId}, #{item.depInventoryId}, #{item.warehouseId}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.settlementType}, #{item.whApplyEntryId}, #{item.depPurApplyEntryId}, #{item.deliveryLineSign}, #{item.deliveryLineQtyCap}, #{item.fixedPackageBarcode}, #{item.warehouseIdStr}, #{item.supplierIdStr}, #{item.departmentIdStr}, #{scopedTenantId})
         </foreach>
     </insert>
 
@@ -2752,6 +2764,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_by = #{updateBy},
             update_time = now()
         where wh_warehouse_apply_id = #{whApplyId}
+          and tenant_id = #{scopedTenantId}
+          and bill_type = 201
+          and bill_status = 1
+          and (del_flag = 0 or del_flag is null)
+    </update>
+
+    <update id="clearDepPurApplyEntryIdOnDraftOutbillsByDepPurApplyId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry e
+        inner join stk_io_bill b on b.id = e.paren_id
+        set e.dep_pur_apply_entry_id = null,
+            e.update_by = #{updateBy},
+            e.update_time = now()
+        where b.dep_purchase_apply_id = #{depPurApplyId}
+          and b.tenant_id = #{scopedTenantId}
+          and b.bill_type = 201
+          and b.bill_status = 1
+          and (b.del_flag = 0 or b.del_flag is null)
+          and (e.del_flag = 0 or e.del_flag is null)
+    </update>
+
+    <update id="clearDepPurchaseApplyOnDraftOutbillsByDepPurApplyId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill
+        set dep_purchase_apply_id = null,
+            dep_purchase_apply_bill_no = null,
+            update_by = #{updateBy},
+            update_time = now()
+        where dep_purchase_apply_id = #{depPurApplyId}
           and tenant_id = #{scopedTenantId}
           and bill_type = 201
           and bill_status = 1

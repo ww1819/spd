@@ -264,6 +264,12 @@ public class StkIoBill extends BaseEntity
     /** 库房申请单号（冗余，写关联表） */
     private String whWarehouseApplyBillNo;
 
+    /** 科室申购主表 ID（dep_purchase_apply.id） */
+    private Long depPurchaseApplyId;
+
+    /** 科室申购单号（冗余） */
+    private String depPurchaseApplyBillNo;
+
     /** 引用配送单入库：配送侧仓库ID快照（varchar） */
     private String deliveryRefWarehouseId;
     /** 引用配送单入库：配送侧仓库名称 */
@@ -906,6 +912,22 @@ public class StkIoBill extends BaseEntity
 
     public void setWhWarehouseApplyBillNo(String whWarehouseApplyBillNo) {
         this.whWarehouseApplyBillNo = whWarehouseApplyBillNo;
+    }
+
+    public Long getDepPurchaseApplyId() {
+        return depPurchaseApplyId;
+    }
+
+    public void setDepPurchaseApplyId(Long depPurchaseApplyId) {
+        this.depPurchaseApplyId = depPurchaseApplyId;
+    }
+
+    public String getDepPurchaseApplyBillNo() {
+        return depPurchaseApplyBillNo;
+    }
+
+    public void setDepPurchaseApplyBillNo(String depPurchaseApplyBillNo) {
+        this.depPurchaseApplyBillNo = depPurchaseApplyBillNo;
     }
 
     public String getDeliveryRefWarehouseId()
