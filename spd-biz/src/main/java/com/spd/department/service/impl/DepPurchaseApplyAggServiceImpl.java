@@ -512,6 +512,8 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
 
         agg.setPurchaseBillStatus(2);
         agg.setSplitStatus(1);
+        agg.setAuditBy(auditBy);
+        agg.setAuditDate(now);
         agg.setUpdateBy(auditBy);
         agg.setUpdateTime(now);
         return depPurchaseApplyAggMapper.updateDepPurchaseApplyAgg(agg);

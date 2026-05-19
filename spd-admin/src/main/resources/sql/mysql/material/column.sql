@@ -866,6 +866,11 @@ CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(3
 CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
 /
 
+-- dep_purchase_apply_agg 审核人/审核时间（汇总申购单审核页展示）
+CALL add_table_column('dep_purchase_apply_agg', 'audit_by', 'varchar(64)', '审核人', NULL);
+/
+CALL add_table_column('dep_purchase_apply_agg', 'audit_date', 'datetime', '审核时间', NULL);
+/
 -- dep_purchase_apply_agg_entry
 CALL add_table_column('dep_purchase_apply_agg_entry', 'warehouse_id', 'varchar(36)', '所属仓库ID(来自仓库定数)', NULL);
 /
