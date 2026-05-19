@@ -29,5 +29,7 @@ public interface HisPatientChargeMirrorUnifiedMapper
         @Param("processTime") Date processTime,
         @Param("processBy") String processBy);
 
+    long countList(HisPatientChargeMirrorUnifiedQuery query);
+
     List<HisPatientChargeMirrorUnified> selectList(HisPatientChargeMirrorUnifiedQuery query);
 }

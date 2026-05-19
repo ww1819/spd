@@ -2705,13 +2705,15 @@ CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
   `process_type` varchar(32) DEFAULT NULL,
   `process_time` datetime DEFAULT NULL,
   `process_by` varchar(64) DEFAULT NULL,
+  `value_level` varchar(8) DEFAULT NULL COMMENT '高低值(冗余自收费项镜像,1高2低)',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_hpcm_unified_list` (`tenant_id`,`visit_kind`,`charge_at`),
-  KEY `idx_hpcm_unified_tenant_at` (`tenant_id`,`charge_at`)
+  KEY `idx_hpcm_unified_tenant_at` (`tenant_id`,`charge_at`),
+  KEY `idx_hpcm_unified_q` (`tenant_id`,`visit_kind`,`process_status`,`charge_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS患者计费镜像统一表';
 /
 

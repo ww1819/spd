@@ -119,6 +119,8 @@ public class HisSqlServerProperties
         private int maxRangeDays = 31;
         /** 拆分为每段查询的天数 */
         private int chunkDays = 7;
+        /** HIS 区间查询超时（秒），默认 5 分钟 */
+        private int queryTimeoutSeconds = 300;
 
         public int getMaxRangeDays()
         {
@@ -138,6 +140,16 @@ public class HisSqlServerProperties
         public void setChunkDays(int chunkDays)
         {
             this.chunkDays = chunkDays;
+        }
+
+        public int getQueryTimeoutSeconds()
+        {
+            return queryTimeoutSeconds;
+        }
+
+        public void setQueryTimeoutSeconds(int queryTimeoutSeconds)
+        {
+            this.queryTimeoutSeconds = queryTimeoutSeconds;
         }
     }
 }

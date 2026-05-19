@@ -40,7 +40,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setDeptName(e.getDeptName());
         m.setDoctorId(e.getDoctorId());
         m.setDoctorName(e.getDoctorName());
-        m.setChargeItemId(e.getChargeItemId());
+        m.setChargeItemId(normalizeChargeItemId(e.getChargeItemId()));
+        m.setValueLevel(StringUtils.trimToNull(e.getValueLevel()));
         m.setItemName(e.getItemName());
         m.setSpecModel(e.getSpecModel());
         m.setBatchNo(e.getBatchNo());
@@ -83,7 +84,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setClinicName(e.getClinicName());
         m.setDoctorId(e.getDoctorId());
         m.setDoctorName(e.getDoctorName());
-        m.setChargeItemId(e.getChargeItemId());
+        m.setChargeItemId(normalizeChargeItemId(e.getChargeItemId()));
+        m.setValueLevel(StringUtils.trimToNull(e.getValueLevel()));
         m.setItemName(e.getItemName());
         m.setSpecModel(e.getSpecModel());
         m.setBatchNo(e.getBatchNo());
@@ -118,7 +120,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setVisitKind("INPATIENT");
         u.setPatientName(q.getPatientName());
         u.setInpatientNo(q.getInpatientNo());
-        u.setChargeItemId(q.getChargeItemId());
+        u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
         u.setChargeIdTf(q.getHisInpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
         u.setProcessed(q.getProcessed());
@@ -145,7 +147,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setVisitKind("OUTPATIENT");
         u.setPatientName(q.getPatientName());
         u.setOutpatientNo(q.getOutpatientNo());
-        u.setChargeItemId(q.getChargeItemId());
+        u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
         u.setChargeIdTf(q.getHisOutpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
         u.setProcessed(q.getProcessed());
@@ -172,7 +174,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setVisitKind(null);
         u.setPatientName(q.getPatientName());
         u.setVisitNo(q.getVisitNo());
-        u.setChargeItemId(q.getChargeItemId());
+        u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
         u.setChargeIdTf(q.getChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
         u.setProcessed(q.getProcessed());
@@ -352,5 +354,10 @@ public final class HisPatientChargeMirrorUnifiedSupport
             return null;
         }
         return loc + "|" + item;
+    }
+
+    public static String normalizeChargeItemId(String chargeItemId)
+    {
+        return StringUtils.trimToNull(chargeItemId);
     }
 }

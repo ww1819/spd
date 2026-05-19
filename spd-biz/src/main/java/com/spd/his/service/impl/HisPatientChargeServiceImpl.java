@@ -42,7 +42,12 @@ import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisIdFingerprint;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import java.util.Collections;
+import com.spd.his.domain.HisChargeItemMirror;
 import com.spd.his.mapper.HisChargeFetchBatchMapper;
+import com.spd.his.mapper.HisChargeItemMirrorMapper;
 import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
@@ -98,6 +103,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+
+    @Autowired
+    private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
 
     @Autowired
     private HisMirrorStockEnricher hisMirrorStockEnricher;
@@ -445,17 +453,16 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
         ensureUnifiedMirrorBackfill(customerId);
-        PageUtils.startPage();
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
-        List<HisPatientChargeMirrorUnified> unified = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, unified);
-        List<HisInpatientChargeMirror> out = new ArrayList<>(unified.size());
-        for (HisPatientChargeMirrorUnified u : unified)
+        UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
+        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
+        List<HisInpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
+        for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toInpatientMirror(u));
         }
         sortInpatientPageByStockIfNeeded(out, query);
-        return out;
+        return wrapAsPage(out, slice);
     }
 
     @Override
@@ -472,17 +479,16 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
         }
         ensureUnifiedMirrorBackfill(customerId);
-        PageUtils.startPage();
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
-        List<HisPatientChargeMirrorUnified> unified = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, unified);
-        List<HisOutpatientChargeMirror> out = new ArrayList<>(unified.size());
-        for (HisPatientChargeMirrorUnified u : unified)
+        UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
+        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
+        List<HisOutpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
+        for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toOutpatientMirror(u));
         }
         sortOutpatientPageByStockIfNeeded(out, query);
-        return out;
+        return wrapAsPage(out, slice);
     }
 
     @Override
@@ -499,17 +505,16 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
         }
         ensureUnifiedMirrorBackfill(customerId);
-        PageUtils.startPage();
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
-        List<HisPatientChargeMirrorUnified> unified = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, unified);
-        List<HisPatientChargeDetailRow> out = new ArrayList<>(unified.size());
-        for (HisPatientChargeMirrorUnified u : unified)
+        UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
+        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
+        List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
+        for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
         }
         sortDetailPageByStockIfNeeded(out, q);
-        return out;
+        return wrapAsPage(out, slice);
     }
 
     @Override
@@ -1025,6 +1030,52 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
     }
 
+    /** 统一表分页：列表 SQL 无 JOIN；total 单独 count；转换 DTO 后须 wrapAsPage 保留总条数 */
+    private static final class UnifiedMirrorPageSlice
+    {
+        private final List<HisPatientChargeMirrorUnified> rows;
+        private final long total;
+        private final int pageNum;
+        private final int pageSize;
+
+        private UnifiedMirrorPageSlice(List<HisPatientChargeMirrorUnified> rows, long total, int pageNum, int pageSize)
+        {
+            this.rows = rows;
+            this.total = total;
+            this.pageNum = pageNum;
+            this.pageSize = pageSize;
+        }
+    }
+
+    private UnifiedMirrorPageSlice selectUnifiedMirrorPageSlice(HisPatientChargeMirrorUnifiedQuery uq)
+    {
+        PageUtils.startPage(false);
+        List<HisPatientChargeMirrorUnified> rows = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
+        long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
+        int pageNum = 1;
+        int pageSize = 10;
+        Page<?> local = PageHelper.getLocalPage();
+        if (local != null)
+        {
+            pageNum = local.getPageNum();
+            pageSize = local.getPageSize();
+        }
+        PageHelper.clearPage();
+        List<HisPatientChargeMirrorUnified> safeRows = rows != null ? rows : Collections.emptyList();
+        return new UnifiedMirrorPageSlice(safeRows, total, pageNum, pageSize);
+    }
+
+    private static <T> Page<T> wrapAsPage(List<T> rows, UnifiedMirrorPageSlice slice)
+    {
+        Page<T> page = new Page<>(slice.pageNum, slice.pageSize);
+        page.setTotal(slice.total);
+        if (rows != null && !rows.isEmpty())
+        {
+            page.addAll(rows);
+        }
+        return page;
+    }
+
     private void insertUnifiedInpatientSlice(List<HisInpatientChargeMirror> slice)
     {
         if (slice == null || slice.isEmpty())
@@ -1036,6 +1087,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             list.add(HisPatientChargeMirrorUnifiedSupport.fromInpatient(e));
         }
+        enrichUnifiedValueLevel(slice.get(0).getTenantId(), list);
         hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
     }
 
@@ -1050,7 +1102,66 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             list.add(HisPatientChargeMirrorUnifiedSupport.fromOutpatient(e));
         }
+        enrichUnifiedValueLevel(slice.get(0).getTenantId(), list);
         hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
+    }
+
+    /** 入库前从收费项镜像补齐 value_level（默认低值 2） */
+    private void enrichUnifiedValueLevel(String tenantId, List<HisPatientChargeMirrorUnified> list)
+    {
+        if (list == null || list.isEmpty() || StringUtils.isEmpty(tenantId))
+        {
+            return;
+        }
+        Set<String> needLookup = new HashSet<>();
+        for (HisPatientChargeMirrorUnified m : list)
+        {
+            if (m == null)
+            {
+                continue;
+            }
+            m.setChargeItemId(HisPatientChargeMirrorUnifiedSupport.normalizeChargeItemId(m.getChargeItemId()));
+            if (StringUtils.isBlank(m.getValueLevel()) && StringUtils.isNotBlank(m.getChargeItemId()))
+            {
+                needLookup.add(m.getChargeItemId());
+            }
+        }
+        Map<String, String> levelByItemId = new HashMap<>();
+        if (!needLookup.isEmpty())
+        {
+            List<String> ids = new ArrayList<>(needLookup);
+            for (int i = 0; i < ids.size(); i += HIS_ID_QUERY_BATCH)
+            {
+                int end = Math.min(i + HIS_ID_QUERY_BATCH, ids.size());
+                List<HisChargeItemMirror> mirrors = hisChargeItemMirrorMapper.selectValueLevelsByChargeItemIds(
+                    tenantId, ids.subList(i, end));
+                if (mirrors == null)
+                {
+                    continue;
+                }
+                for (HisChargeItemMirror cim : mirrors)
+                {
+                    if (cim != null && StringUtils.isNotBlank(cim.getChargeItemId()))
+                    {
+                        levelByItemId.put(cim.getChargeItemId(), StringUtils.trimToEmpty(cim.getValueLevel()));
+                    }
+                }
+            }
+        }
+        for (HisPatientChargeMirrorUnified m : list)
+        {
+            if (m == null)
+            {
+                continue;
+            }
+            if (StringUtils.isNotBlank(m.getValueLevel()))
+            {
+                m.setValueLevel(StringUtils.trim(m.getValueLevel()));
+                continue;
+            }
+            String fromMirror = levelByItemId.get(m.getChargeItemId());
+            m.setValueLevel(StringUtils.isNotBlank(fromMirror) ? fromMirror : "2");
+        }
     }
 
     /** 库存列已移出 SQL：仅对当前页按库存列做二次排序（跨页全局排序需另行物化）。 */

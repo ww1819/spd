@@ -17,6 +17,10 @@ public interface HisChargeItemMirrorMapper
     HisChargeItemMirror selectByTenantAndChargeItemId(@Param("tenantId") String tenantId,
         @Param("chargeItemId") String chargeItemId);
 
+    /** 批量查询收费项高低值（列表入库冗余 value_level 用） */
+    List<HisChargeItemMirror> selectValueLevelsByChargeItemIds(@Param("tenantId") String tenantId,
+        @Param("chargeItemIds") List<String> chargeItemIds);
+
     int updateValueLevel(@Param("tenantId") String tenantId,
         @Param("chargeItemId") String chargeItemId,
         @Param("valueLevel") String valueLevel);

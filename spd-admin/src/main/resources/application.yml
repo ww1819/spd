@@ -7,6 +7,8 @@ spring:
 server:
   tomcat:
     max-http-header-size: 524288  # 512KB
+    # 患者收费抓取等长耗时接口（默认约 20s 易超时）
+    connection-timeout: 300000
 
 # SQL 启动脚本（按 table → column → view → trigger → procedure 顺序执行）
 spd:

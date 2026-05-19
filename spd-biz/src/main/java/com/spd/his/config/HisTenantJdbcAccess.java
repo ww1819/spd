@@ -104,7 +104,10 @@ public class HisTenantJdbcAccess
         ds.setInitialSize(1);
         ds.setMinIdle(1);
         ds.setMaxWait(60000);
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+        ds.setConnectionProperties("socketTimeout=" + (queryTimeoutSec * 1000L));
         JdbcTemplate jt = new JdbcTemplate(ds);
+        jt.setQueryTimeout(queryTimeoutSec);
         String inSql;
         String outSql;
         if (DB_SQLSERVER.equals(dbType))

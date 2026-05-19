@@ -24,6 +24,7 @@ public class HisSqlServerConfiguration
     public DataSource hisDataSource(HisSqlServerProperties properties, Environment environment)
     {
         HisSqlServerProperties.Datasource c = properties.getDatasource();
+        int queryTimeoutSec = Math.max(1, properties.getFetch().getQueryTimeoutSeconds());
         DruidDataSource ds = new DruidDataSource();
         ds.setDriverClassName(resolveDriverClassName(c, environment));
         ds.setUrl(resolveJdbcUrl(c, environment));
@@ -35,6 +36,7 @@ public class HisSqlServerConfiguration
         ds.setInitialSize(1);
         ds.setMinIdle(1);
         ds.setMaxWait(60000);
+        ds.setConnectionProperties("socketTimeout=" + (queryTimeoutSec * 1000L));
         return ds;
     }
 
@@ -89,8 +91,11 @@ public class HisSqlServerConfiguration
 
     @Bean(name = "hisJdbcTemplate")
     @ConditionalOnProperty(prefix = "spd.his.datasource", name = "enabled", havingValue = "true")
-    public JdbcTemplate hisJdbcTemplate(@Qualifier("hisDataSource") DataSource hisDataSource)
+    public JdbcTemplate hisJdbcTemplate(@Qualifier("hisDataSource") DataSource hisDataSource,
+        HisSqlServerProperties properties)
     {
-        return new JdbcTemplate(hisDataSource);
+        JdbcTemplate jt = new JdbcTemplate(hisDataSource);
+        jt.setQueryTimeout(Math.max(1, properties.getFetch().getQueryTimeoutSeconds()));
+        return jt;
     }
 }

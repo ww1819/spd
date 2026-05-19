@@ -123,4 +123,13 @@
             update_time = now()
     </insert>
 
+    <select id="selectValueLevelsByChargeItemIds" resultType="com.spd.his.domain.HisChargeItemMirror">
+        select charge_item_id as chargeItemId, value_level as valueLevel
+        from his_charge_item_mirror
+        where tenant_id = #{tenantId}
+          and (deleted_flag is null or deleted_flag != 1)
+          and charge_item_id in
+        <foreach collection="chargeItemIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+    </select>
+
 </mapper>

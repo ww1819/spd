@@ -59,7 +59,7 @@ public class HisPatientChargeMirrorUnified extends BaseEntity
     private Date processTime;
     private String processBy;
 
-    /** 来自 his_charge_item_mirror，仅列表展示 */
+    /** 高低值冗余字段（1高2低，入库时从收费项镜像写入） */
     private String valueLevel;
     /** 查询后填充 */
     private BigDecimal highValueStockQty;

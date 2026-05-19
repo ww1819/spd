@@ -2510,3 +2510,7 @@ ALTER TABLE spd_scm_tenant_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAUL
 /
 ALTER TABLE spd_scm_supplier_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除';
 /
+
+-- ========== 患者计费统一表：列表性能冗余字段 ==========
+CALL add_table_column('his_patient_charge_mirror_unified', 'value_level', 'varchar(8)', '高低值(冗余自收费项镜像,1高2低)', NULL);
+/

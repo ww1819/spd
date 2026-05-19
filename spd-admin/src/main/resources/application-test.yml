@@ -8,6 +8,8 @@ server:
     tomcat:
         # tomcat的URI编码
         uri-encoding: UTF-8
+        # 患者收费抓取等长耗时接口
+        connection-timeout: 300000
         relaxed-query-chars: ['[', ']']
         # 请求行+请求头最大字节数（默认约8KB），避免定数监测等大批量保存时出现 Request header is too large（512KB）
         max-http-header-size: 524288
