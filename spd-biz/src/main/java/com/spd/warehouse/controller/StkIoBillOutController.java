@@ -7,7 +7,9 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.WhWarehouseApply;
+import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.department.service.IWhWarehouseApplyService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -37,6 +39,9 @@ public class StkIoBillOutController extends BaseController {
     @Autowired
     private IWhWarehouseApplyService whWarehouseApplyService;
 
+    @Autowired
+    private IDepPurchaseApplyService depPurchaseApplyService;
+
     /**
      * 出库引用：分页查询仍有可出库数量的仓库申请单（科室申领按仓拆分后的 CKSQ 单）。
      * 权限与出库申请页、科室/仓库申请单列表对齐，避免仅有 list/add 而无 createCkEntriesByDApply 按钮权限时 403。
@@ -46,6 +51,17 @@ public class StkIoBillOutController extends BaseController {
     public TableDataInfo whApplyListForCk(WhWarehouseApply query) {
         startPage();
         List<WhWarehouseApply> list = whWarehouseApplyService.selectWhWarehouseApplyListForOutboundCk(query);
+        return getDataTable(list);
+    }
+
+    /**
+     * 出库引用：分页查询科室申购单（按引用状态页签筛选）。
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:list') || @ss.hasPermi('outWarehouse:apply:add') || @ss.hasPermi('outWarehouse:apply:edit') || @ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply') || @ss.hasPermi('department:purchase:list')")
+    @GetMapping("/depPurchaseApplyListForCk")
+    public TableDataInfo depPurchaseApplyListForCk(DepPurchaseApply query) {
+        startPage();
+        List<DepPurchaseApply> list = depPurchaseApplyService.selectDepPurchaseApplyListForOutboundCk(query);
         return getDataTable(list);
     }
 
@@ -172,6 +188,16 @@ public class StkIoBillOutController extends BaseController {
             throw new RuntimeException("仓库申请单ID不能为空");
         }
         StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByWhApply(whWarehouseApplyId);
+        return success(stkIoBill1);
+    }
+
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:list') || @ss.hasPermi('outWarehouse:apply:add') || @ss.hasPermi('outWarehouse:apply:edit') || @ss.hasPermi('outWarehouse:apply:createCkEntriesByDApply') || @ss.hasPermi('department:purchase:list')")
+    @GetMapping("/createCkEntriesByDepPurchaseApply")
+    public AjaxResult createCkEntriesByDepPurchaseApply(@RequestParam Long depPurchaseApplyId) {
+        if (depPurchaseApplyId == null) {
+            throw new RuntimeException("科室申购单ID不能为空");
+        }
+        StkIoBill stkIoBill1 = stkIoBillService.createCkEntriesByDepPurchaseApply(depPurchaseApplyId);
         return success(stkIoBill1);
     }
 

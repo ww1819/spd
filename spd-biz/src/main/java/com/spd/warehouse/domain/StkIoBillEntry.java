@@ -155,6 +155,9 @@ public class StkIoBillEntry extends BaseEntity
     /** 库房申请单明细 ID（UUID，不落库；保存出库单后写入 wh_wh_apply_ck_entry_ref） */
     private String whApplyEntryId;
 
+    /** 科室申购明细ID（引用科室申购出库时回填） */
+    private Long depPurApplyEntryId;
+
     /** 配送单拆分行签名（与接口 LIST 分组键一致，用于按行累计已引用数量） */
     private String deliveryLineSign;
 
@@ -499,6 +502,14 @@ public class StkIoBillEntry extends BaseEntity
 
     public void setWhApplyEntryId(String whApplyEntryId) {
         this.whApplyEntryId = whApplyEntryId;
+    }
+
+    public Long getDepPurApplyEntryId() {
+        return depPurApplyEntryId;
+    }
+
+    public void setDepPurApplyEntryId(Long depPurApplyEntryId) {
+        this.depPurApplyEntryId = depPurApplyEntryId;
     }
 
     public String getDeliveryLineSign() {

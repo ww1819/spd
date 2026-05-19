@@ -33,6 +33,9 @@ import com.spd.department.domain.BasApplyEntry;
 import com.spd.department.domain.WhWarehouseApply;
 import com.spd.department.domain.WhWarehouseApplyEntry;
 import com.spd.department.service.IWhWarehouseApplyService;
+import com.spd.department.service.IDepPurchaseApplyService;
+import com.spd.department.domain.DepPurchaseApply;
+import com.spd.department.domain.DepPurchaseApplyEntry;
 import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.BasApplyMapper;
@@ -171,6 +174,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private IWhWarehouseApplyService whWarehouseApplyService;
+
+    @Autowired
+    private IDepPurchaseApplyService depPurchaseApplyService;
 
     @Autowired
     private PurchaseOrderMapper purchaseOrderMapper;
@@ -425,6 +431,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 201
             && StringUtils.isNotEmpty(stkIoBill.getTenantId())) {
             whWarehouseApplyService.releaseWhApplyCkRefsForOutboundBill(id, stkIoBill.getTenantId());
+            depPurchaseApplyService.releaseDepPurApplyCkRefsForOutboundBill(id, stkIoBill.getTenantId());
         }
         stkIoBill.setDelFlag(1);
         stkIoBill.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -1906,6 +1913,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isNotEmpty(stkIoBill.getWhWarehouseApplyId())) {
             whWarehouseApplyService.syncWhApplyCkRefsAfterOutboundSave(stkIoBill.getId());
         }
+        if (stkIoBill.getDepPurchaseApplyId() != null) {
+            depPurchaseApplyService.syncDepPurApplyCkRefsAfterOutboundSave(stkIoBill.getId());
+        }
         return rows;
     }
 
@@ -1950,6 +1960,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         if (bt != null && bt == 201) {
             whWarehouseApplyService.syncWhApplyCkRefsAfterOutboundSave(stkIoBill.getId());
+            StkIoBill reloadedForDep = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+            if (reloadedForDep != null && reloadedForDep.getDepPurchaseApplyId() != null) {
+                depPurchaseApplyService.syncDepPurApplyCkRefsAfterOutboundSave(stkIoBill.getId());
+            }
         }
         return u;
     }
@@ -2804,6 +2818,114 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 need = need.subtract(take);
             }
             /* 申请大于库存时：已按近效期带出全部可用批次，剩余不足部分不再生成明细、不抛错（部分引用） */
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
+        }
+        stkIoBill.setStkIoBillEntryList(entryList);
+        return stkIoBill;
+    }
+
+    @Override
+    public StkIoBill createCkEntriesByDepPurchaseApply(Long depPurchaseApplyId) {
+        if (depPurchaseApplyId == null) {
+            throw new ServiceException("科室申购单ID不能为空");
+        }
+        DepPurchaseApply dep = depPurchaseApplyService.selectDepPurchaseApplyByIdForOutboundCk(depPurchaseApplyId);
+        if (dep == null) {
+            throw new ServiceException(String.format("科室申购单ID：%s 不存在", depPurchaseApplyId));
+        }
+        if (dep.getPurchaseBillStatus() == null || dep.getPurchaseBillStatus() != 2) {
+            throw new ServiceException("科室申购单未审核，不能生成出库单");
+        }
+        if (Integer.valueOf(1).equals(dep.getVoidWholeFlag())) {
+            throw new ServiceException("科室申购单已整单作废，不能生成出库单");
+        }
+        List<DepPurchaseApplyEntry> list = dep.getDepPurchaseApplyEntryList();
+        if (list == null || list.isEmpty()) {
+            throw new ServiceException(String.format("科室申购单ID：%s 无明细", depPurchaseApplyId));
+        }
+        BigDecimal sumLinkedCk = BigDecimal.ZERO;
+        BigDecimal sumLineVoidQty = BigDecimal.ZERO;
+        for (DepPurchaseApplyEntry pe0 : list) {
+            if (pe0 == null) {
+                continue;
+            }
+            if (pe0.getLinkedCkQty() != null) {
+                sumLinkedCk = sumLinkedCk.add(pe0.getLinkedCkQty());
+            }
+            if (pe0.getLineVoidQty() != null) {
+                sumLineVoidQty = sumLineVoidQty.add(pe0.getLineVoidQty());
+            }
+        }
+        if (sumLinkedCk.compareTo(BigDecimal.ZERO) > 0 && sumLineVoidQty.compareTo(BigDecimal.ZERO) > 0) {
+            throw new ServiceException("该科室申购单已存在出库引用且发生过明细作废（部分作废），不允许再次引用生成出库单");
+        }
+        StkIoBill stkIoBill = new StkIoBill();
+        stkIoBill.setWarehouseId(dep.getWarehouseId());
+        stkIoBill.setDepartmentId(dep.getDepartmentId());
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(1);
+        stkIoBill.setRefBillNo(dep.getPurchaseBillNo());
+        stkIoBill.setDepPurchaseApplyId(dep.getId());
+        stkIoBill.setDepPurchaseApplyBillNo(dep.getPurchaseBillNo());
+        String tenantId = StringUtils.isNotEmpty(dep.getTenantId())
+            ? dep.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        List<StkIoBillEntry> entryList = new ArrayList<>();
+        for (DepPurchaseApplyEntry pe : list) {
+            if (pe == null) {
+                continue;
+            }
+            BigDecimal pend = pe.getPendingOutboundQty();
+            if (pend == null || pend.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            Long lineWhId = dep.getWarehouseId();
+            if (pe.getMaterialId() == null || lineWhId == null) {
+                throw new ServiceException("科室申购明细缺少耗材或仓库，无法按近效期分配批次");
+            }
+            FdMaterial material = pe.getMaterial() != null ? pe.getMaterial()
+                : fdMaterialMapper.selectFdMaterialById(pe.getMaterialId());
+            List<StkInventory> invLines = stkInventoryMapper.selectStkInventoryFefoForOutboundAlloc(
+                tenantId, pe.getMaterialId(), lineWhId);
+            BigDecimal need = pend;
+            for (StkInventory inv : invLines) {
+                if (need.compareTo(BigDecimal.ZERO) <= 0) {
+                    break;
+                }
+                if (inv == null) {
+                    continue;
+                }
+                BigDecimal rowQty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+                if (rowQty.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                BigDecimal take = need.min(rowQty);
+                StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
+                stkIoBillEntry.setMaterialId(pe.getMaterialId());
+                stkIoBillEntry.setQty(take);
+                BigDecimal up = inv.getUnitPrice() != null ? inv.getUnitPrice() : pe.getUnitPrice();
+                stkIoBillEntry.setUnitPrice(up);
+                if (up != null) {
+                    stkIoBillEntry.setAmt(up.multiply(take).setScale(2, RoundingMode.HALF_UP));
+                }
+                stkIoBillEntry.setBatchNo(inv.getBatchNo());
+                stkIoBillEntry.setBatchNumber(inv.getBatchNumber());
+                stkIoBillEntry.setBeginTime(inv.getBeginTime());
+                stkIoBillEntry.setEndTime(inv.getEndTime());
+                stkIoBillEntry.setWarehouseId(lineWhId);
+                if (inv.getId() != null) {
+                    stkIoBillEntry.setStkInventoryId(inv.getId());
+                    stkIoBillEntry.setKcNo(inv.getId());
+                }
+                stkIoBillEntry.setDepPurApplyEntryId(pe.getId());
+                if (inv.getSupplierId() != null) {
+                    stkIoBillEntry.setSupplerId(String.valueOf(inv.getSupplierId()));
+                }
+                stkIoBillEntry.setMaterial(material);
+                entryList.add(stkIoBillEntry);
+                need = need.subtract(take);
+            }
         }
         if (entryList.isEmpty()) {
             throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");

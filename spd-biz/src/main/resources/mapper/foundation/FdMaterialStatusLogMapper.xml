@@ -25,4 +25,12 @@
         WHERE material_id = #{materialId} and tenant_id = #{scopedTenantId}
         ORDER BY action_time DESC
     </select>
+
+    <insert id="batchInsert">
+        INSERT INTO fd_material_status_log (id, material_id, action, action_time, operator, reason, tenant_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.materialId}, #{item.action}, #{item.actionTime}, #{item.operator}, #{item.reason}, #{item.tenantId})
+        </foreach>
+    </insert>
 </mapper>

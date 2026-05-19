@@ -13,10 +13,16 @@ import java.util.ArrayList;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.department.domain.DepPurchaseApplyEntry;
+import com.spd.department.domain.DepPurApplyCkEntryRef;
 import com.spd.department.mapper.DepPurchaseApplyMapper;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.department.vo.WarehousePurchaseReminderRowVo;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.warehouse.domain.StkIoBill;
+import com.spd.warehouse.domain.StkIoBillEntry;
+import com.spd.warehouse.mapper.StkIoBillMapper;
 
 /**
  * 科室申购Service业务层处理
@@ -27,11 +33,19 @@ import com.spd.department.vo.WarehousePurchaseReminderRowVo;
 @Service
 public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService 
 {
+    private static final BigDecimal ZERO = BigDecimal.ZERO;
+
     @Autowired
     private DepPurchaseApplyMapper depPurchaseApplyMapper;
 
     @Autowired
     private ITenantScopeService tenantScopeService;
+
+    @Autowired
+    private StkIoBillMapper stkIoBillMapper;
+
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
 
     /** 非租户管理员：仅能访问已授权科室的科室申购单 */
     private void assertDepartmentInUserScope(Long departmentId) {
@@ -158,6 +172,10 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         
         depPurchaseApply.setCreateTime(DateUtils.getNowDate());
+        Long currentUserId = SecurityUtils.getUserId();
+        if (currentUserId != null) {
+            depPurchaseApply.setUserId(currentUserId);
+        }
         if (StringUtils.isEmpty(depPurchaseApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             depPurchaseApply.setCreateBy(SecurityUtils.getUserIdStr());
         }
@@ -190,6 +208,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
+        if (depPurchaseApply.getUserId() == null && existing != null && existing.getUserId() != null) {
+            depPurchaseApply.setUserId(existing.getUserId());
+        }
         
         depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(depPurchaseApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertDepPurchaseApplyEntry(depPurchaseApply);
@@ -396,5 +417,131 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         depPurchaseApply.setUpdateTime(new Date());
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
         return res;
+    }
+
+    @Override
+    public List<DepPurchaseApply> selectDepPurchaseApplyListForOutboundCk(DepPurchaseApply query) {
+        if (query != null) {
+            applyDepartmentScopeToQuery(query);
+            if (StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+                query.setTenantId(SecurityUtils.getCustomerId());
+            }
+        }
+        return depPurchaseApplyMapper.selectDepPurchaseApplyListForOutboundCk(query);
+    }
+
+    @Override
+    public DepPurchaseApply selectDepPurchaseApplyByIdForOutboundCk(Long id) {
+        DepPurchaseApply m = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
+        if (m != null) {
+            SecurityUtils.ensureTenantAccess(m.getTenantId());
+            assertDepPurchaseDepartmentInUserScope(m);
+            List<DepPurchaseApplyEntry> entries = depPurchaseApplyMapper.selectDepPurchaseApplyEntryListByParentIdForCk(id);
+            if (entries != null) {
+                for (DepPurchaseApplyEntry e : entries) {
+                    if (e != null && e.getMaterialId() != null) {
+                        FdMaterial mat = fdMaterialMapper.selectFdMaterialById(e.getMaterialId());
+                        e.setMaterial(mat);
+                    }
+                }
+            }
+            m.setDepPurchaseApplyEntryList(entries);
+        }
+        return m;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncDepPurApplyCkRefsAfterOutboundSave(Long ckBillId) {
+        if (ckBillId == null) {
+            return;
+        }
+        StkIoBill loaded = stkIoBillMapper.selectStkIoBillById(ckBillId);
+        if (loaded == null) {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(loaded.getTenantId())
+            ? loaded.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        String uid = SecurityUtils.getUserIdStr();
+        depPurchaseApplyMapper.softDeleteCkEntryRefsByCkBillId(String.valueOf(ckBillId), tenantId, uid);
+        if (loaded.getDepPurchaseApplyId() == null) {
+            return;
+        }
+        Integer bt = loaded.getBillType();
+        if (bt == null || bt != 201) {
+            return;
+        }
+        DepPurchaseApply dep = depPurchaseApplyMapper.selectDepPurchaseApplyById(loaded.getDepPurchaseApplyId());
+        if (dep == null) {
+            throw new ServiceException("出库单引用的科室申购单不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(dep.getTenantId());
+        List<StkIoBillEntry> entries = loaded.getStkIoBillEntryList();
+        if (entries == null) {
+            return;
+        }
+        Date now = DateUtils.getNowDate();
+        for (StkIoBillEntry db : entries) {
+            if (db == null || db.getId() == null || db.getDepPurApplyEntryId() == null) {
+                continue;
+            }
+            DepPurApplyCkEntryRef row = new DepPurApplyCkEntryRef();
+            row.setTenantId(tenantId);
+            row.setDepPurApplyId(loaded.getDepPurchaseApplyId());
+            row.setDepPurApplyBillNo(loaded.getDepPurchaseApplyBillNo());
+            row.setDepPurApplyEntryId(db.getDepPurApplyEntryId());
+            row.setCkBillId(String.valueOf(loaded.getId()));
+            row.setCkBillNo(loaded.getBillNo());
+            row.setCkEntryId(String.valueOf(db.getId()));
+            row.setRefQty(db.getQty());
+            row.setRefAmt(db.getAmt());
+            row.setLinkStatus(1);
+            row.setDelFlag(0);
+            row.setCreateBy(uid);
+            row.setCreateTime(now);
+            depPurchaseApplyMapper.insertDepPurApplyCkEntryRef(row);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void releaseDepPurApplyCkRefsForOutboundBill(Long ckBillId, String tenantId) {
+        if (ckBillId == null || StringUtils.isEmpty(tenantId)) {
+            return;
+        }
+        depPurchaseApplyMapper.softDeleteCkEntryRefsByCkBillId(String.valueOf(ckBillId), tenantId,
+            SecurityUtils.getUserIdStr());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void voidWholeDepPurchaseApply(Long id, String reason) {
+        if (id == null) {
+            throw new ServiceException("科室申购单ID不能为空");
+        }
+        DepPurchaseApply m = depPurchaseApplyMapper.selectDepPurchaseApplyById(id);
+        if (m == null) {
+            throw new ServiceException("科室申购单不存在");
+        }
+        SecurityUtils.ensureTenantAccess(m.getTenantId());
+        assertDepPurchaseDepartmentInUserScope(m);
+        if (Integer.valueOf(1).equals(m.getVoidWholeFlag())) {
+            throw new ServiceException("该科室申购单已作废");
+        }
+        int audited = depPurchaseApplyMapper.countLinkedRefsToAuditedCkByDepPurApplyId(id);
+        if (audited > 0) {
+            throw new ServiceException("已关联已审核出库单，无法整单作废；请先处理相关出库单");
+        }
+        String uid = SecurityUtils.getUserIdStr();
+        int refCnt = depPurchaseApplyMapper.countActiveCkRefsByDepPurApplyId(id);
+        if (refCnt > 0) {
+            stkIoBillMapper.clearDepPurApplyEntryIdOnDraftOutbillsByDepPurApplyId(id, uid);
+            stkIoBillMapper.clearDepPurchaseApplyOnDraftOutbillsByDepPurApplyId(id, uid);
+            depPurchaseApplyMapper.softDeleteCkEntryRefsByDepPurApplyId(id, uid);
+        }
+        int u = depPurchaseApplyMapper.updateDepPurchaseApplyVoidWhole(id, uid, DateUtils.getNowDate(), reason);
+        if (u <= 0) {
+            throw new ServiceException("整单作废失败，请刷新后重试");
+        }
     }
 }

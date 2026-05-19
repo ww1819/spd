@@ -114,4 +114,15 @@ public interface IDepPurchaseApplyService
      * @return 结果
      */
     public int rejectReceipt(String id, String rejectReason);
+
+    List<DepPurchaseApply> selectDepPurchaseApplyListForOutboundCk(DepPurchaseApply query);
+
+    DepPurchaseApply selectDepPurchaseApplyByIdForOutboundCk(Long id);
+
+    void syncDepPurApplyCkRefsAfterOutboundSave(Long ckBillId);
+
+    void releaseDepPurApplyCkRefsForOutboundBill(Long ckBillId, String tenantId);
+
+    /** 整单作废：无已审核出库关联时允许；若仅有未审核出库关联则先解除关联再作废 */
+    void voidWholeDepPurchaseApply(Long id, String reason);
 }

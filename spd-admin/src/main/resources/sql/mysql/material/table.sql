@@ -773,8 +773,13 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `src_agg_apply_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购主表ID(UUID7)',
   `src_agg_bill_no` varchar(64) DEFAULT NULL COMMENT '来源科室汇总申购单号',
+  `void_whole_flag` int NOT NULL DEFAULT 0 COMMENT '整单作废：0否 1是',
+  `void_whole_by` varchar(64) DEFAULT NULL COMMENT '整单作废人',
+  `void_whole_time` datetime DEFAULT NULL COMMENT '整单作废时间',
+  `void_whole_reason` varchar(500) DEFAULT NULL COMMENT '整单作废原因',
   PRIMARY KEY (`id`),
   KEY `idx_purchase_bill_no` (`purchase_bill_no`),
+  KEY `idx_dep_purchase_apply_void` (`void_whole_flag`),
   KEY `idx_warehouse_id` (`warehouse_id`),
   KEY `idx_department_id` (`department_id`),
   KEY `idx_user_id` (`user_id`),
@@ -812,6 +817,11 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
   `src_agg_entry_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购明细ID(UUID7)',
   `src_agg_apply_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购主表ID(UUID7)',
   `src_agg_bill_no` varchar(64) DEFAULT NULL COMMENT '来源科室汇总申购单号',
+  `line_void_status` int NOT NULL DEFAULT 0 COMMENT '明细作废状态：0正常 1已作废',
+  `line_void_qty` decimal(18,2) NOT NULL DEFAULT 0 COMMENT '累计作废数量',
+  `line_void_by` varchar(64) DEFAULT NULL COMMENT '明细作废操作人',
+  `line_void_time` datetime DEFAULT NULL COMMENT '明细作废时间',
+  `line_void_reason` varchar(500) DEFAULT NULL COMMENT '明细作废原因',
   PRIMARY KEY (`id`),
   KEY `idx_parent_id` (`parent_id`),
   KEY `idx_material_id` (`material_id`),
@@ -820,6 +830,33 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
   KEY `idx_dep_purchase_apply_e_src_agg_entry` (`src_agg_entry_id`),
   KEY `idx_dep_purchase_apply_e_src_agg_no` (`src_agg_bill_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申购明细表';
+/
+
+-- 科室申购单明细与出库单明细关联（引用科室申购单出库）
+CREATE TABLE IF NOT EXISTS `dep_pur_apply_ck_entry_ref` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `dep_pur_apply_id` bigint NOT NULL COMMENT '科室申购主表ID',
+  `dep_pur_apply_bill_no` varchar(64) DEFAULT NULL COMMENT '科室申购单号（冗余）',
+  `dep_pur_apply_entry_id` bigint NOT NULL COMMENT '科室申购明细ID',
+  `ck_bill_id` varchar(32) NOT NULL COMMENT '出库单主表ID（stk_io_bill.id）',
+  `ck_bill_no` varchar(64) DEFAULT NULL COMMENT '出库单号（冗余）',
+  `ck_entry_id` varchar(32) NOT NULL COMMENT '出库单明细ID（stk_io_bill_entry.id）',
+  `ref_qty` decimal(18,2) NOT NULL COMMENT '本行关联数量',
+  `ref_amt` decimal(18,2) DEFAULT NULL COMMENT '关联金额快照',
+  `link_status` tinyint NOT NULL DEFAULT 1 COMMENT '1有效 0已解除',
+  `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_dep_pur_ck_pair` (`dep_pur_apply_entry_id`,`ck_entry_id`),
+  KEY `idx_dep_pur_ck_ref_apply` (`dep_pur_apply_id`),
+  KEY `idx_dep_pur_ck_ref_ck` (`ck_bill_id`),
+  KEY `idx_dep_pur_ck_ref_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申购单明细与出库单明细关联';
 /
 
 /* 采购计划明细与科室申购单明细关联表（逻辑删除：del_flag、delete_by、delete_time、tenant_id） */
@@ -889,6 +926,8 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`),
   KEY `idx_dep_purchase_agg_tenant` (`tenant_id`),

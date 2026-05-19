@@ -29,6 +29,7 @@ import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.domain.FdLocation;
 import com.spd.foundation.domain.FdWarehouseCategory;
 import com.spd.foundation.vo.MaterialTimelineVo;
+import org.springframework.transaction.annotation.Transactional;
 import com.spd.foundation.mapper.FdFactoryMapper;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
 import com.spd.foundation.mapper.FdMaterialChangeLogMapper;
@@ -44,6 +45,7 @@ import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.dto.MaterialBatchUpdateDto;
 import com.spd.foundation.dto.MaterialImportAddDto;
 import com.spd.foundation.dto.MaterialImportUpdateDto;
 import com.spd.foundation.service.IFdMaterialService;
@@ -67,6 +69,11 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     private static final String HS_PREFIX_GZ = "GZ";
     private static final String HS_PREFIX_DZ = "DZ";
     private static final String HS_PREFIX_SJ = "SJ";
+    /** 产品档案批量修改：每批 ID 数量（单条 UPDATE … IN） */
+    private static final int MATERIAL_BATCH_PATCH_CHUNK = 500;
+    /** 启用/停用流水批量插入每批条数 */
+    private static final int MATERIAL_STATUS_LOG_CHUNK = 200;
+
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
 
@@ -859,6 +866,107 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             }
             material.setReferredName(PinyinUtils.getPinyinInitials(name));
             fdMaterialMapper.updateFdMaterial(material);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchUpdateMaterials(MaterialBatchUpdateDto dto) {
+        if (dto == null) {
+            throw new ServiceException("请求参数不能为空");
+        }
+        if (!dto.hasAnyPatchField()) {
+            throw new ServiceException("请至少选择一项要修改的内容");
+        }
+        validateBatchPatchRules(dto);
+
+        List<Long> targetIds = resolveBatchUpdateTargetIds(dto);
+        if (targetIds.isEmpty()) {
+            throw new ServiceException("当前没有可更新的产品档案");
+        }
+
+        Date now = DateUtils.getNowDate();
+        String operator = SecurityUtils.getUserIdStr();
+        if (operator == null) {
+            operator = "";
+        }
+        int total = 0;
+        for (int i = 0; i < targetIds.size(); i += MATERIAL_BATCH_PATCH_CHUNK) {
+            int end = Math.min(i + MATERIAL_BATCH_PATCH_CHUNK, targetIds.size());
+            List<Long> chunk = targetIds.subList(i, end);
+            if (StringUtils.isNotEmpty(dto.getIsUse())) {
+                recordBatchIsUseStatusLogs(chunk, dto.getIsUse(), operator, now);
+            }
+            total += fdMaterialMapper.batchPatchFdMaterialByIds(dto, chunk, operator, now);
+        }
+        return total;
+    }
+
+    private List<Long> resolveBatchUpdateTargetIds(MaterialBatchUpdateDto dto) {
+        if (Boolean.TRUE.equals(dto.getUpdateAll())) {
+            FdMaterial query = dto.getQueryCriteria();
+            if (query == null) {
+                throw new ServiceException("查询条件不能为空");
+            }
+            if (query.getIncludeDisabledInList() == null) {
+                query.setIncludeDisabledInList(true);
+            }
+            List<Long> ids = fdMaterialMapper.selectFdMaterialIdList(query);
+            return ids != null ? ids : new ArrayList<>();
+        }
+        if (dto.getIds() == null || dto.getIds().isEmpty()) {
+            throw new ServiceException("请先选择要修改的产品档案");
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Long id : dto.getIds()) {
+            if (id != null) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    /** 批量修改前：衡水三院高值规则（仅当同时改财务分类与高值标志时校验一次） */
+    private void validateBatchPatchRules(MaterialBatchUpdateDto dto) {
+        if (dto.getFinanceCategoryId() == null || !StringUtils.isNotEmpty(dto.getIsGz())) {
+            return;
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        validateHsThirdHighValueRule(tenantId, dto.getFinanceCategoryId(), dto.getIsGz());
+    }
+
+    /** 批量修改启用状态时写入流水（不写逐条变更日志，避免超时） */
+    private void recordBatchIsUseStatusLogs(List<Long> materialIds, String newIsUse, String operator, Date now) {
+        if (materialIds == null || materialIds.isEmpty() || !StringUtils.isNotEmpty(newIsUse)) {
+            return;
+        }
+        List<Long> changedIds = fdMaterialMapper.selectIdsForIsUseChangeByIds(materialIds, newIsUse);
+        if (changedIds == null || changedIds.isEmpty()) {
+            return;
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        String action = "1".equals(newIsUse) ? "enable" : "disable";
+        for (int i = 0; i < changedIds.size(); i += MATERIAL_STATUS_LOG_CHUNK) {
+            int end = Math.min(i + MATERIAL_STATUS_LOG_CHUNK, changedIds.size());
+            List<FdMaterialStatusLog> logs = new ArrayList<>(end - i);
+            for (int j = i; j < end; j++) {
+                Long materialId = changedIds.get(j);
+                if (materialId == null) {
+                    continue;
+                }
+                FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
+                logRecord.setId(UUID7.generateUUID7());
+                logRecord.setMaterialId(materialId);
+                logRecord.setAction(action);
+                logRecord.setActionTime(now);
+                logRecord.setOperator(operator);
+                logRecord.setReason("批量修改");
+                logRecord.setTenantId(tenantId);
+                logs.add(logRecord);
+            }
+            if (!logs.isEmpty()) {
+                fdMaterialStatusLogMapper.batchInsert(logs);
+            }
         }
     }
 

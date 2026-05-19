@@ -1,6 +1,9 @@
 package com.spd.web.controller.system;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -11,14 +14,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.constant.UserConstants;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.domain.entity.SysMenu;
+import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.StringUtils;
+import com.spd.system.domain.SbCustomer;
+import com.spd.system.domain.dto.MenuBatchGrantBody;
+import com.spd.system.mapper.SbCustomerMapper;
 import com.spd.system.service.ISysMenuService;
 
 /**
@@ -32,6 +40,9 @@ public class SysMenuController extends BaseController
 {
     @Autowired
     private ISysMenuService menuService;
+
+    @Autowired
+    private SbCustomerMapper sbCustomerMapper;
 
     /**
      * 获取菜单列表
@@ -73,6 +84,49 @@ public class SysMenuController extends BaseController
     public AjaxResult batchDefaultOpen(@RequestBody List<Long> menuIds)
     {
         menuService.batchSetDefaultOpenToCustomer(menuIds);
+        return success();
+    }
+
+    /**
+     * 批量赋权：在库耗材租户检索（名称、编码/拼音简码、租户ID 模糊）
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @GetMapping("/batchGrant/tenants")
+    public TableDataInfo batchGrantTenants(@RequestParam(required = false) String keyword)
+    {
+        startPage();
+        List<SbCustomer> list = sbCustomerMapper.selectActiveHcCustomersForMenuGrant(keyword);
+        return getDataTable(list);
+    }
+
+    /**
+     * 批量赋权：所选租户已有租户菜单权限（全部/部分拥有）
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @GetMapping("/batchGrant/existingMenuIds")
+    public AjaxResult batchGrantExistingMenuIds(@RequestParam(required = false) String customerIds)
+    {
+        if (StringUtils.isEmpty(customerIds))
+        {
+            return success(menuService.resolveBatchGrantExistingTenantMenuIds(Collections.emptyList()));
+        }
+        List<String> ids = Arrays.stream(customerIds.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
+        return success(menuService.resolveBatchGrantExistingTenantMenuIds(ids));
+    }
+
+    /**
+     * 批量赋权：精确合并授予租户/其全部工作组/其全部用户
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @Log(title = "菜单管理", businessType = BusinessType.GRANT)
+    @PostMapping("/batchGrant")
+    public AjaxResult batchGrant(@RequestBody MenuBatchGrantBody body)
+    {
+        menuService.batchGrantMenusToTenants(body);
         return success();
     }
 

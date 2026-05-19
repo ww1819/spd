@@ -866,6 +866,11 @@ CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(3
 CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
 /
 
+-- dep_purchase_apply_agg 审核人/审核时间（汇总申购单审核页展示）
+CALL add_table_column('dep_purchase_apply_agg', 'audit_by', 'varchar(64)', '审核人', NULL);
+/
+CALL add_table_column('dep_purchase_apply_agg', 'audit_date', 'datetime', '审核时间', NULL);
+/
 -- dep_purchase_apply_agg_entry
 CALL add_table_column('dep_purchase_apply_agg_entry', 'warehouse_id', 'varchar(36)', '所属仓库ID(来自仓库定数)', NULL);
 /
@@ -1894,6 +1899,34 @@ CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(5
 /
 
 -- wh_wh_apply_ck_entry_ref（出库关联表）全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
+/
+
+-- ========== 科室申购单引用出库（dep_pur_apply_ck_entry_ref、作废字段、出库单追溯）==========
+CALL add_table_column('dep_purchase_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '整单作废：0否 1是', '0');
+/
+CALL add_table_column('dep_purchase_apply', 'void_whole_by', 'varchar(64)', '整单作废人', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'void_whole_time', 'datetime', '整单作废时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply', 'void_whole_reason', 'varchar(500)', '整单作废原因', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '明细作废状态：0正常 1已作废', '0');
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '累计作废数量', '0');
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_by', 'varchar(64)', '明细作废操作人', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_time', 'datetime', '明细作废时间', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_reason', 'varchar(500)', '明细作废原因', NULL);
+/
+-- dep_pur_apply_ck_entry_ref 全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
+/
+CALL add_table_column('stk_io_bill', 'dep_purchase_apply_id', 'bigint', '科室申购主表ID（dep_purchase_apply.id）', NULL);
+/
+CALL add_table_column('stk_io_bill', 'dep_purchase_apply_bill_no', 'varchar(64)', '科室申购单号（冗余）', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'dep_pur_apply_entry_id', 'bigint', '科室申购明细ID（引用出库时回填）', NULL);
 /
 
 CALL add_table_column('gz_order', 'apply_department_id', 'bigint', '申请科室ID（备货验收）', NULL);

@@ -21,13 +21,25 @@ import com.spd.common.core.domain.TreeSelect;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.core.domain.entity.SysRole;
 import com.spd.common.core.domain.entity.SysUser;
+import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.system.domain.SysPost;
+import com.spd.system.domain.SysPostMenu;
+import com.spd.system.domain.SysUserMenu;
+import com.spd.system.domain.dto.MenuBatchGrantBody;
+import com.spd.system.domain.hc.HcCustomerMenu;
+import com.spd.system.domain.vo.MenuBatchGrantExistingVo;
 import com.spd.system.domain.vo.MetaVo;
 import com.spd.system.domain.vo.RouterVo;
+import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.SysMenuMapper;
+import com.spd.system.mapper.SysPostMapper;
+import com.spd.system.mapper.SysPostMenuMapper;
 import com.spd.system.mapper.SysRoleMapper;
 import com.spd.system.mapper.SysRoleMenuMapper;
+import com.spd.system.mapper.SysUserMapper;
+import com.spd.system.mapper.SysUserMenuMapper;
 import com.spd.system.service.ISysMenuService;
 
 /**
@@ -48,6 +60,21 @@ public class SysMenuServiceImpl implements ISysMenuService
 
     @Autowired
     private SysRoleMenuMapper roleMenuMapper;
+
+    @Autowired
+    private HcCustomerMenuMapper hcCustomerMenuMapper;
+
+    @Autowired
+    private SysPostMapper postMapper;
+
+    @Autowired
+    private SysPostMenuMapper postMenuMapper;
+
+    @Autowired
+    private SysUserMapper userMapper;
+
+    @Autowired
+    private SysUserMenuMapper userMenuMapper;
 
     /**
      * 根据用户查询系统菜单列表
@@ -993,5 +1020,239 @@ public class SysMenuServiceImpl implements ISysMenuService
     {
         return StringUtils.replaceEach(path, new String[] { Constants.HTTP, Constants.HTTPS, Constants.WWW, "." },
                 new String[] { "", "", "", "/" });
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchGrantMenusToTenants(MenuBatchGrantBody body)
+    {
+        if (body == null)
+        {
+            throw new ServiceException("请求参数不能为空");
+        }
+        List<Long> rawMenuIds = body.getMenuIds();
+        if (rawMenuIds == null || rawMenuIds.isEmpty())
+        {
+            throw new ServiceException("请至少勾选一个菜单");
+        }
+        List<String> customerIds = body.getCustomerIds();
+        if (customerIds == null || customerIds.isEmpty())
+        {
+            throw new ServiceException("请至少选择一个租户");
+        }
+        boolean grantTenant = Boolean.TRUE.equals(body.getGrantTenant());
+        boolean grantAllPosts = Boolean.TRUE.equals(body.getGrantAllPosts());
+        boolean grantAllUsers = Boolean.TRUE.equals(body.getGrantAllUsers());
+        if (!grantTenant && !grantAllPosts && !grantAllUsers)
+        {
+            throw new ServiceException("请至少选择一种赋权范围");
+        }
+        List<Long> menuIds = normalizeBatchGrantMenuIds(rawMenuIds);
+        for (Long menuId : menuIds)
+        {
+            SysMenu menu = menuMapper.selectMenuById(menuId);
+            if (menu != null && "1".equals(menu.getIsPlatform()))
+            {
+                throw new ServiceException("不能将平台管理菜单分配给租户，请取消勾选平台菜单");
+            }
+        }
+        boolean needTenantMenu = grantTenant || grantAllPosts || grantAllUsers;
+        String operator = SecurityUtils.getUserIdStr();
+        for (String tenantId : customerIds)
+        {
+            if (StringUtils.isEmpty(tenantId))
+            {
+                continue;
+            }
+            String tid = tenantId.trim();
+            if (needTenantMenu)
+            {
+                mergeHcCustomerMenus(tid, menuIds, operator);
+            }
+            if (grantAllPosts)
+            {
+                mergeAllPostMenus(tid, menuIds);
+            }
+            if (grantAllUsers)
+            {
+                mergeAllUserMenus(tid, menuIds);
+            }
+        }
+        if (!menuIds.isEmpty())
+        {
+            markMenusDefaultOpenToCustomer(menuIds);
+        }
+    }
+
+    @Override
+    public MenuBatchGrantExistingVo resolveBatchGrantExistingTenantMenuIds(List<String> customerIds)
+    {
+        MenuBatchGrantExistingVo vo = new MenuBatchGrantExistingVo();
+        if (customerIds == null || customerIds.isEmpty())
+        {
+            return vo;
+        }
+        Set<Long> intersection = null;
+        Set<Long> union = new LinkedHashSet<>();
+        for (String tenantId : customerIds)
+        {
+            if (StringUtils.isEmpty(tenantId))
+            {
+                continue;
+            }
+            List<Long> ids = hcCustomerMenuMapper.selectMenuIdsByTenantId(tenantId.trim());
+            Set<Long> set = new LinkedHashSet<>();
+            if (ids != null)
+            {
+                for (Long id : ids)
+                {
+                    if (id != null && id > 0)
+                    {
+                        set.add(id);
+                    }
+                }
+            }
+            union.addAll(set);
+            if (intersection == null)
+            {
+                intersection = new LinkedHashSet<>(set);
+            }
+            else
+            {
+                intersection.retainAll(set);
+            }
+        }
+        if (intersection == null)
+        {
+            intersection = new LinkedHashSet<>();
+        }
+        Set<Long> partial = new LinkedHashSet<>(union);
+        partial.removeAll(intersection);
+        vo.setMenuIdsAll(new ArrayList<>(intersection));
+        vo.setMenuIdsPartial(new ArrayList<>(partial));
+        return vo;
+    }
+
+    private void mergeHcCustomerMenus(String tenantId, List<Long> menuIds, String operator)
+    {
+        List<HcCustomerMenu> toInsert = new ArrayList<>();
+        for (Long menuId : menuIds)
+        {
+            if (menuId == null || menuId <= 0)
+            {
+                continue;
+            }
+            if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, menuId) > 0)
+            {
+                continue;
+            }
+            HcCustomerMenu e = new HcCustomerMenu();
+            e.setTenantId(tenantId);
+            e.setMenuId(menuId);
+            e.setStatus("0");
+            e.setIsEnabled("1");
+            e.setCreateBy(operator);
+            toInsert.add(e);
+        }
+        if (!toInsert.isEmpty())
+        {
+            hcCustomerMenuMapper.batchInsert(toInsert);
+        }
+    }
+
+    private void mergeAllPostMenus(String tenantId, List<Long> menuIds)
+    {
+        SysPost query = new SysPost();
+        query.setTenantId(tenantId);
+        List<SysPost> posts = postMapper.selectPostList(query);
+        if (posts == null || posts.isEmpty())
+        {
+            return;
+        }
+        for (SysPost post : posts)
+        {
+            if (post == null || post.getPostId() == null)
+            {
+                continue;
+            }
+            List<Long> existing = postMenuMapper.selectMenuListByPostId(post.getPostId());
+            Set<Long> have = new HashSet<>();
+            if (existing != null)
+            {
+                have.addAll(existing);
+            }
+            List<SysPostMenu> toInsert = new ArrayList<>();
+            for (Long menuId : menuIds)
+            {
+                if (menuId == null || menuId <= 0 || have.contains(menuId))
+                {
+                    continue;
+                }
+                SysPostMenu pm = new SysPostMenu();
+                pm.setPostId(post.getPostId());
+                pm.setMenuId(menuId);
+                pm.setTenantId(tenantId);
+                toInsert.add(pm);
+            }
+            if (!toInsert.isEmpty())
+            {
+                postMenuMapper.batchPostMenu(toInsert);
+            }
+        }
+    }
+
+    private void mergeAllUserMenus(String tenantId, List<Long> menuIds)
+    {
+        SysUser query = new SysUser();
+        query.setCustomerId(tenantId);
+        List<SysUser> users = userMapper.selectUserList(query);
+        if (users == null || users.isEmpty())
+        {
+            return;
+        }
+        for (SysUser user : users)
+        {
+            if (user == null || user.getUserId() == null)
+            {
+                continue;
+            }
+            List<Long> existing = userMenuMapper.selectMenuListByUserId(user.getUserId());
+            Set<Long> have = new HashSet<>();
+            if (existing != null)
+            {
+                have.addAll(existing);
+            }
+            List<SysUserMenu> toInsert = new ArrayList<>();
+            for (Long menuId : menuIds)
+            {
+                if (menuId == null || menuId <= 0 || have.contains(menuId))
+                {
+                    continue;
+                }
+                SysUserMenu um = new SysUserMenu();
+                um.setUserId(user.getUserId());
+                um.setMenuId(menuId);
+                um.setTenantId(tenantId);
+                toInsert.add(um);
+            }
+            if (!toInsert.isEmpty())
+            {
+                userMenuMapper.batchUserMenu(toInsert);
+            }
+        }
+    }
+
+    private List<Long> normalizeBatchGrantMenuIds(List<Long> rawMenuIds)
+    {
+        List<Long> result = new ArrayList<>();
+        Set<Long> seen = new LinkedHashSet<>();
+        for (Long id : rawMenuIds)
+        {
+            if (id != null && id > 0 && seen.add(id))
+            {
+                result.add(id);
+            }
+        }
+        return result;
     }
 }

@@ -302,6 +302,15 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：是否HIS对照（1=已对照，0=未对照） */
     private String hisBindStatus;
 
+    /** 查询参数：库房分类多选 */
+    private Long[] storeroomIds;
+
+    /** 查询参数：财务分类多选 */
+    private Long[] financeCategoryIds;
+
+    /** 查询参数：材料类别多选 */
+    private String[] materialCategoryIds;
+
     /** 入选原因 */
     @Excel(name = "入选原因", prompt = "选填")
     private String selectionReason;

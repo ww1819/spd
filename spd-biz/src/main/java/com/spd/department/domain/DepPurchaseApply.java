@@ -87,6 +87,9 @@ public class DepPurchaseApply extends BaseEntity
     /** 审核人姓名（查询关联，非表字段） */
     private String auditPersonName;
 
+    /** 制单人姓名（查询关联，非表字段） */
+    private String createrPersonName;
+
     /** 科室申购明细信息 */
     private List<DepPurchaseApplyEntry> depPurchaseApplyEntryList;
 
@@ -110,6 +113,36 @@ public class DepPurchaseApply extends BaseEntity
 
     /** 查询时是否排除已被采购计划引用的申购单（仅查询用，非表字段） */
     private Boolean excludeReferenced;
+
+    /** 整单作废：0否 1是 */
+    private Integer voidWholeFlag;
+
+    private String voidWholeBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date voidWholeTime;
+
+    private String voidWholeReason;
+
+    /** 列表查询：是否包含已整单作废（默认 false） */
+    private Boolean includeVoidWhole;
+
+    /**
+     * 出库引用弹窗页签：none|partial|full|lineVoid|wholeVoid
+     */
+    private String ckRefSheet;
+
+    private Integer lineVoidedEntryCount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date lastLineVoidTime;
+
+    private String lastLineVoidBy;
+
+    private BigDecimal linkedCkTotal;
+
+    /** 出库引用候选列表：剩余可下推出库数量合计（非表字段） */
+    private BigDecimal pendingOutboundTotal;
 
     public void setId(Long id)
     {
@@ -281,6 +314,14 @@ public class DepPurchaseApply extends BaseEntity
         this.auditPersonName = auditPersonName;
     }
 
+    public String getCreaterPersonName() {
+        return createrPersonName;
+    }
+
+    public void setCreaterPersonName(String createrPersonName) {
+        this.createrPersonName = createrPersonName;
+    }
+
     public List<DepPurchaseApplyEntry> getDepPurchaseApplyEntryList()
     {
         return depPurchaseApplyEntryList;
@@ -368,4 +409,92 @@ public class DepPurchaseApply extends BaseEntity
 
     public Boolean getExcludeReferenced() { return excludeReferenced; }
     public void setExcludeReferenced(Boolean excludeReferenced) { this.excludeReferenced = excludeReferenced; }
+
+    public Integer getVoidWholeFlag() {
+        return voidWholeFlag;
+    }
+
+    public void setVoidWholeFlag(Integer voidWholeFlag) {
+        this.voidWholeFlag = voidWholeFlag;
+    }
+
+    public String getVoidWholeBy() {
+        return voidWholeBy;
+    }
+
+    public void setVoidWholeBy(String voidWholeBy) {
+        this.voidWholeBy = voidWholeBy;
+    }
+
+    public Date getVoidWholeTime() {
+        return voidWholeTime;
+    }
+
+    public void setVoidWholeTime(Date voidWholeTime) {
+        this.voidWholeTime = voidWholeTime;
+    }
+
+    public String getVoidWholeReason() {
+        return voidWholeReason;
+    }
+
+    public void setVoidWholeReason(String voidWholeReason) {
+        this.voidWholeReason = voidWholeReason;
+    }
+
+    public Boolean getIncludeVoidWhole() {
+        return includeVoidWhole;
+    }
+
+    public void setIncludeVoidWhole(Boolean includeVoidWhole) {
+        this.includeVoidWhole = includeVoidWhole;
+    }
+
+    public String getCkRefSheet() {
+        return ckRefSheet;
+    }
+
+    public void setCkRefSheet(String ckRefSheet) {
+        this.ckRefSheet = ckRefSheet;
+    }
+
+    public Integer getLineVoidedEntryCount() {
+        return lineVoidedEntryCount;
+    }
+
+    public void setLineVoidedEntryCount(Integer lineVoidedEntryCount) {
+        this.lineVoidedEntryCount = lineVoidedEntryCount;
+    }
+
+    public Date getLastLineVoidTime() {
+        return lastLineVoidTime;
+    }
+
+    public void setLastLineVoidTime(Date lastLineVoidTime) {
+        this.lastLineVoidTime = lastLineVoidTime;
+    }
+
+    public String getLastLineVoidBy() {
+        return lastLineVoidBy;
+    }
+
+    public void setLastLineVoidBy(String lastLineVoidBy) {
+        this.lastLineVoidBy = lastLineVoidBy;
+    }
+
+    public BigDecimal getLinkedCkTotal() {
+        return linkedCkTotal;
+    }
+
+    public void setLinkedCkTotal(BigDecimal linkedCkTotal) {
+        this.linkedCkTotal = linkedCkTotal;
+    }
+
+    public BigDecimal getPendingOutboundTotal() {
+        return pendingOutboundTotal;
+    }
+
+    public void setPendingOutboundTotal(BigDecimal pendingOutboundTotal) {
+        this.pendingOutboundTotal = pendingOutboundTotal;
+    }
 }

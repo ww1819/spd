@@ -53,8 +53,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditBy"    column="audit_by"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditPersonName"    column="audit_person_name"    />
+        <result property="createrPersonName"    column="creater_person_name"    />
         <result property="srcAggApplyId" column="src_agg_apply_id"/>
         <result property="srcAggBillNo" column="src_agg_bill_no"/>
+        <result property="voidWholeFlag" column="void_whole_flag"/>
+        <result property="voidWholeBy" column="void_whole_by"/>
+        <result property="voidWholeTime" column="void_whole_time"/>
+        <result property="voidWholeReason" column="void_whole_reason"/>
+        <result property="pendingOutboundTotal" column="pending_outbound_total"/>
+        <result property="linkedCkTotal" column="linked_ck_total"/>
+        <result property="lineVoidedEntryCount" column="line_voided_entry_count"/>
+        <result property="lastLineVoidTime" column="last_line_void_time"/>
+        <result property="lastLineVoidBy" column="last_line_void_by"/>
         <association property="warehouse" javaType="FdWarehouse">
             <result property="id" column="w_id"/>
             <result property="name" column="w_name"/>
@@ -100,6 +110,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="srcAggApplyId" column="sub_src_agg_apply_id"/>
         <result property="srcAggBillNo" column="sub_src_agg_bill_no"/>
         <result property="remark"    column="sub_remark"    />
+        <result property="lineVoidStatus" column="sub_line_void_status"/>
+        <result property="lineVoidQty" column="sub_line_void_qty"/>
+        <result property="lineVoidBy" column="sub_line_void_by"/>
+        <result property="lineVoidTime" column="sub_line_void_time"/>
+        <result property="lineVoidReason" column="sub_line_void_reason"/>
+        <result property="linkedCkQty" column="sub_linked_ck_qty"/>
+        <result property="pendingOutboundQty" column="sub_pending_outbound_qty"/>
         <association property="material" javaType="FdMaterial">
             <result property="id" column="m_id"/>
             <result property="code" column="m_code"/>
@@ -147,7 +164,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.remark,
             dpa.tenant_id,
             dpa.audit_by,
-            dpa.audit_date,
+            case when dpa.purchase_bill_status = 2
+                 then coalesce(dpa.audit_date, dpa.update_time)
+                 else dpa.audit_date end as audit_date,
             dpa.src_agg_apply_id,
             dpa.src_agg_bill_no,
             w.id as w_id,
@@ -155,13 +174,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             u.user_id as u_user_id,
             u.user_name as u_user_name,
             u.nick_name as u_nick_name,
-            au.nick_name as audit_person_name,
+            coalesce(nullif(trim(u.nick_name), ''), u.user_name) as creater_person_name,
+            coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
             d.id as d_id,
             d.name as d_name
         from dep_purchase_apply dpa
         left join fd_warehouse w on dpa.warehouse_id = w.id
-        left join sys_user u on dpa.user_id = u.user_id
-        left join sys_user au on dpa.audit_by = au.user_id
+        left join sys_user u on u.user_id = coalesce(
+            dpa.user_id,
+            case when dpa.create_by regexp '^[0-9]+$' then cast(dpa.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case
+                when dpa.purchase_bill_status = 2
+                     and coalesce(nullif(trim(dpa.audit_by), ''), nullif(trim(dpa.update_by), '')) regexp '^[0-9]+$'
+                    then cast(coalesce(nullif(trim(dpa.audit_by), ''), nullif(trim(dpa.update_by), '')) as unsigned)
+                when nullif(trim(dpa.audit_by), '') regexp '^[0-9]+$'
+                    then cast(trim(dpa.audit_by) as unsigned)
+                else null
+            end
+        )
         left join fd_department d on dpa.department_id = d.id
     </sql>
 
@@ -206,7 +238,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.delete_time,
             dpa.tenant_id,
             dpa.audit_by,
-            dpa.audit_date,
+            case when dpa.purchase_bill_status = 2
+                 then coalesce(dpa.audit_date, dpa.update_time)
+                 else dpa.audit_date end as audit_date,
             dpa.src_agg_apply_id,
             dpa.src_agg_bill_no,
             dpa.plan_status, 
@@ -220,6 +254,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             w.name as w_name,
             u.user_id as u_user_id,
             u.user_name as u_user_name,
+            u.nick_name as u_nick_name,
+            coalesce(nullif(trim(u.nick_name), ''), u.user_name) as creater_person_name,
+            coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
             d.id as d_id,
             d.name as d_name,
             dpae.id as sub_id,
@@ -262,7 +299,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             fc.finance_category_name as fc_name
         from dep_purchase_apply dpa
         left join fd_warehouse w on dpa.warehouse_id = w.id
-        left join sys_user u on dpa.user_id = u.user_id
+        left join sys_user u on u.user_id = coalesce(
+            dpa.user_id,
+            case when dpa.create_by regexp '^[0-9]+$' then cast(dpa.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case
+                when dpa.purchase_bill_status = 2
+                     and coalesce(nullif(trim(dpa.audit_by), ''), nullif(trim(dpa.update_by), '')) regexp '^[0-9]+$'
+                    then cast(coalesce(nullif(trim(dpa.audit_by), ''), nullif(trim(dpa.update_by), '')) as unsigned)
+                when nullif(trim(dpa.audit_by), '') regexp '^[0-9]+$'
+                    then cast(trim(dpa.audit_by) as unsigned)
+                else null
+            end
+        )
         left join fd_department d on dpa.department_id = d.id
         left join dep_purchase_apply_entry dpae on dpae.parent_id = dpa.id and (dpae.del_flag is null or dpae.del_flag != 1)
         left join fd_material m on dpae.material_id = m.id
@@ -496,4 +546,185 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by dpa.create_time desc
         limit 500
     </select>
+
+    <!-- 出库引用：科室申购单列表 ckRefSheet=none|partial|full|lineVoid|wholeVoid -->
+    <select id="selectDepPurchaseApplyListForOutboundCk" parameterType="DepPurchaseApply" resultMap="DepPurchaseApplyResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select dpa.id, dpa.purchase_bill_no, dpa.purchase_bill_date, dpa.warehouse_id, dpa.department_id,
+               dpa.user_id, dpa.purchase_bill_status, dpa.total_amount, dpa.urgency_level, dpa.expected_delivery_date,
+               dpa.del_flag, dpa.plan_status, dpa.reject_reason, dpa.tenant_id, dpa.audit_by, dpa.audit_date,
+               dpa.src_agg_apply_id, dpa.src_agg_bill_no,
+               dpa.void_whole_flag, dpa.void_whole_by, dpa.void_whole_time, dpa.void_whole_reason,
+               dpa.create_by, dpa.create_time, dpa.update_by, dpa.update_time, dpa.remark,
+               w.id as w_id, w.name as w_name,
+               d.id as d_id, d.name as d_name,
+               coalesce(agg.pending_sum, 0) as pending_outbound_total,
+               coalesce(agg.linked_sum, 0) as linked_ck_total,
+               coalesce(agg.line_voided_entry_count, 0) as line_voided_entry_count,
+               lst.last_line_void_time,
+               lst.last_line_void_by
+        from dep_purchase_apply dpa
+        left join fd_warehouse w on dpa.warehouse_id = w.id
+        left join fd_department d on dpa.department_id = d.id
+        left join (
+            select e.parent_id as agg_apply_id,
+                   coalesce(sum(greatest(0, e.qty - coalesce(e.line_void_qty, 0) - coalesce(lk.linked_qty, 0))), 0) as pending_sum,
+                   coalesce(sum(coalesce(lk.linked_qty, 0)), 0) as linked_sum,
+                   coalesce(sum(coalesce(e.line_void_qty, 0)), 0) as line_void_sum,
+                   sum(case when coalesce(e.line_void_qty, 0) &gt; 0 then 1 else 0 end) as line_voided_entry_count
+            from dep_purchase_apply_entry e
+            left join (
+                select r.dep_pur_apply_entry_id eid,
+                       sum(case when r.del_flag = 0 and r.link_status = 1
+                                 and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
+                            then r.ref_qty else 0 end) linked_qty
+                from dep_pur_apply_ck_entry_ref r
+                left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+                where r.tenant_id = #{scopedTenantId}
+                group by r.dep_pur_apply_entry_id
+            ) lk on lk.eid = e.id
+            where (e.del_flag = 0 or e.del_flag is null)
+            group by e.parent_id
+        ) agg on agg.agg_apply_id = dpa.id
+        left join (
+            select e.parent_id as lst_apply_id,
+                   max(e.line_void_time) as last_line_void_time,
+                   substring_index(group_concat(e.line_void_by order by e.line_void_time desc separator '|'), '|', 1) as last_line_void_by
+            from dep_purchase_apply_entry e
+            where (e.del_flag = 0 or e.del_flag is null)
+              and e.line_void_time is not null
+            group by e.parent_id
+        ) lst on lst.lst_apply_id = dpa.id
+        <where>
+            dpa.tenant_id = #{scopedTenantId}
+            and (dpa.del_flag = 0 or dpa.del_flag is null)
+            <if test="purchaseBillNo != null and purchaseBillNo != ''">and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
+            <if test="srcAggBillNo != null and srcAggBillNo != ''">and dpa.src_agg_bill_no like concat('%', #{srcAggBillNo}, '%')</if>
+            <if test="warehouseId != null">and dpa.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null">and dpa.department_id = #{departmentId}</if>
+            <include refid="depPurchaseDepartmentScopeFilter"/>
+            <choose>
+                <when test="ckRefSheet != null and ckRefSheet == 'wholeVoid'">
+                    and coalesce(dpa.void_whole_flag, 0) = 1
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'lineVoid'">
+                    and (dpa.void_whole_flag = 0 or dpa.void_whole_flag is null)
+                    and dpa.purchase_bill_status = 2
+                    and coalesce(agg.linked_sum, 0) &gt; 0
+                    and coalesce(agg.line_void_sum, 0) &gt; 0
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'full'">
+                    and (dpa.void_whole_flag = 0 or dpa.void_whole_flag is null)
+                    and dpa.purchase_bill_status = 2
+                    and coalesce(agg.line_void_sum, 0) = 0
+                    and coalesce(agg.linked_sum, 0) &gt; 0
+                    and coalesce(agg.pending_sum, 0) &lt;= 0
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'partial'">
+                    and (dpa.void_whole_flag = 0 or dpa.void_whole_flag is null)
+                    and dpa.purchase_bill_status = 2
+                    and coalesce(agg.line_void_sum, 0) = 0
+                    and coalesce(agg.linked_sum, 0) &gt; 0
+                    and coalesce(agg.pending_sum, 0) &gt; 0
+                </when>
+                <when test="ckRefSheet != null and ckRefSheet == 'none'">
+                    and (dpa.void_whole_flag = 0 or dpa.void_whole_flag is null)
+                    and dpa.purchase_bill_status = 2
+                    and coalesce(agg.line_void_sum, 0) = 0
+                    and coalesce(agg.linked_sum, 0) = 0
+                    and coalesce(agg.pending_sum, 0) &gt; 0
+                </when>
+                <otherwise>
+                    and (dpa.void_whole_flag = 0 or dpa.void_whole_flag is null)
+                    and dpa.purchase_bill_status = 2
+                    and coalesce(agg.pending_sum, 0) &gt; 0
+                </otherwise>
+            </choose>
+        </where>
+        order by dpa.create_time desc, dpa.id desc
+    </select>
+
+    <select id="selectDepPurchaseApplyEntryListByParentIdForCk" resultMap="DepPurchaseApplyEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select e.id as sub_id, e.parent_id as sub_parent_id, e.material_id as sub_material_id,
+               e.material_name as sub_material_name, e.material_spec as sub_material_spec, e.unit as sub_unit,
+               e.unit_price as sub_unit_price, e.qty as sub_qty, e.amt as sub_amt,
+               e.line_void_status as sub_line_void_status, e.line_void_qty as sub_line_void_qty,
+               e.line_void_by as sub_line_void_by, e.line_void_time as sub_line_void_time, e.line_void_reason as sub_line_void_reason,
+               coalesce(s.linked_qty, 0) as sub_linked_ck_qty,
+               (e.qty - coalesce(e.line_void_qty, 0) - coalesce(s.linked_qty, 0)) as sub_pending_outbound_qty
+        from dep_purchase_apply_entry e
+        left join (
+            select r.dep_pur_apply_entry_id eid,
+                   sum(case when r.del_flag = 0 and r.link_status = 1
+                             and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
+                        then r.ref_qty else 0 end) linked_qty
+            from dep_pur_apply_ck_entry_ref r
+            left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+            where r.dep_pur_apply_id = #{parentId} and r.tenant_id = #{scopedTenantId}
+            group by r.dep_pur_apply_entry_id
+        ) s on s.eid = e.id
+        where e.parent_id = #{parentId}
+          and (e.del_flag = 0 or e.del_flag is null)
+        order by e.id asc
+    </select>
+
+    <update id="updateDepPurchaseApplyVoidWhole">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply
+        set void_whole_flag = 1,
+            void_whole_by = #{voidWholeBy}, void_whole_time = #{voidWholeTime}, void_whole_reason = #{voidWholeReason},
+            update_by = #{voidWholeBy}, update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+          and (void_whole_flag = 0 or void_whole_flag is null)
+          and (del_flag = 0 or del_flag is null)
+    </update>
+
+    <update id="softDeleteCkEntryRefsByCkBillId">
+        update dep_pur_apply_ck_entry_ref
+        set del_flag = 1, link_status = 0, update_by = #{updateBy}, update_time = now()
+        where ck_bill_id = #{ckBillId}
+          and tenant_id = #{tenantId}
+          and del_flag = 0
+    </update>
+
+    <update id="softDeleteCkEntryRefsByDepPurApplyId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_pur_apply_ck_entry_ref
+        set del_flag = 1, link_status = 0, update_by = #{updateBy}, update_time = now()
+        where dep_pur_apply_id = #{depPurApplyId}
+          and tenant_id = #{scopedTenantId}
+          and del_flag = 0
+    </update>
+
+    <select id="countLinkedRefsToAuditedCkByDepPurApplyId" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select count(*) from dep_pur_apply_ck_entry_ref r
+        inner join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+        where r.dep_pur_apply_id = #{depPurApplyId}
+          and r.tenant_id = #{scopedTenantId}
+          and r.del_flag = 0 and r.link_status = 1
+          and b.bill_type = 201 and b.bill_status = 2
+          and (b.del_flag = 0 or b.del_flag is null)
+    </select>
+
+    <select id="countActiveCkRefsByDepPurApplyId" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select count(*) from dep_pur_apply_ck_entry_ref
+        where dep_pur_apply_id = #{depPurApplyId}
+          and tenant_id = #{scopedTenantId}
+          and del_flag = 0 and link_status = 1
+    </select>
+
+    <insert id="insertDepPurApplyCkEntryRef" parameterType="com.spd.department.domain.DepPurApplyCkEntryRef" useGeneratedKeys="true" keyProperty="id">
+        insert into dep_pur_apply_ck_entry_ref (
+            tenant_id, dep_pur_apply_id, dep_pur_apply_bill_no, dep_pur_apply_entry_id,
+            ck_bill_id, ck_bill_no, ck_entry_id, ref_qty, ref_amt, link_status, del_flag,
+            create_by, create_time, remark
+        ) values (
+            #{tenantId}, #{depPurApplyId}, #{depPurApplyBillNo}, #{depPurApplyEntryId},
+            #{ckBillId}, #{ckBillNo}, #{ckEntryId}, #{refQty}, #{refAmt}, #{linkStatus}, #{delFlag},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
 </mapper>

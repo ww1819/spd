@@ -448,4 +448,10 @@ public interface StkIoBillMapper
 
     int clearWhWarehouseApplyOnDraftOutbillsByWhApplyId(@Param("whApplyId") String whApplyId,
         @Param("updateBy") String updateBy);
+
+    int clearDepPurApplyEntryIdOnDraftOutbillsByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId,
+        @Param("updateBy") String updateBy);
+
+    int clearDepPurchaseApplyOnDraftOutbillsByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId,
+        @Param("updateBy") String updateBy);
 }

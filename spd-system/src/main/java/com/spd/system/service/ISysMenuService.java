@@ -197,4 +197,14 @@ public interface ISysMenuService
    * 将指定菜单标记为「默认对客户开放」（仅置是，不影响其它菜单；平台管理菜单由 SQL 排除）
    */
   void markMenusDefaultOpenToCustomer(List<Long> menuIds);
+
+  /**
+   * 菜单批量赋权：按勾选菜单 ID 精确合并写入租户/工作组/用户；授工作组或用户时自动合并租户菜单。
+   */
+  void batchGrantMenusToTenants(com.spd.system.domain.dto.MenuBatchGrantBody body);
+
+  /**
+   * 批量赋权：查询所选租户在 hc_customer_menu 中已有菜单（全部拥有 / 部分拥有）
+   */
+  com.spd.system.domain.vo.MenuBatchGrantExistingVo resolveBatchGrantExistingTenantMenuIds(java.util.List<String> customerIds);
 }

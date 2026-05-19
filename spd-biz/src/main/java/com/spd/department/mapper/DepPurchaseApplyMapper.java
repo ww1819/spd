@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.DepPurchaseApplyEntry;
+import com.spd.department.domain.DepPurApplyCkEntryRef;
 import com.spd.department.vo.WarehousePurchaseReminderRowVo;
+import java.util.Date;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -87,4 +89,25 @@ public interface DepPurchaseApplyMapper
      * 消息提醒：科室申购监控列表（待审核/已审核，排除驳回；科室范围与列表一致）
      */
     List<WarehousePurchaseReminderRowVo> selectWarehouseReminderPurchaseMonitorList(DepPurchaseApply depPurchaseApply);
+
+    List<DepPurchaseApply> selectDepPurchaseApplyListForOutboundCk(DepPurchaseApply query);
+
+    List<DepPurchaseApplyEntry> selectDepPurchaseApplyEntryListByParentIdForCk(@Param("parentId") Long parentId);
+
+    int updateDepPurchaseApplyVoidWhole(@Param("id") Long id,
+        @Param("voidWholeBy") String voidWholeBy,
+        @Param("voidWholeTime") Date voidWholeTime,
+        @Param("voidWholeReason") String voidWholeReason);
+
+    int softDeleteCkEntryRefsByCkBillId(@Param("ckBillId") String ckBillId,
+        @Param("tenantId") String tenantId, @Param("updateBy") String updateBy);
+
+    int softDeleteCkEntryRefsByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId,
+        @Param("updateBy") String updateBy);
+
+    int countLinkedRefsToAuditedCkByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId);
+
+    int countActiveCkRefsByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId);
+
+    int insertDepPurApplyCkEntryRef(DepPurApplyCkEntryRef row);
 }

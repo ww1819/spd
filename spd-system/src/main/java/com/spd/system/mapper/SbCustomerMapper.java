@@ -13,6 +13,9 @@ public interface SbCustomerMapper {
 
   List<SbCustomer> selectSbCustomerList(SbCustomer customer);
 
+  /** 菜单批量赋权：在库耗材租户，支持名称/编码/租户ID模糊搜索 */
+  List<SbCustomer> selectActiveHcCustomersForMenuGrant(@Param("keyword") String keyword);
+
   SbCustomer selectSbCustomerById(String customerId);
 
   SbCustomer selectSbCustomerByCode(String customerCode);

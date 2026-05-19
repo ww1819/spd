@@ -382,6 +382,16 @@ public class DepPurchaseApplyController extends BaseController
         return toAjax(result);
     }
 
+    @PreAuthorize("@ss.hasPermi('department:purchase:voidWhole') || @ss.hasPermi('department:purchase:edit') || @ss.hasPermi('outWarehouse:apply:edit')")
+    @Log(title = "科室申购整单作废", businessType = BusinessType.UPDATE)
+    @PostMapping("/voidWhole")
+    public AjaxResult voidWhole(@RequestBody JSONObject body) {
+        Long id = body.getLong("id");
+        String reason = body.getString("reason");
+        depPurchaseApplyService.voidWholeDepPurchaseApply(id, StringUtils.isEmpty(reason) ? "" : reason);
+        return success();
+    }
+
     private static List<Long> parseBillIds(String exportBillIds)
     {
         List<Long> ids = new ArrayList<>();

@@ -69,6 +69,19 @@ public class DepPurchaseApplyAgg extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
 
+    /** 审核人（用户ID） */
+    private String auditBy;
+
+    /** 审核时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date auditDate;
+
+    /** 审核人姓名（列表关联查询，非表字段） */
+    private String auditPersonName;
+
+    /** 制单人姓名（列表关联查询，非表字段） */
+    private String createrPersonName;
+
     public String getId() {
         return id;
     }
@@ -235,5 +248,37 @@ public class DepPurchaseApplyAgg extends BaseEntity {
 
     public void setEndDate(Date endDate) {
         this.endDate = endDate;
+    }
+
+    public String getAuditBy() {
+        return auditBy;
+    }
+
+    public void setAuditBy(String auditBy) {
+        this.auditBy = auditBy;
+    }
+
+    public Date getAuditDate() {
+        return auditDate;
+    }
+
+    public void setAuditDate(Date auditDate) {
+        this.auditDate = auditDate;
+    }
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
+    }
+
+    public String getCreaterPersonName() {
+        return createrPersonName;
+    }
+
+    public void setCreaterPersonName(String createrPersonName) {
+        this.createrPersonName = createrPersonName;
     }
 }

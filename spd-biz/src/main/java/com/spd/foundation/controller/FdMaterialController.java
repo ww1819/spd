@@ -649,6 +649,17 @@ public class FdMaterialController extends BaseController
     }
 
     /**
+     * 批量修改产品档案（库房/财务/材料类别及标志位；仅请求体中非空字段会写入）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
+    @Log(title = "耗材产品批量修改", businessType = BusinessType.UPDATE)
+    @PostMapping("/batchUpdate")
+    public AjaxResult batchUpdate(@RequestBody com.spd.foundation.dto.MaterialBatchUpdateDto dto) {
+        int n = fdMaterialService.batchUpdateMaterials(dto);
+        return success("批量修改成功，共更新 " + n + " 条");
+    }
+
+    /**
      * 产品档案停用（记录停用时间、停用人、停用原因）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
