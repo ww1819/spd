@@ -79,6 +79,9 @@ public class DepPurchaseApplyAgg extends BaseEntity {
     /** 审核人姓名（列表关联查询，非表字段） */
     private String auditPersonName;
 
+    /** 制单人姓名（列表关联查询，非表字段） */
+    private String createrPersonName;
+
     public String getId() {
         return id;
     }
@@ -269,5 +272,13 @@ public class DepPurchaseApplyAgg extends BaseEntity {
 
     public void setAuditPersonName(String auditPersonName) {
         this.auditPersonName = auditPersonName;
+    }
+
+    public String getCreaterPersonName() {
+        return createrPersonName;
+    }
+
+    public void setCreaterPersonName(String createrPersonName) {
+        this.createrPersonName = createrPersonName;
     }
 }

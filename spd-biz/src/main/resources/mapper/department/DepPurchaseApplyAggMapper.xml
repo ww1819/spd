@@ -49,6 +49,7 @@
         <result property="auditBy" column="audit_by"/>
         <result property="auditDate" column="audit_date"/>
         <result property="auditPersonName" column="audit_person_name"/>
+        <result property="createrPersonName" column="creater_person_name"/>
         <result property="remark" column="remark"/>
         <association property="department" javaType="FdDepartment">
             <result property="id" column="d_id"/>
@@ -110,15 +111,31 @@
                     then coalesce(m.audit_date, m.update_time)
                     else m.audit_date end as audit_date,
                coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
+               coalesce(nullif(trim(u.nick_name), ''), u.user_name,
+                   nullif(trim(u_cn.nick_name), ''), u_cn.user_name) as creater_person_name,
                d.id as d_id, d.name as d_name,
-               u.user_id as u_user_id, u.user_name as u_user_name, u.nick_name as u_nick_name
+               coalesce(u.user_id, u_cn.user_id, m.user_id) as u_user_id,
+               coalesce(u.user_name, u_cn.user_name) as u_user_name,
+               coalesce(u.nick_name, u_cn.nick_name) as u_nick_name
         from dep_purchase_apply_agg m
         left join fd_department d on m.department_id = d.id
-        left join sys_user u on m.user_id = u.user_id
+        left join sys_user u on u.user_id = coalesce(
+            m.user_id,
+            case when m.create_by regexp '^[0-9]+$' then cast(m.create_by as unsigned) else null end
+        )
+        left join sys_user u_cn on u.user_id is null
+            and m.create_by is not null and trim(m.create_by) != ''
+            and m.create_by not regexp '^[0-9]+$'
+            and u_cn.user_name = m.create_by
         left join sys_user au on au.user_id = (
-            case when m.purchase_bill_status = 2
-                 then coalesce(nullif(trim(m.audit_by), ''), m.update_by)
-                 else m.audit_by end
+            case
+                when m.purchase_bill_status = 2
+                     and coalesce(nullif(trim(m.audit_by), ''), nullif(trim(m.update_by), '')) regexp '^[0-9]+$'
+                    then cast(coalesce(nullif(trim(m.audit_by), ''), nullif(trim(m.update_by), '')) as unsigned)
+                when nullif(trim(m.audit_by), '') regexp '^[0-9]+$'
+                    then cast(trim(m.audit_by) as unsigned)
+                else null
+            end
         )
     </sql>
 
@@ -178,8 +195,12 @@
                     then coalesce(m.audit_date, m.update_time)
                     else m.audit_date end as audit_date,
                coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
+               coalesce(nullif(trim(u.nick_name), ''), u.user_name,
+                   nullif(trim(u_cn.nick_name), ''), u_cn.user_name) as creater_person_name,
                d.id as d_id, d.name as d_name,
-               u.user_id as u_user_id, u.user_name as u_user_name, u.nick_name as u_nick_name,
+               coalesce(u.user_id, u_cn.user_id, m.user_id) as u_user_id,
+               coalesce(u.user_name, u_cn.user_name) as u_user_name,
+               coalesce(u.nick_name, u_cn.nick_name) as u_nick_name,
                e.id as sub_id, e.parent_id as sub_parent_id, e.tenant_id as sub_tenant_id, e.material_id as sub_material_id,
                e.material_name as sub_material_name, e.material_spec as sub_material_spec, e.unit as sub_unit,
                e.unit_price as sub_unit_price, e.qty as sub_qty, e.amt as sub_amt, e.reason as sub_reason,
@@ -191,11 +212,23 @@
                mat.id as m_id, mat.code as m_code, mat.name as m_name
         from dep_purchase_apply_agg m
         left join fd_department d on m.department_id = d.id
-        left join sys_user u on m.user_id = u.user_id
+        left join sys_user u on u.user_id = coalesce(
+            m.user_id,
+            case when m.create_by regexp '^[0-9]+$' then cast(m.create_by as unsigned) else null end
+        )
+        left join sys_user u_cn on u.user_id is null
+            and m.create_by is not null and trim(m.create_by) != ''
+            and m.create_by not regexp '^[0-9]+$'
+            and u_cn.user_name = m.create_by
         left join sys_user au on au.user_id = (
-            case when m.purchase_bill_status = 2
-                 then coalesce(nullif(trim(m.audit_by), ''), m.update_by)
-                 else m.audit_by end
+            case
+                when m.purchase_bill_status = 2
+                     and coalesce(nullif(trim(m.audit_by), ''), nullif(trim(m.update_by), '')) regexp '^[0-9]+$'
+                    then cast(coalesce(nullif(trim(m.audit_by), ''), nullif(trim(m.update_by), '')) as unsigned)
+                when nullif(trim(m.audit_by), '') regexp '^[0-9]+$'
+                    then cast(trim(m.audit_by) as unsigned)
+                else null
+            end
         )
         left join dep_purchase_apply_agg_entry e on e.parent_id = m.id and (e.del_flag = 0 or e.del_flag is null)
         left join fd_warehouse wh on wh.id = cast(e.warehouse_id as unsigned)

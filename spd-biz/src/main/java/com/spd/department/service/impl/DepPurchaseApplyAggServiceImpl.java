@@ -320,6 +320,10 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             row.setPurchaseBillNo(generateAggPurchaseBillNo());
         }
         row.setCreateTime(DateUtils.getNowDate());
+        Long currentUserId = SecurityUtils.getUserId();
+        if (currentUserId != null) {
+            row.setUserId(currentUserId);
+        }
         if (StringUtils.isEmpty(row.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             row.setCreateBy(SecurityUtils.getUserIdStr());
         }
@@ -491,7 +495,16 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             DepPurchaseApply bill = new DepPurchaseApply();
             bill.setWarehouseId(warehouseId);
             bill.setDepartmentId(agg.getDepartmentId());
-            bill.setUserId(agg.getUserId());
+            Long creatorUserId = agg.getUserId();
+            if (creatorUserId == null && StringUtils.isNotEmpty(agg.getCreateBy())
+                && agg.getCreateBy().trim().matches("\\d+")) {
+                try {
+                    creatorUserId = Long.parseLong(agg.getCreateBy().trim());
+                } catch (NumberFormatException ignored) {
+                    // ignore
+                }
+            }
+            bill.setUserId(creatorUserId);
             bill.setPurchaseBillDate(agg.getPurchaseBillDate());
             bill.setUrgencyLevel(agg.getUrgencyLevel());
             bill.setExpectedDeliveryDate(agg.getExpectedDeliveryDate());
