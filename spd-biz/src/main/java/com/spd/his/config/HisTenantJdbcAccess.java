@@ -65,7 +65,8 @@ public class HisTenantJdbcAccess
                 {
                     ((DruidDataSource) cached.handle.getOwnedDataSourceIfAny()).close();
                 }
-                HisTenantDbHandle handle = buildFromRow(row);
+                int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+                HisTenantDbHandle handle = buildFromRow(row, queryTimeoutSec);
                 cache.put(tenantId, new CachedHandle(sig, handle));
                 return handle;
             }
@@ -85,7 +86,7 @@ public class HisTenantJdbcAccess
             + tenantId + " 的记录，或开启 spd.his.use-global-datasource-fallback 并配置全局 HIS 数据源");
     }
 
-    private static HisTenantDbHandle buildFromRow(HisExternalDb row)
+    private static HisTenantDbHandle buildFromRow(HisExternalDb row, int queryTimeoutSec)
     {
         String dbType = normalizeDbType(row.getDbType());
         String driver = StringUtils.isNotEmpty(row.getDriverClass()) ? row.getDriverClass().trim() : defaultDriver(dbType);
@@ -104,7 +105,6 @@ public class HisTenantJdbcAccess
         ds.setInitialSize(1);
         ds.setMinIdle(1);
         ds.setMaxWait(60000);
-        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
         ds.setConnectionProperties("socketTimeout=" + (queryTimeoutSec * 1000L));
         JdbcTemplate jt = new JdbcTemplate(ds);
         jt.setQueryTimeout(queryTimeoutSec);
