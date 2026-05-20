@@ -193,6 +193,8 @@ public class StkIoRThBillController extends BaseController
         if (map.get("materialRegisterNo") != null) m.setRegisterNo(map.get("materialRegisterNo").toString());
         if (map.get("materialPackageSpeci") != null) m.setPackageSpeci(map.get("materialPackageSpeci").toString());
         if (map.get("materialIsWay") != null) m.setIsWay(map.get("materialIsWay").toString());
+        if (map.get("materialIsBilling") != null) m.setIsBilling(map.get("materialIsBilling").toString());
+        if (map.get("materialIsProcure") != null) m.setIsProcure(map.get("materialIsProcure").toString());
         if (map.get("materialIsGz") != null) m.setIsGz(map.get("materialIsGz").toString());
         if (map.get("materialWarehouseCategoryName") != null) {
             FdWarehouseCategory wc = new FdWarehouseCategory();
