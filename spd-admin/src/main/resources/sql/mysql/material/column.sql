@@ -865,6 +865,14 @@ CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(3
 /
 CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
 /
+CALL add_table_column('dep_purchase_apply_entry', 'purchase_bill_no', 'varchar(64)', '申购单号(冗余)', NULL);
+/
+UPDATE dep_purchase_apply_entry e
+INNER JOIN dep_purchase_apply p ON e.parent_id = p.id
+SET e.purchase_bill_no = p.purchase_bill_no
+WHERE (e.purchase_bill_no IS NULL OR TRIM(e.purchase_bill_no) = '')
+  AND p.purchase_bill_no IS NOT NULL AND TRIM(p.purchase_bill_no) != '';
+/
 
 -- dep_purchase_apply_agg 审核人/审核时间（汇总申购单审核页展示）
 CALL add_table_column('dep_purchase_apply_agg', 'audit_by', 'varchar(64)', '审核人', NULL);

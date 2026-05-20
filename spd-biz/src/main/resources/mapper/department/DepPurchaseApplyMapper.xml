@@ -109,6 +109,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="srcAggEntryId" column="sub_src_agg_entry_id"/>
         <result property="srcAggApplyId" column="sub_src_agg_apply_id"/>
         <result property="srcAggBillNo" column="sub_src_agg_bill_no"/>
+        <result property="purchaseBillNo" column="sub_purchase_bill_no"/>
         <result property="remark"    column="sub_remark"    />
         <result property="lineVoidStatus" column="sub_line_void_status"/>
         <result property="lineVoidQty" column="sub_line_void_qty"/>
@@ -283,6 +284,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpae.src_agg_entry_id as sub_src_agg_entry_id,
             dpae.src_agg_apply_id as sub_src_agg_apply_id,
             dpae.src_agg_bill_no as sub_src_agg_bill_no,
+            dpae.purchase_bill_no as sub_purchase_bill_no,
             dpae.remark as sub_remark,
             m.id as m_id,
             m.code as m_code,
@@ -449,6 +451,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             src_agg_entry_id,
             src_agg_apply_id,
             src_agg_bill_no,
+            purchase_bill_no,
             tenant_id,
             create_by,
             create_time,
@@ -474,6 +477,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 #{item.srcAggEntryId},
                 #{item.srcAggApplyId},
                 #{item.srcAggBillNo},
+                #{item.purchaseBillNo},
                 #{item.tenantId},
                 #{item.createBy},
                 #{item.createTime},

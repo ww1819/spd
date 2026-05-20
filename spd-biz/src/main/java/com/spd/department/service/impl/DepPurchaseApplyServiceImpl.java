@@ -211,7 +211,10 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply.getUserId() == null && existing != null && existing.getUserId() != null) {
             depPurchaseApply.setUserId(existing.getUserId());
         }
-        
+        if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo()) && existing != null) {
+            depPurchaseApply.setPurchaseBillNo(existing.getPurchaseBillNo());
+        }
+
         depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(depPurchaseApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertDepPurchaseApplyEntry(depPurchaseApply);
         return depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
@@ -285,6 +288,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
                 }
                 depPurchaseApplyEntry.setParentId(id);
                 depPurchaseApplyEntry.setTenantId(tenantId);
+                if (StringUtils.isEmpty(depPurchaseApplyEntry.getPurchaseBillNo())) {
+                    depPurchaseApplyEntry.setPurchaseBillNo(depPurchaseApply.getPurchaseBillNo());
+                }
                 depPurchaseApplyEntry.setCreateTime(DateUtils.getNowDate());
                 depPurchaseApplyEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 list.add(depPurchaseApplyEntry);
