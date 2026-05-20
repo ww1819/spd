@@ -81,6 +81,10 @@ public class DepPurchaseApplyEntry extends BaseEntity
     /** 来源科室汇总申购单号 */
     private String srcAggBillNo;
 
+    /** 申购单号（冗余主表单号，便于明细查询） */
+    @Excel(name = "申购单号")
+    private String purchaseBillNo;
+
     /** 删除标志 */
     private Integer delFlag;
 
@@ -270,6 +274,14 @@ public class DepPurchaseApplyEntry extends BaseEntity
 
     public void setSrcAggBillNo(String srcAggBillNo) {
         this.srcAggBillNo = srcAggBillNo;
+    }
+
+    public String getPurchaseBillNo() {
+        return purchaseBillNo;
+    }
+
+    public void setPurchaseBillNo(String purchaseBillNo) {
+        this.purchaseBillNo = purchaseBillNo;
     }
 
     public Integer getDelFlag() {

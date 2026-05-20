@@ -11,7 +11,6 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,7 +71,6 @@ import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
 import com.spd.his.support.HisInternalRequestContext;
-import com.spd.his.service.support.HisMirrorStockEnricher;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
 import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.system.service.ITenantScopeService;
@@ -106,9 +104,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
-
-    @Autowired
-    private HisMirrorStockEnricher hisMirrorStockEnricher;
 
     @Autowired
     private HisChargeFetchBatchMapper hisChargeFetchBatchMapper;
@@ -464,13 +459,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
         List<HisInpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toInpatientMirror(u));
         }
-        sortInpatientPageByStockIfNeeded(out, query);
         return wrapAsPage(out, slice);
     }
 
@@ -490,13 +483,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
         List<HisOutpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toOutpatientMirror(u));
         }
-        sortOutpatientPageByStockIfNeeded(out, query);
         return wrapAsPage(out, slice);
     }
 
@@ -516,13 +507,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
         List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
         }
-        sortDetailPageByStockIfNeeded(out, q);
         return wrapAsPage(out, slice);
     }
 
@@ -1176,96 +1165,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             String fromMirror = levelByItemId.get(m.getChargeItemId());
             m.setValueLevel(StringUtils.isNotBlank(fromMirror) ? fromMirror : "2");
         }
-    }
-
-    /** 库存列已移出 SQL：仅对当前页按库存列做二次排序（跨页全局排序需另行物化）。 */
-    private static void sortInpatientPageByStockIfNeeded(List<HisInpatientChargeMirror> rows, HisInpatientChargeMirror query)
-    {
-        if (rows == null || rows.isEmpty() || query == null)
-        {
-            return;
-        }
-        String col = query.getOrderByColumn();
-        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
-        {
-            return;
-        }
-        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
-        Comparator<HisInpatientChargeMirror> c = "highValueStockQty".equals(col)
-            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
-            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
-        if (!asc)
-        {
-            c = c.reversed();
-        }
-        c = c.thenComparing((a, b) -> compareDateDesc(a.getChargeDate(), b.getChargeDate()))
-            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
-        rows.sort(c);
-    }
-
-    private static void sortOutpatientPageByStockIfNeeded(List<HisOutpatientChargeMirror> rows, HisOutpatientChargeMirror query)
-    {
-        if (rows == null || rows.isEmpty() || query == null)
-        {
-            return;
-        }
-        String col = query.getOrderByColumn();
-        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
-        {
-            return;
-        }
-        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
-        Comparator<HisOutpatientChargeMirror> c = "highValueStockQty".equals(col)
-            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
-            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
-        if (!asc)
-        {
-            c = c.reversed();
-        }
-        c = c.thenComparing((a, b) -> compareDateDesc(DateUtils.parseDate(a.getChargeDate()), DateUtils.parseDate(b.getChargeDate())))
-            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
-        rows.sort(c);
-    }
-
-    private static void sortDetailPageByStockIfNeeded(List<HisPatientChargeDetailRow> rows, HisPatientChargeAllQuery query)
-    {
-        if (rows == null || rows.isEmpty() || query == null)
-        {
-            return;
-        }
-        String col = query.getOrderByColumn();
-        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
-        {
-            return;
-        }
-        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
-        Comparator<HisPatientChargeDetailRow> c = "highValueStockQty".equals(col)
-            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
-            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
-        if (!asc)
-        {
-            c = c.reversed();
-        }
-        c = c.thenComparing((a, b) -> compareDateDesc(a.getChargeDate(), b.getChargeDate()))
-            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
-        rows.sort(c);
-    }
-
-    private static int compareDateDesc(Date a, Date b)
-    {
-        if (a == null && b == null)
-        {
-            return 0;
-        }
-        if (a == null)
-        {
-            return 1;
-        }
-        if (b == null)
-        {
-            return -1;
-        }
-        return b.compareTo(a);
     }
 
     private static String fingerprintInpatient(HisInpatientChargeMirror e)

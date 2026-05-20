@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 住院+门诊计费镜像统一表行（列表查询用；高低值库存为查询后填充，非持久化）。
+ * 住院+门诊计费镜像统一表行（列表查询用）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

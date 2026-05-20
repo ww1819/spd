@@ -839,6 +839,12 @@ CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '
 /
 CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
 /
+CALL add_table_column('dep_purchase_apply', 'purchase_plan_ref_status', 'tinyint', '采购计划引用：0未引用 1部分引用 2全部引用 3计划引用驳回', '0');
+/
+CALL add_table_column('dep_purchase_apply', 'outbound_ref_status', 'tinyint', '出库引用：0未引用 1部分引用 2全部引用', '0');
+/
+CALL add_table_column('dep_purchase_apply', 'receipt_status', 'tinyint', '收货确认：0未确认 1已确认 2驳回收货', '0');
+/
 
 -- dep_purchase_apply_entry
 CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
@@ -864,6 +870,14 @@ CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(3
 CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
 /
 CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'purchase_bill_no', 'varchar(64)', '申购单号(冗余)', NULL);
+/
+UPDATE dep_purchase_apply_entry e
+INNER JOIN dep_purchase_apply p ON e.parent_id = p.id
+SET e.purchase_bill_no = p.purchase_bill_no
+WHERE (e.purchase_bill_no IS NULL OR TRIM(e.purchase_bill_no) = '')
+  AND p.purchase_bill_no IS NOT NULL AND TRIM(p.purchase_bill_no) != '';
 /
 
 -- dep_purchase_apply_agg 审核人/审核时间（汇总申购单审核页展示）

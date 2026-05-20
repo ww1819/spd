@@ -166,9 +166,10 @@ public class CaigouJihuaController extends BaseController
     @PreAuthorize("@ss.hasPermi('caigou:jihua:remove')")
     @Log(title = "采购计划", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long ids)
+    public AjaxResult remove(@PathVariable Long[] ids,
+        @RequestParam(value = "restoreDepApplyPlanRefStatus", required = false, defaultValue = "false") boolean restoreDepApplyPlanRefStatus)
     {
-        return toAjax(purchasePlanService.deletePurchasePlanById(ids));
+        return toAjax(purchasePlanService.deletePurchasePlanByIds(ids, restoreDepApplyPlanRefStatus));
     }
 
     /**
