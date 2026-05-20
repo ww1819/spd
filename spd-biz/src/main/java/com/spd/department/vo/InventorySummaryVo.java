@@ -64,6 +64,17 @@ public class InventorySummaryVo {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date periodDate;
 
+    /** HIS收费项目编码 */
+    private String hisChargeItemCode;
+    /** HIS收费项目名称 */
+    private String hisChargeItemName;
+    /** HIS收费项目规格 */
+    private String hisChargeItemSpeci;
+    /** HIS收费项目单位 */
+    private String hisChargeItemUnit;
+    /** HIS收费项目单价 */
+    private BigDecimal hisChargeItemPrice;
+
     public String getMaterialCode() {
         return materialCode;
     }
@@ -198,5 +209,45 @@ public class InventorySummaryVo {
 
     public void setPeriodDate(Date periodDate) {
         this.periodDate = periodDate;
+    }
+
+    public String getHisChargeItemCode() {
+        return hisChargeItemCode;
+    }
+
+    public void setHisChargeItemCode(String hisChargeItemCode) {
+        this.hisChargeItemCode = hisChargeItemCode;
+    }
+
+    public String getHisChargeItemName() {
+        return hisChargeItemName;
+    }
+
+    public void setHisChargeItemName(String hisChargeItemName) {
+        this.hisChargeItemName = hisChargeItemName;
+    }
+
+    public String getHisChargeItemSpeci() {
+        return hisChargeItemSpeci;
+    }
+
+    public void setHisChargeItemSpeci(String hisChargeItemSpeci) {
+        this.hisChargeItemSpeci = hisChargeItemSpeci;
+    }
+
+    public String getHisChargeItemUnit() {
+        return hisChargeItemUnit;
+    }
+
+    public void setHisChargeItemUnit(String hisChargeItemUnit) {
+        this.hisChargeItemUnit = hisChargeItemUnit;
+    }
+
+    public BigDecimal getHisChargeItemPrice() {
+        return hisChargeItemPrice;
+    }
+
+    public void setHisChargeItemPrice(BigDecimal hisChargeItemPrice) {
+        this.hisChargeItemPrice = hisChargeItemPrice;
     }
 }

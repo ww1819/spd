@@ -49,6 +49,17 @@ public class StkInventorySummaryVo {
     /** 产品档案启停用（fd_material.is_use：1=启用，2=停用） */
     private String materialIsUse;
 
+    /** HIS收费项目编码 */
+    private String hisChargeItemCode;
+    /** HIS收费项目名称 */
+    private String hisChargeItemName;
+    /** HIS收费项目规格 */
+    private String hisChargeItemSpeci;
+    /** HIS收费项目单位 */
+    private String hisChargeItemUnit;
+    /** HIS收费项目单价 */
+    private BigDecimal hisChargeItemPrice;
+
     public Long getId() {
         return id;
     }
@@ -151,6 +162,46 @@ public class StkInventorySummaryVo {
 
     public void setMaterialIsUse(String materialIsUse) {
         this.materialIsUse = materialIsUse;
+    }
+
+    public String getHisChargeItemCode() {
+        return hisChargeItemCode;
+    }
+
+    public void setHisChargeItemCode(String hisChargeItemCode) {
+        this.hisChargeItemCode = hisChargeItemCode;
+    }
+
+    public String getHisChargeItemName() {
+        return hisChargeItemName;
+    }
+
+    public void setHisChargeItemName(String hisChargeItemName) {
+        this.hisChargeItemName = hisChargeItemName;
+    }
+
+    public String getHisChargeItemSpeci() {
+        return hisChargeItemSpeci;
+    }
+
+    public void setHisChargeItemSpeci(String hisChargeItemSpeci) {
+        this.hisChargeItemSpeci = hisChargeItemSpeci;
+    }
+
+    public String getHisChargeItemUnit() {
+        return hisChargeItemUnit;
+    }
+
+    public void setHisChargeItemUnit(String hisChargeItemUnit) {
+        this.hisChargeItemUnit = hisChargeItemUnit;
+    }
+
+    public BigDecimal getHisChargeItemPrice() {
+        return hisChargeItemPrice;
+    }
+
+    public void setHisChargeItemPrice(BigDecimal hisChargeItemPrice) {
+        this.hisChargeItemPrice = hisChargeItemPrice;
     }
 
     @Override

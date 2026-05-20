@@ -190,6 +190,16 @@ public class StkInventoryController extends BaseController
                 Object materialIsUseObj = map.get("materialIsUse");
                 inventoryVo.setMaterialIsUse(materialIsUseObj == null ? "" : materialIsUseObj.toString());
 
+                Object hisChargeItemCodeObj = map.get("hisChargeItemCode");
+                inventoryVo.setHisChargeItemCode(hisChargeItemCodeObj == null ? "" : hisChargeItemCodeObj.toString());
+                Object hisChargeItemNameObj = map.get("hisChargeItemName");
+                inventoryVo.setHisChargeItemName(hisChargeItemNameObj == null ? "" : hisChargeItemNameObj.toString());
+                Object hisChargeItemSpeciObj = map.get("hisChargeItemSpeci");
+                inventoryVo.setHisChargeItemSpeci(hisChargeItemSpeciObj == null ? "" : hisChargeItemSpeciObj.toString());
+                Object hisChargeItemUnitObj = map.get("hisChargeItemUnit");
+                inventoryVo.setHisChargeItemUnit(hisChargeItemUnitObj == null ? "" : hisChargeItemUnitObj.toString());
+                inventoryVo.setHisChargeItemPrice(Convert.toBigDecimal(map.get("hisChargeItemPrice"), null));
+
                 summaryVoList.add(inventoryVo);
 
                 BigDecimal materialQty = Convert.toBigDecimal(map.get("materialQty"), BigDecimal.ZERO);

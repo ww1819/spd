@@ -104,6 +104,9 @@ public class GzDepotInventory extends BaseEntity
     /** 查询参数：耗材名称 */
     private String materialName;
 
+    /** 查询参数：HIS收费项目ID（模糊） */
+    private String hisChargeItemId;
+
     /** 查询参数：开始日期 */
     private String beginDate;
 
@@ -317,6 +320,14 @@ public class GzDepotInventory extends BaseEntity
 
     public void setMaterialName(String materialName) {
         this.materialName = materialName;
+    }
+
+    public String getHisChargeItemId() {
+        return hisChargeItemId;
+    }
+
+    public void setHisChargeItemId(String hisChargeItemId) {
+        this.hisChargeItemId = hisChargeItemId;
     }
 
     public String getBeginDate() {

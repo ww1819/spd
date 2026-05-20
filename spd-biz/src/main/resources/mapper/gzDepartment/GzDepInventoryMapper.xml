@@ -45,6 +45,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci"  column="materialSpeci"   />
         <result property="model"  column="materialModel"   />
         <result property="udiNo"  column="materialUdiNo"   />
+        <result property="hisChargeItemId" column="his_charge_item_id" />
+        <result property="hisChargeItemCode" column="his_charge_item_code" />
+        <result property="hisChargeItemName" column="his_charge_item_name" />
+        <result property="hisChargeItemSpeci" column="his_charge_item_speci" />
+        <result property="hisChargeItemUnit" column="his_charge_item_unit" />
+        <result property="hisChargeItemPrice" column="his_charge_item_price" />
         <result property="unitId"  column="materialUnitId"   />
         <association property="fdFactory"    column="factoryId" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="supplier"    column="materialSupplierId" javaType="FdSupplier" resultMap="materialSupplierResult" />
@@ -97,10 +103,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				gs.create_by as createBy,
 				gs.create_time as createTime,
 				gs.update_by as auditBy,
-				gs.audit_date as auditDate
+				gs.audit_date as auditDate,
+				m.his_charge_item_id,
+				hci.item_code as his_charge_item_code,
+				hci.item_name as his_charge_item_name,
+				hci.spec_model as his_charge_item_speci,
+				hci.unit as his_charge_item_unit,
+				hci.price as his_charge_item_price
         from gz_dep_inventory gz
         left join fd_department d on gz.department_id = d.id
         left join fd_material m on gz.material_id = m.id
+        left join his_charge_item_mirror hci on hci.tenant_id = gz.tenant_id
+            and hci.charge_item_id = m.his_charge_item_id
+            and (hci.deleted_flag is null or hci.deleted_flag != 1)
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_unit u on m.unit_id = u.unit_id
@@ -131,6 +146,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseDate != null "> and gz.warehouse_date = #{warehouseDate}</if>
         <if test="inHospitalCode != null  and inHospitalCode != ''"> and gz.in_hospital_code = #{inHospitalCode}</if>
         <if test="materialName != null  and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        <if test="hisChargeItemId != null and hisChargeItemId != ''">
+            and m.his_charge_item_id like concat('%', #{hisChargeItemId}, '%')
+        </if>
         <!-- 按院内码排序，确保每个院内码一行显示 -->
         order by gz.in_hospital_code, gz.id desc
     </select>

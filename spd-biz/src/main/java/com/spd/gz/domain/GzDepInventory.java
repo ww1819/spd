@@ -44,6 +44,9 @@ public class GzDepInventory extends BaseEntity
     /** 耗材名称（用于查询条件） */
     private String materialName;
 
+    /** HIS收费项目ID（用于查询条件，模糊） */
+    private String hisChargeItemId;
+
     /** 是否显示零库存（用于查询条件） */
     private Boolean showZeroStock;
 
@@ -180,6 +183,17 @@ public class GzDepInventory extends BaseEntity
     {
         return materialName;
     }
+
+    public String getHisChargeItemId()
+    {
+        return hisChargeItemId;
+    }
+
+    public void setHisChargeItemId(String hisChargeItemId)
+    {
+        this.hisChargeItemId = hisChargeItemId;
+    }
+
     public void setShowZeroStock(Boolean showZeroStock)
     {
         this.showZeroStock = showZeroStock;

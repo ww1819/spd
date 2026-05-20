@@ -127,6 +127,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：型号（模糊） */
     private String materialModel;
 
+    /** 查询参数：HIS收费项目ID（模糊） */
+    private String hisChargeItemId;
+
     /** 查询参数：排除的明细组合，格式 materialId__warehouseId 逗号分隔 */
     private String excludeMaterialWarehousePairs;
 
@@ -435,6 +438,14 @@ public class StkInventory extends BaseEntity
 
     public void setMaterialModel(String materialModel) {
         this.materialModel = materialModel;
+    }
+
+    public String getHisChargeItemId() {
+        return hisChargeItemId;
+    }
+
+    public void setHisChargeItemId(String hisChargeItemId) {
+        this.hisChargeItemId = hisChargeItemId;
     }
 
     public String getExcludeMaterialWarehousePairs() {
