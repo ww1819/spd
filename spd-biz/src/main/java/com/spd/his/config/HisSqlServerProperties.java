@@ -117,8 +117,8 @@ public class HisSqlServerProperties
     {
         /** 单次抓取最大跨度（天） */
         private int maxRangeDays = 31;
-        /** 拆分为每段查询的天数 */
-        private int chunkDays = 7;
+        /** 拆分为每段查询的天数（HIS 视图较慢时建议 1） */
+        private int chunkDays = 1;
         /** HIS 区间查询超时（秒），默认 5 分钟 */
         private int queryTimeoutSeconds = 300;
 

@@ -817,6 +817,7 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
   `src_agg_entry_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购明细ID(UUID7)',
   `src_agg_apply_id` varchar(36) DEFAULT NULL COMMENT '来源科室汇总申购主表ID(UUID7)',
   `src_agg_bill_no` varchar(64) DEFAULT NULL COMMENT '来源科室汇总申购单号',
+  `purchase_bill_no` varchar(64) DEFAULT NULL COMMENT '申购单号(冗余，便于明细查询)',
   `line_void_status` int NOT NULL DEFAULT 0 COMMENT '明细作废状态：0正常 1已作废',
   `line_void_qty` decimal(18,2) NOT NULL DEFAULT 0 COMMENT '累计作废数量',
   `line_void_by` varchar(64) DEFAULT NULL COMMENT '明细作废操作人',
@@ -828,7 +829,8 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
   KEY `idx_dep_purchase_apply_e_tenant` (`tenant_id`),
   KEY `idx_dep_purchase_apply_e_src_agg` (`src_agg_apply_id`),
   KEY `idx_dep_purchase_apply_e_src_agg_entry` (`src_agg_entry_id`),
-  KEY `idx_dep_purchase_apply_e_src_agg_no` (`src_agg_bill_no`)
+  KEY `idx_dep_purchase_apply_e_src_agg_no` (`src_agg_bill_no`),
+  KEY `idx_dep_purchase_apply_e_bill_no` (`purchase_bill_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室申购明细表';
 /
 

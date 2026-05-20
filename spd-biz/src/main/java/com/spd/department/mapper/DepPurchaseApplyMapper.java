@@ -110,4 +110,10 @@ public interface DepPurchaseApplyMapper
     int countActiveCkRefsByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId);
 
     int insertDepPurApplyCkEntryRef(DepPurApplyCkEntryRef row);
+
+    /** 按关联表重算并回写采购计划引用状态（状态=3 计划驳回时不覆盖） */
+    int refreshPurchasePlanRefStatus(@Param("applyId") Long applyId);
+
+    /** 按出库关联重算并回写出库引用状态 */
+    int refreshOutboundRefStatus(@Param("applyId") Long applyId);
 }

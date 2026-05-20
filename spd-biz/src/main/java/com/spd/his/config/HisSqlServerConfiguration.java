@@ -25,9 +25,10 @@ public class HisSqlServerConfiguration
     {
         HisSqlServerProperties.Datasource c = properties.getDatasource();
         int queryTimeoutSec = Math.max(1, properties.getFetch().getQueryTimeoutSeconds());
+        int socketTimeoutMs = queryTimeoutSec * 1000;
         DruidDataSource ds = new DruidDataSource();
         ds.setDriverClassName(resolveDriverClassName(c, environment));
-        ds.setUrl(resolveJdbcUrl(c, environment));
+        ds.setUrl(HisSqlServerConnectionDefaults.ensureSocketTimeout(resolveJdbcUrl(c, environment), socketTimeoutMs));
         ds.setUsername(resolveUsername(c, environment));
         ds.setPassword(resolvePassword(c, environment));
         ds.setValidationQuery("SELECT 1");
@@ -36,7 +37,8 @@ public class HisSqlServerConfiguration
         ds.setInitialSize(1);
         ds.setMinIdle(1);
         ds.setMaxWait(60000);
-        ds.setConnectionProperties("socketTimeout=" + (queryTimeoutSec * 1000L));
+        ds.setSocketTimeout(socketTimeoutMs);
+        ds.setConnectionProperties("socketTimeout=" + socketTimeoutMs);
         return ds;
     }
 

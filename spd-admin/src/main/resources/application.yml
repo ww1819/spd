@@ -17,6 +17,12 @@ spd:
       enabled: true
       location: classpath:sql/mysql/
       fail-on-error: false
+  # HIS 患者收费镜像抓取（SQL Server 视图较慢时需加大超时、缩小分段）
+  his:
+    fetch:
+      query-timeout-seconds: 600
+      chunk-days: 1
+      max-range-days: 31
   # 离线授权公钥：留空则从 classpath:license/public.pem 读取（可为证书 PEM）
   license:
     publicKeyPem: ''

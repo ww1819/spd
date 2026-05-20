@@ -71,8 +71,17 @@ public class DepPurchaseApply extends BaseEntity
     /** 删除时间（逻辑删除时填充） */
     private Date deleteTime;
 
-    /** 计划状态：0-未生成，1-已生成，2-驳回 */
+    /** 计划状态（历史字段，与收货/引用状态混用；新逻辑请用 purchasePlanRefStatus / receiptStatus） */
     private Integer planStatus;
+
+    /** 采购计划引用：0未引用 1部分引用 2全部引用 3计划引用驳回 */
+    private Integer purchasePlanRefStatus;
+
+    /** 出库引用：0未引用 1部分引用 2全部引用 */
+    private Integer outboundRefStatus;
+
+    /** 收货确认：0未确认 1已确认 2驳回收货 */
+    private Integer receiptStatus;
 
     /** 驳回原因 */
     private String rejectReason;
@@ -113,6 +122,15 @@ public class DepPurchaseApply extends BaseEntity
 
     /** 查询时是否排除已被采购计划引用的申购单（仅查询用，非表字段） */
     private Boolean excludeReferenced;
+
+    /** 排除引用时保留当前计划ID的引用（编辑计划时传入，仅查询用） */
+    private Long excludeReferencedPlanId;
+
+    /** 查询时排除的申购单号，逗号分隔（仅查询用，如当前计划明细已引用单号） */
+    private String excludePurchaseBillNos;
+
+    /** 解析后的排除单号列表（仅查询用） */
+    private java.util.List<String> excludePurchaseBillNoList;
 
     /** 整单作废：0否 1是 */
     private Integer voidWholeFlag;
@@ -280,6 +298,30 @@ public class DepPurchaseApply extends BaseEntity
         return planStatus;
     }
 
+    public Integer getPurchasePlanRefStatus() {
+        return purchasePlanRefStatus;
+    }
+
+    public void setPurchasePlanRefStatus(Integer purchasePlanRefStatus) {
+        this.purchasePlanRefStatus = purchasePlanRefStatus;
+    }
+
+    public Integer getOutboundRefStatus() {
+        return outboundRefStatus;
+    }
+
+    public void setOutboundRefStatus(Integer outboundRefStatus) {
+        this.outboundRefStatus = outboundRefStatus;
+    }
+
+    public Integer getReceiptStatus() {
+        return receiptStatus;
+    }
+
+    public void setReceiptStatus(Integer receiptStatus) {
+        this.receiptStatus = receiptStatus;
+    }
+
     public void setRejectReason(String rejectReason)
     {
         this.rejectReason = rejectReason;
@@ -409,6 +451,15 @@ public class DepPurchaseApply extends BaseEntity
 
     public Boolean getExcludeReferenced() { return excludeReferenced; }
     public void setExcludeReferenced(Boolean excludeReferenced) { this.excludeReferenced = excludeReferenced; }
+
+    public Long getExcludeReferencedPlanId() { return excludeReferencedPlanId; }
+    public void setExcludeReferencedPlanId(Long excludeReferencedPlanId) { this.excludeReferencedPlanId = excludeReferencedPlanId; }
+
+    public String getExcludePurchaseBillNos() { return excludePurchaseBillNos; }
+    public void setExcludePurchaseBillNos(String excludePurchaseBillNos) { this.excludePurchaseBillNos = excludePurchaseBillNos; }
+
+    public java.util.List<String> getExcludePurchaseBillNoList() { return excludePurchaseBillNoList; }
+    public void setExcludePurchaseBillNoList(java.util.List<String> excludePurchaseBillNoList) { this.excludePurchaseBillNoList = excludePurchaseBillNoList; }
 
     public Integer getVoidWholeFlag() {
         return voidWholeFlag;

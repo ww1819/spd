@@ -22,6 +22,9 @@ public interface PurchasePlanEntryDepApplyMapper {
 
     int logicDeleteByPlanId(@Param("planId") Long planId, @Param("deleteBy") String deleteBy);
 
+    /** 采购计划当前仍关联的科室申购主表 ID（去重） */
+    List<Long> selectDistinctDepApplyIdsByPlanId(@Param("planId") Long planId);
+
     /** 根据采购计划明细ID查询关联的申购明细（dep_purchase_apply） */
     List<ApplyDetailVO> selectApplyDetailsByEntryId(@Param("entryId") Long entryId);
 

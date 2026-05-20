@@ -24,6 +24,10 @@ server:
 
 # 项目相关配置
 spd:
+    his:
+        fetch:
+            query-timeout-seconds: 600
+            chunk-days: 1
     # 名称
     name: spd
     # 版本（与 spd-ui/package.json 发版时建议保持一致）

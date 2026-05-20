@@ -21,12 +21,19 @@
         values (#{purchasePlanEntryId}, #{basApplyEntryId}, '0', #{tenantId}, #{createBy}, #{createTime})
     </insert>
 
+    <!-- 唯一键 uk_plan_entry_apply 含已逻辑删除行；更新计划时复用原行并恢复 del_flag=0 -->
     <insert id="batchInsert">
         insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_time)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.purchasePlanEntryId}, #{item.basApplyEntryId}, '0', #{item.tenantId}, #{item.createBy}, #{item.createTime})
         </foreach>
+        on duplicate key update
+            del_flag = '0',
+            delete_by = null,
+            delete_time = null,
+            update_by = values(create_by),
+            update_time = now()
     </insert>
 
     <update id="logicDeleteByPurchasePlanEntryId">

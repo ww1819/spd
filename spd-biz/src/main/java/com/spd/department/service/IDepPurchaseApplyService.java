@@ -123,6 +123,15 @@ public interface IDepPurchaseApplyService
 
     void releaseDepPurApplyCkRefsForOutboundBill(Long ckBillId, String tenantId);
 
+    /** 重算采购计划引用状态（0未引用 1部分 2全部；3计划驳回不覆盖） */
+    void refreshPurchasePlanRefStatus(Long depPurchaseApplyId);
+
+    /** 重算出库引用状态（0未引用 1部分 2全部） */
+    void refreshOutboundRefStatus(Long depPurchaseApplyId);
+
+    /** 采购计划保存/变更后，批量刷新关联申购单的采购计划引用状态 */
+    void refreshPurchasePlanRefStatusByPlanId(Long planId);
+
     /** 整单作废：无已审核出库关联时允许；若仅有未审核出库关联则先解除关联再作废 */
     void voidWholeDepPurchaseApply(Long id, String reason);
 }

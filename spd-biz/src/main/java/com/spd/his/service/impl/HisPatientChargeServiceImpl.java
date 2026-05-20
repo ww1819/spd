@@ -11,7 +11,6 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,7 +71,6 @@ import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
 import com.spd.his.support.HisInternalRequestContext;
-import com.spd.his.service.support.HisMirrorStockEnricher;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
 import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.system.service.ITenantScopeService;
@@ -106,9 +104,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
-
-    @Autowired
-    private HisMirrorStockEnricher hisMirrorStockEnricher;
 
     @Autowired
     private HisChargeFetchBatchMapper hisChargeFetchBatchMapper;
@@ -192,7 +187,17 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         assertTenantAllowed();
         LocalDateTime[] win = parseWindow(body);
         String tenantId = SecurityUtils.getCustomerId();
+        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+        log.info("门诊收费镜像抓取: tenantId={}, window=[{} ~ {}), chunkDays={}, queryTimeoutSec={}",
+            tenantId, win[0], win[1], chunkDays, queryTimeoutSec);
         HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        if (hisDb.getOutpatientRangeSql() != null && hisDb.getOutpatientRangeSql().contains("LTRIM(RTRIM"))
+        {
+            throw new ServiceException(
+                "当前运行的 SPD 仍是旧版抓取 SQL（含 LTRIM/RTRIM），请重新编译部署 spd-biz 后重启；"
+                    + "或检查 sys_his_external_db 是否填写了自定义门诊区间 SQL");
+        }
         String batchId = IdUtils.fastUUID();
         String createBy = SecurityUtils.getUserIdStr();
         Date now = new Date();
@@ -200,7 +205,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         int inserted = 0;
         int skipped = 0;
         int drift = 0;
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
         LocalDateTime cursor = win[0];
         while (cursor.isBefore(win[1]))
         {
@@ -455,13 +459,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
         List<HisInpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toInpatientMirror(u));
         }
-        sortInpatientPageByStockIfNeeded(out, query);
         return wrapAsPage(out, slice);
     }
 
@@ -481,13 +483,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
         List<HisOutpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toOutpatientMirror(u));
         }
-        sortOutpatientPageByStockIfNeeded(out, query);
         return wrapAsPage(out, slice);
     }
 
@@ -507,13 +507,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
-        hisMirrorStockEnricher.enrichUnifiedList(customerId, slice.rows);
         List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
         }
-        sortDetailPageByStockIfNeeded(out, q);
         return wrapAsPage(out, slice);
     }
 
@@ -781,8 +779,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
         String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisInpatientChargeMirror> rm = (rs, rowNum) -> mapInpatientRow(rs, tenantId, batchId, createBy, createTime);
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
         return hisDb.getJdbcTemplate().query(hisDb.getInpatientRangeSql(), ps ->
         {
+            ps.setQueryTimeout(queryTimeoutSec);
             ps.setString(1, lo);
             ps.setString(2, hi);
         }, rm);
@@ -829,8 +829,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
         String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisOutpatientChargeMirror> rm = (rs, rowNum) -> mapOutpatientRow(rs, tenantId, batchId, createBy, createTime);
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+        log.debug("门诊分段查询: {} <= charge_date < {}", lo, hi);
         return hisDb.getJdbcTemplate().query(hisDb.getOutpatientRangeSql(), ps ->
         {
+            ps.setQueryTimeout(queryTimeoutSec);
             ps.setString(1, lo);
             ps.setString(2, hi);
         }, rm);
@@ -1162,96 +1165,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             String fromMirror = levelByItemId.get(m.getChargeItemId());
             m.setValueLevel(StringUtils.isNotBlank(fromMirror) ? fromMirror : "2");
         }
-    }
-
-    /** 库存列已移出 SQL：仅对当前页按库存列做二次排序（跨页全局排序需另行物化）。 */
-    private static void sortInpatientPageByStockIfNeeded(List<HisInpatientChargeMirror> rows, HisInpatientChargeMirror query)
-    {
-        if (rows == null || rows.isEmpty() || query == null)
-        {
-            return;
-        }
-        String col = query.getOrderByColumn();
-        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
-        {
-            return;
-        }
-        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
-        Comparator<HisInpatientChargeMirror> c = "highValueStockQty".equals(col)
-            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
-            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
-        if (!asc)
-        {
-            c = c.reversed();
-        }
-        c = c.thenComparing((a, b) -> compareDateDesc(a.getChargeDate(), b.getChargeDate()))
-            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
-        rows.sort(c);
-    }
-
-    private static void sortOutpatientPageByStockIfNeeded(List<HisOutpatientChargeMirror> rows, HisOutpatientChargeMirror query)
-    {
-        if (rows == null || rows.isEmpty() || query == null)
-        {
-            return;
-        }
-        String col = query.getOrderByColumn();
-        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
-        {
-            return;
-        }
-        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
-        Comparator<HisOutpatientChargeMirror> c = "highValueStockQty".equals(col)
-            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
-            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
-        if (!asc)
-        {
-            c = c.reversed();
-        }
-        c = c.thenComparing((a, b) -> compareDateDesc(DateUtils.parseDate(a.getChargeDate()), DateUtils.parseDate(b.getChargeDate())))
-            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
-        rows.sort(c);
-    }
-
-    private static void sortDetailPageByStockIfNeeded(List<HisPatientChargeDetailRow> rows, HisPatientChargeAllQuery query)
-    {
-        if (rows == null || rows.isEmpty() || query == null)
-        {
-            return;
-        }
-        String col = query.getOrderByColumn();
-        if (!"highValueStockQty".equals(col) && !"lowValueStockQty".equals(col))
-        {
-            return;
-        }
-        boolean asc = "asc".equalsIgnoreCase(query.getIsAsc());
-        Comparator<HisPatientChargeDetailRow> c = "highValueStockQty".equals(col)
-            ? Comparator.comparing(r -> r.getHighValueStockQty() == null ? BigDecimal.ZERO : r.getHighValueStockQty())
-            : Comparator.comparing(r -> r.getLowValueStockQty() == null ? BigDecimal.ZERO : r.getLowValueStockQty());
-        if (!asc)
-        {
-            c = c.reversed();
-        }
-        c = c.thenComparing((a, b) -> compareDateDesc(a.getChargeDate(), b.getChargeDate()))
-            .thenComparing((a, b) -> StringUtils.defaultString(b.getId()).compareTo(StringUtils.defaultString(a.getId())));
-        rows.sort(c);
-    }
-
-    private static int compareDateDesc(Date a, Date b)
-    {
-        if (a == null && b == null)
-        {
-            return 0;
-        }
-        if (a == null)
-        {
-            return 1;
-        }
-        if (b == null)
-        {
-            return -1;
-        }
-        return b.compareTo(a);
     }
 
     private static String fingerprintInpatient(HisInpatientChargeMirror e)

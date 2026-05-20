@@ -53,15 +53,19 @@ public interface IPurchasePlanService
      * @param ids 需要删除的采购计划主键集合
      * @return 结果
      */
-    public int deletePurchasePlanByIds(Long[] ids);
+    /**
+     * @param restoreDepApplyPlanRefStatus 为 true 时，删除后按剩余计划关联重算相关科室申购单的采购计划引用状态
+     */
+    public int deletePurchasePlanByIds(Long[] ids, boolean restoreDepApplyPlanRefStatus);
 
     /**
      * 删除采购计划信息
      *
      * @param id 采购计划主键
+     * @param restoreDepApplyPlanRefStatus 为 true 时，删除后按剩余计划关联重算相关科室申购单的采购计划引用状态
      * @return 结果
      */
-    public int deletePurchasePlanById(Long id);
+    public int deletePurchasePlanById(Long id, boolean restoreDepApplyPlanRefStatus);
 
     /**
      * 审核采购计划
