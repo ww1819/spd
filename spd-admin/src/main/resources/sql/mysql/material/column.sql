@@ -839,6 +839,12 @@ CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '
 /
 CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
 /
+CALL add_table_column('dep_purchase_apply', 'purchase_plan_ref_status', 'tinyint', '采购计划引用：0未引用 1部分引用 2全部引用 3计划引用驳回', '0');
+/
+CALL add_table_column('dep_purchase_apply', 'outbound_ref_status', 'tinyint', '出库引用：0未引用 1部分引用 2全部引用', '0');
+/
+CALL add_table_column('dep_purchase_apply', 'receipt_status', 'tinyint', '收货确认：0未确认 1已确认 2驳回收货', '0');
+/
 
 -- dep_purchase_apply_entry
 CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);

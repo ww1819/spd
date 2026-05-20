@@ -43,6 +43,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deleteBy"    column="delete_by"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="planStatus"    column="plan_status"    />
+        <result property="purchasePlanRefStatus" column="purchase_plan_ref_status" />
+        <result property="outboundRefStatus" column="outbound_ref_status" />
+        <result property="receiptStatus" column="receipt_status" />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -124,6 +127,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <result property="name" column="m_name"/>
             <result property="speci" column="m_speci"/>
             <result property="model" column="m_model"/>
+            <result property="supplierId" column="m_supplier_id"/>
+            <result property="price" column="m_price"/>
+            <association property="supplier" javaType="FdSupplier">
+                <id property="id" column="m_sid"/>
+                <result property="code" column="m_supplier_code"/>
+                <result property="name" column="m_supplier_name"/>
+            </association>
             <association property="fdFactory" javaType="FdFactory">
                 <id property="factoryId" column="f_id"/>
                 <result property="factoryName" column="f_name"/>
@@ -156,7 +166,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.urgency_level, 
             dpa.expected_delivery_date, 
             dpa.del_flag, 
-            dpa.plan_status, 
+            dpa.plan_status,
+            dpa.purchase_plan_ref_status,
+            dpa.outbound_ref_status,
+            dpa.receipt_status,
             dpa.reject_reason, 
             dpa.create_by, 
             dpa.create_time, 
@@ -198,6 +211,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on dpa.department_id = d.id
     </sql>
 
+    <!-- 排除已被其他采购计划引用的科室申购单（关联表 purchase_plan_entry_dep_apply） -->
+    <sql id="excludeReferencedByOtherPlanCondition">
+        <if test="excludeReferenced != null and (excludeReferenced == true or excludeReferenced == 1 or excludeReferenced == 'true')">
+            and not exists (
+                select 1
+                from purchase_plan_entry_dep_apply r
+                inner join purchase_plan_entry pe on r.purchase_plan_entry_id = pe.id
+                    and pe.tenant_id = #{scopedTenantId}
+                    and (pe.del_flag = '0' or pe.del_flag is null)
+                inner join purchase_plan pp on pe.parent_id = pp.id
+                    and pp.tenant_id = #{scopedTenantId}
+                    and (pp.del_flag = '0' or pp.del_flag is null)
+                left join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id
+                    and e.tenant_id = #{scopedTenantId}
+                    and (e.del_flag is null or e.del_flag != 1)
+                where (r.del_flag = '0' or r.del_flag is null)
+                  and r.tenant_id = #{scopedTenantId}
+                  and (
+                      r.dep_purchase_apply_id = dpa.id
+                      or e.parent_id = dpa.id
+                  )
+                  <if test="excludeReferencedPlanId != null">
+                      and pp.id != #{excludeReferencedPlanId}
+                  </if>
+            )
+        </if>
+    </sql>
+
     <select id="selectDepPurchaseApplyList" parameterType="DepPurchaseApply" resultMap="DepPurchaseApplyResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectDepPurchaseApplyVo"/>
@@ -209,13 +250,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
             <if test="userId != null "> and dpa.user_id = #{userId}</if>
             <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
+            <if test="purchasePlanRefStatus != null"> and dpa.purchase_plan_ref_status = #{purchasePlanRefStatus}</if>
+            <if test="outboundRefStatus != null"> and dpa.outbound_ref_status = #{outboundRefStatus}</if>
             <if test="urgencyLevel != null "> and dpa.urgency_level = #{urgencyLevel}</if>
             <if test="expectedDeliveryDate != null "> and dpa.expected_delivery_date = #{expectedDeliveryDate}</if>
-            <if test="excludeReferenced != null and excludeReferenced == true"> and not exists (
-                select 1 from purchase_plan_entry_dep_apply r
-                inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
-                where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
-            )</if>
+            <include refid="excludeReferencedByOtherPlanCondition"/>
+            <if test="excludePurchaseBillNoList != null and excludePurchaseBillNoList.size() > 0">
+                and dpa.purchase_bill_no not in
+                <foreach collection="excludePurchaseBillNoList" item="billNo" open="(" separator="," close=")">
+                    #{billNo}
+                </foreach>
+            </if>
             <include refid="depPurchaseDepartmentScopeFilter"/>
             and (dpa.del_flag = 0 or dpa.del_flag is null)
         </where>
@@ -244,7 +289,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  else dpa.audit_date end as audit_date,
             dpa.src_agg_apply_id,
             dpa.src_agg_bill_no,
-            dpa.plan_status, 
+            dpa.plan_status,
+            dpa.purchase_plan_ref_status,
+            dpa.outbound_ref_status,
+            dpa.receipt_status,
             dpa.reject_reason, 
             dpa.create_by, 
             dpa.create_time, 
@@ -291,6 +339,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.name as m_name,
             m.speci as m_speci,
             m.model as m_model,
+            m.supplier_id as m_supplier_id,
+            m.price as m_price,
+            ms.id as m_sid,
+            ms.code as m_supplier_code,
+            ms.name as m_supplier_name,
             f.factory_id as f_id,
             f.factory_name as f_name,
             mu.unit_id as u_id,
@@ -318,6 +371,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_department d on dpa.department_id = d.id
         left join dep_purchase_apply_entry dpae on dpae.parent_id = dpa.id and (dpae.del_flag is null or dpae.del_flag != 1)
         left join fd_material m on dpae.material_id = m.id
+        left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_unit mu on m.unit_id = mu.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
@@ -340,6 +394,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="expectedDeliveryDate != null">expected_delivery_date,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="planStatus != null">plan_status,</if>
+            <if test="purchasePlanRefStatus != null">purchase_plan_ref_status,</if>
+            <if test="outboundRefStatus != null">outbound_ref_status,</if>
+            <if test="receiptStatus != null">receipt_status,</if>
             <if test="rejectReason != null">reject_reason,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -364,6 +421,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="expectedDeliveryDate != null">#{expectedDeliveryDate},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="planStatus != null">#{planStatus},</if>
+            <if test="purchasePlanRefStatus != null">#{purchasePlanRefStatus},</if>
+            <if test="outboundRefStatus != null">#{outboundRefStatus},</if>
+            <if test="receiptStatus != null">#{receiptStatus},</if>
             <if test="rejectReason != null">#{rejectReason},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -393,6 +453,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="expectedDeliveryDate != null">expected_delivery_date = #{expectedDeliveryDate},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="planStatus != null">plan_status = #{planStatus},</if>
+            <if test="purchasePlanRefStatus != null">purchase_plan_ref_status = #{purchasePlanRefStatus},</if>
+            <if test="outboundRefStatus != null">outbound_ref_status = #{outboundRefStatus},</if>
+            <if test="receiptStatus != null">receipt_status = #{receiptStatus},</if>
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
@@ -513,19 +576,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
             <if test="userId != null "> and dpa.user_id = #{userId}</if>
             <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
+            <if test="purchasePlanRefStatus != null"> and dpa.purchase_plan_ref_status = #{purchasePlanRefStatus}</if>
+            <if test="outboundRefStatus != null"> and dpa.outbound_ref_status = #{outboundRefStatus}</if>
             <if test="urgencyLevel != null "> and dpa.urgency_level = #{urgencyLevel}</if>
             <if test="expectedDeliveryDate != null "> and dpa.expected_delivery_date = #{expectedDeliveryDate}</if>
-            <if test="excludeReferenced != null and excludeReferenced == true"> and not exists (
-                select 1 from purchase_plan_entry_dep_apply r
-                inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
-                where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId} and (e.del_flag is null or e.del_flag != 1)
-            )</if>
+            <include refid="excludeReferencedByOtherPlanCondition"/>
+            <if test="excludePurchaseBillNoList != null and excludePurchaseBillNoList.size() > 0">
+                and dpa.purchase_bill_no not in
+                <foreach collection="excludePurchaseBillNoList" item="billNo" open="(" separator="," close=")">
+                    #{billNo}
+                </foreach>
+            </if>
             <include refid="depPurchaseDepartmentScopeFilter"/>
             and (dpa.del_flag = 0 or dpa.del_flag is null)
         </where>
     </select>
 
-    <!-- 消息提醒：科室申购单（待审核/已审核），排除 plan_status=2 驳回；已审核时间用 update_time（审核通过时更新） -->
+    <!-- 消息提醒：科室申购单（待审核/已审核），排除计划引用驳回；已审核时间用 update_time（审核通过时更新） -->
     <select id="selectWarehouseReminderPurchaseMonitorList" parameterType="DepPurchaseApply" resultType="com.spd.department.vo.WarehousePurchaseReminderRowVo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
@@ -544,7 +611,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and dpa.tenant_id = #{scopedTenantId}
             and (dpa.del_flag = 0 or dpa.del_flag is null)
             and dpa.purchase_bill_status in (1, 2)
-            and (dpa.plan_status is null or dpa.plan_status != 2)
+            and (dpa.purchase_plan_ref_status is null or dpa.purchase_plan_ref_status != 3)
             <include refid="depPurchaseDepartmentScopeFilter"/>
         </where>
         order by dpa.create_time desc
@@ -556,7 +623,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select dpa.id, dpa.purchase_bill_no, dpa.purchase_bill_date, dpa.warehouse_id, dpa.department_id,
                dpa.user_id, dpa.purchase_bill_status, dpa.total_amount, dpa.urgency_level, dpa.expected_delivery_date,
-               dpa.del_flag, dpa.plan_status, dpa.reject_reason, dpa.tenant_id, dpa.audit_by, dpa.audit_date,
+               dpa.del_flag, dpa.plan_status, dpa.purchase_plan_ref_status, dpa.outbound_ref_status, dpa.receipt_status,
+               dpa.reject_reason, dpa.tenant_id, dpa.audit_by, dpa.audit_date,
                dpa.src_agg_apply_id, dpa.src_agg_bill_no,
                dpa.void_whole_flag, dpa.void_whole_by, dpa.void_whole_time, dpa.void_whole_reason,
                dpa.create_by, dpa.create_time, dpa.update_by, dpa.update_time, dpa.remark,
@@ -731,4 +799,82 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{createBy}, #{createTime}, #{remark}
         )
     </insert>
+
+    <update id="refreshPurchasePlanRefStatus">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply dpa
+        set dpa.purchase_plan_ref_status = (
+            case
+                when (
+                    select count(*) from dep_purchase_apply_entry e
+                    where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId}
+                      and (e.del_flag = 0 or e.del_flag is null)
+                ) = 0 then 0
+                when (
+                    select count(distinct e.id) from dep_purchase_apply_entry e
+                    inner join purchase_plan_entry_dep_apply r on r.dep_purchase_apply_entry_id = e.id
+                        and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
+                    inner join purchase_plan_entry pe on r.purchase_plan_entry_id = pe.id
+                        and pe.tenant_id = #{scopedTenantId} and (pe.del_flag = '0' or pe.del_flag is null)
+                    inner join purchase_plan pp on pe.parent_id = pp.id
+                        and pp.tenant_id = #{scopedTenantId} and (pp.del_flag = '0' or pp.del_flag is null)
+                    where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId}
+                      and (e.del_flag = 0 or e.del_flag is null)
+                ) = 0 then 0
+                when (
+                    select count(distinct e.id) from dep_purchase_apply_entry e
+                    inner join purchase_plan_entry_dep_apply r on r.dep_purchase_apply_entry_id = e.id
+                        and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
+                    inner join purchase_plan_entry pe on r.purchase_plan_entry_id = pe.id
+                        and pe.tenant_id = #{scopedTenantId} and (pe.del_flag = '0' or pe.del_flag is null)
+                    inner join purchase_plan pp on pe.parent_id = pp.id
+                        and pp.tenant_id = #{scopedTenantId} and (pp.del_flag = '0' or pp.del_flag is null)
+                    where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId}
+                      and (e.del_flag = 0 or e.del_flag is null)
+                ) &gt;= (
+                    select count(*) from dep_purchase_apply_entry e
+                    where e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId}
+                      and (e.del_flag = 0 or e.del_flag is null)
+                ) then 2
+                else 1
+            end
+        ),
+        dpa.update_time = now()
+        where dpa.id = #{applyId} and dpa.tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="refreshOutboundRefStatus">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update dep_purchase_apply dpa
+        left join (
+            select e.parent_id as agg_apply_id,
+                   coalesce(sum(greatest(0, e.qty - coalesce(e.line_void_qty, 0) - coalesce(lk.linked_qty, 0))), 0) as pending_sum,
+                   coalesce(sum(coalesce(lk.linked_qty, 0)), 0) as linked_sum
+            from dep_purchase_apply_entry e
+            left join (
+                select r.dep_pur_apply_entry_id eid,
+                       sum(case when r.del_flag = 0 and r.link_status = 1
+                                 and (b.id is null or (b.del_flag = 0 or b.del_flag is null))
+                            then r.ref_qty else 0 end) linked_qty
+                from dep_pur_apply_ck_entry_ref r
+                left join stk_io_bill b on b.id = cast(r.ck_bill_id as unsigned) and b.tenant_id = r.tenant_id
+                where r.tenant_id = #{scopedTenantId}
+                group by r.dep_pur_apply_entry_id
+            ) lk on lk.eid = e.id
+            where e.parent_id = #{applyId}
+              and (e.del_flag = 0 or e.del_flag is null)
+            group by e.parent_id
+        ) agg on agg.agg_apply_id = dpa.id
+        set dpa.outbound_ref_status = (
+            case
+                when dpa.purchase_bill_status is null or dpa.purchase_bill_status != 2 then 0
+                when coalesce(agg.linked_sum, 0) = 0 and coalesce(agg.pending_sum, 0) &gt; 0 then 0
+                when coalesce(agg.linked_sum, 0) &gt; 0 and coalesce(agg.pending_sum, 0) &gt; 0 then 1
+                when coalesce(agg.linked_sum, 0) &gt; 0 and coalesce(agg.pending_sum, 0) &lt;= 0 then 2
+                else 0
+            end
+        ),
+        dpa.update_time = now()
+        where dpa.id = #{applyId} and dpa.tenant_id = #{scopedTenantId}
+    </update>
 </mapper>

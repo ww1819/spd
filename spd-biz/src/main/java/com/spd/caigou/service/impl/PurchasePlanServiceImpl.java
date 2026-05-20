@@ -24,6 +24,9 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.department.service.IDepPurchaseApplyService;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,12 +63,16 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     private StkInventoryMapper stkInventoryMapper;
 
     @Autowired
+    private IDepPurchaseApplyService depPurchaseApplyService;
+
+    @Autowired
+    private PurchasePlanEntryDepApplyMapper purchasePlanEntryDepApplyMapper;
+
+    @Autowired
     private IPurchaseOrderService purchaseOrderService;
 
     @Autowired
     private PurchasePlanEntryApplyMapper purchasePlanEntryApplyMapper;
-    @Autowired
-    private PurchasePlanEntryDepApplyMapper purchasePlanEntryDepApplyMapper;
     @Autowired
     private FdSupplierMapper fdSupplierMapper;
 
@@ -185,12 +192,31 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      * @param purchasePlan 采购计划
      * @return 结果
      */
+    /** 明细未指定供应商时，从产品档案默认供应商回填 */
+    private void fillEntrySupplierFromMaterial(List<PurchasePlanEntry> list) {
+        if (list == null) {
+            return;
+        }
+        for (PurchasePlanEntry e : list) {
+            if (e == null || e.getMaterialId() == null || e.getSupplierId() != null) {
+                continue;
+            }
+            FdMaterial material = fdMaterialMapper.selectFdMaterialById(e.getMaterialId());
+            if (material != null && material.getSupplierId() != null) {
+                e.setSupplierId(material.getSupplierId());
+            }
+        }
+    }
+
     /** 校验计划明细：有耗材的明细必须指定供应商 */
     private void validateEntriesHaveSupplier(List<PurchasePlanEntry> list) {
-        if (list == null) return;
+        if (list == null) {
+            return;
+        }
+        fillEntrySupplierFromMaterial(list);
         for (PurchasePlanEntry e : list) {
             if (e.getMaterialId() != null && (e.getSupplierId() == null)) {
-                throw new ServiceException("请为每条计划明细指定供应商后再保存。存在未选择供应商的明细。");
+                throw new ServiceException("请为每条计划明细指定供应商后再保存。存在未选择供应商的明细（产品档案未维护默认供应商）。");
             }
         }
     }
@@ -228,6 +254,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         }
         int rows = purchasePlanMapper.insertPurchasePlan(purchasePlan);
         insertPurchasePlanEntry(purchasePlan);
+        depPurchaseApplyService.refreshPurchasePlanRefStatusByPlanId(purchasePlan.getId());
         return rows;
     }
 
@@ -246,9 +273,21 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
         purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         String deleteBy = SecurityUtils.getUserIdStr();
+        Set<Long> affectedApplyIds = new HashSet<>();
+        List<Long> beforeApplyIds = purchasePlanEntryDepApplyMapper.selectDistinctDepApplyIdsByPlanId(purchasePlan.getId());
+        if (beforeApplyIds != null) {
+            affectedApplyIds.addAll(beforeApplyIds);
+        }
         purchasePlanEntryApplyMapper.logicDeleteByPlanId(purchasePlan.getId(), deleteBy);
         purchasePlanEntryDepApplyMapper.logicDeleteByPlanId(purchasePlan.getId(), deleteBy);
         syncPurchasePlanEntry(purchasePlan);
+        List<Long> afterApplyIds = purchasePlanEntryDepApplyMapper.selectDistinctDepApplyIdsByPlanId(purchasePlan.getId());
+        if (afterApplyIds != null) {
+            affectedApplyIds.addAll(afterApplyIds);
+        }
+        for (Long applyId : affectedApplyIds) {
+            depPurchaseApplyService.refreshPurchasePlanRefStatus(applyId);
+        }
         return purchasePlanMapper.updatePurchasePlan(purchasePlan);
     }
 
@@ -260,11 +299,18 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      */
     @Transactional
     @Override
-    public int deletePurchasePlanByIds(Long[] ids)
+    public int deletePurchasePlanByIds(Long[] ids, boolean restoreDepApplyPlanRefStatus)
     {
-        String deleteBy = SecurityUtils.getUserIdStr();
-        purchasePlanMapper.deletePurchasePlanEntryByParentIds(ids, deleteBy);
-        return purchasePlanMapper.deletePurchasePlanByIds(ids, deleteBy);
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
+        int total = 0;
+        for (Long id : ids) {
+            if (id != null) {
+                total += deletePurchasePlanById(id, restoreDepApplyPlanRefStatus);
+            }
+        }
+        return total;
     }
 
     /**
@@ -275,7 +321,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      */
     @Transactional
     @Override
-    public int deletePurchasePlanById(Long id)
+    public int deletePurchasePlanById(Long id, boolean restoreDepApplyPlanRefStatus)
     {
         PurchasePlan purchasePlan = purchasePlanMapper.selectPurchasePlanById(id);
         if(purchasePlan == null){
@@ -283,8 +329,19 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         }
         SecurityUtils.ensureTenantAccess(purchasePlan.getTenantId());
         String deleteBy = SecurityUtils.getUserIdStr();
+        List<Long> affectedApplyIds = purchasePlanEntryDepApplyMapper.selectDistinctDepApplyIdsByPlanId(id);
+        purchasePlanEntryApplyMapper.logicDeleteByPlanId(id, deleteBy);
+        purchasePlanEntryDepApplyMapper.logicDeleteByPlanId(id, deleteBy);
         purchasePlanMapper.deletePurchasePlanEntryByParentId(id, deleteBy);
-        return purchasePlanMapper.deletePurchasePlanById(id, deleteBy);
+        int rows = purchasePlanMapper.deletePurchasePlanById(id, deleteBy);
+        if (restoreDepApplyPlanRefStatus && affectedApplyIds != null) {
+            for (Long applyId : affectedApplyIds) {
+                if (applyId != null) {
+                    depPurchaseApplyService.refreshPurchasePlanRefStatus(applyId);
+                }
+            }
+        }
+        return rows;
     }
 
     /**

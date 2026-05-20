@@ -23,6 +23,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.mapper.StkIoBillMapper;
+import com.spd.caigou.mapper.PurchasePlanEntryDepApplyMapper;
 
 /**
  * 科室申购Service业务层处理
@@ -46,6 +47,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private PurchasePlanEntryDepApplyMapper purchasePlanEntryDepApplyMapper;
 
     /** 非租户管理员：仅能访问已授权科室的科室申购单 */
     private void assertDepartmentInUserScope(Long departmentId) {
@@ -105,7 +109,25 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply != null && StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
         }
+        applyExcludePurchaseBillNos(depPurchaseApply);
         return depPurchaseApplyMapper.selectDepPurchaseApplyList(depPurchaseApply);
+    }
+
+    /** 解析 excludePurchaseBillNos 为列表供 Mapper 使用 */
+    private void applyExcludePurchaseBillNos(DepPurchaseApply depPurchaseApply) {
+        if (depPurchaseApply == null || StringUtils.isEmpty(depPurchaseApply.getExcludePurchaseBillNos())) {
+            return;
+        }
+        String[] parts = depPurchaseApply.getExcludePurchaseBillNos().split("[,，]");
+        java.util.List<String> list = new java.util.ArrayList<>();
+        for (String p : parts) {
+            if (StringUtils.isNotEmpty(p) && StringUtils.isNotEmpty(p.trim())) {
+                list.add(p.trim());
+            }
+        }
+        if (!list.isEmpty()) {
+            depPurchaseApply.setExcludePurchaseBillNoList(list);
+        }
     }
 
     @Override
@@ -363,7 +385,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申购可驳回，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
         }
-        depPurchaseApply.setPlanStatus(2); // 驳回状态
+        depPurchaseApply.setPurchasePlanRefStatus(3); // 采购计划引用驳回
+        depPurchaseApply.setPlanStatus(2); // 历史字段兼容
         depPurchaseApply.setRejectReason(rejectReason);
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         depPurchaseApply.setUpdateTime(new Date());
@@ -390,8 +413,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if(depPurchaseApply.getPurchaseBillStatus() != 2){
             throw new ServiceException("只有已审核的申购单才能确认收货!");
         }
-        // 使用planStatus字段标识收货状态：1=已确认收货
-        depPurchaseApply.setPlanStatus(1);
+        depPurchaseApply.setReceiptStatus(1);
         depPurchaseApply.setUpdateBy(confirmBy);
         depPurchaseApply.setUpdateTime(new Date());
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
@@ -416,8 +438,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if(depPurchaseApply.getPurchaseBillStatus() != 2){
             throw new ServiceException("只有已审核的申购单才能驳回收货!");
         }
-        // 使用planStatus字段标识收货状态：2=驳回收货
-        depPurchaseApply.setPlanStatus(2);
+        depPurchaseApply.setReceiptStatus(2);
         depPurchaseApply.setRejectReason(rejectReason);
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         depPurchaseApply.setUpdateTime(new Date());
@@ -507,6 +528,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
             row.setCreateTime(now);
             depPurchaseApplyMapper.insertDepPurApplyCkEntryRef(row);
         }
+        refreshOutboundRefStatus(loaded.getDepPurchaseApplyId());
     }
 
     @Override
@@ -515,8 +537,45 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (ckBillId == null || StringUtils.isEmpty(tenantId)) {
             return;
         }
+        StkIoBill loaded = stkIoBillMapper.selectStkIoBillById(ckBillId);
+        Long depApplyId = loaded != null ? loaded.getDepPurchaseApplyId() : null;
         depPurchaseApplyMapper.softDeleteCkEntryRefsByCkBillId(String.valueOf(ckBillId), tenantId,
             SecurityUtils.getUserIdStr());
+        if (depApplyId != null) {
+            refreshOutboundRefStatus(depApplyId);
+        }
+    }
+
+    @Override
+    public void refreshPurchasePlanRefStatus(Long depPurchaseApplyId) {
+        if (depPurchaseApplyId == null) {
+            return;
+        }
+        depPurchaseApplyMapper.refreshPurchasePlanRefStatus(depPurchaseApplyId);
+    }
+
+    @Override
+    public void refreshOutboundRefStatus(Long depPurchaseApplyId) {
+        if (depPurchaseApplyId == null) {
+            return;
+        }
+        depPurchaseApplyMapper.refreshOutboundRefStatus(depPurchaseApplyId);
+    }
+
+    @Override
+    public void refreshPurchasePlanRefStatusByPlanId(Long planId) {
+        if (planId == null) {
+            return;
+        }
+        List<Long> applyIds = purchasePlanEntryDepApplyMapper.selectDistinctDepApplyIdsByPlanId(planId);
+        if (applyIds == null || applyIds.isEmpty()) {
+            return;
+        }
+        for (Long applyId : applyIds) {
+            if (applyId != null) {
+                refreshPurchasePlanRefStatus(applyId);
+            }
+        }
     }
 
     @Override
@@ -549,5 +608,6 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (u <= 0) {
             throw new ServiceException("整单作废失败，请刷新后重试");
         }
+        refreshOutboundRefStatus(id);
     }
 }
