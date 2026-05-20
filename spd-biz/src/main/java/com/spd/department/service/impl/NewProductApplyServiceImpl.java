@@ -74,7 +74,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
         }
         
         MasterDetailValidateUtil.assertHasMaterialLine(
-            newProductApply.getNewProductApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
+            newProductApply.getApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
         newProductApply.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(newProductApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             newProductApply.setCreateBy(SecurityUtils.getUserIdStr());
@@ -99,7 +99,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     public int updateNewProductApply(NewProductApply newProductApply)
     {
         MasterDetailValidateUtil.assertHasMaterialLine(
-            newProductApply.getNewProductApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
+            newProductApply.getApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
         newProductApply.setUpdateTime(DateUtils.getNowDate());
         newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
         
