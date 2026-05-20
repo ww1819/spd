@@ -8,6 +8,7 @@ import com.spd.caigou.mapper.PurchaseOrderMapper;
 import com.spd.caigou.mapper.PurchasePlanMapper;
 import com.spd.caigou.service.IPurchaseOrderService;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -134,6 +135,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int insertPurchaseOrder(PurchaseOrder purchaseOrder)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            purchaseOrder.getPurchaseOrderEntryList(), PurchaseOrderEntry::getMaterialId, "采购订单");
         // 生成订单单号
         if (StringUtils.isEmpty(purchaseOrder.getOrderNo())) {
             String orderNo = "PO" + System.currentTimeMillis();
@@ -195,6 +198,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int updatePurchaseOrder(PurchaseOrder purchaseOrder)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            purchaseOrder.getPurchaseOrderEntryList(), PurchaseOrderEntry::getMaterialId, "采购订单");
         if (StringUtils.isEmpty(purchaseOrder.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             purchaseOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         }

@@ -2,6 +2,7 @@ package com.spd.department.service.impl;
 
 import java.util.List;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,8 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
             newProductApply.setApplyNo(generateApplyNo());
         }
         
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            newProductApply.getNewProductApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
         newProductApply.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(newProductApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             newProductApply.setCreateBy(SecurityUtils.getUserIdStr());
@@ -95,6 +98,8 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
     @Override
     public int updateNewProductApply(NewProductApply newProductApply)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            newProductApply.getNewProductApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
         newProductApply.setUpdateTime(DateUtils.getNowDate());
         newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
         

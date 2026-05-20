@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -133,6 +134,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         if (gzOrder != null && StringUtils.isEmpty(gzOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzOrder.setTenantId(SecurityUtils.getCustomerId());
         }
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzOrder.getGzOrderEntryList(), gzOrderDocLabel(gzOrder));
         gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
@@ -190,9 +192,22 @@ public class GzOrderServiceImpl implements IGzOrderService
             gzOrder.setCreateBy(null);
         }
         gzOrder.setCreateTime(null);
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzOrder.getGzOrderEntryList(), gzOrderDocLabel(gzOrder));
         syncGzOrderEntry(gzOrder);
         alignActiveGzOrderEntriesSupplierFromHeader(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);
+    }
+
+    private static String gzOrderDocLabel(GzOrder gzOrder) {
+        if (gzOrder == null || gzOrder.getOrderType() == null) {
+            return "高值入库";
+        }
+        switch (gzOrder.getOrderType()) {
+            case 102: return "高值出库";
+            case 301: return "高值退库";
+            case 401: return "高值跟台";
+            default: return "高值入库";
+        }
     }
 
     /**

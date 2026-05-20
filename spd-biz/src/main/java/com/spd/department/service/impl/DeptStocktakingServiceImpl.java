@@ -881,7 +881,12 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     }
 
     private void validateAndNormalizeEntries(StkIoStocktaking bill, Map<Long, StkIoStocktakingEntry> oldEntryMap) {
-        if (bill == null || bill.getStkIoStocktakingEntryList() == null) {
+        if (bill == null) {
+            return;
+        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasMaterialLine(
+            bill.getStkIoStocktakingEntryList(), StkIoStocktakingEntry::getMaterialId, "科室盘点");
+        if (bill.getStkIoStocktakingEntryList() == null) {
             return;
         }
         Set<String> depInventoryIdSeen = new HashSet<>();

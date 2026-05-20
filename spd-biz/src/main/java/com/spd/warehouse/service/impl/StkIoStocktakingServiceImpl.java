@@ -612,8 +612,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
      * 仓库盘点（stock_type=501）：有 kc_no 的明细为账面库存行，仅允许盘亏/平；无 kc_no 为盘盈（字典），不要求手工选归属仓库。
      */
     private void validateWarehouseStocktakingEntries(StkIoStocktaking bill) {
-        if (bill == null || bill.getStockType() == null || bill.getStockType() != 501
-            || bill.getStkIoStocktakingEntryList() == null) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != 501) {
+            return;
+        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasMaterialLine(
+            bill.getStkIoStocktakingEntryList(), StkIoStocktakingEntry::getMaterialId, "仓库盘点");
+        if (bill.getStkIoStocktakingEntryList() == null) {
             return;
         }
         if (bill.getWarehouseId() == null) {

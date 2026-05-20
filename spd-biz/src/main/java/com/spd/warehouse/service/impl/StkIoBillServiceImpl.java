@@ -26,6 +26,7 @@ import com.spd.common.core.page.TotalInfo;
 import com.spd.common.exception.DocRefQtyValidationException;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.department.domain.BasApply;
@@ -306,6 +307,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Override
     public int insertStkIoBill(StkIoBill stkIoBill)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, stkIoBillDocLabel(stkIoBill));
         if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -383,6 +386,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         // 仅当请求中带了明细列表且非空时，才同步明细（增量更新）；否则保留原明细，只更新主表
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
+        if (entryList != null) {
+            MasterDetailValidateUtil.assertHasMaterialLine(
+                entryList, StkIoBillEntry::getMaterialId, stkIoBillDocLabel(stkIoBill));
+        }
         if (entryList != null && !entryList.isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
                 normalizeInboundSupplierFields(stkIoBill);
@@ -580,6 +587,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
      * 入库保存/审核前：补全明细与主表供应商，保证库存、批次、仓库流水一致。
      * 主表 suppler_id 有值时以主表为准，明细一律对齐；主表为空时明细空则按行解析（明细→耗材档案），明细一致则回填主表。
      */
+    private static String stkIoBillDocLabel(StkIoBill bill) {
+        if (bill == null || bill.getBillType() == null) {
+            return "出入库";
+        }
+        switch (bill.getBillType()) {
+            case 101: return "入库";
+            case 201: return "出库";
+            case 301: return "退库";
+            case 401: return "退货";
+            case 501: return "结算";
+            default: return "出入库";
+        }
+    }
+
     private void normalizeInboundSupplierFields(StkIoBill bill) {
         if (bill == null || bill.getBillType() == null || bill.getBillType() != 101) {
             return;

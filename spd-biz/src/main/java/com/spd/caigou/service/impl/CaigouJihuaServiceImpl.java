@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.spd.caigou.service.CaigouJihuaService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -146,6 +147,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public int insertStkIoBill(StkIoBill stkIoBill)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "入库");
         if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -178,6 +181,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public int updateStkIoBill(StkIoBill stkIoBill)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "入库");
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         syncStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
@@ -771,6 +776,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Override
     public int insertOutStkIoBill(StkIoBill stkIoBill)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "出库");
         stkIoBill.setBillNo(getBillNumber("CK"));
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -791,6 +798,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Transactional
     @Override
     public int updateOutStkIoBill(StkIoBill stkIoBill) {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "出库");
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         syncOutStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
@@ -799,6 +808,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Transactional
     @Override
     public int insertTkStkIoBill(StkIoBill stkIoBill) {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "退库");
         stkIoBill.setBillNo(getTKNumber("TK"));
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -823,6 +834,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Transactional
     @Override
     public int insertTHStkIoBill(StkIoBill stkIoBill) {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "退货");
         stkIoBill.setBillNo(getTHNumber("TH"));
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -833,6 +846,8 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     @Transactional
     @Override
     public int updateTKStkIoBill(StkIoBill stkIoBill) {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "退库");
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         syncTKStkIoBillEntry(stkIoBill);
         return stkIoBillMapper.updateStkIoBill(stkIoBill);

@@ -11,6 +11,7 @@ import com.spd.caigou.service.IPurchasePlanService;
 import com.spd.caigou.service.IPurchaseOrderService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -235,6 +236,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int insertPurchasePlan(PurchasePlan purchasePlan)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            purchasePlan.getPurchasePlanEntryList(), PurchasePlanEntry::getMaterialId, "采购计划");
         validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setPlanNo(getPlanNumber());
@@ -268,6 +271,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int updatePurchasePlan(PurchasePlan purchasePlan)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            purchasePlan.getPurchasePlanEntryList(), PurchasePlanEntry::getMaterialId, "采购计划");
         validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setUpdateTime(DateUtils.getNowDate());

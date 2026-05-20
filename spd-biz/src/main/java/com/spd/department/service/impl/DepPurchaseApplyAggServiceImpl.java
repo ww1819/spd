@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -311,6 +312,8 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (row.getDepartmentId() != null) {
             assertDepartmentInUserScope(row.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            row.getEntryList(), DepPurchaseApplyAggEntry::getMaterialId, "汇总申购");
         validateEntryQty(row.getEntryList());
         validateEntryWarehouse(row.getEntryList());
         if (StringUtils.isEmpty(row.getId())) {
@@ -366,6 +369,8 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (row.getDepartmentId() != null) {
             assertDepartmentInUserScope(row.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            row.getEntryList(), DepPurchaseApplyAggEntry::getMaterialId, "汇总申购");
         validateEntryQty(row.getEntryList());
         validateEntryWarehouse(row.getEntryList());
         row.setUpdateBy(SecurityUtils.getUserIdStr());

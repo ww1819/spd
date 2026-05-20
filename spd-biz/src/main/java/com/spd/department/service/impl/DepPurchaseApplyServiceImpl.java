@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Date;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,6 +188,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply != null && depPurchaseApply.getDepartmentId() != null) {
             assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            depPurchaseApply.getDepPurchaseApplyEntryList(), DepPurchaseApplyEntry::getMaterialId, "科室申购");
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         // 生成申购单号
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo())) {
@@ -227,6 +230,8 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply.getDepartmentId() != null) {
             assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            depPurchaseApply.getDepPurchaseApplyEntryList(), DepPurchaseApplyEntry::getMaterialId, "科室申购");
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -69,6 +70,8 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     @Override
     public int insertGzDepApply(GzDepApply gzDepApply)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            gzDepApply.getGzDepApplyEntryList(), GzDepApplyEntry::getMaterialId, "高值科室申领");
         gzDepApply.setApplyBillNo(getNumber());
         gzDepApply.setCreateTime(DateUtils.getNowDate());
         gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
@@ -99,6 +102,8 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
     @Override
     public int updateGzDepApply(GzDepApply gzDepApply)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            gzDepApply.getGzDepApplyEntryList(), GzDepApplyEntry::getMaterialId, "高值科室申领");
         gzDepApply.setUpdateTime(DateUtils.getNowDate());
         gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
         gzDepApplyMapper.deleteGzDepApplyEntryByParenId(gzDepApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
