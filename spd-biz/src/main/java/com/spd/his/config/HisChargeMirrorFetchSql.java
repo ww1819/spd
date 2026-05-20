@@ -16,7 +16,7 @@ public final class HisChargeMirrorFetchSql
             + "use_date, charge_date, quantity, unit_price, total_amount, charge_operator, remark "
             + "FROM dbo.v_inpatient_consumable_charge "
             + "WHERE charge_date IS NOT NULL "
-            + "AND LTRIM(RTRIM(charge_date)) <> '' "
+            + "AND charge_date <> '' "
             + "AND charge_date >= ? "
             + "AND charge_date < ?";
 
@@ -26,7 +26,7 @@ public final class HisChargeMirrorFetchSql
             + "charge_date, quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark "
             + "FROM dbo.v_outpatient_consumable_charge "
             + "WHERE charge_date IS NOT NULL "
-            + "AND LTRIM(RTRIM(charge_date)) <> '' "
+            + "AND charge_date <> '' "
             + "AND charge_date >= ? "
             + "AND charge_date < ?";
 }

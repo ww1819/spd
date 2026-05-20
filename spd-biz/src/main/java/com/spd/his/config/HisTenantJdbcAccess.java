@@ -7,8 +7,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.stereotype.Component;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.spd.common.exception.ServiceException;
@@ -22,6 +25,8 @@ import com.spd.his.mapper.HisExternalDbMapper;
 @Component
 public class HisTenantJdbcAccess
 {
+    private static final Logger log = LoggerFactory.getLogger(HisTenantJdbcAccess.class);
+
     private static final String DB_SQLSERVER = "SQLSERVER";
     private static final String DB_MYSQL = "MYSQL";
 
@@ -48,7 +53,8 @@ public class HisTenantJdbcAccess
         HisExternalDb row = hisExternalDbMapper.selectEnabledByTenantId(tenantId);
         if (row != null)
         {
-            String sig = signature(row);
+            int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+            String sig = signature(row, queryTimeoutSec);
             CachedHandle cached = cache.get(tenantId);
             if (cached != null && sig.equals(cached.signature))
             {
@@ -65,7 +71,6 @@ public class HisTenantJdbcAccess
                 {
                     ((DruidDataSource) cached.handle.getOwnedDataSourceIfAny()).close();
                 }
-                int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
                 HisTenantDbHandle handle = buildFromRow(row, queryTimeoutSec);
                 cache.put(tenantId, new CachedHandle(sig, handle));
                 return handle;
@@ -94,19 +99,46 @@ public class HisTenantJdbcAccess
         {
             throw new ServiceException("租户 " + row.getTenantId() + " 的 HIS 外联配置不完整（driver/jdbc_url/username）");
         }
-        DruidDataSource ds = new DruidDataSource();
-        ds.setDriverClassName(driver);
-        ds.setUrl(HisSqlServerConnectionDefaults.normalizeSqlServerJdbcUrl(row.getJdbcUrl().trim()));
-        ds.setUsername(row.getUsername().trim());
-        ds.setPassword(row.getPassword() != null ? row.getPassword() : "");
-        ds.setValidationQuery("SELECT 1");
-        ds.setTestWhileIdle(true);
-        ds.setMaxActive(8);
-        ds.setInitialSize(1);
-        ds.setMinIdle(1);
-        ds.setMaxWait(60000);
-        ds.setConnectionProperties("socketTimeout=" + (queryTimeoutSec * 1000L));
-        JdbcTemplate jt = new JdbcTemplate(ds);
+        int socketTimeoutMs = queryTimeoutSec * 1000;
+        String jdbcUrl = HisSqlServerConnectionDefaults.ensureSocketTimeout(row.getJdbcUrl().trim(), socketTimeoutMs);
+        JdbcTemplate jt;
+        DataSource ownedDs = null;
+        if (DB_SQLSERVER.equals(dbType))
+        {
+            // SQL Server：DriverManager + URL 上的 socketTimeout，避免 Druid 未把读超时传给 mssql-jdbc
+            DriverManagerDataSource dm = new DriverManagerDataSource();
+            dm.setDriverClassName(driver);
+            dm.setUrl(HisSqlServerConnectionDefaults.normalizeSqlServerJdbcUrl(jdbcUrl));
+            dm.setUsername(row.getUsername().trim());
+            dm.setPassword(row.getPassword() != null ? row.getPassword() : "");
+            jt = new JdbcTemplate(dm);
+            log.info("HIS 外联(SQLServer/DriverManager) tenant={} socketTimeoutMs={} queryTimeoutSec={} jdbcUrl={}",
+                row.getTenantId(), socketTimeoutMs, queryTimeoutSec, dm.getUrl());
+        }
+        else if (DB_MYSQL.equals(dbType))
+        {
+            DruidDataSource ds = new DruidDataSource();
+            ds.setDriverClassName(driver);
+            ds.setUrl(jdbcUrl);
+            ds.setUsername(row.getUsername().trim());
+            ds.setPassword(row.getPassword() != null ? row.getPassword() : "");
+            ds.setValidationQuery("SELECT 1");
+            ds.setTestWhileIdle(true);
+            ds.setMaxActive(8);
+            ds.setInitialSize(1);
+            ds.setMinIdle(1);
+            ds.setMaxWait(60000);
+            ds.setSocketTimeout(socketTimeoutMs);
+            ds.setConnectionProperties("socketTimeout=" + socketTimeoutMs);
+            jt = new JdbcTemplate(ds);
+            ownedDs = ds;
+            log.info("HIS 外联(MySQL/Druid) tenant={} socketTimeoutMs={} queryTimeoutSec={}",
+                row.getTenantId(), socketTimeoutMs, queryTimeoutSec);
+        }
+        else
+        {
+            throw new ServiceException("不支持的 HIS db_type: " + row.getDbType() + "，请使用 SQLSERVER 或 MYSQL");
+        }
         jt.setQueryTimeout(queryTimeoutSec);
         String inSql;
         String outSql;
@@ -117,7 +149,7 @@ public class HisTenantJdbcAccess
             outSql = StringUtils.isNotBlank(row.getSqlOutpatientRange())
                 ? row.getSqlOutpatientRange().trim() : HisChargeMirrorFetchSql.SQLSERVER_OUTPATIENT_RANGE;
         }
-        else if (DB_MYSQL.equals(dbType))
+        else
         {
             if (StringUtils.isBlank(row.getSqlInpatientRange()) || StringUtils.isBlank(row.getSqlOutpatientRange()))
             {
@@ -126,11 +158,11 @@ public class HisTenantJdbcAccess
             inSql = row.getSqlInpatientRange().trim();
             outSql = row.getSqlOutpatientRange().trim();
         }
-        else
+        if (outSql.contains("LTRIM") || outSql.contains("RTRIM"))
         {
-            throw new ServiceException("不支持的 HIS db_type: " + row.getDbType() + "，请使用 SQLSERVER 或 MYSQL");
+            log.warn("租户 {} 门诊抓取 SQL 仍含 LTRIM/RTRIM（多为旧版程序或库内自定义 SQL），大视图易超时", row.getTenantId());
         }
-        return new HisTenantDbHandle(jt, ds, inSql, outSql, dbType);
+        return new HisTenantDbHandle(jt, ownedDs, inSql, outSql, dbType);
     }
 
     private static String defaultDriver(String dbType)
@@ -160,12 +192,12 @@ public class HisTenantJdbcAccess
         return u;
     }
 
-    private static String signature(HisExternalDb row)
+    private static String signature(HisExternalDb row, int queryTimeoutSec)
     {
         String s = row.getDbType() + "|" + row.getDriverClass() + "|" + row.getJdbcUrl() + "|" + row.getUsername() + "|"
             + (row.getPassword() != null ? row.getPassword() : "") + "|"
             + StringUtils.defaultString(row.getSqlInpatientRange()) + "|"
-            + StringUtils.defaultString(row.getSqlOutpatientRange());
+            + StringUtils.defaultString(row.getSqlOutpatientRange()) + "|qt=" + queryTimeoutSec;
         try
         {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
