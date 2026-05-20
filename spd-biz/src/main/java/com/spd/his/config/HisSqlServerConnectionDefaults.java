@@ -87,4 +87,26 @@ public final class HisSqlServerConnectionDefaults
         }
         return out.toString();
     }
+
+    /**
+     * 为 SQL Server JDBC URL 设置读超时（毫秒）。{@code Read timed out} 多为 socket 层超时。
+     * 若 URL 中已有 {@code socketTimeout=60000} 等较小值，会<strong>强制覆盖</strong>为 {@code timeoutMs}（旧逻辑“已有则跳过”会导致仍 60 秒超时）。
+     */
+    public static String ensureSocketTimeout(String url, int timeoutMs)
+    {
+        if (url == null || url.isEmpty() || timeoutMs <= 0)
+        {
+            return url;
+        }
+        String u = normalizeSqlServerJdbcUrl(url.trim());
+        if (u.toLowerCase(Locale.ROOT).matches("(?s).*sockettimeout=\\d+.*"))
+        {
+            return u.replaceAll("(?i)socketTimeout=\\d+", "socketTimeout=" + timeoutMs);
+        }
+        while (u.endsWith(";"))
+        {
+            u = u.substring(0, u.length() - 1);
+        }
+        return u + ";socketTimeout=" + timeoutMs;
+    }
 }

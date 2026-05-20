@@ -2,7 +2,6 @@ package com.spd.his.config;
 
 import javax.sql.DataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import com.alibaba.druid.pool.DruidDataSource;
 
 /**
  * 某租户当前生效的 HIS 外联 JDBC 与抓取 SQL 文本。
@@ -10,15 +9,15 @@ import com.alibaba.druid.pool.DruidDataSource;
 public class HisTenantDbHandle
 {
     private final JdbcTemplate jdbcTemplate;
-    /** 非空则须在应用退出或配置变更时 close */
-    private final DruidDataSource ownedDataSource;
+    /** 非空则须在应用退出或配置变更时 close（如 Druid 连接池） */
+    private final DataSource ownedDataSource;
     private final String inpatientRangeSql;
     private final String outpatientRangeSql;
     private final String dbTypeNormalized;
 
     public HisTenantDbHandle(
         JdbcTemplate jdbcTemplate,
-        DruidDataSource ownedDataSource,
+        DataSource ownedDataSource,
         String inpatientRangeSql,
         String outpatientRangeSql,
         String dbTypeNormalized)

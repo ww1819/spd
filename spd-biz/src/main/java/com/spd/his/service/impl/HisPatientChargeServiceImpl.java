@@ -187,7 +187,17 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         assertTenantAllowed();
         LocalDateTime[] win = parseWindow(body);
         String tenantId = SecurityUtils.getCustomerId();
+        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+        log.info("门诊收费镜像抓取: tenantId={}, window=[{} ~ {}), chunkDays={}, queryTimeoutSec={}",
+            tenantId, win[0], win[1], chunkDays, queryTimeoutSec);
         HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        if (hisDb.getOutpatientRangeSql() != null && hisDb.getOutpatientRangeSql().contains("LTRIM(RTRIM"))
+        {
+            throw new ServiceException(
+                "当前运行的 SPD 仍是旧版抓取 SQL（含 LTRIM/RTRIM），请重新编译部署 spd-biz 后重启；"
+                    + "或检查 sys_his_external_db 是否填写了自定义门诊区间 SQL");
+        }
         String batchId = IdUtils.fastUUID();
         String createBy = SecurityUtils.getUserIdStr();
         Date now = new Date();
@@ -195,7 +205,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         int inserted = 0;
         int skipped = 0;
         int drift = 0;
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
         LocalDateTime cursor = win[0];
         while (cursor.isBefore(win[1]))
         {
@@ -770,8 +779,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
         String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisInpatientChargeMirror> rm = (rs, rowNum) -> mapInpatientRow(rs, tenantId, batchId, createBy, createTime);
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
         return hisDb.getJdbcTemplate().query(hisDb.getInpatientRangeSql(), ps ->
         {
+            ps.setQueryTimeout(queryTimeoutSec);
             ps.setString(1, lo);
             ps.setString(2, hi);
         }, rm);
@@ -818,8 +829,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String lo = chunkStart.format(HIS_FETCH_TIME_FMT);
         String hi = chunkEndExcl.format(HIS_FETCH_TIME_FMT);
         RowMapper<HisOutpatientChargeMirror> rm = (rs, rowNum) -> mapOutpatientRow(rs, tenantId, batchId, createBy, createTime);
+        int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
+        log.debug("门诊分段查询: {} <= charge_date < {}", lo, hi);
         return hisDb.getJdbcTemplate().query(hisDb.getOutpatientRangeSql(), ps ->
         {
+            ps.setQueryTimeout(queryTimeoutSec);
             ps.setString(1, lo);
             ps.setString(2, hi);
         }, rm);

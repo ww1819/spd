@@ -886,6 +886,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                s.name supplierName,
                d.name departmentName, w.name warehouseName, b.material_id materialId,
                m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay,
+               m.is_billing materialIsBilling, m.is_procure materialIsProcure,
                wc.warehouse_category_name materialWarehouseCategoryName,
                stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
                stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
