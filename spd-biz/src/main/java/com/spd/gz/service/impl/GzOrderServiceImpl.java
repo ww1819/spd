@@ -251,9 +251,10 @@ public class GzOrderServiceImpl implements IGzOrderService
         }
         SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
-        if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值入库单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzOrderEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值入库");
 
         //更新高值仓库库存
         updateDepotInventory(gzOrder,gzOrderEntryList);

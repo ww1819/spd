@@ -400,6 +400,11 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException(String.format("盘点业务ID：%s，不存在!", id));
         }
 
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            stkIoStocktaking.getStkIoStocktakingEntryList(),
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "仓库盘点");
+
         Integer stockType = stkIoStocktaking.getStockType();
         if (stockType != null && stockType == STOCK_TYPE_WH_STOCKTAKING) {
             normalizeWhStocktakingQtyToLiveBeforeAudit(stkIoStocktaking);

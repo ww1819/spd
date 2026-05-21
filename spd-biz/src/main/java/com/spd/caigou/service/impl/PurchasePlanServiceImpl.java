@@ -371,6 +371,10 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             throw new ServiceException(String.format("采购计划ID：%s，状态不正确，只能审核未提交状态的计划!", id));
         }
         List<PurchasePlanEntry> entryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
+        MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            entryList,
+            e -> e != null && MasterDetailValidateUtil.isNotDeletedFlagStr(e.getDelFlag()),
+            "采购计划");
         validateEntriesHaveSupplier(entryList);
         validateEntriesHaveQty(entryList);
 

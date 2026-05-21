@@ -434,11 +434,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
 
         List<StkIoStocktakingEntry> stkIoStocktakingEntryList = stkIoStocktaking.getStkIoStocktakingEntryList();
-        if (stkIoStocktaking.getStockType() != null && stkIoStocktaking.getStockType() == 502) {
-            if (stkIoStocktakingEntryList == null || stkIoStocktakingEntryList.isEmpty()) {
-                throw new com.spd.common.exception.ServiceException("盘点单无有效明细（可能保存时明细被误删），无法审核。请驳回或删除本单后重新制单并保存。");
-            }
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            stkIoStocktakingEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "科室盘点");
         normalizeDeptStocktakingQtyToLiveBeforeAudit(stkIoStocktaking);
         applyQtyAdjustmentsIfNeeded(stkIoStocktaking, adjustList);
         List<StocktakingQtyMismatchVo> mismatches = buildQtyMismatches(stkIoStocktaking);

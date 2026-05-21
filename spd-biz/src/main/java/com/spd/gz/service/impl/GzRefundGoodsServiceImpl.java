@@ -298,9 +298,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
 
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
-        if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值退货单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzRefundGoodsEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值退货");
 
         gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoodsEntryList);
         if (gzRefundGoods.getSupplerId() == null) {
@@ -345,9 +346,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             throw new ServiceException(String.format("单据 %s 已审核，请勿重复审核", no));
         }
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
-        if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值退库单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzRefundGoodsEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值退库");
         gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoodsEntryList);
         auditWarehouseStockRefund(gzRefundGoods, gzRefundGoodsEntryList);
         gzRefundGoods.setGoodsStatus(2);

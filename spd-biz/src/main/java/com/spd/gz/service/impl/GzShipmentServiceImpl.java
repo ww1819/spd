@@ -235,9 +235,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             throw new ServiceException(String.format("高值出库单 %s 已审核，请勿重复审核", no));
         }
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
-        if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值出库单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzShipmentEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值出库");
 
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipmentEntryList);
 

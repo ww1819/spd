@@ -480,6 +480,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
 
         Integer auditBillType = stkIoBill.getBillType();
+        if (auditBillType != null && isLowValueIoBillTypeRequiringEntriesOnAudit(auditBillType)) {
+            MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+                stkIoBillEntryList,
+                e -> e != null && MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+                stkIoBillDocLabel(stkIoBill));
+        }
         if (auditBillType != null) {
             if (auditBillType == 201 || auditBillType == 301) {
                 assertWarehouseStockEntriesMatchBillHeader(stkIoBill, auditBillType == 301);
@@ -592,13 +598,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             return "出入库";
         }
         switch (bill.getBillType()) {
-            case 101: return "入库";
-            case 201: return "出库";
-            case 301: return "退库";
-            case 401: return "退货";
+            case 101: return "低值入库";
+            case 201: return "低值出库";
+            case 301: return "低值退货";
+            case 401: return "低值退库";
             case 501: return "结算";
             default: return "出入库";
         }
+    }
+
+    /** 低值入/出/退库/退货审核须至少一条未删除明细 */
+    private static boolean isLowValueIoBillTypeRequiringEntriesOnAudit(int billType) {
+        return billType == 101 || billType == 201 || billType == 301 || billType == 401;
     }
 
     private void normalizeInboundSupplierFields(StkIoBill bill) {
