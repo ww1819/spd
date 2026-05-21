@@ -610,11 +610,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if (material == null) {
                     throw new com.spd.common.exception.ServiceException(String.format("耗材ID：%s，产品档案不存在!", entry.getMaterialId()));
                 }
+                applyDepInventorySupplierFromStocktakingEntry(stkDepInventory, entry, material);
                 StkBatch stkBatch = ensureStkBatchByStocktaking(stkIoStocktaking, entry, material);
                 if (stkBatch != null && stkBatch.getId() != null) {
                     stkDepInventory.setBatchId(stkBatch.getId());
                     // 科室盘点只维护科室库存 stk_dep_inventory，不向 stk_inventory 写入占位行，避免「库存明细查询」出现与仓库无关的 0 库存行
                 }
+                InventoryMaterialSnapshotHelper.applyDepInventoryBillContextFromStocktaking(stkDepInventory, stkIoStocktaking, entry);
+                InventoryMaterialSnapshotHelper.fillDepRowFromStocktaking(stkDepInventory, entry, material, fdMaterialMapper,
+                    stkIoStocktaking.getTenantId());
                 stkDepInventory.setCreateTime(new Date());
                 stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
 
@@ -705,6 +709,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     if (depInventory.getBatchNumber() == null) {
                         depInventory.setBatchNumber(entry.getBatchNumber());
                     }
+                    InventoryMaterialSnapshotHelper.applyDepInventoryBillContextFromStocktaking(depInventory, stkIoStocktaking, entry);
+                    InventoryMaterialSnapshotHelper.fillDepRowFromStocktaking(depInventory, entry, material, fdMaterialMapper,
+                        stkIoStocktaking.getTenantId());
                     stkDepInventoryMapper.updateStkDepInventory(depInventory);
                     if (entry.getId() != null) {
                         applyStocktakingEntryAuditFields(entry, false);
@@ -741,6 +748,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 if (depInventory.getBatchNumber() == null) {
                     depInventory.setBatchNumber(entry.getBatchNumber());
                 }
+                applyDepInventorySupplierFromStocktakingEntry(depInventory, entry, material);
+                InventoryMaterialSnapshotHelper.applyDepInventoryBillContextFromStocktaking(depInventory, stkIoStocktaking, entry);
+                InventoryMaterialSnapshotHelper.fillDepRowFromStocktaking(depInventory, entry, material, fdMaterialMapper,
+                    stkIoStocktaking.getTenantId());
                 depInventory.setUpdateTime(new Date());
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
@@ -842,9 +853,16 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkDepInventory.setBeginDate(entry.getBeginTime());
         stkDepInventory.setEndDate(entry.getEndTime());
         stkDepInventory.setReceiptConfirmStatus(1);
+        applyDepInventorySupplierFromStocktakingEntry(stkDepInventory, entry, material);
+        if (material.getFactoryId() != null) {
+            stkDepInventory.setFactoryId(material.getFactoryId());
+        }
         if (stkBatch != null && stkBatch.getId() != null) {
             stkDepInventory.setBatchId(stkBatch.getId());
         }
+        InventoryMaterialSnapshotHelper.applyDepInventoryBillContextFromStocktaking(stkDepInventory, stkIoStocktaking, entry);
+        InventoryMaterialSnapshotHelper.fillDepRowFromStocktaking(stkDepInventory, entry, material, fdMaterialMapper,
+            stkIoStocktaking.getTenantId());
         stkDepInventory.setCreateTime(new Date());
         stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
         stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
@@ -1106,6 +1124,23 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
             }
         }
         return null;
+    }
+
+    /**
+     * 盘盈/期初写入科室库存时补全 supplier_id（盘点明细 supplier_id 优先，否则产品档案）。
+     */
+    private void applyDepInventorySupplierFromStocktakingEntry(StkDepInventory inv, StkIoStocktakingEntry entry, FdMaterial material) {
+        if (inv == null) {
+            return;
+        }
+        if (StringUtils.isNotEmpty(inv.getSupplierId())) {
+            return;
+        }
+        if (entry != null && entry.getSupplierId() != null) {
+            inv.setSupplierId(String.valueOf(entry.getSupplierId()));
+        } else if (material != null && material.getSupplierId() != null) {
+            inv.setSupplierId(String.valueOf(material.getSupplierId()));
+        }
     }
 
     /** 科室库存 supplier_id 为 varchar，解析为 Long 供盘点明细 supplierId 使用 */

@@ -804,8 +804,15 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setBatchNumber(entry.getBatchNumber());
         inv.setMaterialDate(now);
         inv.setWarehouseDate(now);
-        if (StringUtils.isNotEmpty(entry.getSupplerId())) {
-            inv.setSupplierId(entry.getSupplerId());
+        Long depSup = parseSupplierIdLong(entry.getSupplerId());
+        if (depSup == null && entry.getMaterialId() != null) {
+            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            if (m != null && m.getSupplierId() != null) {
+                depSup = m.getSupplierId();
+            }
+        }
+        if (depSup != null) {
+            inv.setSupplierId(String.valueOf(depSup));
         }
         if (stkBatch != null && stkBatch.getFactoryId() != null) {
             inv.setFactoryId(stkBatch.getFactoryId());
@@ -830,15 +837,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setTenantId(bill.getTenantId());
         inv.setCreateTime(now);
         inv.setCreateBy(username);
-        if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                inv.setSnapMaterialName(m.getName());
-                inv.setSnapMaterialSpeci(m.getSpeci());
-                inv.setSnapMaterialModel(m.getModel());
-                inv.setSnapMaterialFactoryId(m.getFactoryId());
-            }
-        }
+        InventoryMaterialSnapshotHelper.fillDepRowFromProfitLoss(inv, entry, fdMaterialMapper, bill.getTenantId());
         return inv;
     }
 
@@ -986,7 +985,14 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         }
         inv.setMaterialDate(now);
         inv.setWarehouseDate(now);
-        inv.setSupplierId(parseSupplierIdLong(entry.getSupplerId()));
+        Long whSup = parseSupplierIdLong(entry.getSupplerId());
+        if (whSup == null && entry.getMaterialId() != null) {
+            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            if (m != null && m.getSupplierId() != null) {
+                whSup = m.getSupplierId();
+            }
+        }
+        inv.setSupplierId(whSup);
         if (stkBatch != null && stkBatch.getFactoryId() != null) {
             inv.setFactoryId(stkBatch.getFactoryId());
         }
@@ -1005,15 +1011,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setCreateBy(username);
         inv.setDelFlag(0);
         inv.setTenantId(bill.getTenantId());
-        if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                inv.setSnapMaterialName(m.getName());
-                inv.setSnapMaterialSpeci(m.getSpeci());
-                inv.setSnapMaterialModel(m.getModel());
-                inv.setSnapMaterialFactoryId(m.getFactoryId());
-            }
-        }
+        InventoryMaterialSnapshotHelper.fillWarehouseRowFromProfitLoss(inv, entry, fdMaterialMapper, bill.getTenantId());
         return inv;
     }
 
