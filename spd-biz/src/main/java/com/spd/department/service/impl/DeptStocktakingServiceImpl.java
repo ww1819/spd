@@ -752,6 +752,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 InventoryMaterialSnapshotHelper.applyDepInventoryBillContextFromStocktaking(depInventory, stkIoStocktaking, entry);
                 InventoryMaterialSnapshotHelper.fillDepRowFromStocktaking(depInventory, entry, material, fdMaterialMapper,
                     stkIoStocktaking.getTenantId());
+                if (stockQty.compareTo(bookQty) > 0) {
+                    applyDeptStocktakingSurplusInventoryRemark(depInventory);
+                }
                 depInventory.setUpdateTime(new Date());
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
 
@@ -863,6 +866,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         InventoryMaterialSnapshotHelper.applyDepInventoryBillContextFromStocktaking(stkDepInventory, stkIoStocktaking, entry);
         InventoryMaterialSnapshotHelper.fillDepRowFromStocktaking(stkDepInventory, entry, material, fdMaterialMapper,
             stkIoStocktaking.getTenantId());
+        applyDeptStocktakingSurplusInventoryRemark(stkDepInventory);
         stkDepInventory.setCreateTime(new Date());
         stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
         stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
@@ -1460,6 +1464,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     }
 
     private static final int STOCK_TYPE_DEPT_STOCKTAKING = 502;
+
+    /** 科室盘点盘盈审核生成/盘盈加量的科室库存备注 */
+    private static final String REMARK_DEPT_STOCKTAKING_SURPLUS_INV = "本库存由科室盘点盘盈业务产生";
+
+    private static void applyDeptStocktakingSurplusInventoryRemark(StkDepInventory inv) {
+        if (inv != null && StringUtils.isEmpty(inv.getRemark())) {
+            inv.setRemark(REMARK_DEPT_STOCKTAKING_SURPLUS_INV);
+        }
+    }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
