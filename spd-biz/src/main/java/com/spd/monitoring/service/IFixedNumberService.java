@@ -36,5 +36,15 @@ public interface IFixedNumberService {
      */
     int deleteFixedNumberByIds(List<String> ids);
 
+    /**
+     * 停用仓库定数监测（关闭产品档案与仓库的定数关联，不物理删除）
+     */
+    int disableWhFixedNumberByIds(List<String> ids);
+
+    /**
+     * 启用仓库定数监测
+     */
+    int enableWhFixedNumberByIds(List<String> ids);
+
 }
 

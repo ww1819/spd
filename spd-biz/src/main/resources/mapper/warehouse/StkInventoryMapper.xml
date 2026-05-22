@@ -757,6 +757,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ) alert_line_pick on alert_line_pick.material_id = fn.material_id and alert_line_pick.warehouse_id = fn.warehouse_id
         left join stk_inventory alert_line on alert_line.id = alert_line_pick.pick_id
         where (fn.del_flag = 0 or fn.del_flag is null)
+          and (fn.enable_status = '0' or fn.enable_status is null)
           and fn.tenant_id = #{tenantId}
           and fn.monitoring = '1'
         <include refid="stkInventoryMaterialActive"/>
@@ -809,6 +810,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             group by stk.material_id, stk.warehouse_id
         ) inv on inv.material_id = fn.material_id and inv.warehouse_id = fn.warehouse_id
         where (fn.del_flag = 0 or fn.del_flag is null)
+          and (fn.enable_status = '0' or fn.enable_status is null)
           and fn.tenant_id = #{tenantId}
           and fn.monitoring = '1'
         <include refid="stkInventoryMaterialActive"/>

@@ -221,6 +221,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 where fn.material_id = m.id
                   and fn.warehouse_id = #{warehouseId}
                   and fn.del_flag != 1
+                  and (fn.enable_status = '0' or fn.enable_status is null)
                   and fn.tenant_id = #{scopedTenantId}
             )
         </if>
@@ -582,6 +583,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 where fn.material_id = m.id
                   and fn.warehouse_id = #{warehouseId}
                   and fn.del_flag != 1
+                  and (fn.enable_status = '0' or fn.enable_status is null)
                   and fn.tenant_id = #{scopedTenantId}
             )
         </if>

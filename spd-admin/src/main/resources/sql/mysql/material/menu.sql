@@ -4456,7 +4456,7 @@ WHERE @stk_in_id IS NOT NULL
 /
 
 -- ========== 定数监测 monitoring/fixedNumber（FixedNumberController）==========
--- 权限：monitoring:fixedNumber:list/add/remove/export；default_open_to_customer=1
+-- 权限：monitoring:fixedNumber:list/add/remove/disable/enable/export；default_open_to_customer=1
 /
 
 SET @mon_parent := COALESCE(
@@ -4540,9 +4540,49 @@ INSERT INTO sys_menu (
 )
 SELECT
   (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '定数导出',
+  '定数停用',
   @fixed_num_menu,
   3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'monitoring:fixedNumber:disable', '#',
+  'admin', NOW(), '1', NOW(), '关闭产品档案与仓库定数关联',
+  '0', '1'
+FROM DUAL
+WHERE @fixed_num_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fixed_num_menu AND perms = 'monitoring:fixedNumber:disable');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '定数启用',
+  @fixed_num_menu,
+  4,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'monitoring:fixedNumber:enable', '#',
+  'admin', NOW(), '1', NOW(), '恢复产品档案与仓库定数关联',
+  '0', '1'
+FROM DUAL
+WHERE @fixed_num_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fixed_num_menu AND perms = 'monitoring:fixedNumber:enable');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '定数导出',
+  @fixed_num_menu,
+  5,
   '#', '', NULL,
   1, 0, 'F', '0', '0', 'monitoring:fixedNumber:export', '#',
   'admin', NOW(), '1', NOW(), '',
@@ -7117,6 +7157,8 @@ JOIN sys_menu m
     'monitoring:fixedNumber:list',
     'monitoring:fixedNumber:add',
     'monitoring:fixedNumber:remove',
+    'monitoring:fixedNumber:disable',
+    'monitoring:fixedNumber:enable',
     'monitoring:fixedNumber:export',
     'department:newProductApply:list',
     'department:newProductApply:query',

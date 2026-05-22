@@ -582,6 +582,12 @@ CALL add_table_column('wh_fixed_number', 'delete_by', 'varchar(64)', '删除人'
 /
 CALL add_table_column('wh_fixed_number', 'delete_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('wh_fixed_number', 'enable_status', 'char(1)', '启用状态（0启用 1停用）', '''0''');
+/
+CALL add_table_column('wh_fixed_number', 'disable_by', 'varchar(64)', '停用人', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'disable_time', 'datetime', '停用时间', NULL);
+/
 CALL add_table_column('dept_fixed_number', 'remark', 'varchar(512)', '备注', NULL);
 /
 CALL add_table_column('dept_fixed_number', 'delete_by', 'varchar(64)', '删除人', NULL);
