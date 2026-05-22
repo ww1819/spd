@@ -81,6 +81,7 @@ public class FixedNumberController extends BaseController
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
                     map.put("isProcure", item.getMaterial().getIsProcure());
+                    map.put("isGz", item.getMaterial().getIsGz());
                     if (item.getMaterial().getSupplierId() != null) {
                         map.put("supplierId", item.getMaterial().getSupplierId());
                     }
@@ -139,6 +140,7 @@ public class FixedNumberController extends BaseController
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
                     map.put("isProcure", item.getMaterial().getIsProcure());
+                    map.put("isGz", item.getMaterial().getIsGz());
                 }
                 if (item.getDepartment() != null) {
                     map.put("departmentName", item.getDepartment().getName());
@@ -184,7 +186,7 @@ public class FixedNumberController extends BaseController
         if (whQuery == null || whQuery.getWarehouseId() == null) {
             return getDataTable(new ArrayList<>());
         }
-        whQuery.setIsGz("2");
+        // 科室申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案（仅展示该仓库定数监测中的产品）
         startPage();
         List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
         long total = new PageInfo<>(list).getTotal();
@@ -231,7 +233,7 @@ public class FixedNumberController extends BaseController
         if (whQuery == null) {
             whQuery = new WhFixedNumber();
         }
-        whQuery.setIsGz("2");
+        // 科室汇总申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案
         startPage();
         List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
         long total = new PageInfo<>(list).getTotal();

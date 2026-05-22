@@ -117,6 +117,9 @@
         <if test="isProcure != null and isProcure != ''">
             and m.is_procure = #{isProcure}
         </if>
+        <if test="isGz != null and isGz != ''">
+            and m.is_gz = #{isGz}
+        </if>
         order by m.code
     </select>
 
