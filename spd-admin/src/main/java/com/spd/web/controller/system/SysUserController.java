@@ -37,7 +37,10 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.system.domain.SysPost;
 import com.spd.system.dto.BatchWorkgroupRequest;
+import com.spd.system.dto.UserDeptGrantBody;
 import com.spd.system.dto.UserImportUpdateDto;
+import com.spd.system.dto.UserMenuGrantBody;
+import com.spd.system.dto.UserWarehouseGrantBody;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISbWorkGroupService;
 import com.spd.system.service.ITenantScopeService;
@@ -502,7 +505,16 @@ public class SysUserController extends BaseController
         user.setUpdateBy(getUserIdStr());
         if (StringUtils.isNotEmpty(user.getPassword()))
         {
-            user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+            String pwd = user.getPassword();
+            // 已是 BCrypt 密文（如权限分配误提交库中 password）时不再二次加密
+            if (pwd.startsWith("$2a$") || pwd.startsWith("$2b$") || pwd.startsWith("$2y$"))
+            {
+                user.setPassword(null);
+            }
+            else
+            {
+                user.setPassword(SecurityUtils.encryptPassword(pwd));
+            }
         }
         return toAjax(userService.updateUser(user));
     }
@@ -549,6 +561,45 @@ public class SysUserController extends BaseController
         userService.checkUserDataScope(user.getUserId());
         user.setUpdateBy(getUserIdStr());
         return toAjax(userService.updateUserStatus(user));
+    }
+
+    /**
+     * 仅更新用户菜单权限（不调用用户主表更新，避免误改密码等字段）
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.GRANT)
+    @PutMapping("/{userId}/menus")
+    public AjaxResult grantUserMenus(@PathVariable("userId") Long userId, @RequestBody UserMenuGrantBody body)
+    {
+        Long[] menuIds = body != null ? body.getMenuIds() : null;
+        userService.updateUserMenusOnly(userId, menuIds);
+        return success();
+    }
+
+    /**
+     * 仅更新用户科室权限
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.GRANT)
+    @PutMapping("/{userId}/departments")
+    public AjaxResult grantUserDepartments(@PathVariable("userId") Long userId, @RequestBody UserDeptGrantBody body)
+    {
+        Long[] departmentIds = body != null ? body.getDepartmentIds() : new Long[0];
+        userService.updateUserDepartmentsOnly(userId, departmentIds);
+        return success();
+    }
+
+    /**
+     * 仅更新用户仓库权限
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.GRANT)
+    @PutMapping("/{userId}/warehouses")
+    public AjaxResult grantUserWarehouses(@PathVariable("userId") Long userId, @RequestBody UserWarehouseGrantBody body)
+    {
+        Long[] warehouseIds = body != null ? body.getWarehouseIds() : new Long[0];
+        userService.updateUserWarehousesOnly(userId, warehouseIds);
+        return success();
     }
 
     /**

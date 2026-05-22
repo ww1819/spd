@@ -249,4 +249,19 @@ public interface ISysUserService
      * @return 成功写入关联条数
      */
     int batchSetUserWorkgroup(List<Long> userIds, Long postId);
+
+    /**
+     * 仅更新用户菜单权限（不修改 sys_user 主表及密码）
+     */
+    void updateUserMenusOnly(Long userId, Long[] menuIds);
+
+    /**
+     * 仅更新用户科室权限
+     */
+    void updateUserDepartmentsOnly(Long userId, Long[] departmentIds);
+
+    /**
+     * 仅更新用户仓库权限
+     */
+    void updateUserWarehousesOnly(Long userId, Long[] warehouseIds);
 }
