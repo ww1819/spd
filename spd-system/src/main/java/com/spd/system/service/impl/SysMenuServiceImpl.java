@@ -563,11 +563,62 @@ public class SysMenuServiceImpl implements ISysMenuService
             }
         }
         List<SysMenu> menus = customerMenus != null ? new ArrayList<>(customerMenus) : new ArrayList<>();
-        // 客户 hc_customer_menu 中可能只登记了父目录，未登记子菜单「收货确认」等，需向下补齐才能在授权树中展示
-        menus = appendDescendantMenusForHcAssignTree(menus);
+        // 仅向上补齐目录节点用于建树，不向下展开租户未在 hc_customer_menu 登记的子功能，避免授权树出现客户未开通的菜单
         menus = appendAncestorMenusForHcAssignTree(menus);
         List<TreeSelect> tree = buildMenuTreeSelect(menus);
         return pruneAssignTreeForCustomerScope(tree, customerGrantedIds);
+    }
+
+    @Override
+    public boolean isMenuUnderCustomerHcScope(String tenantId, Long menuId)
+    {
+        if (StringUtils.isEmpty(tenantId) || menuId == null || menuId <= 0)
+        {
+            return false;
+        }
+        Long cur = menuId;
+        int guard = 0;
+        while (cur != null && cur > 0 && guard++ < 200)
+        {
+            if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, cur) > 0)
+            {
+                return true;
+            }
+            SysMenu m = menuMapper.selectMenuById(cur);
+            if (m == null || m.getParentId() == null)
+            {
+                break;
+            }
+            cur = m.getParentId();
+        }
+        return false;
+    }
+
+    @Override
+    public List<Long> filterMenuIdsUnderCustomerHcScope(String tenantId, List<Long> menuIds)
+    {
+        if (menuIds == null || menuIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        if (StringUtils.isEmpty(tenantId))
+        {
+            return new ArrayList<>(menuIds);
+        }
+        List<Long> out = new ArrayList<>();
+        for (Long id : menuIds)
+        {
+            if (id != null && id > 0 && isMenuUnderCustomerHcScope(tenantId, id))
+            {
+                SysMenu menu = menuMapper.selectMenuById(id);
+                if (menu != null && "1".equals(StringUtils.trimToEmpty(menu.getIsPlatform())))
+                {
+                    continue;
+                }
+                out.add(id);
+            }
+        }
+        return out;
     }
 
     /**

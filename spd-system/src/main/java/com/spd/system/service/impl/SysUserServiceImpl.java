@@ -717,7 +717,12 @@ public class SysUserServiceImpl implements ISysUserService
                 for (SysUserMenu um : materialRows) {
                     mids.add(um.getMenuId());
                 }
-                List<Long> expanded = menuService.expandMenuIdsWithAncestorsForTenant(mids);
+                List<Long> scoped = menuService.filterMenuIdsUnderCustomerHcScope(tenantIdForHc, mids);
+                if (scoped.isEmpty() && !mids.isEmpty())
+                {
+                    throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+                }
+                List<Long> expanded = menuService.expandMenuIdsWithAncestorsForTenant(scoped);
                 List<SysUserMenu> toSave = new ArrayList<>();
                 for (Long mid : expanded) {
                     if (mid == null || mid <= 0) {
@@ -775,6 +780,17 @@ public class SysUserServiceImpl implements ISysUserService
         String[] menuIdStrs = toMenuIdStrings(menuIds);
         if (menuIdStrs == null || menuIdStrs.length == 0) {
             throw new ServiceException("菜单权限不能为空");
+        }
+        if (StringUtils.isNotEmpty(user.getCustomerId()) && menuIds != null && menuIds.length > 0)
+        {
+            List<Long> scoped = menuService.filterMenuIdsUnderCustomerHcScope(user.getCustomerId(),
+                java.util.Arrays.asList(menuIds));
+            if (scoped.isEmpty())
+            {
+                throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+            }
+            menuIds = scoped.toArray(new Long[0]);
+            menuIdStrs = toMenuIdStrings(menuIds);
         }
         user.setMenuIds(menuIdStrs);
         if (StringUtils.isEmpty(user.getCustomerId())) {

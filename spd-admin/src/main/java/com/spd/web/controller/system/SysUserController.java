@@ -111,6 +111,10 @@ public class SysUserController extends BaseController
         }
         ajax.put("menus", sysMenuService.selectMenuTreeForPostAssign(tenantId));
         List<Long> checked = userService.selectMenuListByUserId(userId);
+        if (checked != null && !checked.isEmpty())
+        {
+            checked = sysMenuService.filterMenuIdsUnderCustomerHcScope(tenantId, checked);
+        }
         ajax.put("checkedKeys", checked != null ? checked : new ArrayList<>());
         return ajax;
     }

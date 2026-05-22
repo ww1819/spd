@@ -26,6 +26,8 @@
   <select id="countByTenantIdAndMenuId" resultType="int">
     select count(1) from hc_customer_menu
     where tenant_id = #{tenantId} and menu_id = #{menuId}
+      and (is_enabled = '1' or is_enabled is null)
+      and (status = '0' or status is null)
   </select>
 
   <update id="updateStatus">

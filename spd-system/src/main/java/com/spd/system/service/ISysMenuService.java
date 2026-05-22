@@ -174,6 +174,16 @@ public interface ISysMenuService
   List<TreeSelect> selectMenuTreeForPostAssign(String tenantId);
 
   /**
+   * 菜单是否在租户耗材权限范围内（自身或任一祖先在 hc_customer_menu 且未暂停）
+   */
+  boolean isMenuUnderCustomerHcScope(String tenantId, Long menuId);
+
+  /**
+   * 过滤出租户可分配的菜单 ID（用于用户/工作组保存，防止越权写入）
+   */
+  List<Long> filterMenuIdsUnderCustomerHcScope(String tenantId, List<Long> menuIds);
+
+  /**
    * 将菜单 ID 扩展为包含其下全部非平台子孙（M/C/F），用于客户保存 hc_customer_menu 与业务含义「开通父即含子」一致
    */
   List<Long> expandMenuIdsWithDescendants(List<Long> menuIds);
