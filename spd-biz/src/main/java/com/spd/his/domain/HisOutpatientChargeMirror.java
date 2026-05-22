@@ -49,6 +49,12 @@ public class HisOutpatientChargeMirror extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date processTime;
     private String processBy;
+    /** 处理方（手动/自动） */
+    private String processParty;
+    /** 处理情况说明 */
+    private String processSituation;
+    /** 处理人姓名（展示用） */
+    private String processByName;
     /** 该科室该项目对应的高值耗材库存数量 */
     private BigDecimal highValueStockQty;
     /** 该科室该项目对应的低值耗材库存数量 */

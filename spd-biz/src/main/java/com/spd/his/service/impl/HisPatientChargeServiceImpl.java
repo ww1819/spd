@@ -63,6 +63,7 @@ import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
+import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
@@ -73,6 +74,8 @@ import com.spd.his.service.IHisPatientChargeService;
 import com.spd.his.support.HisInternalRequestContext;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
 import com.spd.foundation.service.ISbTenantSettingService;
+import com.spd.common.core.domain.entity.SysUser;
+import com.spd.system.mapper.SysUserMapper;
 import com.spd.system.service.ITenantScopeService;
 
 @Service
@@ -86,6 +89,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     /** HIS 区间查询占位符绑定格式（字符串比较，与内置 SQL 一致） */
     private static final DateTimeFormatter HIS_FETCH_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /** 患者费用明细单次导出最大行数 */
+    private static final int MIRROR_EXPORT_MAX_ROWS = 50000;
 
     @Autowired
     private HisTenantJdbcAccess hisTenantJdbcAccess;
@@ -125,6 +131,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private IHisBillingRefundService hisBillingRefundService;
+
+    @Autowired
+    private SysUserMapper sysUserMapper;
 
     @Override
     public HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body)
@@ -513,6 +522,46 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
         }
         return wrapAsPage(out, slice);
+    }
+
+    @Override
+    public List<HisPatientChargeMirrorExportVo> selectMirrorExportList(
+        HisPatientChargeAllQuery query, String visitKind, String inpatientNo, String outpatientNo)
+    {
+        HisPatientChargeAllQuery q = query == null ? new HisPatientChargeAllQuery() : query;
+        if (StringUtils.isEmpty(q.getTenantId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        String customerId = q.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
+        }
+        ensureUnifiedMirrorBackfill(customerId);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.buildExportUnifiedQuery(
+            q, visitKind, inpatientNo, outpatientNo);
+        long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
+        if (total > MIRROR_EXPORT_MAX_ROWS)
+        {
+            throw new ServiceException("导出条数不能超过 " + MIRROR_EXPORT_MAX_ROWS + "，请缩小筛选范围（当前约 " + total + " 条）");
+        }
+        PageHelper.clearPage();
+        List<HisPatientChargeMirrorUnified> rows = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
+        enrichUnifiedProcessDisplay(rows);
+        List<HisPatientChargeMirrorExportVo> out = new ArrayList<>(rows != null ? rows.size() : 0);
+        if (rows != null)
+        {
+            for (HisPatientChargeMirrorUnified u : rows)
+            {
+                HisPatientChargeMirrorExportVo vo = HisPatientChargeMirrorUnifiedSupport.toExportVo(u);
+                if (vo != null)
+                {
+                    out.add(vo);
+                }
+            }
+        }
+        return out;
     }
 
     @Override
@@ -1065,7 +1114,63 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         PageHelper.clearPage();
         List<HisPatientChargeMirrorUnified> safeRows = rows != null ? rows : Collections.emptyList();
+        enrichUnifiedProcessDisplay(safeRows);
         return new UnifiedMirrorPageSlice(safeRows, total, pageNum, pageSize);
+    }
+
+    /** 补齐处理方/处理情况展示字段，并将 process_by 解析为姓名 */
+    private void enrichUnifiedProcessDisplay(List<HisPatientChargeMirrorUnified> rows)
+    {
+        if (rows == null || rows.isEmpty())
+        {
+            return;
+        }
+        Map<String, String> nameCache = new HashMap<>();
+        for (HisPatientChargeMirrorUnified u : rows)
+        {
+            if (u == null)
+            {
+                continue;
+            }
+            u.setProcessByName(resolveProcessByDisplayName(u.getProcessBy(), nameCache));
+        }
+    }
+
+    private String resolveProcessByDisplayName(String processBy, Map<String, String> cache)
+    {
+        if (StringUtils.isBlank(processBy))
+        {
+            return "";
+        }
+        String key = processBy.trim();
+        if (cache.containsKey(key))
+        {
+            return cache.get(key);
+        }
+        String name = key;
+        try
+        {
+            Long uid = Long.parseLong(key);
+            SysUser su = sysUserMapper.selectUserById(uid);
+            if (su != null)
+            {
+                name = StringUtils.defaultIfBlank(su.getNickName(), su.getUserName());
+            }
+        }
+        catch (NumberFormatException ex)
+        {
+            SysUser su = sysUserMapper.selectUserByUserName(key);
+            if (su != null)
+            {
+                name = StringUtils.defaultIfBlank(su.getNickName(), su.getUserName());
+            }
+        }
+        if (StringUtils.isBlank(name))
+        {
+            name = key;
+        }
+        cache.put(key, name);
+        return name;
     }
 
     private static <T> Page<T> wrapAsPage(List<T> rows, UnifiedMirrorPageSlice slice)

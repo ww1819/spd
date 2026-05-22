@@ -2746,6 +2746,8 @@ CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
   `process_type` varchar(32) DEFAULT NULL,
   `process_time` datetime DEFAULT NULL,
   `process_by` varchar(64) DEFAULT NULL,
+  `process_party` varchar(32) DEFAULT NULL COMMENT '处理方式（如自动处理、手动处理）',
+  `process_situation` varchar(512) DEFAULT NULL COMMENT '处理情况说明（成功/失败原因等）',
   `value_level` varchar(8) DEFAULT NULL COMMENT '高低值(冗余自收费项镜像,1高2低)',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,

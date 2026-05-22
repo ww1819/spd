@@ -48,6 +48,22 @@
             and (m.inpatient_no like concat('%', #{visitNo}, '%') or m.outpatient_no like concat('%', #{visitNo}, '%'))
         </if>
         <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+        <if test="hisChargeId != null and hisChargeId != ''">
+            <choose>
+                <when test='"INPATIENT".equals(visitKind)'>
+                    and trim(ifnull(m.his_inpatient_charge_id,'')) = trim(#{hisChargeId})
+                </when>
+                <when test='"OUTPATIENT".equals(visitKind)'>
+                    and trim(ifnull(m.his_outpatient_charge_id,'')) = trim(#{hisChargeId})
+                </when>
+                <otherwise>
+                    and (
+                        (m.visit_kind = 'INPATIENT' and trim(ifnull(m.his_inpatient_charge_id,'')) = trim(#{hisChargeId}))
+                        or (m.visit_kind = 'OUTPATIENT' and trim(ifnull(m.his_outpatient_charge_id,'')) = trim(#{hisChargeId}))
+                    )
+                </otherwise>
+            </choose>
+        </if>
         <if test="chargeIdTf != null and chargeIdTf != ''">
             <choose>
                 <when test='"INPATIENT".equals(visitKind)'>
@@ -138,6 +154,8 @@
         <result property="processType" column="process_type"/>
         <result property="processTime" column="process_time"/>
         <result property="processBy" column="process_by"/>
+        <result property="processParty" column="process_party"/>
+        <result property="processSituation" column="process_situation"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>

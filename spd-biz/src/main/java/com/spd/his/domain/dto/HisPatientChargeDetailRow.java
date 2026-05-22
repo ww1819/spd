@@ -24,6 +24,8 @@ public class HisPatientChargeDetailRow
     /** 展示统一科室/就诊 */
     private String deptDisplayName;
     private String chargeItemId;
+    /** HIS 费用明细主键 */
+    private String hisChargeId;
     /** 退费记录对应的原收费明细ID（住院/门诊统一展示） */
     private String chargeIdTf;
     private String itemName;
@@ -37,6 +39,12 @@ public class HisPatientChargeDetailRow
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date processTime;
     private String processBy;
+    /** 处理人姓名 */
+    private String processByName;
+    /** 处理方（手动/自动） */
+    private String processParty;
+    /** 处理情况说明 */
+    private String processSituation;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
     private BigDecimal highValueStockQty;
