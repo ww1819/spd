@@ -31,4 +31,15 @@ public interface HisMirrorConsumeLinkMapper
 
     int increaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
         @Param("updateBy") String updateBy);
+
+    int decreaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
+        @Param("updateBy") String updateBy);
+
+    HisMirrorConsumeLink selectById(@Param("tenantId") String tenantId, @Param("id") String id);
+
+    List<HisMirrorConsumeLink> selectAllLowValueLinksForMirror(@Param("tenantId") String tenantId,
+        @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId);
+
+    int resetReturnedQtyForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
+        @Param("mirrorRowId") String mirrorRowId, @Param("updateBy") String updateBy);
 }

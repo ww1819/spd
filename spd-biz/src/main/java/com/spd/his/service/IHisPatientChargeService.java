@@ -55,6 +55,9 @@ public interface IHisPatientChargeService
 
     HisMirrorLowBatchResultVo processMirrorLowValueBatch(HisMirrorManualBatchBody body);
 
+    com.spd.his.domain.dto.HisMirrorWriteOffResultVo processMirrorLowValueWriteOff(
+        com.spd.his.domain.dto.HisMirrorWriteOffBody body);
+
     HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body);
 
     HisMirrorHighApplyResultVo applyMirrorHighConsume(HisMirrorHighApplyBody body);

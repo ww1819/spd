@@ -30,6 +30,8 @@ import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
+import com.spd.his.domain.dto.HisMirrorWriteOffBody;
+import com.spd.his.domain.dto.HisMirrorWriteOffResultVo;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
@@ -172,6 +174,18 @@ public class HisPatientChargeController extends BaseController
     public AjaxResult applyHighConsume(@RequestBody HisMirrorHighApplyBody body)
     {
         HisMirrorHighApplyResultVo vo = hisPatientChargeService.applyMirrorHighConsume(body);
+        return success(vo);
+    }
+
+    /**
+     * 低值冲销：反消耗并恢复为待处理；计费行会联动已核销/已退费返还的关联退费行。
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:writeOffLow')")
+    @Log(title = "HIS计费镜像低值冲销", businessType = BusinessType.UPDATE)
+    @PostMapping("/mirror/writeOffLowValue")
+    public AjaxResult writeOffLowValue(@RequestBody HisMirrorWriteOffBody body)
+    {
+        HisMirrorWriteOffResultVo vo = hisPatientChargeService.processMirrorLowValueWriteOff(body);
         return success(vo);
     }
 

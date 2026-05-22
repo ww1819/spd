@@ -118,6 +118,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private IHisMirrorConsumeManualService hisMirrorConsumeManualService;
 
     @Autowired
+    private com.spd.his.service.IHisMirrorConsumeWriteOffService hisMirrorConsumeWriteOffService;
+
+    @Autowired
     private ITenantScopeService tenantScopeService;
 
     @Autowired
@@ -665,6 +668,19 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setSuccessCount(ok);
         vo.setFailCount(fail);
         return vo;
+    }
+
+    @Override
+    public com.spd.his.domain.dto.HisMirrorWriteOffResultVo processMirrorLowValueWriteOff(
+        com.spd.his.domain.dto.HisMirrorWriteOffBody body)
+    {
+        assertTenantAllowed();
+        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
+        {
+            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
+                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+        }
+        return hisMirrorConsumeWriteOffService.processLowValueWriteOff(body);
     }
 
     @Override

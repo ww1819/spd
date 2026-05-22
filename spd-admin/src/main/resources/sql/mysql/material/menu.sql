@@ -6178,6 +6178,11 @@ SELECT 3610, '计费高值退费返还', @patient_charge_menu, 9, '#', '', NULL,
 FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:billingRefundHigh') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3610))
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
 /
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3612, '计费低值冲销', @patient_charge_menu, 10, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:writeOffLow', '#', 'admin', NOW(), '1', NOW(), 'POST /his/patientCharge/mirror/writeOffLowValue', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:writeOffLow') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3612))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
 
 -- 23.3.2 HIS 计费自动处理（系统管理/系统设置；material/system/billingSetting/index）
 SET @hc_billing_setting_parent := COALESCE(

@@ -93,4 +93,53 @@
             update_time = now()
         where id = #{id} and ifnull(del_flag, 0) = 0
     </update>
+
+    <update id="decreaseReturnedQtyById">
+        update his_mirror_consume_link
+        set returned_qty = @new_ret := greatest(0, ifnull(returned_qty, 0) - #{delta}),
+            refundable_remaining_qty = ifnull(alloc_qty, 0) - @new_ret,
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id} and ifnull(del_flag, 0) = 0
+    </update>
+
+    <select id="selectById" resultType="com.spd.his.domain.HisMirrorConsumeLink">
+        select
+            id, tenant_id as tenantId, visit_kind as visitKind, mirror_row_id as mirrorRowId,
+            fetch_batch_id as fetchBatchId, dept_batch_consume_id as deptBatchConsumeId,
+            dept_batch_consume_entry_id as deptBatchConsumeEntryId, alloc_qty as allocQty,
+            dep_inventory_id as depInventoryId, gz_dep_inventory_id as gzDepInventoryId,
+            returned_qty as returnedQty, refundable_remaining_qty as refundableRemainingQty
+        from his_mirror_consume_link
+        where tenant_id = #{tenantId} and id = #{id} and ifnull(del_flag, 0) = 0
+        limit 1
+    </select>
+
+    <select id="selectAllLowValueLinksForMirror" resultType="com.spd.his.domain.HisMirrorConsumeLink">
+        select
+            id, tenant_id as tenantId, visit_kind as visitKind, mirror_row_id as mirrorRowId,
+            fetch_batch_id as fetchBatchId, dept_batch_consume_id as deptBatchConsumeId,
+            dept_batch_consume_entry_id as deptBatchConsumeEntryId, alloc_qty as allocQty,
+            dep_inventory_id as depInventoryId, returned_qty as returnedQty,
+            refundable_remaining_qty as refundableRemainingQty, create_time as createTime
+        from his_mirror_consume_link
+        where tenant_id = #{tenantId}
+          and visit_kind = #{visitKind}
+          and mirror_row_id = #{mirrorRowId}
+          and ifnull(del_flag, 0) = 0
+          and dep_inventory_id is not null
+        order by create_time asc, id asc
+    </select>
+
+    <update id="resetReturnedQtyForMirror">
+        update his_mirror_consume_link
+        set returned_qty = 0,
+            refundable_remaining_qty = ifnull(alloc_qty, 0),
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and visit_kind = #{visitKind}
+          and mirror_row_id = #{mirrorRowId}
+          and ifnull(del_flag, 0) = 0
+    </update>
 </mapper>
