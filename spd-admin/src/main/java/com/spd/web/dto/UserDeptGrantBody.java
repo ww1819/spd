@@ -1,4 +1,4 @@
-package com.spd.system.dto;
+package com.spd.web.dto;
 
 import java.io.Serializable;
 

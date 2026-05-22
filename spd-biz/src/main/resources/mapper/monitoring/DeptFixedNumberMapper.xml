@@ -47,6 +47,7 @@
         <result property="model" column="model"/>
         <result property="registerNo" column="registerNo"/>
         <result property="isProcure" column="isProcure"/>
+        <result property="isGz" column="isGz"/>
     </resultMap>
 
     <sql id="selectDeptFixedNumberVo">
@@ -78,6 +79,7 @@
             m.model    as model,
             m.register_no as registerNo,
             m.is_procure as isProcure,
+            m.is_gz as isGz,
             u.unit_name as unitName,
             m.price as price,
             s.name as supplierName,

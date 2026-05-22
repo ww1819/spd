@@ -1,4 +1,4 @@
-package com.spd.system.dto;
+package com.spd.web.dto;
 
 import java.io.Serializable;
 
@@ -9,7 +9,6 @@ public class UserMenuGrantBody implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 菜单 ID 列表（耗材 sys_menu 数字 ID） */
     private Long[] menuIds;
 
     public Long[] getMenuIds() {

@@ -51,6 +51,7 @@
         <result property="registerNo" column="registerNo"/>
         <result property="supplierId" column="materialSupplierId"/>
         <result property="isProcure" column="isProcure"/>
+        <result property="isGz" column="isGz"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -88,6 +89,7 @@
             m.price as price,
             m.supplier_id as materialSupplierId,
             m.is_procure as isProcure,
+            m.is_gz as isGz,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName,
