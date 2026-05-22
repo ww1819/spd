@@ -40,27 +40,79 @@
             l.create_time as createTime,
             h.id as consumeBillId,
             h.consume_bill_no as consumeBillNo,
-            h.consume_bill_date as consumeBillDate,
+            coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeBillDate,
+            'CONSUME' as recordType,
+            ifnull(h.reverse_flag, 0) as reverseFlag,
+            h.reverse_of_bill_no as reverseOfBillNo,
             h.consume_bill_status as consumeBillStatus,
             e.id as consumeEntryId,
             e.material_name as materialName,
             e.batch_no as batchNo,
             e.batch_number as batchNumber,
+            e.unit_price as unitPrice,
             e.qty as entryQty,
+            e.amt as amt,
+            e.begin_time as beginTime,
+            e.end_time as endTime,
             case
-                when trim(ifnull(e.main_barcode, '')) != '' then trim(e.main_barcode)
+                when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
                 else trim(ifnull(e.sub_barcode, ''))
             end as inHospitalCode
         from his_mirror_consume_link l
         inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
             and ifnull(h.del_flag, 0) = 0
             and h.tenant_id = l.tenant_id
+            and ifnull(h.reverse_flag, 0) = 0
         left join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id and ifnull(e.del_flag, 0) = 0
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
           and l.mirror_row_id = #{mirrorRowId}
           and ifnull(l.del_flag, 0) = 0
-        order by l.create_time desc, l.id desc
+    </select>
+
+    <select id="selectReverseConsumeRecordsByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorConsumeRecordVo">
+        select
+            l.id as linkId,
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            abs(ifnull(re.qty, 0)) as allocQty,
+            coalesce(h.audit_date, h.create_time) as createTime,
+            h.id as consumeBillId,
+            h.consume_bill_no as consumeBillNo,
+            coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeBillDate,
+            'REVERSE' as recordType,
+            1 as reverseFlag,
+            h.reverse_of_bill_no as reverseOfBillNo,
+            h.consume_bill_status as consumeBillStatus,
+            re.id as consumeEntryId,
+            re.material_name as materialName,
+            re.batch_no as batchNo,
+            re.batch_number as batchNumber,
+            re.unit_price as unitPrice,
+            re.qty as entryQty,
+            re.amt as amt,
+            re.begin_time as beginTime,
+            re.end_time as endTime,
+            case
+                when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
+                else trim(ifnull(re.sub_barcode, ''))
+            end as inHospitalCode
+        from his_mirror_consume_link l
+        inner join t_hc_ks_xh_entry fe on fe.id = l.dept_batch_consume_entry_id
+            and ifnull(fe.del_flag, 0) = 0
+            and fe.tenant_id = l.tenant_id
+        inner join t_hc_ks_xh_entry re on re.src_consume_entry_id = fe.id
+            and ifnull(re.del_flag, 0) = 0
+            and re.tenant_id = l.tenant_id
+            and re.qty &lt; 0
+        inner join t_hc_ks_xh h on h.id = re.paren_id
+            and ifnull(h.del_flag, 0) = 0
+            and h.tenant_id = l.tenant_id
+            and ifnull(h.reverse_flag, 0) = 1
+        where l.tenant_id = #{tenantId}
+          and l.visit_kind = #{visitKind}
+          and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
     </select>
 
     <select id="selectCandidateLinksForRefund" resultType="com.spd.his.domain.HisMirrorConsumeLink">

@@ -22,6 +22,10 @@ public interface HisMirrorConsumeLinkMapper
     List<HisMirrorConsumeRecordVo> selectConsumeRecordsByMirrorRow(@Param("tenantId") String tenantId,
         @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId);
 
+    /** 镜像行关联正向消耗所产生的冲销（反消耗）单明细 */
+    List<HisMirrorConsumeRecordVo> selectReverseConsumeRecordsByMirrorRow(@Param("tenantId") String tenantId,
+        @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId);
+
     /**
      * 退费候选：尚有余量可返还的消耗关联行（低值 dep_inventory 非空；高值 gz_dep_inventory 非空）
      */

@@ -583,7 +583,46 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         String rowId = StringUtils.trimToEmpty(mirrorRowId);
         assertMirrorRowDepartmentAllowed(tenantId, vk, rowId);
-        return hisMirrorConsumeLinkMapper.selectConsumeRecordsByMirrorRow(tenantId, vk, rowId);
+        List<HisMirrorConsumeRecordVo> forward = hisMirrorConsumeLinkMapper.selectConsumeRecordsByMirrorRow(
+            tenantId, vk, rowId);
+        List<HisMirrorConsumeRecordVo> reverse = hisMirrorConsumeLinkMapper.selectReverseConsumeRecordsByMirrorRow(
+            tenantId, vk, rowId);
+        List<HisMirrorConsumeRecordVo> merged = new ArrayList<>();
+        if (forward != null)
+        {
+            merged.addAll(forward);
+        }
+        if (reverse != null)
+        {
+            merged.addAll(reverse);
+        }
+        merged.sort((a, b) -> {
+            Date ta = a != null && a.getConsumeBillDate() != null ? a.getConsumeBillDate()
+                : (a != null ? a.getCreateTime() : null);
+            Date tb = b != null && b.getConsumeBillDate() != null ? b.getConsumeBillDate()
+                : (b != null ? b.getCreateTime() : null);
+            if (ta == null && tb == null)
+            {
+                return 0;
+            }
+            if (ta == null)
+            {
+                return 1;
+            }
+            if (tb == null)
+            {
+                return -1;
+            }
+            int cmp = tb.compareTo(ta);
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+            String aid = a != null ? a.getConsumeBillNo() : "";
+            String bid = b != null ? b.getConsumeBillNo() : "";
+            return StringUtils.compare(bid, aid);
+        });
+        return merged;
     }
 
     @Override
