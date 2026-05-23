@@ -5,7 +5,9 @@ import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
 import com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 采购计划Service接口
@@ -108,4 +110,9 @@ public interface IPurchasePlanService
      * 采购计划汇总导出（按供应商+物资维度汇总）
      */
     List<PurchasePlanSummaryExportVO> listPurchasePlanSummaryExport(PurchasePlan query);
+
+    /**
+     * 按仓库汇总物资库存数量（materialId -> sumQty）
+     */
+    Map<Long, BigDecimal> mapMaterialStockQtyByWarehouse(Long warehouseId, List<Long> materialIds);
 }
