@@ -14,4 +14,7 @@ public interface HisBillingRefundOrderMapper
     /** 已成功处理过的退费镜像行（幂等跳过） */
     int countDoneByRefundMirrorRowId(@Param("tenantId") String tenantId,
         @Param("refundMirrorRowId") String refundMirrorRowId);
+
+    HisBillingRefundOrder selectDoneByRefundMirrorRowId(@Param("tenantId") String tenantId,
+        @Param("refundMirrorRowId") String refundMirrorRowId);
 }

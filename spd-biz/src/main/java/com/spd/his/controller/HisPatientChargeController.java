@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import javax.servlet.http.HttpServletResponse;
 import com.spd.common.annotation.Log;
+import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
@@ -28,9 +30,12 @@ import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
+import com.spd.his.domain.dto.HisMirrorWriteOffBody;
+import com.spd.his.domain.dto.HisMirrorWriteOffResultVo;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
+import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
@@ -71,6 +76,24 @@ public class HisPatientChargeController extends BaseController
         query.setTenantId(SecurityUtils.getCustomerId());
         List<HisPatientChargeDetailRow> list = hisPatientChargeService.selectAllMirrorList(query);
         return getDataTable(list);
+    }
+
+    /**
+     * 患者费用明细导出（按当前筛选条件；末尾含处理方式、处理情况）
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @Log(title = "患者费用明细导出", businessType = BusinessType.EXPORT)
+    @PostMapping("/mirror/export")
+    public void exportMirrorList(HttpServletResponse response, HisPatientChargeAllQuery query,
+        @RequestParam(value = "visitKind", required = false) String visitKind,
+        @RequestParam(value = "inpatientNo", required = false) String inpatientNo,
+        @RequestParam(value = "outpatientNo", required = false) String outpatientNo)
+    {
+        query.setTenantId(SecurityUtils.getCustomerId());
+        List<HisPatientChargeMirrorExportVo> list = hisPatientChargeService.selectMirrorExportList(
+            query, visitKind, inpatientNo, outpatientNo);
+        ExcelUtil<HisPatientChargeMirrorExportVo> util = new ExcelUtil<>(HisPatientChargeMirrorExportVo.class);
+        util.exportExcel(response, list, "患者费用明细");
     }
 
     /**
@@ -151,6 +174,18 @@ public class HisPatientChargeController extends BaseController
     public AjaxResult applyHighConsume(@RequestBody HisMirrorHighApplyBody body)
     {
         HisMirrorHighApplyResultVo vo = hisPatientChargeService.applyMirrorHighConsume(body);
+        return success(vo);
+    }
+
+    /**
+     * 低值冲销：反消耗并恢复为待处理；计费行会联动已核销/已退费返还的关联退费行。
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:writeOffLow')")
+    @Log(title = "HIS计费镜像低值冲销", businessType = BusinessType.UPDATE)
+    @PostMapping("/mirror/writeOffLowValue")
+    public AjaxResult writeOffLowValue(@RequestBody HisMirrorWriteOffBody body)
+    {
+        HisMirrorWriteOffResultVo vo = hisPatientChargeService.processMirrorLowValueWriteOff(body);
         return success(vo);
     }
 

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -152,6 +153,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setCreateBy(SecurityUtils.getUserIdStr());
         gzShipment.setShipmentNo(getShipmentNo());
         gzShipment.setCreateTime(DateUtils.getNowDate());
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzShipment.getGzShipmentEntryList(), "高值出库");
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         int rows = gzShipmentMapper.insertGzShipment(gzShipment);
         int filteredCount = insertGzShipmentEntry(gzShipment);
@@ -186,6 +188,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         }
         gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(DateUtils.getNowDate());
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzShipment.getGzShipmentEntryList(), "高值出库");
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         gzLineRefWriteService.deleteOutboundRefs(gzShipment.getId());
         int filteredCount = syncGzShipmentEntry(gzShipment);
@@ -232,9 +235,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             throw new ServiceException(String.format("高值出库单 %s 已审核，请勿重复审核", no));
         }
         List<GzShipmentEntry> gzShipmentEntryList = gzShipment.getGzShipmentEntryList();
-        if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值出库单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzShipmentEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值出库");
 
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipmentEntryList);
 

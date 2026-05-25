@@ -143,6 +143,194 @@ public final class InventoryMaterialSnapshotHelper {
         }
     }
 
+    /**
+     * 科室盘点审核写科室库存：优先明细嵌套耗材、再档案（仅补空快照，不覆盖已有值）。
+     */
+    public static void fillDepRowFromStocktaking(StkDepInventory dep, StkIoStocktakingEntry entry, FdMaterial materialHint,
+        FdMaterialMapper fdMaterialMapper, String tenantId) {
+        if (dep == null) {
+            return;
+        }
+        FdMaterial nested = materialHint;
+        if (nested == null && entry != null) {
+            nested = entry.getMaterial();
+        }
+        applyMaterialSnapshotsToDep(dep, nested, null, null, null, fdMaterialMapper, tenantId);
+    }
+
+    /**
+     * 盈亏单审核写科室库存：优先盈亏明细名称/规格快照与嵌套耗材，再档案。
+     */
+    public static void fillDepRowFromProfitLoss(StkDepInventory dep, StkIoProfitLossEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        if (dep == null) {
+            return;
+        }
+        String nameHint = null;
+        String speciHint = null;
+        FdMaterial nested = null;
+        if (entry != null) {
+            nameHint = entry.getMaterialNameSnap();
+            speciHint = entry.getMaterialSpeciSnap();
+            nested = entry.getMaterial();
+        }
+        applyMaterialSnapshotsToDep(dep, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId);
+    }
+
+    /**
+     * 盈亏单审核写仓库库存：优先盈亏明细名称/规格快照与嵌套耗材，再档案。
+     */
+    public static void fillWarehouseRowFromProfitLoss(StkInventory inv, StkIoProfitLossEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        if (inv == null) {
+            return;
+        }
+        String nameHint = null;
+        String speciHint = null;
+        FdMaterial nested = null;
+        if (entry != null) {
+            nameHint = entry.getMaterialNameSnap();
+            speciHint = entry.getMaterialSpeciSnap();
+            nested = entry.getMaterial();
+        }
+        applyMaterialSnapshotsToWarehouse(inv, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId);
+    }
+
+    /** 科室盘点审核生成/更新科室库存时写入单据与条码等冗余字段 */
+    public static void applyDepInventoryBillContextFromStocktaking(StkDepInventory dep, StkIoStocktaking bill, StkIoStocktakingEntry entry) {
+        if (dep == null) {
+            return;
+        }
+        if (bill != null) {
+            if (StringUtils.isEmpty(dep.getTenantId()) && StringUtils.isNotEmpty(bill.getTenantId())) {
+                dep.setTenantId(bill.getTenantId());
+            }
+            dep.setBillId(bill.getId());
+            if (StringUtils.isNotEmpty(bill.getStockNo())) {
+                dep.setBillNo(bill.getStockNo());
+                dep.setOutOrderNo(bill.getStockNo());
+            }
+        }
+        if (entry != null) {
+            if (entry.getId() != null) {
+                dep.setBillEntryId(entry.getId());
+            }
+            if (StringUtils.isNotEmpty(entry.getMainBarcode())) {
+                dep.setMainBarcode(entry.getMainBarcode());
+            }
+            if (StringUtils.isNotEmpty(entry.getSubBarcode())) {
+                dep.setSubBarcode(entry.getSubBarcode());
+            }
+            if (entry.getKcNo() != null) {
+                dep.setKcNo(entry.getKcNo());
+            }
+        }
+    }
+
+    private static void applyMaterialSnapshotsToDep(StkDepInventory dep, FdMaterial nested, String nameHint, String speciHint,
+        Long factoryIdHint, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        if (dep == null) {
+            return;
+        }
+        if (StringUtils.isNotEmpty(nameHint) && StringUtils.isEmpty(dep.getSnapMaterialName())) {
+            dep.setSnapMaterialName(nameHint);
+        }
+        if (StringUtils.isNotEmpty(speciHint) && StringUtils.isEmpty(dep.getSnapMaterialSpeci())) {
+            dep.setSnapMaterialSpeci(speciHint);
+        }
+        if (nested != null) {
+            if (StringUtils.isEmpty(dep.getSnapMaterialName()) && StringUtils.isNotEmpty(nested.getName())) {
+                dep.setSnapMaterialName(nested.getName());
+            }
+            if (StringUtils.isEmpty(dep.getSnapMaterialSpeci()) && StringUtils.isNotEmpty(nested.getSpeci())) {
+                dep.setSnapMaterialSpeci(nested.getSpeci());
+            }
+            if (StringUtils.isEmpty(dep.getSnapMaterialModel()) && StringUtils.isNotEmpty(nested.getModel())) {
+                dep.setSnapMaterialModel(nested.getModel());
+            }
+            if (dep.getSnapMaterialFactoryId() == null && nested.getFactoryId() != null) {
+                dep.setSnapMaterialFactoryId(nested.getFactoryId());
+            }
+        }
+        if (factoryIdHint != null && dep.getSnapMaterialFactoryId() == null) {
+            dep.setSnapMaterialFactoryId(factoryIdHint);
+        }
+        Long mid = dep.getMaterialId();
+        if (mid == null || fdMaterialMapper == null) {
+            return;
+        }
+        FdMaterial m = loadFdMaterial(mid, fdMaterialMapper, tenantId);
+        if (m == null) {
+            return;
+        }
+        if (StringUtils.isEmpty(dep.getSnapMaterialName())) {
+            dep.setSnapMaterialName(m.getName());
+        }
+        if (StringUtils.isEmpty(dep.getSnapMaterialSpeci())) {
+            dep.setSnapMaterialSpeci(m.getSpeci());
+        }
+        if (StringUtils.isEmpty(dep.getSnapMaterialModel())) {
+            dep.setSnapMaterialModel(m.getModel());
+        }
+        if (dep.getSnapMaterialFactoryId() == null && m.getFactoryId() != null) {
+            dep.setSnapMaterialFactoryId(m.getFactoryId());
+        }
+        if (dep.getFactoryId() == null && m.getFactoryId() != null) {
+            dep.setFactoryId(m.getFactoryId());
+        }
+    }
+
+    private static void applyMaterialSnapshotsToWarehouse(StkInventory inv, FdMaterial nested, String nameHint, String speciHint,
+        Long factoryIdHint, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        if (inv == null) {
+            return;
+        }
+        if (StringUtils.isNotEmpty(nameHint) && StringUtils.isEmpty(inv.getSnapMaterialName())) {
+            inv.setSnapMaterialName(nameHint);
+        }
+        if (StringUtils.isNotEmpty(speciHint) && StringUtils.isEmpty(inv.getSnapMaterialSpeci())) {
+            inv.setSnapMaterialSpeci(speciHint);
+        }
+        if (nested != null) {
+            if (StringUtils.isEmpty(inv.getSnapMaterialName()) && StringUtils.isNotEmpty(nested.getName())) {
+                inv.setSnapMaterialName(nested.getName());
+            }
+            if (StringUtils.isEmpty(inv.getSnapMaterialSpeci()) && StringUtils.isNotEmpty(nested.getSpeci())) {
+                inv.setSnapMaterialSpeci(nested.getSpeci());
+            }
+            if (StringUtils.isEmpty(inv.getSnapMaterialModel()) && StringUtils.isNotEmpty(nested.getModel())) {
+                inv.setSnapMaterialModel(nested.getModel());
+            }
+            if (inv.getSnapMaterialFactoryId() == null && nested.getFactoryId() != null) {
+                inv.setSnapMaterialFactoryId(nested.getFactoryId());
+            }
+        }
+        if (factoryIdHint != null && inv.getSnapMaterialFactoryId() == null) {
+            inv.setSnapMaterialFactoryId(factoryIdHint);
+        }
+        Long mid = inv.getMaterialId();
+        if (mid == null || fdMaterialMapper == null) {
+            return;
+        }
+        FdMaterial m = loadFdMaterial(mid, fdMaterialMapper, tenantId);
+        if (m == null) {
+            return;
+        }
+        if (StringUtils.isEmpty(inv.getSnapMaterialName())) {
+            inv.setSnapMaterialName(m.getName());
+        }
+        if (StringUtils.isEmpty(inv.getSnapMaterialSpeci())) {
+            inv.setSnapMaterialSpeci(m.getSpeci());
+        }
+        if (StringUtils.isEmpty(inv.getSnapMaterialModel())) {
+            inv.setSnapMaterialModel(m.getModel());
+        }
+        if (inv.getSnapMaterialFactoryId() == null && m.getFactoryId() != null) {
+            inv.setSnapMaterialFactoryId(m.getFactoryId());
+        }
+        if (inv.getFactoryId() == null && m.getFactoryId() != null) {
+            inv.setFactoryId(m.getFactoryId());
+        }
+    }
+
     private static String longStr(Long v) {
         return v == null ? null : String.valueOf(v);
     }

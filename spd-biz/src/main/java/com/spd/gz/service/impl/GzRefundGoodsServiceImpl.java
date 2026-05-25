@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -153,6 +154,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             gzRefundGoods.setGoodsNo(nextGoodsNoForGoods());
         }
         gzRefundGoods.setCreateTime(DateUtils.getNowDate());
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzRefundGoods.getGzRefundGoodsEntryList(), "高值退货");
         gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         int rows = gzRefundGoodsMapper.insertGzRefundGoods(gzRefundGoods);
         int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods, false);
@@ -177,6 +179,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             gzRefundGoods.setGoodsNo(nextGoodsNoForStock());
         }
         gzRefundGoods.setCreateTime(DateUtils.getNowDate());
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzRefundGoods.getGzRefundGoodsEntryList(), "高值退库");
         gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         int rows = gzRefundGoodsMapper.insertGzRefundStock(gzRefundGoods);
         int filteredCount = insertGzRefundGoodsEntry(gzRefundGoods, true);
@@ -214,6 +217,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
         gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzRefundGoods.getGzRefundGoodsEntryList(), "高值退货");
         gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         gzLineRefWriteService.deleteRefundGoodsRefs(gzRefundGoods.getId());
         int filteredCount = syncGzRefundGoodsEntry(gzRefundGoods, false);
@@ -232,6 +236,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         gzRefundGoods.setSupplerId(null);
         gzRefundGoods.setUpdateBy(SecurityUtils.getUserIdStr());
         gzRefundGoods.setUpdateTime(DateUtils.getNowDate());
+        MasterDetailValidateUtil.assertEntryListNotEmpty(gzRefundGoods.getGzRefundGoodsEntryList(), "高值退库");
         gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoods.getGzRefundGoodsEntryList());
         gzLineRefWriteService.deleteRefundGoodsRefs(gzRefundGoods.getId());
         int filteredCount = syncGzRefundGoodsEntry(gzRefundGoods, true);
@@ -293,9 +298,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
 
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
-        if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值退货单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzRefundGoodsEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值退货");
 
         gzStockValidationService.assertRefundTh(gzRefundGoods, gzRefundGoodsEntryList);
         if (gzRefundGoods.getSupplerId() == null) {
@@ -340,9 +346,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             throw new ServiceException(String.format("单据 %s 已审核，请勿重复审核", no));
         }
         List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
-        if (gzRefundGoodsEntryList == null || gzRefundGoodsEntryList.isEmpty()) {
-            throw new ServiceException(String.format("高值退库单 %s 无明细，无法审核", id));
-        }
+        com.spd.common.utils.MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            gzRefundGoodsEntryList,
+            e -> e != null && com.spd.common.utils.MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
+            "高值退库");
         gzStockValidationService.assertRefundTk(gzRefundGoods, gzRefundGoodsEntryList);
         auditWarehouseStockRefund(gzRefundGoods, gzRefundGoodsEntryList);
         gzRefundGoods.setGoodsStatus(2);

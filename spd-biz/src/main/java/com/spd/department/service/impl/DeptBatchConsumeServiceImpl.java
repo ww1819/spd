@@ -25,6 +25,7 @@ import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,6 +110,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int insertDeptBatchConsume(DeptBatchConsume deptBatchConsume)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            deptBatchConsume.getDeptBatchConsumeEntryList(), DeptBatchConsumeEntry::getMaterialId, "消耗");
         deptBatchConsume.setCreateTime(DateUtils.getNowDate());
         deptBatchConsume.setConsumeBillNo(getNumber());
         deptBatchConsume.setConsumeBillStatus(1); // 待审核状态
@@ -144,6 +147,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int updateDeptBatchConsume(DeptBatchConsume deptBatchConsume)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            deptBatchConsume.getDeptBatchConsumeEntryList(), DeptBatchConsumeEntry::getMaterialId, "消耗");
         deptBatchConsume.setUpdateTime(DateUtils.getNowDate());
         String deleteBy = SecurityUtils.getUserIdStr();
         String tenantId = StringUtils.isNotEmpty(deptBatchConsume.getTenantId()) ? deptBatchConsume.getTenantId() : SecurityUtils.getCustomerId();

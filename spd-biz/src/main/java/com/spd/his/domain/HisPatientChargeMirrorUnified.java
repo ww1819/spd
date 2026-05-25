@@ -58,6 +58,12 @@ public class HisPatientChargeMirrorUnified extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date processTime;
     private String processBy;
+    /** 处理方式（如：自动处理、手动处理） */
+    private String processParty;
+    /** 处理情况说明（成功/失败原因等） */
+    private String processSituation;
+    /** 处理人姓名（列表展示，非表字段） */
+    private String processByName;
 
     /** 高低值冗余字段（1高2低，入库时从收费项镜像写入） */
     private String valueLevel;

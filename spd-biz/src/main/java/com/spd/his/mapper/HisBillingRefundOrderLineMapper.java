@@ -7,4 +7,7 @@ import com.spd.his.domain.HisBillingRefundOrderLine;
 public interface HisBillingRefundOrderLineMapper
 {
     int insertBatch(@Param("list") List<HisBillingRefundOrderLine> list);
+
+    List<HisBillingRefundOrderLine> selectByRefundOrderId(@Param("tenantId") String tenantId,
+        @Param("refundOrderId") String refundOrderId);
 }

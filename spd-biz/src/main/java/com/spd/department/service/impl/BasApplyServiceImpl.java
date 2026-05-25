@@ -11,6 +11,7 @@ import com.spd.system.service.ITenantScopeService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -204,6 +205,19 @@ public class BasApplyServiceImpl implements IBasApplyService
         }
     }
 
+    private static String basApplyDocLabel(BasApply basApply) {
+        if (basApply == null || basApply.getBillType() == null) {
+            return "科室申领";
+        }
+        if (basApply.getBillType() == 2) {
+            return "科室申购";
+        }
+        if (basApply.getBillType() == 3) {
+            return "转科申请";
+        }
+        return "科室申领";
+    }
+
     /** billType=1：明细绑定 stock_warehouse_id；2 申购、3 转科不要求 */
     private static boolean deptApplyConsumableRequiresStockWarehouse(BasApply basApply) {
         if (basApply == null) {
@@ -296,6 +310,8 @@ public class BasApplyServiceImpl implements IBasApplyService
             }
             assertDepartmentInUserScope(basApply.getWarehouseId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            basApply.getBasApplyEntryList(), BasApplyEntry::getMaterialId, basApplyDocLabel(basApply));
         validateEntryQty(basApply);
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
@@ -369,6 +385,8 @@ public class BasApplyServiceImpl implements IBasApplyService
         {
             assertTransferDepartmentsImmutableWhenDetailsExist(basApply, existing);
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            basApply.getBasApplyEntryList(), BasApplyEntry::getMaterialId, basApplyDocLabel(basApply));
         validateEntryQty(basApply);
         if (existing != null) {
             basApply.setCreateBy(existing.getCreateBy());

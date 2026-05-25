@@ -16,6 +16,7 @@ import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
+import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
@@ -36,6 +37,12 @@ public interface IHisPatientChargeService
     List<HisPatientChargeDetailRow> selectAllMirrorList(HisPatientChargeAllQuery query);
 
     /**
+     * 患者费用明细导出（按当前筛选条件，不分页）
+     */
+    List<HisPatientChargeMirrorExportVo> selectMirrorExportList(
+        HisPatientChargeAllQuery query, String visitKind, String inpatientNo, String outpatientNo);
+
+    /**
      * 查询某条计费镜像行关联的科室消耗记录（含消耗单号、明细、分摊数量等）
      */
     List<HisMirrorConsumeRecordVo> listMirrorConsumeRecords(String visitKind, String mirrorRowId);
@@ -47,6 +54,9 @@ public interface IHisPatientChargeService
     HisGenerateConsumeResultVo processMirrorLowValue(HisMirrorManualRowBody body);
 
     HisMirrorLowBatchResultVo processMirrorLowValueBatch(HisMirrorManualBatchBody body);
+
+    com.spd.his.domain.dto.HisMirrorWriteOffResultVo processMirrorLowValueWriteOff(
+        com.spd.his.domain.dto.HisMirrorWriteOffBody body);
 
     HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body);
 

@@ -14,4 +14,12 @@
             #{e.remark}, ifnull(#{e.delFlag}, 0), #{e.createBy}, #{e.createTime}, #{e.updateBy}, #{e.updateTime})
         </foreach>
     </insert>
+
+    <select id="selectByRefundOrderId" resultType="com.spd.his.domain.HisBillingRefundOrderLine">
+        select id, tenant_id as tenantId, refund_order_id as refundOrderId, consume_link_id as consumeLinkId,
+               return_qty as returnQty, dep_inventory_id as depInventoryId
+        from his_billing_refund_order_line
+        where tenant_id = #{tenantId} and refund_order_id = #{refundOrderId} and ifnull(del_flag, 0) = 0
+        order by create_time asc, id asc
+    </select>
 </mapper>

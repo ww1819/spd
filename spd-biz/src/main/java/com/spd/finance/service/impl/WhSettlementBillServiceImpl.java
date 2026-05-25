@@ -1,6 +1,7 @@
 package com.spd.finance.service.impl;
 
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.DateUtils;
@@ -87,6 +88,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
         row.setDelFlag(0);
         int r = whSettlementBillMapper.insert(row);
         if (row.getEntryList() != null && !row.getEntryList().isEmpty()) {
+            MasterDetailValidateUtil.assertEntryListNotEmpty(row.getEntryList(), "仓库结算");
             saveEntries(row.getId(), row.getEntryList());
         }
         return r;
@@ -175,9 +177,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
             e.setTenantId(tenantId);
             e.setSortOrder(i);
         }
-        if (entries.isEmpty()) {
-            return 1;
-        }
+        MasterDetailValidateUtil.assertEntryListNotEmpty(entries, "仓库结算");
         whSettlementBillMapper.insertEntryBatch(entries);
         return entries.size();
     }

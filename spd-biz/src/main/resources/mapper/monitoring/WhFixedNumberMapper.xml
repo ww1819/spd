@@ -19,6 +19,9 @@
         <result property="remark" column="remark"/>
         <result property="deleteBy" column="delete_by"/>
         <result property="deleteTime" column="delete_time"/>
+        <result property="enableStatus" column="enable_status"/>
+        <result property="disableBy" column="disable_by"/>
+        <result property="disableTime" column="disable_time"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -48,6 +51,7 @@
         <result property="registerNo" column="registerNo"/>
         <result property="supplierId" column="materialSupplierId"/>
         <result property="isProcure" column="isProcure"/>
+        <result property="isGz" column="isGz"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -66,6 +70,9 @@
             f.remark,
             f.delete_by,
             f.delete_time,
+            f.enable_status,
+            f.disable_by,
+            f.disable_time,
             f.create_by,
             f.create_time,
             f.update_by,
@@ -82,6 +89,7 @@
             m.price as price,
             m.supplier_id as materialSupplierId,
             m.is_procure as isProcure,
+            m.is_gz as isGz,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName,
@@ -137,6 +145,12 @@
                 #{eid}
             </foreach>
         </if>
+        <if test="onlyEnabled != null and onlyEnabled">
+            and (f.enable_status = '0' or f.enable_status is null)
+        </if>
+        <if test="enableStatus != null and enableStatus != ''">
+            and f.enable_status = #{enableStatus}
+        </if>
         <if test="material != null and material.speci != null and material.speci != ''">
             and m.speci like concat('%', #{material.speci}, '%')
         </if>
@@ -145,9 +159,9 @@
 
     <insert id="insertWhFixedNumber" parameterType="WhFixedNumber">
         insert into wh_fixed_number
-        (id, material_id, warehouse_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, tenant_id, remark, create_by, create_time)
+        (id, material_id, warehouse_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, enable_status, tenant_id, remark, create_by, create_time)
         values
-        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{tenantId}, #{remark}, #{createBy}, now())
+        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, '0', #{tenantId}, #{remark}, #{createBy}, now())
     </insert>
 
     <update id="updateWhFixedNumber" parameterType="WhFixedNumber">
@@ -221,6 +235,39 @@
         and f.warehouse_id = #{warehouseId}
         and f.material_id = #{materialId}
     </select>
+
+    <update id="disableWhFixedNumberByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update wh_fixed_number
+        set enable_status = '1',
+            disable_by = #{disableBy},
+            disable_time = now(),
+            update_by = #{disableBy},
+            update_time = now()
+        where tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+          and (enable_status = '0' or enable_status is null)
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="enableWhFixedNumberByIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update wh_fixed_number
+        set enable_status = '0',
+            disable_by = null,
+            disable_time = null,
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{scopedTenantId}
+          and enable_status = '1'
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
 
 </mapper>
 

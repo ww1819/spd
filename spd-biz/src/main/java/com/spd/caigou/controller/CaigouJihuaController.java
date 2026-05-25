@@ -119,6 +119,34 @@ public class CaigouJihuaController extends BaseController
     }
 
     /**
+     * 按仓库查询物资库存数量（新增明细时即时展示库存）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/materialStockQty")
+    public AjaxResult materialStockQty(@RequestParam Long warehouseId, @RequestParam String materialIds)
+    {
+        if (warehouseId == null || !StringUtils.hasText(materialIds))
+        {
+            return success(new HashMap<>());
+        }
+        List<Long> ids = new ArrayList<>();
+        for (String part : materialIds.split(","))
+        {
+            if (part == null)
+            {
+                continue;
+            }
+            String trimmed = part.trim();
+            if (trimmed.isEmpty())
+            {
+                continue;
+            }
+            ids.add(Long.valueOf(trimmed));
+        }
+        return success(purchasePlanService.mapMaterialStockQtyByWarehouse(warehouseId, ids));
+    }
+
+    /**
      * 新增采购计划
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:add')")

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Date;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,14 +171,26 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
      * @param depPurchaseApply 科室申购
      * @return 结果
      */
+    /** 已选耗材行：数量为空或≤0 时默认 1 */
+    private void normalizeEntryQty(List<DepPurchaseApplyEntry> list) {
+        MasterDetailValidateUtil.normalizeMaterialLineQtyDefaultOne(
+            list, DepPurchaseApplyEntry::getMaterialId, DepPurchaseApplyEntry::getQty, DepPurchaseApplyEntry::setQty);
+    }
+
     /** 校验明细数量：有耗材的明细数量不能为空且必须大于0 */
     private void validateEntryQty(List<DepPurchaseApplyEntry> list) {
-        if (list == null) return;
-        for (DepPurchaseApplyEntry e : list) {
-            if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
-                throw new ServiceException("科室申购单明细中数量不能为空且必须大于0，请检查后保存。");
-            }
-        }
+        MasterDetailValidateUtil.assertMaterialLinesHavePositiveQty(
+            list, DepPurchaseApplyEntry::getMaterialId, DepPurchaseApplyEntry::getQty, "科室申购单");
+    }
+
+    /** 审核前：每条明细产品档案与数量均必填（不自动补默认数量） */
+    private void assertEntriesReadyForAudit(List<DepPurchaseApplyEntry> list) {
+        MasterDetailValidateUtil.assertEntriesReadyForAudit(
+            list,
+            DepPurchaseApplyEntry::getMaterialId,
+            DepPurchaseApplyEntry::getQty,
+            e -> StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName() : null,
+            "科室申购单");
     }
 
     @Transactional
@@ -187,6 +200,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply != null && depPurchaseApply.getDepartmentId() != null) {
             assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            depPurchaseApply.getDepPurchaseApplyEntryList(), DepPurchaseApplyEntry::getMaterialId, "科室申购");
+        normalizeEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         // 生成申购单号
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo())) {
@@ -227,6 +243,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply.getDepartmentId() != null) {
             assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            depPurchaseApply.getDepPurchaseApplyEntryList(), DepPurchaseApplyEntry::getMaterialId, "科室申购");
+        normalizeEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -308,6 +327,10 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
                 if (depPurchaseApplyEntry.getMaterialId() == null) {
                     continue;
                 }
+                if (depPurchaseApplyEntry.getQty() == null
+                    || depPurchaseApplyEntry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    depPurchaseApplyEntry.setQty(BigDecimal.ONE);
+                }
                 depPurchaseApplyEntry.setParentId(id);
                 depPurchaseApplyEntry.setTenantId(tenantId);
                 if (StringUtils.isEmpty(depPurchaseApplyEntry.getPurchaseBillNo())) {
@@ -357,7 +380,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
             throw new ServiceException("只有待审核状态(1)的科室申购可审核，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
         }
-        validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
+        assertEntriesReadyForAudit(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setPurchaseBillStatus(2);//已审核状态
         depPurchaseApply.setAuditBy(auditBy);
         depPurchaseApply.setAuditDate(new Date());

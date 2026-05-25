@@ -74,6 +74,9 @@ public class FixedNumberController extends BaseController
                 map.put("locationId", item.getLocationId());
                 map.put("tenantId", item.getTenantId());
                 map.put("remark", item.getRemark());
+                map.put("enableStatus", item.getEnableStatus() != null ? item.getEnableStatus() : "0");
+                map.put("disableBy", item.getDisableBy());
+                map.put("disableTime", item.getDisableTime());
                 if (item.getMaterial() != null) {
                     map.put("code", item.getMaterial().getCode());
                     map.put("name", item.getMaterial().getName());
@@ -81,6 +84,7 @@ public class FixedNumberController extends BaseController
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
                     map.put("isProcure", item.getMaterial().getIsProcure());
+                    map.put("isGz", item.getMaterial().getIsGz());
                     if (item.getMaterial().getSupplierId() != null) {
                         map.put("supplierId", item.getMaterial().getSupplierId());
                     }
@@ -139,6 +143,7 @@ public class FixedNumberController extends BaseController
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
                     map.put("isProcure", item.getMaterial().getIsProcure());
+                    map.put("isGz", item.getMaterial().getIsGz());
                 }
                 if (item.getDepartment() != null) {
                     map.put("departmentName", item.getDepartment().getName());
@@ -184,7 +189,8 @@ public class FixedNumberController extends BaseController
         if (whQuery == null || whQuery.getWarehouseId() == null) {
             return getDataTable(new ArrayList<>());
         }
-        whQuery.setIsGz("2");
+        // 科室申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案（仅展示该仓库定数监测中的产品）
+        whQuery.setOnlyEnabled(Boolean.TRUE);
         startPage();
         List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
         long total = new PageInfo<>(list).getTotal();
@@ -231,7 +237,8 @@ public class FixedNumberController extends BaseController
         if (whQuery == null) {
             whQuery = new WhFixedNumber();
         }
-        whQuery.setIsGz("2");
+        // 科室汇总申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案
+        whQuery.setOnlyEnabled(Boolean.TRUE);
         startPage();
         List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
         long total = new PageInfo<>(list).getTotal();
@@ -334,6 +341,40 @@ public class FixedNumberController extends BaseController
             return error("ID 列表不能为空");
         }
         int rows = fixedNumberService.deleteFixedNumberByIds(ids);
+        return toAjax(rows);
+    }
+
+    /**
+     * 批量停用仓库定数监测（关闭产品档案与仓库关联，不删除记录）
+     */
+    @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:disable')")
+    @Log(title = "定数监测", businessType = BusinessType.UPDATE)
+    @PostMapping("/batchDisable")
+    public AjaxResult batchDisable(@RequestBody Map<String, List<String>> body)
+    {
+        List<String> ids = body == null ? null : body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        int rows = fixedNumberService.disableWhFixedNumberByIds(ids);
+        return toAjax(rows);
+    }
+
+    /**
+     * 批量启用仓库定数监测
+     */
+    @PreAuthorize("@ss.hasPermi('monitoring:fixedNumber:enable')")
+    @Log(title = "定数监测", businessType = BusinessType.UPDATE)
+    @PostMapping("/batchEnable")
+    public AjaxResult batchEnable(@RequestBody Map<String, List<String>> body)
+    {
+        List<String> ids = body == null ? null : body.get("ids");
+        if (ids == null || ids.isEmpty())
+        {
+            return error("ID 列表不能为空");
+        }
+        int rows = fixedNumberService.enableWhFixedNumberByIds(ids);
         return toAjax(rows);
     }
 

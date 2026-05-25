@@ -717,7 +717,12 @@ public class SysUserServiceImpl implements ISysUserService
                 for (SysUserMenu um : materialRows) {
                     mids.add(um.getMenuId());
                 }
-                List<Long> expanded = menuService.expandMenuIdsWithAncestorsForTenant(mids);
+                List<Long> scoped = menuService.filterMenuIdsUnderCustomerHcScope(tenantIdForHc, mids);
+                if (scoped.isEmpty() && !mids.isEmpty())
+                {
+                    throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+                }
+                List<Long> expanded = menuService.expandMenuIdsWithAncestorsForTenant(scoped);
                 List<SysUserMenu> toSave = new ArrayList<>();
                 for (Long mid : expanded) {
                     if (mid == null || mid <= 0) {
@@ -761,6 +766,89 @@ public class SysUserServiceImpl implements ISysUserService
             log.error("保存用户菜单权限异常 - userId: {}, 错误: {}", user.getUserId(), e.getMessage(), e);
             throw e;
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserMenusOnly(Long userId, Long[] menuIds) {
+        checkUserDataScope(userId);
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+        checkUserAllowed(user);
+        String[] menuIdStrs = toMenuIdStrings(menuIds);
+        if (menuIdStrs == null || menuIdStrs.length == 0) {
+            throw new ServiceException("菜单权限不能为空");
+        }
+        if (StringUtils.isNotEmpty(user.getCustomerId()) && menuIds != null && menuIds.length > 0)
+        {
+            List<Long> scoped = menuService.filterMenuIdsUnderCustomerHcScope(user.getCustomerId(),
+                java.util.Arrays.asList(menuIds));
+            if (scoped.isEmpty())
+            {
+                throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+            }
+            menuIds = scoped.toArray(new Long[0]);
+            menuIdStrs = toMenuIdStrings(menuIds);
+        }
+        user.setMenuIds(menuIdStrs);
+        if (StringUtils.isEmpty(user.getCustomerId())) {
+            userMenuMapper.deleteUserMenuByUserId(userId, null);
+        } else if (containsMaterialMenuId(menuIdStrs)) {
+            userMenuMapper.deleteUserMenuByUserId(userId, user.getCustomerId());
+        }
+        insertUserMenu(user);
+        log.info("仅更新用户菜单权限 - userId: {}, count: {}", userId, menuIdStrs.length);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserDepartmentsOnly(Long userId, Long[] departmentIds) {
+        checkUserDataScope(userId);
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+        checkUserAllowed(user);
+        userDepartmentMapper.deleteUserDepartmentByUserId(userId);
+        user.setDepartmentIds(departmentIds != null ? departmentIds : new Long[0]);
+        insertUserDepartment(user);
+        if (StringUtils.isNotEmpty(user.getCustomerId())) {
+            sbUserPermissionService.saveUserDepts(userId, user.getCustomerId(), user.getDepartmentIds());
+        }
+        log.info("仅更新用户科室权限 - userId: {}", userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserWarehousesOnly(Long userId, Long[] warehouseIds) {
+        checkUserDataScope(userId);
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+        checkUserAllowed(user);
+        userWarehouseMapper.deleteUserWarehouseByUserId(userId);
+        user.setWarehouseIds(warehouseIds != null ? warehouseIds : new Long[0]);
+        insertUserWarehouse(user);
+        if (StringUtils.isNotEmpty(user.getCustomerId())) {
+            sbUserPermissionService.saveUserWarehouses(userId, user.getCustomerId(), user.getWarehouseIds());
+        }
+        log.info("仅更新用户仓库权限 - userId: {}", userId);
+    }
+
+    private static String[] toMenuIdStrings(Long[] menuIds) {
+        if (menuIds == null || menuIds.length == 0) {
+            return new String[0];
+        }
+        List<String> list = new ArrayList<>();
+        for (Long id : menuIds) {
+            if (id != null && id > 0) {
+                list.add(String.valueOf(id));
+            }
+        }
+        return list.toArray(new String[0]);
     }
 
     private static boolean containsMaterialMenuId(String[] menuIds) {

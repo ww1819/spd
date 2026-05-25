@@ -46,6 +46,18 @@ public class WhFixedNumber extends BaseEntity {
     /** 删除标志（0正常 1删除） */
     private Integer delFlag;
 
+    /** 启用状态（0启用 1停用） */
+    private String enableStatus;
+
+    /** 停用人 */
+    private String disableBy;
+
+    /** 停用时间 */
+    private java.util.Date disableTime;
+
+    /** 查询参数：仅查询启用中的定数（科室申购/入库等下游业务） */
+    private Boolean onlyEnabled;
+
     /** 租户ID（同sb_customer.customer_id） */
     private String tenantId;
 
@@ -171,6 +183,38 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setDelFlag(Integer delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getEnableStatus() {
+        return enableStatus;
+    }
+
+    public void setEnableStatus(String enableStatus) {
+        this.enableStatus = enableStatus;
+    }
+
+    public String getDisableBy() {
+        return disableBy;
+    }
+
+    public void setDisableBy(String disableBy) {
+        this.disableBy = disableBy;
+    }
+
+    public java.util.Date getDisableTime() {
+        return disableTime;
+    }
+
+    public void setDisableTime(java.util.Date disableTime) {
+        this.disableTime = disableTime;
+    }
+
+    public Boolean getOnlyEnabled() {
+        return onlyEnabled;
+    }
+
+    public void setOnlyEnabled(Boolean onlyEnabled) {
+        this.onlyEnabled = onlyEnabled;
     }
 
     public String getTenantId() {

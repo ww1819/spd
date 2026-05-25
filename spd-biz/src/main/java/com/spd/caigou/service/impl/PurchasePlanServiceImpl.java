@@ -11,6 +11,7 @@ import com.spd.caigou.service.IPurchasePlanService;
 import com.spd.caigou.service.IPurchaseOrderService;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
@@ -112,7 +113,17 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                 }
             }
 
-            Map<Long, BigDecimal> stockByMaterialId = mapStockQtyByWarehouseAndMaterialIds(warehouseId, materialIds);
+            Map<Long, BigDecimal> stockByMaterialId = new HashMap<>();
+            if (warehouseId != null && !materialIds.isEmpty()) {
+                List<MaterialWarehouseStockAgg> stockAggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, materialIds);
+                if (stockAggs != null) {
+                    for (MaterialWarehouseStockAgg a : stockAggs) {
+                        if (a != null && a.getMaterialId() != null) {
+                            stockByMaterialId.put(a.getMaterialId(), a.getSumQty() != null ? a.getSumQty() : BigDecimal.ZERO);
+                        }
+                    }
+                }
+            }
 
             for (PurchasePlanEntry entry : purchasePlanEntryList) {
                 if (entry.getMaterialId() != null) {
@@ -259,6 +270,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int insertPurchasePlan(PurchasePlan purchasePlan)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            purchasePlan.getPurchasePlanEntryList(), PurchasePlanEntry::getMaterialId, "采购计划");
         validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setPlanNo(getPlanNumber());
@@ -292,6 +305,8 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     @Override
     public int updatePurchasePlan(PurchasePlan purchasePlan)
     {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            purchasePlan.getPurchasePlanEntryList(), PurchasePlanEntry::getMaterialId, "采购计划");
         validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
@@ -390,6 +405,10 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             throw new ServiceException(String.format("采购计划ID：%s，状态不正确，只能审核未提交状态的计划!", id));
         }
         List<PurchasePlanEntry> entryList = purchasePlanMapper.selectPurchasePlanEntryByParentId(id);
+        MasterDetailValidateUtil.assertHasActiveEntryForAudit(
+            entryList,
+            e -> e != null && MasterDetailValidateUtil.isNotDeletedFlagStr(e.getDelFlag()),
+            "采购计划");
         validateEntriesHaveSupplier(entryList);
         validateEntriesHaveQty(entryList);
 
@@ -757,5 +776,39 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     public List<PurchasePlanSummaryExportVO> listPurchasePlanSummaryExport(PurchasePlan query)
     {
         return purchasePlanMapper.selectPurchasePlanSummaryExportList(query);
+    }
+
+    @Override
+    public Map<Long, BigDecimal> mapMaterialStockQtyByWarehouse(Long warehouseId, List<Long> materialIds)
+    {
+        Map<Long, BigDecimal> result = new HashMap<>();
+        if (warehouseId == null || materialIds == null || materialIds.isEmpty())
+        {
+            return result;
+        }
+        List<Long> distinctIds = materialIds.stream()
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (distinctIds.isEmpty())
+        {
+            return result;
+        }
+        for (Long materialId : distinctIds)
+        {
+            result.put(materialId, BigDecimal.ZERO);
+        }
+        List<MaterialWarehouseStockAgg> stockAggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, distinctIds);
+        if (stockAggs != null)
+        {
+            for (MaterialWarehouseStockAgg agg : stockAggs)
+            {
+                if (agg != null && agg.getMaterialId() != null)
+                {
+                    result.put(agg.getMaterialId(), agg.getSumQty() != null ? agg.getSumQty() : BigDecimal.ZERO);
+                }
+            }
+        }
+        return result;
     }
 }

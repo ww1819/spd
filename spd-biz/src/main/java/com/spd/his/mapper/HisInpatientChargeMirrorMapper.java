@@ -37,4 +37,8 @@ public interface HisInpatientChargeMirrorMapper
     HisInpatientChargeMirror selectByIdAndTenant(@Param("tenantId") String tenantId, @Param("id") String id);
 
     String selectMirrorIdByHisChargeId(@Param("tenantId") String tenantId, @Param("hisChargeId") String hisChargeId);
+
+    /** 关联到原收费明细的退费镜像行（已处理或已退费返还） */
+    List<HisInpatientChargeMirror> selectLinkedRefundByChargeIdTf(@Param("tenantId") String tenantId,
+        @Param("chargeIdTf") String chargeIdTf);
 }

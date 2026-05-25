@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -58,6 +59,39 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         assertDepartmentInUserScope(a.getDepartmentId());
     }
 
+    /** 仅待审核(1)且未拆分(0)的汇总申购单允许改明细/删单 */
+    private void assertAggEditable(DepPurchaseApplyAgg existing) {
+        if (existing == null || existing.getDelFlag() != null && existing.getDelFlag() == 1) {
+            throw new ServiceException("汇总申购单不存在或已删除");
+        }
+        Integer status = existing.getPurchaseBillStatus();
+        if (status != null && status == 3) {
+            throw new ServiceException("已驳回的汇总申购单不可修改");
+        }
+        if (status == null || status != 1) {
+            throw new ServiceException("仅待审核且未拆分的汇总申购单可修改，当前状态：" + status);
+        }
+        if (existing.getSplitStatus() != null && existing.getSplitStatus() != 0) {
+            throw new ServiceException("已拆分的汇总申购单不可修改");
+        }
+    }
+
+    /** 防止前端篡改单据状态/审核字段 */
+    private void stripAggHeadImmutableFieldsOnUpdate(DepPurchaseApplyAgg row) {
+        if (row == null) {
+            return;
+        }
+        row.setPurchaseBillStatus(null);
+        row.setSplitStatus(null);
+        row.setRejectReason(null);
+        row.setAuditBy(null);
+        row.setAuditDate(null);
+        row.setPurchaseBillNo(null);
+        row.setCreateBy(null);
+        row.setCreateTime(null);
+        row.setDelFlag(null);
+    }
+
     @Override
     public void applyDepartmentScopeToQuery(DepPurchaseApplyAgg query) {
         if (query == null) {
@@ -99,15 +133,23 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         return sum != null ? sum : BigDecimal.ZERO;
     }
 
+    private void normalizeEntryQty(List<DepPurchaseApplyAggEntry> list) {
+        MasterDetailValidateUtil.normalizeMaterialLineQtyDefaultOne(
+            list, DepPurchaseApplyAggEntry::getMaterialId, DepPurchaseApplyAggEntry::getQty, DepPurchaseApplyAggEntry::setQty);
+    }
+
     private void validateEntryQty(List<DepPurchaseApplyAggEntry> list) {
-        if (list == null) {
-            return;
-        }
-        for (DepPurchaseApplyAggEntry e : list) {
-            if (e.getMaterialId() != null && (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0)) {
-                throw new ServiceException("汇总申购明细中数量不能为空且必须大于0，请检查后保存。");
-            }
-        }
+        MasterDetailValidateUtil.assertMaterialLinesHavePositiveQty(
+            list, DepPurchaseApplyAggEntry::getMaterialId, DepPurchaseApplyAggEntry::getQty, "汇总申购");
+    }
+
+    private void assertEntriesReadyForAudit(List<DepPurchaseApplyAggEntry> list) {
+        MasterDetailValidateUtil.assertEntriesReadyForAudit(
+            list,
+            DepPurchaseApplyAggEntry::getMaterialId,
+            DepPurchaseApplyAggEntry::getQty,
+            e -> StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName() : null,
+            "汇总申购单");
     }
 
     private void validateEntryWarehouse(List<DepPurchaseApplyAggEntry> list) {
@@ -175,6 +217,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
      */
     private List<DepPurchaseApplyAggEntry> saveAggEntryListIncremental(String parentId, String tenantId,
         List<DepPurchaseApplyAggEntry> rawList, List<DepPurchaseApplyAggEntry> dbEntries) {
+        normalizeEntryQty(rawList);
         Map<String, DepPurchaseApplyAggEntry> dbById = new HashMap<>();
         Map<String, String> dbKeyToId = new HashMap<>();
         if (dbEntries != null) {
@@ -203,6 +246,9 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             for (DepPurchaseApplyAggEntry e : rawList) {
                 if (e == null || e.getMaterialId() == null) {
                     continue;
+                }
+                if (e.getQty() == null || e.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                    e.setQty(BigDecimal.ONE);
                 }
                 fillEntryAmt(e);
                 e.setParentId(parentId);
@@ -311,6 +357,9 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (row.getDepartmentId() != null) {
             assertDepartmentInUserScope(row.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            row.getEntryList(), DepPurchaseApplyAggEntry::getMaterialId, "汇总申购");
+        normalizeEntryQty(row.getEntryList());
         validateEntryQty(row.getEntryList());
         validateEntryWarehouse(row.getEntryList());
         if (StringUtils.isEmpty(row.getId())) {
@@ -356,16 +405,17 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
             assertAggDepartmentInUserScope(existing);
         }
-        if (existing == null || existing.getDelFlag() != null && existing.getDelFlag() == 1) {
+        if (existing == null) {
             throw new ServiceException("汇总申购单不存在或已删除");
         }
-        if (existing.getPurchaseBillStatus() == null || existing.getPurchaseBillStatus() != 1
-            || (existing.getSplitStatus() != null && existing.getSplitStatus() != 0)) {
-            throw new ServiceException("仅待审核且未拆分的汇总申购单可修改");
-        }
+        assertAggEditable(existing);
+        stripAggHeadImmutableFieldsOnUpdate(row);
         if (row.getDepartmentId() != null) {
             assertDepartmentInUserScope(row.getDepartmentId());
         }
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            row.getEntryList(), DepPurchaseApplyAggEntry::getMaterialId, "汇总申购");
+        normalizeEntryQty(row.getEntryList());
         validateEntryQty(row.getEntryList());
         validateEntryWarehouse(row.getEntryList());
         row.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -387,10 +437,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (existing == null) {
             throw new ServiceException("汇总申购单不存在");
         }
-        if (existing.getPurchaseBillStatus() == null || existing.getPurchaseBillStatus() != 1
-            || (existing.getSplitStatus() != null && existing.getSplitStatus() != 0)) {
-            throw new ServiceException("仅待审核且未拆分的汇总申购单可删除");
-        }
+        assertAggEditable(existing);
         String deleteBy = SecurityUtils.getUserIdStr();
         depPurchaseApplyAggMapper.deleteDepPurchaseApplyAggEntryByParentId(id, deleteBy);
         return depPurchaseApplyAggMapper.deleteDepPurchaseApplyAggById(id, deleteBy);
@@ -453,10 +500,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             throw new ServiceException("该汇总申购单已拆分，不能重复审核");
         }
         List<DepPurchaseApplyAggEntry> entries = agg.getEntryList();
-        if (entries == null || entries.isEmpty()) {
-            throw new ServiceException("汇总申购单无有效明细，无法审核拆分");
-        }
-        validateEntryQty(entries);
+        assertEntriesReadyForAudit(entries);
         validateEntryWarehouse(entries);
 
         Map<Long, List<DepPurchaseApplyAggEntry>> byWh = new LinkedHashMap<>();

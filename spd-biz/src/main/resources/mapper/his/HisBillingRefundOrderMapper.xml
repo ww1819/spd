@@ -30,4 +30,17 @@
           and process_status = 'DONE'
           and ifnull(del_flag, 0) = 0
     </select>
+
+    <select id="selectDoneByRefundMirrorRowId" resultType="com.spd.his.domain.HisBillingRefundOrder">
+        select id, tenant_id as tenantId, visit_kind as visitKind, refund_mirror_row_id as refundMirrorRowId,
+               origin_charge_detail_id as originChargeDetailId, origin_mirror_row_id as originMirrorRowId,
+               refund_qty as refundQty, value_level as valueLevel, process_status as processStatus
+        from his_billing_refund_order
+        where tenant_id = #{tenantId}
+          and refund_mirror_row_id = #{refundMirrorRowId}
+          and process_status = 'DONE'
+          and ifnull(del_flag, 0) = 0
+        order by create_time desc
+        limit 1
+    </select>
 </mapper>
