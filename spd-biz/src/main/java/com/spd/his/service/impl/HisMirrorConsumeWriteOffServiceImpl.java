@@ -370,15 +370,15 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
         if (KIND_IN.equals(visitKind))
         {
             hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
-                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy);
+                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
         }
         else
         {
             hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
-                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy);
+                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
         }
         hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
-            STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy);
+            STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
     }
 
     private List<MirrorSnapshot> listLinkedRefundMirrors(String tenantId, String visitKind, String hisChargeId)
