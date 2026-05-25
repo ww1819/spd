@@ -2575,13 +2575,7 @@ ALTER TABLE spd_scm_supplier_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFA
 -- ========== 患者计费统一表：列表性能冗余字段 ==========
 CALL add_table_column('his_patient_charge_mirror_unified', 'value_level', 'varchar(8)', '高低值(冗余自收费项镜像,1高2低)', NULL);
 /
-<<<<<<< HEAD
-CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
-=======
 CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'varchar(32)', '处理方式（如自动处理、手动处理）', NULL);
 /
 CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '处理情况说明（成功/失败原因等）', NULL);
->>>>>>> 2cffb44aff98a22cfe5cc7976547b88bea78fa03
 /

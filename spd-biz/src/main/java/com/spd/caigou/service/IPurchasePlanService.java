@@ -128,4 +128,12 @@ public interface IPurchasePlanService
      * @return key=materialId, value=库存数量
      */
     Map<Long, BigDecimal> mapMaterialStockQtyByWarehouse(Long warehouseId, List<Long> materialIds);
+
+    /**
+     * 引用申购单确认：按多张科室申购单 ID 批量查询可引用明细（不依赖前端右侧预览列表）
+     *
+     * @param applyIds 科室申购主表 ID
+     * @param excludeEntryIds 需排除的申购明细 ID（已在当前计划明细中的行）
+     */
+    List<com.spd.department.domain.DepPurchaseApplyEntry> listReferenceApplyEntries(Long[] applyIds, List<Long> excludeEntryIds);
 }

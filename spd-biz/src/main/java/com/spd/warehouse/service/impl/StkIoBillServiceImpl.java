@@ -511,9 +511,52 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 tryApplyOutboundReceiptConfirmation(stkIoBill, auditBy);
             }
         }
+        if (res > 0 && auditBillType != null && auditBillType == 101 && stkIoBill.getDepartmentId() != null) {
+            tryAutoOutboundChainAfterInboundAudit(stkIoBill, auditBy);
+        }
         return res;
     }
 
+    /**
+     * 到货验收入库单已选科室：审核后同事务生成出库单、审核出库并确认收货（兼容历史单：未选科室不触发）。
+     */
+    private void tryAutoOutboundChainAfterInboundAudit(StkIoBill rkBill, String auditBy) {
+        if (rkBill == null || rkBill.getId() == null || rkBill.getDepartmentId() == null) {
+            return;
+        }
+        if (rkBill.getBillType() == null || rkBill.getBillType() != 101) {
+            return;
+        }
+        try {
+            StkIoBill ckDraft = createCkEntriesByRkApply(String.valueOf(rkBill.getId()));
+            ckDraft.setBillStatus(1);
+            ckDraft.setBillType(201);
+            ckDraft.setCreateBy(auditBy);
+            if (StringUtils.isEmpty(ckDraft.getTenantId())) {
+                ckDraft.setTenantId(StringUtils.isNotEmpty(rkBill.getTenantId())
+                    ? rkBill.getTenantId() : SecurityUtils.getCustomerId());
+            }
+            if (ckDraft.getBillDate() == null) {
+                ckDraft.setBillDate(rkBill.getBillDate() != null ? rkBill.getBillDate() : DateUtils.getNowDate());
+            }
+            if (ckDraft.getSupplerId() == null) {
+                ckDraft.setSupplerId(rkBill.getSupplerId());
+            }
+            insertOutStkIoBill(ckDraft);
+            Long ckId = ckDraft.getId();
+            if (ckId == null) {
+                throw new ServiceException("未获得出库单ID");
+            }
+            auditStkIoBill(String.valueOf(ckId), auditBy);
+            StkIoBill ckFull = selectStkIoBillById(ckId);
+            if (ckFull != null) {
+                tryApplyOutboundReceiptConfirmation(ckFull, auditBy);
+            }
+        } catch (ServiceException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "未知错误";
+            throw new ServiceException("科室联动自动生成出库单失败：" + msg);
+        }
+    }
 
     /**
      * 明细 suppler_id（字符串）解析为供应商主键
@@ -2010,6 +2053,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
         syncBillHeaderSupplerFromUniformEntries(stkIoBill);
+        syncBillTotalAmountFromEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, null);
         stkIoBill.setBillNo(getBillNumber("CK"));
         // 如果制单日期为空，自动设置为当前日期
@@ -3094,9 +3138,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             StkIoBillEntry ckEntry = new StkIoBillEntry();
             ckEntry.setMaterialId(rkEntry.getMaterialId());
             ckEntry.setQty(refable);
-            ckEntry.setUnitPrice(rkEntry.getUnitPrice());
-            if (rkEntry.getUnitPrice() != null) {
-                ckEntry.setAmt(rkEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+            BigDecimal unitPrice = rkEntry.getUnitPrice();
+            if (unitPrice == null && rkEntry.getPrice() != null) {
+                unitPrice = rkEntry.getPrice();
+            }
+            ckEntry.setUnitPrice(unitPrice);
+            if (unitPrice != null) {
+                ckEntry.setAmt(unitPrice.multiply(refable).setScale(2, RoundingMode.HALF_UP));
             } else if (rkEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
                 ckEntry.setAmt(rkEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
             } else {
@@ -4833,6 +4881,30 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     /**
      * 出库/退库保存前：若各明细解析出的供应商 id 一致，则写回主表 supplerId。
      */
+    /** 主表总金额：按明细 amt 汇总（程序生成出库单时前端未提交 totalAmount） */
+    private void syncBillTotalAmountFromEntries(StkIoBill bill) {
+        if (bill == null) {
+            return;
+        }
+        List<StkIoBillEntry> entries = bill.getStkIoBillEntryList();
+        if (entries == null || entries.isEmpty()) {
+            if (bill.getTotalAmount() == null) {
+                bill.setTotalAmount(BigDecimal.ZERO);
+            }
+            return;
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (StkIoBillEntry e : entries) {
+            if (e == null || (e.getDelFlag() != null && e.getDelFlag() == 1)) {
+                continue;
+            }
+            if (e.getAmt() != null) {
+                total = total.add(e.getAmt());
+            }
+        }
+        bill.setTotalAmount(total.setScale(2, RoundingMode.HALF_UP));
+    }
+
     private void syncBillHeaderSupplerFromUniformEntries(StkIoBill bill) {
         if (bill == null) {
             return;

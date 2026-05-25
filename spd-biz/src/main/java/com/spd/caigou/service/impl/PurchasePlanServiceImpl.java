@@ -25,6 +25,8 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg;
 import com.spd.warehouse.mapper.StkInventoryMapper;
+import com.spd.department.domain.DepPurchaseApplyEntry;
+import com.spd.department.mapper.DepPurchaseApplyMapper;
 import com.spd.department.service.IDepPurchaseApplyService;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,6 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.spd.caigou.domain.vo.EntryBillNoVO;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -76,6 +81,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
     private PurchasePlanEntryApplyMapper purchasePlanEntryApplyMapper;
     @Autowired
     private FdSupplierMapper fdSupplierMapper;
+
+    @Autowired
+    private DepPurchaseApplyMapper depPurchaseApplyMapper;
 
     /**
      * 查询采购计划
@@ -461,72 +469,88 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if (id == null) {
             return;
         }
-        // 批量写入 mapper 依赖 item.tenantId，必须严格解析且不允许为空
         String tenantId = StringUtils.isNotEmpty(purchasePlan.getTenantId())
             ? purchasePlan.getTenantId()
             : SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotNull(purchasePlanEntryList) && !purchasePlanEntryList.isEmpty())
         {
-            List<PurchasePlanEntry> list = new ArrayList<PurchasePlanEntry>();
-            for (PurchasePlanEntry purchasePlanEntry : purchasePlanEntryList)
-            {
-                if (purchasePlanEntry.getMaterialId() == null) {
-                    continue;
-                }
-                purchasePlanEntry.setParentId(id);
-                purchasePlanEntry.setTenantId(tenantId);
-                purchasePlanEntry.setDelFlag("0");
-                purchasePlanEntry.setCreateBy(SecurityUtils.getUserIdStr());
-                purchasePlanEntry.setCreateTime(new Date());
-                list.add(purchasePlanEntry);
-            }
+            List<PurchasePlanEntry> list = preparePlanEntriesForInsert(purchasePlanEntryList, id, tenantId);
             if (list.isEmpty()) {
                 return;
             }
-            boolean hasBasRefs = list.stream().anyMatch(e -> e.getBasApplyEntryIds() != null && !e.getBasApplyEntryIds().isEmpty());
-            boolean hasDepRefs = list.stream().anyMatch(e -> e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty());
-            boolean hasRefs = hasBasRefs || hasDepRefs;
-            String createBy = SecurityUtils.getUserIdStr();
-            Date now = new Date();
+            purchasePlanMapper.batchPurchasePlanEntry(list);
+            boolean hasRefs = list.stream().anyMatch(e ->
+                (e.getBasApplyEntryIds() != null && !e.getBasApplyEntryIds().isEmpty())
+                    || (e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty()));
             if (hasRefs) {
-                for (PurchasePlanEntry e : list) {
-                    purchasePlanMapper.insertPurchasePlanEntry(e);
-                    if (e.getId() != null) {
-                        if (e.getBasApplyEntryIds() != null && !e.getBasApplyEntryIds().isEmpty()) {
-                            List<PurchasePlanEntryApply> refs = e.getBasApplyEntryIds().stream()
-                                .map(applyEntryId -> {
-                                    PurchasePlanEntryApply ref = new PurchasePlanEntryApply();
-                                    ref.setPurchasePlanEntryId(e.getId());
-                                    ref.setBasApplyEntryId(applyEntryId);
-                                    ref.setTenantId(tenantId);
-                                    ref.setCreateBy(createBy);
-                                    ref.setCreateTime(now);
-                                    return ref;
-                                }).collect(Collectors.toList());
-                            purchasePlanEntryApplyMapper.batchInsert(refs);
-                        }
-                        if (e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty()) {
-                            List<PurchasePlanEntryDepApply> depRefs = e.getDepApplyEntryIds().stream()
-                                .map(depEntryId -> {
-                                    PurchasePlanEntryDepApply ref = new PurchasePlanEntryDepApply();
-                                    ref.setPurchasePlanEntryId(e.getId());
-                                    ref.setDepPurchaseApplyEntryId(depEntryId);
-                                    ref.setPurchasePlanId(purchasePlan.getId());
-                                    ref.setPlanNo(purchasePlan.getPlanNo());
-                                    ref.setTenantId(tenantId);
-                                    ref.setCreateBy(createBy);
-                                    ref.setCreateTime(now);
-                                    return ref;
-                                }).collect(Collectors.toList());
-                            purchasePlanEntryDepApplyMapper.batchInsert(depRefs);
-                            purchasePlanEntryDepApplyMapper.updateFillApplyInfo(e.getId());
-                        }
-                    }
-                }
-            } else {
-                purchasePlanMapper.batchPurchasePlanEntry(list);
+                assignEntryIdsAfterBatchInsert(id, list);
+                insertEntryRefsForPlan(purchasePlan, list, tenantId, SecurityUtils.getUserIdStr(), new Date());
+                purchasePlanEntryDepApplyMapper.updateFillApplyInfoByPlanId(id);
             }
         }
+    }
+
+    private List<PurchasePlanEntry> preparePlanEntriesForInsert(List<PurchasePlanEntry> source, Long parentId, String tenantId)
+    {
+        List<PurchasePlanEntry> list = new ArrayList<>();
+        String createBy = SecurityUtils.getUserIdStr();
+        Date now = new Date();
+        for (PurchasePlanEntry e : source)
+        {
+            if (e == null || e.getMaterialId() == null) {
+                continue;
+            }
+            e.setParentId(parentId);
+            e.setTenantId(tenantId);
+            e.setDelFlag("0");
+            e.setCreateBy(createBy);
+            e.setCreateTime(now);
+            list.add(e);
+        }
+        return list;
+    }
+
+    /** 批量 insert 后按插入顺序回填自增 id（与 select 按 id 升序一致） */
+    private void assignEntryIdsAfterBatchInsert(Long parentId, List<PurchasePlanEntry> submitted)
+    {
+        if (parentId == null || submitted == null || submitted.isEmpty()) {
+            return;
+        }
+        List<PurchasePlanEntry> needId = new ArrayList<>();
+        for (PurchasePlanEntry e : submitted) {
+            if (e != null && e.getMaterialId() != null && e.getId() == null) {
+                needId.add(e);
+            }
+        }
+        if (needId.isEmpty()) {
+            return;
+        }
+        List<PurchasePlanEntry> persisted = purchasePlanMapper.selectPurchasePlanEntryByParentId(parentId);
+        if (persisted == null || persisted.size() < needId.size()) {
+            return;
+        }
+        persisted.sort(Comparator.comparing(PurchasePlanEntry::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        int from = persisted.size() - needId.size();
+        for (int i = 0; i < needId.size(); i++) {
+            needId.get(i).setId(persisted.get(from + i).getId());
+        }
+    }
+
+    private boolean planEntryRowChanged(PurchasePlanEntry old, PurchasePlanEntry cur)
+    {
+        if (old == null || cur == null) {
+            return true;
+        }
+        return !Objects.equals(old.getMaterialId(), cur.getMaterialId())
+            || !Objects.equals(old.getSupplierId(), cur.getSupplierId())
+            || !Objects.equals(old.getQty(), cur.getQty())
+            || !Objects.equals(old.getApplyQty(), cur.getApplyQty())
+            || !Objects.equals(old.getPrice(), cur.getPrice())
+            || !Objects.equals(old.getAmt(), cur.getAmt())
+            || !Objects.equals(old.getSpeci(), cur.getSpeci())
+            || !Objects.equals(old.getModel(), cur.getModel())
+            || !Objects.equals(old.getRemark(), cur.getRemark())
+            || !Objects.equals(old.getApplyDepartmentId(), cur.getApplyDepartmentId());
     }
 
     private void syncPurchasePlanEntry(PurchasePlan purchasePlan) {
@@ -578,7 +602,9 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                 if (cur != null) {
                     cur.setId(old.getId());
                     cur.setDelFlag("0");
-                    purchasePlanMapper.updatePurchasePlanEntry(cur);
+                    if (planEntryRowChanged(old, cur)) {
+                        purchasePlanMapper.updatePurchasePlanEntry(cur);
+                    }
                 } else {
                     PurchasePlanEntry deleted = new PurchasePlanEntry();
                     deleted.setId(old.getId());
@@ -594,48 +620,64 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
 
         if (!newEntries.isEmpty()) {
             purchasePlanMapper.batchPurchasePlanEntry(newEntries);
+            assignEntryIdsAfterBatchInsert(parentId, newEntries);
         }
         // 关联表按“先清后建”重建，保证明细ID稳定前提下，引用关系与前端提交一致。
         insertEntryRefsForPlan(purchasePlan, normalized, tenantId, operator, now);
+        boolean hasDepRefs = normalized.stream().anyMatch(e -> e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty());
+        if (hasDepRefs) {
+            purchasePlanEntryDepApplyMapper.updateFillApplyInfoByPlanId(parentId);
+        }
     }
 
     private void insertEntryRefsForPlan(PurchasePlan purchasePlan, List<PurchasePlanEntry> entries, String tenantId, String createBy, Date now) {
         if (entries == null || entries.isEmpty()) {
             return;
         }
+        List<PurchasePlanEntryApply> allBasRefs = new ArrayList<>();
+        List<PurchasePlanEntryDepApply> allDepRefs = new ArrayList<>();
+        Long planId = purchasePlan.getId();
+        String planNo = purchasePlan.getPlanNo();
         for (PurchasePlanEntry e : entries) {
-            if (e.getId() == null) {
+            if (e == null || e.getId() == null) {
                 continue;
             }
             if (e.getBasApplyEntryIds() != null && !e.getBasApplyEntryIds().isEmpty()) {
-                List<PurchasePlanEntryApply> refs = e.getBasApplyEntryIds().stream()
-                    .map(applyEntryId -> {
-                        PurchasePlanEntryApply ref = new PurchasePlanEntryApply();
-                        ref.setPurchasePlanEntryId(e.getId());
-                        ref.setBasApplyEntryId(applyEntryId);
-                        ref.setTenantId(tenantId);
-                        ref.setCreateBy(createBy);
-                        ref.setCreateTime(now);
-                        return ref;
-                    }).collect(Collectors.toList());
-                purchasePlanEntryApplyMapper.batchInsert(refs);
+                for (Long applyEntryId : e.getBasApplyEntryIds()) {
+                    if (applyEntryId == null) {
+                        continue;
+                    }
+                    PurchasePlanEntryApply ref = new PurchasePlanEntryApply();
+                    ref.setPurchasePlanEntryId(e.getId());
+                    ref.setBasApplyEntryId(applyEntryId);
+                    ref.setTenantId(tenantId);
+                    ref.setCreateBy(createBy);
+                    ref.setCreateTime(now);
+                    allBasRefs.add(ref);
+                }
             }
             if (e.getDepApplyEntryIds() != null && !e.getDepApplyEntryIds().isEmpty()) {
-                List<PurchasePlanEntryDepApply> depRefs = e.getDepApplyEntryIds().stream()
-                    .map(depEntryId -> {
-                        PurchasePlanEntryDepApply ref = new PurchasePlanEntryDepApply();
-                        ref.setPurchasePlanEntryId(e.getId());
-                        ref.setDepPurchaseApplyEntryId(depEntryId);
-                        ref.setPurchasePlanId(purchasePlan.getId());
-                        ref.setPlanNo(purchasePlan.getPlanNo());
-                        ref.setTenantId(tenantId);
-                        ref.setCreateBy(createBy);
-                        ref.setCreateTime(now);
-                        return ref;
-                    }).collect(Collectors.toList());
-                purchasePlanEntryDepApplyMapper.batchInsert(depRefs);
-                purchasePlanEntryDepApplyMapper.updateFillApplyInfo(e.getId());
+                for (Long depEntryId : e.getDepApplyEntryIds()) {
+                    if (depEntryId == null) {
+                        continue;
+                    }
+                    PurchasePlanEntryDepApply ref = new PurchasePlanEntryDepApply();
+                    ref.setPurchasePlanEntryId(e.getId());
+                    ref.setDepPurchaseApplyEntryId(depEntryId);
+                    ref.setPurchasePlanId(planId);
+                    ref.setPlanNo(planNo);
+                    ref.setTenantId(tenantId);
+                    ref.setCreateBy(createBy);
+                    ref.setCreateTime(now);
+                    allDepRefs.add(ref);
+                }
             }
+        }
+        if (!allBasRefs.isEmpty()) {
+            purchasePlanEntryApplyMapper.batchInsert(allBasRefs);
+        }
+        if (!allDepRefs.isEmpty()) {
+            purchasePlanEntryDepApplyMapper.batchInsert(allDepRefs);
         }
     }
 
@@ -810,5 +852,22 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             }
         }
         return result;
+    }
+
+    @Override
+    public List<DepPurchaseApplyEntry> listReferenceApplyEntries(Long[] applyIds, List<Long> excludeEntryIds)
+    {
+        if (applyIds == null || applyIds.length == 0)
+        {
+            return Collections.emptyList();
+        }
+        Long[] distinctApplyIds = Arrays.stream(applyIds).filter(Objects::nonNull).distinct().toArray(Long[]::new);
+        if (distinctApplyIds.length == 0)
+        {
+            return Collections.emptyList();
+        }
+        List<Long> excludeList = excludeEntryIds == null ? Collections.emptyList()
+            : excludeEntryIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        return depPurchaseApplyMapper.selectEntriesForPlanReferenceByApplyIds(distinctApplyIds, excludeList);
     }
 }

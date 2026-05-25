@@ -91,6 +91,12 @@ public class WhFixedNumber extends BaseEntity {
     /** 查询参数：耗材名称/编码关键词（用于列表筛选） */
     private String materialName;
 
+    /** 查询参数：耗材编码（与 materialName 可同时使用，取交集） */
+    private String materialCode;
+
+    /** 查询参数：规格（模糊） */
+    private String materialSpeci;
+
     /** 查询参数：供应商ID（用于列表筛选） */
     private Long supplierId;
     /** 查询参数：生产厂家ID（用于列表筛选） */
@@ -303,6 +309,22 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setMaterialName(String materialName) {
         this.materialName = materialName;
+    }
+
+    public String getMaterialCode() {
+        return materialCode;
+    }
+
+    public void setMaterialCode(String materialCode) {
+        this.materialCode = materialCode;
+    }
+
+    public String getMaterialSpeci() {
+        return materialSpeci;
+    }
+
+    public void setMaterialSpeci(String materialSpeci) {
+        this.materialSpeci = materialSpeci;
     }
 
     public Long getSupplierId() {

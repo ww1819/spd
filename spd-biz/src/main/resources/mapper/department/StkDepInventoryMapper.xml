@@ -257,7 +257,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectStkDepInventoryList" parameterType="StkDepInventory" resultMap="StkDepInventoryResult">
         <include refid="selectStkDepInventoryVo"/>
         <include refid="stkDepInventoryListWhere"/>
-        order by stk.warehouse_date desc
+        order by IFNULL(m.name, '') asc, IFNULL(m.code, '') asc, stk.id asc
     </select>
 
     <select id="selectDepartmentNearExpiryReminderList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentNearExpiryReminderRowVo">
@@ -584,7 +584,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier msup on msup.id = m.supplier_id
         where <include refid="inventorySummaryWhere"/>
         group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
-        order by m.code, d.name
+        order by IFNULL(m.name, '') asc, d.name asc, IFNULL(m.code, '') asc
     </select>
 
     <!-- 科室进销存明细查询 -->

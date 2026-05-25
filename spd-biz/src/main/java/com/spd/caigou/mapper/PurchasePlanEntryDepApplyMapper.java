@@ -20,6 +20,9 @@ public interface PurchasePlanEntryDepApplyMapper {
     /** 根据关联的明细从主表回填 dep_purchase_apply_id、purchase_bill_no */
     int updateFillApplyInfo(@Param("purchasePlanEntryId") Long purchasePlanEntryId);
 
+    /** 按计划一次回填所有关联行的申购单主表信息（避免按行循环 update） */
+    int updateFillApplyInfoByPlanId(@Param("planId") Long planId);
+
     int logicDeleteByPlanId(@Param("planId") Long planId, @Param("deleteBy") String deleteBy);
 
     /** 采购计划当前仍关联的科室申购主表 ID（去重） */

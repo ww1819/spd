@@ -187,9 +187,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
-        <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
+        <if test="name != null  and name != ''"> and (
+            m.code like concat('%', #{name}, '%') escape '\\'
+            OR m.name like concat('%', #{name}, '%') escape '\\'
+            OR m.referred_name like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
+        )</if>
         <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
-        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%')</if>
+        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%') escape '\\'</if>
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>
@@ -549,9 +557,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
-        <if test="name != null  and name != ''"> and (m.code like concat('%', #{name}, '%') OR m.name like concat('%', #{name}, '%') OR m.referred_name like concat('%', #{name}, '%') )</if>
+        <if test="name != null  and name != ''"> and (
+            m.code like concat('%', #{name}, '%') escape '\\'
+            OR m.name like concat('%', #{name}, '%') escape '\\'
+            OR m.referred_name like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
+            OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
+        )</if>
         <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
-        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%')</if>
+        <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%') escape '\\'</if>
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>

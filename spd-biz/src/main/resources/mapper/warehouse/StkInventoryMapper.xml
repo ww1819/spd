@@ -240,7 +240,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0 and stk.tenant_id = #{tenantId}
           and (m.is_use is null or m.is_use = '' or m.is_use != '2')
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
-        order by stk.material_id, stk.batch_no, stk.id
+        order by IFNULL(m.name, '') asc, IFNULL(m.code, '') asc, stk.batch_no asc, stk.id asc
     </select>
 
     <!-- 不使用 <bind name="scopedTenantId">，否则会覆盖实体上的 tenantId，导致与 Service 注入的租户不一致 -->
@@ -279,7 +279,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="materialHisChargeItemIdWhere"/>
         <if test="id != null"> and stk.id = #{id}</if>
         <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
-        order by stk.warehouse_date desc
+        order by IFNULL(m.name, '') asc, IFNULL(m.code, '') asc, stk.id asc
     </select>
 
     <select id="selectStkInventoryListTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
@@ -317,7 +317,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="materialHisChargeItemIdWhere"/>
         <if test="id != null"> and stk.id = #{id}</if>
         <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
-        order by stk.warehouse_date desc
     </select>
 
     <!-- 库存汇总：按耗材 + 仓库合并批次，数量/金额汇总；单价为加权平均 -->
@@ -383,7 +382,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <include refid="materialHisChargeItemIdWhere"/>
         GROUP BY stk.material_id, stk.warehouse_id, m.code, m.name, m.speci, m.model, u.unit_name
-        order by m.code, MAX(w.name)
+        order by IFNULL(m.name, '') asc, MAX(w.name) asc, IFNULL(m.code, '') asc
     </select>
 
 
@@ -955,10 +954,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="materialName != null and materialName != ''">
-            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
+            and (
+                m.name like concat('%', #{materialName}, '%') escape '\\'
+                or m.code like concat('%', #{materialName}, '%') escape '\\'
+                or m.referred_name like concat('%', #{materialName}, '%') escape '\\'
+                or ifnull(m.use_name, '') like concat('%', #{materialName}, '%') escape '\\'
+                or ifnull(m.brand, '') like concat('%', #{materialName}, '%') escape '\\'
+                or ifnull(m.speci, '') like concat('%', #{materialName}, '%') escape '\\'
+                or ifnull(m.model, '') like concat('%', #{materialName}, '%') escape '\\'
+            )
         </if>
-        <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
-        <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
+        <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%') escape '\\'</if>
+        <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%') escape '\\'</if>
         <if test="excludeMaterialWarehousePairs != null and excludeMaterialWarehousePairs != ''">
             and find_in_set(concat(stk.material_id, '__', stk.warehouse_id), #{excludeMaterialWarehousePairs}) = 0
         </if>

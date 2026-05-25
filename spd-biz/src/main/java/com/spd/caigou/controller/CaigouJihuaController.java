@@ -255,6 +255,25 @@ public class CaigouJihuaController extends BaseController
     }
 
     /**
+     * 引用申购单确认：按所选申购单主键批量查询明细（服务端聚合，不依赖前端右侧预览列表）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/referenceApplyEntries")
+    public AjaxResult referenceApplyEntries(
+        @RequestParam("applyIds") String applyIdsStr,
+        @RequestParam(name = "excludeEntryIds", required = false) String excludeEntryIdsStr)
+    {
+        Long[] applyIds = parseIds(applyIdsStr);
+        if (applyIds == null || applyIds.length == 0)
+        {
+            return error("请至少选择一张申购单");
+        }
+        Long[] excludeArr = parseIds(excludeEntryIdsStr);
+        List<Long> excludeEntryIds = excludeArr == null ? new ArrayList<>() : Arrays.asList(excludeArr);
+        return success(purchasePlanService.listReferenceApplyEntries(applyIds, excludeEntryIds));
+    }
+
+    /**
      * 导出采购记录：按选中的计划单汇总，生成「年份月份耗材采购记录」Excel，首行为标题
      * 列：物资名称，物资规格，数量，单位，供货单位，收货人，收货日期（收货人、收货日期为空）；数量为明细汇总
      */

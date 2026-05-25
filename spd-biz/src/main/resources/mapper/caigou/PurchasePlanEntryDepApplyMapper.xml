@@ -34,6 +34,18 @@
         where r.purchase_plan_entry_id = #{purchasePlanEntryId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
     </update>
 
+    <update id="updateFillApplyInfoByPlanId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update purchase_plan_entry_dep_apply r
+        inner join dep_purchase_apply_entry e on r.dep_purchase_apply_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        inner join dep_purchase_apply a on e.parent_id = a.id and a.tenant_id = #{scopedTenantId}
+        inner join purchase_plan_entry pe on r.purchase_plan_entry_id = pe.id and pe.tenant_id = #{scopedTenantId}
+        inner join purchase_plan pp on pe.parent_id = pp.id and pp.tenant_id = #{scopedTenantId}
+        set r.dep_purchase_apply_id = a.id, r.purchase_bill_no = a.purchase_bill_no,
+            r.purchase_plan_id = pp.id, r.plan_no = pp.plan_no
+        where pe.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
+    </update>
+
     <update id="logicDeleteByPlanId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_dep_apply r

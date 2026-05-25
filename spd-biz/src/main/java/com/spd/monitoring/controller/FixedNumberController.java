@@ -10,6 +10,8 @@ import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.utils.MaterialSearchKeywordUtils;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.enums.BusinessType;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -189,6 +191,7 @@ public class FixedNumberController extends BaseController
         if (whQuery == null || whQuery.getWarehouseId() == null) {
             return getDataTable(new ArrayList<>());
         }
+        normalizePurchaseMaterialQuery(whQuery);
         // 科室申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案（仅展示该仓库定数监测中的产品）
         whQuery.setOnlyEnabled(Boolean.TRUE);
         startPage();
@@ -237,6 +240,7 @@ public class FixedNumberController extends BaseController
         if (whQuery == null) {
             whQuery = new WhFixedNumber();
         }
+        normalizePurchaseMaterialQuery(whQuery);
         // 科室汇总申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案
         whQuery.setOnlyEnabled(Boolean.TRUE);
         startPage();
@@ -390,6 +394,28 @@ public class FixedNumberController extends BaseController
         List<Object> list = new ArrayList<>();
         ExcelUtil<Object> util = new ExcelUtil<Object>(Object.class);
         util.exportExcel(response, list, "定数监测数据");
+    }
+
+    /** 申购选耗材：规范化检索词并转义 LIKE 通配符 */
+    private void normalizePurchaseMaterialQuery(WhFixedNumber whQuery) {
+        if (whQuery == null) {
+            return;
+        }
+        if (StringUtils.isNotEmpty(whQuery.getMaterialName())) {
+            whQuery.setMaterialName(MaterialSearchKeywordUtils.normalizeAndEscapeLike(whQuery.getMaterialName()));
+        }
+        if (StringUtils.isNotEmpty(whQuery.getMaterialCode())) {
+            whQuery.setMaterialCode(MaterialSearchKeywordUtils.normalizeAndEscapeLike(whQuery.getMaterialCode()));
+        }
+        if (StringUtils.isNotEmpty(whQuery.getMaterialSpeci())) {
+            whQuery.setMaterialSpeci(MaterialSearchKeywordUtils.normalizeAndEscapeLike(whQuery.getMaterialSpeci()));
+        }
+        if (whQuery.getMaterial() != null && StringUtils.isNotEmpty(whQuery.getMaterial().getSpeci())) {
+            whQuery.getMaterial().setSpeci(MaterialSearchKeywordUtils.normalizeAndEscapeLike(whQuery.getMaterial().getSpeci()));
+            if (StringUtils.isEmpty(whQuery.getMaterialSpeci())) {
+                whQuery.setMaterialSpeci(whQuery.getMaterial().getSpeci());
+            }
+        }
     }
 }
 

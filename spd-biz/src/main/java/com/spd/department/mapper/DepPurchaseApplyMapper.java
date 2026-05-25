@@ -116,4 +116,14 @@ public interface DepPurchaseApplyMapper
 
     /** 按出库关联重算并回写出库引用状态 */
     int refreshOutboundRefStatus(@Param("applyId") Long applyId);
+
+    /**
+     * 采购计划引用申购单：按多张申购单主键批量查询明细（含耗材档案）
+     *
+     * @param applyIds 科室申购主表 ID 列表
+     * @param excludeEntryIds 需排除的申购明细 ID（如已在当前计划明细中）
+     */
+    List<DepPurchaseApplyEntry> selectEntriesForPlanReferenceByApplyIds(
+        @Param("applyIds") Long[] applyIds,
+        @Param("excludeEntryIds") List<Long> excludeEntryIds);
 }

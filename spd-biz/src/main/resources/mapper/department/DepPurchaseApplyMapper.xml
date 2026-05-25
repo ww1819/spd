@@ -153,6 +153,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </association>
     </resultMap>
 
+    <resultMap type="DepPurchaseApplyEntry" id="DepPurchaseApplyEntryPlanRefResult" extends="DepPurchaseApplyEntryResult">
+        <result property="applyDepartmentName" column="d_name"/>
+        <result property="applyDepartmentId" column="dpa_department_id"/>
+    </resultMap>
+
     <sql id="selectDepPurchaseApplyVo">
         select 
             dpa.id, 
@@ -881,4 +886,80 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         dpa.update_time = now()
         where dpa.id = #{applyId} and dpa.tenant_id = #{scopedTenantId}
     </update>
+
+    <!-- 采购计划引用：按多张申购单 ID 批量查明细 -->
+    <select id="selectEntriesForPlanReferenceByApplyIds" resultMap="DepPurchaseApplyEntryPlanRefResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            dpae.id as sub_id,
+            dpae.parent_id as sub_parent_id,
+            dpae.material_id as sub_material_id,
+            dpae.material_name as sub_material_name,
+            dpae.material_spec as sub_material_spec,
+            dpae.unit as sub_unit,
+            dpae.unit_price as sub_unit_price,
+            dpae.qty as sub_qty,
+            dpae.amt as sub_amt,
+            dpae.reason as sub_reason,
+            dpae.supplier_name as sub_supplier_name,
+            dpae.brand as sub_brand,
+            dpae.model as sub_model,
+            dpae.create_by as sub_create_by,
+            dpae.create_time as sub_create_time,
+            dpae.update_by as sub_update_by,
+            dpae.update_time as sub_update_time,
+            dpae.delete_by as sub_delete_by,
+            dpae.delete_time as sub_delete_time,
+            dpae.tenant_id as sub_tenant_id,
+            dpae.del_flag as sub_del_flag,
+            dpae.src_agg_entry_id as sub_src_agg_entry_id,
+            dpae.src_agg_apply_id as sub_src_agg_apply_id,
+            dpae.src_agg_bill_no as sub_src_agg_bill_no,
+            coalesce(nullif(trim(dpae.purchase_bill_no), ''), dpa.purchase_bill_no) as sub_purchase_bill_no,
+            dpae.remark as sub_remark,
+            dpa.department_id as dpa_department_id,
+            d.name as d_name,
+            m.id as m_id,
+            m.code as m_code,
+            m.name as m_name,
+            m.speci as m_speci,
+            m.model as m_model,
+            m.supplier_id as m_supplier_id,
+            m.price as m_price,
+            ms.id as m_sid,
+            ms.code as m_supplier_code,
+            ms.name as m_supplier_name,
+            f.factory_id as f_id,
+            f.factory_name as f_name,
+            mu.unit_id as u_id,
+            mu.unit_name as u_name,
+            wc.warehouse_category_id as wc_id,
+            wc.warehouse_category_name as wc_name,
+            fc.finance_category_id as fc_id,
+            fc.finance_category_name as fc_name
+        from dep_purchase_apply_entry dpae
+        inner join dep_purchase_apply dpa on dpa.id = dpae.parent_id
+            and dpa.tenant_id = #{scopedTenantId}
+            and (dpa.del_flag = 0 or dpa.del_flag is null)
+        left join fd_department d on dpa.department_id = d.id
+        left join fd_material m on dpae.material_id = m.id
+        left join fd_supplier ms on m.supplier_id = ms.id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_unit mu on m.unit_id = mu.unit_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        where dpae.tenant_id = #{scopedTenantId}
+          and (dpae.del_flag is null or dpae.del_flag != 1)
+          and dpae.parent_id in
+        <foreach collection="applyIds" item="aid" open="(" separator="," close=")">
+            #{aid}
+        </foreach>
+        <if test="excludeEntryIds != null and excludeEntryIds.size() > 0">
+            and dpae.id not in
+            <foreach collection="excludeEntryIds" item="eid" open="(" separator="," close=")">
+                #{eid}
+            </foreach>
+        </if>
+        order by dpae.parent_id, dpae.id
+    </select>
 </mapper>

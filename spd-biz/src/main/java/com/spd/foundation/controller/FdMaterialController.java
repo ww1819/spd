@@ -110,12 +110,27 @@ public class FdMaterialController extends BaseController
     @GetMapping("/listDeptSafe")
     public List<Map<String, Object>> listDeptSafe(
         @RequestParam(value = "name", required = false) String name,
+        @RequestParam(value = "keyword", required = false) String keyword,
+        @RequestParam(value = "speci", required = false) String speci,
         @RequestParam(value = "isGz", required = false) String isGz)
     {
         FdMaterial query = new FdMaterial();
-        if (StringUtils.isNotEmpty(name))
+        String searchKey = StringUtils.isNotEmpty(keyword) ? keyword : name;
+        if (StringUtils.isNotEmpty(searchKey))
         {
-            query.setName(name.trim());
+            String normalized = com.spd.common.utils.MaterialSearchKeywordUtils.normalizeAndEscapeLike(searchKey.trim());
+            if (StringUtils.isNotEmpty(normalized))
+            {
+                query.setName(normalized);
+            }
+        }
+        if (StringUtils.isNotEmpty(speci))
+        {
+            String normalizedSpeci = com.spd.common.utils.MaterialSearchKeywordUtils.normalizeAndEscapeLike(speci.trim());
+            if (StringUtils.isNotEmpty(normalizedSpeci))
+            {
+                query.setSpeci(normalizedSpeci);
+            }
         }
         if (StringUtils.isNotEmpty(isGz))
         {

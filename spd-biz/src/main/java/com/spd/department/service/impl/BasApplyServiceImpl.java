@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import com.spd.system.service.ITenantScopeService;
@@ -12,6 +14,7 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.MasterDetailValidateUtil;
+import com.spd.common.utils.MinPackageQtyValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -205,6 +208,34 @@ public class BasApplyServiceImpl implements IBasApplyService
         }
     }
 
+    /** 保存时：仅当产品档案维护了最小包装数时，数量须为其整数倍（审核不校验，兼容历史单） */
+    private void validateMinPackageQtyOnSave(List<BasApplyEntry> list, String docLabel) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        Map<Long, FdMaterial> materialCache = new HashMap<>();
+        for (BasApplyEntry e : list) {
+            if (e == null || e.getMaterialId() == null) {
+                continue;
+            }
+            FdMaterial m = materialCache.computeIfAbsent(e.getMaterialId(), fdMaterialMapper::selectFdMaterialById);
+            BigDecimal min = m != null ? m.getMinPackageQty() : null;
+            if (!MinPackageQtyValidateUtil.isEffectiveMinPackageQty(min)) {
+                continue;
+            }
+            if (!MinPackageQtyValidateUtil.isQtyMultipleOfMinPackage(e.getQty(), min)) {
+                String name = null;
+                if (e.getMaterial() != null && StringUtils.isNotEmpty(e.getMaterial().getName())) {
+                    name = e.getMaterial().getName();
+                } else if (m != null) {
+                    name = m.getName();
+                }
+                throw new ServiceException(
+                    MinPackageQtyValidateUtil.buildMismatchMessage(docLabel, name, e.getQty(), min));
+            }
+        }
+    }
+
     private static String basApplyDocLabel(BasApply basApply) {
         if (basApply == null || basApply.getBillType() == null) {
             return "科室申领";
@@ -313,6 +344,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         MasterDetailValidateUtil.assertHasMaterialLine(
             basApply.getBasApplyEntryList(), BasApplyEntry::getMaterialId, basApplyDocLabel(basApply));
         validateEntryQty(basApply);
+        validateMinPackageQtyOnSave(basApply.getBasApplyEntryList(), basApplyDocLabel(basApply));
         if (StringUtils.isEmpty(basApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             basApply.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -388,6 +420,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         MasterDetailValidateUtil.assertHasMaterialLine(
             basApply.getBasApplyEntryList(), BasApplyEntry::getMaterialId, basApplyDocLabel(basApply));
         validateEntryQty(basApply);
+        validateMinPackageQtyOnSave(basApply.getBasApplyEntryList(), basApplyDocLabel(basApply));
         if (existing != null) {
             basApply.setCreateBy(existing.getCreateBy());
             basApply.setCreateTime(existing.getCreateTime());

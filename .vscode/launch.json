@@ -17,7 +17,7 @@
             "request": "launch",
             "mainClass": "com.spd.SPDApplication",
             "projectName": "spd-admin",
-            "shortenCommandLine": "argfile",
+            "shortenCommandLine": "classpath",
             "preLaunchTask": "spd-maven-install"
         },
         {

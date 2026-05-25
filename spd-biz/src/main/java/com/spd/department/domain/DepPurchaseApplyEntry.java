@@ -119,6 +119,12 @@ public class DepPurchaseApplyEntry extends BaseEntity
     /** 待出库数量 = 申购数量 - 已作废 - 已关联出库 */
     private BigDecimal pendingOutboundQty;
 
+    /** 引用采购计划时回填：申请科室名称（非表字段） */
+    private String applyDepartmentName;
+
+    /** 引用采购计划时回填：申请科室ID（非表字段） */
+    private Long applyDepartmentId;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -388,6 +394,22 @@ public class DepPurchaseApplyEntry extends BaseEntity
 
     public void setPendingOutboundQty(BigDecimal pendingOutboundQty) {
         this.pendingOutboundQty = pendingOutboundQty;
+    }
+
+    public String getApplyDepartmentName() {
+        return applyDepartmentName;
+    }
+
+    public void setApplyDepartmentName(String applyDepartmentName) {
+        this.applyDepartmentName = applyDepartmentName;
+    }
+
+    public Long getApplyDepartmentId() {
+        return applyDepartmentId;
+    }
+
+    public void setApplyDepartmentId(Long applyDepartmentId) {
+        this.applyDepartmentId = applyDepartmentId;
     }
 
     @Override

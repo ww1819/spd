@@ -6,11 +6,14 @@ import java.util.Date;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.MasterDetailValidateUtil;
+import com.spd.common.utils.MinPackageQtyValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import com.spd.common.utils.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.spd.department.domain.DepPurchaseApplyEntry;
@@ -183,6 +186,30 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
             list, DepPurchaseApplyEntry::getMaterialId, DepPurchaseApplyEntry::getQty, "科室申购单");
     }
 
+    /** 保存时：仅当产品档案维护了最小包装数时，数量须为其整数倍（审核不校验，兼容历史单） */
+    private void validateMinPackageQtyOnSave(List<DepPurchaseApplyEntry> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        Map<Long, FdMaterial> materialCache = new HashMap<>();
+        for (DepPurchaseApplyEntry e : list) {
+            if (e == null || e.getMaterialId() == null) {
+                continue;
+            }
+            FdMaterial m = materialCache.computeIfAbsent(e.getMaterialId(), fdMaterialMapper::selectFdMaterialById);
+            BigDecimal min = m != null ? m.getMinPackageQty() : null;
+            if (!MinPackageQtyValidateUtil.isEffectiveMinPackageQty(min)) {
+                continue;
+            }
+            if (!MinPackageQtyValidateUtil.isQtyMultipleOfMinPackage(e.getQty(), min)) {
+                String name = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName()
+                    : (m != null ? m.getName() : null);
+                throw new ServiceException(
+                    MinPackageQtyValidateUtil.buildMismatchMessage("科室申购", name, e.getQty(), min));
+            }
+        }
+    }
+
     /** 审核前：每条明细产品档案与数量均必填（不自动补默认数量） */
     private void assertEntriesReadyForAudit(List<DepPurchaseApplyEntry> list) {
         MasterDetailValidateUtil.assertEntriesReadyForAudit(
@@ -204,6 +231,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
             depPurchaseApply.getDepPurchaseApplyEntryList(), DepPurchaseApplyEntry::getMaterialId, "科室申购");
         normalizeEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
+        validateMinPackageQtyOnSave(depPurchaseApply.getDepPurchaseApplyEntryList());
         // 生成申购单号
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo())) {
             depPurchaseApply.setPurchaseBillNo(generatePurchaseBillNo());
@@ -247,6 +275,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
             depPurchaseApply.getDepPurchaseApplyEntryList(), DepPurchaseApplyEntry::getMaterialId, "科室申购");
         normalizeEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
+        validateMinPackageQtyOnSave(depPurchaseApply.getDepPurchaseApplyEntryList());
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         if (depPurchaseApply.getUserId() == null && existing != null && existing.getUserId() != null) {

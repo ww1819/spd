@@ -30,6 +30,7 @@ import com.spd.department.availablestock.DepartmentApplyAvailableStockStrategy;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.service.IStkInventoryService;
 import com.spd.common.utils.poi.ExcelUtil;
+import com.spd.common.utils.MaterialSearchKeywordUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.constant.HttpStatus;
@@ -263,6 +264,7 @@ public class StkInventoryController extends BaseController
         if (stkInventory == null) {
             stkInventory = new StkInventory();
         }
+        normalizeDeptApplyStockMaterialQuery(stkInventory);
         startPage();
         List<Map<String, Object>> list = departmentApplyAvailableStockStrategy.listAggregated(stkInventory);
         return getDataTable(list);
@@ -388,5 +390,23 @@ public class StkInventoryController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(stkInventoryService.deleteStkInventoryByIds(ids));
+    }
+
+    private void normalizeDeptApplyStockMaterialQuery(StkInventory query) {
+        if (query == null) {
+            return;
+        }
+        if (StringUtils.isNotEmpty(query.getMaterialName())) {
+            query.setMaterialName(MaterialSearchKeywordUtils.normalizeAndEscapeLike(query.getMaterialName()));
+        }
+        if (StringUtils.isNotEmpty(query.getMaterialSpeci())) {
+            query.setMaterialSpeci(MaterialSearchKeywordUtils.normalizeAndEscapeLike(query.getMaterialSpeci()));
+        }
+        if (StringUtils.isNotEmpty(query.getMaterialModel())) {
+            query.setMaterialModel(MaterialSearchKeywordUtils.normalizeAndEscapeLike(query.getMaterialModel()));
+        }
+        if (StringUtils.isNotEmpty(query.getWarehouseName())) {
+            query.setWarehouseName(MaterialSearchKeywordUtils.normalizeAndEscapeLike(query.getWarehouseName()));
+        }
     }
 }
