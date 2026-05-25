@@ -112,17 +112,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                 }
             }
 
-            Map<Long, BigDecimal> stockByMaterialId = new HashMap<>();
-            if (warehouseId != null && !materialIds.isEmpty()) {
-                List<MaterialWarehouseStockAgg> stockAggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, materialIds);
-                if (stockAggs != null) {
-                    for (MaterialWarehouseStockAgg a : stockAggs) {
-                        if (a != null && a.getMaterialId() != null) {
-                            stockByMaterialId.put(a.getMaterialId(), a.getSumQty() != null ? a.getSumQty() : BigDecimal.ZERO);
-                        }
-                    }
-                }
-            }
+            Map<Long, BigDecimal> stockByMaterialId = mapStockQtyByWarehouseAndMaterialIds(warehouseId, materialIds);
 
             for (PurchasePlanEntry entry : purchasePlanEntryList) {
                 if (entry.getMaterialId() != null) {
@@ -169,6 +159,40 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         }
         purchasePlan.setPurchasePlanEntryList(purchasePlanEntryList);
         return purchasePlan;
+    }
+
+    @Override
+    public Map<Long, BigDecimal> mapStockQtyByWarehouseAndMaterialIds(Long warehouseId, List<Long> materialIds)
+    {
+        Map<Long, BigDecimal> stockByMaterialId = new HashMap<>();
+        if (warehouseId == null || materialIds == null || materialIds.isEmpty())
+        {
+            return stockByMaterialId;
+        }
+        List<Long> distinctIds = materialIds.stream()
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (distinctIds.isEmpty())
+        {
+            return stockByMaterialId;
+        }
+        List<MaterialWarehouseStockAgg> stockAggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, distinctIds);
+        if (stockAggs != null)
+        {
+            for (MaterialWarehouseStockAgg a : stockAggs)
+            {
+                if (a != null && a.getMaterialId() != null)
+                {
+                    stockByMaterialId.put(a.getMaterialId(), a.getSumQty() != null ? a.getSumQty() : BigDecimal.ZERO);
+                }
+            }
+        }
+        for (Long materialId : distinctIds)
+        {
+            stockByMaterialId.putIfAbsent(materialId, BigDecimal.ZERO);
+        }
+        return stockByMaterialId;
     }
 
     /**

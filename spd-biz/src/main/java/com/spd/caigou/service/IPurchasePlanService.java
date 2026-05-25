@@ -5,7 +5,9 @@ import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
 import com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 采购计划Service接口
@@ -108,4 +110,13 @@ public interface IPurchasePlanService
      * 采购计划汇总导出（按供应商+物资维度汇总）
      */
     List<PurchasePlanSummaryExportVO> listPurchasePlanSummaryExport(PurchasePlan query);
+
+    /**
+     * 按仓库+耗材批量查询当前库存数量（采购计划明细展示用，不持久化）
+     *
+     * @param warehouseId 仓库主键
+     * @param materialIds 耗材主键列表
+     * @return key=耗材ID，value=该仓库下汇总库存数量（无库存记录时为 0）
+     */
+    Map<Long, BigDecimal> mapStockQtyByWarehouseAndMaterialIds(Long warehouseId, List<Long> materialIds);
 }

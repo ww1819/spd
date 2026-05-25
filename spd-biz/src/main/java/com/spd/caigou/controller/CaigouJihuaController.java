@@ -20,11 +20,14 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 采购计划Controller
@@ -170,6 +173,26 @@ public class CaigouJihuaController extends BaseController
         @RequestParam(value = "restoreDepApplyPlanRefStatus", required = false, defaultValue = "false") boolean restoreDepApplyPlanRefStatus)
     {
         return toAjax(purchasePlanService.deletePurchasePlanByIds(ids, restoreDepApplyPlanRefStatus));
+    }
+
+    /**
+     * 按仓库+耗材批量查询当前库存数量（采购计划明细「库存数量」列刷新用）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/entryStockQty")
+    public AjaxResult entryStockQty(@RequestParam Long warehouseId,
+                                    @RequestParam(name = "materialIds", required = false) String materialIdsStr)
+    {
+        if (warehouseId == null)
+        {
+            return error("仓库不能为空");
+        }
+        Long[] ids = parseIds(materialIdsStr);
+        List<Long> materialIds = ids == null ? new ArrayList<>() : Arrays.asList(ids);
+        Map<Long, BigDecimal> map = purchasePlanService.mapStockQtyByWarehouseAndMaterialIds(warehouseId, materialIds);
+        Map<String, BigDecimal> body = map.entrySet().stream()
+            .collect(Collectors.toMap(e -> String.valueOf(e.getKey()), Map.Entry::getValue));
+        return success(body);
     }
 
     /**
