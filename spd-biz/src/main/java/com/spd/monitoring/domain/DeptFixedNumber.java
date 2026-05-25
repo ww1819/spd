@@ -76,6 +76,8 @@ public class DeptFixedNumber extends BaseEntity {
     private String materialName;
     /** 查询参数：是否集采（1=是 2=否） */
     private String isProcure;
+    /** 查询参数：是否高值（1=高值 2=非高值） */
+    private String isGz;
 
     public String getId() {
         return id;
@@ -251,6 +253,14 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setIsProcure(String isProcure) {
         this.isProcure = isProcure;
+    }
+
+    public String getIsGz() {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz) {
+        this.isGz = isGz;
     }
 
     @Override

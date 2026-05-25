@@ -25,6 +25,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.system.domain.SysPost;
 import com.spd.system.service.ISysMenuService;
@@ -89,6 +90,10 @@ public class SysPostController extends BaseController
         String tenantId = post != null ? post.getTenantId() : null;
         ajax.put("menus", sysMenuService.selectMenuTreeForPostAssign(tenantId));
         List<Long> menuIds = ((SysPostServiceImpl) postService).selectMenuListByPostId(postId);
+        if (menuIds != null && !menuIds.isEmpty() && StringUtils.isNotEmpty(tenantId))
+        {
+            menuIds = sysMenuService.filterMenuIdsUnderCustomerHcScope(tenantId, menuIds);
+        }
         ajax.put("checkedKeys", menuIds != null ? menuIds : new ArrayList<>());
         return ajax;
     }

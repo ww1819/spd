@@ -9,6 +9,7 @@ import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.HisPatientChargeMirrorUnified;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
+import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery;
 
 /**
@@ -125,6 +126,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setPatientName(q.getPatientName());
         u.setInpatientNo(q.getInpatientNo());
         u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
+        u.setHisChargeId(StringUtils.trimToNull(q.getHisInpatientChargeId()));
         u.setChargeIdTf(q.getHisInpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
         u.setProcessed(q.getProcessed());
@@ -152,6 +154,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setPatientName(q.getPatientName());
         u.setOutpatientNo(q.getOutpatientNo());
         u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
+        u.setHisChargeId(StringUtils.trimToNull(q.getHisOutpatientChargeId()));
         u.setChargeIdTf(q.getHisOutpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
         u.setProcessed(q.getProcessed());
@@ -179,6 +182,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setPatientName(q.getPatientName());
         u.setVisitNo(q.getVisitNo());
         u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
+        u.setHisChargeId(StringUtils.trimToNull(q.getHisChargeId()));
         u.setChargeIdTf(q.getChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
         u.setProcessed(q.getProcessed());
@@ -231,8 +235,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessType(u.getProcessType());
         r.setProcessTime(u.getProcessTime());
         r.setProcessBy(u.getProcessBy());
-        r.setProcessSituation(u.getProcessSituation());
         r.setProcessParty(u.getProcessParty());
+        r.setProcessSituation(u.getProcessSituation());
+        r.setProcessByName(u.getProcessByName());
         r.setCreateBy(u.getCreateBy());
         r.setCreateTime(u.getCreateTime());
         r.setUpdateBy(u.getUpdateBy());
@@ -281,8 +286,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessType(u.getProcessType());
         r.setProcessTime(u.getProcessTime());
         r.setProcessBy(u.getProcessBy());
-        r.setProcessSituation(u.getProcessSituation());
         r.setProcessParty(u.getProcessParty());
+        r.setProcessSituation(u.getProcessSituation());
+        r.setProcessByName(u.getProcessByName());
         r.setCreateBy(u.getCreateBy());
         r.setCreateTime(u.getCreateTime());
         r.setUpdateBy(u.getUpdateBy());
@@ -311,6 +317,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
             r.setDeptName(null);
             r.setClinicName(u.getClinicName());
             r.setDeptDisplayName(u.getClinicName());
+            r.setHisChargeId(u.getHisOutpatientChargeId());
             r.setChargeIdTf(u.getHisOutpatientChargeIdTf());
         }
         else
@@ -319,6 +326,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
             r.setDeptName(u.getDeptName());
             r.setClinicName(null);
             r.setDeptDisplayName(u.getDeptName());
+            r.setHisChargeId(u.getHisInpatientChargeId());
             r.setChargeIdTf(u.getHisInpatientChargeIdTf());
         }
         r.setChargeItemId(u.getChargeItemId());
@@ -332,13 +340,74 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessType(u.getProcessType());
         r.setProcessTime(u.getProcessTime());
         r.setProcessBy(u.getProcessBy());
-        r.setProcessSituation(u.getProcessSituation());
         r.setProcessParty(u.getProcessParty());
+        r.setProcessSituation(u.getProcessSituation());
+        r.setProcessByName(u.getProcessByName());
         r.setCreateTime(u.getCreateTime());
         r.setValueLevel(u.getValueLevel());
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;
+    }
+
+    public static HisPatientChargeMirrorExportVo toExportVo(HisPatientChargeMirrorUnified u)
+    {
+        if (u == null)
+        {
+            return null;
+        }
+        HisPatientChargeDetailRow d = toDetailRow(u);
+        if (d == null)
+        {
+            return null;
+        }
+        HisPatientChargeMirrorExportVo vo = new HisPatientChargeMirrorExportVo();
+        vo.setVisitType(d.getVisitType());
+        vo.setVisitNo(d.getVisitNo());
+        vo.setDeptDisplayName(d.getDeptDisplayName());
+        vo.setPatientName(d.getPatientName());
+        vo.setChargeItemId(d.getChargeItemId());
+        vo.setHisChargeId(d.getHisChargeId());
+        vo.setChargeIdTf(d.getChargeIdTf());
+        vo.setItemName(d.getItemName());
+        vo.setSpecModel(d.getSpecModel());
+        vo.setValueLevel(d.getValueLevel());
+        vo.setChargeDate(d.getChargeDate());
+        vo.setQuantity(d.getQuantity());
+        vo.setTotalAmount(d.getTotalAmount());
+        vo.setProcessType(d.getProcessType());
+        vo.setProcessStatus(d.getProcessStatus());
+        vo.setProcessParty(d.getProcessParty());
+        vo.setProcessByName(StringUtils.isNotBlank(d.getProcessByName()) ? d.getProcessByName() : d.getProcessBy());
+        vo.setProcessSituation(d.getProcessSituation());
+        vo.setProcessTime(d.getProcessTime());
+        vo.setCreateTime(d.getCreateTime());
+        return vo;
+    }
+
+    public static HisPatientChargeMirrorUnifiedQuery buildExportUnifiedQuery(
+        HisPatientChargeAllQuery query, String visitKind, String inpatientNo, String outpatientNo)
+    {
+        HisPatientChargeMirrorUnifiedQuery uq = fromAllQuery(query);
+        if ("INPATIENT".equals(visitKind))
+        {
+            uq.setVisitKind("INPATIENT");
+            if (StringUtils.isNotBlank(inpatientNo))
+            {
+                uq.setInpatientNo(inpatientNo);
+            }
+            uq.setVisitNo(null);
+        }
+        else if ("OUTPATIENT".equals(visitKind))
+        {
+            uq.setVisitKind("OUTPATIENT");
+            if (StringUtils.isNotBlank(outpatientNo))
+            {
+                uq.setOutpatientNo(outpatientNo);
+            }
+            uq.setVisitNo(null);
+        }
+        return uq;
     }
 
     /** 库存汇总用：住院=dept_code，门诊=clinic_code */

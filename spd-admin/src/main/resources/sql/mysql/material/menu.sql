@@ -4456,7 +4456,7 @@ WHERE @stk_in_id IS NOT NULL
 /
 
 -- ========== 定数监测 monitoring/fixedNumber（FixedNumberController）==========
--- 权限：monitoring:fixedNumber:list/add/remove/export；default_open_to_customer=1
+-- 权限：monitoring:fixedNumber:list/add/remove/disable/enable/export；default_open_to_customer=1
 /
 
 SET @mon_parent := COALESCE(
@@ -4540,9 +4540,49 @@ INSERT INTO sys_menu (
 )
 SELECT
   (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
-  '定数导出',
+  '定数停用',
   @fixed_num_menu,
   3,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'monitoring:fixedNumber:disable', '#',
+  'admin', NOW(), '1', NOW(), '关闭产品档案与仓库定数关联',
+  '0', '1'
+FROM DUAL
+WHERE @fixed_num_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fixed_num_menu AND perms = 'monitoring:fixedNumber:disable');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '定数启用',
+  @fixed_num_menu,
+  4,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'monitoring:fixedNumber:enable', '#',
+  'admin', NOW(), '1', NOW(), '恢复产品档案与仓库定数关联',
+  '0', '1'
+FROM DUAL
+WHERE @fixed_num_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fixed_num_menu AND perms = 'monitoring:fixedNumber:enable');
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '定数导出',
+  @fixed_num_menu,
+  5,
   '#', '', NULL,
   1, 0, 'F', '0', '0', 'monitoring:fixedNumber:export', '#',
   'admin', NOW(), '1', NOW(), '',
@@ -6138,6 +6178,11 @@ SELECT 3610, '计费高值退费返还', @patient_charge_menu, 9, '#', '', NULL,
 FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:billingRefundHigh') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3610))
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
 /
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3612, '计费低值冲销', @patient_charge_menu, 10, '#', '', NULL, 1, 0, 'F', '0', '0', 'department:patientCharge:writeOffLow', '#', 'admin', NOW(), '1', NOW(), 'POST /his/patientCharge/mirror/writeOffLowValue', '0', '1'
+FROM DUAL WHERE @patient_charge_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @patient_charge_menu AND perms = 'department:patientCharge:writeOffLow') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3612))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
 
 -- 23.3.2 HIS 计费自动处理（系统管理/系统设置；material/system/billingSetting/index）
 SET @hc_billing_setting_parent := COALESCE(
@@ -7117,6 +7162,8 @@ JOIN sys_menu m
     'monitoring:fixedNumber:list',
     'monitoring:fixedNumber:add',
     'monitoring:fixedNumber:remove',
+    'monitoring:fixedNumber:disable',
+    'monitoring:fixedNumber:enable',
     'monitoring:fixedNumber:export',
     'department:newProductApply:list',
     'department:newProductApply:query',

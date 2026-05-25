@@ -293,6 +293,9 @@ CREATE TABLE IF NOT EXISTS `wh_fixed_number` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `enable_status` char(1) NOT NULL DEFAULT '0' COMMENT '启用状态（0启用 1停用）',
+  `disable_by` varchar(64) DEFAULT NULL COMMENT '停用人',
+  `disable_time` datetime DEFAULT NULL COMMENT '停用时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_wh_fixed_number_material` (`warehouse_id`,`material_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库定数监测表';
@@ -2750,6 +2753,8 @@ CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
   `process_type` varchar(32) DEFAULT NULL,
   `process_time` datetime DEFAULT NULL,
   `process_by` varchar(64) DEFAULT NULL,
+  `process_party` varchar(32) DEFAULT NULL COMMENT '处理方式（如自动处理、手动处理）',
+  `process_situation` varchar(512) DEFAULT NULL COMMENT '处理情况说明（成功/失败原因等）',
   `process_situation` varchar(512) DEFAULT NULL COMMENT '处理情况：处理成功或失败原因',
   `process_party` varchar(32) DEFAULT NULL COMMENT '处理方：手动处理/自动处理',
   `value_level` varchar(8) DEFAULT NULL COMMENT '高低值(冗余自收费项镜像,1高2低)',

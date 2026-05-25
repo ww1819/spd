@@ -126,6 +126,14 @@ public class DepPurchaseApply extends BaseEntity
     /** 排除引用时保留当前计划ID的引用（编辑计划时传入，仅查询用） */
     private Long excludeReferencedPlanId;
 
+    /** 查询：制单日期起（仅查询用，非表字段） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date beginDate;
+
+    /** 查询：制单日期止（仅查询用，非表字段） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date endDate;
+
     /** 查询时排除的申购单号，逗号分隔（仅查询用，如当前计划明细已引用单号） */
     private String excludePurchaseBillNos;
 
@@ -454,6 +462,12 @@ public class DepPurchaseApply extends BaseEntity
 
     public Long getExcludeReferencedPlanId() { return excludeReferencedPlanId; }
     public void setExcludeReferencedPlanId(Long excludeReferencedPlanId) { this.excludeReferencedPlanId = excludeReferencedPlanId; }
+
+    public Date getBeginDate() { return beginDate; }
+    public void setBeginDate(Date beginDate) { this.beginDate = beginDate; }
+
+    public Date getEndDate() { return endDate; }
+    public void setEndDate(Date endDate) { this.endDate = endDate; }
 
     public String getExcludePurchaseBillNos() { return excludePurchaseBillNos; }
     public void setExcludePurchaseBillNos(String excludePurchaseBillNos) { this.excludePurchaseBillNos = excludePurchaseBillNos; }

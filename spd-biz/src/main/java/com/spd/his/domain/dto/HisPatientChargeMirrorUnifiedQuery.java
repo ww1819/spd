@@ -25,6 +25,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     /** 全部模式下住院号/门诊号统一筛选 */
     private String visitNo;
     private String chargeItemId;
+    /** HIS 费用明细主键（住院 his_inpatient_charge_id / 门诊 his_outpatient_charge_id） */
+    private String hisChargeId;
     private String chargeIdTf;
     private Long departmentId;
     private String processed;

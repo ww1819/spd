@@ -46,4 +46,7 @@ public interface HisOutpatientChargeMirrorMapper
     HisOutpatientChargeMirror selectByIdAndTenant(@Param("tenantId") String tenantId, @Param("id") String id);
 
     String selectMirrorIdByHisChargeId(@Param("tenantId") String tenantId, @Param("hisChargeId") String hisChargeId);
+
+    List<HisOutpatientChargeMirror> selectLinkedRefundByChargeIdTf(@Param("tenantId") String tenantId,
+        @Param("chargeIdTf") String chargeIdTf);
 }

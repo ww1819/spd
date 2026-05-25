@@ -23,6 +23,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.domain.dto.MenuBatchGrantBody;
@@ -134,8 +135,14 @@ public class SysMenuController extends BaseController
      * 获取菜单下拉树列表
      */
     @GetMapping("/treeselect")
-    public AjaxResult treeselect(SysMenu menu)
+    public AjaxResult treeselect(SysMenu menu,
+        @org.springframework.web.bind.annotation.RequestParam(value = "tenantId", required = false) String tenantId)
     {
+        String tid = StringUtils.isNotEmpty(tenantId) ? tenantId.trim() : SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(tid))
+        {
+            return success(menuService.selectMenuTreeForPostAssign(tid));
+        }
         List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
         return success(menuService.buildMenuTreeSelect(menus));
     }

@@ -20,11 +20,14 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 采购计划Controller
@@ -116,6 +119,35 @@ public class CaigouJihuaController extends BaseController
     }
 
     /**
+     * 按仓库查询物资库存数量（新增明细时即时展示库存）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/materialStockQty")
+    public AjaxResult materialStockQty(@RequestParam("warehouseId") Long warehouseId,
+                                       @RequestParam("materialIds") String materialIds)
+    {
+        if (warehouseId == null || !StringUtils.hasText(materialIds))
+        {
+            return success(new HashMap<>());
+        }
+        List<Long> ids = new ArrayList<>();
+        for (String part : materialIds.split(","))
+        {
+            if (part == null)
+            {
+                continue;
+            }
+            String trimmed = part.trim();
+            if (trimmed.isEmpty())
+            {
+                continue;
+            }
+            ids.add(Long.valueOf(trimmed));
+        }
+        return success(purchasePlanService.mapMaterialStockQtyByWarehouse(warehouseId, ids));
+    }
+
+    /**
      * 新增采购计划
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:add')")
@@ -173,11 +205,31 @@ public class CaigouJihuaController extends BaseController
     }
 
     /**
+     * 按仓库+耗材批量查询当前库存数量（采购计划明细「库存数量」列刷新用）
+     */
+    @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
+    @GetMapping("/entryStockQty")
+    public AjaxResult entryStockQty(@RequestParam("warehouseId") Long warehouseId,
+                                    @RequestParam(name = "materialIds", required = false) String materialIdsStr)
+    {
+        if (warehouseId == null)
+        {
+            return error("仓库不能为空");
+        }
+        Long[] ids = parseIds(materialIdsStr);
+        List<Long> materialIds = ids == null ? new ArrayList<>() : Arrays.asList(ids);
+        Map<Long, BigDecimal> map = purchasePlanService.mapStockQtyByWarehouseAndMaterialIds(warehouseId, materialIds);
+        Map<String, BigDecimal> body = map.entrySet().stream()
+            .collect(Collectors.toMap(e -> String.valueOf(e.getKey()), Map.Entry::getValue));
+        return success(body);
+    }
+
+    /**
      * 根据采购计划明细ID查询关联的申购明细（科室申购单单号、申购科室、申购数量、制单人、制单时间、审核人、审核时间）
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/applyDetails")
-    public AjaxResult applyDetails(@RequestParam Long entryId)
+    public AjaxResult applyDetails(@RequestParam("entryId") Long entryId)
     {
         return success(purchasePlanEntryApplyService.listApplyDetailsByEntryId(entryId));
     }
@@ -187,7 +239,7 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/applyBillNoList")
-    public AjaxResult applyBillNoList(@RequestParam Long planId)
+    public AjaxResult applyBillNoList(@RequestParam("planId") Long planId)
     {
         return success(purchasePlanEntryApplyService.listApplyBillNosByPlanId(planId));
     }
@@ -197,7 +249,7 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/applyBillHeaderList")
-    public AjaxResult applyBillHeaderList(@RequestParam Long planId)
+    public AjaxResult applyBillHeaderList(@RequestParam("planId") Long planId)
     {
         return success(purchasePlanEntryApplyService.listApplyBillHeaderListByPlanId(planId));
     }

@@ -21,6 +21,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     /** 住院号/门诊号统一查询值 */
     private String visitNo;
     private String chargeItemId;
+    /** HIS 费用明细主键（住院/门诊统一筛选） */
+    private String hisChargeId;
     /** 退费记录对应的原收费明细ID（住院/门诊统一筛选） */
     private String chargeIdTf;
     private Long departmentId;

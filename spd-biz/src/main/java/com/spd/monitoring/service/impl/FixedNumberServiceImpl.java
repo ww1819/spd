@@ -158,5 +158,29 @@ public class FixedNumberServiceImpl implements IFixedNumberService {
         rows += deptFixedNumberMapper.deleteDeptFixedNumberByIds(ids, operator);
         return rows;
     }
+
+    @Override
+    public int disableWhFixedNumberByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        String operator = SecurityUtils.getUsername();
+        if (operator == null) {
+            operator = "";
+        }
+        return whFixedNumberMapper.disableWhFixedNumberByIds(ids, operator);
+    }
+
+    @Override
+    public int enableWhFixedNumberByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        String operator = SecurityUtils.getUsername();
+        if (operator == null) {
+            operator = "";
+        }
+        return whFixedNumberMapper.enableWhFixedNumberByIds(ids, operator);
+    }
 }
 
