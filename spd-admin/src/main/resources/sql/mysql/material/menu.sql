@@ -6051,7 +6051,33 @@ ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3417, '采购计划', @caigou_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @caigou_parent), 'jihua', 'caigou/jihua/index', NULL, 1, 0, 'C', '0', '0', 'caigou:jihua:list', 'list', 'admin', NOW(), '1', NOW(), '采购计划列表', '0', '1'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/jihua/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3417)
-ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), menu_type = VALUES(menu_type), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+-- 历史误为目录(M)的采购计划行：启动脚本时纠正为菜单(C)（与订单审查段 3812 同理）
+UPDATE sys_menu sm
+JOIN (
+  SELECT menu_id AS root_id FROM sys_menu
+  WHERE menu_type = 'M' AND path = 'caigou'
+  ORDER BY menu_id LIMIT 1
+) r ON 1 = 1
+SET sm.menu_name = '采购计划',
+    sm.parent_id = r.root_id,
+    sm.path = 'jihua',
+    sm.component = 'caigou/jihua/index',
+    sm.perms = 'caigou:jihua:list',
+    sm.icon = 'list',
+    sm.menu_type = 'C',
+    sm.visible = '0',
+    sm.status = '0',
+    sm.update_by = '1',
+    sm.update_time = NOW()
+WHERE sm.menu_type <> 'C'
+  AND (
+    sm.menu_id = 3417
+    OR sm.component = 'caigou/jihua/index'
+    OR sm.perms = 'caigou:jihua:list'
+    OR (sm.path = 'jihua' AND sm.menu_name = '采购计划')
+  );
 /
 SET @jihua_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/jihua/index' ORDER BY menu_id DESC LIMIT 1);
 /
