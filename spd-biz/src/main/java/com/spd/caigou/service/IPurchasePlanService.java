@@ -110,4 +110,22 @@ public interface IPurchasePlanService
      * 采购计划汇总导出（按供应商+物资维度汇总）
      */
     List<PurchasePlanSummaryExportVO> listPurchasePlanSummaryExport(PurchasePlan query);
+
+    /**
+     * 按仓库+耗材批量查询当前库存数量（采购计划明细「库存数量」列）
+     *
+     * @param warehouseId 仓库ID
+     * @param materialIds 耗材ID列表
+     * @return key=materialId, value=库存数量
+     */
+    Map<Long, BigDecimal> mapStockQtyByWarehouseAndMaterialIds(Long warehouseId, List<Long> materialIds);
+
+    /**
+     * 按仓库查询物资库存数量（新增明细时即时展示库存）
+     *
+     * @param warehouseId 仓库ID
+     * @param materialIds 耗材ID列表
+     * @return key=materialId, value=库存数量
+     */
+    Map<Long, BigDecimal> mapMaterialStockQtyByWarehouse(Long warehouseId, List<Long> materialIds);
 }

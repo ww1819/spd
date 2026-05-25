@@ -123,7 +123,8 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/materialStockQty")
-    public AjaxResult materialStockQty(@RequestParam Long warehouseId, @RequestParam String materialIds)
+    public AjaxResult materialStockQty(@RequestParam("warehouseId") Long warehouseId,
+                                       @RequestParam("materialIds") String materialIds)
     {
         if (warehouseId == null || !StringUtils.hasText(materialIds))
         {
@@ -208,7 +209,7 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/entryStockQty")
-    public AjaxResult entryStockQty(@RequestParam Long warehouseId,
+    public AjaxResult entryStockQty(@RequestParam("warehouseId") Long warehouseId,
                                     @RequestParam(name = "materialIds", required = false) String materialIdsStr)
     {
         if (warehouseId == null)
@@ -228,7 +229,7 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/applyDetails")
-    public AjaxResult applyDetails(@RequestParam Long entryId)
+    public AjaxResult applyDetails(@RequestParam("entryId") Long entryId)
     {
         return success(purchasePlanEntryApplyService.listApplyDetailsByEntryId(entryId));
     }
@@ -238,7 +239,7 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/applyBillNoList")
-    public AjaxResult applyBillNoList(@RequestParam Long planId)
+    public AjaxResult applyBillNoList(@RequestParam("planId") Long planId)
     {
         return success(purchasePlanEntryApplyService.listApplyBillNosByPlanId(planId));
     }
@@ -248,7 +249,7 @@ public class CaigouJihuaController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('caigou:jihua:query')")
     @GetMapping("/applyBillHeaderList")
-    public AjaxResult applyBillHeaderList(@RequestParam Long planId)
+    public AjaxResult applyBillHeaderList(@RequestParam("planId") Long planId)
     {
         return success(purchasePlanEntryApplyService.listApplyBillHeaderListByPlanId(planId));
     }
