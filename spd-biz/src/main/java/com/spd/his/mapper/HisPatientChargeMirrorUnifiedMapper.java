@@ -27,6 +27,16 @@ public interface HisPatientChargeMirrorUnifiedMapper
         @Param("processStatus") String processStatus,
         @Param("processType") String processType,
         @Param("processTime") Date processTime,
+        @Param("processBy") String processBy,
+        @Param("processSituation") String processSituation,
+        @Param("processParty") String processParty);
+
+    int updateMirrorProcessOutcome(
+        @Param("tenantId") String tenantId,
+        @Param("ids") List<String> ids,
+        @Param("processSituation") String processSituation,
+        @Param("processParty") String processParty,
+        @Param("processTime") Date processTime,
         @Param("processBy") String processBy);
 
     long countList(HisPatientChargeMirrorUnifiedQuery query);

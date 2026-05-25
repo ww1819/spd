@@ -59,6 +59,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setProcessType(e.getProcessType());
         m.setProcessTime(e.getProcessTime());
         m.setProcessBy(e.getProcessBy());
+        m.setProcessSituation(e.getProcessSituation());
+        m.setProcessParty(e.getProcessParty());
         m.setCreateBy(e.getCreateBy());
         m.setCreateTime(e.getCreateTime());
         return m;
@@ -104,6 +106,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setProcessType(e.getProcessType());
         m.setProcessTime(e.getProcessTime());
         m.setProcessBy(e.getProcessBy());
+        m.setProcessSituation(e.getProcessSituation());
+        m.setProcessParty(e.getProcessParty());
         m.setCreateBy(e.getCreateBy());
         m.setCreateTime(e.getCreateTime());
         return m;
@@ -227,6 +231,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessType(u.getProcessType());
         r.setProcessTime(u.getProcessTime());
         r.setProcessBy(u.getProcessBy());
+        r.setProcessSituation(u.getProcessSituation());
+        r.setProcessParty(u.getProcessParty());
         r.setCreateBy(u.getCreateBy());
         r.setCreateTime(u.getCreateTime());
         r.setUpdateBy(u.getUpdateBy());
@@ -275,6 +281,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessType(u.getProcessType());
         r.setProcessTime(u.getProcessTime());
         r.setProcessBy(u.getProcessBy());
+        r.setProcessSituation(u.getProcessSituation());
+        r.setProcessParty(u.getProcessParty());
         r.setCreateBy(u.getCreateBy());
         r.setCreateTime(u.getCreateTime());
         r.setUpdateBy(u.getUpdateBy());
@@ -324,6 +332,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessType(u.getProcessType());
         r.setProcessTime(u.getProcessTime());
         r.setProcessBy(u.getProcessBy());
+        r.setProcessSituation(u.getProcessSituation());
+        r.setProcessParty(u.getProcessParty());
         r.setCreateTime(u.getCreateTime());
         r.setValueLevel(u.getValueLevel());
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);

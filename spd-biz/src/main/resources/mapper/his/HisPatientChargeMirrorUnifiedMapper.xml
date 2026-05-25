@@ -138,6 +138,8 @@
         <result property="processType" column="process_type"/>
         <result property="processTime" column="process_time"/>
         <result property="processBy" column="process_by"/>
+        <result property="processSituation" column="process_situation"/>
+        <result property="processParty" column="process_party"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -253,6 +255,20 @@
         update his_patient_charge_mirror_unified set
             process_status = #{processStatus},
             process_type = #{processType},
+            process_time = #{processTime},
+            process_by = #{processBy},
+            <if test="processSituation != null">process_situation = #{processSituation},</if>
+            <if test="processParty != null">process_party = #{processParty},</if>
+            update_time = now()
+        where tenant_id = #{tenantId}
+        and id in
+        <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
+    </update>
+
+    <update id="updateMirrorProcessOutcome">
+        update his_patient_charge_mirror_unified set
+            process_situation = #{processSituation},
+            process_party = #{processParty},
             process_time = #{processTime},
             process_by = #{processBy},
             update_time = now()

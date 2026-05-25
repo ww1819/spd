@@ -527,15 +527,15 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         if (KIND_IN.equals(visitKind))
         {
             hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
-                MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy);
+                MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy, null, null);
         }
         else
         {
             hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
-                MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy);
+                MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy, null, null);
         }
         hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
-            MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy);
+            MIRROR_STATUS_REFUNDED, MIRROR_PROC_TYPE_REFUND, procTime, procBy, null, null);
     }
 
     private List<DeptBatchConsumeReverseReq.ReverseItem> mergeReverseItems(List<DeptBatchConsumeReverseReq.ReverseItem> items)

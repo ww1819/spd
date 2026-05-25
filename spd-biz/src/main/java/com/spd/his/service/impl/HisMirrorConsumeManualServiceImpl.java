@@ -1,6 +1,7 @@
 package com.spd.his.service.impl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -31,6 +32,7 @@ import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
+import com.spd.his.constant.HisMirrorProcessConstants;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisChargeItemMirror;
 import com.spd.his.domain.HisMirrorConsumeLink;
@@ -85,10 +87,33 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
     @Autowired
     private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+    @Autowired
+    private HisMirrorProcessOutcomeRecorder hisMirrorProcessOutcomeRecorder;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public HisGenerateConsumeResultVo processLowValue(HisMirrorManualRowBody body)
+    {
+        String processParty = HisMirrorProcessConstants.resolveParty(body == null ? null : body.getProcessParty());
+        String visitKind = resolveVisitKind(body == null ? null : body.getVisitKind());
+        String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
+        try
+        {
+            return processLowValueInternal(body, processParty);
+        }
+        catch (ServiceException e)
+        {
+            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
+            throw e;
+        }
+        catch (Exception e)
+        {
+            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
+            throw new ServiceException(StringUtils.defaultIfBlank(e.getMessage(), "低值处理失败"));
+        }
+    }
+
+    private HisGenerateConsumeResultVo processLowValueInternal(HisMirrorManualRowBody body, String processParty)
     {
         String visitKind = resolveVisitKind(body == null ? null : body.getVisitKind());
         String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
@@ -108,11 +133,15 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException("计费数量为 0，无需生成消耗");
         }
+        requireMirrorUnitPrice(line.unitPrice, mirrorRowId);
         List<AllocPiece> pieces = new ArrayList<>();
-        int skipped = appendPiecesForLine(tenantId, line.fetchBatchId, visitKind, line.id, line.deptHisCode, line.chargeItemId, qty, pieces);
+        int skipped = appendPiecesForLine(tenantId, line.fetchBatchId, visitKind, line.id, line.deptHisCode, line.chargeItemId,
+            qty, line.unitPrice, pieces);
         if (skipped > 0 || pieces.isEmpty())
         {
-            throw new ServiceException("低值处理失败：科室二级库库存不满足全量扣减或缺少对照，镜像行仍保持未处理");
+            FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
+            FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
+            throwInsufficientStock("低值", dept, mat, line.unitPrice);
         }
         Map<String, List<AllocPiece>> groups = new LinkedHashMap<>();
         for (AllocPiece p : pieces)
@@ -185,20 +214,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             }
         }
         flushLinks(linkBuffer);
-        Date procTime = DateUtils.getNowDate();
-        String procBy = currentMirrorProcessBy();
-        if (KIND_IN.equals(visitKind))
-        {
-            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
-                STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
-        }
-        else
-        {
-            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
-                STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
-        }
-        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
-            STATUS_CONSUMED, PROC_TYPE_LOW, procTime, procBy);
+        persistProcessSuccess(tenantId, visitKind, mirrorRowId, STATUS_CONSUMED, PROC_TYPE_LOW, processParty);
         vo.setConsumeBillCount(vo.getConsumeBillIds().size());
         vo.setConsumeEntryCount(pieces.size());
         vo.setLinkRowCount(linkBuffer.size());
@@ -231,13 +247,14 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException("该镜像行计费数量已全部消耗完毕");
         }
+        requireMirrorUnitPrice(line.unitPrice, mirrorRowId);
         FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
         assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, mat);
-        GzDepInventory hit = findGzByNormalizedCode(tenantId, dept.getId(), mat.getId(), codeRaw);
+        GzDepInventory hit = findGzByNormalizedCode(tenantId, dept, mat, codeRaw, line.unitPrice);
         if (hit.getQty() == null || hit.getQty().compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("本科室该院内码高值虚拟库存不足或数量为 0");
+            throwInsufficientStock("高值", dept, mat, line.unitPrice);
         }
         BigDecimal maxApply = remaining.min(hit.getQty());
         HisMirrorHighScanResultVo vo = new HisMirrorHighScanResultVo();
@@ -256,6 +273,27 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     @Override
     @Transactional(rollbackFor = Exception.class)
     public HisMirrorHighApplyResultVo applyHighConsume(HisMirrorHighApplyBody body)
+    {
+        String processParty = HisMirrorProcessConstants.resolveParty(body == null ? null : body.getProcessParty());
+        String visitKind = resolveVisitKind(body == null ? null : body.getVisitKind());
+        String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
+        try
+        {
+            return applyHighConsumeInternal(body, processParty);
+        }
+        catch (ServiceException e)
+        {
+            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
+            throw e;
+        }
+        catch (Exception e)
+        {
+            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
+            throw new ServiceException(StringUtils.defaultIfBlank(e.getMessage(), "高值处理失败"));
+        }
+    }
+
+    private HisMirrorHighApplyResultVo applyHighConsumeInternal(HisMirrorHighApplyBody body, String processParty)
     {
         String visitKind = resolveVisitKind(body == null ? null : body.getVisitKind());
         String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
@@ -277,6 +315,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException("该镜像行计费数量已全部消耗完毕");
         }
+        requireMirrorUnitPrice(line.unitPrice, mirrorRowId);
         FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
         assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, mat);
@@ -314,10 +353,16 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             {
                 throw new ServiceException("高值库存不属于当前计费镜像行对应科室，请检查院内码是否为本部门");
             }
+            if (!unitPriceMatches(line.unitPrice, gz.getUnitPrice()))
+            {
+                throw new ServiceException(String.format(
+                    "核销失败：所选高值库存单价 %s 与计费镜像单价 %s 不一致",
+                    formatUnitPrice(gz.getUnitPrice()), formatUnitPrice(line.unitPrice)));
+            }
             BigDecimal gq = gz.getQty() == null ? BigDecimal.ZERO : gz.getQty();
             if (gq.compareTo(lineQty) < 0)
             {
-                throw new ServiceException(String.format("保存失败：院内码对应高值虚拟库存不足（当前%s，申请%s）", gq, lineQty));
+                throwInsufficientStock("高值", dept, mat, line.unitPrice);
             }
             if (gz.getMaterialId() == null || !gz.getMaterialId().equals(mat.getId()))
             {
@@ -385,20 +430,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         BigDecimal allocatedAfter = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
         BigDecimal newRemaining = billQty.subtract(allocatedAfter);
         String newStatus = newRemaining.compareTo(BigDecimal.ZERO) <= 0 ? STATUS_CONSUMED : STATUS_PARTIAL;
-        Date procTime = DateUtils.getNowDate();
-        String procBy = currentMirrorProcessBy();
-        if (KIND_IN.equals(visitKind))
-        {
-            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
-                newStatus, PROC_TYPE_HIGH, procTime, procBy);
-        }
-        else
-        {
-            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
-                newStatus, PROC_TYPE_HIGH, procTime, procBy);
-        }
-        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, java.util.Collections.singletonList(mirrorRowId),
-            newStatus, PROC_TYPE_HIGH, procTime, procBy);
+        persistProcessSuccess(tenantId, visitKind, mirrorRowId, newStatus, PROC_TYPE_HIGH, processParty);
         HisMirrorHighApplyResultVo vo = new HisMirrorHighApplyResultVo();
         vo.setConsumeBillId(consumeId);
         vo.setAppliedQty(applySum);
@@ -503,6 +535,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String chargeItemId;
         BigDecimal quantity;
         String processStatus;
+        BigDecimal unitPrice;
     }
 
     private MirrorLine loadMirrorLine(String tenantId, String visitKind, String mirrorRowId)
@@ -520,6 +553,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             ml.deptHisCode = r.getDeptCode();
             ml.chargeItemId = r.getChargeItemId();
             ml.quantity = r.getQuantity();
+            ml.unitPrice = r.getUnitPrice();
             ml.processStatus = r.getProcessStatus();
             return ml;
         }
@@ -532,6 +566,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         ml.deptHisCode = r.getClinicCode();
         ml.chargeItemId = r.getChargeItemId();
         ml.quantity = r.getQuantity();
+        ml.unitPrice = r.getUnitPrice();
         ml.processStatus = r.getProcessStatus();
         return ml;
     }
@@ -571,21 +606,29 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         return mat;
     }
 
-    private GzDepInventory findGzByNormalizedCode(String tenantId, Long departmentId, Long materialId, String scanCode)
+    private GzDepInventory findGzByNormalizedCode(String tenantId, FdDepartment dept, FdMaterial mat, String scanCode,
+        BigDecimal mirrorUnitPrice)
     {
         GzDepInventory probe = new GzDepInventory();
-        probe.setDepartmentId(departmentId);
-        probe.setMaterialId(materialId);
+        probe.setDepartmentId(dept.getId());
+        probe.setMaterialId(mat.getId());
         probe.setShowZeroStock(Boolean.TRUE);
         List<GzDepInventory> list = gzDepInventoryMapper.selectGzDepInventoryList(probe);
         if (list == null || list.isEmpty())
         {
-            throw new ServiceException("未找到本科室该耗材的高值虚拟库存记录");
+            throwInsufficientStock("高值", dept, mat, mirrorUnitPrice);
+        }
+        List<GzDepInventory> atMirrorPrice = list.stream()
+            .filter(g -> g != null && unitPriceMatches(mirrorUnitPrice, g.getUnitPrice()))
+            .collect(Collectors.toList());
+        if (atMirrorPrice.isEmpty())
+        {
+            throwInsufficientStock("高值", dept, mat, mirrorUnitPrice);
         }
         String nScan = HisMatchTextUtils.normalizeMatchKey(scanCode);
-        for (GzDepInventory g : list)
+        for (GzDepInventory g : atMirrorPrice)
         {
-            if (g == null || StringUtils.isBlank(g.getInHospitalCode()))
+            if (StringUtils.isBlank(g.getInHospitalCode()))
             {
                 continue;
             }
@@ -594,7 +637,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 return g;
             }
         }
-        throw new ServiceException("未匹配到院内码对应的高值科室库存（请确认已对照且条码属于本科室）");
+        throw new ServiceException(String.format(
+            "未匹配到单价为 %s 的院内码对应高值库存（科室：%s，产品：%s）",
+            formatUnitPrice(mirrorUnitPrice), deptDisplayName(dept), productDisplayName(mat)));
     }
 
     private void assertChargeItemValueLevelForLow(String tenantId, String chargeItemId, FdMaterial mat)
@@ -633,7 +678,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     }
 
     private int appendPiecesForLine(String tenantId, String fetchBatchId, String visitKind, String mirrorRowId,
-        String deptHisCode, String chargeItemId, BigDecimal qty, List<AllocPiece> out)
+        String deptHisCode, String chargeItemId, BigDecimal qty, BigDecimal mirrorUnitPrice, List<AllocPiece> out)
     {
         if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0)
         {
@@ -642,13 +687,15 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         FdDepartment dept = resolveDepartment(tenantId, deptHisCode, mirrorRowId);
         FdMaterial mat = resolveMaterial(tenantId, chargeItemId, mirrorRowId);
         assertChargeItemValueLevelForLow(tenantId, chargeItemId, mat);
-        out.addAll(allocateLine(tenantId, dept.getId(), mat.getId(), qty, mirrorRowId, visitKind, fetchBatchId));
+        out.addAll(allocateLine(tenantId, dept, mat, qty, mirrorUnitPrice, mirrorRowId, visitKind, fetchBatchId));
         return 0;
     }
 
-    private List<AllocPiece> allocateLine(String tenantId, Long departmentId, Long materialId, BigDecimal need,
-        String mirrorRowId, String visitKind, String fetchBatchId)
+    private List<AllocPiece> allocateLine(String tenantId, FdDepartment dept, FdMaterial mat, BigDecimal need,
+        BigDecimal mirrorUnitPrice, String mirrorRowId, String visitKind, String fetchBatchId)
     {
+        Long departmentId = dept.getId();
+        Long materialId = mat.getId();
         StkDepInventory probe = new StkDepInventory();
         probe.setTenantId(tenantId);
         probe.setDepartmentId(departmentId);
@@ -659,11 +706,18 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             rows = new ArrayList<>();
         }
-        rows.sort(Comparator
+        List<StkDepInventory> atMirrorPrice = rows.stream()
+            .filter(r -> r != null && unitPriceMatches(mirrorUnitPrice, r.getUnitPrice()))
+            .collect(Collectors.toList());
+        if (atMirrorPrice.isEmpty())
+        {
+            throwInsufficientStock("低值", dept, mat, mirrorUnitPrice);
+        }
+        atMirrorPrice.sort(Comparator
             .comparing(StkDepInventory::getWarehouseDate, Comparator.nullsLast(Date::compareTo))
             .thenComparing(r -> r.getId() == null ? 0L : r.getId()));
         Long chosenWarehouseId = null;
-        for (StkDepInventory r : rows)
+        for (StkDepInventory r : atMirrorPrice)
         {
             if (r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0)
             {
@@ -671,13 +725,14 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 break;
             }
         }
-        boolean hasPositive = rows.stream().anyMatch(r -> r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
+        boolean hasPositive = atMirrorPrice.stream()
+            .anyMatch(r -> r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
         if (!hasPositive)
         {
-            throw new ServiceException("科室「" + departmentId + "」耗材「" + materialId + "」无可用二级库库存（镜像行 " + mirrorRowId + "）");
+            throwInsufficientStock("低值", dept, mat, mirrorUnitPrice);
         }
         final Long whKey = chosenWarehouseId;
-        List<StkDepInventory> filtered = rows.stream()
+        List<StkDepInventory> filtered = atMirrorPrice.stream()
             .filter(r -> Objects.equals(r.getWarehouseId(), whKey))
             .collect(Collectors.toList());
         BigDecimal remain = need;
@@ -709,9 +764,58 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         if (remain.compareTo(BigDecimal.ZERO) > 0)
         {
-            throw new ServiceException("科室二级库库存不足：科室" + departmentId + " 耗材" + materialId + " 需求 " + need + " 镜像行 " + mirrorRowId);
+            throwInsufficientStock("低值", dept, mat, mirrorUnitPrice);
         }
         return pieces;
+    }
+
+    private static void requireMirrorUnitPrice(BigDecimal mirrorUnitPrice, String mirrorRowId)
+    {
+        if (mirrorUnitPrice == null)
+        {
+            throw new ServiceException("镜像行「" + mirrorRowId + "」缺少单价，无法按单价匹配库存核销");
+        }
+    }
+
+    /** 计费镜像单价与库存单价一致（均按 4 位小数比较） */
+    private static boolean unitPriceMatches(BigDecimal mirrorUnitPrice, BigDecimal stockUnitPrice)
+    {
+        if (mirrorUnitPrice == null || stockUnitPrice == null)
+        {
+            return false;
+        }
+        return mirrorUnitPrice.setScale(4, RoundingMode.HALF_UP)
+            .compareTo(stockUnitPrice.setScale(4, RoundingMode.HALF_UP)) == 0;
+    }
+
+    private static String formatUnitPrice(BigDecimal price)
+    {
+        return price == null ? "?" : price.setScale(4, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+    }
+
+    private static String deptDisplayName(FdDepartment dept)
+    {
+        if (dept == null)
+        {
+            return "未知科室";
+        }
+        return StringUtils.isNotBlank(dept.getName()) ? dept.getName().trim() : String.valueOf(dept.getId());
+    }
+
+    private static String productDisplayName(FdMaterial mat)
+    {
+        if (mat == null)
+        {
+            return "未知产品";
+        }
+        return StringUtils.isNotBlank(mat.getName()) ? mat.getName().trim() : String.valueOf(mat.getId());
+    }
+
+    private static void throwInsufficientStock(String valueLevelLabel, FdDepartment dept, FdMaterial mat,
+        BigDecimal mirrorUnitPrice)
+    {
+        throw new ServiceException(String.format("核销失败：%s 单价为 %s 的 %s %s库存不足",
+            deptDisplayName(dept), formatUnitPrice(mirrorUnitPrice), productDisplayName(mat), valueLevelLabel));
     }
 
     private DeptBatchConsumeEntry buildLowConsumeEntry(AllocPiece p, Long departmentId, String createBy)
@@ -805,6 +909,32 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             int end = Math.min(i + n, linkBuffer.size());
             hisMirrorConsumeLinkMapper.insertBatch(linkBuffer.subList(i, end));
         }
+    }
+
+    private void persistProcessSuccess(String tenantId, String visitKind, String mirrorRowId, String processStatus,
+        String processType, String processParty)
+    {
+        if (StringUtils.isAnyEmpty(tenantId, visitKind, mirrorRowId))
+        {
+            return;
+        }
+        List<String> ids = java.util.Collections.singletonList(mirrorRowId);
+        Date procTime = DateUtils.getNowDate();
+        String procBy = currentMirrorProcessBy();
+        String situation = HisMirrorProcessConstants.RESULT_SUCCESS;
+        String party = HisMirrorProcessConstants.resolveParty(processParty);
+        if (KIND_IN.equals(visitKind))
+        {
+            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,
+                procBy, situation, party);
+        }
+        else
+        {
+            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,
+                procBy, situation, party);
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,
+            procBy, situation, party);
     }
 
     private static class AllocPiece

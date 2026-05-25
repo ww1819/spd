@@ -32,6 +32,8 @@
         <result property="processType" column="process_type"/>
         <result property="processTime" column="process_time"/>
         <result property="processBy" column="process_by"/>
+        <result property="processSituation" column="process_situation"/>
+        <result property="processParty" column="process_party"/>
         <result property="highValueStockQty" column="high_value_stock_qty"/>
         <result property="lowValueStockQty" column="low_value_stock_qty"/>
         <result property="valueLevel" column="value_level"/>
@@ -111,6 +113,20 @@
         update his_inpatient_charge_mirror set
             process_status = #{processStatus},
             process_type = #{processType},
+            process_time = #{processTime},
+            process_by = #{processBy},
+            <if test="processSituation != null">process_situation = #{processSituation},</if>
+            <if test="processParty != null">process_party = #{processParty},</if>
+            update_time = now()
+        where tenant_id = #{tenantId}
+        and id in
+        <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
+    </update>
+
+    <update id="updateMirrorProcessOutcome">
+        update his_inpatient_charge_mirror set
+            process_situation = #{processSituation},
+            process_party = #{processParty},
             process_time = #{processTime},
             process_by = #{processBy},
             update_time = now()

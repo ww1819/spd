@@ -2030,6 +2030,10 @@ CALL add_table_column('his_inpatient_charge_mirror', 'process_time', 'datetime',
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'process_by', 'varchar(64)', '处理人', NULL);
 /
+CALL add_table_column('his_inpatient_charge_mirror', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
+/
 
 CALL add_table_column('his_outpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
 /
@@ -2098,6 +2102,10 @@ CALL add_table_column('his_outpatient_charge_mirror', 'process_type', 'varchar(3
 CALL add_table_column('his_outpatient_charge_mirror', 'process_time', 'datetime', '处理时间', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'process_by', 'varchar(64)', '处理人', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
 /
 
 CALL add_table_column('his_charge_fetch_batch', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
@@ -2560,4 +2568,8 @@ ALTER TABLE spd_scm_supplier_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFA
 
 -- ========== 患者计费统一表：列表性能冗余字段 ==========
 CALL add_table_column('his_patient_charge_mirror_unified', 'value_level', 'varchar(8)', '高低值(冗余自收费项镜像,1高2低)', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
 /

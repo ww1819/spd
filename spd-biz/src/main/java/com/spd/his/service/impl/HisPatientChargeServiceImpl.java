@@ -60,6 +60,7 @@ import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
+import com.spd.his.constant.HisMirrorProcessConstants;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
@@ -318,11 +319,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                     HisMirrorManualRowBody b = new HisMirrorManualRowBody();
                     b.setVisitKind(KIND_IN);
                     b.setMirrorRowId(row.getId());
+                    b.setProcessParty(HisMirrorProcessConstants.PARTY_AUTO);
                     hisMirrorConsumeManualService.processLowValue(b);
                 }
                 catch (Exception e)
                 {
-                    log.warn("HIS自动低值消耗跳过 mirrorRowId={} err={}", row.getId(), e.toString());
+                    log.warn("HIS自动低值消耗失败 mirrorRowId={} err={}", row.getId(), e.toString());
                 }
             }
         }
@@ -344,11 +346,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                     HisMirrorManualRowBody b = new HisMirrorManualRowBody();
                     b.setVisitKind("OUTPATIENT");
                     b.setMirrorRowId(row.getId());
+                    b.setProcessParty(HisMirrorProcessConstants.PARTY_AUTO);
                     hisMirrorConsumeManualService.processLowValue(b);
                 }
                 catch (Exception e)
                 {
-                    log.warn("HIS自动低值消耗跳过 mirrorRowId={} err={}", row.getId(), e.toString());
+                    log.warn("HIS自动低值消耗失败 mirrorRowId={} err={}", row.getId(), e.toString());
                 }
             }
         }

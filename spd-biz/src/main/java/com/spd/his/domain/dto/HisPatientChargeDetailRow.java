@@ -37,6 +37,8 @@ public class HisPatientChargeDetailRow
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date processTime;
     private String processBy;
+    private String processSituation;
+    private String processParty;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
     private BigDecimal highValueStockQty;

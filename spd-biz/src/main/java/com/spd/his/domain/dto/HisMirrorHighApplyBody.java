@@ -9,4 +9,6 @@ public class HisMirrorHighApplyBody
     private String visitKind;
     private String mirrorRowId;
     private List<HisMirrorHighApplyLine> lines;
+    /** 处理方：手动处理 / 自动处理；空则默认手动处理 */
+    private String processParty;
 }
