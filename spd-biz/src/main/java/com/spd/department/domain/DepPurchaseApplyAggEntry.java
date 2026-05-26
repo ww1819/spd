@@ -52,6 +52,9 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
     /** 展示用，非表字段 */
     private String warehouseName;
 
+    /** 展示用：审核拆分后对应的科室申购单号 */
+    private String splitDepPurchaseBillNo;
+
     private Integer delFlag;
 
     private String deleteBy;
@@ -202,6 +205,14 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     public void setWarehouseName(String warehouseName) {
         this.warehouseName = warehouseName;
+    }
+
+    public String getSplitDepPurchaseBillNo() {
+        return splitDepPurchaseBillNo;
+    }
+
+    public void setSplitDepPurchaseBillNo(String splitDepPurchaseBillNo) {
+        this.splitDepPurchaseBillNo = splitDepPurchaseBillNo;
     }
 
     public Integer getDelFlag() {
