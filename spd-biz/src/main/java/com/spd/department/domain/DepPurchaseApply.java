@@ -38,6 +38,10 @@ public class DepPurchaseApply extends BaseEntity
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 高低值标志（1高值 2低值） */
+    @Excel(name = "高低值标志", readConverterExp = "1=高值,2=低值")
+    private String isGz;
+
     /** 科室ID */
     @Excel(name = "科室ID")
     private Long departmentId;
@@ -208,6 +212,16 @@ public class DepPurchaseApply extends BaseEntity
     public Long getWarehouseId()
     {
         return warehouseId;
+    }
+
+    public String getIsGz()
+    {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz)
+    {
+        this.isGz = isGz;
     }
 
     public void setDepartmentId(Long departmentId)
@@ -413,6 +427,7 @@ public class DepPurchaseApply extends BaseEntity
             .append("purchaseBillNo", getPurchaseBillNo())
             .append("purchaseBillDate", getPurchaseBillDate())
             .append("warehouseId", getWarehouseId())
+            .append("isGz", getIsGz())
             .append("departmentId", getDepartmentId())
             .append("userId", getUserId())
             .append("purchaseBillStatus", getPurchaseBillStatus())

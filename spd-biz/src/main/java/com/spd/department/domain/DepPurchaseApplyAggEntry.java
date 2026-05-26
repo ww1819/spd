@@ -46,6 +46,9 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
     /** 所属仓库ID（来自仓库定数 wh_fixed_number，varchar 存储） */
     private String warehouseId;
 
+    /** 高低值标志（1高值 2低值，来自产品档案） */
+    private String isGz;
+
     /** 展示用，非表字段 */
     private String warehouseName;
 
@@ -183,6 +186,14 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     public void setWarehouseId(String warehouseId) {
         this.warehouseId = warehouseId;
+    }
+
+    public String getIsGz() {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz) {
+        this.isGz = isGz;
     }
 
     public String getWarehouseName() {

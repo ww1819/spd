@@ -33,6 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="purchaseBillNo"    column="purchase_bill_no"    />
         <result property="purchaseBillDate"    column="purchase_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
+        <result property="isGz"    column="is_gz"    />
         <result property="departmentId"    column="department_id"    />
         <result property="userId"    column="user_id"    />
         <result property="purchaseBillStatus"    column="purchase_bill_status"    />
@@ -164,6 +165,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.purchase_bill_no, 
             dpa.purchase_bill_date, 
             dpa.warehouse_id, 
+            dpa.is_gz,
             dpa.department_id, 
             dpa.user_id, 
             dpa.purchase_bill_status, 
@@ -254,6 +256,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginDate != null"> and dpa.purchase_bill_date &gt;= #{beginDate}</if>
             <if test="endDate != null"> and dpa.purchase_bill_date &lt;= #{endDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
+            <if test="isGz != null and isGz != ''"> and dpa.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
             <if test="userId != null "> and dpa.user_id = #{userId}</if>
             <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>
@@ -280,6 +283,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dpa.purchase_bill_no, 
             dpa.purchase_bill_date, 
             dpa.warehouse_id, 
+            dpa.is_gz,
             dpa.department_id, 
             dpa.user_id, 
             dpa.purchase_bill_status, 
@@ -393,6 +397,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="purchaseBillNo != null and purchaseBillNo != ''">purchase_bill_no,</if>
             <if test="purchaseBillDate != null">purchase_bill_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="isGz != null and isGz != ''">is_gz,</if>
             <if test="departmentId != null">department_id,</if>
             <if test="userId != null">user_id,</if>
             <if test="purchaseBillStatus != null">purchase_bill_status,</if>
@@ -420,6 +425,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="purchaseBillNo != null and purchaseBillNo != ''">#{purchaseBillNo},</if>
             <if test="purchaseBillDate != null">#{purchaseBillDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="isGz != null and isGz != ''">#{isGz},</if>
             <if test="departmentId != null">#{departmentId},</if>
             <if test="userId != null">#{userId},</if>
             <if test="purchaseBillStatus != null">#{purchaseBillStatus},</if>
@@ -452,6 +458,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="purchaseBillNo != null and purchaseBillNo != ''">purchase_bill_no = #{purchaseBillNo},</if>
             <if test="purchaseBillDate != null">purchase_bill_date = #{purchaseBillDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="isGz != null and isGz != ''">is_gz = #{isGz},</if>
             <if test="departmentId != null">department_id = #{departmentId},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="purchaseBillStatus != null">purchase_bill_status = #{purchaseBillStatus},</if>
@@ -582,6 +589,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="beginDate != null"> and dpa.purchase_bill_date &gt;= #{beginDate}</if>
             <if test="endDate != null"> and dpa.purchase_bill_date &lt;= #{endDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
+            <if test="isGz != null and isGz != ''"> and dpa.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
             <if test="userId != null "> and dpa.user_id = #{userId}</if>
             <if test="purchaseBillStatus != null "> and dpa.purchase_bill_status = #{purchaseBillStatus}</if>

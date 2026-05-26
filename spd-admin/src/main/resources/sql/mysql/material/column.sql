@@ -2579,3 +2579,13 @@ CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'var
 /
 CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '处理情况说明（成功/失败原因等）', NULL);
 /
+
+-- ========== 采购链路：高低值标志（1高值 2低值） ==========
+CALL add_table_column('dep_purchase_apply', 'is_gz', 'char(1)', '高低值标志（1高值 2低值）', NULL);
+/
+CALL add_table_column('dep_purchase_apply_agg_entry', 'is_gz', 'char(1)', '高低值标志（1高值 2低值，来自产品档案）', NULL);
+/
+CALL add_table_column('purchase_plan', 'is_gz', 'char(1)', '高低值标志（1高值 2低值）', NULL);
+/
+CALL add_table_column('purchase_order', 'is_gz', 'char(1)', '高低值标志（1高值 2低值，来自采购计划）', NULL);
+/

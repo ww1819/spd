@@ -264,6 +264,19 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         }
     }
 
+    private void assertPurchasePlanHeaderIsGz(PurchasePlan purchasePlan) {
+        if (purchasePlan == null) {
+            return;
+        }
+        if (purchasePlan.getWarehouseId() == null) {
+            throw new ServiceException("采购计划请先选择仓库");
+        }
+        String gz = purchasePlan.getIsGz();
+        if (!"1".equals(gz) && !"2".equals(gz)) {
+            throw new ServiceException("采购计划请先选择高值/低值属性");
+        }
+    }
+
     /** 校验计划明细：有耗材的明细采购数量不能为空且必须大于0（审核时调用） */
     private void validateEntriesHaveQty(List<PurchasePlanEntry> list) {
         if (list == null) return;
@@ -282,6 +295,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             purchasePlan.getPurchasePlanEntryList(), PurchasePlanEntry::getMaterialId, "采购计划");
         validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
+        assertPurchasePlanHeaderIsGz(purchasePlan);
         purchasePlan.setPlanNo(getPlanNumber());
         // 如果前端没有传入状态，则默认为"未提交"（0），否则使用前端传入的状态
         if (purchasePlan.getPlanStatus() == null || purchasePlan.getPlanStatus().isEmpty()) {
@@ -317,6 +331,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             purchasePlan.getPurchasePlanEntryList(), PurchasePlanEntry::getMaterialId, "采购计划");
         validateEntriesHaveSupplier(purchasePlan.getPurchasePlanEntryList());
         validateEntriesHaveQty(purchasePlan.getPurchasePlanEntryList());
+        assertPurchasePlanHeaderIsGz(purchasePlan);
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
         purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
         String deleteBy = SecurityUtils.getUserIdStr();

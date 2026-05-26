@@ -214,6 +214,9 @@ public class FixedNumberController extends BaseController
             map.put("factoryName", item.getFactoryName());
             map.put("warehouseCategoryName", item.getWarehouseCategoryName());
             map.put("financeCategoryName", item.getFinanceCategoryName());
+            if (item.getMaterial() != null && item.getMaterial().getIsGz() != null) {
+                map.put("isGz", item.getMaterial().getIsGz());
+            }
             if (item.getUnitName() != null) {
                 map.put("fdUnit", java.util.Collections.singletonMap("unitName", item.getUnitName()));
             }
@@ -251,12 +254,16 @@ public class FixedNumberController extends BaseController
             Map<String, Object> map = new HashMap<>();
             Long mid = item.getMaterialId();
             Long wid = item.getWarehouseId();
+            String isGz = item.getMaterial() != null ? item.getMaterial().getIsGz() : null;
             map.put("materialId", mid);
             map.put("warehouseId", wid != null ? String.valueOf(wid) : null);
             map.put("warehouseName", item.getWarehouse() != null ? item.getWarehouse().getName() : null);
+            if (isGz != null) {
+                map.put("isGz", isGz);
+            }
             if (mid != null && wid != null) {
-                map.put("id", mid + "_" + wid);
-                map.put("pickKey", mid + "_" + wid);
+                map.put("id", isGz != null ? (mid + "_" + wid + "_" + isGz) : (mid + "_" + wid));
+                map.put("pickKey", isGz != null ? (mid + "_" + wid + "_" + isGz) : (mid + "_" + wid));
             } else if (mid != null) {
                 map.put("id", String.valueOf(mid));
                 map.put("pickKey", String.valueOf(mid));
@@ -273,6 +280,9 @@ public class FixedNumberController extends BaseController
             map.put("factoryName", item.getFactoryName());
             map.put("warehouseCategoryName", item.getWarehouseCategoryName());
             map.put("financeCategoryName", item.getFinanceCategoryName());
+            if (item.getMaterial() != null && item.getMaterial().getIsGz() != null) {
+                map.put("isGz", item.getMaterial().getIsGz());
+            }
             if (item.getUnitName() != null) {
                 map.put("fdUnit", java.util.Collections.singletonMap("unitName", item.getUnitName()));
             }

@@ -9,6 +9,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="planNo"    column="plan_no"    />
         <result property="supplierId"    column="supplier_id"    />
         <result property="warehouseId"    column="warehouse_id"    />
+        <result property="isGz"    column="is_gz"    />
         <result property="departmentId"    column="department_id"    />
         <result property="planDate"    column="plan_date"    />
         <result property="planStatus"    column="plan_status"    />
@@ -101,7 +102,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectPurchasePlanVo">
-        select pp.id, pp.plan_no, pp.supplier_id, pp.warehouse_id, pp.department_id, pp.plan_date, pp.plan_status,
+        select pp.id, pp.plan_no, pp.supplier_id, pp.warehouse_id, pp.is_gz, pp.department_id, pp.plan_date, pp.plan_status,
                pp.pro_person, pp.total_amount, pp.telephone, pp.remark, pp.del_flag, pp.delete_by, pp.delete_time, pp.tenant_id, pp.plan_entry_mode, pp.create_by, pp.create_time,
                pp.update_by, pp.update_time, pp.audit_by, pp.audit_date, pp.audit_opinion,
                s.id sId, s.code supplierCode, s.name supplierName,
@@ -142,6 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planNo != null  and planNo != ''"> and pp.plan_no like concat('%', #{planNo}, '%')</if>
             <if test="supplierId != null "> and pp.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and pp.warehouse_id = #{warehouseId}</if>
+            <if test="isGz != null and isGz != ''"> and pp.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and pp.department_id = #{departmentId}</if>
             <if test="planDate != null "> and pp.plan_date = #{planDate}</if>
             <if test="planStatus != null  and planStatus != ''"> and pp.plan_status = #{planStatus}</if>
@@ -197,6 +199,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planNo != null  and planNo != ''"> and pp.plan_no like concat('%', #{planNo}, '%')</if>
             <if test="supplierId != null "> and (pp.supplier_id = #{supplierId} or ppe.supplier_id = #{supplierId})</if>
             <if test="warehouseId != null "> and pp.warehouse_id = #{warehouseId}</if>
+            <if test="isGz != null and isGz != ''"> and pp.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and pp.department_id = #{departmentId}</if>
             <if test="planDate != null "> and pp.plan_date = #{planDate}</if>
             <if test="planStatus != null  and planStatus != ''"> and pp.plan_status = #{planStatus}</if>
@@ -289,6 +292,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planNo != null and planNo != ''">plan_no,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="isGz != null and isGz != ''">is_gz,</if>
             <if test="departmentId != null">department_id,</if>
             <if test="planDate != null">plan_date,</if>
             <if test="planStatus != null">plan_status,</if>
@@ -311,6 +315,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planNo != null and planNo != ''">#{planNo},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="isGz != null and isGz != ''">#{isGz},</if>
             <if test="departmentId != null">#{departmentId},</if>
             <if test="planDate != null">#{planDate},</if>
             <if test="planStatus != null">#{planStatus},</if>
@@ -389,6 +394,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="isGz != null and isGz != ''">is_gz = #{isGz},</if>
             <if test="departmentId != null">department_id = #{departmentId},</if>
             <if test="planDate != null">plan_date = #{planDate},</if>
             <if test="planStatus != null">plan_status = #{planStatus},</if>

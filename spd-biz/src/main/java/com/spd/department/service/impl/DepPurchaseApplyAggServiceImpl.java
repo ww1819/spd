@@ -169,6 +169,35 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         }
     }
 
+    private void validateEntryIsGz(List<DepPurchaseApplyAggEntry> list) {
+        if (list == null) {
+            return;
+        }
+        for (DepPurchaseApplyAggEntry e : list) {
+            if (e.getMaterialId() == null) {
+                continue;
+            }
+            String gz = normalizeIsGz(e.getIsGz());
+            if (gz == null) {
+                String label = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName()
+                    : String.valueOf(e.getMaterialId());
+                throw new ServiceException("汇总申购明细【" + label + "】缺少高值/低值标志，请重新从定数选品。");
+            }
+            e.setIsGz(gz);
+        }
+    }
+
+    private String normalizeIsGz(String isGz) {
+        if (StringUtils.isEmpty(isGz)) {
+            return null;
+        }
+        String v = isGz.trim();
+        if ("1".equals(v) || "2".equals(v)) {
+            return v;
+        }
+        return null;
+    }
+
     private Long parseWarehouseId(String warehouseId) {
         if (StringUtils.isEmpty(warehouseId)) {
             return null;
@@ -197,10 +226,17 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (e == null || e.getMaterialId() == null) {
             return null;
         }
+        if (StringUtils.isNotEmpty(e.getWarehouseId()) && StringUtils.isNotEmpty(e.getIsGz())) {
+            return e.getMaterialId() + "_" + e.getWarehouseId().trim() + "_" + e.getIsGz().trim();
+        }
         if (StringUtils.isNotEmpty(e.getWarehouseId())) {
             return e.getMaterialId() + "_" + e.getWarehouseId().trim();
         }
         return String.valueOf(e.getMaterialId());
+    }
+
+    private String splitGroupKey(Long warehouseId, String isGz) {
+        return warehouseId + "|" + isGz;
     }
 
     private void assignNewEntryId(DepPurchaseApplyAggEntry e, Set<String> usedIds) {
@@ -362,6 +398,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         normalizeEntryQty(row.getEntryList());
         validateEntryQty(row.getEntryList());
         validateEntryWarehouse(row.getEntryList());
+        validateEntryIsGz(row.getEntryList());
         if (StringUtils.isEmpty(row.getId())) {
             row.setId(UUID7.generateUUID7());
         }
@@ -418,6 +455,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         normalizeEntryQty(row.getEntryList());
         validateEntryQty(row.getEntryList());
         validateEntryWarehouse(row.getEntryList());
+        validateEntryIsGz(row.getEntryList());
         row.setUpdateBy(SecurityUtils.getUserIdStr());
         row.setUpdateTime(DateUtils.getNowDate());
         List<DepPurchaseApplyAggEntry> active = saveAggEntryListIncremental(
@@ -502,35 +540,39 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         List<DepPurchaseApplyAggEntry> entries = agg.getEntryList();
         assertEntriesReadyForAudit(entries);
         validateEntryWarehouse(entries);
+        validateEntryIsGz(entries);
 
-        Map<Long, List<DepPurchaseApplyAggEntry>> byWh = new LinkedHashMap<>();
+        Map<String, List<DepPurchaseApplyAggEntry>> bySplit = new LinkedHashMap<>();
         List<String> missing = new ArrayList<>();
         for (DepPurchaseApplyAggEntry e : entries) {
             if (e.getMaterialId() == null) {
                 continue;
             }
             Long whId = parseWarehouseId(e.getWarehouseId());
-            if (whId == null || whId <= 0) {
+            String isGz = normalizeIsGz(e.getIsGz());
+            if (whId == null || whId <= 0 || isGz == null) {
                 String label = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName()
                     : String.valueOf(e.getMaterialId());
                 missing.add(label);
                 continue;
             }
-            byWh.computeIfAbsent(whId, k -> new ArrayList<>()).add(e);
+            bySplit.computeIfAbsent(splitGroupKey(whId, isGz), k -> new ArrayList<>()).add(e);
         }
         if (!missing.isEmpty()) {
-            throw new ServiceException("以下明细未关联有效仓库，无法按仓拆分，请从仓库定数重新选择："
+            throw new ServiceException("以下明细未关联有效仓库或高值/低值标志，无法拆分，请从仓库定数重新选择："
                 + String.join("、", missing));
         }
-        if (byWh.isEmpty()) {
+        if (bySplit.isEmpty()) {
             throw new ServiceException("没有可拆分的明细行");
         }
 
         String auditBy = SecurityUtils.getUserIdStr();
         Date now = new Date();
-        for (Map.Entry<Long, List<DepPurchaseApplyAggEntry>> g : byWh.entrySet()) {
-            Long warehouseId = g.getKey();
+        for (Map.Entry<String, List<DepPurchaseApplyAggEntry>> g : bySplit.entrySet()) {
             List<DepPurchaseApplyAggEntry> group = g.getValue();
+            DepPurchaseApplyAggEntry first = group.get(0);
+            Long warehouseId = parseWarehouseId(first.getWarehouseId());
+            String isGz = first.getIsGz();
             List<DepPurchaseApplyEntry> depEntries = new ArrayList<>();
             for (DepPurchaseApplyAggEntry ae : group) {
                 fillEntryAmt(ae);
@@ -538,6 +580,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
             }
             DepPurchaseApply bill = new DepPurchaseApply();
             bill.setWarehouseId(warehouseId);
+            bill.setIsGz(isGz);
             bill.setDepartmentId(agg.getDepartmentId());
             Long creatorUserId = agg.getUserId();
             if (creatorUserId == null && StringUtils.isNotEmpty(agg.getCreateBy())

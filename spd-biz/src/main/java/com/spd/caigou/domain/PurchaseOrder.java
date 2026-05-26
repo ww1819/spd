@@ -45,6 +45,9 @@ public class PurchaseOrder extends BaseEntity
     /** 仓库ID */
     private Long warehouseId;
 
+    /** 高低值标志（1高值 2低值，来自采购计划） */
+    private String isGz;
+
     /** 部门ID */
     private Long departmentId;
 
@@ -213,6 +216,16 @@ public class PurchaseOrder extends BaseEntity
     public Long getWarehouseId() 
     {
         return warehouseId;
+    }
+
+    public String getIsGz()
+    {
+        return isGz;
+    }
+
+    public void setIsGz(String isGz)
+    {
+        this.isGz = isGz;
     }
 
     public void setDepartmentId(Long departmentId) 
@@ -533,6 +546,7 @@ public class PurchaseOrder extends BaseEntity
             .append("orderDate", getOrderDate())
             .append("supplierId", getSupplierId())
             .append("warehouseId", getWarehouseId())
+            .append("isGz", getIsGz())
             .append("departmentId", getDepartmentId())
             .append("orderStatus", getOrderStatus())
             .append("orderType", getOrderType())

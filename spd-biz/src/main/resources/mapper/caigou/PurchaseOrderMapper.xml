@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="orderDate"    column="order_date"    />
         <result property="supplierId"    column="supplier_id"    />
         <result property="warehouseId"    column="warehouse_id"    />
+        <result property="isGz"    column="is_gz"    />
         <result property="departmentId"    column="department_id"    />
         <result property="orderStatus"    column="order_status"    />
         <result property="orderType"    column="order_type"    />
@@ -107,7 +108,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectPurchaseOrderVo">
-        select po.id, po.order_no, po.plan_no, po.plan_id, po.order_date, po.supplier_id, po.warehouse_id, po.department_id, 
+        select po.id, po.order_no, po.plan_no, po.plan_id, po.order_date, po.supplier_id, po.warehouse_id, po.is_gz, po.department_id, 
                po.order_status, po.order_type, po.urgency_level, po.total_amount, po.paid_amount, 
                po.unpaid_amount, po.expected_delivery_date, po.actual_delivery_date, po.payment_terms, 
                po.delivery_address, po.contact_person, po.contact_phone, po.audit_by, po.audit_date, 
@@ -133,6 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderNo != null  and orderNo != ''"> and po.order_no like concat('%', #{orderNo}, '%')</if>
             <if test="supplierId != null "> and po.supplier_id = #{supplierId}</if>
             <if test="warehouseId != null "> and po.warehouse_id = #{warehouseId}</if>
+            <if test="isGz != null and isGz != ''"> and po.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and po.department_id = #{departmentId}</if>
             <if test="orderStatus != null  and orderStatus != ''"> and po.order_status = #{orderStatus}</if>
             <if test="orderType != null  and orderType != ''"> and po.order_type = #{orderType}</if>
@@ -177,6 +179,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderDate != null">order_date,</if>
             <if test="supplierId != null">supplier_id,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="isGz != null and isGz != ''">is_gz,</if>
             <if test="departmentId != null">department_id,</if>
             <if test="orderStatus != null">order_status,</if>
             <if test="orderType != null">order_type,</if>
@@ -208,6 +211,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderDate != null">#{orderDate},</if>
             <if test="supplierId != null">#{supplierId},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="isGz != null and isGz != ''">#{isGz},</if>
             <if test="departmentId != null">#{departmentId},</if>
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="orderType != null">#{orderType},</if>

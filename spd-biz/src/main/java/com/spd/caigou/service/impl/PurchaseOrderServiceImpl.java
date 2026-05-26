@@ -402,6 +402,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setOrderDate(new Date());
             purchaseOrder.setSupplierId(supplierId);
             purchaseOrder.setWarehouseId(purchasePlan.getWarehouseId());
+            purchaseOrder.setIsGz(purchasePlan.getIsGz());
             purchaseOrder.setDepartmentId(purchasePlan.getDepartmentId());
             purchaseOrder.setOrderStatus("0"); // 待审核
             purchaseOrder.setOrderType("1"); // 采购订单

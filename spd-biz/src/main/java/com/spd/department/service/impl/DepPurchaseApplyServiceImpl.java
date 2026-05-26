@@ -220,6 +220,17 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
             "科室申购单");
     }
 
+    /** 手工科室申购须指定高值/低值；汇总拆分生成的单据已在拆分时写入 */
+    private void assertDepPurchaseIsGz(DepPurchaseApply apply) {
+        if (apply == null || StringUtils.isNotEmpty(apply.getSrcAggApplyId())) {
+            return;
+        }
+        String gz = apply.getIsGz();
+        if (!"1".equals(gz) && !"2".equals(gz)) {
+            throw new ServiceException("请先选择高值/低值属性");
+        }
+    }
+
     @Transactional
     @Override
     public int insertDepPurchaseApply(DepPurchaseApply depPurchaseApply)
@@ -232,6 +243,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         normalizeEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateMinPackageQtyOnSave(depPurchaseApply.getDepPurchaseApplyEntryList());
+        assertDepPurchaseIsGz(depPurchaseApply);
         // 生成申购单号
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo())) {
             depPurchaseApply.setPurchaseBillNo(generatePurchaseBillNo());
@@ -276,6 +288,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         normalizeEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateEntryQty(depPurchaseApply.getDepPurchaseApplyEntryList());
         validateMinPackageQtyOnSave(depPurchaseApply.getDepPurchaseApplyEntryList());
+        assertDepPurchaseIsGz(depPurchaseApply);
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         if (depPurchaseApply.getUserId() == null && existing != null && existing.getUserId() != null) {
