@@ -155,8 +155,11 @@ public class PurchaseOrder extends BaseEntity
     private String pushErrorMsg;
     /** 推送快照：平台医院编码 */
     private String scmHospitalCode;
-    /** 推送快照：平台供应商编码 */
+    /** 推送快照：平台供应商编码（发布时回写订单表） */
     private String scmSupplierCode;
+
+    /** 列表展示：绑定表当前平台供应商编码（未发布时对照用） */
+    private String bindScmSupplierCode;
 
     /** 发布人（推送成功时回写） */
     private String pushBy;
@@ -560,6 +563,16 @@ public class PurchaseOrder extends BaseEntity
     public void setScmSupplierCode(String scmSupplierCode)
     {
         this.scmSupplierCode = scmSupplierCode;
+    }
+
+    public String getBindScmSupplierCode()
+    {
+        return bindScmSupplierCode;
+    }
+
+    public void setBindScmSupplierCode(String bindScmSupplierCode)
+    {
+        this.bindScmSupplierCode = bindScmSupplierCode;
     }
 
     public String getPushBy()

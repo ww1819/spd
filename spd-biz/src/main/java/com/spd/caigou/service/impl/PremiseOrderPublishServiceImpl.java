@@ -176,7 +176,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             {
                 throw new ServiceException("订单「" + po.getOrderNo() + "」无法推送：该订单供应商未维护「平台供应商编码」。请在【系统设置-云平台编码绑定】的供应商编码中维护后再推送。");
             }
-            purchaseOrderMapper.updatePushCodesSnapshot(id, hospitalCode.trim(), supplierCode.trim(), updateBy);
+            writePushCodesSnapshotForOrder(id, updateBy);
         }
     }
 
@@ -195,6 +195,10 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
         {
             try
             {
+                if (ok)
+                {
+                    writePushCodesSnapshotForOrder(id, updateBy);
+                }
                 purchaseOrderMapper.updatePushOutcome(id, status, msg, updateBy);
             }
             catch (Exception ex)
@@ -202,6 +206,25 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
                 log.warn("更新订单推送状态失败 id={}", id, ex);
             }
         }
+    }
+
+    /**
+     * 将绑定表中的平台医院/供应商编码快照写入订单表（发布前校验、发布成功时各写一次）。
+     */
+    private void writePushCodesSnapshotForOrder(Long id, String updateBy)
+    {
+        PurchaseOrder po = purchaseOrderService.selectPurchaseOrderById(id);
+        if (po == null || StringUtils.isEmpty(po.getTenantId()) || po.getSupplierId() == null)
+        {
+            return;
+        }
+        String hospitalCode = spdScmTenantBindMapper.selectHospitalCodeByTenantId(po.getTenantId());
+        String supplierCode = spdScmSupplierBindMapper.selectSupplierCode(po.getTenantId(), String.valueOf(po.getSupplierId()));
+        if (StringUtils.isEmpty(hospitalCode) || StringUtils.isEmpty(supplierCode))
+        {
+            return;
+        }
+        purchaseOrderMapper.updatePushCodesSnapshot(id, hospitalCode.trim(), supplierCode.trim(), updateBy);
     }
 
     private static boolean isSuccess(AjaxResult r)

@@ -41,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="pushErrorMsg"    column="push_error_msg"    />
         <result property="scmHospitalCode"    column="scm_hospital_code"    />
         <result property="scmSupplierCode"    column="scm_supplier_code"    />
+        <result property="bindScmSupplierCode"    column="bind_scm_supplier_code"    />
         <result property="pushBy"    column="push_by"    />
         <result property="voidWholeFlag"    column="void_whole_flag"    />
         <result property="voidWholeBy"    column="void_whole_by"    />
@@ -128,6 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as create_by_name,
                coalesce(nullif(trim(pbu.nick_name), ''), pbu.user_name) as push_by_name,
                coalesce(nullif(trim(vbu.nick_name), ''), vbu.user_name) as void_whole_by_name,
+               ssb.scm_supplier_code as bind_scm_supplier_code,
         s.name as supplier_name, s.code as supplier_code,
         w.name as warehouse_name, w.code as warehouse_code,
         d.name as dept_name, d.code as dept_code
@@ -144,6 +146,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user vbu on vbu.user_id = (
             case when po.void_whole_by regexp '^[0-9]+$' then cast(po.void_whole_by as unsigned) else null end
         )
+        left join spd_scm_supplier_bind ssb on ssb.tenant_id = po.tenant_id
+            and ssb.supplier_id = cast(po.supplier_id as char)
+            and (ssb.del_flag is null or ssb.del_flag = '' or ssb.del_flag = '0')
     </sql>
 
     <select id="selectPurchaseOrderList" parameterType="com.spd.caigou.domain.PurchaseOrder" resultMap="PurchaseOrderResult">
