@@ -154,6 +154,10 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             {
                 throw new ServiceException("订单不存在或无权限访问，id=" + id);
             }
+            if (Integer.valueOf(1).equals(po.getVoidWholeFlag()))
+            {
+                throw new ServiceException("订单「" + po.getOrderNo() + "」已作废，不能发布");
+            }
             if (StringUtils.isEmpty(po.getTenantId()))
             {
                 throw new ServiceException("订单「" + po.getOrderNo() + "」缺少租户信息，无法校验云平台编码");

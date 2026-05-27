@@ -118,6 +118,12 @@ public interface PurchaseOrderMapper
         @Param("pushErrorMsg") String pushErrorMsg, @Param("updateBy") String updateBy);
 
     /**
+     * 整单作废（未发布、未作废、待审核或已审核）
+     */
+    int voidWholePurchaseOrder(@Param("id") Long id, @Param("voidWholeBy") String voidWholeBy,
+        @Param("voidWholeTime") java.util.Date voidWholeTime, @Param("voidWholeReason") String voidWholeReason);
+
+    /**
      * 是否存在已向平台推送过、且带平台供应商编码快照的采购订单（用于未建院端绑定时仍允许拉取脱敏资料）
      */
     int countOrderWithScmSupplierSnapshot(@Param("tenantId") String tenantId,

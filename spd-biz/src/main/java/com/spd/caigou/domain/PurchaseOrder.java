@@ -158,6 +158,31 @@ public class PurchaseOrder extends BaseEntity
     /** 推送快照：平台供应商编码 */
     private String scmSupplierCode;
 
+    /** 发布人（推送成功时回写） */
+    private String pushBy;
+
+    /** 整单作废：0否 1是 */
+    private Integer voidWholeFlag;
+
+    private String voidWholeBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date voidWholeTime;
+
+    private String voidWholeReason;
+
+    /** 列表展示：制单人姓名 */
+    private String createByName;
+
+    /** 列表展示：发布人姓名 */
+    private String pushByName;
+
+    /** 列表展示：作废人姓名 */
+    private String voidWholeByName;
+
+    /** 查询：时间类型 createTime / auditDate / pushTime */
+    private String dateType;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -535,6 +560,96 @@ public class PurchaseOrder extends BaseEntity
     public void setScmSupplierCode(String scmSupplierCode)
     {
         this.scmSupplierCode = scmSupplierCode;
+    }
+
+    public String getPushBy()
+    {
+        return pushBy;
+    }
+
+    public void setPushBy(String pushBy)
+    {
+        this.pushBy = pushBy;
+    }
+
+    public Integer getVoidWholeFlag()
+    {
+        return voidWholeFlag;
+    }
+
+    public void setVoidWholeFlag(Integer voidWholeFlag)
+    {
+        this.voidWholeFlag = voidWholeFlag;
+    }
+
+    public String getVoidWholeBy()
+    {
+        return voidWholeBy;
+    }
+
+    public void setVoidWholeBy(String voidWholeBy)
+    {
+        this.voidWholeBy = voidWholeBy;
+    }
+
+    public Date getVoidWholeTime()
+    {
+        return voidWholeTime;
+    }
+
+    public void setVoidWholeTime(Date voidWholeTime)
+    {
+        this.voidWholeTime = voidWholeTime;
+    }
+
+    public String getVoidWholeReason()
+    {
+        return voidWholeReason;
+    }
+
+    public void setVoidWholeReason(String voidWholeReason)
+    {
+        this.voidWholeReason = voidWholeReason;
+    }
+
+    public String getCreateByName()
+    {
+        return createByName;
+    }
+
+    public void setCreateByName(String createByName)
+    {
+        this.createByName = createByName;
+    }
+
+    public String getPushByName()
+    {
+        return pushByName;
+    }
+
+    public void setPushByName(String pushByName)
+    {
+        this.pushByName = pushByName;
+    }
+
+    public String getVoidWholeByName()
+    {
+        return voidWholeByName;
+    }
+
+    public void setVoidWholeByName(String voidWholeByName)
+    {
+        this.voidWholeByName = voidWholeByName;
+    }
+
+    public String getDateType()
+    {
+        return dateType;
+    }
+
+    public void setDateType(String dateType)
+    {
+        this.dateType = dateType;
     }
 
     @Override

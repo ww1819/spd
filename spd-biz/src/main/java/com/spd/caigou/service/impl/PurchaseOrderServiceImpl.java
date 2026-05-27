@@ -8,6 +8,7 @@ import com.spd.caigou.mapper.PurchaseOrderMapper;
 import com.spd.caigou.mapper.PurchasePlanMapper;
 import com.spd.caigou.service.IPurchaseOrderService;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
@@ -478,6 +479,52 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         purchasePlanMapper.updatePurchasePlan(purchasePlan);
 
         return orderCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int voidWholePurchaseOrders(Long[] ids, String reason)
+    {
+        if (ids == null || ids.length == 0)
+        {
+            throw new ServiceException("请选择要作废的订单");
+        }
+        String uid = SecurityUtils.getUserIdStr();
+        Date now = DateUtils.getNowDate();
+        int count = 0;
+        for (Long id : ids)
+        {
+            if (id == null)
+            {
+                continue;
+            }
+            PurchaseOrder po = purchaseOrderMapper.selectPurchaseOrderById(id);
+            if (po == null)
+            {
+                throw new ServiceException("订单不存在或无权限访问，id=" + id);
+            }
+            SecurityUtils.ensureTenantAccess(po.getTenantId());
+            if (Integer.valueOf(1).equals(po.getVoidWholeFlag()))
+            {
+                throw new ServiceException("订单「" + po.getOrderNo() + "」已作废");
+            }
+            if ("1".equals(po.getPushStatus()))
+            {
+                throw new ServiceException("订单「" + po.getOrderNo() + "」已发布，不允许作废");
+            }
+            String st = po.getOrderStatus();
+            if (!"0".equals(st) && !"2".equals(st))
+            {
+                throw new ServiceException("订单「" + po.getOrderNo() + "」当前状态不允许作废（仅待审核、已审核可作废）");
+            }
+            int u = purchaseOrderMapper.voidWholePurchaseOrder(id, uid, now, reason);
+            if (u <= 0)
+            {
+                throw new ServiceException("订单「" + po.getOrderNo() + "」作废失败，请刷新后重试");
+            }
+            count += u;
+        }
+        return count;
     }
 
     /**

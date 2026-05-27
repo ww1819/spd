@@ -1,5 +1,6 @@
 package com.spd.caigou.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
@@ -127,5 +128,39 @@ public class CaigouDingdanController extends BaseController
     public AjaxResult audit(@PathVariable Long id, @RequestBody PurchaseOrder purchaseOrder)
     {
         return toAjax(purchaseOrderService.auditPurchaseOrder(id, purchaseOrder.getAuditBy(), purchaseOrder.getAuditOpinion()));
+    }
+
+    /**
+     * 整单作废（未发布；待审核、已审核可作废，全租户开放）
+     */
+    @Log(title = "采购订单作废", businessType = BusinessType.UPDATE)
+    @PutMapping("/voidWhole")
+    public AjaxResult voidWhole(@RequestBody Map<String, Object> params)
+    {
+        Object idsObj = params.get("ids");
+        if (!(idsObj instanceof List))
+        {
+            return error("参数错误，ids 必须为数组");
+        }
+        @SuppressWarnings("unchecked")
+        List<Object> rawIds = (List<Object>) idsObj;
+        List<Long> ids = new ArrayList<>();
+        for (Object o : rawIds)
+        {
+            if (o instanceof Number)
+            {
+                ids.add(((Number) o).longValue());
+            }
+            else if (o != null)
+            {
+                ids.add(Long.parseLong(o.toString()));
+            }
+        }
+        if (ids.isEmpty())
+        {
+            return error("订单ID列表不能为空");
+        }
+        String reason = params.get("reason") != null ? params.get("reason").toString() : null;
+        return toAjax(purchaseOrderService.voidWholePurchaseOrders(ids.toArray(new Long[0]), reason));
     }
 }

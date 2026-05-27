@@ -41,6 +41,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="pushErrorMsg"    column="push_error_msg"    />
         <result property="scmHospitalCode"    column="scm_hospital_code"    />
         <result property="scmSupplierCode"    column="scm_supplier_code"    />
+        <result property="pushBy"    column="push_by"    />
+        <result property="voidWholeFlag"    column="void_whole_flag"    />
+        <result property="voidWholeBy"    column="void_whole_by"    />
+        <result property="voidWholeTime"    column="void_whole_time"    />
+        <result property="voidWholeReason"    column="void_whole_reason"    />
+        <result property="createByName"    column="create_by_name"    />
+        <result property="pushByName"    column="push_by_name"    />
+        <result property="voidWholeByName"    column="void_whole_by_name"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -114,8 +122,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                po.delivery_address, po.contact_person, po.contact_phone, po.audit_by, po.audit_date, 
                po.audit_opinion, po.remark, po.del_flag, po.delete_by, po.delete_time, po.tenant_id,
                po.scm_order_id, po.scm_order_no, po.push_status, po.push_time, po.push_error_msg,
-               po.scm_hospital_code, po.scm_supplier_code,
+               po.scm_hospital_code, po.scm_supplier_code, po.push_by,
+               po.void_whole_flag, po.void_whole_by, po.void_whole_time, po.void_whole_reason,
                po.create_by, po.create_time, po.update_by, po.update_time,
+               coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as create_by_name,
+               coalesce(nullif(trim(pbu.nick_name), ''), pbu.user_name) as push_by_name,
+               coalesce(nullif(trim(vbu.nick_name), ''), vbu.user_name) as void_whole_by_name,
         s.name as supplier_name, s.code as supplier_code,
         w.name as warehouse_name, w.code as warehouse_code,
         d.name as dept_name, d.code as dept_code
@@ -123,6 +135,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier s on po.supplier_id = s.id
         left join fd_warehouse w on po.warehouse_id = w.id
         left join fd_department d on po.department_id = d.id
+        left join sys_user cu on cu.user_id = (
+            case when po.create_by regexp '^[0-9]+$' then cast(po.create_by as unsigned) else null end
+        )
+        left join sys_user pbu on pbu.user_id = (
+            case when po.push_by regexp '^[0-9]+$' then cast(po.push_by as unsigned) else null end
+        )
+        left join sys_user vbu on vbu.user_id = (
+            case when po.void_whole_by regexp '^[0-9]+$' then cast(po.void_whole_by as unsigned) else null end
+        )
     </sql>
 
     <select id="selectPurchaseOrderList" parameterType="com.spd.caigou.domain.PurchaseOrder" resultMap="PurchaseOrderResult">
@@ -139,11 +160,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null  and orderStatus != ''"> and po.order_status = #{orderStatus}</if>
             <if test="orderType != null  and orderType != ''"> and po.order_type = #{orderType}</if>
             <if test="urgencyLevel != null  and urgencyLevel != ''"> and po.urgency_level = #{urgencyLevel}</if>
-            <if test="beginDate != null and beginDate != ''"><!-- 开始时间检索 -->
-                and date_format(po.order_date,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+            <if test="pushStatus != null and pushStatus == '1'"> and po.push_status = '1'</if>
+            <if test="pushStatus != null and pushStatus == '0'"> and (po.push_status is null or po.push_status = '0' or po.push_status = '2')</if>
+            <if test="voidWholeFlag != null"> and coalesce(po.void_whole_flag, 0) = #{voidWholeFlag}</if>
+            <if test="beginDate != null and beginDate != ''">
+                <choose>
+                    <when test="dateType != null and dateType == 'auditDate'">
+                        and po.audit_date is not null
+                        and date_format(po.audit_date,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+                    </when>
+                    <when test="dateType != null and dateType == 'pushTime'">
+                        and po.push_time is not null
+                        and date_format(po.push_time,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+                    </when>
+                    <otherwise>
+                        and po.create_time is not null
+                        and date_format(po.create_time,'%y%m%d') &gt;= date_format(#{beginDate},'%y%m%d')
+                    </otherwise>
+                </choose>
             </if>
-            <if test="endDate != null and endDate != ''"><!-- 结束时间检索 -->
-                and date_format(po.order_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+            <if test="endDate != null and endDate != ''">
+                <choose>
+                    <when test="dateType != null and dateType == 'auditDate'">
+                        and date_format(po.audit_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+                    </when>
+                    <when test="dateType != null and dateType == 'pushTime'">
+                        and date_format(po.push_time,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+                    </when>
+                    <otherwise>
+                        and date_format(po.create_time,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
+                    </otherwise>
+                </choose>
             </if>
         </where>
         order by po.create_time desc
@@ -398,7 +445,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             push_error_msg = #{pushErrorMsg},
             update_by = #{updateBy},
             update_time = now()
+            <if test="pushStatus != null and pushStatus == '1'">, push_by = #{updateBy}</if>
         where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="voidWholePurchaseOrder">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update purchase_order
+        set void_whole_flag = 1,
+            void_whole_by = #{voidWholeBy},
+            void_whole_time = #{voidWholeTime},
+            void_whole_reason = #{voidWholeReason},
+            update_by = #{voidWholeBy},
+            update_time = now()
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+          and coalesce(void_whole_flag, 0) = 0
+          and (push_status is null or push_status != '1')
+          and order_status in ('0', '2')
     </update>
 
     <select id="countOrderWithScmSupplierSnapshot" resultType="int">

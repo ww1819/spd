@@ -78,4 +78,9 @@ public interface IPurchaseOrderService
      */
     public int generateOrdersFromPlan(Long planId);
 
+    /**
+     * 批量整单作废（未发布；待审核或已审核）
+     */
+    int voidWholePurchaseOrders(Long[] ids, String reason);
+
 }
