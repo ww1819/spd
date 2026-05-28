@@ -885,6 +885,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                f.factory_name factoryName, fc.finance_category_name financeCategoryName,
                s.name supplierName,
                d.name departmentName, w.name warehouseName, b.material_id materialId,
+               m.storeroom_id storeroomId,
+               case
+                   when m.storeroom_id in (11, 12) then '材料'
+                   when m.storeroom_id = 13 then '试剂'
+                   else '未识别分类'
+               end materialKind,
                m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay,
                m.is_billing materialIsBilling, m.is_procure materialIsProcure,
                wc.warehouse_category_name materialWarehouseCategoryName,

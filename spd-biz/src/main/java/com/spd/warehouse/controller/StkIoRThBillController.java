@@ -190,6 +190,10 @@ public class StkIoRThBillController extends BaseController
         if (map == null) return null;
         FdMaterial m = new FdMaterial();
         if (map.get("materialId") != null) m.setId(((Number) map.get("materialId")).longValue());
+        // 出退库导出分块：依赖 storeroomId（fd_material.storeroom_id）
+        if (map.get("storeroomId") != null) {
+            m.setStoreroomId(((Number) map.get("storeroomId")).longValue());
+        }
         if (map.get("materialRegisterNo") != null) m.setRegisterNo(map.get("materialRegisterNo").toString());
         if (map.get("materialPackageSpeci") != null) m.setPackageSpeci(map.get("materialPackageSpeci").toString());
         if (map.get("materialIsWay") != null) m.setIsWay(map.get("materialIsWay").toString());
@@ -198,6 +202,9 @@ public class StkIoRThBillController extends BaseController
         if (map.get("materialIsGz") != null) m.setIsGz(map.get("materialIsGz").toString());
         if (map.get("materialWarehouseCategoryName") != null) {
             FdWarehouseCategory wc = new FdWarehouseCategory();
+            if (m.getStoreroomId() != null) {
+                wc.setWarehouseCategoryId(m.getStoreroomId());
+            }
             wc.setWarehouseCategoryName(map.get("materialWarehouseCategoryName").toString());
             m.setFdWarehouseCategory(wc);
         }
