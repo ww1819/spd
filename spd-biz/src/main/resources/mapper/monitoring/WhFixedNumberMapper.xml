@@ -52,6 +52,7 @@
         <result property="supplierId" column="materialSupplierId"/>
         <result property="isProcure" column="isProcure"/>
         <result property="isGz" column="isGz"/>
+        <result property="isUse" column="materialIsUse"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -90,6 +91,7 @@
             m.supplier_id as materialSupplierId,
             m.is_procure as isProcure,
             m.is_gz as isGz,
+            m.is_use as materialIsUse,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName,
@@ -111,7 +113,6 @@
         and (f.tenant_id = #{scopedTenantId})
         and m.id is not null
         and (m.del_flag is null or m.del_flag != 1)
-        and (m.is_use is null or m.is_use = '' or m.is_use != '2')
         <if test="warehouseId != null">
             and f.warehouse_id = #{warehouseId}
         </if>
@@ -161,6 +162,7 @@
         </if>
         <if test="onlyEnabled != null and onlyEnabled">
             and (f.enable_status = '0' or f.enable_status is null)
+            and (m.is_use is null or m.is_use = '' or m.is_use != '2')
         </if>
         <if test="enableStatus != null and enableStatus != ''">
             and f.enable_status = #{enableStatus}
