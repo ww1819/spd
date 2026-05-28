@@ -372,8 +372,10 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             throw new ServiceException(String.format("采购计划ID：%s，没有明细数据!", planId));
         }
 
-        // 按单据明细的供应商分组（优先使用明细上的供应商，未填时取产品档案供应商）
-        Map<Long, List<PurchasePlanEntry>> supplierGroupMap = new HashMap<>();
+        // 高值：始终按供应商+科室；低值且「按申购单明细拆分」：按供应商+科室；低值且按产品档案汇总：仅按供应商
+        boolean highValuePlan = "1".equals(purchasePlan.getIsGz());
+        boolean splitBySupplierAndDept = highValuePlan || "2".equals(purchasePlan.getPlanEntryMode());
+        Map<String, List<PurchasePlanEntry>> orderGroupMap = new HashMap<>();
         for (PurchasePlanEntry entry : planEntryList) {
             FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
             if (material == null) {
@@ -383,19 +385,41 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             if (supplierId == null) {
                 throw new ServiceException(String.format("耗材ID：%s，明细未指定供应商且产品档案无供应商!", entry.getMaterialId()));
             }
-            if (!supplierGroupMap.containsKey(supplierId)) {
-                supplierGroupMap.put(supplierId, new ArrayList<>());
+            String groupKey;
+            if (splitBySupplierAndDept) {
+                Long deptId = entry.getApplyDepartmentId() != null
+                    ? entry.getApplyDepartmentId()
+                    : purchasePlan.getDepartmentId();
+                if (deptId == null) {
+                    String planHint = highValuePlan ? "高值采购计划" : "按申购单明细拆分的低值采购计划";
+                    throw new ServiceException(String.format(
+                        "%s明细（耗材ID：%s）缺少申请科室，无法按供应商+科室生成订单", planHint, entry.getMaterialId()));
+                }
+                groupKey = supplierId + "|" + deptId;
+            } else {
+                groupKey = String.valueOf(supplierId);
             }
-            supplierGroupMap.get(supplierId).add(entry);
+            orderGroupMap.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(entry);
         }
 
-        // 为每个供应商生成一个订单
         int orderCount = 0;
-        for (Map.Entry<Long, List<PurchasePlanEntry>> entry : supplierGroupMap.entrySet()) {
-            Long supplierId = entry.getKey();
-            List<PurchasePlanEntry> supplierEntries = entry.getValue();
+        for (Map.Entry<String, List<PurchasePlanEntry>> groupEntry : orderGroupMap.entrySet()) {
+            List<PurchasePlanEntry> supplierEntries = groupEntry.getValue();
+            PurchasePlanEntry firstEntry = supplierEntries.get(0);
+            FdMaterial firstMaterial = fdMaterialMapper.selectFdMaterialById(firstEntry.getMaterialId());
+            Long supplierId = firstEntry.getSupplierId() != null
+                ? firstEntry.getSupplierId()
+                : (firstMaterial != null ? firstMaterial.getSupplierId() : null);
+            if (supplierId == null) {
+                throw new ServiceException(String.format("耗材ID：%s，明细未指定供应商且产品档案无供应商!", firstEntry.getMaterialId()));
+            }
+            Long orderDepartmentId = purchasePlan.getDepartmentId();
+            if (splitBySupplierAndDept) {
+                orderDepartmentId = firstEntry.getApplyDepartmentId() != null
+                    ? firstEntry.getApplyDepartmentId()
+                    : purchasePlan.getDepartmentId();
+            }
 
-            // 创建订单
             PurchaseOrder purchaseOrder = new PurchaseOrder();
             purchaseOrder.setPlanId(planId);
             purchaseOrder.setPlanNo(purchasePlan.getPlanNo()); // 关联计划单号
@@ -404,7 +428,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setSupplierId(supplierId);
             purchaseOrder.setWarehouseId(purchasePlan.getWarehouseId());
             purchaseOrder.setIsGz(purchasePlan.getIsGz());
-            purchaseOrder.setDepartmentId(purchasePlan.getDepartmentId());
+            purchaseOrder.setDepartmentId(orderDepartmentId);
             purchaseOrder.setOrderStatus("0"); // 待审核
             purchaseOrder.setOrderType("1"); // 采购订单
             purchaseOrder.setUrgencyLevel("2"); // 中等紧急程度
