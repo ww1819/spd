@@ -378,6 +378,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isGz != null">is_gz,</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">is_follow,</if>
+            <!-- 如果报错 Unknown column 'is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
+            <if test="isBilling != null">is_billing,</if>
             <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
             <if test="locationId != null">location_id,</if>
             <if test="selectionReason != null">selection_reason,</if>
@@ -440,6 +442,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isGz != null">#{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null and isFollow != ''">#{isFollow},</if>
+            <!-- 如果报错 Unknown column 'is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
+            <if test="isBilling != null">#{isBilling},</if>
             <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
             <if test="locationId != null">#{locationId},</if>
             <if test="selectionReason != null">#{selectionReason},</if>
@@ -511,6 +515,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isGz != null">is_gz = #{isGz},</if>
             <!-- 如果报错 Unknown column 'is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             <if test="isFollow != null">is_follow = #{isFollow},</if>
+            <!-- 如果报错 Unknown column 'is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
+            <if test="isBilling != null">is_billing = #{isBilling},</if>
             <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
             <if test="locationId != null">location_id = #{locationId},</if>
             <if test="selectionReason != null">selection_reason = #{selectionReason},</if>
