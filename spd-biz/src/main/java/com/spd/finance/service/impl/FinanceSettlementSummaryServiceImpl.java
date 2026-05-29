@@ -51,8 +51,16 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         BigDecimal unrecognizedSum = BigDecimal.ZERO;
 
         Collator zh = Collator.getInstance(Locale.CHINA);
-        Comparator<FinanceSettlementSummaryRowVo> byName = (a, b) ->
-            zh.compare(StringUtils.nvl(a.getSupplierName(), ""), StringUtils.nvl(b.getSupplierName(), ""));
+        Comparator<FinanceSettlementSummaryRowVo> bySupplierName = (a, b) -> {
+            int rank = Integer.compare(
+                supplierDisplayOrderRank(a.getSupplierName()),
+                supplierDisplayOrderRank(b.getSupplierName()));
+            if (rank != 0)
+            {
+                return rank;
+            }
+            return zh.compare(StringUtils.nvl(a.getSupplierName(), ""), StringUtils.nvl(b.getSupplierName(), ""));
+        };
 
         if (raw != null)
         {
@@ -84,9 +92,9 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
             }
         }
 
-        material.sort(byName);
-        reagent.sort(byName);
-        unrecognized.sort(byName);
+        material.sort(bySupplierName);
+        reagent.sort(bySupplierName);
+        unrecognized.sort(bySupplierName);
 
         List<FinanceDeptConsumablePickupRowVo> deptRows = new ArrayList<>();
         Comparator<FinanceDeptConsumablePickupRowVo> byDeptName = (a, b) ->
@@ -123,6 +131,27 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         bundle.setUnrecognizedWholesaleTotal(unrecognizedSum.setScale(2, RoundingMode.HALF_UP));
         bundle.setDeptConsumablePickupRows(deptRows);
         return bundle;
+    }
+
+    /**
+     * 供货单位展示顺序：带量 → 集采 → 其余；同组内再按名称排序。
+     * 名称同时含「带量」「集采」时归入带量组。
+     */
+    private static int supplierDisplayOrderRank(String supplierName)
+    {
+        if (StringUtils.isEmpty(supplierName))
+        {
+            return 2;
+        }
+        if (supplierName.contains("带量"))
+        {
+            return 0;
+        }
+        if (supplierName.contains("集采"))
+        {
+            return 1;
+        }
+        return 2;
     }
 
     private static BigDecimal toBigDecimal(Object v)
