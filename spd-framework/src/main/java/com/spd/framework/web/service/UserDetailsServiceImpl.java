@@ -16,6 +16,8 @@ import com.spd.common.utils.StringUtils;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISysUserService;
+import com.spd.system.service.ITenantAdminMenuSyncService;
+import com.spd.system.service.ITenantScopeService;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,6 +47,12 @@ public class UserDetailsServiceImpl implements UserDetailsService
 
     @Autowired
     private SbPermissionService sbPermissionService;
+
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    @Autowired
+    private ITenantAdminMenuSyncService tenantAdminMenuSyncService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
@@ -114,7 +122,25 @@ public class UserDetailsServiceImpl implements UserDetailsService
         if (StringUtils.isNotEmpty(customerId)) {
             user.setCustomerId(customerId);
         }
+        syncTenantAdminMenusIfNeeded(user, customerId, forHc);
         return createLoginUser(user);
+    }
+
+    /**
+     * 耗材租户管理员登录：将 hc_customer_menu 已开通菜单补充到 super 工作组与 super_01，避免客户新开通功能后管理员侧栏缺失。
+     */
+    private void syncTenantAdminMenusIfNeeded(SysUser user, String customerId, boolean forHc) {
+        if (!forHc || user == null || user.getUserId() == null || StringUtils.isEmpty(customerId)) {
+            return;
+        }
+        if (!tenantScopeService.isTenantSuper(user.getUserId(), customerId)) {
+            return;
+        }
+        try {
+            tenantAdminMenuSyncService.syncHcCustomerMenusToTenantAdmins(customerId);
+        } catch (Exception e) {
+            log.warn("租户管理员登录菜单同步失败, userId={}, tenantId={}: {}", user.getUserId(), customerId, e.getMessage());
+        }
     }
 
     /**

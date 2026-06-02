@@ -16,6 +16,9 @@ public interface HcCustomerMenuMapper {
 
   List<Long> selectMenuIdsByTenantId(String tenantId);
 
+  /** 租户已开通且未暂停的菜单 ID（与 countByTenantIdAndMenuId 条件一致） */
+  List<Long> selectEnabledMenuIdsByTenantId(@Param("tenantId") String tenantId);
+
   /** 耗材租户下已被暂停的菜单ID（status='1'） */
   List<Long> selectPausedMenuIdsByTenantId(String tenantId);
 

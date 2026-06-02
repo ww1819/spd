@@ -34,6 +34,7 @@ import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysUserService;
+import com.spd.system.service.ITenantAdminMenuSyncService;
 
 /**
  * 登录校验方法
@@ -69,6 +70,9 @@ public class SysLoginService
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private ITenantAdminMenuSyncService tenantAdminMenuSyncService;
 
     /**
      * 登录验证
@@ -170,6 +174,13 @@ public class SysLoginService
             throw new ServiceException("所选租户 super_01 用户已停用");
         }
         tenantSuperUser.setCustomerId(tenantId);
+        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
+            try {
+                tenantAdminMenuSyncService.syncHcCustomerMenusToTenantAdmins(tenantId);
+            } catch (Exception e) {
+                // 同步失败不阻断平台管理员切换租户
+            }
+        }
         LoginUser loginUser = createLoginUser(tenantSuperUser);
         loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
         recordLoginInfo(loginUser.getUserId());

@@ -14,6 +14,13 @@
     select menu_id from hc_customer_menu where tenant_id = #{tenantId}
   </select>
 
+  <select id="selectEnabledMenuIdsByTenantId" resultType="long">
+    select menu_id from hc_customer_menu
+    where tenant_id = #{tenantId}
+      and (is_enabled = '1' or is_enabled is null)
+      and (status = '0' or status is null)
+  </select>
+
   <!-- 耗材租户下已被暂停的菜单ID（status='1'），用于登录后路由 meta.paused 标记 -->
   <select id="selectPausedMenuIdsByTenantId" resultType="long">
     select menu_id from hc_customer_menu where tenant_id = #{tenantId} and status = '1'

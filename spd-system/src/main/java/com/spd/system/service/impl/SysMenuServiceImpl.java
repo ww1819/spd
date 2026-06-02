@@ -3,6 +3,7 @@ package com.spd.system.service.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -576,22 +577,12 @@ public class SysMenuServiceImpl implements ISysMenuService
         {
             return false;
         }
-        Long cur = menuId;
-        int guard = 0;
-        while (cur != null && cur > 0 && guard++ < 200)
+        Set<Long> enabledMenuIds = loadCustomerEnabledMenuIdSet(tenantId);
+        if (enabledMenuIds.isEmpty())
         {
-            if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, cur) > 0)
-            {
-                return true;
-            }
-            SysMenu m = menuMapper.selectMenuById(cur);
-            if (m == null || m.getParentId() == null)
-            {
-                break;
-            }
-            cur = m.getParentId();
+            return false;
         }
-        return false;
+        return isMenuUnderCustomerHcScopeCached(menuId, enabledMenuIds, loadSysMenuByIdMap());
     }
 
     @Override
@@ -605,20 +596,96 @@ public class SysMenuServiceImpl implements ISysMenuService
         {
             return new ArrayList<>(menuIds);
         }
+        Set<Long> enabledMenuIds = loadCustomerEnabledMenuIdSet(tenantId);
+        if (enabledMenuIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        Map<Long, SysMenu> menuById = loadSysMenuByIdMap();
         List<Long> out = new ArrayList<>();
         for (Long id : menuIds)
         {
-            if (id != null && id > 0 && isMenuUnderCustomerHcScope(tenantId, id))
+            if (id == null || id <= 0)
             {
-                SysMenu menu = menuMapper.selectMenuById(id);
-                if (menu != null && "1".equals(StringUtils.trimToEmpty(menu.getIsPlatform())))
-                {
-                    continue;
-                }
-                out.add(id);
+                continue;
             }
+            if (!isMenuUnderCustomerHcScopeCached(id, enabledMenuIds, menuById))
+            {
+                continue;
+            }
+            SysMenu menu = menuById.get(id);
+            if (menu != null && "1".equals(StringUtils.trimToEmpty(menu.getIsPlatform())))
+            {
+                continue;
+            }
+            out.add(id);
         }
         return out;
+    }
+
+    /** 租户 hc_customer_menu 已开通且未暂停的菜单 ID（一次查询，供授权过滤复用） */
+    private Set<Long> loadCustomerEnabledMenuIdSet(String tenantId)
+    {
+        List<Long> ids = hcCustomerMenuMapper.selectEnabledMenuIdsByTenantId(tenantId.trim());
+        Set<Long> set = new HashSet<>();
+        if (ids != null)
+        {
+            for (Long id : ids)
+            {
+                if (id != null && id > 0)
+                {
+                    set.add(id);
+                }
+            }
+        }
+        return set;
+    }
+
+    /** sys_menu 全量 id 索引（一次查询，避免授权过滤/补祖先时 N+1） */
+    private Map<Long, SysMenu> loadSysMenuByIdMap()
+    {
+        List<SysMenu> all = menuMapper.selectMenuTreeAll();
+        Map<Long, SysMenu> map = new HashMap<>();
+        if (all != null)
+        {
+            for (SysMenu m : all)
+            {
+                if (m != null && m.getMenuId() != null)
+                {
+                    map.put(m.getMenuId(), m);
+                }
+            }
+        }
+        return map;
+    }
+
+    /** 菜单自身或任一祖先在租户已开通菜单范围内 */
+    private boolean isMenuUnderCustomerHcScopeCached(Long menuId, Set<Long> enabledMenuIds, Map<Long, SysMenu> menuById)
+    {
+        Long cur = menuId;
+        int guard = 0;
+        while (cur != null && cur > 0 && guard++ < 200)
+        {
+            if (enabledMenuIds.contains(cur))
+            {
+                return true;
+            }
+            SysMenu m = menuById.get(cur);
+            if (m == null)
+            {
+                m = menuMapper.selectMenuById(cur);
+                if (m != null && m.getMenuId() != null)
+                {
+                    menuById.put(m.getMenuId(), m);
+                }
+            }
+            if (m == null || m.getParentId() == null || m.getParentId() <= 0)
+            {
+                break;
+            }
+            cur = m.getParentId();
+        }
+        return false;
     }
 
     /**
@@ -815,6 +882,7 @@ public class SysMenuServiceImpl implements ISysMenuService
             return menus;
         }
         Map<Long, SysMenu> byId = new LinkedHashMap<>();
+        Map<Long, SysMenu> allMenuById = loadSysMenuByIdMap();
         for (SysMenu m : menus)
         {
             if (m != null && m.getMenuId() != null)
@@ -842,7 +910,15 @@ public class SysMenuServiceImpl implements ISysMenuService
             {
                 continue;
             }
-            SysMenu parent = menuMapper.selectMenuById(pid);
+            SysMenu parent = allMenuById.get(pid);
+            if (parent == null)
+            {
+                parent = menuMapper.selectMenuById(pid);
+                if (parent != null && parent.getMenuId() != null)
+                {
+                    allMenuById.put(parent.getMenuId(), parent);
+                }
+            }
             // 不向上挂平台管理目录，避免在租户授权树中露出平台节点
             if (parent != null && (parent.getIsPlatform() == null || !"1".equals(String.valueOf(parent.getIsPlatform()).trim())))
             {
