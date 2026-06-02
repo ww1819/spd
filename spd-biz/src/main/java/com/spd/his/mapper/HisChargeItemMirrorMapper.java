@@ -25,6 +25,10 @@ public interface HisChargeItemMirrorMapper
         @Param("chargeItemId") String chargeItemId,
         @Param("valueLevel") String valueLevel);
 
+    int updateValueLevelBatch(@Param("tenantId") String tenantId,
+        @Param("chargeItemIds") List<String> chargeItemIds,
+        @Param("valueLevel") String valueLevel);
+
     int markAllDeletedByTenant(@Param("tenantId") String tenantId);
 
     int insertOrUpdateBatch(@Param("rows") List<HisChargeItemMirror> rows);
