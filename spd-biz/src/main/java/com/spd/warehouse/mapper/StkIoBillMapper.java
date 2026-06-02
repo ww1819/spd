@@ -454,4 +454,7 @@ public interface StkIoBillMapper
 
     int clearDepPurchaseApplyOnDraftOutbillsByDepPurApplyId(@Param("depPurApplyId") Long depPurApplyId,
         @Param("updateBy") String updateBy);
+
+    /** 高值核销确认结算单：按前缀取最大单号 */
+    String selectMaxSettlementBillNo(@Param("prefix") String prefix, @Param("billType") Integer billType);
 }

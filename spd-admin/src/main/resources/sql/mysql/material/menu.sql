@@ -6702,6 +6702,138 @@ FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_men
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- 23.10 高值使用：HIS 计费镜像高值扫描核销（从患者收费查询剥离；GzHighChargeMirrorController）
+-- 【MCP aspt 库结构】sys_menu：path/component/query/is_frame/is_cache/is_platform/default_open_to_customer；无 del_flag/url
+-- 【MCP 现网】高值管理 menu_id=1064(path=gz)；高值使用 menu_id=1256(parent=1064)；住院高值扫码 1258 已占 order_num 1–2
+SET @gz_root := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_name = '高值管理' AND menu_type = 'M' AND path = 'gz'
+  ORDER BY menu_id LIMIT 1
+);
+/
+SET @gz_use_root := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_name = '高值使用' AND menu_type = 'M'
+    AND parent_id = COALESCE(@gz_root, parent_id)
+  ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3820, '高值扫描核销', @gz_use_root, 3, 'highChargeScan', 'gz/highChargeScan/index', NULL, 1, 0, 'C', '0', '0', 'gz:highChargeScan:list', 'scan', 'admin', NOW(), '1', NOW(), 'HIS计费镜像高值扫码核销；/gz/highChargeMirror/*', '0', '1'
+FROM DUAL WHERE @gz_use_root IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/highChargeScan/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3820))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+SET @gz_high_charge_scan_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/highChargeScan/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3821, '高值扫码查询', @gz_high_charge_scan_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:highChargeScan:scan', '#', 'admin', NOW(), '1', NOW(), 'POST /gz/highChargeMirror/mirror/scanHighBarcode', '0', '1'
+FROM DUAL WHERE @gz_high_charge_scan_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_high_charge_scan_menu AND perms = 'gz:highChargeScan:scan') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3821))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3822, '高值扫码核销', @gz_high_charge_scan_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:highChargeScan:apply', '#', 'admin', NOW(), '1', NOW(), 'POST /gz/highChargeMirror/mirror/applyHighConsume', '0', '1'
+FROM DUAL WHERE @gz_high_charge_scan_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_high_charge_scan_menu AND perms = 'gz:highChargeScan:apply') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3822))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+-- 原患者收费查询下的高值扫码权限已迁移至 gz:highChargeScan，停用旧按钮（MCP：3606 status 已为 1）
+UPDATE sys_menu
+SET status = '1',
+    remark = CONCAT(IFNULL(remark, ''), ' [已迁移至 gz:highChargeScan，/gz/highChargeMirror]'),
+    update_time = NOW()
+WHERE perms = 'department:patientCharge:processMirrorHigh' AND menu_type = 'F' AND status = '0';
+/
+-- sys_role_menu 仅 role_id+menu_id（MCP aspt）；拥有旧高值权限的角色授予新菜单
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT rm.role_id, @gz_high_charge_scan_menu
+FROM sys_role_menu rm
+INNER JOIN sys_menu oldm ON oldm.menu_id = rm.menu_id AND oldm.perms = 'department:patientCharge:processMirrorHigh'
+WHERE @gz_high_charge_scan_menu IS NOT NULL;
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT rm.role_id, nm.menu_id
+FROM sys_role_menu rm
+INNER JOIN sys_menu oldm ON oldm.menu_id = rm.menu_id AND oldm.perms = 'department:patientCharge:processMirrorHigh'
+INNER JOIN sys_menu nm ON nm.parent_id = @gz_high_charge_scan_menu AND nm.menu_type = 'F' AND nm.perms IN ('gz:highChargeScan:scan', 'gz:highChargeScan:apply')
+WHERE @gz_high_charge_scan_menu IS NOT NULL;
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3820);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3821);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3822);
+/
+-- 拥有患者收费查询或原计费消耗权限的角色，补全高值管理→高值使用→高值扫描核销菜单链（MCP aspt）
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT DISTINCT rm.role_id, tgt.menu_id
+FROM sys_role_menu rm
+INNER JOIN sys_menu src ON src.menu_id = rm.menu_id
+  AND src.perms IN (
+    'department:patientCharge:list',
+    'department:patientCharge:generateConsume',
+    'department:patientCharge:processMirrorHigh',
+    'department:patientCharge:processMirrorLow'
+  )
+INNER JOIN (
+  SELECT 1064 AS menu_id UNION ALL SELECT 1256 UNION ALL SELECT 3820 UNION ALL SELECT 3821 UNION ALL SELECT 3822
+) tgt ON 1 = 1;
+/
+
+-- 23.11 高值使用：高值核销确认（GzHighChargeConfirmController）
+SET @gz_use_root_confirm := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_name = '高值使用' AND menu_type = 'M'
+    AND parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '高值管理' AND menu_type = 'M' AND path = 'gz' ORDER BY menu_id LIMIT 1)
+  ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3850, '高值核销确认', @gz_use_root_confirm, 4, 'highChargeConfirm', 'gz/highChargeConfirm/index', NULL, 1, 0, 'C', '0', '0', 'gz:highChargeConfirm:list', 'form', 'admin', NOW(), '1', NOW(), '高值扫码核销明细月底确认；/gz/highChargeConfirm/*', '0', '1'
+FROM DUAL WHERE @gz_use_root_confirm IS NOT NULL
+  AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/highChargeConfirm/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3850))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+SET @gz_high_charge_confirm_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/highChargeConfirm/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3851, '高值核销确认查询', @gz_high_charge_confirm_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:highChargeConfirm:list', '#', 'admin', NOW(), '1', NOW(), 'GET /gz/highChargeConfirm/list', '0', '1'
+FROM DUAL WHERE @gz_high_charge_confirm_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_high_charge_confirm_menu AND perms = 'gz:highChargeConfirm:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3851))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3852, '高值消耗确认', @gz_high_charge_confirm_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:highChargeConfirm:confirm', '#', 'admin', NOW(), '1', NOW(), 'POST /gz/highChargeConfirm/confirm', '0', '1'
+FROM DUAL WHERE @gz_high_charge_confirm_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_high_charge_confirm_menu AND perms = 'gz:highChargeConfirm:confirm') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3852))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3850);
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3851);
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3852);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT rm.role_id, @gz_high_charge_confirm_menu
+FROM sys_role_menu rm
+INNER JOIN sys_menu m ON m.menu_id = rm.menu_id AND m.perms = 'gz:highChargeScan:list'
+WHERE @gz_high_charge_confirm_menu IS NOT NULL;
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT rm.role_id, nm.menu_id
+FROM sys_role_menu rm
+INNER JOIN sys_menu m ON m.menu_id = rm.menu_id AND m.perms = 'gz:highChargeScan:list'
+INNER JOIN sys_menu nm ON nm.parent_id = @gz_high_charge_confirm_menu AND nm.menu_type = 'F' AND nm.perms IN ('gz:highChargeConfirm:list', 'gz:highChargeConfirm:confirm')
+WHERE @gz_high_charge_confirm_menu IS NOT NULL;
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT DISTINCT rm.role_id, tgt.menu_id
+FROM sys_role_menu rm
+INNER JOIN sys_menu m ON m.menu_id = rm.menu_id AND m.perms IN (
+    'gz:highChargeScan:list',
+    'department:patientCharge:list'
+  )
+INNER JOIN (
+  SELECT 1064 AS menu_id UNION ALL SELECT 1256 UNION ALL SELECT 3850 UNION ALL SELECT 3851 UNION ALL SELECT 3852
+) tgt ON 1 = 1;
+/
+
 -- 23.7 盈亏单：add/edit/remove/audit（父：warehouse/profitLoss/index；扫描 FE∩BE 相对 menu.sql 曾缺 audit/edit/remove 三项）
 SET @profit_loss_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouse/profitLoss/index' ORDER BY menu_id DESC LIMIT 1);
 /

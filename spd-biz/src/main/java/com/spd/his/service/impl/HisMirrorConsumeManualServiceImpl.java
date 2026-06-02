@@ -50,6 +50,8 @@ import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisMirrorConsumeManualService;
+import com.spd.his.support.HisMirrorProcessUserMessages;
+import com.spd.his.support.HisMirrorValueLevelSupport;
 
 @Service
 public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManualService
@@ -108,8 +110,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (Exception e)
         {
-            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
-            throw new ServiceException(StringUtils.defaultIfBlank(e.getMessage(), "低值处理失败"));
+            String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, "低值核销失败");
+            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, msg);
+            throw new ServiceException(msg);
         }
     }
 
@@ -119,29 +122,29 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
         if (StringUtils.isEmpty(mirrorRowId))
         {
-            throw new ServiceException("请指定 mirrorRowId");
+            throw new ServiceException("请选择要核销的计费记录");
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
         if (!STATUS_PENDING.equals(line.processStatus))
         {
-            throw new ServiceException("仅「待处理」状态的镜像行可做低值一次性消耗，当前状态：" + line.processStatus);
+            throw new ServiceException(HisMirrorProcessUserMessages.lowPendingOnly(line.processStatus));
         }
         assertSourcesForLow(listDistinctSources(tenantId, visitKind, mirrorRowId));
         BigDecimal qty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
         if (qty.compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("计费数量为 0，无需生成消耗");
+            throw new ServiceException(HisMirrorProcessUserMessages.zeroQuantity());
         }
-        requireMirrorUnitPrice(line.unitPrice, mirrorRowId);
+        requireMirrorUnitPrice(line);
         List<AllocPiece> pieces = new ArrayList<>();
         int skipped = appendPiecesForLine(tenantId, line.fetchBatchId, visitKind, line.id, line.deptHisCode, line.chargeItemId,
-            qty, line.unitPrice, pieces);
+            line.itemName, qty, line.unitPrice, pieces);
         if (skipped > 0 || pieces.isEmpty())
         {
-            FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
-            FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
-            throwInsufficientStock("低值", dept, mat, line.unitPrice);
+            FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);
+            FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
+            throwInsufficientStock(mat);
         }
         Map<String, List<AllocPiece>> groups = new LinkedHashMap<>();
         for (AllocPiece p : pieces)
@@ -231,13 +234,13 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String codeRaw = body == null ? null : body.getInHospitalCode();
         if (StringUtils.isAnyEmpty(mirrorRowId, codeRaw))
         {
-            throw new ServiceException("请指定 mirrorRowId 与 inHospitalCode");
+            throw new ServiceException("请扫描院内码");
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
         if (!STATUS_PENDING.equals(line.processStatus) && !STATUS_PARTIAL.equals(line.processStatus))
         {
-            throw new ServiceException("仅「待处理」或「部分消耗」可做高值扫码，当前状态：" + line.processStatus);
+            throw new ServiceException(HisMirrorProcessUserMessages.highScanNotAllowed(line.processStatus));
         }
         assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         BigDecimal billQty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
@@ -245,16 +248,16 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         BigDecimal remaining = billQty.subtract(allocated);
         if (remaining.compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("该镜像行计费数量已全部消耗完毕");
+            throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
         }
-        requireMirrorUnitPrice(line.unitPrice, mirrorRowId);
-        FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
-        FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
-        assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, mat);
+        requireMirrorUnitPrice(line);
+        FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);
+        FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
+        assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, line.itemName, mat);
         GzDepInventory hit = findGzByNormalizedCode(tenantId, dept, mat, codeRaw, line.unitPrice);
         if (hit.getQty() == null || hit.getQty().compareTo(BigDecimal.ZERO) <= 0)
         {
-            throwInsufficientStock("高值", dept, mat, line.unitPrice);
+            throwInsufficientStock(mat);
         }
         BigDecimal maxApply = remaining.min(hit.getQty());
         HisMirrorHighScanResultVo vo = new HisMirrorHighScanResultVo();
@@ -288,8 +291,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (Exception e)
         {
-            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
-            throw new ServiceException(StringUtils.defaultIfBlank(e.getMessage(), "高值处理失败"));
+            String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, "高值核销失败");
+            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, msg);
+            throw new ServiceException(msg);
         }
     }
 
@@ -299,13 +303,13 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
         if (StringUtils.isEmpty(mirrorRowId) || body.getLines() == null || body.getLines().isEmpty())
         {
-            throw new ServiceException("请指定 mirrorRowId 与至少一行高值消耗明细");
+            throw new ServiceException("请添加高值消耗明细");
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
         if (!STATUS_PENDING.equals(line.processStatus) && !STATUS_PARTIAL.equals(line.processStatus))
         {
-            throw new ServiceException("镜像行状态不允许继续高值消耗：" + line.processStatus);
+            throw new ServiceException(HisMirrorProcessUserMessages.highScanNotAllowed(line.processStatus));
         }
         assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         BigDecimal billQty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
@@ -313,12 +317,12 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         BigDecimal remaining = billQty.subtract(allocatedBefore);
         if (remaining.compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("该镜像行计费数量已全部消耗完毕");
+            throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
         }
-        requireMirrorUnitPrice(line.unitPrice, mirrorRowId);
-        FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode, mirrorRowId);
-        FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, mirrorRowId);
-        assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, mat);
+        requireMirrorUnitPrice(line);
+        FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);
+        FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
+        assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, line.itemName, mat);
         Map<Long, BigDecimal> mergedByGz = new LinkedHashMap<>();
         for (HisMirrorHighApplyLine ln : body.getLines())
         {
@@ -347,26 +351,24 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             GzDepInventory gz = gzDepInventoryMapper.selectGzDepInventoryById(gzId);
             if (gz == null)
             {
-                throw new ServiceException("高值科室库存不存在：" + gzId);
+                throw new ServiceException(HisMirrorProcessUserMessages.stockInsufficient(productDisplayName(mat)));
             }
             if (gz.getDepartmentId() == null || !gz.getDepartmentId().equals(dept.getId()))
             {
-                throw new ServiceException("高值库存不属于当前计费镜像行对应科室，请检查院内码是否为本部门");
+                throw new ServiceException(HisMirrorProcessUserMessages.wrongDeptScan());
             }
             if (!unitPriceMatches(line.unitPrice, gz.getUnitPrice()))
             {
-                throw new ServiceException(String.format(
-                    "核销失败：所选高值库存单价 %s 与计费镜像单价 %s 不一致",
-                    formatUnitPrice(gz.getUnitPrice()), formatUnitPrice(line.unitPrice)));
+                throw new ServiceException(HisMirrorProcessUserMessages.priceMismatch(line.unitPrice, gz.getUnitPrice()));
             }
             BigDecimal gq = gz.getQty() == null ? BigDecimal.ZERO : gz.getQty();
             if (gq.compareTo(lineQty) < 0)
             {
-                throwInsufficientStock("高值", dept, mat, line.unitPrice);
+                throwInsufficientStock(mat);
             }
             if (gz.getMaterialId() == null || !gz.getMaterialId().equals(mat.getId()))
             {
-                throw new ServiceException("扫码耗材与计费项目对照的耗材不一致");
+                throw new ServiceException(HisMirrorProcessUserMessages.materialMismatch());
             }
             DeptBatchConsumeEntry e = buildHighEntryFromGz(gz, lineQty, mirrorRowId, dept.getId(), createBy, mat);
             entries.add(e);
@@ -377,7 +379,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         if (applySum.compareTo(remaining) > 0)
         {
-            throw new ServiceException(String.format("本次消耗合计 %s 超过镜像剩余计费数量 %s", applySum, remaining));
+            throw new ServiceException(HisMirrorProcessUserMessages.qtyExceedRemaining());
         }
         DeptBatchConsume bill = new DeptBatchConsume();
         bill.setDepartmentId(dept.getId());
@@ -494,15 +496,15 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             String t = StringUtils.trimToEmpty(s);
             if (LEGACY_BATCH.equalsIgnoreCase(t))
             {
-                throw new ServiceException("该镜像行已由历史「按批次」生成过消耗，不能改为低值手动处理。");
+                throw new ServiceException(HisMirrorProcessUserMessages.legacyBatchLow());
             }
             if (BILL_HIGH.equalsIgnoreCase(t))
             {
-                throw new ServiceException("该镜像行已走高值扫码路径，请继续在「高值处理」中完成计费数量。");
+                throw new ServiceException(HisMirrorProcessUserMessages.alreadyHighPath());
             }
             if (BILL_LOW.equalsIgnoreCase(t))
             {
-                throw new ServiceException("该镜像行已存在低值消耗记录。");
+                throw new ServiceException(HisMirrorProcessUserMessages.alreadyLowConsumed());
             }
         }
     }
@@ -518,11 +520,11 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             String t = StringUtils.trimToEmpty(s);
             if (LEGACY_BATCH.equalsIgnoreCase(t))
             {
-                throw new ServiceException("该镜像行已由历史「按批次」生成过消耗，不能再走高值扫码路径。");
+                throw new ServiceException(HisMirrorProcessUserMessages.legacyBatchHigh());
             }
             if (BILL_LOW.equalsIgnoreCase(t))
             {
-                throw new ServiceException("该镜像行已按低值一次性消耗，不能再走高值扫码。");
+                throw new ServiceException(HisMirrorProcessUserMessages.alreadyLowCannotHigh());
             }
         }
     }
@@ -533,6 +535,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String fetchBatchId;
         String deptHisCode;
         String chargeItemId;
+        String itemName;
         BigDecimal quantity;
         String processStatus;
         BigDecimal unitPrice;
@@ -547,11 +550,12 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
             if (r == null)
             {
-                throw new ServiceException("住院镜像行不存在");
+                throw new ServiceException(HisMirrorProcessUserMessages.chargeNotFound(true));
             }
             ml.fetchBatchId = r.getFetchBatchId();
             ml.deptHisCode = r.getDeptCode();
             ml.chargeItemId = r.getChargeItemId();
+            ml.itemName = r.getItemName();
             ml.quantity = r.getQuantity();
             ml.unitPrice = r.getUnitPrice();
             ml.processStatus = r.getProcessStatus();
@@ -560,48 +564,49 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
         if (r == null)
         {
-            throw new ServiceException("门诊镜像行不存在");
+            throw new ServiceException(HisMirrorProcessUserMessages.chargeNotFound(false));
         }
         ml.fetchBatchId = r.getFetchBatchId();
         ml.deptHisCode = r.getClinicCode();
         ml.chargeItemId = r.getChargeItemId();
+        ml.itemName = r.getItemName();
         ml.quantity = r.getQuantity();
         ml.unitPrice = r.getUnitPrice();
         ml.processStatus = r.getProcessStatus();
         return ml;
     }
 
-    private FdDepartment resolveDepartment(String tenantId, String deptHisCode, String mirrorRowId)
+    private FdDepartment resolveDepartment(String tenantId, String deptHisCode)
     {
         if (StringUtils.isBlank(deptHisCode))
         {
-            throw new ServiceException("镜像行「" + mirrorRowId + "」缺少科室/就诊对照编码");
+            throw new ServiceException(HisMirrorProcessUserMessages.deptNotMapped());
         }
         FdDepartment dept = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, HisMatchTextUtils.normalizeMatchKey(deptHisCode));
         if (dept == null || dept.getId() == null)
         {
-            throw new ServiceException("镜像行「" + mirrorRowId + "」无法匹配科室（HIS编码）");
+            throw new ServiceException(HisMirrorProcessUserMessages.deptNotMapped());
         }
         return dept;
     }
 
-    private FdMaterial resolveMaterial(String tenantId, String chargeItemId, String mirrorRowId)
+    private FdMaterial resolveMaterial(String tenantId, String chargeItemId, String itemName)
     {
         if (StringUtils.isBlank(chargeItemId))
         {
-            throw new ServiceException("镜像行「" + mirrorRowId + "」缺少 charge_item_id");
+            throw new ServiceException(HisMirrorProcessUserMessages.missingChargeItem());
         }
         String normalizedChargeItemId = HisMatchTextUtils.normalizeMatchKey(chargeItemId);
         FdMaterial mat = fdMaterialMapper.selectFdMaterialByTenantAndHisChargeItemId(
             tenantId, normalizedChargeItemId);
         if (log.isInfoEnabled())
         {
-            log.info("HIS镜像耗材匹配 tenantId={}, mirrorRowId={}, chargeItemIdRaw={}, chargeItemIdNorm={}, materialId={}",
-                tenantId, mirrorRowId, chargeItemId, normalizedChargeItemId, mat == null ? null : mat.getId());
+            log.info("HIS计费耗材对照 tenantId={}, chargeItemIdRaw={}, chargeItemIdNorm={}, materialId={}",
+                tenantId, chargeItemId, normalizedChargeItemId, mat == null ? null : mat.getId());
         }
         if (mat == null || mat.getId() == null)
         {
-            throw new ServiceException("镜像行「" + mirrorRowId + "」无法匹配耗材档案（charge_item_id）");
+            throw new ServiceException(HisMirrorProcessUserMessages.notMapped(chargeItemId, itemName));
         }
         return mat;
     }
@@ -616,77 +621,118 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         List<GzDepInventory> list = gzDepInventoryMapper.selectGzDepInventoryList(probe);
         if (list == null || list.isEmpty())
         {
-            throwInsufficientStock("高值", dept, mat, mirrorUnitPrice);
-        }
-        List<GzDepInventory> atMirrorPrice = list.stream()
-            .filter(g -> g != null && unitPriceMatches(mirrorUnitPrice, g.getUnitPrice()))
-            .collect(Collectors.toList());
-        if (atMirrorPrice.isEmpty())
-        {
-            throwInsufficientStock("高值", dept, mat, mirrorUnitPrice);
+            throw new ServiceException(HisMirrorProcessUserMessages.scanCodeNotFound(productDisplayName(mat)));
         }
         String nScan = HisMatchTextUtils.normalizeMatchKey(scanCode);
-        for (GzDepInventory g : atMirrorPrice)
+        GzDepInventory hit = null;
+        for (GzDepInventory g : list)
         {
-            if (StringUtils.isBlank(g.getInHospitalCode()))
+            if (g != null && matchesGzScanCode(g, nScan))
             {
-                continue;
-            }
-            if (HisMatchTextUtils.normalizeMatchKey(g.getInHospitalCode()).equals(nScan))
-            {
-                return g;
+                hit = g;
+                break;
             }
         }
-        throw new ServiceException(String.format(
-            "未匹配到单价为 %s 的院内码对应高值库存（科室：%s，产品：%s）",
-            formatUnitPrice(mirrorUnitPrice), deptDisplayName(dept), productDisplayName(mat)));
+        if (hit == null)
+        {
+            GzDepInventory probeByCode = new GzDepInventory();
+            probeByCode.setDepartmentId(dept.getId());
+            probeByCode.setInHospitalCode(scanCode);
+            probeByCode.setShowZeroStock(Boolean.TRUE);
+            List<GzDepInventory> byCode = gzDepInventoryMapper.selectGzDepInventoryList(probeByCode);
+            if (byCode != null)
+            {
+                for (GzDepInventory g : byCode)
+                {
+                    if (g != null && matchesGzScanCode(g, nScan))
+                    {
+                        throw new ServiceException(HisMirrorProcessUserMessages.materialMismatch());
+                    }
+                }
+            }
+            throw new ServiceException(HisMirrorProcessUserMessages.scanCodeNotFound(productDisplayName(mat)));
+        }
+        if (!unitPriceMatches(mirrorUnitPrice, hit.getUnitPrice()))
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.priceMismatch(mirrorUnitPrice, hit.getUnitPrice()));
+        }
+        if (hit.getQty() == null || hit.getQty().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throwInsufficientStock(mat);
+        }
+        return hit;
     }
 
-    private void assertChargeItemValueLevelForLow(String tenantId, String chargeItemId, FdMaterial mat)
+    /** 院内码 / 主条码 / 辅条码 任一匹配即视为扫中 */
+    private static boolean matchesGzScanCode(GzDepInventory g, String normalizedScan)
+    {
+        if (g == null || StringUtils.isBlank(normalizedScan))
+        {
+            return false;
+        }
+        if (codeKeyEquals(g.getInHospitalCode(), normalizedScan))
+        {
+            return true;
+        }
+        if (codeKeyEquals(g.getMasterBarcode(), normalizedScan))
+        {
+            return true;
+        }
+        return codeKeyEquals(g.getSecondaryBarcode(), normalizedScan);
+    }
+
+    private static boolean codeKeyEquals(String stored, String normalizedScan)
+    {
+        return StringUtils.isNotBlank(stored)
+            && HisMatchTextUtils.normalizeMatchKey(stored).equals(normalizedScan);
+    }
+
+    private void assertChargeItemValueLevelForLow(String tenantId, String chargeItemId, String itemName, FdMaterial mat)
     {
         String level = resolveChargeItemValueLevel(tenantId, chargeItemId, mat);
-        if ("1".equals(level))
+        if (HisMirrorValueLevelSupport.isUnknown(level))
         {
-            throw new ServiceException("收费项目为高值属性，请使用高值扫码处理");
+            throw new ServiceException(HisMirrorProcessUserMessages.valueLevelUnknown(chargeItemId, itemName));
+        }
+        if (HisMirrorValueLevelSupport.isHighValue(level))
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.valueLevelHigh(chargeItemId, itemName));
         }
     }
 
-    private void assertChargeItemValueLevelForHigh(String tenantId, String chargeItemId, FdMaterial mat)
+    private void assertChargeItemValueLevelForHigh(String tenantId, String chargeItemId, String itemName, FdMaterial mat)
     {
         String level = resolveChargeItemValueLevel(tenantId, chargeItemId, mat);
-        if (!"1".equals(level))
+        if (HisMirrorValueLevelSupport.isUnknown(level))
         {
-            throw new ServiceException("收费项目为低值属性，请使用低值自动处理");
+            throw new ServiceException(HisMirrorProcessUserMessages.valueLevelUnknown(chargeItemId, itemName));
+        }
+        if (HisMirrorValueLevelSupport.isLowValue(level))
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.valueLevelLow(chargeItemId, itemName));
         }
     }
 
     private String resolveChargeItemValueLevel(String tenantId, String chargeItemId, FdMaterial mat)
     {
-        if (StringUtils.isNotBlank(chargeItemId))
+        if (mat != null)
         {
-            HisChargeItemMirror ci = hisChargeItemMirrorMapper.selectByTenantAndChargeItemId(tenantId, chargeItemId.trim());
-            if (ci != null && StringUtils.isNotBlank(ci.getValueLevel()))
-            {
-                return ci.getValueLevel().trim();
-            }
+            return HisMirrorValueLevelSupport.resolveFromMaterial(mat);
         }
-        if (mat != null && "1".equals(StringUtils.trimToEmpty(mat.getIsGz())))
-        {
-            return "1";
-        }
-        return "2";
+        return HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, chargeItemId);
     }
 
     private int appendPiecesForLine(String tenantId, String fetchBatchId, String visitKind, String mirrorRowId,
-        String deptHisCode, String chargeItemId, BigDecimal qty, BigDecimal mirrorUnitPrice, List<AllocPiece> out)
+        String deptHisCode, String chargeItemId, String itemName, BigDecimal qty, BigDecimal mirrorUnitPrice,
+        List<AllocPiece> out)
     {
         if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0)
         {
             return 1;
         }
-        FdDepartment dept = resolveDepartment(tenantId, deptHisCode, mirrorRowId);
-        FdMaterial mat = resolveMaterial(tenantId, chargeItemId, mirrorRowId);
-        assertChargeItemValueLevelForLow(tenantId, chargeItemId, mat);
+        FdDepartment dept = resolveDepartment(tenantId, deptHisCode);
+        FdMaterial mat = resolveMaterial(tenantId, chargeItemId, itemName);
+        assertChargeItemValueLevelForLow(tenantId, chargeItemId, itemName, mat);
         out.addAll(allocateLine(tenantId, dept, mat, qty, mirrorUnitPrice, mirrorRowId, visitKind, fetchBatchId));
         return 0;
     }
@@ -711,7 +757,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             .collect(Collectors.toList());
         if (atMirrorPrice.isEmpty())
         {
-            throwInsufficientStock("低值", dept, mat, mirrorUnitPrice);
+            throwInsufficientStock(mat);
         }
         atMirrorPrice.sort(Comparator
             .comparing(StkDepInventory::getWarehouseDate, Comparator.nullsLast(Date::compareTo))
@@ -729,7 +775,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             .anyMatch(r -> r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
         if (!hasPositive)
         {
-            throwInsufficientStock("低值", dept, mat, mirrorUnitPrice);
+            throwInsufficientStock(mat);
         }
         final Long whKey = chosenWarehouseId;
         List<StkDepInventory> filtered = atMirrorPrice.stream()
@@ -764,16 +810,18 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         if (remain.compareTo(BigDecimal.ZERO) > 0)
         {
-            throwInsufficientStock("低值", dept, mat, mirrorUnitPrice);
+            throwInsufficientStock(mat);
         }
         return pieces;
     }
 
-    private static void requireMirrorUnitPrice(BigDecimal mirrorUnitPrice, String mirrorRowId)
+    private static void requireMirrorUnitPrice(MirrorLine line)
     {
-        if (mirrorUnitPrice == null)
+        if (line == null || line.unitPrice == null)
         {
-            throw new ServiceException("镜像行「" + mirrorRowId + "」缺少单价，无法按单价匹配库存核销");
+            throw new ServiceException(HisMirrorProcessUserMessages.noUnitPrice(
+                line == null ? null : line.chargeItemId,
+                line == null ? null : line.itemName));
         }
     }
 
@@ -788,20 +836,6 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             .compareTo(stockUnitPrice.setScale(4, RoundingMode.HALF_UP)) == 0;
     }
 
-    private static String formatUnitPrice(BigDecimal price)
-    {
-        return price == null ? "?" : price.setScale(4, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
-    }
-
-    private static String deptDisplayName(FdDepartment dept)
-    {
-        if (dept == null)
-        {
-            return "未知科室";
-        }
-        return StringUtils.isNotBlank(dept.getName()) ? dept.getName().trim() : String.valueOf(dept.getId());
-    }
-
     private static String productDisplayName(FdMaterial mat)
     {
         if (mat == null)
@@ -811,11 +845,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         return StringUtils.isNotBlank(mat.getName()) ? mat.getName().trim() : String.valueOf(mat.getId());
     }
 
-    private static void throwInsufficientStock(String valueLevelLabel, FdDepartment dept, FdMaterial mat,
-        BigDecimal mirrorUnitPrice)
+    private static void throwInsufficientStock(FdMaterial mat)
     {
-        throw new ServiceException(String.format("核销失败：%s 单价为 %s 的 %s %s库存不足",
-            deptDisplayName(dept), formatUnitPrice(mirrorUnitPrice), productDisplayName(mat), valueLevelLabel));
+        throw new ServiceException(HisMirrorProcessUserMessages.stockInsufficient(productDisplayName(mat)));
     }
 
     private DeptBatchConsumeEntry buildLowConsumeEntry(AllocPiece p, Long departmentId, String createBy)

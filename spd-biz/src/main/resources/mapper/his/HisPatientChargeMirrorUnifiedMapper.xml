@@ -34,6 +34,28 @@
         </if>
     </sql>
 
+    <sql id="unifiedMaterialJoin">
+        left join fd_material fm on fm.tenant_id = m.tenant_id
+            and trim(fm.his_charge_item_id) = trim(m.charge_item_id)
+            and (fm.del_flag = 0 or fm.del_flag is null)
+    </sql>
+
+    <sql id="resolvedValueLevelExpr">
+        case when fm.is_gz = '1' then '1' when fm.is_gz = '2' then '2' else '0' end
+    </sql>
+
+    <sql id="unifiedSelectColumns">
+        m.id, m.tenant_id, m.visit_kind, m.fetch_batch_id,
+        m.his_inpatient_charge_id, m.his_outpatient_charge_id, m.his_inpatient_charge_id_tf, m.his_outpatient_charge_id_tf,
+        m.patient_id, m.patient_name, m.inpatient_no, m.outpatient_no,
+        m.dept_code, m.dept_name, m.clinic_code, m.clinic_name,
+        m.doctor_id, m.doctor_name, m.charge_item_id, m.item_name, m.spec_model, m.batch_no, m.expire_date,
+        m.use_date, m.charge_date_display, m.charge_at,
+        m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
+        m.process_status, m.process_type, m.process_time, m.process_by, m.process_party, m.process_situation,
+        m.create_by, m.create_time, m.update_by, m.update_time
+    </sql>
+
     <sql id="unifiedListWhere">
         where m.tenant_id = #{tenantId}
         <if test="visitKind != null and visitKind != ''"> and m.visit_kind = #{visitKind}</if>
@@ -102,7 +124,11 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="valueLevel != null and valueLevel != ''"> and ifnull(m.value_level, '') = #{valueLevel}</if>
+        <if test="valueLevel != null and valueLevel != ''"> and (<include refid="resolvedValueLevelExpr"/>) = #{valueLevel}</if>
+        <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
+            and (<include refid="resolvedValueLevelExpr"/>) in
+            <foreach collection="valueLevelIn" item="vl" open="(" separator="," close=")">#{vl}</foreach>
+        </if>
         <if test='"INPATIENT".equals(visitKind) and deptNameLike != null'>
             and m.dept_name like concat('%', #{deptNameLike}, '%')
         </if>
@@ -296,12 +322,16 @@
     <select id="countList" resultType="long">
         select count(*)
         from his_patient_charge_mirror_unified m
+        <include refid="unifiedMaterialJoin"/>
         <include refid="unifiedListWhere"/>
     </select>
 
     <select id="selectList" resultMap="UnifiedResult">
-        select m.*
+        select
+            <include refid="unifiedSelectColumns"/>,
+            <include refid="resolvedValueLevelExpr"/> as value_level
         from his_patient_charge_mirror_unified m
+        <include refid="unifiedMaterialJoin"/>
         <include refid="unifiedListWhere"/>
         order by m.charge_at desc, m.id desc
     </select>

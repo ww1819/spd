@@ -58,6 +58,7 @@ import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.mapper.FdDepartmentMapper;
+import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.constant.HisMirrorProcessConstants;
@@ -73,6 +74,7 @@ import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
 import com.spd.his.support.HisInternalRequestContext;
+import com.spd.his.support.HisMirrorValueLevelSupport;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
 import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.common.core.domain.entity.SysUser;
@@ -126,6 +128,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private FdDepartmentMapper fdDepartmentMapper;
+
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
 
     @Autowired
     private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
@@ -322,7 +327,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             }
             for (HisInpatientChargeMirror row : pending)
             {
-                if (row == null || !isLowValueMirrorRow(row.getValueLevel()))
+                if (row == null)
+                {
+                    continue;
+                }
+                String level = HisMirrorValueLevelSupport.resolveFromMaterial(
+                    fdMaterialMapper, tenantId, row.getChargeItemId());
+                if (!isLowValueMirrorRow(level))
                 {
                     continue;
                 }
@@ -349,7 +360,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             }
             for (HisOutpatientChargeMirror row : pending)
             {
-                if (row == null || !isLowValueMirrorRow(row.getValueLevel()))
+                if (row == null)
+                {
+                    continue;
+                }
+                String level = HisMirrorValueLevelSupport.resolveFromMaterial(
+                    fdMaterialMapper, tenantId, row.getChargeItemId());
+                if (!isLowValueMirrorRow(level))
                 {
                     continue;
                 }
@@ -426,8 +443,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     private static boolean isLowValueMirrorRow(String valueLevel)
     {
-        String v = StringUtils.trimToEmpty(valueLevel);
-        return v.isEmpty() || "2".equals(v);
+        return HisMirrorValueLevelSupport.isLowValue(valueLevel);
     }
 
     /**
@@ -521,6 +537,81 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
+        UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
+        List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
+        for (HisPatientChargeMirrorUnified u : slice.rows)
+        {
+            out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
+        }
+        return wrapAsPage(out, slice);
+    }
+
+    @Override
+    public List<HisInpatientChargeMirror> selectHighChargeInpatientMirrorList(HisInpatientChargeMirror query)
+    {
+        if (query == null || StringUtils.isEmpty(query.getTenantId()))
+        {
+            query = query == null ? new HisInpatientChargeMirror() : query;
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
+        String customerId = query.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
+        }
+        ensureUnifiedMirrorBackfill(customerId);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
+        HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
+        UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
+        List<HisInpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
+        for (HisPatientChargeMirrorUnified u : slice.rows)
+        {
+            out.add(HisPatientChargeMirrorUnifiedSupport.toInpatientMirror(u));
+        }
+        return wrapAsPage(out, slice);
+    }
+
+    @Override
+    public List<HisOutpatientChargeMirror> selectHighChargeOutpatientMirrorList(HisOutpatientChargeMirror query)
+    {
+        if (query == null || StringUtils.isEmpty(query.getTenantId()))
+        {
+            query = query == null ? new HisOutpatientChargeMirror() : query;
+            query.setTenantId(SecurityUtils.getCustomerId());
+        }
+        String customerId = query.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
+        }
+        ensureUnifiedMirrorBackfill(customerId);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
+        HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
+        UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
+        List<HisOutpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
+        for (HisPatientChargeMirrorUnified u : slice.rows)
+        {
+            out.add(HisPatientChargeMirrorUnifiedSupport.toOutpatientMirror(u));
+        }
+        return wrapAsPage(out, slice);
+    }
+
+    @Override
+    public List<HisPatientChargeDetailRow> selectHighChargeAllMirrorList(HisPatientChargeAllQuery query)
+    {
+        HisPatientChargeAllQuery q = query == null ? new HisPatientChargeAllQuery() : query;
+        if (StringUtils.isEmpty(q.getTenantId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        String customerId = q.getTenantId();
+        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
+        {
+            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
+        }
+        ensureUnifiedMirrorBackfill(customerId);
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
+        HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)

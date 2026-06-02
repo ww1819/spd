@@ -1401,6 +1401,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and tenant_id = #{scopedTenantId}
     </select>
 
+    <select id="selectMaxSettlementBillNo" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(bill_no) from stk_io_bill
+        where bill_no like concat(#{prefix}, '%')
+        and bill_type = #{billType}
+        and tenant_id = #{scopedTenantId}
+    </select>
+
     <select id="selectTHMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill

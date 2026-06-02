@@ -335,4 +335,9 @@ public interface IStkIoBillService
      * 首页科室使用图：按审核月聚合全年出退库（租户级，不按当前用户科室数据范围过滤）
      */
     List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(Date beginDate, Date endDate);
+
+    /**
+     * 高值核销确认：写入 G-RK/G-CK 已审核单据 + 仓库流水（hc_ck_flow），不写 stk_inventory / 科室库存。
+     */
+    Long insertHighValueSettlementBill(StkIoBill bill, String billNoPrefix);
 }

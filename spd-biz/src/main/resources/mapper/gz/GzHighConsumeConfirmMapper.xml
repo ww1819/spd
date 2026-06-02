@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzHighConsumeConfirmMapper">
+
+    <sql id="confirmListFrom">
+        from his_mirror_consume_link l
+        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
+            and h.tenant_id = l.tenant_id
+            and ifnull(h.del_flag, 0) = 0
+            and ifnull(h.reverse_flag, 0) = 0
+            and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
+            and h.consume_bill_status = 2
+        inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
+            and e.tenant_id = l.tenant_id
+            and ifnull(e.del_flag, 0) = 0
+        left join fd_department d on d.id = h.department_id
+        left join fd_supplier sup on sup.id = cast(nullif(trim(e.supplier_id), '') as unsigned) and sup.tenant_id = l.tenant_id
+        left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
+        left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
+        left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
+        where l.tenant_id = #{tenantId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.gz_dep_inventory_id is not null
+    </sql>
+
+    <select id="selectConfirmList" resultType="com.spd.gz.domain.dto.GzHighChargeConfirmRowVo">
+        select
+            l.id as linkId,
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            l.alloc_qty as allocQty,
+            l.in_hospital_code as inHospitalCode,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            l.confirm_id as confirmId,
+            c.confirm_no as confirmNo,
+            coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeAuditTime,
+            h.consume_bill_no as consumeBillNo,
+            e.id as consumeEntryId,
+            e.material_id as materialId,
+            e.material_name as materialName,
+            e.unit_price as unitPrice,
+            coalesce(l.alloc_qty, e.qty) as entryQty,
+            e.amt as amt,
+            e.supplier_id as supplierId,
+            sup.name as supplierName,
+            e.batch_no as batchNo,
+            h.department_id as departmentId,
+            d.name as departmentName,
+            coalesce(inp.patient_name, outp.patient_name) as patientName,
+            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
+            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
+            coalesce(inp.item_name, outp.item_name) as itemName
+        <include refid="confirmListFrom"/>
+        <if test="departmentId != null">
+            and h.department_id = #{departmentId}
+        </if>
+        <if test="confirmStatus != null and confirmStatus != ''">
+            and ifnull(l.confirm_status, 0) = #{confirmStatus}
+        </if>
+        <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
+            and coalesce(h.audit_date, h.create_time, h.consume_bill_date) &gt;= #{beginConsumeAuditTime}
+        </if>
+        <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
+            and coalesce(h.audit_date, h.create_time, h.consume_bill_date) &lt;= #{endConsumeAuditTime}
+        </if>
+        <if test="patientName != null and patientName != ''">
+            and coalesce(inp.patient_name, outp.patient_name) like concat('%', #{patientName}, '%')
+        </if>
+        <if test="visitNo != null and visitNo != ''">
+            and coalesce(inp.inpatient_no, outp.outpatient_no) like concat('%', #{visitNo}, '%')
+        </if>
+        <if test="chargeItemId != null and chargeItemId != ''">
+            and coalesce(inp.charge_item_id, outp.charge_item_id) like concat('%', #{chargeItemId}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            and e.material_name like concat('%', #{materialName}, '%')
+        </if>
+        order by consumeAuditTime desc, l.id desc
+    </select>
+
+    <select id="selectConfirmLineDetailsByLinkIds" resultType="com.spd.gz.domain.dto.GzHighChargeConfirmRowVo">
+        select
+            l.id as linkId,
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            l.alloc_qty as allocQty,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeAuditTime,
+            e.id as consumeEntryId,
+            e.material_id as materialId,
+            e.material_name as materialName,
+            e.unit_price as unitPrice,
+            coalesce(l.alloc_qty, e.qty) as entryQty,
+            e.amt as amt,
+            e.supplier_id as supplierId,
+            sup.name as supplierName,
+            e.batch_no as batchNo,
+            e.batch_number as batchNumber,
+            e.begin_time as beginTime,
+            e.end_time as endTime,
+            e.main_barcode as mainBarcode,
+            e.sub_barcode as subBarcode,
+            e.material_speci as materialSpeci,
+            e.material_model as materialModel,
+            e.factory_id as factoryId,
+            h.department_id as departmentId
+        from his_mirror_consume_link l
+        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
+            and h.tenant_id = l.tenant_id
+            and ifnull(h.del_flag, 0) = 0
+            and ifnull(h.reverse_flag, 0) = 0
+            and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
+            and h.consume_bill_status = 2
+        inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
+            and e.tenant_id = l.tenant_id
+            and ifnull(e.del_flag, 0) = 0
+        left join fd_supplier sup on sup.id = cast(nullif(trim(e.supplier_id), '') as unsigned) and sup.tenant_id = l.tenant_id
+        where l.tenant_id = #{tenantId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.gz_dep_inventory_id is not null
+          and l.id in
+        <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="insertConfirm">
+        insert into gz_high_consume_confirm (
+            id, tenant_id, confirm_no, department_id, warehouse_id,
+            confirm_time, confirm_by, period_begin, period_end, remark,
+            del_flag, create_by, create_time
+        ) values (
+            #{id}, #{tenantId}, #{confirmNo}, #{departmentId}, #{warehouseId},
+            #{confirmTime}, #{confirmBy}, #{periodBegin}, #{periodEnd}, #{remark},
+            ifnull(#{delFlag}, 0), #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <insert id="insertConfirmLineBatch">
+        insert into gz_high_consume_confirm_line (
+            id, tenant_id, confirm_id, consume_link_id, dept_batch_consume_entry_id, del_flag, create_time
+        ) values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.confirmId}, #{e.consumeLinkId}, #{e.deptBatchConsumeEntryId},
+             ifnull(#{e.delFlag}, 0), #{e.createTime})
+        </foreach>
+    </insert>
+
+    <insert id="insertConfirmBillBatch">
+        insert into gz_high_consume_confirm_bill (
+            id, tenant_id, confirm_id, supplier_id, bill_type, stk_io_bill_id, bill_no, del_flag, create_time
+        ) values
+        <foreach collection="list" item="e" separator=",">
+            (#{e.id}, #{e.tenantId}, #{e.confirmId}, #{e.supplierId}, #{e.billType}, #{e.stkIoBillId}, #{e.billNo},
+             ifnull(#{e.delFlag}, 0), #{e.createTime})
+        </foreach>
+    </insert>
+
+    <update id="updateLinkConfirmStatus">
+        update his_mirror_consume_link
+        set confirm_status = 1,
+            confirm_id = #{confirmId},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and ifnull(del_flag, 0) = 0
+          and ifnull(confirm_status, 0) = 0
+          and id in
+        <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectMaxConfirmNo" resultType="String">
+        select max(confirm_no) from gz_high_consume_confirm
+        where tenant_id = #{tenantId}
+          and confirm_no like concat(#{datePrefix}, '%')
+          and ifnull(del_flag, 0) = 0
+    </select>
+
+    <select id="selectBillsByConfirmId" resultType="com.spd.gz.domain.GzHighConsumeConfirmBill">
+        select
+            id, tenant_id as tenantId, confirm_id as confirmId, supplier_id as supplierId,
+            bill_type as billType, stk_io_bill_id as stkIoBillId, bill_no as billNo
+        from gz_high_consume_confirm_bill
+        where tenant_id = #{tenantId}
+          and confirm_id = #{confirmId}
+          and ifnull(del_flag, 0) = 0
+        order by supplier_id, bill_type
+    </select>
+</mapper>

@@ -2834,6 +2834,8 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '高值院内码快照',
   `returned_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '计费退费已返还数量累计',
   `refundable_remaining_qty` decimal(18,6) DEFAULT NULL COMMENT '尚可返还数量(=alloc-已返，应用维护)',
+  `confirm_status` tinyint NOT NULL DEFAULT 0 COMMENT '高值消耗确认 0未确认 1已确认',
+  `confirm_id` varchar(36) DEFAULT NULL COMMENT 'gz_high_consume_confirm.id',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -2845,8 +2847,61 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   KEY `idx_hmcl_consume` (`dept_batch_consume_id`),
   KEY `idx_hmcl_fetch` (`tenant_id`,`fetch_batch_id`),
   KEY `idx_hmcl_dep_inv` (`tenant_id`,`dep_inventory_id`),
-  KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`)
+  KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`),
+  KEY `idx_hmcl_confirm` (`tenant_id`,`confirm_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（含退费返还累计与库存行快照）';
+/
+
+-- 高值扫码核销消耗确认批次（月底科室确认，生成结算用 G-RK/G-CK 单据）
+CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `confirm_no` varchar(32) NOT NULL COMMENT '确认批次号 GZQRyyyyMMdd00001',
+  `department_id` bigint NOT NULL COMMENT '科室ID',
+  `warehouse_id` bigint NOT NULL COMMENT '高值仓库ID',
+  `confirm_time` datetime NOT NULL COMMENT '确认时间',
+  `confirm_by` varchar(64) DEFAULT NULL COMMENT '确认人',
+  `period_begin` datetime DEFAULT NULL COMMENT '勾选明细核销时间范围起',
+  `period_end` datetime DEFAULT NULL COMMENT '勾选明细核销时间范围止',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_gz_hcc_confirm_no` (`tenant_id`,`confirm_no`),
+  KEY `idx_gz_hcc_dept` (`tenant_id`,`department_id`,`confirm_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值消耗确认批次';
+/
+
+CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_line` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `confirm_id` varchar(36) NOT NULL COMMENT 'gz_high_consume_confirm.id',
+  `consume_link_id` varchar(36) NOT NULL COMMENT 'his_mirror_consume_link.id',
+  `dept_batch_consume_entry_id` bigint NOT NULL COMMENT '消耗明细ID',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_gz_hccl_link` (`consume_link_id`),
+  KEY `idx_gz_hccl_confirm` (`tenant_id`,`confirm_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值消耗确认明细行';
+/
+
+CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_bill` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `confirm_id` varchar(36) NOT NULL COMMENT 'gz_high_consume_confirm.id',
+  `supplier_id` varchar(128) DEFAULT NULL COMMENT '供应商ID',
+  `bill_type` int NOT NULL COMMENT '101入库 201出库',
+  `stk_io_bill_id` bigint NOT NULL COMMENT 'stk_io_bill.id',
+  `bill_no` varchar(64) NOT NULL COMMENT '单号 G-RK/G-CK',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_gz_hccb_confirm` (`tenant_id`,`confirm_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值消耗确认生成的结算单据';
 /
 
 -- 租户级业务开关（如衡水三院低值计费自动消耗等；主键UUID7）

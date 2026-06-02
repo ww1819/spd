@@ -37,7 +37,7 @@ public class HisPatientChargeMirrorExportVo
     @Excel(name = "规格")
     private String specModel;
 
-    @Excel(name = "高低值类型", readConverterExp = "1=高值,2=低值")
+    @Excel(name = "高低值类型", readConverterExp = "1=高值,2=低值,0=未识别")
     private String valueLevel;
 
     @Excel(name = "计费时间", width = 20, dateFormat = "yyyy-MM-dd HH:mm:ss")

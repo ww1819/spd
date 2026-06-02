@@ -23,10 +23,6 @@ import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
-import com.spd.his.domain.dto.HisMirrorHighApplyBody;
-import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
-import com.spd.his.domain.dto.HisMirrorHighScanBody;
-import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.domain.dto.HisMirrorManualRowBody;
@@ -42,7 +38,7 @@ import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.service.IHisPatientChargeService;
 
 /**
- * HIS 患者计费镜像：查询、抓取、按明细手动生成科室消耗（低值/高值）。
+ * HIS 患者计费镜像：查询、抓取、按明细低值核销。
  */
 @RestController
 @RequestMapping("/his/patientCharge")
@@ -157,23 +153,6 @@ public class HisPatientChargeController extends BaseController
     public AjaxResult processLowValueBatch(@RequestBody HisMirrorManualBatchBody body)
     {
         HisMirrorLowBatchResultVo vo = hisPatientChargeService.processMirrorLowValueBatch(body);
-        return success(vo);
-    }
-
-    @PreAuthorize("@ss.hasPermi('department:patientCharge:generateConsume') or @ss.hasPermi('department:patientCharge:processMirrorHigh')")
-    @PostMapping("/mirror/scanHighBarcode")
-    public AjaxResult scanHighBarcode(@RequestBody HisMirrorHighScanBody body)
-    {
-        HisMirrorHighScanResultVo vo = hisPatientChargeService.scanMirrorHighBarcode(body);
-        return success(vo);
-    }
-
-    @PreAuthorize("@ss.hasPermi('department:patientCharge:generateConsume') or @ss.hasPermi('department:patientCharge:processMirrorHigh')")
-    @Log(title = "HIS计费镜像高值扫码消耗", businessType = BusinessType.OTHER)
-    @PostMapping("/mirror/applyHighConsume")
-    public AjaxResult applyHighConsume(@RequestBody HisMirrorHighApplyBody body)
-    {
-        HisMirrorHighApplyResultVo vo = hisPatientChargeService.applyMirrorHighConsume(body);
         return success(vo);
     }
 

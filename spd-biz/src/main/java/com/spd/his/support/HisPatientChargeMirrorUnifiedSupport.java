@@ -1,6 +1,7 @@
 package com.spd.his.support;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import com.spd.common.utils.DateUtils;
@@ -112,6 +113,20 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setCreateBy(e.getCreateBy());
         m.setCreateTime(e.getCreateTime());
         return m;
+    }
+
+    public static void applyHighChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
+    {
+        if (u == null || StringUtils.isNotBlank(u.getValueLevel()))
+        {
+            return;
+        }
+        if (u.getValueLevelIn() == null || u.getValueLevelIn().isEmpty())
+        {
+            u.setValueLevelIn(Arrays.asList(
+                HisMirrorValueLevelSupport.LEVEL_HIGH,
+                HisMirrorValueLevelSupport.LEVEL_UNKNOWN));
+        }
     }
 
     public static HisPatientChargeMirrorUnifiedQuery fromInpatientQuery(HisInpatientChargeMirror q)

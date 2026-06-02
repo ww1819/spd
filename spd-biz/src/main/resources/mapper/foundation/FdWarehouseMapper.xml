@@ -77,6 +77,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and <include refid="fdWarehouseTenantMatch"/>
         <if test="code != null  and code != ''"> and code = #{code}</if>
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+        <if test="warehouseType != null and warehouseType != ''"> and COALESCE(warehouse_type, '低值') = #{warehouseType}</if>
         <if test="params != null and params.allowedWarehouseIds != null">
             <choose>
                 <when test="params.allowedWarehouseIds.size() > 0"> and id in <foreach collection="params.allowedWarehouseIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>

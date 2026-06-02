@@ -31,6 +31,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     private Long departmentId;
     private String processed;
     private String valueLevel;
+    /** 高低值 IN 筛选，如高值页传 1,0 */
+    private java.util.List<String> valueLevelIn;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date beginChargeDate;

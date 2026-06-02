@@ -36,6 +36,12 @@ public interface IHisPatientChargeService
 
     List<HisPatientChargeDetailRow> selectAllMirrorList(HisPatientChargeAllQuery query);
 
+    List<HisInpatientChargeMirror> selectHighChargeInpatientMirrorList(HisInpatientChargeMirror query);
+
+    List<HisOutpatientChargeMirror> selectHighChargeOutpatientMirrorList(HisOutpatientChargeMirror query);
+
+    List<HisPatientChargeDetailRow> selectHighChargeAllMirrorList(HisPatientChargeAllQuery query);
+
     /**
      * 患者费用明细导出（按当前筛选条件，不分页）
      */

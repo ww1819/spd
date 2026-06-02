@@ -5182,4 +5182,174 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         return "";
     }
+
+    @Transactional
+    @Override
+    public Long insertHighValueSettlementBill(StkIoBill bill, String billNoPrefix)
+    {
+        MasterDetailValidateUtil.assertHasMaterialLine(
+            bill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, stkIoBillDocLabel(bill));
+        if (StringUtils.isEmpty(bill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            bill.setTenantId(SecurityUtils.getCustomerId());
+        }
+        Integer billType = bill.getBillType();
+        if (billType == null || (billType != 101 && billType != 201))
+        {
+            throw new ServiceException("高值核销确认结算单类型须为入库(101)或出库(201)");
+        }
+        if (bill.getWarehouseId() == null)
+        {
+            throw new ServiceException("请选择仓库");
+        }
+        if (bill.getBillDate() == null)
+        {
+            bill.setBillDate(DateUtils.getNowDate());
+        }
+        if (bill.getAuditDate() == null)
+        {
+            bill.setAuditDate(bill.getBillDate());
+        }
+        bill.setBillStatus(2);
+        bill.setDelFlag(0);
+        bill.setBillNo(getSettlementBillNumber(billNoPrefix, billType));
+        bill.setCreateTime(DateUtils.getNowDate());
+        if (billType == 101)
+        {
+            normalizeInboundSupplierFields(bill);
+        }
+        else
+        {
+            syncBillHeaderSupplerFromUniformEntries(bill);
+        }
+        syncBillTotalAmountFromEntries(bill);
+        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(bill.getWarehouseId()));
+        if (wh != null && StringUtils.isNotEmpty(wh.getSettlementType()))
+        {
+            bill.setSettlementType(wh.getSettlementType());
+            List<StkIoBillEntry> entries = bill.getStkIoBillEntryList();
+            if (entries != null)
+            {
+                for (StkIoBillEntry e : entries)
+                {
+                    if (e != null)
+                    {
+                        e.setSettlementType(wh.getSettlementType());
+                    }
+                }
+            }
+        }
+        stkIoBillMapper.insertStkIoBill(bill);
+        insertHighValueConfirmBillEntries(bill);
+        StkIoBill persisted = selectStkIoBillById(bill.getId());
+        insertHighValueConfirmFlowsOnly(persisted);
+        return bill.getId();
+    }
+
+    /** 高值核销确认：仅写明细，不校验/不写仓库库存 */
+    private void insertHighValueConfirmBillEntries(StkIoBill bill)
+    {
+        List<StkIoBillEntry> stkIoBillEntryList = bill.getStkIoBillEntryList();
+        Long id = bill.getId();
+        if (StringUtils.isNull(stkIoBillEntryList) || id == null)
+        {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        List<StkIoBillEntry> list = new ArrayList<>();
+        for (StkIoBillEntry entry : stkIoBillEntryList)
+        {
+            if (entry == null)
+            {
+                continue;
+            }
+            entry.setParenId(id);
+            entry.setBillNo(bill.getBillNo());
+            entry.setWarehouseId(bill.getWarehouseId());
+            entry.setDelFlag(0);
+            entry.setTenantId(tenantId);
+            entry.setStkInventoryId(null);
+            entry.setDepInventoryId(null);
+            entry.setKcNo(null);
+            if (StringUtils.isBlank(entry.getBatchNo()))
+            {
+                entry.setBatchNo(getBatchNumber());
+            }
+            fillEntryMaterialSnapshot(entry, tenantId);
+            list.add(entry);
+        }
+        if (!list.isEmpty())
+        {
+            stkIoBillMapper.batchStkIoBillEntry(list);
+        }
+    }
+
+    /** 高值核销确认：写 hc_ck_flow，不触发 updateInventory / 科室库存 / 条码生命周期 */
+    private void insertHighValueConfirmFlowsOnly(StkIoBill bill)
+    {
+        if (bill == null || bill.getStkIoBillEntryList() == null)
+        {
+            return;
+        }
+        Integer billType = bill.getBillType();
+        String lx = billType != null && billType == 201 ? "CK" : "RK";
+        Date flowTime = bill.getAuditDate() != null ? bill.getAuditDate() : DateUtils.getNowDate();
+        String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        for (StkIoBillEntry entry : bill.getStkIoBillEntryList())
+        {
+            if (entry == null || (entry.getDelFlag() != null && entry.getDelFlag() == 1))
+            {
+                continue;
+            }
+            if (entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) == 0)
+            {
+                continue;
+            }
+            Long lineSupplerId = resolveInboundLineSupplierId(bill, entry);
+            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+            BigDecimal amt = entry.getAmt();
+            if (amt == null && unitPrice != null && entry.getQty() != null)
+            {
+                amt = unitPrice.multiply(entry.getQty());
+            }
+            if (amt == null)
+            {
+                amt = BigDecimal.ZERO;
+            }
+            HcCkFlow flow = new HcCkFlow();
+            flow.setBillId(bill.getId());
+            flow.setEntryId(entry.getId());
+            flow.setWarehouseId(bill.getWarehouseId());
+            flow.setMaterialId(entry.getMaterialId());
+            flow.setBatchNo(entry.getBatchNo());
+            flow.setBatchNumber(entry.getBatchNumber());
+            flow.setQty(entry.getQty());
+            flow.setUnitPrice(unitPrice);
+            flow.setAmt(amt);
+            flow.setBeginTime(entry.getBeginTime());
+            flow.setEndTime(entry.getEndTime());
+            flow.setMainBarcode(entry.getMainBarcode());
+            flow.setSubBarcode(entry.getSubBarcode());
+            flow.setSupplierId(lineSupplerId);
+            flow.setFactoryId(entry.getMaterialFactoryId());
+            flow.setLx(lx);
+            flow.setOriginBusinessType("高值核销确认");
+            flow.setKcNo(null);
+            flow.setFlowTime(flowTime);
+            flow.setDelFlag(0);
+            flow.setCreateTime(DateUtils.getNowDate());
+            flow.setCreateBy(SecurityUtils.getUserIdStr());
+            flow.setTenantId(tenantId);
+            InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(
+                flow, bill, entry, bill.getWarehouseId(), lineSupplerId, bill.getDepartmentId(), fdMaterialMapper);
+            hcCkFlowMapper.insertHcCkFlow(flow);
+        }
+    }
+
+    public String getSettlementBillNumber(String prefix, Integer billType)
+    {
+        String date = FillRuleUtil.getDateNum();
+        String maxNum = stkIoBillMapper.selectMaxSettlementBillNo(prefix, billType);
+        return FillRuleUtil.getNumber(prefix, maxNum, date);
+    }
 }

@@ -31,4 +31,8 @@ public class HisMirrorConsumeLink
     private Integer delFlag;
     private String deleteBy;
     private Date deleteTime;
+    /** 高值消耗确认：0未确认 1已确认 */
+    private Integer confirmStatus;
+    /** 确认批次 gz_high_consume_confirm.id */
+    private String confirmId;
 }
