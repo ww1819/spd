@@ -21,6 +21,7 @@ import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdMaterialListRequest;
 import com.spd.foundation.dto.MaterialImportAddDto;
@@ -193,6 +194,7 @@ public class FdMaterialController extends BaseController
         if (pageSize == null || pageSize < 1) pageSize = 10;
         PageHelper.startPage(pageNum, pageSize);
         List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel);
+        long total = new PageInfo<>(mirrorRows).getTotal();
         List<Map<String, Object>> rows = new ArrayList<>();
         for (HisChargeItemMirror r : mirrorRows)
         {
@@ -207,7 +209,9 @@ public class FdMaterialController extends BaseController
             item.put("valueLevel", r.getValueLevel());
             rows.add(item);
         }
-        return getDataTable(rows);
+        TableDataInfo data = getDataTable(rows);
+        data.setTotal(total);
+        return data;
     }
 
     /**
@@ -260,6 +264,66 @@ public class FdMaterialController extends BaseController
             return error("收费项目不存在或不可维护");
         }
         return success("保存成功");
+    }
+
+    /**
+     * 批量维护收费项目高低值属性（1高值 2低值）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
+    @Log(title = "批量维护收费项目高低值属性", businessType = BusinessType.UPDATE)
+    @PutMapping("/hisChargeItem/valueLevel/batch")
+    public AjaxResult batchUpdateHisChargeItemValueLevel(@RequestBody Map<String, Object> body)
+    {
+        if (body == null || body.get("chargeItemIds") == null || body.get("valueLevel") == null)
+        {
+            return error("chargeItemIds 和 valueLevel 不能为空");
+        }
+        String valueLevel = String.valueOf(body.get("valueLevel")).trim();
+        if (!"1".equals(valueLevel) && !"2".equals(valueLevel))
+        {
+            return error("valueLevel 仅支持 1(高值) 或 2(低值)");
+        }
+        Object idsObj = body.get("chargeItemIds");
+        if (!(idsObj instanceof List))
+        {
+            return error("chargeItemIds 格式不正确");
+        }
+        List<String> chargeItemIds = new ArrayList<>();
+        for (Object id : (List<?>) idsObj)
+        {
+            if (id == null)
+            {
+                continue;
+            }
+            String cid = String.valueOf(id).trim();
+            if (StringUtils.isNotEmpty(cid))
+            {
+                chargeItemIds.add(cid);
+            }
+        }
+        if (chargeItemIds.isEmpty())
+        {
+            return error("请至少选择一个收费项目");
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        // 去重、排序（降低锁冲突概率）
+        chargeItemIds = chargeItemIds.stream().distinct().sorted().collect(Collectors.toList());
+
+        // 分批更新：避免一次性 IN 过大导致 SQL 超时/连接中断
+        final int chunkSize = 500;
+        int updated = 0;
+        for (int i = 0; i < chargeItemIds.size(); i += chunkSize)
+        {
+            int end = Math.min(i + chunkSize, chargeItemIds.size());
+            List<String> chunk = chargeItemIds.subList(i, end);
+            updated += hisChargeItemMirrorMapper.updateValueLevelBatch(tenantId, chunk, valueLevel);
+        }
+
+        if (updated <= 0)
+        {
+            return error("所选收费项目不存在或不可维护");
+        }
+        return AjaxResult.success("批量保存成功，共更新 " + updated + " 条");
     }
 
     /**

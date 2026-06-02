@@ -84,6 +84,16 @@
           and (deleted_flag is null or deleted_flag != 1)
     </update>
 
+    <update id="updateValueLevelBatch">
+        update his_charge_item_mirror
+        set value_level = #{valueLevel},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and (deleted_flag is null or deleted_flag != 1)
+          and charge_item_id in
+        <foreach collection="chargeItemIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+    </update>
+
     <update id="markAllDeletedByTenant">
         update his_charge_item_mirror
         set deleted_flag = 1,
