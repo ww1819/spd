@@ -26,6 +26,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdMaterialListRequest;
 import com.spd.foundation.dto.MaterialImportAddDto;
 import com.spd.foundation.dto.MaterialImportUpdateDto;
+import com.spd.foundation.dto.MaterialSyncHisChargeItemDto;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
@@ -41,6 +42,7 @@ import com.spd.his.config.HisTenantDbHandle;
 import com.spd.his.config.HisTenantJdbcAccess;
 import com.spd.his.domain.HisChargeItemMirror;
 import com.spd.his.mapper.HisChargeItemMirrorMapper;
+import com.spd.foundation.mapper.FdMaterialMapper;
 
 /**
  * 耗材产品Controller
@@ -62,6 +64,9 @@ public class FdMaterialController extends BaseController
 
     @Autowired
     private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
+
+    @Autowired
+    private FdMaterialMapper fdMaterialMapper;
 
     /** 服务器interface接口URL */
     @Value("${spd.interface.url:http://localhost:8081}")
@@ -324,6 +329,132 @@ public class FdMaterialController extends BaseController
             return error("所选收费项目不存在或不可维护");
         }
         return AjaxResult.success("批量保存成功，共更新 " + updated + " 条");
+    }
+
+    /**
+     * 将产品档案 is_gz 同步到已对照 HIS 收费项目的 value_level（1高值 2低值）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
+    @Log(title = "同步产品档案高低值到收费项目", businessType = BusinessType.UPDATE)
+    @PutMapping("/syncHisChargeItemValueLevel")
+    public AjaxResult syncHisChargeItemValueLevelFromMaterial(@RequestBody MaterialSyncHisChargeItemDto dto)
+    {
+        if (dto == null)
+        {
+            return error("请求参数不能为空");
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        if (!HS_THIRD_TENANT_ID.equals(tenantId))
+        {
+            return error("当前租户未启用 HIS 收费项目对照");
+        }
+
+        List<Long> materialIds = resolveSyncMaterialTargetIds(dto);
+        if (materialIds.isEmpty())
+        {
+            return error("当前没有可同步的产品档案");
+        }
+
+        final int loadChunk = 500;
+        List<FdMaterial> materials = new ArrayList<>();
+        for (int i = 0; i < materialIds.size(); i += loadChunk)
+        {
+            int end = Math.min(i + loadChunk, materialIds.size());
+            List<FdMaterial> chunk = fdMaterialMapper.selectFdMaterialByIds(materialIds.subList(i, end));
+            if (chunk != null && !chunk.isEmpty())
+            {
+                materials.addAll(chunk);
+            }
+        }
+        if (materials.isEmpty())
+        {
+            return error("未找到有效的产品档案");
+        }
+
+        // chargeItemId -> valueLevel（同一收费项多条档案时以后者为准）
+        Map<String, String> chargeItemToLevel = new LinkedHashMap<>();
+        int skippedNoBind = 0;
+        int skippedInvalidGz = 0;
+        for (FdMaterial m : materials)
+        {
+            if (m == null)
+            {
+                continue;
+            }
+            String chargeItemId = StringUtils.trimToEmpty(m.getHisChargeItemId());
+            if (StringUtils.isEmpty(chargeItemId))
+            {
+                skippedNoBind++;
+                continue;
+            }
+            String valueLevel = StringUtils.trimToEmpty(m.getIsGz());
+            if (!"1".equals(valueLevel) && !"2".equals(valueLevel))
+            {
+                skippedInvalidGz++;
+                continue;
+            }
+            chargeItemToLevel.put(chargeItemId, valueLevel);
+        }
+        if (chargeItemToLevel.isEmpty())
+        {
+            return error("所选产品均未对照收费项目，或高低值标志无效");
+        }
+
+        Map<String, List<String>> grouped = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : chargeItemToLevel.entrySet())
+        {
+            grouped.computeIfAbsent(e.getValue(), k -> new ArrayList<>()).add(e.getKey());
+        }
+
+        final int chunkSize = 500;
+        int updated = 0;
+        for (Map.Entry<String, List<String>> entry : grouped.entrySet())
+        {
+            List<String> ids = entry.getValue().stream().distinct().sorted().collect(Collectors.toList());
+            for (int i = 0; i < ids.size(); i += chunkSize)
+            {
+                int end = Math.min(i + chunkSize, ids.size());
+                updated += hisChargeItemMirrorMapper.updateValueLevelBatch(tenantId, ids.subList(i, end), entry.getKey());
+            }
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("requestedMaterialCount", materialIds.size());
+        data.put("syncChargeItemCount", chargeItemToLevel.size());
+        data.put("updatedCount", updated);
+        data.put("skippedNoBind", skippedNoBind);
+        data.put("skippedInvalidGz", skippedInvalidGz);
+        return AjaxResult.success("同步完成，共更新收费项目 " + updated + " 条", data);
+    }
+
+    private List<Long> resolveSyncMaterialTargetIds(MaterialSyncHisChargeItemDto dto)
+    {
+        if (Boolean.TRUE.equals(dto.getSyncAll()))
+        {
+            FdMaterial query = dto.getQueryCriteria();
+            if (query == null)
+            {
+                return new ArrayList<>();
+            }
+            if (query.getIncludeDisabledInList() == null)
+            {
+                query.setIncludeDisabledInList(true);
+            }
+            List<Long> ids = fdMaterialMapper.selectFdMaterialIdList(query);
+            return ids != null ? ids : new ArrayList<>();
+        }
+        List<Long> materialIds = new ArrayList<>();
+        if (dto.getMaterialIds() != null)
+        {
+            for (Long id : dto.getMaterialIds())
+            {
+                if (id != null)
+                {
+                    materialIds.add(id);
+                }
+            }
+        }
+        return materialIds;
     }
 
     /**
