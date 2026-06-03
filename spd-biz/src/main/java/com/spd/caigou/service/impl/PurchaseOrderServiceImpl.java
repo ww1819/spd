@@ -390,12 +390,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 Long deptId = entry.getApplyDepartmentId() != null
                     ? entry.getApplyDepartmentId()
                     : purchasePlan.getDepartmentId();
-                if (deptId == null) {
-                    String planHint = highValuePlan ? "高值采购计划" : "按申购单明细拆分的低值采购计划";
-                    throw new ServiceException(String.format(
-                        "%s明细（耗材ID：%s）缺少申请科室，无法按供应商+科室生成订单", planHint, entry.getMaterialId()));
-                }
-                groupKey = supplierId + "|" + deptId;
+                // 申请科室为空时仍生成订单，同供应商且无科室的明细合并为一单
+                groupKey = supplierId + "|" + (deptId != null ? deptId : "");
             } else {
                 groupKey = String.valueOf(supplierId);
             }
@@ -418,6 +414,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderDepartmentId = firstEntry.getApplyDepartmentId() != null
                     ? firstEntry.getApplyDepartmentId()
                     : purchasePlan.getDepartmentId();
+                // 允许 null：申请科室为空的高值/按明细拆分低值订单
             }
 
             PurchaseOrder purchaseOrder = new PurchaseOrder();

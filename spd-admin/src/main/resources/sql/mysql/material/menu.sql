@@ -6806,7 +6806,9 @@ FROM DUAL WHERE @gz_high_charge_confirm_menu IS NOT NULL AND (NOT EXISTS (SELECT
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
 /
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3850);
+/
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3851);
+/
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3852);
 /
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
