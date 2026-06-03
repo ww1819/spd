@@ -27,3 +27,9 @@ spd:
   license:
     publicKeyPem: ''
 
+# 防止 XSS 攻击（FilterConfig 启动即需；各 profile 可覆盖）
+xss:
+  enabled: true
+  excludes: /system/notice
+  urlPatterns: /system/*,/monitor/*,/tool/*
+

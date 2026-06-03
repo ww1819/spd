@@ -15,6 +15,8 @@ public class HisPatientChargeDetailRow
     /** INPATIENT / OUTPATIENT */
     private String visitType;
     private String patientName;
+    /** 患者性别 */
+    private String patientSex;
     private String inpatientNo;
     private String outpatientNo;
     /** 展示统一号 */

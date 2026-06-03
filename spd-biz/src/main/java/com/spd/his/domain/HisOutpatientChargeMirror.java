@@ -25,6 +25,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String hisOutpatientChargeIdTf;
     private String patientId;
     private String patientName;
+    /** 患者性别 */
+    private String patientSex;
     private String outpatientNo;
     private String clinicCode;
     private String clinicName;

@@ -19,6 +19,10 @@ public class GzHighChargeConfirmRowVo
     private Integer confirmStatus;
     private String confirmId;
     private String confirmNo;
+    /** 消耗确认生成的入库单号 G-RK */
+    private String inboundBillNo;
+    /** 消耗确认生成的出库单号 G-CK */
+    private String outboundBillNo;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date consumeAuditTime;

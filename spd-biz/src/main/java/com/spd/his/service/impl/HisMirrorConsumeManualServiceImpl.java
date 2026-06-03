@@ -31,7 +31,10 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepInventory;
+import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzTraceabilityEntry;
 import com.spd.gz.mapper.GzDepInventoryMapper;
+import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.his.constant.HisMirrorProcessConstants;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisChargeItemMirror;
@@ -91,6 +94,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
     @Autowired
     private HisMirrorProcessOutcomeRecorder hisMirrorProcessOutcomeRecorder;
+    @Autowired
+    private IGzTraceabilityService gzTraceabilityService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -429,6 +434,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             links.add(lk);
         }
         flushLinks(links);
+        recordHighConsumeTraceability(tenantId, visitKind, mirrorRowId, dept, line, bill, persisted, createBy);
         BigDecimal allocatedAfter = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
         BigDecimal newRemaining = billQty.subtract(allocatedAfter);
         String newStatus = newRemaining.compareTo(BigDecimal.ZERO) <= 0 ? STATUS_CONSUMED : STATUS_PARTIAL;
@@ -941,6 +947,148 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             int end = Math.min(i + n, linkBuffer.size());
             hisMirrorConsumeLinkMapper.insertBatch(linkBuffer.subList(i, end));
         }
+    }
+
+    /**
+     * 高值核销完成后写入高值追溯消耗记录（库存已在消耗单审核时扣减）
+     */
+    private void recordHighConsumeTraceability(String tenantId, String visitKind, String mirrorRowId,
+        FdDepartment dept, MirrorLine line, DeptBatchConsume bill, List<DeptBatchConsumeEntry> persistedEntries,
+        String createBy)
+    {
+        if (persistedEntries == null || persistedEntries.isEmpty())
+        {
+            return;
+        }
+        GzTraceability trace = new GzTraceability();
+        trace.setTenantId(tenantId);
+        trace.setExecDeptId(dept.getId());
+        trace.setApplyDeptId(dept.getId());
+        trace.setCreateBy(createBy);
+        trace.setRemark("HIS高值扫码核销 consumeBillNo=" + StringUtils.defaultString(bill.getConsumeBillNo())
+            + " mirrorRowId=" + mirrorRowId);
+        fillTraceabilityPatientFromMirror(trace, tenantId, visitKind, mirrorRowId, line);
+        List<GzTraceabilityEntry> traceEntries = new ArrayList<>();
+        for (DeptBatchConsumeEntry pe : persistedEntries)
+        {
+            if (pe == null || pe.getGzDepInventoryId() == null)
+            {
+                continue;
+            }
+            GzDepInventory gz = gzDepInventoryMapper.selectGzDepInventoryById(pe.getGzDepInventoryId());
+            if (gz == null)
+            {
+                continue;
+            }
+            FdMaterial matDetail = pe.getMaterialId() != null
+                ? fdMaterialMapper.selectFdMaterialById(pe.getMaterialId()) : null;
+            GzTraceabilityEntry te = buildTraceabilityEntryFromConsume(pe, gz, matDetail, line.unitPrice);
+            traceEntries.add(te);
+        }
+        if (traceEntries.isEmpty())
+        {
+            return;
+        }
+        trace.setTraceabilityEntryList(traceEntries);
+        gzTraceabilityService.insertConsumedTraceability(trace);
+    }
+
+    private void fillTraceabilityPatientFromMirror(GzTraceability trace, String tenantId, String visitKind,
+        String mirrorRowId, MirrorLine line)
+    {
+        if (KIND_IN.equals(visitKind))
+        {
+            HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
+            if (r == null)
+            {
+                return;
+            }
+            trace.setPatientName(r.getPatientName());
+            trace.setHospitalNumber(r.getInpatientNo());
+            trace.setChiefSurgeon(r.getDoctorName());
+            trace.setSurgeryDate(r.getChargeDate() != null ? r.getChargeDate() : r.getUseDate());
+            trace.setAdmissionDiagnosis(StringUtils.defaultIfBlank(r.getItemName(), line.itemName));
+            return;
+        }
+        HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
+        if (r == null)
+        {
+            return;
+        }
+        trace.setPatientName(r.getPatientName());
+        trace.setHospitalNumber(r.getOutpatientNo());
+        trace.setChiefSurgeon(r.getDoctorName());
+        trace.setSurgeryDate(parseMirrorChargeDate(r.getChargeDate()));
+        trace.setAdmissionDiagnosis(StringUtils.defaultIfBlank(r.getItemName(), line.itemName));
+    }
+
+    private static Date parseMirrorChargeDate(String chargeDateRaw)
+    {
+        if (StringUtils.isBlank(chargeDateRaw))
+        {
+            return null;
+        }
+        String normalized = chargeDateRaw.trim().replace('/', '-');
+        Date parsed = DateUtils.parseDate(normalized);
+        if (parsed != null)
+        {
+            return parsed;
+        }
+        if (normalized.length() >= 10)
+        {
+            return DateUtils.parseDate(normalized.substring(0, 10));
+        }
+        return null;
+    }
+
+    private static GzTraceabilityEntry buildTraceabilityEntryFromConsume(DeptBatchConsumeEntry pe, GzDepInventory gz,
+        FdMaterial matDetail, BigDecimal mirrorUnitPrice)
+    {
+        GzTraceabilityEntry te = new GzTraceabilityEntry();
+        te.setMaterialId(pe.getMaterialId());
+        te.setInventoryId(pe.getGzDepInventoryId());
+        te.setMaterialName(StringUtils.defaultIfBlank(pe.getMaterialName(),
+            matDetail != null ? matDetail.getName() : gz.getMaterialName()));
+        te.setSpecification(StringUtils.defaultIfBlank(pe.getMaterialSpeci(),
+            matDetail != null ? matDetail.getSpeci() : null));
+        te.setModel(StringUtils.defaultIfBlank(pe.getMaterialModel(),
+            matDetail != null ? matDetail.getModel() : null));
+        if (matDetail != null && matDetail.getFdUnit() != null)
+        {
+            te.setUnit(matDetail.getFdUnit().getUnitName());
+        }
+        te.setQuantity(pe.getQty());
+        BigDecimal chargePrice = pe.getUnitPrice() != null ? pe.getUnitPrice() : mirrorUnitPrice;
+        if (chargePrice == null && gz.getUnitPrice() != null)
+        {
+            chargePrice = gz.getUnitPrice();
+        }
+        te.setChargePrice(chargePrice);
+        te.setBatchNo(gz.getBatchNo());
+        te.setExpiryDate(gz.getEndTime());
+        te.setInHospitalCode(gz.getInHospitalCode());
+        te.setMasterBarcode(gz.getMasterBarcode());
+        te.setSecondaryBarcode(gz.getSecondaryBarcode());
+        te.setSupplierId(gz.getSupplierId() != null ? gz.getSupplierId()
+            : (matDetail != null ? matDetail.getSupplierId() : null));
+        if (matDetail != null)
+        {
+            if (matDetail.getFdFactory() != null)
+            {
+                te.setManufacturer(matDetail.getFdFactory().getFactoryName());
+            }
+            if (matDetail.getSupplier() != null)
+            {
+                te.setSupplier(matDetail.getSupplier().getName());
+            }
+            te.setCertificateNo(matDetail.getRegisterNo());
+            if (StringUtils.isNotBlank(matDetail.getIsFollow()))
+            {
+                te.setBillingFollow("1".equals(matDetail.getIsFollow()) ? "1" : "0");
+            }
+        }
+        te.setCreateBy(pe.getCreateBy());
+        return te;
     }
 
     private void persistProcessSuccess(String tenantId, String visitKind, String mirrorRowId, String processStatus,

@@ -47,7 +47,7 @@
     <sql id="unifiedSelectColumns">
         m.id, m.tenant_id, m.visit_kind, m.fetch_batch_id,
         m.his_inpatient_charge_id, m.his_outpatient_charge_id, m.his_inpatient_charge_id_tf, m.his_outpatient_charge_id_tf,
-        m.patient_id, m.patient_name, m.inpatient_no, m.outpatient_no,
+        m.patient_id, m.patient_name, m.patient_sex, m.inpatient_no, m.outpatient_no,
         m.dept_code, m.dept_name, m.clinic_code, m.clinic_name,
         m.doctor_id, m.doctor_name, m.charge_item_id, m.item_name, m.spec_model, m.batch_no, m.expire_date,
         m.use_date, m.charge_date_display, m.charge_at,
@@ -152,6 +152,7 @@
         <result property="hisOutpatientChargeIdTf" column="his_outpatient_charge_id_tf"/>
         <result property="patientId" column="patient_id"/>
         <result property="patientName" column="patient_name"/>
+        <result property="patientSex" column="patient_sex"/>
         <result property="inpatientNo" column="inpatient_no"/>
         <result property="outpatientNo" column="outpatient_no"/>
         <result property="deptCode" column="dept_code"/>

@@ -27,6 +27,8 @@ public class HisPatientChargeMirrorUnified extends BaseEntity
     private String hisOutpatientChargeIdTf;
     private String patientId;
     private String patientName;
+    /** 患者性别 */
+    private String patientSex;
     private String inpatientNo;
     private String outpatientNo;
     private String deptCode;

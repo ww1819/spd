@@ -16,6 +16,16 @@
         left join fd_department d on d.id = h.department_id
         left join fd_supplier sup on sup.id = cast(nullif(trim(e.supplier_id), '') as unsigned) and sup.tenant_id = l.tenant_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
+        left join gz_high_consume_confirm_bill in_bill on in_bill.confirm_id = l.confirm_id
+            and in_bill.tenant_id = l.tenant_id
+            and in_bill.bill_type = 101
+            and ifnull(in_bill.del_flag, 0) = 0
+            and in_bill.supplier_id = nullif(trim(e.supplier_id), '')
+        left join gz_high_consume_confirm_bill out_bill on out_bill.confirm_id = l.confirm_id
+            and out_bill.tenant_id = l.tenant_id
+            and out_bill.bill_type = 201
+            and ifnull(out_bill.del_flag, 0) = 0
+            and out_bill.supplier_id = nullif(trim(e.supplier_id), '')
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
@@ -33,6 +43,8 @@
             ifnull(l.confirm_status, 0) as confirmStatus,
             l.confirm_id as confirmId,
             c.confirm_no as confirmNo,
+            in_bill.bill_no as inboundBillNo,
+            out_bill.bill_no as outboundBillNo,
             coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeAuditTime,
             h.consume_bill_no as consumeBillNo,
             e.id as consumeEntryId,

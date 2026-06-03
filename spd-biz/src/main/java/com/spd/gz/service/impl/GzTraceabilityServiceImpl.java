@@ -99,6 +99,50 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     }
 
     /**
+     * 写入已审核的高值消耗追溯记录（库存已在科室消耗单审核时扣减，此处不再重复扣减）
+     */
+    @Transactional
+    @Override
+    public int insertConsumedTraceability(GzTraceability gzTraceability)
+    {
+        if (gzTraceability == null)
+        {
+            throw new ServiceException("高值追溯单不能为空");
+        }
+        if (StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            gzTraceability.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (StringUtils.isEmpty(gzTraceability.getTraceNo()))
+        {
+            gzTraceability.setTraceNo(generateTraceNo());
+        }
+        Date now = DateUtils.getNowDate();
+        String userId = SecurityUtils.getUserIdStr();
+        if (gzTraceability.getOrderStatus() == null)
+        {
+            gzTraceability.setOrderStatus(2);
+        }
+        if (gzTraceability.getAuditDate() == null && Integer.valueOf(2).equals(gzTraceability.getOrderStatus()))
+        {
+            gzTraceability.setAuditDate(now);
+        }
+        if (StringUtils.isEmpty(gzTraceability.getAuditBy()) && Integer.valueOf(2).equals(gzTraceability.getOrderStatus()))
+        {
+            gzTraceability.setAuditBy(userId);
+        }
+        gzTraceability.setDelFlag("0");
+        gzTraceability.setCreateTime(now);
+        if (StringUtils.isEmpty(gzTraceability.getCreateBy()))
+        {
+            gzTraceability.setCreateBy(userId);
+        }
+        int rows = gzTraceabilityMapper.insertGzTraceability(gzTraceability);
+        insertGzTraceabilityEntry(gzTraceability);
+        return rows;
+    }
+
+    /**
      * 修改高值追溯单
      *
      * @param gzTraceability 高值追溯单

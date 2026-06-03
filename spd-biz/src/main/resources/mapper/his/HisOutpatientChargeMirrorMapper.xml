@@ -17,6 +17,7 @@
         <result property="hisOutpatientChargeIdTf" column="his_outpatient_charge_id_tf"/>
         <result property="patientId" column="patient_id"/>
         <result property="patientName" column="patient_name"/>
+        <result property="patientSex" column="patient_sex"/>
         <result property="outpatientNo" column="outpatient_no"/>
         <result property="clinicCode" column="clinic_code"/>
         <result property="clinicName" column="clinic_name"/>

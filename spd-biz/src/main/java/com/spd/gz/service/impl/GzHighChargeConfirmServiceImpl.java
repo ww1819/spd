@@ -69,7 +69,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         }
         if (body.getWarehouseId() == null)
         {
-            throw new ServiceException("请选择高值仓库");
+            throw new ServiceException("请选择仓库");
         }
         String tenantId = requireTenant();
         FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(body.getWarehouseId()));
@@ -77,9 +77,9 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         {
             throw new ServiceException("仓库不存在");
         }
-        if (!"高值".equals(StringUtils.trimToEmpty(wh.getWarehouseType())))
+        if ("高值".equals(StringUtils.trimToEmpty(wh.getWarehouseType())))
         {
-            throw new ServiceException("只能选择仓库类型为高值的仓库");
+            throw new ServiceException("不能选择仓库类型为高值的仓库");
         }
         List<String> linkIds = body.getLinkIds().stream()
             .filter(StringUtils::isNotBlank)

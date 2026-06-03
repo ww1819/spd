@@ -1984,6 +1984,8 @@ CALL add_table_column('his_inpatient_charge_mirror', 'patient_id', 'varchar(32)'
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
 /
+CALL add_table_column('his_inpatient_charge_mirror', 'patient_sex', 'varchar(16)', '患者性别', NULL);
+/
 CALL add_table_column('his_inpatient_charge_mirror', 'inpatient_no', 'varchar(64)', '住院号', NULL);
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'dept_code', 'varchar(32)', '费用科室编码', NULL);
@@ -2054,6 +2056,8 @@ CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id_
 CALL add_table_column('his_outpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'patient_sex', 'varchar(16)', '患者性别', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'outpatient_no', 'varchar(64)', '门诊号', NULL);
 /
@@ -2633,6 +2637,8 @@ CALL add_table_column('his_patient_charge_mirror_unified', 'value_level', 'varch
 CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'varchar(32)', '处理方式（如自动处理、手动处理）', NULL);
 /
 CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '处理情况说明（成功/失败原因等）', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'patient_sex', 'varchar(16)', '患者性别', NULL);
 /
 
 -- ========== 采购链路：高低值标志（1高值 2低值） ==========

@@ -226,6 +226,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setHisInpatientChargeIdTf(u.getHisInpatientChargeIdTf());
         r.setPatientId(u.getPatientId());
         r.setPatientName(u.getPatientName());
+        r.setPatientSex(u.getPatientSex());
         r.setInpatientNo(u.getInpatientNo());
         r.setDeptCode(u.getDeptCode());
         r.setDeptName(u.getDeptName());
@@ -275,6 +276,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setHisOutpatientChargeIdTf(u.getHisOutpatientChargeIdTf());
         r.setPatientId(u.getPatientId());
         r.setPatientName(u.getPatientName());
+        r.setPatientSex(u.getPatientSex());
         r.setOutpatientNo(u.getOutpatientNo());
         r.setClinicCode(u.getClinicCode());
         r.setClinicName(u.getClinicName());
@@ -322,6 +324,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setId(u.getId());
         r.setVisitType(u.getVisitKind());
         r.setPatientName(u.getPatientName());
+        r.setPatientSex(u.getPatientSex());
         r.setInpatientNo(u.getInpatientNo());
         r.setOutpatientNo(u.getOutpatientNo());
         if ("OUTPATIENT".equals(u.getVisitKind()))

@@ -36,6 +36,14 @@ public interface IGzTraceabilityService
     public int insertGzTraceability(GzTraceability gzTraceability);
 
     /**
+     * 写入已审核的高值消耗追溯记录（不重复扣减科室库存，供 HIS 镜像高值核销等场景使用）
+     *
+     * @param gzTraceability 高值追溯单（含明细）
+     * @return 结果
+     */
+    public int insertConsumedTraceability(GzTraceability gzTraceability);
+
+    /**
      * 修改高值追溯单
      *
      * @param gzTraceability 高值追溯单
