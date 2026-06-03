@@ -10,7 +10,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
  */
 public final class HisMirrorValueLevelSupport
 {
-    /** 未识别：无对照耗材或未维护 is_gz */
+    /** 历史/兼容：未识别（列表与核销逻辑已视同低值 {@link #LEVEL_LOW}） */
     public static final String LEVEL_UNKNOWN = "0";
     /** 高值 */
     public static final String LEVEL_HIGH = "1";
@@ -25,31 +25,27 @@ public final class HisMirrorValueLevelSupport
     }
 
     /**
-     * 按耗材档案 is_gz 解析：1→高值，2→低值，否则未识别。
+     * 按耗材档案 is_gz 解析：1→高值；无对照、未维护或其它取值→低值。
      */
     public static String resolveFromMaterial(FdMaterial mat)
     {
         if (mat == null)
         {
-            return LEVEL_UNKNOWN;
+            return LEVEL_LOW;
         }
         String isGz = StringUtils.trimToEmpty(mat.getIsGz());
         if ("1".equals(isGz))
         {
             return LEVEL_HIGH;
         }
-        if ("2".equals(isGz))
-        {
-            return LEVEL_LOW;
-        }
-        return LEVEL_UNKNOWN;
+        return LEVEL_LOW;
     }
 
     public static String resolveFromMaterial(FdMaterialMapper mapper, String tenantId, String chargeItemId)
     {
         if (mapper == null || StringUtils.isBlank(tenantId) || StringUtils.isBlank(chargeItemId))
         {
-            return LEVEL_UNKNOWN;
+            return LEVEL_LOW;
         }
         FdMaterial mat = mapper.selectFdMaterialByTenantAndHisChargeItemId(tenantId, chargeItemId.trim());
         return resolveFromMaterial(mat);
@@ -93,7 +89,7 @@ public final class HisMirrorValueLevelSupport
 
     public static boolean isUnknown(String level)
     {
-        return LEVEL_UNKNOWN.equals(StringUtils.trimToEmpty(level))
-            || StringUtils.isBlank(level);
+        String v = StringUtils.trimToEmpty(level);
+        return LEVEL_UNKNOWN.equals(v);
     }
 }

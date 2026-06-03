@@ -1,7 +1,6 @@
 package com.spd.his.support;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import com.spd.common.utils.DateUtils;
@@ -115,6 +114,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         return m;
     }
 
+    /** 高值扫码核销列表：未指定高低值筛选时默认仅高值（未维护 is_gz 视同低值，见 resolvedValueLevelExpr） */
     public static void applyHighChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
         if (u == null || StringUtils.isNotBlank(u.getValueLevel()))
@@ -123,9 +123,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         }
         if (u.getValueLevelIn() == null || u.getValueLevelIn().isEmpty())
         {
-            u.setValueLevelIn(Arrays.asList(
-                HisMirrorValueLevelSupport.LEVEL_HIGH,
-                HisMirrorValueLevelSupport.LEVEL_UNKNOWN));
+            u.setValueLevel(HisMirrorValueLevelSupport.LEVEL_HIGH);
         }
     }
 

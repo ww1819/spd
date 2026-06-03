@@ -41,7 +41,7 @@
     </sql>
 
     <sql id="resolvedValueLevelExpr">
-        case when fm.is_gz = '1' then '1' when fm.is_gz = '2' then '2' else '0' end
+        case when fm.is_gz = '1' then '1' else '2' end
     </sql>
 
     <sql id="unifiedSelectColumns">
