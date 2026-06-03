@@ -93,16 +93,20 @@ public class TenantScopeServiceImpl implements ITenantScopeService {
     if (StringUtils.isEmpty(cidParam)) {
       return false;
     }
-    if (userId.equals(SecurityUtils.getUserId())) {
-      if (DEFAULT_TENANT_ADMIN_USERNAME.equalsIgnoreCase(StringUtils.trimToEmpty(SecurityUtils.getUsername()))) {
-        // 与 Controller 一致：优先 resolveEffectiveTenantId（含 TenantContext），避免仅 getCustomerId() 与入参不一致
-        String effective = StringUtils.trimToEmpty(SecurityUtils.resolveEffectiveTenantId(null));
-        if (StringUtils.isNotEmpty(effective) && cidParam.equalsIgnoreCase(effective)) {
-          return true;
+    try {
+      if (userId.equals(SecurityUtils.getUserId())) {
+        if (DEFAULT_TENANT_ADMIN_USERNAME.equalsIgnoreCase(StringUtils.trimToEmpty(SecurityUtils.getUsername()))) {
+          // 与 Controller 一致：优先 resolveEffectiveTenantId（含 TenantContext），避免仅 getCustomerId() 与入参不一致
+          String effective = StringUtils.trimToEmpty(SecurityUtils.resolveEffectiveTenantId(null));
+          if (StringUtils.isNotEmpty(effective) && cidParam.equalsIgnoreCase(effective)) {
+            return true;
+          }
+          String loginCid = StringUtils.trimToEmpty(SecurityUtils.getCustomerId());
+          return StringUtils.isNotEmpty(loginCid) && cidParam.equalsIgnoreCase(loginCid);
         }
-        String loginCid = StringUtils.trimToEmpty(SecurityUtils.getCustomerId());
-        return StringUtils.isNotEmpty(loginCid) && cidParam.equalsIgnoreCase(loginCid);
       }
+    } catch (Exception ignored) {
+      // 登录认证尚未写入 SecurityContext（如 loadUserByUsername 阶段），改走按 userId 查库
     }
     SysUser u = sysUserMapper.selectUserById(userId);
     if (u == null || !"0".equals(StringUtils.trimToEmpty(u.getDelFlag()))) {
