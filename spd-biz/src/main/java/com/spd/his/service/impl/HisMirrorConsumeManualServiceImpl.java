@@ -54,6 +54,7 @@ import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.support.HisMirrorProcessUserMessages;
+import com.spd.gz.support.GzTraceSourceConstants;
 import com.spd.his.support.HisMirrorValueLevelSupport;
 
 @Service
@@ -346,8 +347,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException("没有有效的高值消耗明细");
         }
         BigDecimal applySum = mergedByGz.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        List<DeptBatchConsumeEntry> entries = new ArrayList<>();
-        Long billWarehouseId = null;
+        List<GzTraceabilityEntry> traceEntries = new ArrayList<>();
         String createBy = SecurityUtils.getUserIdStr();
         for (Map.Entry<Long, BigDecimal> en : mergedByGz.entrySet())
         {
@@ -375,72 +375,69 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             {
                 throw new ServiceException(HisMirrorProcessUserMessages.materialMismatch());
             }
-            DeptBatchConsumeEntry e = buildHighEntryFromGz(gz, lineQty, mirrorRowId, dept.getId(), createBy, mat);
-            entries.add(e);
-            if (billWarehouseId == null && gz.getWarehouse() != null && gz.getWarehouse().getId() != null)
-            {
-                billWarehouseId = gz.getWarehouse().getId();
-            }
+            traceEntries.add(buildTraceabilityEntryFromGz(gz, lineQty, line.unitPrice, mat, createBy));
         }
         if (applySum.compareTo(remaining) > 0)
         {
             throw new ServiceException(HisMirrorProcessUserMessages.qtyExceedRemaining());
         }
-        DeptBatchConsume bill = new DeptBatchConsume();
-        bill.setDepartmentId(dept.getId());
-        bill.setWarehouseId(billWarehouseId);
-        bill.setUserId(SecurityUtils.getUserId());
-        bill.setConsumeBillDate(DateUtils.getNowDate());
-        bill.setRemark("HIS计费镜像高值手动扫码 mirrorRowId=" + mirrorRowId);
-        bill.setBillSource(BILL_HIGH);
-        bill.setDisallowReverse(1);
-        bill.setHisFetchBatchId(line.fetchBatchId);
-        bill.setCreateBy(createBy);
-        bill.setDisableEntryDedup(Boolean.TRUE);
-        bill.setDeptBatchConsumeEntryList(entries);
-        deptBatchConsumeService.insertDeptBatchConsume(bill);
-        Long consumeId = bill.getId();
-        if (consumeId == null)
+        GzTraceability trace = new GzTraceability();
+        trace.setTenantId(tenantId);
+        trace.setVisitKind(visitKind);
+        trace.setMirrorRowId(mirrorRowId);
+        trace.setTraceSource(GzTraceSourceConstants.HIS_MIRROR_HIGH);
+        trace.setExecDeptId(dept.getId());
+        trace.setApplyDeptId(dept.getId());
+        trace.setCreateBy(createBy);
+        trace.setRemark("HIS高值扫码核销 mirrorRowId=" + mirrorRowId);
+        fillTraceabilityPatientFromMirror(trace, tenantId, visitKind, mirrorRowId, line);
+        trace.setTraceabilityEntryList(traceEntries);
+        GzTraceability persisted = gzTraceabilityService.insertAuditedMirrorHighBill(trace);
+        if (persisted == null || persisted.getId() == null
+            || persisted.getTraceabilityEntryList() == null || persisted.getTraceabilityEntryList().isEmpty())
         {
-            throw new ServiceException("生成消耗主单失败");
-        }
-        deptBatchConsumeService.auditConsume(String.valueOf(consumeId), createBy);
-        List<DeptBatchConsumeEntry> persisted = bill.getDeptBatchConsumeEntryList();
-        if (persisted == null || persisted.size() != entries.size())
-        {
-            throw new ServiceException("消耗明细保存数量与预期不一致");
+            throw new ServiceException("生成高值计费单失败");
         }
         Date linkTime = DateUtils.getNowDate();
         List<HisMirrorConsumeLink> links = new ArrayList<>();
-        for (int i = 0; i < persisted.size(); i++)
+        for (GzTraceabilityEntry te : persisted.getTraceabilityEntryList())
         {
+            if (te == null || te.getId() == null)
+            {
+                continue;
+            }
             HisMirrorConsumeLink lk = new HisMirrorConsumeLink();
             lk.setId(UUID7.generateUUID7());
             lk.setTenantId(tenantId);
             lk.setVisitKind(visitKind);
             lk.setMirrorRowId(mirrorRowId);
             lk.setFetchBatchId(line.fetchBatchId);
-            lk.setDeptBatchConsumeId(consumeId);
-            lk.setDeptBatchConsumeEntryId(persisted.get(i).getId());
-            lk.setAllocQty(persisted.get(i).getQty());
-            Long gzPk = persisted.get(i).getGzDepInventoryId();
-            GzDepInventory gzOne = gzPk != null ? gzDepInventoryMapper.selectGzDepInventoryById(gzPk) : null;
-            lk.setGzDepInventoryId(gzPk);
-            lk.setInHospitalCode(gzOne != null ? gzOne.getInHospitalCode() : null);
+            lk.setTraceabilityId(persisted.getId());
+            lk.setTraceabilityEntryId(te.getId());
+            lk.setAllocQty(te.getQuantity());
+            lk.setGzDepInventoryId(te.getInventoryId());
+            GzDepInventory gzOne = te.getInventoryId() != null
+                ? gzDepInventoryMapper.selectGzDepInventoryById(te.getInventoryId()) : null;
+            lk.setInHospitalCode(gzOne != null ? gzOne.getInHospitalCode()
+                : (te.getInHospitalCode() != null ? te.getInHospitalCode() : null));
             lk.setReturnedQty(BigDecimal.ZERO);
-            lk.setRefundableRemainingQty(persisted.get(i).getQty());
+            lk.setRefundableRemainingQty(te.getQuantity());
             lk.setDelFlag(0);
             lk.setCreateTime(linkTime);
             links.add(lk);
         }
+        if (links.isEmpty())
+        {
+            throw new ServiceException("高值计费明细关联失败");
+        }
         flushLinks(links);
-        recordHighConsumeTraceability(tenantId, visitKind, mirrorRowId, dept, line, bill, persisted, createBy);
         BigDecimal allocatedAfter = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
         BigDecimal newRemaining = billQty.subtract(allocatedAfter);
         String newStatus = newRemaining.compareTo(BigDecimal.ZERO) <= 0 ? STATUS_CONSUMED : STATUS_PARTIAL;
         persistProcessSuccess(tenantId, visitKind, mirrorRowId, newStatus, PROC_TYPE_HIGH, processParty);
         HisMirrorHighApplyResultVo vo = new HisMirrorHighApplyResultVo();
-        vo.setConsumeBillId(consumeId);
+        vo.setTraceBillId(persisted.getId());
+        vo.setTraceNo(persisted.getTraceNo());
         vo.setAppliedQty(applySum);
         vo.setRemainingBillQty(newRemaining.max(BigDecimal.ZERO));
         vo.setMirrorProcessStatus(newStatus);
@@ -1039,6 +1036,50 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             return DateUtils.parseDate(normalized.substring(0, 10));
         }
         return null;
+    }
+
+    private static GzTraceabilityEntry buildTraceabilityEntryFromGz(GzDepInventory gz, BigDecimal qty,
+        BigDecimal mirrorUnitPrice, FdMaterial matDetail, String createBy)
+    {
+        GzTraceabilityEntry te = new GzTraceabilityEntry();
+        te.setMaterialId(gz.getMaterialId());
+        te.setInventoryId(gz.getId());
+        te.setMaterialName(StringUtils.defaultIfBlank(gz.getMaterialName(),
+            matDetail != null ? matDetail.getName() : null));
+        te.setSpecification(matDetail != null ? matDetail.getSpeci() : null);
+        te.setModel(matDetail != null ? matDetail.getModel() : null);
+        if (matDetail != null && matDetail.getFdUnit() != null)
+        {
+            te.setUnit(matDetail.getFdUnit().getUnitName());
+        }
+        te.setQuantity(qty);
+        BigDecimal chargePrice = mirrorUnitPrice != null ? mirrorUnitPrice : gz.getUnitPrice();
+        te.setChargePrice(chargePrice);
+        te.setBatchNo(gz.getBatchNo());
+        te.setExpiryDate(gz.getEndTime());
+        te.setInHospitalCode(gz.getInHospitalCode());
+        te.setMasterBarcode(gz.getMasterBarcode());
+        te.setSecondaryBarcode(gz.getSecondaryBarcode());
+        te.setSupplierId(gz.getSupplierId() != null ? gz.getSupplierId()
+            : (matDetail != null ? matDetail.getSupplierId() : null));
+        if (matDetail != null)
+        {
+            if (matDetail.getFdFactory() != null)
+            {
+                te.setManufacturer(matDetail.getFdFactory().getFactoryName());
+            }
+            if (matDetail.getSupplier() != null)
+            {
+                te.setSupplier(matDetail.getSupplier().getName());
+            }
+            te.setCertificateNo(matDetail.getRegisterNo());
+            if (StringUtils.isNotBlank(matDetail.getIsFollow()))
+            {
+                te.setBillingFollow("1".equals(matDetail.getIsFollow()) ? "1" : "0");
+            }
+        }
+        te.setCreateBy(createBy);
+        return te;
     }
 
     private static GzTraceabilityEntry buildTraceabilityEntryFromConsume(DeptBatchConsumeEntry pe, GzDepInventory gz,

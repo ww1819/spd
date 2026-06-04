@@ -30,8 +30,10 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.gz.domain.GzDepInventory;
-import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzDepFlow;
+import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzTraceabilityEntry;
+import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzOrder;
 import com.spd.gz.domain.GzOrderEntry;
 import com.spd.gz.domain.GzOrderEntryInhospitalcodeList;
@@ -40,6 +42,7 @@ import com.spd.gz.domain.GzRefundGoodsEntry;
 import com.spd.gz.domain.GzShipment;
 import com.spd.gz.domain.GzShipmentEntry;
 import com.spd.gz.domain.GzWhFlow;
+import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.gz.mapper.GzOrderMapper;
 import com.spd.gz.mapper.SysSheetIdMapper;
 import com.spd.hc.domain.HcBarcodeFlow;
@@ -83,6 +86,8 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
     private com.spd.department.mapper.StkDepInventoryMapper stkDepInventoryMapper;
     @Autowired
     private FdWarehouseMapper fdWarehouseMapper;
+    @Autowired
+    private GzDepInventoryMapper gzDepInventoryMapper;
 
     private String tenantOf(StkIoBill bill) {
         return StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId();
@@ -1044,6 +1049,165 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         } catch (Exception e) {
             log.warn("onDeptBatchConsumeGz failed billId={}", bill.getId(), e);
         }
+    }
+
+    @Override
+    public void onMirrorHighChargeConsume(GzTraceability trace, GzTraceabilityEntry entry, GzDepInventory gzLine)
+    {
+        if (trace == null || entry == null || gzLine == null)
+        {
+            return;
+        }
+        try
+        {
+            insertGzDepFlowForMirrorHighCharge(trace, entry, gzLine, entry.getQuantity(), false);
+            if (StringUtils.isEmpty(gzLine.getInHospitalCode()))
+            {
+                return;
+            }
+            String tenantId = StringUtils.isNotEmpty(trace.getTenantId()) ? trace.getTenantId() : SecurityUtils.getCustomerId();
+            HcBarcodeMaster master = hcBarcodeTraceMapper.selectHcBarcodeMasterByTenantAndBarcode(tenantId, gzLine.getInHospitalCode().trim());
+            if (master == null)
+            {
+                return;
+            }
+            BigDecimal signedQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ZERO;
+            if (signedQty.compareTo(BigDecimal.ZERO) == 0)
+            {
+                return;
+            }
+            appendMirrorHighChargeHcFlowAndPatch(master, trace, entry, gzLine, signedQty);
+        }
+        catch (Exception e)
+        {
+            log.warn("onMirrorHighChargeConsume failed traceId={}", trace.getId(), e);
+        }
+    }
+
+    @Override
+    public void onMirrorHighChargeRefund(GzTraceability trace, GzTraceabilityEntry entry, GzDepInventory gzLine, BigDecimal returnQty)
+    {
+        if (trace == null || entry == null || gzLine == null || returnQty == null
+            || returnQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            return;
+        }
+        try
+        {
+            if (gzLine.getQty() != null)
+            {
+                gzLine.setQty(gzLine.getQty().add(returnQty));
+                gzDepInventoryMapper.updateGzDepInventory(gzLine);
+            }
+            insertGzDepFlowForMirrorHighCharge(trace, entry, gzLine, returnQty, true);
+        }
+        catch (Exception e)
+        {
+            log.warn("onMirrorHighChargeRefund failed traceId={}", trace.getId(), e);
+        }
+    }
+
+    private void insertGzDepFlowForMirrorHighCharge(GzTraceability trace, GzTraceabilityEntry entry,
+        GzDepInventory gzLine, BigDecimal qty, boolean refund)
+    {
+        if (entry == null || gzLine == null || qty == null || qty.compareTo(BigDecimal.ZERO) == 0)
+        {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(trace.getTenantId()) ? trace.getTenantId() : SecurityUtils.getCustomerId();
+        Long deptId = trace.getExecDeptId() != null ? trace.getExecDeptId() : gzLine.getDepartmentId();
+        Date now = new Date();
+        GzDepFlow df = new GzDepFlow();
+        df.setId(UUID7.generateUUID7());
+        df.setTenantId(tenantId);
+        df.setBillId(trace.getId() != null ? String.valueOf(trace.getId()) : null);
+        df.setBillNo(trace.getTraceNo());
+        df.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
+        df.setDepartmentId(str(deptId));
+        df.setDepartmentName(resolveDepartmentName(deptId));
+        if (gzLine.getWarehouse() != null && gzLine.getWarehouse().getId() != null)
+        {
+            df.setWarehouseId(String.valueOf(gzLine.getWarehouse().getId()));
+            df.setWarehouseName(gzLine.getWarehouse().getName());
+        }
+        df.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : str(gzLine.getMaterialId()));
+        if (StringUtils.isNotEmpty(entry.getMaterialName()))
+        {
+            df.setMaterialName(entry.getMaterialName());
+        }
+        else if (StringUtils.isNotEmpty(gzLine.getMaterialName()))
+        {
+            df.setMaterialName(gzLine.getMaterialName());
+        }
+        df.setBatchNo(StringUtils.isNotEmpty(entry.getBatchNo()) ? entry.getBatchNo() : gzLine.getBatchNo());
+        df.setQty(qty.abs());
+        BigDecimal unitPx = entry.getChargePrice() != null ? entry.getChargePrice() : gzLine.getUnitPrice();
+        df.setUnitPrice(unitPx);
+        if (unitPx != null)
+        {
+            df.setAmt(unitPx.multiply(qty.abs()));
+        }
+        df.setBeginTime(gzLine.getMaterialDate());
+        df.setEndTime(gzLine.getEndTime());
+        if (entry.getSupplierId() != null)
+        {
+            df.setSupplierId(String.valueOf(entry.getSupplierId()));
+            df.setSupplierName(resolveSupplierName(entry.getSupplierId()));
+        }
+        else if (gzLine.getSupplierId() != null)
+        {
+            df.setSupplierId(String.valueOf(gzLine.getSupplierId()));
+            df.setSupplierName(resolveSupplierName(gzLine.getSupplierId()));
+        }
+        df.setInHospitalCode(gzLine.getInHospitalCode());
+        df.setMasterBarcode(StringUtils.isNotEmpty(entry.getMasterBarcode()) ? entry.getMasterBarcode() : gzLine.getMasterBarcode());
+        df.setSecondaryBarcode(StringUtils.isNotEmpty(entry.getSecondaryBarcode()) ? entry.getSecondaryBarcode() : gzLine.getSecondaryBarcode());
+        df.setGzDepInventoryId(gzLine.getId() != null ? String.valueOf(gzLine.getId()) : null);
+        df.setLx(refund ? "TXH" : "XH");
+        df.setFlowTime(now);
+        df.setOriginBusinessType(refund ? "HIS高值扫码退费返还" : "HIS高值扫码核销");
+        df.setDelFlag(0);
+        df.setCreateBy(uid());
+        df.setCreateTime(now);
+        hcBarcodeTraceMapper.insertGzDepFlow(df);
+    }
+
+    private void appendMirrorHighChargeHcFlowAndPatch(HcBarcodeMaster master, GzTraceability trace,
+        GzTraceabilityEntry entry, GzDepInventory gzLine, BigDecimal signedQty)
+    {
+        if (master == null || trace == null || signedQty == null || signedQty.compareTo(BigDecimal.ZERO) == 0)
+        {
+            return;
+        }
+        String strDept = trace.getExecDeptId() != null ? String.valueOf(trace.getExecDeptId()) : null;
+        Integer seq = hcBarcodeTraceMapper.selectNextFlowSeq(master.getTenantId(), master.getId());
+        HcBarcodeFlow flow = new HcBarcodeFlow();
+        flow.setId(UUID7.generateUUID7());
+        flow.setTenantId(master.getTenantId());
+        flow.setHcBarcodeMasterId(master.getId());
+        flow.setBarcodeValue(master.getBarcodeValue());
+        flow.setValueLevel(master.getValueLevel());
+        flow.setSeqNo(seq != null ? seq : 1);
+        flow.setEventCode("KS_XH");
+        flow.setEventName("HIS高值扫码核销");
+        flow.setEventTime(new Date());
+        flow.setBillDomain("GZ_TRACEABILITY");
+        flow.setBillId(trace.getId() != null ? String.valueOf(trace.getId()) : null);
+        flow.setBillNo(trace.getTraceNo());
+        flow.setBillEntryId(entry != null && entry.getId() != null ? String.valueOf(entry.getId()) : null);
+        flow.setFromDepartmentId(strDept);
+        flow.setToDepartmentId(null);
+        flow.setQty(signedQty.abs());
+        flow.setMaterialName(master.getMaterialName());
+        flow.setMaterialSpeci(master.getMaterialSpeci());
+        flow.setMaterialModel(master.getMaterialModel());
+        flow.setOperatorId(uid());
+        flow.setOperatorName(uid());
+        flow.setDelFlag(0);
+        flow.setCreateBy(uid());
+        flow.setCreateTime(new Date());
+        hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
+        patchMasterAfterDeptConsume(master, signedQty, trace.getExecDeptId());
     }
 
     /** 高值科室库存变动：写入 gz_dep_flow（与条码主档是否存在无关）。 */
