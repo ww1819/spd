@@ -129,6 +129,15 @@ public class GzTraceability extends BaseEntity
     /** 租户ID */
     private String tenantId;
 
+    /** 就诊类型 INPATIENT/OUTPATIENT（HIS镜像高值计费） */
+    private String visitKind;
+
+    /** HIS计费镜像行ID */
+    private String mirrorRowId;
+
+    /** 来源：HIS_MIRROR_HIGH=HIS高值扫码核销 */
+    private String traceSource;
+
     /** 申请科室对象 */
     private FdDepartment applyDept;
 
@@ -410,6 +419,15 @@ public class GzTraceability extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getVisitKind() { return visitKind; }
+    public void setVisitKind(String visitKind) { this.visitKind = visitKind; }
+
+    public String getMirrorRowId() { return mirrorRowId; }
+    public void setMirrorRowId(String mirrorRowId) { this.mirrorRowId = mirrorRowId; }
+
+    public String getTraceSource() { return traceSource; }
+    public void setTraceSource(String traceSource) { this.traceSource = traceSource; }
 
     public FdDepartment getApplyDept() {
         return applyDept;

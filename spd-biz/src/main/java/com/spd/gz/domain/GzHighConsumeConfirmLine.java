@@ -14,6 +14,7 @@ public class GzHighConsumeConfirmLine
     private String confirmId;
     private String consumeLinkId;
     private Long deptBatchConsumeEntryId;
+    private Long traceabilityEntryId;
     private Integer delFlag;
     private Date createTime;
 }

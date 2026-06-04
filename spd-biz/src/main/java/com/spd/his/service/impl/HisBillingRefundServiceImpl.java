@@ -21,6 +21,12 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsumeReverseReq;
 import com.spd.department.service.IDeptBatchConsumeService;
+import com.spd.gz.domain.GzDepInventory;
+import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzTraceabilityEntry;
+import com.spd.gz.mapper.GzDepInventoryMapper;
+import com.spd.gz.service.IGzTraceabilityService;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.domain.HisBillingRefundOrder;
 import com.spd.his.domain.HisBillingRefundOrderLine;
@@ -67,6 +73,12 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
     private LvRefundConsumeLinkOrderStrategy lvRefundConsumeLinkOrderStrategy;
     @Autowired
     private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+    @Autowired
+    private IGzTraceabilityService gzTraceabilityService;
+    @Autowired
+    private GzDepInventoryMapper gzDepInventoryMapper;
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     /** 避免同类自调用导致 @Transactional 失效 */
     @Lazy
@@ -468,6 +480,17 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             }
             Long consumeId = lk.getDeptBatchConsumeId();
             Long entryId = lk.getDeptBatchConsumeEntryId();
+            if (lk.getTraceabilityId() != null && lk.getTraceabilityEntryId() != null)
+            {
+                BigDecimal take = need.min(linkRem);
+                if (take.compareTo(BigDecimal.ZERO) <= 0)
+                {
+                    continue;
+                }
+                planned.add(new PlannedLine(lk.getId(), take, null, null));
+                need = need.subtract(take);
+                continue;
+            }
             if (consumeId == null || entryId == null)
             {
                 continue;
@@ -747,6 +770,18 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             }
             Long consumeId = lk.getDeptBatchConsumeId();
             Long entryId = lk.getDeptBatchConsumeEntryId();
+            if (lk.getTraceabilityId() != null && lk.getTraceabilityEntryId() != null)
+            {
+                BigDecimal linkRem = linkRemLeft.getOrDefault(lk.getId(), BigDecimal.ZERO);
+                BigDecimal take = ln.getReturnQty().min(linkRem);
+                if (take.compareTo(BigDecimal.ZERO) <= 0)
+                {
+                    throw new ServiceException("退费数量超过该行可退上限");
+                }
+                linkRemLeft.put(lk.getId(), linkRem.subtract(take));
+                planned.add(new PlannedLine(lk.getId(), take, null, null));
+                continue;
+            }
             if (consumeId == null || entryId == null)
             {
                 throw new ServiceException("消耗关联缺少消耗单或明细");
@@ -814,6 +849,10 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
                     it.setReverseQty(me.getValue());
                     mergedItems.add(it);
                 }
+                if (mergedItems.isEmpty())
+                {
+                    continue;
+                }
                 DeptBatchConsumeReverseReq req = new DeptBatchConsumeReverseReq();
                 req.setConsumeId(en.getKey());
                 req.setItems(mergedItems);
@@ -822,8 +861,12 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             }
             for (PlannedLine pl : planned)
             {
-                hisMirrorConsumeLinkMapper.increaseReturnedQtyById(pl.linkId, pl.delta, uid);
                 HisMirrorConsumeLink lk = linkById.get(pl.linkId);
+                if (lk != null && lk.getTraceabilityId() != null && lk.getTraceabilityEntryId() != null)
+                {
+                    applyTraceHighRefund(tenantId, lk, pl.delta);
+                }
+                hisMirrorConsumeLinkMapper.increaseReturnedQtyById(pl.linkId, pl.delta, uid);
                 HisBillingRefundOrderLine lr = new HisBillingRefundOrderLine();
                 lr.setId(UUID7.generateUUID7());
                 lr.setTenantId(tenantId);
@@ -867,6 +910,38 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             throw new ServiceException(msg);
         }
         return order;
+    }
+
+    private void applyTraceHighRefund(String tenantId, HisMirrorConsumeLink lk, BigDecimal returnQty)
+    {
+        if (lk == null || returnQty == null || returnQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            return;
+        }
+        GzTraceability trace = gzTraceabilityService.selectGzTraceabilityById(lk.getTraceabilityId());
+        if (trace == null || trace.getTraceabilityEntryList() == null)
+        {
+            throw new ServiceException("高值计费单不存在，无法退费返还");
+        }
+        GzTraceabilityEntry entry = trace.getTraceabilityEntryList().stream()
+            .filter(e -> e != null && lk.getTraceabilityEntryId().equals(e.getId()))
+            .findFirst()
+            .orElse(null);
+        if (entry == null)
+        {
+            throw new ServiceException("高值计费明细不存在，无法退费返还");
+        }
+        Long gzId = lk.getGzDepInventoryId() != null ? lk.getGzDepInventoryId() : entry.getInventoryId();
+        if (gzId == null)
+        {
+            throw new ServiceException("缺少高值库存关联，无法退费返还");
+        }
+        GzDepInventory gz = gzDepInventoryMapper.selectGzDepInventoryById(gzId);
+        if (gz == null)
+        {
+            throw new ServiceException("高值科室库存不存在，无法退费返还");
+        }
+        hcBarcodeLifecycleService.onMirrorHighChargeRefund(trace, entry, gz, returnQty);
     }
 
     private static class RefundAllocationPlan

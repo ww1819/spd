@@ -29,6 +29,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="orderStatus"    column="order_status"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="visitKind"    column="visit_kind"    />
+        <result property="mirrorRowId"    column="mirror_row_id"    />
+        <result property="traceSource"    column="trace_source"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
@@ -195,6 +198,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">order_status,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="visitKind != null">visit_kind,</if>
+            <if test="mirrorRowId != null">mirror_row_id,</if>
+            <if test="traceSource != null">trace_source,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -226,6 +232,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">#{orderStatus},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="visitKind != null">#{visitKind},</if>
+            <if test="mirrorRowId != null">#{mirrorRowId},</if>
+            <if test="traceSource != null">#{traceSource},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -262,6 +271,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="visitKind != null">visit_kind = #{visitKind},</if>
+            <if test="mirrorRowId != null">mirror_row_id = #{mirrorRowId},</if>
+            <if test="traceSource != null">trace_source = #{traceSource},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

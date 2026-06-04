@@ -51,4 +51,15 @@ public class GzHighChargeConfirmRowVo
     private String visitNo;
     private String chargeItemId;
     private String itemName;
+    /** 计费项目规格（HIS 镜像） */
+    private String itemSpec;
+    /** 计费项目型号 */
+    private String itemModel;
+    /** 生产厂家 */
+    private String factoryName;
+    /** 注册证号 */
+    private String registerNo;
+    /** 生产日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date productionDate;
 }

@@ -148,7 +148,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             cl.setTenantId(tenantId);
             cl.setConfirmId(confirmId);
             cl.setConsumeLinkId(row.getLinkId());
-            cl.setDeptBatchConsumeEntryId(row.getConsumeEntryId());
+            cl.setTraceabilityEntryId(row.getConsumeEntryId());
             cl.setDelFlag(0);
             cl.setCreateTime(confirmTime);
             confirmLines.add(cl);

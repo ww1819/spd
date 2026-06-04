@@ -46,6 +46,12 @@ public interface IHcBarcodeLifecycleService {
     /** 科室批量消耗/反消耗：高值（按院内码关联主档） */
     void onDeptBatchConsumeGz(DeptBatchConsume bill, DeptBatchConsumeEntry entry, GzDepInventory gzLine);
 
+    /** HIS 高值扫码核销：扣减库存后写 gz_dep_flow（计费单，非科室消耗单） */
+    void onMirrorHighChargeConsume(com.spd.gz.domain.GzTraceability trace, com.spd.gz.domain.GzTraceabilityEntry entry, GzDepInventory gzLine);
+
+    /** HIS 高值扫码退费：返还库存并写退消耗流水 */
+    void onMirrorHighChargeRefund(com.spd.gz.domain.GzTraceability trace, com.spd.gz.domain.GzTraceabilityEntry entry, GzDepInventory gzLine, java.math.BigDecimal returnQty);
+
     /** 科室批量消耗/反消耗：低值（按科室库存定数包码，支持逗号分隔多码按数量拆分） */
     void onDeptBatchConsumeLv(DeptBatchConsume bill, DeptBatchConsumeEntry entry, StkDepInventory depLine);
 }

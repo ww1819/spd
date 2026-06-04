@@ -44,6 +44,14 @@ public interface IGzTraceabilityService
     public int insertConsumedTraceability(GzTraceability gzTraceability);
 
     /**
+     * HIS 镜像高值扫码核销：写入已审核高值计费单、扣减科室库存并写 gz_dep_flow
+     *
+     * @param gzTraceability 含 visitKind/mirrorRowId/traceSource=HIS_MIRROR_HIGH 及明细
+     * @return 持久化后的计费单（含明细 ID）
+     */
+    GzTraceability insertAuditedMirrorHighBill(GzTraceability gzTraceability);
+
+    /**
      * 修改高值追溯单
      *
      * @param gzTraceability 高值追溯单

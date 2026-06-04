@@ -2231,6 +2231,18 @@ CALL add_table_column('his_mirror_consume_link', 'confirm_status', 'tinyint NOT 
 /
 CALL add_table_column('his_mirror_consume_link', 'confirm_id', 'varchar(36)', 'gz_high_consume_confirm.id', NULL);
 /
+CALL add_table_column('his_mirror_consume_link', 'traceability_id', 'bigint', '高值计费单 gz_traceability.id', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'traceability_entry_id', 'bigint', '高值计费明细 gz_traceability_entry.id', NULL);
+/
+CALL add_table_column('gz_traceability', 'visit_kind', 'varchar(16)', 'INPATIENT/OUTPATIENT（HIS镜像高值计费）', NULL);
+/
+CALL add_table_column('gz_traceability', 'mirror_row_id', 'varchar(36)', 'HIS计费镜像行ID', NULL);
+/
+CALL add_table_column('gz_traceability', 'trace_source', 'varchar(32)', 'HIS_MIRROR_HIGH=HIS高值扫码核销', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_line', 'traceability_entry_id', 'bigint', '高值计费明细 gz_traceability_entry.id', NULL);
+/
 
 CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',
@@ -2259,7 +2271,8 @@ CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_line` (
   `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
   `confirm_id` varchar(36) NOT NULL COMMENT 'gz_high_consume_confirm.id',
   `consume_link_id` varchar(36) NOT NULL COMMENT 'his_mirror_consume_link.id',
-  `dept_batch_consume_entry_id` bigint NOT NULL COMMENT '消耗明细ID',
+  `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '消耗明细ID（历史）',
+  `traceability_entry_id` bigint DEFAULT NULL COMMENT '高值计费明细 gz_traceability_entry.id',
   `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),

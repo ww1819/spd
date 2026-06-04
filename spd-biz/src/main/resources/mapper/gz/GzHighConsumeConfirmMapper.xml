@@ -4,33 +4,33 @@
 
     <sql id="confirmListFrom">
         from his_mirror_consume_link l
-        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
-            and h.tenant_id = l.tenant_id
-            and ifnull(h.del_flag, 0) = 0
-            and ifnull(h.reverse_flag, 0) = 0
-            and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
-            and h.consume_bill_status = 2
-        inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
-            and e.tenant_id = l.tenant_id
-            and ifnull(e.del_flag, 0) = 0
-        left join fd_department d on d.id = h.department_id
-        left join fd_supplier sup on sup.id = cast(nullif(trim(e.supplier_id), '') as unsigned) and sup.tenant_id = l.tenant_id
+        inner join gz_traceability t on t.id = l.traceability_id
+            and t.tenant_id = l.tenant_id
+            and ifnull(t.del_flag, 0) = 0
+            and t.trace_source = 'HIS_MIRROR_HIGH'
+            and t.order_status = 2
+        inner join gz_traceability_entry te on te.id = l.traceability_entry_id
+            and te.tenant_id = l.tenant_id
+            and ifnull(te.del_flag, 0) = 0
+        left join fd_department d on d.id = t.exec_dept_id
+        left join fd_supplier sup on sup.id = te.supplier_id and sup.tenant_id = l.tenant_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
         left join gz_high_consume_confirm_bill in_bill on in_bill.confirm_id = l.confirm_id
             and in_bill.tenant_id = l.tenant_id
             and in_bill.bill_type = 101
             and ifnull(in_bill.del_flag, 0) = 0
-            and in_bill.supplier_id = nullif(trim(e.supplier_id), '')
+            and in_bill.supplier_id = cast(te.supplier_id as char)
         left join gz_high_consume_confirm_bill out_bill on out_bill.confirm_id = l.confirm_id
             and out_bill.tenant_id = l.tenant_id
             and out_bill.bill_type = 201
             and ifnull(out_bill.del_flag, 0) = 0
-            and out_bill.supplier_id = nullif(trim(e.supplier_id), '')
+            and out_bill.supplier_id = cast(te.supplier_id as char)
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
           and ifnull(l.del_flag, 0) = 0
           and l.gz_dep_inventory_id is not null
+          and l.traceability_id is not null
     </sql>
 
     <select id="selectConfirmList" resultType="com.spd.gz.domain.dto.GzHighChargeConfirmRowVo">
@@ -45,35 +45,50 @@
             c.confirm_no as confirmNo,
             in_bill.bill_no as inboundBillNo,
             out_bill.bill_no as outboundBillNo,
-            coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeAuditTime,
-            h.consume_bill_no as consumeBillNo,
-            e.id as consumeEntryId,
-            e.material_id as materialId,
-            e.material_name as materialName,
-            e.unit_price as unitPrice,
-            coalesce(l.alloc_qty, e.qty) as entryQty,
-            e.amt as amt,
-            e.supplier_id as supplierId,
+            coalesce(t.audit_date, t.create_time) as consumeAuditTime,
+            t.trace_no as consumeBillNo,
+            te.id as consumeEntryId,
+            te.material_id as materialId,
+            te.material_name as materialName,
+            te.charge_price as unitPrice,
+            coalesce(l.alloc_qty, te.quantity) as entryQty,
+            case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
+                then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
+            cast(te.supplier_id as char) as supplierId,
             sup.name as supplierName,
-            e.batch_no as batchNo,
-            h.department_id as departmentId,
+            te.batch_no as batchNo,
+            t.exec_dept_id as departmentId,
             d.name as departmentName,
             coalesce(inp.patient_name, outp.patient_name) as patientName,
             coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
             coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
-            coalesce(inp.item_name, outp.item_name) as itemName
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(
+                nullif(trim(inp.spec_model), ''),
+                nullif(trim(outp.spec_model), ''),
+                (select cm.speci from fd_material cm
+                    where cm.tenant_id = l.tenant_id
+                      and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
+                      and (cm.del_flag = 0 or cm.del_flag is null)
+                    order by cm.id limit 1)
+            ) as itemSpec,
+            (select cm.model from fd_material cm
+                where cm.tenant_id = l.tenant_id
+                  and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
+                  and (cm.del_flag = 0 or cm.del_flag is null)
+                order by cm.id limit 1) as itemModel
         <include refid="confirmListFrom"/>
         <if test="departmentId != null">
-            and h.department_id = #{departmentId}
+            and t.exec_dept_id = #{departmentId}
         </if>
         <if test="confirmStatus != null and confirmStatus != ''">
             and ifnull(l.confirm_status, 0) = #{confirmStatus}
         </if>
         <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
-            and coalesce(h.audit_date, h.create_time, h.consume_bill_date) &gt;= #{beginConsumeAuditTime}
+            and coalesce(t.audit_date, t.create_time) &gt;= #{beginConsumeAuditTime}
         </if>
         <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
-            and coalesce(h.audit_date, h.create_time, h.consume_bill_date) &lt;= #{endConsumeAuditTime}
+            and coalesce(t.audit_date, t.create_time) &lt;= #{endConsumeAuditTime}
         </if>
         <if test="patientName != null and patientName != ''">
             and coalesce(inp.patient_name, outp.patient_name) like concat('%', #{patientName}, '%')
@@ -85,7 +100,7 @@
             and coalesce(inp.charge_item_id, outp.charge_item_id) like concat('%', #{chargeItemId}, '%')
         </if>
         <if test="materialName != null and materialName != ''">
-            and e.material_name like concat('%', #{materialName}, '%')
+            and te.material_name like concat('%', #{materialName}, '%')
         </if>
         order by consumeAuditTime desc, l.id desc
     </select>
@@ -97,39 +112,40 @@
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
             ifnull(l.confirm_status, 0) as confirmStatus,
-            coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeAuditTime,
-            e.id as consumeEntryId,
-            e.material_id as materialId,
-            e.material_name as materialName,
-            e.unit_price as unitPrice,
-            coalesce(l.alloc_qty, e.qty) as entryQty,
-            e.amt as amt,
-            e.supplier_id as supplierId,
+            coalesce(t.audit_date, t.create_time) as consumeAuditTime,
+            te.id as consumeEntryId,
+            te.material_id as materialId,
+            te.material_name as materialName,
+            te.charge_price as unitPrice,
+            coalesce(l.alloc_qty, te.quantity) as entryQty,
+            case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
+                then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
+            cast(te.supplier_id as char) as supplierId,
             sup.name as supplierName,
-            e.batch_no as batchNo,
-            e.batch_number as batchNumber,
-            e.begin_time as beginTime,
-            e.end_time as endTime,
-            e.main_barcode as mainBarcode,
-            e.sub_barcode as subBarcode,
-            e.material_speci as materialSpeci,
-            e.material_model as materialModel,
-            e.factory_id as factoryId,
-            h.department_id as departmentId
+            te.batch_no as batchNo,
+            null as batchNumber,
+            null as beginTime,
+            te.expiry_date as endTime,
+            te.master_barcode as mainBarcode,
+            te.secondary_barcode as subBarcode,
+            te.specification as materialSpeci,
+            te.model as materialModel,
+            null as factoryId,
+            t.exec_dept_id as departmentId
         from his_mirror_consume_link l
-        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
-            and h.tenant_id = l.tenant_id
-            and ifnull(h.del_flag, 0) = 0
-            and ifnull(h.reverse_flag, 0) = 0
-            and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
-            and h.consume_bill_status = 2
-        inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
-            and e.tenant_id = l.tenant_id
-            and ifnull(e.del_flag, 0) = 0
-        left join fd_supplier sup on sup.id = cast(nullif(trim(e.supplier_id), '') as unsigned) and sup.tenant_id = l.tenant_id
+        inner join gz_traceability t on t.id = l.traceability_id
+            and t.tenant_id = l.tenant_id
+            and ifnull(t.del_flag, 0) = 0
+            and t.trace_source = 'HIS_MIRROR_HIGH'
+            and t.order_status = 2
+        inner join gz_traceability_entry te on te.id = l.traceability_entry_id
+            and te.tenant_id = l.tenant_id
+            and ifnull(te.del_flag, 0) = 0
+        left join fd_supplier sup on sup.id = te.supplier_id and sup.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
           and ifnull(l.del_flag, 0) = 0
           and l.gz_dep_inventory_id is not null
+          and l.traceability_id is not null
           and l.id in
         <foreach collection="linkIds" item="id" open="(" separator="," close=")">
             #{id}
@@ -150,10 +166,10 @@
 
     <insert id="insertConfirmLineBatch">
         insert into gz_high_consume_confirm_line (
-            id, tenant_id, confirm_id, consume_link_id, dept_batch_consume_entry_id, del_flag, create_time
+            id, tenant_id, confirm_id, consume_link_id, dept_batch_consume_entry_id, traceability_entry_id, del_flag, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (#{e.id}, #{e.tenantId}, #{e.confirmId}, #{e.consumeLinkId}, #{e.deptBatchConsumeEntryId},
+            (#{e.id}, #{e.tenantId}, #{e.confirmId}, #{e.consumeLinkId}, #{e.deptBatchConsumeEntryId}, #{e.traceabilityEntryId},
              ifnull(#{e.delFlag}, 0), #{e.createTime})
         </foreach>
     </insert>

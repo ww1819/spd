@@ -1380,6 +1380,9 @@ CREATE TABLE IF NOT EXISTS `gz_traceability` (
   `order_status` int DEFAULT NULL COMMENT '状态',
   `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
   `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `visit_kind` varchar(16) DEFAULT NULL COMMENT 'INPATIENT/OUTPATIENT（HIS镜像高值计费）',
+  `mirror_row_id` varchar(36) DEFAULT NULL COMMENT 'HIS计费镜像行ID',
+  `trace_source` varchar(32) DEFAULT NULL COMMENT '来源：HIS_MIRROR_HIGH=HIS高值扫码核销；空=手工住院高值扫码',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
@@ -1391,7 +1394,8 @@ CREATE TABLE IF NOT EXISTS `gz_traceability` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`),
   KEY `idx_gz_trace_no` (`trace_no`),
-  KEY `idx_gz_trace_tenant` (`tenant_id`)
+  KEY `idx_gz_trace_tenant` (`tenant_id`),
+  KEY `idx_gz_trace_mirror` (`tenant_id`,`trace_source`,`mirror_row_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值追溯主表';
 /
 
@@ -2830,8 +2834,10 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
   `mirror_row_id` varchar(36) NOT NULL COMMENT '镜像表主键 his_*_charge_mirror.id',
   `fetch_batch_id` varchar(36) DEFAULT NULL COMMENT '抓取批次ID',
-  `dept_batch_consume_id` bigint NOT NULL COMMENT '科室批量消耗主表 t_hc_ks_xh.id',
-  `dept_batch_consume_entry_id` bigint NOT NULL COMMENT '科室批量消耗明细 t_hc_ks_xh_entry.id',
+  `dept_batch_consume_id` bigint DEFAULT NULL COMMENT '科室批量消耗主表 t_hc_ks_xh.id（低值/历史高值）',
+  `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '科室批量消耗明细 t_hc_ks_xh_entry.id（低值/历史高值）',
+  `traceability_id` bigint DEFAULT NULL COMMENT '高值计费单 gz_traceability.id',
+  `traceability_entry_id` bigint DEFAULT NULL COMMENT '高值计费明细 gz_traceability_entry.id',
   `alloc_qty` decimal(18,6) NOT NULL COMMENT '本行分摊数量',
   `dep_inventory_id` bigint DEFAULT NULL COMMENT '低值科室库存 stk_dep_inventory.id',
   `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '高值科室库存 gz_dep_inventory.id',
@@ -2850,6 +2856,8 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   PRIMARY KEY (`id`),
   KEY `idx_hmcl_mirror` (`mirror_row_id`),
   KEY `idx_hmcl_consume` (`dept_batch_consume_id`),
+  KEY `idx_hmcl_trace` (`traceability_id`),
+  KEY `idx_hmcl_trace_entry` (`traceability_entry_id`),
   KEY `idx_hmcl_fetch` (`tenant_id`,`fetch_batch_id`),
   KEY `idx_hmcl_dep_inv` (`tenant_id`,`dep_inventory_id`),
   KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`),
@@ -2885,7 +2893,8 @@ CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_line` (
   `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
   `confirm_id` varchar(36) NOT NULL COMMENT 'gz_high_consume_confirm.id',
   `consume_link_id` varchar(36) NOT NULL COMMENT 'his_mirror_consume_link.id',
-  `dept_batch_consume_entry_id` bigint NOT NULL COMMENT '消耗明细ID',
+  `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '消耗明细ID（历史）',
+  `traceability_entry_id` bigint DEFAULT NULL COMMENT '高值计费明细 gz_traceability_entry.id',
   `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),

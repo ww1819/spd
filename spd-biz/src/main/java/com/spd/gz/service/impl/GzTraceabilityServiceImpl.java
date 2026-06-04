@@ -20,6 +20,8 @@ import com.spd.gz.domain.GzMaterialUsageReportVo;
 import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.gz.domain.GzDepInventory;
+import com.spd.gz.support.GzTraceSourceConstants;
+import com.spd.hc.service.IHcBarcodeLifecycleService;
 
 /**
  * 高值追溯单Service业务层处理
@@ -35,6 +37,9 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     
     @Autowired
     private GzDepInventoryMapper gzDepInventoryMapper;
+
+    @Autowired
+    private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
     /**
      * 查询高值追溯单
@@ -140,6 +145,62 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         int rows = gzTraceabilityMapper.insertGzTraceability(gzTraceability);
         insertGzTraceabilityEntry(gzTraceability);
         return rows;
+    }
+
+    /**
+     * HIS 镜像高值扫码核销：已审核计费单 + 扣库存 + 高值科室流水
+     */
+    @Transactional
+    @Override
+    public GzTraceability insertAuditedMirrorHighBill(GzTraceability gzTraceability)
+    {
+        if (gzTraceability == null || gzTraceability.getTraceabilityEntryList() == null
+            || gzTraceability.getTraceabilityEntryList().isEmpty())
+        {
+            throw new ServiceException("高值计费明细不能为空");
+        }
+        if (StringUtils.isEmpty(gzTraceability.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            gzTraceability.setTenantId(SecurityUtils.getCustomerId());
+        }
+        if (StringUtils.isEmpty(gzTraceability.getTraceNo()))
+        {
+            gzTraceability.setTraceNo(generateTraceNo());
+        }
+        Date now = DateUtils.getNowDate();
+        String userId = SecurityUtils.getUserIdStr();
+        gzTraceability.setTraceSource(StringUtils.isNotEmpty(gzTraceability.getTraceSource())
+            ? gzTraceability.getTraceSource() : GzTraceSourceConstants.HIS_MIRROR_HIGH);
+        gzTraceability.setOrderStatus(2);
+        gzTraceability.setAuditDate(now);
+        gzTraceability.setAuditBy(userId);
+        gzTraceability.setDelFlag("0");
+        gzTraceability.setCreateTime(now);
+        if (StringUtils.isEmpty(gzTraceability.getCreateBy()))
+        {
+            gzTraceability.setCreateBy(userId);
+        }
+        gzTraceabilityMapper.insertGzTraceability(gzTraceability);
+        insertGzTraceabilityEntry(gzTraceability);
+        deductDepartmentInventory(gzTraceability);
+        GzTraceability persisted = selectGzTraceabilityById(gzTraceability.getId());
+        if (persisted == null || persisted.getTraceabilityEntryList() == null)
+        {
+            throw new ServiceException("高值计费单保存失败");
+        }
+        for (GzTraceabilityEntry entry : persisted.getTraceabilityEntryList())
+        {
+            if (entry == null || entry.getInventoryId() == null)
+            {
+                continue;
+            }
+            GzDepInventory gz = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
+            if (gz != null)
+            {
+                hcBarcodeLifecycleService.onMirrorHighChargeConsume(persisted, entry, gz);
+            }
+        }
+        return persisted;
     }
 
     /**
