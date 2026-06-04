@@ -4,6 +4,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.department.mapper.DeptBatchConsumeMapper">
 
+    <!-- 与 TenantScopeService.resolveDepartmentScope 一致：sb_user_permission_dept ∪ sys_user_department -->
+    <sql id="scopedDeptIdsSubquery">
+        select distinct x.did from (
+            select cast(upd.dept_id as unsigned) as did
+            from sb_user_permission_dept upd
+            where upd.user_id = #{params.scopeDeptUserId}
+              and ifnull(upd.del_flag, '0') = '0'
+            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
+              and upd.customer_id = #{params.scopeDeptCustomerId}
+            </if>
+            union
+            select ud.department_id as did
+            from sys_user_department ud
+            where ud.user_id = #{params.scopeDeptUserId}
+              and (ud.status = 0 or ud.status = '0' or ud.status is null)
+        ) x
+        where x.did is not null
+    </sql>
+
+    <sql id="deptBatchConsumeDepartmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and a.department_id in (<include refid="scopedDeptIdsSubquery"/>)
+        </if>
+    </sql>
+
     <resultMap type="DeptBatchConsume" id="DeptBatchConsumeResult">
         <result property="id"    column="id"    />
         <result property="consumeBillNo"    column="consume_bill_no"    />
@@ -153,6 +178,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumeBillStatus != null "> and a.consume_bill_status = #{consumeBillStatus}</if>
             <if test="beginDate != null and beginDate != ''"> and a.consume_bill_date &gt;= #{beginDate}</if>
             <if test="endDate != null and endDate != ''"> and a.consume_bill_date &lt;= #{endDate}</if>
+            <include refid="deptBatchConsumeDepartmentScopeFilter"/>
         </where>
         order by
             case when a.consume_bill_status = 2 then 1 else 0 end asc,
