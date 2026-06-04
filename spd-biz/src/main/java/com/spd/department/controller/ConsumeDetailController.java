@@ -98,6 +98,25 @@ public class ConsumeDetailController extends BaseController
         return getDataTable(list, totalInfo, total);
     }
 
+    /**
+     * 科室领用—出退库汇总（出库 201 / 退库 401 净出库，按科室权限过滤）
+     */
+    @PreAuthorize("@ss.hasPermi('department:consumeDetail:list')")
+    @GetMapping("/outReturnSummary")
+    public TableDataInfo outReturnSummary(StkIoBill stkIoBill)
+    {
+        startPage();
+        applyDepartmentScopeOrDeny(stkIoBill);
+        List<Map<String, Object>> list = consumeDetailService.selectConsumeOutReturnSummaryList(stkIoBill);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
+        TotalInfo totalInfo = consumeDetailService.selectConsumeOutReturnSummaryListTotal(stkIoBill);
+        if (totalInfo == null)
+        {
+            totalInfo = new TotalInfo();
+        }
+        return getDataTable(list, totalInfo, total);
+    }
 
     /**
      * 查询仓库进销存报表

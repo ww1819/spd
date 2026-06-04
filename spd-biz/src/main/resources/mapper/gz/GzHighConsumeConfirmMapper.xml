@@ -62,7 +62,21 @@
             coalesce(inp.patient_name, outp.patient_name) as patientName,
             coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
             coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
-            coalesce(inp.item_name, outp.item_name) as itemName
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(
+                nullif(trim(inp.spec_model), ''),
+                nullif(trim(outp.spec_model), ''),
+                (select cm.speci from fd_material cm
+                    where cm.tenant_id = l.tenant_id
+                      and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
+                      and (cm.del_flag = 0 or cm.del_flag is null)
+                    order by cm.id limit 1)
+            ) as itemSpec,
+            (select cm.model from fd_material cm
+                where cm.tenant_id = l.tenant_id
+                  and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
+                  and (cm.del_flag = 0 or cm.del_flag is null)
+                order by cm.id limit 1) as itemModel
         <include refid="confirmListFrom"/>
         <if test="departmentId != null">
             and t.exec_dept_id = #{departmentId}

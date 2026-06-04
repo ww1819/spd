@@ -44,6 +44,15 @@ public class GzRefDocController extends BaseController
     }
 
     @PreAuthorize("@ss.hasPermi('gz:refDoc:query')")
+    @GetMapping("/acceptance/{orderId}/refPreview")
+    public AjaxResult acceptanceRefPreview(@PathVariable Long orderId,
+            @RequestParam Long warehouseId,
+            @RequestParam(required = false) Long excludeShipmentId)
+    {
+        return success(gzRefDocService.previewAcceptanceRef(orderId, warehouseId, excludeShipmentId));
+    }
+
+    @PreAuthorize("@ss.hasPermi('gz:refDoc:query')")
     @GetMapping("/shipment/audited")
     public AjaxResult listAuditedShipment(GzShipment query)
     {

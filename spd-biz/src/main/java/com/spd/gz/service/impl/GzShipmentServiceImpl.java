@@ -154,10 +154,12 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setShipmentNo(getShipmentNo());
         gzShipment.setCreateTime(DateUtils.getNowDate());
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzShipment.getGzShipmentEntryList(), "高值出库");
+        normalizeAndAssertOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList(), null);
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         int rows = gzShipmentMapper.insertGzShipment(gzShipment);
         int filteredCount = insertGzShipmentEntry(gzShipment);
         gzShipment.setDedupFilteredCount(filteredCount);
+        gzLineRefWriteService.assertBarcodeNotOccupiedByOthers(gzShipment.getGzShipmentEntryList(), gzShipment.getId());
         gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return rows;
     }
@@ -188,11 +190,24 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         }
         gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(DateUtils.getNowDate());
+        GzShipment existing = gzShipmentMapper.selectGzShipmentById(gzShipment.getId());
+        if (existing == null)
+        {
+            throw new ServiceException(String.format("高值出库业务：%s，不存在!", gzShipment.getId()));
+        }
+        if (StringUtils.isNotEmpty(existing.getRefAcceptanceId()))
+        {
+            gzShipment.setRefAcceptanceId(existing.getRefAcceptanceId());
+            gzShipment.setWarehouseId(existing.getWarehouseId());
+            gzShipment.setDepartmentId(existing.getDepartmentId());
+        }
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzShipment.getGzShipmentEntryList(), "高值出库");
+        normalizeAndAssertOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList(), existing);
         gzStockValidationService.assertShipmentOutbound(gzShipment, gzShipment.getGzShipmentEntryList());
         gzLineRefWriteService.deleteOutboundRefs(gzShipment.getId());
         int filteredCount = syncGzShipmentEntry(gzShipment);
         gzShipment.setDedupFilteredCount(filteredCount);
+        gzLineRefWriteService.assertBarcodeNotOccupiedByOthers(gzShipment.getGzShipmentEntryList(), gzShipment.getId());
         gzLineRefWriteService.persistOutboundRefs(gzShipment, gzShipment.getGzShipmentEntryList());
         return gzShipmentMapper.updateGzShipment(gzShipment);
     }
@@ -706,6 +721,101 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             || !java.util.Objects.equals(oldRow.getDepartmentId(), newRow.getDepartmentId())
             || !java.util.Objects.equals(oldRow.getBillNo(), newRow.getBillNo())
             || !java.util.Objects.equals(oldRow.getRemark(), newRow.getRemark());
+    }
+
+    private void normalizeAndAssertOutboundRefs(GzShipment sh, List<GzShipmentEntry> entries, GzShipment existing)
+    {
+        if (sh.getWarehouseId() == null)
+        {
+            throw new ServiceException("出库仓库不能为空");
+        }
+        if (sh.getDepartmentId() == null)
+        {
+            throw new ServiceException("出库科室不能为空");
+        }
+        String boundRefId = sh.getRefAcceptanceId();
+        if (StringUtils.isEmpty(boundRefId) && existing != null)
+        {
+            boundRefId = existing.getRefAcceptanceId();
+            sh.setRefAcceptanceId(boundRefId);
+        }
+        boolean anyRefLine = false;
+        String firstRefAcceptanceId = null;
+        if (entries != null)
+        {
+            for (GzShipmentEntry e : entries)
+            {
+                if (e == null)
+                {
+                    continue;
+                }
+                if (hasShipmentAcceptanceRef(e))
+                {
+                    anyRefLine = true;
+                    if (firstRefAcceptanceId == null)
+                    {
+                        firstRefAcceptanceId = e.getRefSrcAcceptanceId();
+                    }
+                    else if (!firstRefAcceptanceId.equals(e.getRefSrcAcceptanceId()))
+                    {
+                        throw new ServiceException("引用模式下明细须来自同一张备货验收单");
+                    }
+                }
+            }
+        }
+        if (StringUtils.isNotEmpty(boundRefId))
+        {
+            String boundStr = boundRefId.trim();
+            if (!anyRefLine)
+            {
+                throw new ServiceException("已绑定验收单的出库单须保留引用明细，请删除整单后重新制单");
+            }
+            for (GzShipmentEntry e : entries)
+            {
+                if (e == null)
+                {
+                    continue;
+                }
+                if (!hasShipmentAcceptanceRef(e))
+                {
+                    throw new ServiceException("引用模式下不允许混入非引用来源的明细");
+                }
+                if (!boundStr.equals(e.getRefSrcAcceptanceId()))
+                {
+                    throw new ServiceException("明细与表头绑定的验收单不一致");
+                }
+            }
+        }
+        else if (anyRefLine)
+        {
+            if (StringUtils.isNotEmpty(firstRefAcceptanceId))
+            {
+                sh.setRefAcceptanceId(firstRefAcceptanceId.trim());
+            }
+            for (GzShipmentEntry e : entries)
+            {
+                if (e != null && !hasShipmentAcceptanceRef(e))
+                {
+                    throw new ServiceException("存在引用明细时不允许混入扫码或手工添加的明细");
+                }
+            }
+        }
+        else
+        {
+            for (GzShipmentEntry e : entries)
+            {
+                if (e != null && hasShipmentAcceptanceRef(e))
+                {
+                    throw new ServiceException("非引用模式下不允许保存引用来源字段的明细");
+                }
+            }
+        }
+    }
+
+    private boolean hasShipmentAcceptanceRef(GzShipmentEntry e)
+    {
+        return e != null && StringUtils.isNotEmpty(e.getRefSrcAcceptanceId())
+            && (StringUtils.isNotEmpty(e.getRefSrcBarcodeLineId()) || StringUtils.isNotEmpty(e.getRefSrcOrderEntryId()));
     }
 
     private String buildShipmentRefDedupKey(GzShipmentEntry e) {

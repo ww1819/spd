@@ -77,6 +77,9 @@ public class GzShipment extends BaseEntity
     /** 保存时后台自动去重过滤条数（不落库） */
     private Integer dedupFilteredCount;
 
+    /** 引用的备货验收单主表ID（varchar36，绑定后不可变更） */
+    private String refAcceptanceId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -295,6 +298,16 @@ public class GzShipment extends BaseEntity
 
     public void setDedupFilteredCount(Integer dedupFilteredCount) {
         this.dedupFilteredCount = dedupFilteredCount;
+    }
+
+    public String getRefAcceptanceId()
+    {
+        return refAcceptanceId;
+    }
+
+    public void setRefAcceptanceId(String refAcceptanceId)
+    {
+        this.refAcceptanceId = refAcceptanceId;
     }
 
     @Override

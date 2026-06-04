@@ -26,6 +26,8 @@ import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.core.page.TotalInfo;
+import com.spd.common.utils.SecurityUtils;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 科室批量消耗Controller
@@ -40,6 +42,17 @@ public class DeptBatchConsumeController extends BaseController
     @Autowired
     private IDeptBatchConsumeService deptBatchConsumeService;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    private void applyDepartmentScopeOrDeny(DeptBatchConsume q) {
+        if (q == null) {
+            return;
+        }
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            q.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+    }
+
     /**
      * 查询科室批量消耗列表
      */
@@ -47,6 +60,7 @@ public class DeptBatchConsumeController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(DeptBatchConsume deptBatchConsume)
     {
+        applyDepartmentScopeOrDeny(deptBatchConsume);
         startPage();
         List<DeptBatchConsume> list = deptBatchConsumeService.selectDeptBatchConsumeList(deptBatchConsume);
         return getDataTable(list);
@@ -60,6 +74,7 @@ public class DeptBatchConsumeController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, DeptBatchConsume deptBatchConsume)
     {
+        applyDepartmentScopeOrDeny(deptBatchConsume);
         List<DeptBatchConsume> list = deptBatchConsumeService.selectDeptBatchConsumeList(deptBatchConsume);
         ExcelUtil<DeptBatchConsume> util = new ExcelUtil<DeptBatchConsume>(DeptBatchConsume.class);
         util.exportExcel(response, list, "科室批量消耗数据");

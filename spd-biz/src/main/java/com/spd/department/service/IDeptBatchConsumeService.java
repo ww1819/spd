@@ -33,6 +33,11 @@ public interface IDeptBatchConsumeService
     public List<DeptBatchConsume> selectDeptBatchConsumeList(DeptBatchConsume deptBatchConsume);
 
     /**
+     * 列表/导出等查询：按当前用户科室权限过滤
+     */
+    void applyDepartmentScopeToQuery(DeptBatchConsume deptBatchConsume);
+
+    /**
      * 新增科室批量消耗
      * 
      * @param deptBatchConsume 科室批量消耗

@@ -19,6 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="refAcceptanceId"    column="ref_acceptance_id"    />
         <result property="totalAmt"    column="totalAmt"    />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -65,7 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectGzShipmentVo">
         select gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
-				gs.create_time, gs.update_by, gs.update_time, gs.remark,
+				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName
         from gz_shipment gs
@@ -77,7 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
-				gs.create_time, gs.update_by, gs.update_time, gs.remark,
+				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				COALESCE(SUM(gse.amt), 0) as totalAmt
@@ -96,7 +97,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="auditDate != null "> and gs.audit_date = #{auditDate}</if>
         group by gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
-				gs.create_time, gs.update_by, gs.update_time, gs.remark,
+				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,
 				w.id, w.code, w.name, d.id, d.code, d.name
         order by
             case when gs.shipment_status = 2 then 1 else 0 end asc,
@@ -107,7 +108,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectGzShipmentById" parameterType="Long" resultMap="GzShipmentGzShipmentEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select a.id, a.shipment_no, a.department_id, a.shipment_date, a.warehouse_id, 
+        select a.id, a.shipment_no, a.department_id, a.shipment_date, a.warehouse_id, a.ref_acceptance_id,
 				a.shipment_status, a.shipment_type, a.del_flag,
                 a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
@@ -137,6 +138,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
+            <if test="refAcceptanceId != null and refAcceptanceId != ''">ref_acceptance_id,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -153,6 +155,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
+            <if test="refAcceptanceId != null and refAcceptanceId != ''">#{refAcceptanceId},</if>
             #{scopedTenantId},
          </trim>
     </insert>
@@ -174,6 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="refAcceptanceId != null and refAcceptanceId != ''">ref_acceptance_id = #{refAcceptanceId},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
