@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `third_party_dept_id` varchar(128) DEFAULT NULL COMMENT '其他第三方系统科室ID',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `del_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新人',

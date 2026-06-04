@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.dto.MaterialBatchUpdateDto;
@@ -76,6 +77,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private FoundationArchiveDeleteGuardMapper foundationArchiveDeleteGuardMapper;
 
     @Autowired
     private StkIoBillMapper stkIoBillMapper;
@@ -716,10 +720,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
      */
     private void checkMaterialIsWarehouse(Long id)
     {
-        int count = stkIoBillMapper.selectStkIobillEntryMaterialIsExist(id);
-        if (count > 0)
+        if (foundationArchiveDeleteGuardMapper.countMaterialBusinessUsage(id) > 0)
         {
-            throw new ServiceException("该产品已产生业务单据（含入库等），无法删除，请在档案中改为「停用」。");
+            throw new ServiceException("该产品已产生业务数据（申领、申购、出入库/退库、批量消耗、高值单据、库存等），不允许删除，请在档案中改为「停用」");
         }
     }
 

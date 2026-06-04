@@ -62,7 +62,7 @@ public interface FdWarehouseMapper
      * @param id 仓库主键
      * @return 结果
      */
-    public int deleteFdWarehouseById(String id);
+    int deleteFdWarehouseById(@Param("id") String id, @Param("deleteBy") String deleteBy);
 
     /**
      * 批量删除仓库

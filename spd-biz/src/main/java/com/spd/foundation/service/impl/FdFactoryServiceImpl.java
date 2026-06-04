@@ -26,6 +26,7 @@ import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFactoryChangeLog;
 import com.spd.foundation.mapper.FdFactoryChangeLogMapper;
 import com.spd.foundation.mapper.FdFactoryMapper;
+import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdFactoryService;
 
@@ -40,6 +41,9 @@ public class FdFactoryServiceImpl implements IFdFactoryService
 {
     @Autowired
     private FdFactoryMapper fdFactoryMapper;
+
+    @Autowired
+    private FoundationArchiveDeleteGuardMapper foundationArchiveDeleteGuardMapper;
 
     @Autowired
     private FdFactoryChangeLogMapper fdFactoryChangeLogMapper;
@@ -175,6 +179,10 @@ public class FdFactoryServiceImpl implements IFdFactoryService
             throw new ServiceException(String.format("厂家：%s，不存在!", factoryId));
         }
         SecurityUtils.ensureTenantAccess(fdFactory.getTenantId());
+        if (foundationArchiveDeleteGuardMapper.countFactoryBusinessUsage(factoryId) > 0)
+        {
+            throw new ServiceException("该生产厂家已发生业务数据（库存、出入库、批量消耗、流水等），不允许删除");
+        }
         return fdFactoryMapper.deleteFdFactoryByFactoryId(factoryId, SecurityUtils.getUserIdStr());
     }
 

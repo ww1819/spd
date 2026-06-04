@@ -37,6 +37,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
+        <result property="deleteBy"    column="del_by"    />
+        <result property="deleteTime"    column="del_time"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="parentId"    column="parent_id"    />
         <result property="deptRemark"    column="remark"    />
@@ -44,7 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, referred_name, remark, his_id, del_flag, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
+        select id, code, name, referred_name, remark, his_id, del_flag, del_by, del_time, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
     </sql>
 
     <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id） -->
@@ -204,6 +206,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="deleteBy != null">del_by = #{deleteBy},</if>
+            <if test="deleteTime != null">del_time = #{deleteTime},</if>
             parent_id = #{parentId,jdbcType=BIGINT},
             <choose>
                 <when test="params != null and params.skipThirdPartyDeptId == true"></when>
@@ -225,6 +229,58 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <!--            #{id}-->
 <!--        </foreach>-->
 <!--    </delete>-->
+
+    <!-- 科室是否已有业务数据（存在任一则不可删除） -->
+    <select id="countDepartmentBusinessUsage" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM bas_apply
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM dep_purchase_apply
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM dep_purchase_apply_agg
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_bill
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM t_hc_ks_xh
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_shipment
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_order
+            WHERE IFNULL(del_flag, 0) != 1
+              AND tenant_id = #{scopedTenantId}
+              AND (department_id = #{departmentId} OR apply_department_id = #{departmentId})
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_refund_goods
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_refund_stock
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_stocktaking
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND warehouse_id IS NULL AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_dep_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+        ) biz
+    </select>
 
     <select id="selectFdDepartmentByTenantAndHisId" resultMap="FdDepartmentResult">
         <include refid="selectFdDepartmentVo"/>

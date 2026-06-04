@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper">
+
+    <!-- 产品档案：未删除业务明细/库存/单据引用 -->
+    <select id="countMaterialBusinessUsage" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM stk_io_bill_entry
+            WHERE IFNULL(del_flag, 0) != 1 AND material_id = #{materialId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND material_id = #{materialId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_dep_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND material_id = #{materialId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM bas_apply_entry e
+            INNER JOIN bas_apply a ON a.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(a.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND a.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM dep_purchase_apply_entry e
+            INNER JOIN dep_purchase_apply p ON p.id = e.parent_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(p.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND p.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM t_hc_ks_xh_entry e
+            INNER JOIN t_hc_ks_xh m ON m.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(m.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND m.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_order_entry e
+            INNER JOIN gz_order o ON o.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(o.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND o.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_shipment_entry e
+            INNER JOIN gz_shipment s ON s.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(s.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND s.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_dep_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND material_id = #{materialId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_depot_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND material_id = #{materialId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_stocktaking_entry e
+            INNER JOIN stk_io_stocktaking s ON s.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(s.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND s.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM wh_warehouse_apply_entry e
+            INNER JOIN wh_warehouse_apply w ON w.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(w.del_flag, 0) != 1
+              AND e.material_id = #{materialId} AND w.tenant_id = #{scopedTenantId}
+            LIMIT 1
+        ) biz
+    </select>
+
+    <!-- 仓库：未删除业务单据/库存/高值等引用 -->
+    <select id="countWarehouseBusinessUsage" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM stk_io_bill
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM bas_apply
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM dep_purchase_apply
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM t_hc_ks_xh
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_order
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_shipment
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_depot_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_stocktaking
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM wh_warehouse_apply
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_refund_goods
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_refund_stock
+            WHERE IFNULL(del_flag, 0) != 1 AND warehouse_id = #{warehouseId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+        ) biz
+    </select>
+
+    <!-- 供应商：未删除出入库/高值/明细引用 -->
+    <select id="countSupplierBusinessUsage" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM stk_io_bill
+            WHERE IFNULL(del_flag, 0) != 1 AND suppler_id = #{supplierId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_bill_entry
+            WHERE IFNULL(del_flag, 0) != 1 AND supplier_id = #{supplierId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM gz_order
+            WHERE IFNULL(del_flag, 0) != 1 AND suppler_id = #{supplierId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_stocktaking
+            WHERE IFNULL(del_flag, 0) != 1 AND suppler_id = #{supplierId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+        ) biz
+    </select>
+
+    <!-- 生产厂家：未删除库存/流水/消耗/明细引用 -->
+    <select id="countFactoryBusinessUsage" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT COUNT(1) FROM (
+            SELECT 1 FROM stk_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND factory_id = #{factoryId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_dep_inventory
+            WHERE IFNULL(del_flag, 0) != 1 AND factory_id = #{factoryId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM t_hc_ks_xh_entry e
+            INNER JOIN t_hc_ks_xh m ON m.id = e.paren_id
+            WHERE IFNULL(e.del_flag, 0) != 1 AND IFNULL(m.del_flag, 0) != 1
+              AND e.factory_id = #{factoryId} AND m.tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM stk_io_bill_entry
+            WHERE IFNULL(del_flag, 0) != 1 AND material_factory_id = #{factoryId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM t_hc_ck_flow
+            WHERE IFNULL(del_flag, 0) != 1 AND factory_id = #{factoryId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+            UNION ALL
+            SELECT 1 FROM t_hc_ks_flow
+            WHERE IFNULL(del_flag, 0) != 1 AND factory_id = #{factoryId} AND tenant_id = #{scopedTenantId}
+            LIMIT 1
+        ) biz
+    </select>
+</mapper>

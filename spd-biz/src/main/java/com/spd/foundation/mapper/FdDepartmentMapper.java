@@ -44,6 +44,11 @@ public interface FdDepartmentMapper
     int countChildrenByParentId(@Param("parentId") Long parentId);
 
     /**
+     * 科室是否已有业务引用（申领、申购、出入库/退库、批量消耗、高值单据、科室库存等）
+     */
+    int countDepartmentBusinessUsage(@Param("departmentId") Long departmentId);
+
+    /**
      * 租户下同名科室数量（未删除；可排除某 id，用于唯一校验）
      */
     int countDepartmentByTenantAndName(@Param("tenantId") String tenantId, @Param("name") String name, @Param("excludeId") Long excludeId);

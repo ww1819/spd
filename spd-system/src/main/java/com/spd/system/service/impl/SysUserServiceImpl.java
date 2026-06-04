@@ -903,11 +903,17 @@ public class SysUserServiceImpl implements ISysUserService
     @Transactional
     public int deleteUserById(Long userId)
     {
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null)
+        {
+            throw new ServiceException("用户不存在");
+        }
+        assertUserNoBusinessUsage(user);
         // 删除用户与角色关联
         userRoleMapper.deleteUserRoleByUserId(userId);
         // 删除用户与岗位表
         userPostMapper.deleteUserPostByUserId(userId);
-        return userMapper.deleteUserById(userId);
+        return userMapper.deleteUserById(userId, SecurityUtils.getUserIdStr());
     }
 
     /**
@@ -924,6 +930,11 @@ public class SysUserServiceImpl implements ISysUserService
         {
             checkUserAllowed(new SysUser(userId));
             checkUserDataScope(userId);
+            SysUser user = userMapper.selectUserById(userId);
+            if (user != null)
+            {
+                assertUserNoBusinessUsage(user);
+            }
         }
         // 删除用户与角色关联
         userRoleMapper.deleteUserRole(userIds);
@@ -1135,5 +1146,18 @@ public class SysUserServiceImpl implements ISysUserService
         userPostMapper.deleteUserPost(delArr);
         userPostMapper.batchUserPost(toInsert);
         return toInsert.size();
+    }
+
+    private void assertUserNoBusinessUsage(SysUser user)
+    {
+        if (user == null || user.getUserId() == null)
+        {
+            return;
+        }
+        String tenantId = StringUtils.trimToNull(user.getCustomerId());
+        if (userMapper.countUserBusinessUsage(user.getUserId(), tenantId) > 0)
+        {
+            throw new ServiceException("该用户已发生业务数据（申领、申购、出入库/盘点、批量消耗等），不允许删除");
+        }
     }
 }

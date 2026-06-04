@@ -200,14 +200,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </update>
 
-    <delete id="deleteFdWarehouseById" parameterType="String">
+    <delete id="deleteFdWarehouseById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update fd_warehouse set del_flag = 1, update_time = now() where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
+        update fd_warehouse set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_by = #{deleteBy}, update_time = now()
+        where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </delete>
 
     <delete id="deleteFdWarehouseByIds" parameterType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update fd_warehouse set del_flag = 1, update_time = now() where <include refid="fdWarehouseTenantMatch"/> and id in
+        update fd_warehouse set del_flag = 1, delete_time = now(), update_time = now() where <include refid="fdWarehouseTenantMatch"/> and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

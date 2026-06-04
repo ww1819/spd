@@ -127,11 +127,9 @@ public interface SysUserMapper
      * @param userId 用户ID
      * @return 结果
      */
-    public int deleteUserById(Long userId);
-
     /**
      * 批量删除用户信息
-     * 
+     *
      * @param userIds 需要删除的用户ID
      * @return 结果
      */
@@ -160,4 +158,11 @@ public interface SysUserMapper
      * @return 结果
      */
     public SysUser checkEmailUnique(String email);
+
+    /**
+     * 用户是否已有未删除业务单据（操作人 user_id）
+     */
+    int countUserBusinessUsage(@Param("userId") Long userId, @Param("tenantId") String tenantId);
+
+    int deleteUserById(@Param("userId") Long userId, @Param("deleteBy") String deleteBy);
 }

@@ -9,6 +9,7 @@ import com.spd.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdWarehouseMapper;
+import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.service.IFdWarehouseService;
 import com.spd.system.service.ITenantFoundationAutoGrantService;
@@ -24,6 +25,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 {
     @Autowired
     private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FoundationArchiveDeleteGuardMapper foundationArchiveDeleteGuardMapper;
 
     @Autowired
     private ITenantFoundationAutoGrantService tenantFoundationAutoGrantService;
@@ -135,26 +139,20 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     @Override
     public int deleteFdWarehouseById(String id)
     {
-        checkWarehouseIsExist(Long.valueOf(id));
+        Long warehouseId = Long.valueOf(id);
+        checkWarehouseBusinessUsage(warehouseId);
         FdWarehouse fdWarehouse = fdWarehouseMapper.selectFdWarehouseById(id);
         if(fdWarehouse == null){
             throw new ServiceException(String.format("仓库：%s，不存在!", id));
         }
-        fdWarehouse.setDelFlag(1);
-        fdWarehouse.setUpdateTime(DateUtils.getNowDate());
-        fdWarehouse.setUpdateBy(SecurityUtils.getUserIdStr());
-        return fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
+        return fdWarehouseMapper.deleteFdWarehouseById(id, SecurityUtils.getUserIdStr());
     }
 
-    /**
-     * 校验仓库是否已存在出入库业务
-     * @param id
-     */
-    private void checkWarehouseIsExist(Long id){
-
-        int count = fdWarehouseMapper.selectWarehouseIsExist(id);
-        if(count > 0){
-            throw new ServiceException(String.format("已存在出入库业务的仓库不能进行删除!"));
+    private void checkWarehouseBusinessUsage(Long warehouseId)
+    {
+        if (foundationArchiveDeleteGuardMapper.countWarehouseBusinessUsage(warehouseId) > 0)
+        {
+            throw new ServiceException("该仓库已发生业务数据（申领、申购、出入库/退库、批量消耗、高值单据、库存等），不允许删除");
         }
     }
 

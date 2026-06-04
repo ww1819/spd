@@ -27,6 +27,7 @@ import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdSupplierChangeLog;
 import com.spd.foundation.mapper.FdSupplierChangeLogMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdSupplierService;
 
@@ -41,6 +42,9 @@ public class FdSupplierServiceImpl implements IFdSupplierService
 {
     @Autowired
     private FdSupplierMapper fdSupplierMapper;
+
+    @Autowired
+    private FoundationArchiveDeleteGuardMapper foundationArchiveDeleteGuardMapper;
 
     @Autowired
     private FdSupplierChangeLogMapper fdSupplierChangeLogMapper;
@@ -182,10 +186,9 @@ public class FdSupplierServiceImpl implements IFdSupplierService
 
     private void checkSupplierIsExist(Long id)
     {
-        int count = fdSupplierMapper.selectSupplierIsExist(id);
-        if (count > 0)
+        if (foundationArchiveDeleteGuardMapper.countSupplierBusinessUsage(id) > 0)
         {
-            throw new ServiceException("已存在出入库业务的供应商不能进行删除!");
+            throw new ServiceException("该供应商已发生业务数据（出入库/退库、高值单据等），不允许删除");
         }
     }
 

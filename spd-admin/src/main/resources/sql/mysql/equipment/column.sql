@@ -207,6 +207,10 @@ DEALLOCATE PREPARE __stmt_his_dept_eq;
 /
 CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
 /
+CALL add_table_column('fd_department', 'del_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_department', 'del_time', 'datetime', '删除时间', NULL);
+/
 
 CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',

@@ -316,8 +316,16 @@ CALL add_table_column('fd_finance_category', 'parent_id', 'bigint(20)', '上级�
 /
 CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
 /
+CALL add_table_column('fd_department', 'del_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_department', 'del_time', 'datetime', '删除时间', NULL);
+/
 /* 耗材业务表与租户关联：仓库、出入库单、库存、科室库存、申领单 */
 CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('fd_warehouse', 'delete_by', 'varchar(64)', '删除者', NULL);
+/
+CALL add_table_column('fd_warehouse', 'delete_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('stk_io_bill', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
