@@ -15,17 +15,9 @@
             and ifnull(e.del_flag, 0) = 0
         left join fd_department d on d.id = h.department_id
         left join fd_supplier sup on sup.id = cast(nullif(trim(e.supplier_id), '') as unsigned) and sup.tenant_id = l.tenant_id
+        left join fd_factory ff on ff.factory_id = e.factory_id and ff.tenant_id = l.tenant_id
+        left join fd_material mat on mat.id = e.material_id and mat.tenant_id = l.tenant_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
-        left join gz_high_consume_confirm_bill in_bill on in_bill.confirm_id = l.confirm_id
-            and in_bill.tenant_id = l.tenant_id
-            and in_bill.bill_type = 101
-            and ifnull(in_bill.del_flag, 0) = 0
-            and in_bill.supplier_id = nullif(trim(e.supplier_id), '')
-        left join gz_high_consume_confirm_bill out_bill on out_bill.confirm_id = l.confirm_id
-            and out_bill.tenant_id = l.tenant_id
-            and out_bill.bill_type = 201
-            and ifnull(out_bill.del_flag, 0) = 0
-            and out_bill.supplier_id = nullif(trim(e.supplier_id), '')
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
@@ -43,8 +35,16 @@
             ifnull(l.confirm_status, 0) as confirmStatus,
             l.confirm_id as confirmId,
             c.confirm_no as confirmNo,
-            in_bill.bill_no as inboundBillNo,
-            out_bill.bill_no as outboundBillNo,
+            (select in_b.bill_no from gz_high_consume_confirm_bill in_b
+                where in_b.confirm_id = l.confirm_id and in_b.tenant_id = l.tenant_id
+                  and in_b.bill_type = 101 and ifnull(in_b.del_flag, 0) = 0
+                  and in_b.supplier_id = nullif(trim(e.supplier_id), '')
+                order by in_b.create_time desc limit 1) as inboundBillNo,
+            (select out_b.bill_no from gz_high_consume_confirm_bill out_b
+                where out_b.confirm_id = l.confirm_id and out_b.tenant_id = l.tenant_id
+                  and out_b.bill_type = 201 and ifnull(out_b.del_flag, 0) = 0
+                  and out_b.supplier_id = nullif(trim(e.supplier_id), '')
+                order by out_b.create_time desc limit 1) as outboundBillNo,
             coalesce(h.audit_date, h.create_time, h.consume_bill_date) as consumeAuditTime,
             h.consume_bill_no as consumeBillNo,
             e.id as consumeEntryId,
@@ -56,12 +56,33 @@
             e.supplier_id as supplierId,
             sup.name as supplierName,
             e.batch_no as batchNo,
+            coalesce(nullif(trim(e.batch_number), ''), nullif(trim(e.material_no), '')) as batchNumber,
+            coalesce(e.material_date, e.begin_time) as productionDate,
+            e.end_time as endTime,
+            e.material_speci as materialSpeci,
+            e.material_model as materialModel,
+            ff.factory_name as factoryName,
+            mat.register_no as registerNo,
             h.department_id as departmentId,
             d.name as departmentName,
             coalesce(inp.patient_name, outp.patient_name) as patientName,
             coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
             coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
-            coalesce(inp.item_name, outp.item_name) as itemName
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(
+                nullif(trim(inp.spec_model), ''),
+                nullif(trim(outp.spec_model), ''),
+                (select cm.speci from fd_material cm
+                    where cm.tenant_id = l.tenant_id
+                      and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
+                      and (cm.del_flag = 0 or cm.del_flag is null)
+                    order by cm.id limit 1)
+            ) as itemSpec,
+            (select cm.model from fd_material cm
+                where cm.tenant_id = l.tenant_id
+                  and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
+                  and (cm.del_flag = 0 or cm.del_flag is null)
+                order by cm.id limit 1) as itemModel
         <include refid="confirmListFrom"/>
         <if test="departmentId != null">
             and h.department_id = #{departmentId}
