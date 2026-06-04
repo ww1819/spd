@@ -1917,6 +1917,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
     </sql>
 
+    <!-- 科室领用—出退库汇总：bill_type 201/401，出库为正、退库为负；按用户科室权限过滤 -->
+    <sql id="consumeOutReturnSummaryWhere">
+        (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
+        <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
+        <if test="departmentKeyword != null and departmentKeyword != ''">
+            and (d.code like concat('%', #{departmentKeyword}, '%')
+                 or d.name like concat('%', #{departmentKeyword}, '%')
+                 or d.referred_name like concat('%', #{departmentKeyword}, '%'))
+        </if>
+        <if test="materialNameLike != null and materialNameLike != ''">
+            and (m.name like concat('%', #{materialNameLike}, '%')
+                 or m.code like concat('%', #{materialNameLike}, '%')
+                 or m.referred_name like concat('%', #{materialNameLike}, '%'))
+        </if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''">
+            and m.speci like concat('%', #{materialSpeciLike}, '%')
+        </if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''">
+            and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%')
+                 or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%')
+                 or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))
+        </if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''">
+            and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%')
+                 or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%')
+                 or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))
+        </if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
+        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
+                #{wcId}
+            </foreach>
+        </if>
+        <include refid="stkIoBillDepartmentScopeFilter"/>
+    </sql>
+
     <!-- 领用明细：当前筛选下全部分录数量、金额合计 -->
     <select id="selectConsumeDetailListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
@@ -2027,6 +2075,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE <include refid="consumeRankingReportWhere"/>
         GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, f.factory_name, s.name
         ORDER BY totalAmt DESC
+    </select>
+
+    <!-- 科室领用—出退库汇总：按科室+仓库+耗材+规格+单位+采购价+帐类+财务分类汇总 -->
+    <select id="selectConsumeOutReturnSummaryList" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ifnull(d.name, '') departmentName,
+               ifnull(w.name, '') warehouseName,
+               case when m.storeroom_id = 13 then '试剂' else '耗材' end accountKindName,
+               m.name materialName,
+               ifnull(m.speci, '') materialSpeci,
+               ifnull(u.unit_name, '') unitName,
+               IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &gt; 0
+                   THEN ROUND(b.amt / b.qty, 6) ELSE NULL END) unitPrice,
+               ROUND(SUM((case when stk.bill_type = 401 then -1 else 1 end) * IFNULL(b.qty, 0)), 4) materialQty,
+               ROUND(SUM(<include refid="medicalConsumableSignedLineAmt"/>), 2) materialAmt,
+               ifnull(fc.finance_category_name, '') financeCategoryName
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on m.id = b.material_id
+        left join fd_department d on d.id = stk.department_id
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            and (fc.tenant_id = stk.tenant_id or fc.tenant_id is null)
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        where <include refid="consumeOutReturnSummaryWhere"/>
+        group by stk.department_id, stk.warehouse_id, b.material_id,
+                 m.name, m.speci, u.unit_name,
+                 IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &gt; 0
+                     THEN ROUND(b.amt / b.qty, 6) ELSE NULL END),
+                 case when m.storeroom_id = 13 then '试剂' else '耗材' end,
+                 fc.finance_category_name, d.name, w.name
+        order by d.name, w.name, m.name, m.speci
+    </select>
+
+    <select id="selectConsumeOutReturnSummaryListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select COALESCE(SUM((case when stk.bill_type = 401 then -1 else 1 end) * IFNULL(b.qty, 0)), 0) totalQty,
+               COALESCE(ROUND(SUM(<include refid="medicalConsumableSignedLineAmt"/>), 2), 0) totalAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        inner join fd_material m on m.id = b.material_id
+        left join fd_department d on d.id = stk.department_id
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            and (fc.tenant_id = stk.tenant_id or fc.tenant_id is null)
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        where <include refid="consumeOutReturnSummaryWhere"/>
     </select>
 
     <!-- 查询仓库进销存 -->
