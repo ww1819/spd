@@ -54,6 +54,16 @@ public interface IConsumeDetailService
     TotalInfo selectConsumeRankingListTotal(StkIoBill stkIoBill);
 
     /**
+     * 科室领用—出退库汇总列表
+     */
+    List<Map<String, Object>> selectConsumeOutReturnSummaryList(StkIoBill stkIoBill);
+
+    /**
+     * 科室领用—出退库汇总：净数量、净金额合计
+     */
+    TotalInfo selectConsumeOutReturnSummaryListTotal(StkIoBill stkIoBill);
+
+    /**
      * 查询仓库进销存报表
      *
      * @param stkIoBill 查询条件

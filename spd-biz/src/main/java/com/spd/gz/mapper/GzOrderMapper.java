@@ -110,6 +110,17 @@ public interface GzOrderMapper
     List<String> selectOutboundOrderNosByInHospitalCode(String inHospitalCode);
 
     /**
+     * 备货出库引用窗：已审核验收单列表（按仓库/申请科室/引用状态）
+     */
+    List<GzOrder> selectAuditedAcceptanceForShipmentRef(GzOrder query);
+
+    long countAcceptanceBarcodeLines(@Param("parentId") Long parentId);
+
+    long countShipmentOccupiedBarcodeLines(@Param("acceptanceOrderId") Long acceptanceOrderId);
+
+    int updateShipmentRefStatus(@Param("id") Long id, @Param("shipmentRefStatus") Integer shipmentRefStatus);
+
+    /**
      * 新增院内码明细列表
      */
     int insertGzOrderEntryInhospitalcodeList(GzOrderEntryInhospitalcodeList row);

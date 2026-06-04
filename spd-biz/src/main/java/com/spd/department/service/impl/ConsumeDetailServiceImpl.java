@@ -92,6 +92,18 @@ public class ConsumeDetailServiceImpl implements IConsumeDetailService
         return stkIoBillMapper.selectConsumeRankingListTotal(stkIoBill);
     }
 
+    @Override
+    public List<Map<String, Object>> selectConsumeOutReturnSummaryList(StkIoBill stkIoBill)
+    {
+        return stkIoBillMapper.selectConsumeOutReturnSummaryList(stkIoBill);
+    }
+
+    @Override
+    public TotalInfo selectConsumeOutReturnSummaryListTotal(StkIoBill stkIoBill)
+    {
+        return stkIoBillMapper.selectConsumeOutReturnSummaryListTotal(stkIoBill);
+    }
+
     /**
      * 查询领用排名列表（按金额降序）
      *

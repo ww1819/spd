@@ -34,6 +34,7 @@ import com.spd.department.mapper.DeptBatchConsumeMapper;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.hc.service.IHcBarcodeLifecycleService;
+import com.spd.system.service.ITenantScopeService;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 
 /**
@@ -59,6 +60,43 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Autowired
     private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
 
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
+    /** 非租户管理员：仅能访问已授权科室的批量消耗单 */
+    private void assertDepartmentInUserScope(Long departmentId) {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+        if (deptIds == null) {
+            return;
+        }
+        if (departmentId == null || deptIds.isEmpty() || !deptIds.contains(departmentId)) {
+            throw new ServiceException("无权操作该科室的消耗单");
+        }
+    }
+
+    private void assertConsumeBillAccess(Long id) {
+        if (id == null) {
+            return;
+        }
+        DeptBatchConsume bill = deptBatchConsumeMapper.selectDeptBatchConsumeById(id);
+        if (bill == null) {
+            throw new ServiceException("消耗单不存在");
+        }
+        SecurityUtils.ensureTenantAccess(bill.getTenantId());
+        assertDepartmentInUserScope(bill.getDepartmentId());
+    }
+
+    @Override
+    public void applyDepartmentScopeToQuery(DeptBatchConsume deptBatchConsume) {
+        if (deptBatchConsume == null) {
+            return;
+        }
+        tenantScopeService.applyDepartmentScopeQueryParams(
+            deptBatchConsume.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+    }
+
     /**
      * 查询科室批量消耗
      *
@@ -72,6 +110,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (deptBatchConsume == null) {
             return null;
         }
+        SecurityUtils.ensureTenantAccess(deptBatchConsume.getTenantId());
+        assertDepartmentInUserScope(deptBatchConsume.getDepartmentId());
         List<DeptBatchConsumeEntry> deptBatchConsumeEntryList = deptBatchConsume.getDeptBatchConsumeEntryList();
         if (deptBatchConsumeEntryList != null) {
             for (DeptBatchConsumeEntry deptBatchConsumeEntry : deptBatchConsumeEntryList) {
@@ -110,6 +150,10 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int insertDeptBatchConsume(DeptBatchConsume deptBatchConsume)
     {
+        if (deptBatchConsume.getDepartmentId() == null) {
+            throw new ServiceException("请先选择科室");
+        }
+        assertDepartmentInUserScope(deptBatchConsume.getDepartmentId());
         MasterDetailValidateUtil.assertHasMaterialLine(
             deptBatchConsume.getDeptBatchConsumeEntryList(), DeptBatchConsumeEntry::getMaterialId, "消耗");
         deptBatchConsume.setCreateTime(DateUtils.getNowDate());
@@ -147,6 +191,11 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int updateDeptBatchConsume(DeptBatchConsume deptBatchConsume)
     {
+        assertConsumeBillAccess(deptBatchConsume.getId());
+        DeptBatchConsume existing = deptBatchConsumeMapper.selectDeptBatchConsumeById(deptBatchConsume.getId());
+        if (existing != null && existing.getDepartmentId() != null) {
+            deptBatchConsume.setDepartmentId(existing.getDepartmentId());
+        }
         MasterDetailValidateUtil.assertHasMaterialLine(
             deptBatchConsume.getDeptBatchConsumeEntryList(), DeptBatchConsumeEntry::getMaterialId, "消耗");
         deptBatchConsume.setUpdateTime(DateUtils.getNowDate());
@@ -172,6 +221,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (ids == null || ids.length == 0) {
             return 0;
         }
+        for (Long id : ids) {
+            assertConsumeBillAccess(id);
+        }
         String deleteBy = SecurityUtils.getUserIdStr();
         deptBatchConsumeMapper.deleteDeptBatchConsumeEntryRefByConsumeIds(ids, SecurityUtils.getCustomerId());
         deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenIds(ids, deleteBy);
@@ -188,6 +240,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public int deleteDeptBatchConsumeById(Long id)
     {
+        assertConsumeBillAccess(id);
         String deleteBy = SecurityUtils.getUserIdStr();
         deptBatchConsumeMapper.deleteDeptBatchConsumeEntryRefByConsumeIds(new Long[]{id}, SecurityUtils.getCustomerId());
         deptBatchConsumeMapper.deleteDeptBatchConsumeEntryByParenId(id, deleteBy);
@@ -213,6 +266,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if(deptBatchConsume == null){
             throw new ServiceException(String.format("科室批量消耗ID：%s，不存在!", id));
         }
+        SecurityUtils.ensureTenantAccess(deptBatchConsume.getTenantId());
+        assertDepartmentInUserScope(deptBatchConsume.getDepartmentId());
         if (deptBatchConsume.getConsumeBillStatus() != null && deptBatchConsume.getConsumeBillStatus() == 2) {
             throw new ServiceException(String.format("科室批量消耗单 %s 已审核，请勿重复审核", deptBatchConsume.getConsumeBillNo()));
         }
@@ -369,6 +424,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (deptBatchConsume != null && StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
         }
+        if (deptBatchConsume != null && deptBatchConsume.getDepartmentId() != null) {
+            assertDepartmentInUserScope(deptBatchConsume.getDepartmentId());
+        }
         return deptBatchConsumeMapper.selectOutRefEntryList(deptBatchConsume);
     }
 
@@ -378,6 +436,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (consumeId == null) {
             return new ArrayList<>();
         }
+        assertConsumeBillAccess(consumeId);
         return deptBatchConsumeMapper.selectReverseableEntryList(consumeId);
     }
 
@@ -404,6 +463,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (srcBill == null) {
             throw new ServiceException("反消耗失败：来源消耗单不存在");
         }
+        SecurityUtils.ensureTenantAccess(srcBill.getTenantId());
+        assertDepartmentInUserScope(srcBill.getDepartmentId());
         if (!allowHisMirrorSource && srcBill.getDisallowReverse() != null && srcBill.getDisallowReverse().intValue() == 1) {
             throw new ServiceException("反消耗失败：该单来源于HIS计费镜像消耗，禁止手工退消耗");
         }

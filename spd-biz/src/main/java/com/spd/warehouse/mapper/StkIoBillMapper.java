@@ -322,6 +322,16 @@ public interface StkIoBillMapper
     TotalInfo selectConsumeRankingListTotal(StkIoBill stkIoBill);
 
     /**
+     * 科室领用—出退库汇总（按科室+仓库+耗材等维度汇总，201/401 净出库）
+     */
+    List<Map<String, Object>> selectConsumeOutReturnSummaryList(StkIoBill stkIoBill);
+
+    /**
+     * 科室领用—出退库汇总：当前筛选下净数量、净金额合计
+     */
+    TotalInfo selectConsumeOutReturnSummaryListTotal(StkIoBill stkIoBill);
+
+    /**
      * 查询仓库进销存
      * @param stkIoBill
      * @return

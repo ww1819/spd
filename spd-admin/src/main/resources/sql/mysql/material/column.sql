@@ -1951,6 +1951,44 @@ CALL add_table_column('stk_io_bill_entry', 'dep_pur_apply_entry_id', 'bigint', '
 
 CALL add_table_column('gz_order', 'apply_department_id', 'bigint', '申请科室ID（备货验收）', NULL);
 /
+CALL add_table_column('gz_order', 'shipment_ref_status', 'int', '出库引用状态0未1部分2全部(仅备货验收101)', 0);
+/
+CALL add_table_column('gz_shipment', 'ref_acceptance_id', 'varchar(36)', '引用的备货验收单主表ID（varchar36，与引用表外键一致）', NULL);
+/
+-- 存量库若已按 bigint 建列，升级为 varchar(36)（每段一条语句，同连接会话变量仍有效）
+SET @ref_acc_col_type := (
+  SELECT DATA_TYPE FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_shipment' AND COLUMN_NAME = 'ref_acceptance_id'
+  LIMIT 1
+);
+/
+SET @ref_acc_ddl := IF(@ref_acc_col_type = 'bigint',
+  'ALTER TABLE gz_shipment MODIFY COLUMN ref_acceptance_id varchar(36) DEFAULT NULL COMMENT ''引用的备货验收单主表ID（varchar36，与引用表外键一致）''',
+  'SELECT 1');
+/
+PREPARE stmt_ref_acc FROM @ref_acc_ddl;
+/
+EXECUTE stmt_ref_acc;
+/
+DEALLOCATE PREPARE stmt_ref_acc;
+/
+
+-- 出库引用条码唯一（GZ_SHIPMENT 维度，src_barcode_line_id 非空时生效）
+SET @idx_exists := (
+  SELECT COUNT(1) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_order_entry_code_ref' AND index_name = 'uk_gz_code_ref_barcode_kind'
+);
+/
+SET @ddl := IF(@idx_exists = 0,
+  'ALTER TABLE gz_order_entry_code_ref ADD UNIQUE INDEX uk_gz_code_ref_barcode_kind (src_barcode_line_id, tgt_bill_kind)',
+  'SELECT 1');
+/
+PREPARE stmt_gz_code_ref FROM @ddl;
+/
+EXECUTE stmt_gz_code_ref;
+/
+DEALLOCATE PREPARE stmt_gz_code_ref;
+/
 
 -- gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref 全量建表见 material/table.sql
 /
