@@ -12,6 +12,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="departmentId"    column="department_id"    />
         <result property="applyDepartmentId"    column="apply_department_id"    />
+        <result property="shipmentRefStatus"    column="shipment_ref_status"    />
+        <result property="refAvailableCount"    column="refAvailableCount"    />
         <result property="orderStatus"    column="order_status"    />
         <result property="orderType"    column="order_type"    />
         <result property="delFlag"    column="del_flag"    />
@@ -398,6 +400,87 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and TRIM(in_hospital_code) != ''
         order by id asc
     </select>
+
+    <!-- 备货出库引用窗：已审核验收单（order_type=101） -->
+    <select id="selectAuditedAcceptanceForShipmentRef" parameterType="GzOrder" resultMap="GzOrderResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select gz.id, gz.order_no, gz.suppler_id, gz.order_date, gz.warehouse_id,
+               gz.department_id, gz.apply_department_id, gz.shipment_ref_status,
+               gz.order_status, gz.order_type, gz.del_flag, gz.audit_date, gz.audit_by,
+               gz.is_follow_flag, gz.create_by, gz.create_time, gz.update_by, gz.update_time, gz.remark,
+               gz.tenant_id,
+               w.id wId, w.code warehouseCode, w.name warehouseName,
+               ad.id adId, ad.code adCode, ad.name adName,
+               (select count(1)
+                from gz_order_entry_inhospitalcode_list ic
+                where ic.parent_id = gz.id
+                  and ic.tenant_id = #{scopedTenantId}
+                  and IFNULL(ic.del_flag, 0) = 0
+                  and ic.in_hospital_code is not null
+                  and trim(ic.in_hospital_code) != ''
+                  and not exists (
+                      select 1 from gz_order_entry_code_ref cr
+                      where cr.tgt_bill_kind = 'GZ_SHIPMENT'
+                        and cr.src_barcode_line_id = cast(ic.id as char(36))
+                  )
+                  and exists (
+                      select 1 from gz_depot_inventory di
+                      where di.order_id = gz.id
+                        and di.warehouse_id = #{refWarehouseId}
+                        and di.inhospitalcode_list_id = ic.id
+                        and di.qty > 0
+                        and IFNULL(di.del_flag, 0) = 0
+                  )
+               ) as refAvailableCount
+        from gz_order gz
+        left join fd_warehouse w on gz.warehouse_id = w.id
+        left join fd_department ad on gz.apply_department_id = ad.id
+        where gz.del_flag != 1
+          and gz.tenant_id = #{scopedTenantId}
+          and gz.order_type = 101
+          and gz.order_status = 2
+          and exists (
+              select 1 from gz_depot_inventory di0
+              where di0.order_id = gz.id
+                and di0.warehouse_id = #{refWarehouseId}
+                and di0.qty > 0
+                and IFNULL(di0.del_flag, 0) = 0
+          )
+        <if test="applyDepartmentId != null"> and gz.apply_department_id = #{applyDepartmentId}</if>
+        <if test="shipmentRefStatus != null"> and IFNULL(gz.shipment_ref_status, 0) = #{shipmentRefStatus}</if>
+        <if test="orderNo != null and orderNo != ''"> and gz.order_no like concat('%', #{orderNo}, '%')</if>
+        order by gz.audit_date desc, gz.id desc
+    </select>
+
+    <select id="countAcceptanceBarcodeLines" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from gz_order_entry_inhospitalcode_list ic
+        where ic.parent_id = #{parentId}
+          and ic.tenant_id = #{scopedTenantId}
+          and IFNULL(ic.del_flag, 0) = 0
+          and ic.in_hospital_code is not null
+          and trim(ic.in_hospital_code) != ''
+    </select>
+
+    <select id="countShipmentOccupiedBarcodeLines" resultType="long">
+        select count(distinct cr.src_barcode_line_id)
+        from gz_order_entry_code_ref cr
+        inner join gz_order_entry_inhospitalcode_list ic
+            on cast(ic.id as char(36)) = cr.src_barcode_line_id
+        where cr.tgt_bill_kind = 'GZ_SHIPMENT'
+          and cr.src_acceptance_id = cast(#{acceptanceOrderId} as char(36))
+          and ic.parent_id = #{acceptanceOrderId}
+          and IFNULL(ic.del_flag, 0) = 0
+    </select>
+
+    <update id="updateShipmentRefStatus">
+        update gz_order
+        set shipment_ref_status = #{shipmentRefStatus},
+            update_time = now()
+        where id = #{id}
+          and order_type = 101
+    </update>
 
     <!-- 根据院内码查询是否有未出库的出库单 -->
     <select id="selectOutboundOrderNosByInHospitalCode" parameterType="String" resultType="String">

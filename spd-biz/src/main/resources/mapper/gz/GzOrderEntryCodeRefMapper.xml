@@ -22,4 +22,33 @@
         delete from gz_order_entry_code_ref
         where tgt_main_id = #{tgtMainId} and tgt_bill_kind = #{tgtBillKind}
     </delete>
+
+    <select id="selectSrcAcceptanceIdsByTgtMainId" resultType="java.lang.String">
+        select distinct src_acceptance_id
+        from gz_order_entry_code_ref
+        where tgt_main_id = #{tgtMainId}
+          and tgt_bill_kind = #{tgtBillKind}
+          and src_acceptance_id is not null
+          and trim(src_acceptance_id) != ''
+    </select>
+
+    <select id="selectOccupiedByBarcodeLineIds" resultType="java.util.HashMap">
+        select src_barcode_line_id as barcodeLineId,
+               tgt_main_id as tgtMainId,
+               tgt_bill_no as tgtBillNo,
+               src_in_hospital_code as inHospitalCode
+        from gz_order_entry_code_ref
+        where tgt_bill_kind = #{tgtBillKind}
+          and src_barcode_line_id is not null
+          and trim(src_barcode_line_id) != ''
+        <if test="barcodeLineIds != null and barcodeLineIds.size() > 0">
+          and src_barcode_line_id in
+          <foreach collection="barcodeLineIds" item="bid" open="(" separator="," close=")">
+              #{bid}
+          </foreach>
+        </if>
+        <if test="excludeTgtMainId != null and excludeTgtMainId != ''">
+          and tgt_main_id != #{excludeTgtMainId}
+        </if>
+    </select>
 </mapper>

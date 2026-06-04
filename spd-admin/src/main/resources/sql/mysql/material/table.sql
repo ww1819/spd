@@ -1312,9 +1312,11 @@ CREATE TABLE IF NOT EXISTS `gz_shipment` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `ref_acceptance_id` varchar(36) DEFAULT NULL COMMENT '引用的备货验收单主表ID（varchar36）',
   PRIMARY KEY (`id`),
   KEY `idx_gz_shipment_no` (`shipment_no`),
-  KEY `idx_gz_shipment_tenant` (`tenant_id`)
+  KEY `idx_gz_shipment_tenant` (`tenant_id`),
+  KEY `idx_gz_shipment_ref_acc` (`ref_acceptance_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值出库主表';
 /
 
@@ -2517,7 +2519,8 @@ CREATE TABLE IF NOT EXISTS `gz_order_entry_code_ref` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_gz_code_ref_barcode` (`src_barcode_line_id`),
-  KEY `idx_gz_code_ref_tgt` (`tgt_bill_kind`,`tgt_entry_id`)
+  KEY `idx_gz_code_ref_tgt` (`tgt_bill_kind`,`tgt_entry_id`),
+  UNIQUE KEY `uk_gz_code_ref_barcode_kind` (`src_barcode_line_id`,`tgt_bill_kind`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货验收条码明细引用关系';
 /
 

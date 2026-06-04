@@ -15,6 +15,7 @@ import com.spd.gz.domain.GzRefundGoodsEntryRef;
 import com.spd.gz.domain.GzShipment;
 import com.spd.gz.domain.GzShipmentEntry;
 import com.spd.gz.domain.GzShipmentEntryRef;
+import com.spd.common.exception.ServiceException;
 import com.spd.gz.mapper.GzOrderEntryCodeRefMapper;
 import com.spd.gz.mapper.GzRefundGoodsEntryRefMapper;
 import com.spd.gz.mapper.GzShipmentEntryRefMapper;
@@ -44,6 +45,9 @@ public class GzLineRefWriteService
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
 
+    @Autowired
+    private GzShipmentRefStatusService gzShipmentRefStatusService;
+
     public void deleteOutboundRefs(Long shipmentId)
     {
         if (shipmentId == null)
@@ -51,8 +55,44 @@ public class GzLineRefWriteService
             return;
         }
         String mid = String.valueOf(shipmentId);
+        List<String> acceptanceIds = gzOrderEntryCodeRefMapper.selectSrcAcceptanceIdsByTgtMainId(mid, KIND_SHIPMENT);
         gzOrderEntryCodeRefMapper.deleteByTgtMainIdAndKind(mid, KIND_SHIPMENT);
         gzShipmentEntryRefMapper.deleteByParenShipmentId(shipmentId);
+        gzShipmentRefStatusService.recalculateByAcceptanceIdStr(acceptanceIds);
+    }
+
+    /**
+     * 保存前校验：验收条码在出库维度未被其他出库单占用
+     */
+    public void assertBarcodeNotOccupiedByOthers(List<GzShipmentEntry> entries, Long currentShipmentId)
+    {
+        if (entries == null || entries.isEmpty())
+        {
+            return;
+        }
+        List<String> lineIds = new ArrayList<>();
+        for (GzShipmentEntry e : entries)
+        {
+            if (e != null && StringUtils.isNotEmpty(e.getRefSrcBarcodeLineId()))
+            {
+                lineIds.add(e.getRefSrcBarcodeLineId().trim());
+            }
+        }
+        if (lineIds.isEmpty())
+        {
+            return;
+        }
+        String exclude = currentShipmentId != null ? String.valueOf(currentShipmentId) : null;
+        List<java.util.Map<String, Object>> occupied =
+            gzOrderEntryCodeRefMapper.selectOccupiedByBarcodeLineIds(lineIds, KIND_SHIPMENT, exclude);
+        if (occupied != null && !occupied.isEmpty())
+        {
+            java.util.Map<String, Object> first = occupied.get(0);
+            String code = first.get("inHospitalCode") != null ? String.valueOf(first.get("inHospitalCode")) : "";
+            String billNo = first.get("tgtBillNo") != null ? String.valueOf(first.get("tgtBillNo")) : "";
+            throw new ServiceException(String.format(
+                "院内码 %s 已被出库单 %s 引用，不可重复引用", code, billNo));
+        }
     }
 
     public void persistOutboundRefs(GzShipment sh, List<GzShipmentEntry> entries)
@@ -133,6 +173,16 @@ public class GzLineRefWriteService
         {
             gzShipmentEntryRefMapper.batchInsert(shipList);
         }
+
+        java.util.Set<String> acceptanceIds = new java.util.HashSet<>();
+        for (GzShipmentEntry e : entries)
+        {
+            if (e != null && StringUtils.isNotEmpty(e.getRefSrcAcceptanceId()))
+            {
+                acceptanceIds.add(e.getRefSrcAcceptanceId());
+            }
+        }
+        gzShipmentRefStatusService.recalculateByAcceptanceIdStr(acceptanceIds);
     }
 
     private boolean hasOutboundAcceptanceRef(GzShipmentEntry e)

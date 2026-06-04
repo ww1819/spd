@@ -49,6 +49,15 @@ public class GzOrder extends BaseEntity
     /** 申请科室ID（备货验收） */
     private Long applyDepartmentId;
 
+    /** 出库引用状态：0未引用 1部分引用 2全部引用（仅 order_type=101） */
+    private Integer shipmentRefStatus;
+
+    /** 引用窗：当前仓库可引条码数（查询用，非表字段） */
+    private Integer refAvailableCount;
+
+    /** 引用窗：出库仓库ID（查询用，非表字段） */
+    private Long refWarehouseId;
+
     /** 单据状态 */
     @Excel(name = "单据状态")
     private Integer orderStatus;
@@ -166,6 +175,36 @@ public class GzOrder extends BaseEntity
     public void setApplyDepartmentId(Long applyDepartmentId)
     {
         this.applyDepartmentId = applyDepartmentId;
+    }
+
+    public Integer getShipmentRefStatus()
+    {
+        return shipmentRefStatus;
+    }
+
+    public void setShipmentRefStatus(Integer shipmentRefStatus)
+    {
+        this.shipmentRefStatus = shipmentRefStatus;
+    }
+
+    public Integer getRefAvailableCount()
+    {
+        return refAvailableCount;
+    }
+
+    public void setRefAvailableCount(Integer refAvailableCount)
+    {
+        this.refAvailableCount = refAvailableCount;
+    }
+
+    public Long getRefWarehouseId()
+    {
+        return refWarehouseId;
+    }
+
+    public void setRefWarehouseId(Long refWarehouseId)
+    {
+        this.refWarehouseId = refWarehouseId;
     }
 
     public FdDepartment getApplyDepartment()
