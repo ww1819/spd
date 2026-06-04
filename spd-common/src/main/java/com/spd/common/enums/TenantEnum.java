@@ -24,6 +24,8 @@ public enum TenantEnum {
     TENANT_B("tenant-b-002", "TENANT_B", "strategyB", "示例租户B"),
     /** 衡水市第三人民医院（枚举名用稳定代号，避免客户改名影响 tenant_key） */
     HS_003("hengsui-third-001", "HSSDSRMYY", "hengsui", "衡水市第三人民医院"),
+    /** 枣强县中医院（枚举名用稳定代号，避免客户改名影响 tenant_key） */
+    ZQ_TCM("zaoqiang-tcm-001", "ZQXZYY", "zaoqiang", "枣强县中医院"),
     /** 默认/通用租户 */
     DEFAULT("tenant-default", "DEFAULT", "default", "默认租户");
 
