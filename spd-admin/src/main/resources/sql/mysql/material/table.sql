@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS `fd_unit` (
   `unit_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `unit_code` varchar(64) DEFAULT NULL COMMENT '单位编码',
   `unit_name` varchar(255) DEFAULT NULL COMMENT '单位名称',
-  `his_unit_id` varchar(64) DEFAULT NULL COMMENT 'HIS计量单位ID（众阳 min_packing_id/dose_unit_id）',
+  `his_unit_id` varchar(64) DEFAULT NULL COMMENT '众阳HIS最小包装单位ID（min_packing_id）',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',

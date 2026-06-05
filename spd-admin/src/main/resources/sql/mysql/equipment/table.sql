@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS `fd_material` (
   `del_time` datetime DEFAULT NULL COMMENT '删除时间',
   `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
   `his_id` varchar(100) DEFAULT NULL COMMENT 'his系统产品档案ID，或其他第三方系统产品档案ID',
-  `his_spec_packing_id` varchar(64) DEFAULT NULL COMMENT 'HIS规格包装ID（众阳 drug_spec_packing_id）',
+  `his_spec_packing_id` varchar(64) DEFAULT NULL COMMENT '众阳HIS产品档案唯一键（drug_spec_packing_id）',
   `selection_reason` varchar(512) DEFAULT NULL COMMENT '入选原因',
   `is_billing` char(4) DEFAULT '2' COMMENT '是否计费：1=计费,2=不计费',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '主条码（用于扫码匹配产品档案）',
