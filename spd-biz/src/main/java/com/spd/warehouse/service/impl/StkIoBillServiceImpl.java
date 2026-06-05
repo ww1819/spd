@@ -886,7 +886,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             headerWarehouse = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
         }
         StkInventory stkInventory = null;
-        for(StkIoBillEntry entry : stkIoBillEntryList){
+        for (int i = 0; i < stkIoBillEntryList.size(); i++) {
+            StkIoBillEntry entry = stkIoBillEntryList.get(i);
             if (entry == null) {
                 continue;
             }
@@ -996,7 +997,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         throw new ServiceException(String.format("出库-批次号：%s，不存在!", batchNo));
                     }
 
-                    validateInventory(batchNo, warehouseId, stkIoBillEntryList);
+                    validateInventory(entry, warehouseId, stkIoBillEntryList, i + 1);
 
                     BigDecimal unitPrice = inventory.getUnitPrice();//单价
 
@@ -1382,7 +1383,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (!outWarehouseId.equals(outInventory.getWarehouseId())) {
                         throw new ServiceException(String.format("调拨-批次号：%s，不在转出仓库!", batchNo));
                     }
-                    validateInventory(batchNo, outWarehouseId, stkIoBillEntryList);
+                    validateInventory(entry, outWarehouseId, stkIoBillEntryList, i + 1);
                     BigDecimal unitPrice = outInventory.getUnitPrice();
                     String updateBy501 = SecurityUtils.getUserIdStr();
                     int decOut = stkInventoryMapper.decreaseStkInventoryQty(outInventory.getId(), qty, updateBy501);
@@ -1842,7 +1843,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         List<StkIoBillEntry> prepared = new ArrayList<>();
         Set<String> dedupKeys = new HashSet<>();
         int filteredCount = 0;
-        for (StkIoBillEntry e : incoming) {
+        for (int idx = 0; idx < incoming.size(); idx++) {
+            StkIoBillEntry e = incoming.get(idx);
             if (e == null) {
                 continue;
             }
@@ -1869,7 +1871,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 filteredCount++;
                 continue;
             }
-            validateInventory(e.getBatchNo(), validateWhId, incoming);
+            validateInventory(e, validateWhId, incoming, idx + 1);
             e.setParenId(stkIoBill.getId());
             e.setBillNo(stkIoBill.getBillNo());
             e.setDelFlag(0);
@@ -2052,6 +2054,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (StringUtils.isEmpty(stkIoBill.getTenantId())) {
             stkIoBill.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
+        assertOutBillEntriesQtyPositive(stkIoBill.getStkIoBillEntryList());
         syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         syncBillTotalAmountFromEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, null);
@@ -2097,6 +2100,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (existing != null) {
                 stkIoBill.setBillType(existing.getBillType());
             }
+        }
+        List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
+        if (entryList != null && !entryList.isEmpty()) {
+            assertOutBillEntriesQtyPositive(entryList);
         }
         Integer bt = stkIoBill.getBillType();
         if (bt != null && (bt == 201 || bt == 301)) {
@@ -2703,8 +2710,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             String tenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
             List<StkIoBillEntry> list = new ArrayList<StkIoBillEntry>();
             Set<String> dedupKeys = new HashSet<>();
-            for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList)
+            for (int idx = 0; idx < stkIoBillEntryList.size(); idx++)
             {
+                StkIoBillEntry stkIoBillEntry = stkIoBillEntryList.get(idx);
                 if (stkIoBillEntry == null) {
                     continue;
                 }
@@ -2731,7 +2739,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     filteredCount++;
                     continue;
                 }
-                validateInventory(stkIoBillEntry.getBatchNo(), validateWhId, stkIoBillEntryList);
+                validateInventory(stkIoBillEntry, validateWhId, stkIoBillEntryList, idx + 1);
                 stkIoBillEntry.setParenId(id);
                 stkIoBillEntry.setBillNo(stkIoBill.getBillNo());
                 stkIoBillEntry.setDelFlag(0);
@@ -2787,22 +2795,69 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return null;
     }
 
+    private void validateInventory(StkIoBillEntry currentEntry, Long oldWarehouseId, List<StkIoBillEntry> stkIoBillEntryList){
+        validateInventory(currentEntry, oldWarehouseId, stkIoBillEntryList, 0);
+    }
+
+    /** 出库/退货保存：明细数量须大于 0 */
+    private void assertOutBillEntriesQtyPositive(List<StkIoBillEntry> entries) {
+        if (entries == null) {
+            return;
+        }
+        for (int i = 0; i < entries.size(); i++) {
+            StkIoBillEntry e = entries.get(i);
+            if (e == null || e.getMaterialId() == null) {
+                continue;
+            }
+            if (e.getDelFlag() != null && e.getDelFlag() == 1) {
+                continue;
+            }
+            BigDecimal qty = e.getQty();
+            if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ServiceException(buildZeroQtyErrorMessage(i + 1, e));
+            }
+        }
+    }
+
+    private String buildZeroQtyErrorMessage(int rowNo, StkIoBillEntry entry) {
+        String rowLabel = formatChineseRowNo(rowNo);
+        String materialCode = resolveEntryMaterialCode(entry);
+        String materialName = resolveEntryMaterialName(entry);
+        if (StringUtils.isEmpty(materialName)) {
+            materialName = "--";
+        }
+        String batchNo = entry != null ? entry.getBatchNo() : null;
+        if (StringUtils.isEmpty(batchNo)) {
+            batchNo = "--";
+        }
+        return String.format("数量不能为0！%s产品%s（%s）批次为%s。", rowLabel, materialCode, materialName, batchNo);
+    }
+
+    private String formatChineseRowNo(int rowNo) {
+        String[] cn = {"一", "二", "三", "四", "五", "六", "七", "八", "九", "十"};
+        if (rowNo >= 1 && rowNo <= cn.length) {
+            return "第" + cn[rowNo - 1] + "行";
+        }
+        return "第" + rowNo + "行";
+    }
+
     /**
      * Validate warehouse inventory (batchNo + warehouseId).
-     * @param stkIoBillEntryList
+     * displayRowNo 为界面明细行号（1-based）；同一批次多行合计超库存时提示该行产品。
      */
-    private void validateInventory(String oldBatchNo, Long oldWarehouseId, List<StkIoBillEntry> stkIoBillEntryList){
+    private void validateInventory(StkIoBillEntry currentEntry, Long oldWarehouseId, List<StkIoBillEntry> stkIoBillEntryList, int displayRowNo){
         if (oldWarehouseId == null) {
             throw new ServiceException("单据仓库不能为空，无法校验库存");
         }
-        if (oldBatchNo == null || stkIoBillEntryList == null) {
+        if (currentEntry == null || stkIoBillEntryList == null) {
+            return;
+        }
+        String oldBatchNo = currentEntry.getBatchNo();
+        if (oldBatchNo == null) {
             return;
         }
         BigDecimal sumQty = BigDecimal.ZERO;
-        int firstRowNo = 0;
-        StkIoBillEntry firstMatchEntry = null;
-        for (int i = 0; i < stkIoBillEntryList.size(); i++) {
-            StkIoBillEntry stkIoBillEntry = stkIoBillEntryList.get(i);
+        for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList) {
             if (stkIoBillEntry == null) {
                 continue;
             }
@@ -2818,10 +2873,6 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (entryWarehouseId != null && !oldWarehouseId.equals(entryWarehouseId)) {
                 continue;
             }
-            if (firstMatchEntry == null) {
-                firstMatchEntry = stkIoBillEntry;
-                firstRowNo = i + 1;
-            }
             sumQty = sumQty.add(qty);
         }
         if (sumQty.compareTo(BigDecimal.ZERO) <= 0) {
@@ -2836,8 +2887,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         BigDecimal inventoryQty = inventory.getQty() != null ? inventory.getQty() : BigDecimal.ZERO;
         if (inventoryQty.compareTo(sumQty) < 0) {
-            String materialCode = resolveEntryMaterialCode(firstMatchEntry);
-            String materialName = resolveEntryMaterialName(firstMatchEntry);
+            int rowNo = displayRowNo > 0 ? displayRowNo : resolveEntryDisplayRowNo(currentEntry, stkIoBillEntryList);
+            String materialCode = resolveEntryMaterialCode(currentEntry);
+            String materialName = resolveEntryMaterialName(currentEntry);
             if (StringUtils.isEmpty(materialName)) {
                 materialName = "--";
             }
@@ -2846,12 +2898,53 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
             throw new ServiceException(String.format(
                     "仓库库存不足！本单第%d行产品%s（%s）库存不足，当前库存为%s，批次为%s",
-                    firstRowNo > 0 ? firstRowNo : 1,
+                    rowNo,
                     materialCode,
                     materialName,
                     fmtQty(inventoryQty),
                     oldBatchNo));
         }
+    }
+
+    private int resolveEntryDisplayRowNo(StkIoBillEntry currentEntry, List<StkIoBillEntry> list) {
+        if (currentEntry == null || list == null || list.isEmpty()) {
+            return 1;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            StkIoBillEntry e = list.get(i);
+            if (e == null) {
+                continue;
+            }
+            if (e == currentEntry) {
+                return i + 1;
+            }
+            if (currentEntry.getId() != null && currentEntry.getId().equals(e.getId())) {
+                return i + 1;
+            }
+        }
+        String batchNo = currentEntry.getBatchNo();
+        Long materialId = currentEntry.getMaterialId();
+        Long invId = currentEntry.resolveStkInventoryKeyForWarehouseOps();
+        if (invId != null) {
+            for (int i = 0; i < list.size(); i++) {
+                StkIoBillEntry e = list.get(i);
+                if (e != null && invId.equals(e.resolveStkInventoryKeyForWarehouseOps())) {
+                    return i + 1;
+                }
+            }
+        }
+        if (materialId != null) {
+            for (int i = 0; i < list.size(); i++) {
+                StkIoBillEntry e = list.get(i);
+                if (e == null || batchNo == null || !batchNo.equals(e.getBatchNo())) {
+                    continue;
+                }
+                if (materialId.equals(e.getMaterialId())) {
+                    return i + 1;
+                }
+            }
+        }
+        return 1;
     }
     @Override
     public StkIoBill createCkEntriesByDApply(String dApplyId) {
