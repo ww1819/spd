@@ -631,6 +631,46 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'his.internal.api_key');
 /
 
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO启用', 'sso.enabled', 'false', 'N', 'admin', NOW(), 'true 时开放 /sso/** 单点登录'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.enabled');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO API密钥', 'sso.api.key', 'change-me-sso-key', 'N', 'admin', NOW(), '对方申请 onceToken 时请求头 X-Spd-Sso-Key'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.api.key');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO RSA私钥', 'sso.rsa.privateKeyPem', '', 'N', 'admin', NOW(), 'PKCS#8 PEM，解密对方 RSA 加密的 password'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.rsa.privateKeyPem');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO允许明文密码', 'sso.rsa.allowPlainPassword', 'true', 'N', 'admin', NOW(), '文档过渡期：password 可明文传输'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.rsa.allowPlainPassword');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO前端基址', 'sso.frontend.baseUrl', 'http://localhost', 'N', 'admin', NOW(), '/sso/transfer 重定向目标，如 https://spd.example.com'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.frontend.baseUrl');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO Token有效期(分钟)', 'sso.token.expireMinutes', '360', 'N', 'admin', NOW(), '静默 6 小时，对齐接口文档'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.token.expireMinutes');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO onceToken有效期(分钟)', 'sso.onceToken.expireMinutes', '5', 'N', 'admin', NOW(), '一次性令牌有效期'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.onceToken.expireMinutes');
+/
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'SSO系统编码', 'sso.systemCode', 'spd,hc', 'N', 'admin', NOW(), '对方 systemCode 须在此列表中，逗号分隔'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'sso.systemCode');
+/
+
 SET @post_list_menu_id := (
   SELECT menu_id FROM sys_menu
   WHERE perms = 'system:post:list' AND menu_type = 'C'

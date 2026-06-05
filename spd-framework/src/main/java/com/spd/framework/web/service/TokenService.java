@@ -113,10 +113,18 @@ public class TokenService
      */
     public String createToken(LoginUser loginUser)
     {
+        return createToken(loginUser, expireTime);
+    }
+
+    /**
+     * 创建令牌并指定 Redis 会话有效期（分钟）。
+     */
+    public String createToken(LoginUser loginUser, int expireMinutes)
+    {
         String token = IdUtils.fastUUID();
         loginUser.setToken(token);
         setUserAgent(loginUser);
-        refreshToken(loginUser);
+        refreshToken(loginUser, expireMinutes);
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(Constants.LOGIN_USER_KEY, token);
@@ -156,11 +164,15 @@ public class TokenService
      */
     public void refreshToken(LoginUser loginUser)
     {
+        refreshToken(loginUser, expireTime);
+    }
+
+    public void refreshToken(LoginUser loginUser, int expireMinutes)
+    {
         loginUser.setLoginTime(System.currentTimeMillis());
-        loginUser.setExpireTime(loginUser.getLoginTime() + expireTime * MILLIS_MINUTE);
-        // 根据uuid将loginUser缓存
+        loginUser.setExpireTime(loginUser.getLoginTime() + expireMinutes * MILLIS_MINUTE);
         String userKey = getTokenKey(loginUser.getToken());
-        redisCache.setCacheObject(userKey, loginUser, expireTime, TimeUnit.MINUTES);
+        redisCache.setCacheObject(userKey, loginUser, expireMinutes, TimeUnit.MINUTES);
     }
 
     /**

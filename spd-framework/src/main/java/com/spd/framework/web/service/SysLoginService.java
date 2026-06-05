@@ -146,6 +146,43 @@ public class SysLoginService
     }
 
     /**
+     * 单点登录：跳过验证码，按租户+用户名认证并签发 token（可指定有效期分钟数）。
+     */
+    public String ssoLogin(String username, String password, String customerId, String systemType, int expireMinutes)
+    {
+        loginPreCheck(username, password, customerId);
+        String prefix = "hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc:" : "id:";
+        String effectiveUsername = prefix + customerId.trim() + "|" + username;
+        Authentication authentication = null;
+        try
+        {
+            UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(effectiveUsername, password);
+            AuthenticationContextHolder.setContext(authenticationToken);
+            authentication = authenticationManager.authenticate(authenticationToken);
+        }
+        catch (Exception e)
+        {
+            if (e instanceof BadCredentialsException)
+            {
+                AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL,
+                    MessageUtils.message("user.password.not.match")));
+                throw new UserPasswordNotMatchException();
+            }
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, e.getMessage()));
+            throw new ServiceException(e.getMessage());
+        }
+        finally
+        {
+            AuthenticationContextHolder.clearContext();
+        }
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        recordLoginInfo(loginUser.getUserId());
+        return tokenService.createToken(loginUser, expireMinutes);
+    }
+
+    /**
      * 已登录平台管理员切换租户：直接签发目标租户 super_01 token
      */
     public String switchTenantAsSuper(String customerId, String systemType) {
