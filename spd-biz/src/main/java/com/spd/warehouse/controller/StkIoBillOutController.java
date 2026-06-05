@@ -12,15 +12,22 @@ import com.spd.department.domain.WhWarehouseApply;
 import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.department.service.IWhWarehouseApplyService;
 import com.spd.warehouse.domain.StkIoBill;
+import com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg;
+import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.service.IStkIoBillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 出库Controller
@@ -41,6 +48,69 @@ public class StkIoBillOutController extends BaseController {
 
     @Autowired
     private IDepPurchaseApplyService depPurchaseApplyService;
+
+    @Autowired
+    private StkInventoryMapper stkInventoryMapper;
+
+    /**
+     * 按仓库+耗材批量查询当前库存数量（出库明细「库存数量」列）
+     */
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:list') || @ss.hasPermi('outWarehouse:apply:add') || @ss.hasPermi('outWarehouse:apply:edit') || @ss.hasPermi('outWarehouse:apply:query')")
+    @GetMapping("/materialStockQty")
+    public AjaxResult materialStockQty(@RequestParam("warehouseId") Long warehouseId,
+                                       @RequestParam(name = "materialIds", required = false) String materialIdsStr)
+    {
+        if (warehouseId == null)
+        {
+            return success(new HashMap<>());
+        }
+        List<Long> materialIds = parseMaterialIds(materialIdsStr);
+        if (materialIds.isEmpty())
+        {
+            return success(new HashMap<>());
+        }
+        Map<String, BigDecimal> body = new HashMap<>();
+        List<MaterialWarehouseStockAgg> aggs = stkInventoryMapper.selectSumQtyGroupByMaterialAndWarehouse(warehouseId, materialIds);
+        if (aggs != null)
+        {
+            for (MaterialWarehouseStockAgg agg : aggs)
+            {
+                if (agg != null && agg.getMaterialId() != null)
+                {
+                    body.put(String.valueOf(agg.getMaterialId()),
+                        agg.getSumQty() != null ? agg.getSumQty() : BigDecimal.ZERO);
+                }
+            }
+        }
+        for (Long materialId : materialIds)
+        {
+            body.putIfAbsent(String.valueOf(materialId), BigDecimal.ZERO);
+        }
+        return success(body);
+    }
+
+    private List<Long> parseMaterialIds(String materialIdsStr)
+    {
+        List<Long> ids = new ArrayList<>();
+        if (!StringUtils.hasText(materialIdsStr))
+        {
+            return ids;
+        }
+        for (String part : materialIdsStr.split(","))
+        {
+            if (part == null)
+            {
+                continue;
+            }
+            String trimmed = part.trim();
+            if (trimmed.isEmpty())
+            {
+                continue;
+            }
+            ids.add(Long.valueOf(trimmed));
+        }
+        return ids;
+    }
 
     /**
      * 出库引用：分页查询仍有可出库数量的仓库申请单（科室申领按仓拆分后的 CKSQ 单）。

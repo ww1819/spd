@@ -2799,7 +2799,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             return;
         }
         BigDecimal sumQty = BigDecimal.ZERO;
-        for (StkIoBillEntry stkIoBillEntry : stkIoBillEntryList) {
+        int firstRowNo = 0;
+        StkIoBillEntry firstMatchEntry = null;
+        for (int i = 0; i < stkIoBillEntryList.size(); i++) {
+            StkIoBillEntry stkIoBillEntry = stkIoBillEntryList.get(i);
             if (stkIoBillEntry == null) {
                 continue;
             }
@@ -2815,6 +2818,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (entryWarehouseId != null && !oldWarehouseId.equals(entryWarehouseId)) {
                 continue;
             }
+            if (firstMatchEntry == null) {
+                firstMatchEntry = stkIoBillEntry;
+                firstRowNo = i + 1;
+            }
             sumQty = sumQty.add(qty);
         }
         if (sumQty.compareTo(BigDecimal.ZERO) <= 0) {
@@ -2829,9 +2836,21 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         BigDecimal inventoryQty = inventory.getQty() != null ? inventory.getQty() : BigDecimal.ZERO;
         if (inventoryQty.compareTo(sumQty) < 0) {
+            String materialCode = resolveEntryMaterialCode(firstMatchEntry);
+            String materialName = resolveEntryMaterialName(firstMatchEntry);
+            if (StringUtils.isEmpty(materialName)) {
+                materialName = "--";
+            }
+            if (StringUtils.isEmpty(materialCode)) {
+                materialCode = "--";
+            }
             throw new ServiceException(String.format(
-                    "实际库存不足！本单该批次在仓库下的出库合计：%s，当前库存：%s，批次：%s",
-                    sumQty, inventoryQty, oldBatchNo));
+                    "仓库库存不足！本单第%d行产品%s（%s）库存不足，当前库存为%s，批次为%s",
+                    firstRowNo > 0 ? firstRowNo : 1,
+                    materialCode,
+                    materialName,
+                    fmtQty(inventoryQty),
+                    oldBatchNo));
         }
     }
     @Override
@@ -5181,6 +5200,27 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             return m != null && m.getName() != null ? m.getName() : "";
         }
         return "";
+    }
+
+    private String resolveEntryMaterialCode(StkIoBillEntry en)
+    {
+        if (en == null)
+        {
+            return "--";
+        }
+        if (en.getMaterial() != null && StringUtils.isNotEmpty(en.getMaterial().getCode()))
+        {
+            return en.getMaterial().getCode();
+        }
+        if (en.getMaterialId() != null)
+        {
+            FdMaterial m = fdMaterialMapper.selectFdMaterialById(en.getMaterialId());
+            if (m != null && StringUtils.isNotEmpty(m.getCode()))
+            {
+                return m.getCode();
+            }
+        }
+        return en.getMaterialId() != null ? String.valueOf(en.getMaterialId()) : "--";
     }
 
     @Transactional
