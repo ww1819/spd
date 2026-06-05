@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `name` varchar(255) DEFAULT NULL COMMENT '科室名称',
   `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码（拼音简码）',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `third_party_dept_id` varchar(128) DEFAULT NULL COMMENT '其他第三方系统科室ID',
+  `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统科室ID',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `del_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `del_time` datetime DEFAULT NULL COMMENT '删除时间',
@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `parent_id` bigint DEFAULT NULL COMMENT '上级科室ID（NULL表示客户下顶级）',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fd_department_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_department_tenant_code` (`tenant_id`,`code`),
   KEY `idx_fd_department_parent` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室主数据';
@@ -120,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `fd_material` (
   `del_time` datetime DEFAULT NULL COMMENT '删除时间',
   `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
   `his_id` varchar(100) DEFAULT NULL COMMENT 'his系统产品档案ID，或其他第三方系统产品档案ID',
+  `his_spec_packing_id` varchar(64) DEFAULT NULL COMMENT 'HIS规格包装ID（众阳 drug_spec_packing_id）',
   `selection_reason` varchar(512) DEFAULT NULL COMMENT '入选原因',
   `is_billing` char(4) DEFAULT '2' COMMENT '是否计费：1=计费,2=不计费',
   `main_barcode` varchar(128) DEFAULT NULL COMMENT '主条码（用于扫码匹配产品档案）',
@@ -134,6 +136,7 @@ CREATE TABLE IF NOT EXISTS `fd_material` (
   `material_category_id` varchar(36) DEFAULT NULL COMMENT '材料类别ID',
   `min_package_qty` decimal(18,6) DEFAULT NULL COMMENT '最小包装数（每最小包装所含数量，如 10 支/盒）',
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_fd_material_tenant_his_spec` (`tenant_id`,`his_id`,`his_spec_packing_id`),
   KEY `idx_location_id` (`location_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='耗材产品';
 /

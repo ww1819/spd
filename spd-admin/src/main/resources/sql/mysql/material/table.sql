@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `parent_id` bigint DEFAULT NULL COMMENT '上级科室ID（NULL表示客户下顶级）',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fd_department_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_department_tenant_code` (`tenant_id`,`code`),
   KEY `idx_fd_department_parent` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室主数据';
@@ -173,6 +174,7 @@ CREATE TABLE IF NOT EXISTS `fd_unit` (
   `unit_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `unit_code` varchar(64) DEFAULT NULL COMMENT '单位编码',
   `unit_name` varchar(255) DEFAULT NULL COMMENT '单位名称',
+  `his_unit_id` varchar(64) DEFAULT NULL COMMENT 'HIS计量单位ID（众阳 min_packing_id/dose_unit_id）',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
@@ -183,6 +185,7 @@ CREATE TABLE IF NOT EXISTS `fd_unit` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   PRIMARY KEY (`unit_id`),
+  UNIQUE KEY `uk_fd_unit_tenant_his` (`tenant_id`,`his_unit_id`),
   KEY `idx_fd_unit_tenant_code` (`tenant_id`,`unit_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计量单位';
 /
@@ -228,6 +231,7 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse_category` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统库房分类ID',
   PRIMARY KEY (`warehouse_category_id`),
+  UNIQUE KEY `uk_fd_wh_cat_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_wh_cat_tenant` (`tenant_id`),
   KEY `idx_fd_wh_cat_parent` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房分类';
@@ -474,6 +478,19 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
 -- 耗材系统 SaaS 表（与设备共用 sb_customer 客户列表，耗材侧单独建表并与租户 tenant_id 关联）
 -- 执行时按「/」分段执行
 -- 耗材工作组：使用系统岗位表 sys_post（及 sys_user_post、sys_post_menu 等），不单独建 hc_work_group 表。
+
+-- 用户与科室关联（若依 sys_user 基础表来自主库初始化；his_identity_id 见 column.sql）
+CREATE TABLE IF NOT EXISTS `sys_user_department` (
+  `user_id` bigint NOT NULL COMMENT '用户ID（sys_user.user_id）',
+  `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
+  `status` int DEFAULT 0 COMMENT '状态',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sys_user.customer_id)',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`user_id`,`department_id`),
+  KEY `idx_sys_user_dept_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户与科室关联（主键即 uk_sys_user_dept）';
+/
 
 -- 用户与岗位(耗材工作组)关联（与 sys_post.post_id、sys_user.user_id；tenant_id 与 sys_user.customer_id 对齐）
 CREATE TABLE IF NOT EXISTS `sys_user_post` (
