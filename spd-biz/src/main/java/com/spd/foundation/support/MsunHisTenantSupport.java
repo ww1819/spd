@@ -49,6 +49,12 @@ public final class MsunHisTenantSupport
         return "/api/vendor/" + VENDOR_CODE + "/hospitals/" + requireHospitalKey(tenantId);
     }
 
+    /** {@code /api/vendor/msun/hospitals/{hospitalKey}/spd/query}（2.5.102/82/43 等探针查询） */
+    public static String spdQueryApiPrefix(String tenantId)
+    {
+        return vendorHospitalApiPrefix(tenantId) + "/spd/query";
+    }
+
     public static String joinUrl(String baseUrl, String path)
     {
         String base = StringUtils.trimToEmpty(baseUrl);

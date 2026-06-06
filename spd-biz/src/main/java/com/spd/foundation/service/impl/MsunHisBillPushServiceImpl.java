@@ -39,6 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 枣强众阳 HIS 出库 2.5.41 / 退库 2.5.42 推送编排。
+ * <p>{@code spdDetailId} 拼接/解析规则见 {@link com.spd.foundation.constants.MsunHisConstants}；
+ * 推送成功后由 {@link MsunHisPushVerifyService} 即时拉取 2.5.102（及出库 2.5.43 批次库存）并标注异常。
  */
 @Service
 public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
@@ -55,6 +57,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
     private final FdSupplierMapper fdSupplierMapper;
     private final FdMaterialMapper fdMaterialMapper;
     private final StkDepInventoryMapper stkDepInventoryMapper;
+    private final MsunHisPushVerifyService msunHisPushVerifyService;
 
     public MsunHisBillPushServiceImpl(
             ISysConfigService sysConfigService,
@@ -63,7 +66,8 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             FdDepartmentMapper fdDepartmentMapper,
             FdSupplierMapper fdSupplierMapper,
             FdMaterialMapper fdMaterialMapper,
-            StkDepInventoryMapper stkDepInventoryMapper)
+            StkDepInventoryMapper stkDepInventoryMapper,
+            MsunHisPushVerifyService msunHisPushVerifyService)
     {
         this.sysConfigService = sysConfigService;
         this.stkIoBillMapper = stkIoBillMapper;
@@ -72,6 +76,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         this.fdSupplierMapper = fdSupplierMapper;
         this.fdMaterialMapper = fdMaterialMapper;
         this.stkDepInventoryMapper = stkDepInventoryMapper;
+        this.msunHisPushVerifyService = msunHisPushVerifyService;
     }
 
     @Override
@@ -97,11 +102,15 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             return;
         }
+        updateBillPushStatus(bill.getId(), MsunHisConstants.PUSHING, null, null);
         PushContext ctx = buildOutboundContext(bill, tenantId);
         Map<String, Object> body = buildOutboundBody(bill, ctx, toPush, tenantId);
         JSONObject response = postInterface(tenantId, "/push/drug-stocks-new", body);
         applyOutboundResponse(bill, toPush, tenantId, response);
-        updateBillPushStatus(bill.getId(), MsunHisConstants.PUSH_SUCCESS, null, extractTraceId(response));
+        String traceId = extractTraceId(response);
+        updateBillPushStatus(bill.getId(), MsunHisConstants.PUSH_SUCCESS, null, traceId);
+        msunHisPushVerifyService.verifyAfterPush(
+            bill, toPush, ctx.storageDeptHisId, ctx.pharmacyDeptHisId, tenantId, true);
     }
 
     @Override
@@ -152,6 +161,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             return;
         }
+        updateBillPushStatus(bill.getId(), MsunHisConstants.PUSHING, null, null);
         PushContext ctx = buildReturnContext(bill, tenantId);
         Map<String, Object> body = buildReturnBody(bill, ctx, toPush, tenantId);
         JSONObject response = postInterface(tenantId, "/push/drug-stocks-return", body);
@@ -160,7 +170,10 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             stkIoBillMapper.updateEntryHisPushStatus(entry.getId(), MsunHisConstants.PUSH_SUCCESS, null);
         }
-        updateBillPushStatus(bill.getId(), MsunHisConstants.PUSH_SUCCESS, null, extractTraceId(response));
+        String traceId = extractTraceId(response);
+        updateBillPushStatus(bill.getId(), MsunHisConstants.PUSH_SUCCESS, null, traceId);
+        msunHisPushVerifyService.verifyAfterPush(
+            bill, toPush, ctx.storageDeptHisId, ctx.pharmacyDeptHisId, tenantId, false);
     }
 
     private void validateReturnEntry(StkIoBill bill, StkIoBillEntry entry, PushContext ctx, String tenantId)
@@ -320,6 +333,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
                 throw new ServiceException("耗材不存在 id=" + entry.getMaterialId());
             }
             String memo = MsunHisConstants.buildEntryMemo(tenantId, entry.getId());
+            String spdDetailId = MsunHisConstants.buildSpdDetailId(bill.getId(), entry.getId());
             Map<String, Object> line = new LinkedHashMap<>();
             line.put("drugId", parseLongRequired(material.getHisId(), "耗材HIS drugId"));
             line.put("drugSpecPackingId", parseLongRequired(material.getHisSpecPackingId(), "耗材HIS规格"));
@@ -330,11 +344,11 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             line.put("produceDate", formatHisDateTime(entry.getBeginTime()));
             line.put("effectiveDate", formatHisDateTime(entry.getEndTime()));
             line.put("ycBatchNo", entry.getBatchNumber());
-            line.put("spdDetailId", String.valueOf(entry.getId()));
+            line.put("spdDetailId", spdDetailId);
             line.put("memo", memo);
             details.add(line);
 
-            stkIoBillMapper.updateEntryHisPrepare(entry.getId(), memo, String.valueOf(entry.getId()),
+            stkIoBillMapper.updateEntryHisPrepare(entry.getId(), memo, spdDetailId,
                 material.getHisId(), material.getHisSpecPackingId(), MsunHisConstants.PUSHING);
         }
         body.put("inStockDetailDTOList", details);
@@ -363,12 +377,32 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             }
             String memo = StringUtils.isNotEmpty(entry.getHisMemo())
                 ? entry.getHisMemo() : MsunHisConstants.buildEntryMemo(tenantId, entry.getId());
+            String spdDetailId = StringUtils.isNotEmpty(entry.getHisSpdDetailId())
+                ? entry.getHisSpdDetailId() : MsunHisConstants.buildSpdDetailId(bill.getId(), entry.getId());
             Map<String, Object> line = new LinkedHashMap<>();
             line.put("pharmacyStockId", parseLongRequired(pharmacyStockId, "pharmacyStockId"));
             line.put("quantity", entry.getQty());
             line.put("memo", memo);
             details.add(line);
-            stkIoBillMapper.updateEntryHisPushStatus(entry.getId(), MsunHisConstants.PUSHING, null);
+            String drugId = entry.getHisDrugId();
+            String specId = entry.getHisDrugSpecPackingId();
+            if (StringUtils.isEmpty(drugId) || StringUtils.isEmpty(specId))
+            {
+                FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                if (material != null)
+                {
+                    if (StringUtils.isEmpty(drugId))
+                    {
+                        drugId = material.getHisId();
+                    }
+                    if (StringUtils.isEmpty(specId))
+                    {
+                        specId = material.getHisSpecPackingId();
+                    }
+                }
+            }
+            stkIoBillMapper.updateEntryHisPrepare(entry.getId(), memo, spdDetailId,
+                drugId, specId, MsunHisConstants.PUSHING);
         }
         body.put("outStockDetailDTOList", details);
         body.put("_spdLogMeta", logMeta(bill));
@@ -415,7 +449,12 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         for (StkIoBillEntry entry : entries)
         {
             String memo = MsunHisConstants.buildEntryMemo(tenantId, entry.getId());
+            String spdDetailId = MsunHisConstants.buildSpdDetailId(bill.getId(), entry.getId());
             JSONObject row = byMemo.get(memo);
+            if (row == null && StringUtils.isNotEmpty(spdDetailId))
+            {
+                row = bySpdDetail.get(spdDetailId);
+            }
             if (row == null)
             {
                 row = bySpdDetail.get(String.valueOf(entry.getId()));
