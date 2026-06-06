@@ -2,7 +2,7 @@
 -- 执行顺序建议：1.table.sql 2.column.sql（存储过程 add_table_column + 存量库增量字段）3.menu.sql 4.data_integrity.sql 5.function.sql/procedure.sql/trigger.sql/view.sql 按需执行
 -- 分工：本文件为全量 CREATE TABLE IF NOT EXISTS（及必要的 INSERT 种子）；column.sql 仅含 add_table_column 存储过程与 CALL/动态 ALTER 等增量，不含 CREATE TABLE。
 -- 本脚本已含：出入库/库存/批次、仓库与科室流水、盘点/盈亏、科室批量消耗、期初导入、结算与 SaaS 权限、打印设置、档案变更日志（fd_*_change_log）、盘盈待入账（stk_profit_loss_pending）、库房申请单（wh_warehouse_apply / wh_warehouse_apply_entry / wh_wh_apply_ck_entry_ref）、高值备货引用（gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref）、租户级 HIS 外联（sys_his_external_db）等；存量库若已建表可跳过对应 CREATE。
--- 说明：fd_material / fd_warehouse / fd_material_category 等若依基础表通常来自主库初始化 SQL，未重复写入本文件；历史增量字段仍由 column.sql 补齐。
+-- 说明：fd_material 全量建表见 equipment/table.sql（含 his_id、his_spec_packing_id）；本文件含 fd_warehouse 及众阳 HIS 推送相关列；存量库增量字段仍由 column.sql 补齐。
 -- 按「/」分段，每段一条语句执行
 /
 
@@ -235,6 +235,32 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse_category` (
   KEY `idx_fd_wh_cat_tenant` (`tenant_id`),
   KEY `idx_fd_wh_cat_parent` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房分类';
+/
+
+-- 仓库主数据（与 aspt.fd_warehouse 一致；业务表 stk_io_bill.warehouse_id 等关联本表 id）
+CREATE TABLE IF NOT EXISTS `fd_warehouse` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `code` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '仓库编码',
+  `name` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '仓库名称',
+  `create_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag` int DEFAULT 0 COMMENT '删除标志',
+  `warehouse_person` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '负责人',
+  `warehouse_phone` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '电话',
+  `warehouse_status` char(4) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '状态',
+  `remark` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  `warehouse_type` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '低值' COMMENT '仓库类型（高值、低值、试剂）',
+  `settlement_type` varchar(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '结算类型（1=入库结算，2=出库结算，3=消耗结算）',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_by` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
+  `his_id` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'his系统仓库ID，或其他第三方系统仓库ID',
+  `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `lv_audit_gen_inhospital_in` tinyint DEFAULT 0 COMMENT '低值入库审核是否生成院内码定数包 0否1是',
+  `lv_audit_gen_inhospital_out` tinyint DEFAULT 0 COMMENT '低值出库审核是否生成院内码定数包 0否1是',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='仓库';
 /
 
 -- 财务分类（业务表 fd_material.finance_category_id 等关联 finance_category_id）
@@ -479,7 +505,7 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
 -- 执行时按「/」分段执行
 -- 耗材工作组：使用系统岗位表 sys_post（及 sys_user_post、sys_post_menu 等），不单独建 hc_work_group 表。
 
--- 用户与科室关联（若依 sys_user 基础表来自主库初始化；his_identity_id 见 column.sql）
+-- 用户与科室关联（若依 sys_user 基础表来自主库初始化；众阳 his_id、his_identity_id 及 uk_sys_user_customer_his_identity 见 column.sql）
 CREATE TABLE IF NOT EXISTS `sys_user_department` (
   `user_id` bigint NOT NULL COMMENT '用户ID（sys_user.user_id）',
   `department_id` bigint NOT NULL COMMENT '科室ID（fd_department.id）',
@@ -1569,6 +1595,16 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill` (
   `delivery_ref_supplier_name` varchar(256) DEFAULT NULL COMMENT '引用配送单入库：供应商名称快照',
   `delivery_ref_dept_id` varchar(128) DEFAULT NULL COMMENT '引用配送单入库：申请科室ID快照',
   `delivery_ref_dept_name` varchar(256) DEFAULT NULL COMMENT '引用配送单入库：申请科室名称快照',
+  `his_in_stock_status` varchar(8) DEFAULT NULL COMMENT '2.5.41 inStockStatus',
+  `his_storage_dept_id` varchar(128) DEFAULT NULL COMMENT '推送快照 storageDeptId',
+  `his_pharmacy_dept_id` varchar(128) DEFAULT NULL COMMENT '推送快照 pharmacyDeptId',
+  `his_spd_main_id` varchar(64) DEFAULT NULL COMMENT '2.5.41 spdMainId',
+  `his_save_correlation_flag` char(1) DEFAULT '1' COMMENT '2.5.41 saveCorrelationFlag',
+  `his_is_return_to_supplier` char(1) DEFAULT '1' COMMENT '2.5.42 isReturnToSupplier',
+  `his_push_status` varchar(16) DEFAULT NULL COMMENT 'HIS推送状态 0未推1推中2成功3失败',
+  `his_push_time` datetime DEFAULT NULL COMMENT 'HIS最近推送时间',
+  `his_push_msg` varchar(500) DEFAULT NULL COMMENT 'HIS推送失败/校验原因',
+  `his_trace_id` varchar(64) DEFAULT NULL COMMENT 'HIS traceId',
   PRIMARY KEY (`id`),
   KEY `idx_stk_io_bill_no` (`bill_no`),
   KEY `idx_stk_io_bill_type` (`bill_type`),
@@ -1620,6 +1656,18 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `warehouse_id_str` varchar(64) DEFAULT NULL COMMENT '仓库ID快照(varchar)',
   `supplier_id_str` varchar(64) DEFAULT NULL COMMENT '供应商ID快照(varchar)',
   `department_id_str` varchar(64) DEFAULT NULL COMMENT '科室ID快照(varchar)',
+  `his_memo` varchar(128) DEFAULT NULL COMMENT 'HIS明细对照键 memo',
+  `his_spd_detail_id` varchar(64) DEFAULT NULL COMMENT '2.5.41 spdDetailId（{billId}:{entryId}，见 MsunHisConstants）',
+  `his_pharmacy_stock_id` varchar(64) DEFAULT NULL COMMENT '2.5.41回写 pharmacyStockId',
+  `his_storage_stock_id` varchar(64) DEFAULT NULL COMMENT '药库批次 storageStockId',
+  `his_stock_query_id` varchar(64) DEFAULT NULL COMMENT '合并库存 stockQueryId',
+  `buy_price` decimal(18,6) DEFAULT NULL COMMENT '进价(推送)',
+  `retail_price` decimal(18,6) DEFAULT NULL COMMENT '零售价(推送)',
+  `invoice_code` varchar(128) DEFAULT NULL COMMENT '明细发票号',
+  `his_push_status` varchar(16) DEFAULT NULL COMMENT '行级HIS推送状态',
+  `his_push_msg` varchar(500) DEFAULT NULL COMMENT '行级HIS推送错误/校验',
+  `his_drug_id` varchar(64) DEFAULT NULL COMMENT '推送快照 drugId',
+  `his_drug_spec_packing_id` varchar(64) DEFAULT NULL COMMENT '推送快照 drugSpecPackingId',
   PRIMARY KEY (`id`),
   KEY `idx_stk_io_entry_paren` (`paren_id`),
   KEY `idx_stk_io_entry_material` (`material_id`),
@@ -1947,6 +1995,9 @@ CREATE TABLE IF NOT EXISTS `stk_dep_inventory` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `his_pharmacy_stock_id` varchar(128) DEFAULT NULL COMMENT '退库权威键 pharmacyStockId',
+  `his_stock_query_id` varchar(128) DEFAULT NULL COMMENT 'HIS合并库存ID',
+  `his_storage_stock_id` varchar(128) DEFAULT NULL COMMENT 'HIS药库批次ID',
   PRIMARY KEY (`id`),
   KEY `idx_stk_dep_inv_batch` (`batch_no`),
   KEY `idx_stk_dep_inv_batch_id` (`batch_id`),

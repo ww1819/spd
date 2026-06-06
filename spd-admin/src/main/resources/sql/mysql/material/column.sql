@@ -323,9 +323,9 @@ CALL add_table_column('fd_department', 'del_time', 'datetime', '删除时间', N
 /* 耗材业务表与租户关联：仓库、出入库单、库存、科室库存、申领单 */
 CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('fd_warehouse', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_warehouse', 'del_by', 'varchar(100)', '删除者', NULL);
 /
-CALL add_table_column('fd_warehouse', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_warehouse', 'del_time', 'datetime', '删除时间', NULL);
 /
 CALL add_table_column('stk_io_bill', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
@@ -2732,8 +2732,85 @@ CALL add_table_column('fd_unit', 'his_unit_id', 'varchar(64)', 'HIS计量单位I
 CALL add_table_column('sys_user', 'his_identity_id', 'varchar(64)', 'HIS用户身份ID（众阳 identity_id）', NULL);
 /
 
+-- 众阳主数据 UPSERT 组合唯一键（存量库补索引；新库见 material/table.sql 全量建表）
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_department' AND index_name = 'uk_fd_department_tenant_his'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE fd_department ADD UNIQUE KEY uk_fd_department_tenant_his (tenant_id, his_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_material' AND index_name = 'uk_fd_material_tenant_his_spec'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE fd_material ADD UNIQUE KEY uk_fd_material_tenant_his_spec (tenant_id, his_id, his_spec_packing_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_warehouse_category' AND index_name = 'uk_fd_wh_cat_tenant_his'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE fd_warehouse_category ADD UNIQUE KEY uk_fd_wh_cat_tenant_his (tenant_id, his_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_unit' AND index_name = 'uk_fd_unit_tenant_his'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE fd_unit ADD UNIQUE KEY uk_fd_unit_tenant_his (tenant_id, his_unit_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'sys_user' AND index_name = 'uk_sys_user_customer_his_identity'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE sys_user ADD UNIQUE KEY uk_sys_user_customer_his_identity (customer_id, his_identity_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+
 -- ========== 众阳 HIS 单据推送（枣强 zaoqiang-tcm-001，评估文档 §6）==========
-CALL add_table_column('fd_warehouse', 'his_id', 'varchar(128)', 'HIS药库科室ID(storageDeptId)', NULL);
+CALL add_table_column('fd_warehouse', 'his_id', 'varchar(100)', 'his系统仓库ID，或其他第三方系统仓库ID（众阳对接填 storageDeptId）', NULL);
 /
 CALL add_table_column('stk_io_bill', 'his_in_stock_status', 'varchar(8)', '2.5.41 inStockStatus', NULL);
 /
@@ -2757,7 +2834,7 @@ CALL add_table_column('stk_io_bill', 'his_trace_id', 'varchar(64)', 'HIS traceId
 /
 CALL add_table_column('stk_io_bill_entry', 'his_memo', 'varchar(128)', 'HIS明细对照键 memo', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_spd_detail_id', 'varchar(64)', '2.5.41 spdDetailId', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_spd_detail_id', 'varchar(64)', '2.5.41 spdDetailId（{billId}:{entryId}，见 MsunHisConstants）', NULL);
 /
 CALL add_table_column('stk_io_bill_entry', 'his_pharmacy_stock_id', 'varchar(64)', '2.5.41回写 pharmacyStockId', NULL);
 /
