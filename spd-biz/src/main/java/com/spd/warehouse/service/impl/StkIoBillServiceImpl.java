@@ -1017,15 +1017,17 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     String updateBy = SecurityUtils.getUserIdStr();
                     int decRows = stkInventoryMapper.decreaseStkInventoryQty(inventory.getId(), qty, updateBy);
                     if (decRows == 0) {
-                        StkInventory latest = stkInventoryMapper.selectStkInventoryById(inventory.getId());
+                        StkInventory latest = stkInventoryMapper.selectStkInventoryRowById(inventory.getId());
                         BigDecimal cur = latest != null && latest.getQty() != null ? latest.getQty() : BigDecimal.ZERO;
                         throw new ServiceException(String.format(
                                 "实际库存不足，出库审核已拒绝。批次：%s，本行出库：%s，当前库存：%s（可能与他单并发或本单多行合计超库存，请刷新后重试）",
                                 batchNo, qty, cur));
                     }
-                    inventory = stkInventoryMapper.selectStkInventoryById(inventory.getId());
-                    if (inventory == null) {
-                        throw new ServiceException(String.format("出库扣减后重新加载库存失败，批次：%s", batchNo));
+                    if (inventory.getQty() != null) {
+                        inventory.setQty(inventory.getQty().subtract(qty));
+                        if (unitPrice != null) {
+                            inventory.setAmt(inventory.getQty().multiply(unitPrice));
+                        }
                     }
 
                     // 插仓库流水（lx=CK，kc_no=仓库库存id）
@@ -1912,7 +1914,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         StkInventory inv = null;
         Long whKey = e.resolveStkInventoryKeyForWarehouseOps();
         if (whKey != null) {
-            inv = stkInventoryMapper.selectStkInventoryById(whKey);
+            inv = stkInventoryMapper.selectStkInventoryRowById(whKey);
         } else if (StringUtils.isNotEmpty(e.getBatchNo()) && headerWh != null) {
             inv = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(e.getBatchNo().trim(), headerWh);
         }
