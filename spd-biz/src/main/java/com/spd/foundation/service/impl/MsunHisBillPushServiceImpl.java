@@ -115,7 +115,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void repushOutbound(Long billId)
+    public void pushOutbound(Long billId)
     {
         StkIoBill bill = stkIoBillMapper.selectStkIoBillById(billId);
         if (bill == null)
@@ -124,9 +124,16 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         }
         if (bill.getBillStatus() == null || bill.getBillStatus() != 2)
         {
-            throw new ServiceException("仅已审核出库单可补退推送");
+            throw new ServiceException("未审核出库单不允许推送HIS");
         }
         pushAfterOutboundAudit(bill);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void repushOutbound(Long billId)
+    {
+        pushOutbound(billId);
     }
 
     @Override

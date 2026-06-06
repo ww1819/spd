@@ -21,6 +21,9 @@ public interface IMsunHisBillPushService
     /** 401 审核后推送 2.5.42 */
     void pushAfterReturnAudit(StkIoBill bill);
 
-    /** 201 补退：仅推未成功/失败明细 */
+    /** 201 手动推送：仅推未成功/失败明细（已审核） */
+    void pushOutbound(Long billId);
+
+    /** @deprecated 使用 {@link #pushOutbound(Long)} */
     void repushOutbound(Long billId);
 }

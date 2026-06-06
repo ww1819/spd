@@ -517,18 +517,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setAuditDate(new Date());
         stkIoBill.setAuditBy(auditBy);
         int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
-        if (res > 0 && zaoqiangHis && auditBillType != null)
-        {
-            StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
-            if (auditBillType == 201)
-            {
-                msunHisBillPushService.pushAfterOutboundAudit(reloaded);
-            }
-            else if (auditBillType == 401)
-            {
-                msunHisBillPushService.pushAfterReturnAudit(reloaded);
-            }
-        }
+        // HIS 推送与审核分离：由前端手动触发 pushOutbound / repushOutbound，避免推送失败导致审核回滚
         if (res > 0 && auditBillType != null && auditBillType == 201) {
             String tid = auditTenantId;
             if (TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT.equals(tid)) {
