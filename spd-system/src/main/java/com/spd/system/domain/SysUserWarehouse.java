@@ -17,6 +17,9 @@ public class SysUserWarehouse {
     /** 状态 */
     private Integer status;
 
+    /** 租户ID(同 sys_user.customer_id) */
+    private String tenantId;
+
     public Long getUserId() {
         return userId;
     }
@@ -41,12 +44,21 @@ public class SysUserWarehouse {
         this.status = status;
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
                 .append("userId", getUserId())
                 .append("warehouseId", getWarehouseId())
                 .append("status", getStatus())
+                .append("tenantId", getTenantId())
                 .toString();
     }
 }

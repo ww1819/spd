@@ -47,4 +47,14 @@ public interface SysUserWarehouseMapper
      * 用户已授权的仓库 ID（sys_user_warehouse）
      */
     public List<Long> selectWarehouseIdsByUserId(Long userId);
+
+    /** 按用户 ID 从 sys_user.customer_id 补全 tenant_id */
+    int backfillTenantIdByUserIdFromUser(Long userId);
+
+    /** 按用户 ID 从 fd_warehouse.tenant_id 补全 tenant_id */
+    int backfillTenantIdByUserIdFromWarehouse(Long userId);
+
+    int backfillAllTenantIdFromUser();
+
+    int backfillAllTenantIdFromWarehouse();
 }

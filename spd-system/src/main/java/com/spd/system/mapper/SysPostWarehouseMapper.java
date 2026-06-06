@@ -34,5 +34,15 @@ public interface SysPostWarehouseMapper
      * @return 仓库ID列表
      */
     public List<Long> selectWarehouseListByPostId(Long postId);
+
+    /** 按工作组 ID 从 sys_post.tenant_id 补全 tenant_id */
+    int backfillTenantIdByPostIdFromPost(Long postId);
+
+    /** 按工作组 ID 从 fd_warehouse.tenant_id 补全 tenant_id */
+    int backfillTenantIdByPostIdFromWarehouse(Long postId);
+
+    int backfillAllTenantIdFromPost();
+
+    int backfillAllTenantIdFromWarehouse();
 }
 

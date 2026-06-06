@@ -638,17 +638,43 @@ public class SysUserServiceImpl implements ISysUserService
         Long[] warehouseIds = user.getWarehouseIds();
         if (StringUtils.isNotEmpty(warehouseIds))
         {
-            // 新增用户与岗位管理
+            String tenantId = resolveUserTenantId(user);
             List<SysUserWarehouse> list = new ArrayList<SysUserWarehouse>(warehouseIds.length);
             for (Long warehouseId : warehouseIds)
             {
                 SysUserWarehouse uw = new SysUserWarehouse();
                 uw.setUserId(user.getUserId());
                 uw.setWarehouseId(warehouseId);
+                uw.setStatus(0);
+                if (StringUtils.isNotEmpty(tenantId))
+                {
+                    uw.setTenantId(tenantId);
+                }
                 list.add(uw);
             }
             userWarehouseMapper.batchUserWarehouse(list);
         }
+    }
+
+    private String resolveUserTenantId(SysUser user)
+    {
+        if (user == null)
+        {
+            return SecurityUtils.resolveEffectiveTenantId(null);
+        }
+        if (StringUtils.isNotEmpty(user.getCustomerId()))
+        {
+            return user.getCustomerId();
+        }
+        if (user.getUserId() != null)
+        {
+            SysUser db = userMapper.selectUserById(user.getUserId());
+            if (db != null && StringUtils.isNotEmpty(db.getCustomerId()))
+            {
+                return db.getCustomerId();
+            }
+        }
+        return SecurityUtils.resolveEffectiveTenantId(null);
     }
 
     /**

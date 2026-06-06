@@ -85,6 +85,7 @@ public class TenantFoundationAutoGrantServiceImpl implements ITenantFoundationAu
         uw.setUserId(super01.getUserId());
         uw.setWarehouseId(warehouseId);
         uw.setStatus(0);
+        uw.setTenantId(tenantId);
         sysUserWarehouseMapper.batchUserWarehouse(Collections.singletonList(uw));
       }
     }

@@ -1682,11 +1682,39 @@ CALL add_table_column('sys_user_role', 'create_time', 'datetime', '创建时间'
 /
 
 -- sys_user_warehouse
-CALL add_table_column('sys_user_warehouse', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_user_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sys_user.customer_id)', NULL);
 /
 CALL add_table_column('sys_user_warehouse', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('sys_user_warehouse', 'create_time', 'datetime', '创建时间', NULL);
+/
+
+-- ========== 仓库权限表补全 tenant_id（存量数据）==========
+/* sys_user_warehouse：优先 sys_user.customer_id，其次 fd_warehouse.tenant_id */
+UPDATE sys_user_warehouse uw
+INNER JOIN sys_user u ON u.user_id = uw.user_id
+SET uw.tenant_id = u.customer_id
+WHERE (uw.tenant_id IS NULL OR uw.tenant_id = '')
+  AND u.customer_id IS NOT NULL AND TRIM(u.customer_id) != '';
+/
+UPDATE sys_user_warehouse uw
+INNER JOIN fd_warehouse w ON w.id = uw.warehouse_id
+SET uw.tenant_id = w.tenant_id
+WHERE (uw.tenant_id IS NULL OR uw.tenant_id = '')
+  AND w.tenant_id IS NOT NULL AND TRIM(w.tenant_id) != '';
+/
+/* sys_post_warehouse：优先 sys_post.tenant_id，其次 fd_warehouse.tenant_id */
+UPDATE sys_post_warehouse pw
+INNER JOIN sys_post p ON p.post_id = pw.post_id
+SET pw.tenant_id = p.tenant_id
+WHERE (pw.tenant_id IS NULL OR pw.tenant_id = '')
+  AND p.tenant_id IS NOT NULL AND TRIM(p.tenant_id) != '';
+/
+UPDATE sys_post_warehouse pw
+INNER JOIN fd_warehouse w ON w.id = pw.warehouse_id
+SET pw.tenant_id = w.tenant_id
+WHERE (pw.tenant_id IS NULL OR pw.tenant_id = '')
+  AND w.tenant_id IS NOT NULL AND TRIM(w.tenant_id) != '';
 /
 
 

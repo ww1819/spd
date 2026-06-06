@@ -25,5 +25,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		select warehouse_id from sys_post_warehouse where post_id=#{postId}
 	</select>
 
+	<update id="backfillTenantIdByPostIdFromPost">
+		update sys_post_warehouse pw
+		inner join sys_post p on p.post_id = pw.post_id
+		set pw.tenant_id = p.tenant_id
+		where pw.post_id = #{postId}
+		  and (pw.tenant_id is null or pw.tenant_id = '')
+		  and p.tenant_id is not null and trim(p.tenant_id) != ''
+	</update>
+
+	<update id="backfillTenantIdByPostIdFromWarehouse">
+		update sys_post_warehouse pw
+		inner join fd_warehouse w on w.id = pw.warehouse_id
+		set pw.tenant_id = w.tenant_id
+		where pw.post_id = #{postId}
+		  and (pw.tenant_id is null or pw.tenant_id = '')
+		  and w.tenant_id is not null and trim(w.tenant_id) != ''
+	</update>
+
+	<update id="backfillAllTenantIdFromPost">
+		update sys_post_warehouse pw
+		inner join sys_post p on p.post_id = pw.post_id
+		set pw.tenant_id = p.tenant_id
+		where (pw.tenant_id is null or pw.tenant_id = '')
+		  and p.tenant_id is not null and trim(p.tenant_id) != ''
+	</update>
+
+	<update id="backfillAllTenantIdFromWarehouse">
+		update sys_post_warehouse pw
+		inner join fd_warehouse w on w.id = pw.warehouse_id
+		set pw.tenant_id = w.tenant_id
+		where (pw.tenant_id is null or pw.tenant_id = '')
+		  and w.tenant_id is not null and trim(w.tenant_id) != ''
+	</update>
+
 </mapper>
 

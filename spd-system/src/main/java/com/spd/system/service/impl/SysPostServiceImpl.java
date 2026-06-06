@@ -360,6 +360,7 @@ public class SysPostServiceImpl implements ISysPostService
         Long[] warehouseIds = post.getWarehouseIds();
         if (StringUtils.isNotNull(warehouseIds))
         {
+            String tenantId = resolvePostTenantId(post);
             // 删除原有权限
             postWarehouseMapper.deletePostWarehouseByPostId(postId);
             // 新增权限
@@ -373,8 +374,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostWarehouse pw = new SysPostWarehouse();
                         pw.setPostId(postId);
                         pw.setWarehouseId(warehouseId);
-                        if (StringUtils.isNotEmpty(post.getTenantId())) {
-                            pw.setTenantId(post.getTenantId());
+                        if (StringUtils.isNotEmpty(tenantId))
+                        {
+                            pw.setTenantId(tenantId);
                         }
                         list.add(pw);
                     }
@@ -385,6 +387,32 @@ public class SysPostServiceImpl implements ISysPostService
                 }
             }
         }
+    }
+
+    private String resolvePostTenantId(SysPost post)
+    {
+        if (post == null)
+        {
+            return SecurityUtils.getCustomerId();
+        }
+        if (StringUtils.isNotEmpty(post.getTenantId()))
+        {
+            return post.getTenantId();
+        }
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isNotEmpty(tenantId))
+        {
+            return tenantId;
+        }
+        if (post.getPostId() != null)
+        {
+            SysPost db = postMapper.selectPostById(post.getPostId());
+            if (db != null && StringUtils.isNotEmpty(db.getTenantId()))
+            {
+                return db.getTenantId();
+            }
+        }
+        return null;
     }
 
     /**
@@ -551,6 +579,8 @@ public class SysPostServiceImpl implements ISysPostService
         }
         int affected = 0;
         boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        SysPost post = postMapper.selectPostById(postId);
+        String postTenantId = post != null ? post.getTenantId() : null;
         for (Long userId : userIds)
         {
             if (copyMode)
@@ -568,6 +598,10 @@ public class SysPostServiceImpl implements ISysPostService
                     userWarehouse.setUserId(userId);
                     userWarehouse.setWarehouseId(warehouseId);
                     userWarehouse.setStatus(0);
+                    if (StringUtils.isNotEmpty(postTenantId))
+                    {
+                        userWarehouse.setTenantId(postTenantId);
+                    }
                     toInsert.add(userWarehouse);
                     exists.add(warehouseId);
                 }
