@@ -467,4 +467,22 @@ public interface StkIoBillMapper
 
     /** 高值核销确认结算单：按前缀取最大单号 */
     String selectMaxSettlementBillNo(@Param("prefix") String prefix, @Param("billType") Integer billType);
+
+    int updateEntryHisPrepare(@Param("id") Long id, @Param("hisMemo") String hisMemo,
+        @Param("hisSpdDetailId") String hisSpdDetailId, @Param("hisDrugId") String hisDrugId,
+        @Param("hisDrugSpecPackingId") String hisDrugSpecPackingId, @Param("hisPushStatus") String hisPushStatus);
+
+    int updateEntryHisPushStatus(@Param("id") Long id, @Param("hisPushStatus") String hisPushStatus,
+        @Param("hisPushMsg") String hisPushMsg);
+
+    int updateEntryHisPushResult(@Param("id") Long id, @Param("hisPharmacyStockId") String hisPharmacyStockId,
+        @Param("hisStorageStockId") String hisStorageStockId, @Param("hisStockQueryId") String hisStockQueryId,
+        @Param("hisPushStatus") String hisPushStatus, @Param("hisPushMsg") String hisPushMsg);
+
+    int updateBillHisPushStatus(@Param("id") Long id, @Param("hisPushStatus") String hisPushStatus,
+        @Param("hisPushMsg") String hisPushMsg, @Param("hisTraceId") String hisTraceId,
+        @Param("hisPushTime") java.util.Date hisPushTime);
+
+    int updateDepInventoryHisStock(@Param("id") Long id, @Param("hisPharmacyStockId") String hisPharmacyStockId,
+        @Param("hisStorageStockId") String hisStorageStockId, @Param("hisStockQueryId") String hisStockQueryId);
 }

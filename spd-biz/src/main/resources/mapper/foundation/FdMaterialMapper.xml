@@ -66,6 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isSunshineProcurement"    column="is_sunshine_procurement"    />
         <result property="locationId"    column="location_id"    />
         <result property="hisId"    column="his_id"    />
+        <result property="hisSpecPackingId"    column="his_spec_packing_id"    />
         <result property="hisChargeItemId"    column="his_charge_item_id"    />
         <result property="hisChargeItemCode"    column="his_charge_item_code"    />
         <result property="hisChargeItemName"    column="his_charge_item_name"    />
@@ -127,7 +128,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
             m.price, m.default_warehouse_id as default_warehouse_id, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
             m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.material_category_id, m.finance_category_id, m.unit_id,
-            m.his_id,
+            m.his_id, m.his_spec_packing_id,
             m.his_charge_item_id,
             hci.item_code as his_charge_item_code,
             hci.item_name as his_charge_item_name,

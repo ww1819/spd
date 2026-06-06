@@ -22,6 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="tenantId"    column="tenant_id"    />
         <result property="lvAuditGenInhospitalIn" column="lv_audit_gen_inhospital_in" />
         <result property="lvAuditGenInhospitalOut" column="lv_audit_gen_inhospital_out" />
+        <result property="hisId" column="his_id" />
     </resultMap>
 
     <resultMap type="FdWarehouse" id="FdUserWarehouseResult">
@@ -33,7 +34,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectFdWarehouseVo">
         select id, code, name, create_by, create_time, update_by, update_time,warehouse_person,warehouse_phone,warehouse_status,
         COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark,tenant_id,
-        lv_audit_gen_inhospital_in, lv_audit_gen_inhospital_out from fd_warehouse
+        lv_audit_gen_inhospital_in, lv_audit_gen_inhospital_out, his_id from fd_warehouse
     </sql>
 
     <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id，而登录已用 TenantEnum 新 ID） -->
@@ -196,6 +197,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
             <if test="lvAuditGenInhospitalIn != null">lv_audit_gen_inhospital_in = #{lvAuditGenInhospitalIn},</if>
             <if test="lvAuditGenInhospitalOut != null">lv_audit_gen_inhospital_out = #{lvAuditGenInhospitalOut},</if>
+            <if test="hisId != null">his_id = #{hisId},</if>
         </trim>
         where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </update>

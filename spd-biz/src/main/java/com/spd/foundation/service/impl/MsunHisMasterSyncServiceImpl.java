@@ -69,7 +69,7 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
 
     private void assertZaoqiangTenant()
     {
-        String tenantId = SecurityUtils.resolveEffectiveTenantId();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         if (!TenantEnum.ZQ_TCM.getCustomerId().equals(tenantId))
         {
             throw new ServiceException("仅枣强县中医院租户可使用众阳HIS数据同步");

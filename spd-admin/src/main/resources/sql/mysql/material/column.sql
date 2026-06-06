@@ -2731,3 +2731,57 @@ CALL add_table_column('fd_unit', 'his_unit_id', 'varchar(64)', 'HIS计量单位I
 /
 CALL add_table_column('sys_user', 'his_identity_id', 'varchar(64)', 'HIS用户身份ID（众阳 identity_id）', NULL);
 /
+
+-- ========== 众阳 HIS 单据推送（枣强 zaoqiang-tcm-001，评估文档 §6）==========
+CALL add_table_column('fd_warehouse', 'his_id', 'varchar(128)', 'HIS药库科室ID(storageDeptId)', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_in_stock_status', 'varchar(8)', '2.5.41 inStockStatus', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_storage_dept_id', 'varchar(128)', '推送快照 storageDeptId', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_pharmacy_dept_id', 'varchar(128)', '推送快照 pharmacyDeptId', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_spd_main_id', 'varchar(64)', '2.5.41 spdMainId', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_save_correlation_flag', 'char(1)', '2.5.41 saveCorrelationFlag 默认1', '1');
+/
+CALL add_table_column('stk_io_bill', 'his_is_return_to_supplier', 'char(1)', '2.5.42 isReturnToSupplier 默认1', '1');
+/
+CALL add_table_column('stk_io_bill', 'his_push_status', 'varchar(16)', 'HIS推送状态 0未推1推中2成功3失败', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_push_time', 'datetime', 'HIS最近推送时间', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_push_msg', 'varchar(500)', 'HIS推送失败原因', NULL);
+/
+CALL add_table_column('stk_io_bill', 'his_trace_id', 'varchar(64)', 'HIS traceId', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_memo', 'varchar(128)', 'HIS明细对照键 memo', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_spd_detail_id', 'varchar(64)', '2.5.41 spdDetailId', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_pharmacy_stock_id', 'varchar(64)', '2.5.41回写 pharmacyStockId', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_storage_stock_id', 'varchar(64)', '药库批次 storageStockId', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_stock_query_id', 'varchar(64)', '合并库存 stockQueryId', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'buy_price', 'decimal(18,6)', '进价(推送)', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'retail_price', 'decimal(18,6)', '零售价(推送)', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'invoice_code', 'varchar(128)', '明细发票号', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_push_status', 'varchar(16)', '行级HIS推送状态', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_push_msg', 'varchar(500)', '行级HIS推送错误', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_drug_id', 'varchar(64)', '推送快照 drugId', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'his_drug_spec_packing_id', 'varchar(64)', '推送快照 drugSpecPackingId', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'his_pharmacy_stock_id', 'varchar(128)', '退库权威键 pharmacyStockId', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'his_stock_query_id', 'varchar(128)', 'HIS合并库存ID', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'his_storage_stock_id', 'varchar(128)', 'HIS药库批次ID', NULL);
+/

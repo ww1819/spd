@@ -115,6 +115,17 @@ public class StkIoBillEntry extends BaseEntity
     /** 科室库存明细主键 {@code stk_dep_inventory.id}（出库审核反写、收货确认、退库锁定等） */
     private Long depInventoryId;
 
+    /** HIS 明细对照键 memo */
+    private String hisMemo;
+    private String hisSpdDetailId;
+    private String hisPharmacyStockId;
+    private String hisStorageStockId;
+    private String hisStockQueryId;
+    private String hisPushStatus;
+    private String hisPushMsg;
+    private String hisDrugId;
+    private String hisDrugSpecPackingId;
+
     /** 高值耗材主条码 */
     @Excel(name = "高值耗材主条码")
     private String mainBarcode;
@@ -559,6 +570,25 @@ public class StkIoBillEntry extends BaseEntity
     public void setDepartmentIdStr(String departmentIdStr) {
         this.departmentIdStr = departmentIdStr;
     }
+
+    public String getHisMemo() { return hisMemo; }
+    public void setHisMemo(String hisMemo) { this.hisMemo = hisMemo; }
+    public String getHisSpdDetailId() { return hisSpdDetailId; }
+    public void setHisSpdDetailId(String hisSpdDetailId) { this.hisSpdDetailId = hisSpdDetailId; }
+    public String getHisPharmacyStockId() { return hisPharmacyStockId; }
+    public void setHisPharmacyStockId(String hisPharmacyStockId) { this.hisPharmacyStockId = hisPharmacyStockId; }
+    public String getHisStorageStockId() { return hisStorageStockId; }
+    public void setHisStorageStockId(String hisStorageStockId) { this.hisStorageStockId = hisStorageStockId; }
+    public String getHisStockQueryId() { return hisStockQueryId; }
+    public void setHisStockQueryId(String hisStockQueryId) { this.hisStockQueryId = hisStockQueryId; }
+    public String getHisPushStatus() { return hisPushStatus; }
+    public void setHisPushStatus(String hisPushStatus) { this.hisPushStatus = hisPushStatus; }
+    public String getHisPushMsg() { return hisPushMsg; }
+    public void setHisPushMsg(String hisPushMsg) { this.hisPushMsg = hisPushMsg; }
+    public String getHisDrugId() { return hisDrugId; }
+    public void setHisDrugId(String hisDrugId) { this.hisDrugId = hisDrugId; }
+    public String getHisDrugSpecPackingId() { return hisDrugSpecPackingId; }
+    public void setHisDrugSpecPackingId(String hisDrugSpecPackingId) { this.hisDrugSpecPackingId = hisDrugSpecPackingId; }
 
     @Override
     public String toString() {

@@ -144,6 +144,11 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "收货确认状态", readConverterExp = "0=未确认,1=已确认")
     private Integer receiptConfirmStatus;
 
+    /** HIS 药房批次库存 ID（退库 2.5.42 必填） */
+    private String hisPharmacyStockId;
+    private String hisStockQueryId;
+    private String hisStorageStockId;
+
     /** 租户ID(同sb_customer.customer_id) */
     private String tenantId;
 
@@ -488,6 +493,13 @@ public class StkDepInventory extends BaseEntity
     public void setReceiptConfirmStatus(Integer receiptConfirmStatus) {
         this.receiptConfirmStatus = receiptConfirmStatus;
     }
+
+    public String getHisPharmacyStockId() { return hisPharmacyStockId; }
+    public void setHisPharmacyStockId(String hisPharmacyStockId) { this.hisPharmacyStockId = hisPharmacyStockId; }
+    public String getHisStockQueryId() { return hisStockQueryId; }
+    public void setHisStockQueryId(String hisStockQueryId) { this.hisStockQueryId = hisStockQueryId; }
+    public String getHisStorageStockId() { return hisStorageStockId; }
+    public void setHisStorageStockId(String hisStorageStockId) { this.hisStorageStockId = hisStorageStockId; }
 
     public String getTenantId() {
         return tenantId;

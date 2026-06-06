@@ -58,6 +58,9 @@ public class FdWarehouse extends BaseEntity
     /** 低值出库审核是否生成院内码定数包：0否 1是 */
     private Integer lvAuditGenInhospitalOut;
 
+    /** HIS 药库科室 ID（众阳 storageDeptId） */
+    private String hisId;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -156,6 +159,14 @@ public class FdWarehouse extends BaseEntity
 
     public void setLvAuditGenInhospitalOut(Integer lvAuditGenInhospitalOut) {
         this.lvAuditGenInhospitalOut = lvAuditGenInhospitalOut;
+    }
+
+    public String getHisId() {
+        return hisId;
+    }
+
+    public void setHisId(String hisId) {
+        this.hisId = hisId;
     }
 
     @Override

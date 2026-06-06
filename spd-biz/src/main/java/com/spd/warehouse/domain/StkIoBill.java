@@ -105,6 +105,11 @@ public class StkIoBill extends BaseEntity
     /** 作为源单被下游引用状态：NONE 未引用 / PARTIAL 部分引用 / FULL 全部引用（列表查询计算，不落库） */
     private String docRefStatus;
 
+    /** HIS 推送状态：0未推 1推中 2成功 3失败 */
+    private String hisPushStatus;
+    private String hisPushMsg;
+    private Date hisPushTime;
+
     /** 供应商对象 */
     private FdSupplier supplier;
 
@@ -1028,5 +1033,29 @@ public class StkIoBill extends BaseEntity
 
     public void setDocRefStatus(String docRefStatus) {
         this.docRefStatus = docRefStatus;
+    }
+
+    public String getHisPushStatus() {
+        return hisPushStatus;
+    }
+
+    public void setHisPushStatus(String hisPushStatus) {
+        this.hisPushStatus = hisPushStatus;
+    }
+
+    public String getHisPushMsg() {
+        return hisPushMsg;
+    }
+
+    public void setHisPushMsg(String hisPushMsg) {
+        this.hisPushMsg = hisPushMsg;
+    }
+
+    public Date getHisPushTime() {
+        return hisPushTime;
+    }
+
+    public void setHisPushTime(Date hisPushTime) {
+        this.hisPushTime = hisPushTime;
     }
 }

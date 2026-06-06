@@ -57,6 +57,7 @@ import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
+import com.spd.foundation.service.IMsunHisBillPushService;
 import com.spd.warehouse.domain.HcCkFlow;
 import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
@@ -205,6 +206,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private StkDeliveryLineCapMapper stkDeliveryLineCapMapper;
+
+    @Autowired
+    private IMsunHisBillPushService msunHisBillPushService;
 
     /**
      * 查询出入库
@@ -498,6 +502,14 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         normalizeInboundSupplierFields(stkIoBill);
         persistInboundEntrySupplerToDb(stkIoBill);
 
+        String auditTenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId())
+            ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+        boolean zaoqiangHis = msunHisBillPushService.isZaoqiangTenant(auditTenantId);
+        if (zaoqiangHis && auditBillType != null && auditBillType == 401)
+        {
+            msunHisBillPushService.validateReturnGate(stkIoBill);
+        }
+
         //更新库存   
         updateInventory(stkIoBill,stkIoBillEntryList);
 
@@ -505,8 +517,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setAuditDate(new Date());
         stkIoBill.setAuditBy(auditBy);
         int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
+        if (res > 0 && zaoqiangHis && auditBillType != null)
+        {
+            StkIoBill reloaded = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+            if (auditBillType == 201)
+            {
+                msunHisBillPushService.pushAfterOutboundAudit(reloaded);
+            }
+            else if (auditBillType == 401)
+            {
+                msunHisBillPushService.pushAfterReturnAudit(reloaded);
+            }
+        }
         if (res > 0 && auditBillType != null && auditBillType == 201) {
-            String tid = StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+            String tid = auditTenantId;
             if (TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT.equals(tid)) {
                 tryApplyOutboundReceiptConfirmation(stkIoBill, auditBy);
             }

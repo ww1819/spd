@@ -76,6 +76,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deliveryRefSupplierName"    column="delivery_ref_supplier_name"    />
         <result property="deliveryRefDeptId"    column="delivery_ref_dept_id"    />
         <result property="deliveryRefDeptName"    column="delivery_ref_dept_name"    />
+        <result property="hisPushStatus"    column="his_push_status"    />
+        <result property="hisPushMsg"    column="his_push_msg"    />
+        <result property="hisPushTime"    column="his_push_time"    />
 
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -96,6 +99,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="dId"     />
         <result property="code"  column="departmentCode"   />
         <result property="name"  column="departmentName"   />
+        <result property="hisId" column="departmentHisId" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="FdWarehouse">
@@ -172,6 +176,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseIdStr" column="sub_warehouse_id_str" />
         <result property="supplierIdStr" column="sub_supplier_id_str" />
         <result property="departmentIdStr" column="sub_department_id_str" />
+        <result property="hisMemo" column="sub_his_memo" />
+        <result property="hisSpdDetailId" column="sub_his_spd_detail_id" />
+        <result property="hisPharmacyStockId" column="sub_his_pharmacy_stock_id" />
+        <result property="hisStorageStockId" column="sub_his_storage_stock_id" />
+        <result property="hisStockQueryId" column="sub_his_stock_query_id" />
+        <result property="hisPushStatus" column="sub_his_push_status" />
+        <result property="hisPushMsg" column="sub_his_push_msg" />
+        <result property="hisDrugId" column="sub_his_drug_id" />
+        <result property="hisDrugSpecPackingId" column="sub_his_drug_spec_packing_id" />
         <association property="material" javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -188,6 +201,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="financeCategoryId"  column="finance_category_id"   />
         <result property="packageSpeci"  column="package_speci"   />
         <result property="registerNo"  column="register_no"   />
+        <result property="hisId" column="his_id" />
+        <result property="hisSpecPackingId" column="his_spec_packing_id" />
         <association property="fdUnit" javaType="FdUnit">
             <id     property="unitId"    column="u_unit_id"     />
             <result property="unitCode"  column="u_code"   />
@@ -249,11 +264,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag, stk.tenant_id, stk.delete_by, stk.delete_time, stk.settlement_type, stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
+				stk.his_push_status,stk.his_push_msg,stk.his_push_time,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
 				stk.delivery_ref_warehouse_id,stk.delivery_ref_warehouse_name,stk.delivery_ref_supplier_id,
 				stk.delivery_ref_supplier_name,stk.delivery_ref_dept_id,stk.delivery_ref_dept_name,
 				s.id sId,s.code supplierCode,s.name supplierName,
-				d.id dId,d.code departmentCode,d.name departmentName,
+				d.id dId,d.code departmentCode,d.name departmentName,d.his_id departmentHisId,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				tw.id twId,tw.code toWarehouseCode,tw.name toWarehouseName,
 				u.user_id userId,u.nick_name nickName,u.user_name userName,
@@ -1061,6 +1077,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
 				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,a.audit_by,
+                a.his_push_status,a.his_push_msg,a.his_push_time,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.bill_no as sub_bill_no, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
                 b.material_name as sub_entry_material_name, b.material_speci as sub_entry_material_speci, b.material_model as sub_entry_material_model, b.material_factory_id as sub_entry_material_factory_id,
                 b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price,
@@ -1072,13 +1089,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.delivery_line_sign as sub_delivery_line_sign, b.delivery_line_qty_cap as sub_delivery_line_qty_cap,
                 b.fixed_package_barcode as sub_fixed_package_barcode,
                 b.warehouse_id_str as sub_warehouse_id_str, b.supplier_id_str as sub_supplier_id_str, b.department_id_str as sub_department_id_str,
+                b.his_memo as sub_his_memo, b.his_spd_detail_id as sub_his_spd_detail_id, b.his_pharmacy_stock_id as sub_his_pharmacy_stock_id,
+                b.his_storage_stock_id as sub_his_storage_stock_id, b.his_stock_query_id as sub_his_stock_query_id,
+                b.his_push_status as sub_his_push_status, b.his_push_msg as sub_his_push_msg,
+                b.his_drug_id as sub_his_drug_id, b.his_drug_spec_packing_id as sub_his_drug_spec_packing_id,
                 au.nick_name auditNickName,au.user_name auditUserName,
                cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,
                wh.id as wId, wh.code as warehouseCode, wh.name as warehouseName,
-               d.id as dId, d.code as departmentCode, d.name as departmentName,
+               d.id as dId, d.code as departmentCode, d.name as departmentName, d.his_id as departmentHisId,
                op.user_id as userId, op.nick_name as nickName, op.user_name as userName,
                bill_sup.id as sId, bill_sup.code as supplierCode, bill_sup.name as supplierName,
                m.id as mId, m.code as materialCode, m.name as materialName, m.speci, m.model, m.register_no, m.supplier_id,
+               m.his_id, m.his_spec_packing_id,
                m.factory_id AS mat_factory_id, m.unit_id AS m_unit_id, m.finance_category_id, m.storeroom_id,
                u.unit_id AS u_unit_id, u.unit_code as u_code, u.unit_name as u_name,
                f.factory_id AS f_factory_id, f.factory_code as f_code, f.factory_name as f_name,
@@ -2908,5 +2930,48 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and bill_type = 201
           and bill_status = 1
           and (del_flag = 0 or del_flag is null)
+    </update>
+
+    <update id="updateEntryHisPrepare">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry set his_memo = #{hisMemo}, his_spd_detail_id = #{hisSpdDetailId},
+            his_drug_id = #{hisDrugId}, his_drug_spec_packing_id = #{hisDrugSpecPackingId},
+            his_push_status = #{hisPushStatus}, update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updateEntryHisPushStatus">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry set his_push_status = #{hisPushStatus},
+            <if test="hisPushMsg != null">his_push_msg = #{hisPushMsg},</if>
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updateEntryHisPushResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry set his_pharmacy_stock_id = #{hisPharmacyStockId},
+            his_storage_stock_id = #{hisStorageStockId}, his_stock_query_id = #{hisStockQueryId},
+            his_push_status = #{hisPushStatus},
+            <if test="hisPushMsg != null">his_push_msg = #{hisPushMsg},</if>
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updateBillHisPushStatus">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill set his_push_status = #{hisPushStatus}, his_push_time = #{hisPushTime},
+            <if test="hisPushMsg != null">his_push_msg = #{hisPushMsg},</if>
+            <if test="hisTraceId != null">his_trace_id = #{hisTraceId},</if>
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updateDepInventoryHisStock">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_dep_inventory set his_pharmacy_stock_id = #{hisPharmacyStockId},
+            his_storage_stock_id = #{hisStorageStockId}, his_stock_query_id = #{hisStockQueryId},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>
