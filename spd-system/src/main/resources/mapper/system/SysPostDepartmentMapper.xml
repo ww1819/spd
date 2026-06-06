@@ -25,5 +25,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		select department_id from sys_post_department where post_id=#{postId}
 	</select>
 
+	<update id="backfillTenantIdByPostIdFromPost">
+		update sys_post_department pd
+		inner join sys_post p on p.post_id = pd.post_id
+		set pd.tenant_id = p.tenant_id
+		where pd.post_id = #{postId}
+		  and (pd.tenant_id is null or pd.tenant_id = '')
+		  and p.tenant_id is not null and trim(p.tenant_id) != ''
+	</update>
+
+	<update id="backfillTenantIdByPostIdFromDepartment">
+		update sys_post_department pd
+		inner join fd_department d on d.id = pd.department_id
+		set pd.tenant_id = d.tenant_id
+		where pd.post_id = #{postId}
+		  and (pd.tenant_id is null or pd.tenant_id = '')
+		  and d.tenant_id is not null and trim(d.tenant_id) != ''
+	</update>
+
+	<update id="backfillAllTenantIdFromPost">
+		update sys_post_department pd
+		inner join sys_post p on p.post_id = pd.post_id
+		set pd.tenant_id = p.tenant_id
+		where (pd.tenant_id is null or pd.tenant_id = '')
+		  and p.tenant_id is not null and trim(p.tenant_id) != ''
+	</update>
+
+	<update id="backfillAllTenantIdFromDepartment">
+		update sys_post_department pd
+		inner join fd_department d on d.id = pd.department_id
+		set pd.tenant_id = d.tenant_id
+		where (pd.tenant_id is null or pd.tenant_id = '')
+		  and d.tenant_id is not null and trim(d.tenant_id) != ''
+	</update>
+
 </mapper>
 

@@ -685,13 +685,18 @@ public class SysUserServiceImpl implements ISysUserService
         Long[] departmentIds = user.getDepartmentIds();
         if (StringUtils.isNotEmpty(departmentIds))
         {
-            // 新增用户与岗位管理
+            String tenantId = resolveUserTenantId(user);
             List<SysUserDepartment> list = new ArrayList<SysUserDepartment>(departmentIds.length);
             for (Long departmentId : departmentIds)
             {
                 SysUserDepartment ud = new SysUserDepartment();
                 ud.setUserId(user.getUserId());
                 ud.setDepartmentId(departmentId);
+                ud.setStatus(0);
+                if (StringUtils.isNotEmpty(tenantId))
+                {
+                    ud.setTenantId(tenantId);
+                }
                 list.add(ud);
             }
             userDepartmentMapper.batchUserDepartment(list);

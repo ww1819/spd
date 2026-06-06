@@ -324,6 +324,7 @@ public class SysPostServiceImpl implements ISysPostService
         Long[] departmentIds = post.getDepartmentIds();
         if (StringUtils.isNotNull(departmentIds))
         {
+            String tenantId = resolvePostTenantId(post);
             // 删除原有权限
             postDepartmentMapper.deletePostDepartmentByPostId(postId);
             // 新增权限
@@ -337,8 +338,9 @@ public class SysPostServiceImpl implements ISysPostService
                         SysPostDepartment pd = new SysPostDepartment();
                         pd.setPostId(postId);
                         pd.setDepartmentId(departmentId);
-                        if (StringUtils.isNotEmpty(post.getTenantId())) {
-                            pd.setTenantId(post.getTenantId());
+                        if (StringUtils.isNotEmpty(tenantId))
+                        {
+                            pd.setTenantId(tenantId);
                         }
                         list.add(pd);
                     }
@@ -530,6 +532,8 @@ public class SysPostServiceImpl implements ISysPostService
         }
         int affected = 0;
         boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        SysPost post = postMapper.selectPostById(postId);
+        String postTenantId = post != null ? post.getTenantId() : null;
         for (Long userId : userIds)
         {
             if (copyMode)
@@ -547,6 +551,10 @@ public class SysPostServiceImpl implements ISysPostService
                     userDepartment.setUserId(userId);
                     userDepartment.setDepartmentId(departmentId);
                     userDepartment.setStatus(0);
+                    if (StringUtils.isNotEmpty(postTenantId))
+                    {
+                        userDepartment.setTenantId(postTenantId);
+                    }
                     toInsert.add(userDepartment);
                     exists.add(departmentId);
                 }

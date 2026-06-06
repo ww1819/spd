@@ -56,6 +56,7 @@ public class TenantFoundationAutoGrantServiceImpl implements ITenantFoundationAu
         ud.setUserId(super01.getUserId());
         ud.setDepartmentId(departmentId);
         ud.setStatus(0);
+        ud.setTenantId(tenantId);
         sysUserDepartmentMapper.batchUserDepartment(Collections.singletonList(ud));
       }
     }

@@ -42,4 +42,14 @@ public interface SysUserDepartmentMapper {
      * 用户已授权的科室 ID（sys_user_department）
      */
     public List<Long> selectDepartmentIdsByUserId(Long userId);
+
+    /** 按用户 ID 从 sys_user.customer_id 补全 tenant_id */
+    int backfillTenantIdByUserIdFromUser(Long userId);
+
+    /** 按用户 ID 从 fd_department.tenant_id 补全 tenant_id */
+    int backfillTenantIdByUserIdFromDepartment(Long userId);
+
+    int backfillAllTenantIdFromUser();
+
+    int backfillAllTenantIdFromDepartment();
 }

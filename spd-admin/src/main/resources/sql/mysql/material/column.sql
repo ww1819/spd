@@ -1634,11 +1634,39 @@ CALL add_table_column('sys_sheet_id', 'tenant_id', 'varchar(36)', '租户ID', NU
 /
 
 -- sys_user_department
-CALL add_table_column('sys_user_department', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_user_department', 'tenant_id', 'varchar(36)', '租户ID(同sys_user.customer_id)', NULL);
 /
 CALL add_table_column('sys_user_department', 'create_by', 'varchar(64)', '创建者', NULL);
 /
 CALL add_table_column('sys_user_department', 'create_time', 'datetime', '创建时间', NULL);
+/
+
+-- ========== 科室权限表补全 tenant_id（存量数据）==========
+/* sys_user_department：优先 sys_user.customer_id，其次 fd_department.tenant_id */
+UPDATE sys_user_department ud
+INNER JOIN sys_user u ON u.user_id = ud.user_id
+SET ud.tenant_id = u.customer_id
+WHERE (ud.tenant_id IS NULL OR ud.tenant_id = '')
+  AND u.customer_id IS NOT NULL AND TRIM(u.customer_id) != '';
+/
+UPDATE sys_user_department ud
+INNER JOIN fd_department d ON d.id = ud.department_id
+SET ud.tenant_id = d.tenant_id
+WHERE (ud.tenant_id IS NULL OR ud.tenant_id = '')
+  AND d.tenant_id IS NOT NULL AND TRIM(d.tenant_id) != '';
+/
+/* sys_post_department：优先 sys_post.tenant_id，其次 fd_department.tenant_id */
+UPDATE sys_post_department pd
+INNER JOIN sys_post p ON p.post_id = pd.post_id
+SET pd.tenant_id = p.tenant_id
+WHERE (pd.tenant_id IS NULL OR pd.tenant_id = '')
+  AND p.tenant_id IS NOT NULL AND TRIM(p.tenant_id) != '';
+/
+UPDATE sys_post_department pd
+INNER JOIN fd_department d ON d.id = pd.department_id
+SET pd.tenant_id = d.tenant_id
+WHERE (pd.tenant_id IS NULL OR pd.tenant_id = '')
+  AND d.tenant_id IS NOT NULL AND TRIM(d.tenant_id) != '';
 /
 
 -- sys_menu：是否仅平台管理（1=是，仅平台显示，不对客户显示）
