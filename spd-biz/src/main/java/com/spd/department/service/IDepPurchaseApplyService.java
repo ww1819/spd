@@ -13,7 +13,7 @@ import com.spd.department.vo.WarehousePurchaseReminderRowVo;
  */
 public interface IDepPurchaseApplyService 
 {
-    /** 非租户管理员：列表/导出等查询按科室数据权限过滤（params.scopeDeptUserId，见 Mapper） */
+    /** 非机构管理员：列表/导出等查询按科室数据权限过滤（params.scopeDeptUserId，见 Mapper） */
     void applyDepartmentScopeToQuery(DepPurchaseApply depPurchaseApply);
 
     /**

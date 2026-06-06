@@ -63,7 +63,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Autowired
     private ITenantScopeService tenantScopeService;
 
-    /** 非租户管理员：仅能访问已授权科室的批量消耗单 */
+    /** 非机构管理员：仅能访问已授权科室的批量消耗单 */
     private void assertDepartmentInUserScope(Long departmentId) {
         Long userId = SecurityUtils.getUserId();
         String customerId = SecurityUtils.getCustomerId();

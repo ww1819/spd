@@ -114,11 +114,13 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   @Autowired
   private ISbCustomerCategory68Service sbCustomerCategory68Service;
 
-  /** 新增客户时默认管理员组标识 */
+  /** 新增客户时默认机构管理员工作组标识（post_code / group_key） */
   private static final String DEFAULT_GROUP_KEY = "super";
+  /** 新增客户时默认机构管理员工作组展示名（与平台管理员区分） */
+  private static final String DEFAULT_SUPER_GROUP_NAME = "机构管理员";
   /** 新增客户时默认管理员账号 */
   private static final String DEFAULT_ADMIN_USERNAME = "super_01";
-  /** 新增客户时默认角色标识（租户管理员） */
+  /** 新增客户时默认角色标识（机构管理员） */
   private static final String DEFAULT_ROLE_KEY = "tenant_admin";
 
   @Override
@@ -185,8 +187,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
 
   /**
    * 新增客户后自动创建：
-   * 1）设备侧：管理员组(super)、租户管理员角色、管理员账号(super_01)并加入该组；新租户与 super 组默认包含系统设置下非平台管理功能。
-   * 2）耗材侧：耗材系统工作组管理员组(super)（sys_post 岗位）、super_01 加入该岗位，并为管理员组与 super_01 授予系统设置下非平台管理功能的权限（客户管理、客户菜单功能管理已设为平台管理功能，不授予租户）。
+   * 1）设备侧：机构管理员工作组(super)、机构管理员角色、管理员账号(super_01)并加入该组；新租户与 super 组默认包含系统设置下非平台管理功能。
+   * 2）耗材侧：耗材系统工作组「机构管理员」(super)（sys_post 岗位）、super_01 加入该岗位，并为该工作组与 super_01 授予系统设置下非平台管理功能的权限（客户管理、客户菜单功能管理已设为平台管理功能，不授予租户）。
    */
   private void createDefaultTenantAdmin(String customerId, String customerName, String createBy) {
     String groupId = UUID7.generateUUID7();
@@ -195,7 +197,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     SbRole role = new SbRole();
     role.setRoleId(roleId);
     role.setCustomerId(customerId);
-    role.setRoleName("租户管理员");
+    role.setRoleName("机构管理员");
     role.setRoleKey(DEFAULT_ROLE_KEY);
     role.setRoleSort(0);
     role.setStatus("0");
@@ -205,7 +207,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     SbWorkGroup group = new SbWorkGroup();
     group.setGroupId(groupId);
     group.setCustomerId(customerId);
-    group.setGroupName("管理员组");
+    group.setGroupName(DEFAULT_SUPER_GROUP_NAME);
     group.setGroupKey(DEFAULT_GROUP_KEY);
     group.setOrderNum(0);
     group.setCreateBy(createBy);
@@ -220,7 +222,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     SysUser user = new SysUser();
     user.setCustomerId(customerId);
     user.setUserName(DEFAULT_ADMIN_USERNAME);
-    user.setNickName("租户管理员");
+    user.setNickName("机构管理员");
     user.setPassword(SecurityUtils.encryptPassword(initPassword));
     user.setStatus("0");
     user.setCreateBy(createBy);
@@ -286,10 +288,10 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       sbUserPermissionMenuMapper.batchInsert(userMenus);
     }
 
-    // 耗材系统工作组：创建默认岗位「管理员组」(super)，将 super_01 加入该岗位，并授予系统设置下非平台管理功能（is_platform!=1；客户管理、客户菜单功能管理为平台管理不授予）
+    // 耗材系统工作组：创建默认岗位「机构管理员」(super)，将 super_01 加入该岗位，并授予系统设置下非平台管理功能（is_platform!=1；客户管理、客户菜单功能管理为平台管理不授予）
     SysPost post = new SysPost();
     post.setPostCode(DEFAULT_GROUP_KEY);
-    post.setPostName("管理员组");
+    post.setPostName(DEFAULT_SUPER_GROUP_NAME);
     post.setPostSort(0);
     post.setStatus("0");
     post.setTenantId(customerId);
@@ -849,7 +851,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SbRole role = new SbRole();
       role.setRoleId(roleId);
       role.setCustomerId(customerId);
-      role.setRoleName("租户管理员");
+      role.setRoleName("机构管理员");
       role.setRoleKey(DEFAULT_ROLE_KEY);
       role.setRoleSort(0);
       role.setStatus("0");
@@ -860,7 +862,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
         SbWorkGroup group = new SbWorkGroup();
         group.setGroupId(groupId);
         group.setCustomerId(customerId);
-        group.setGroupName("管理员组");
+        group.setGroupName(DEFAULT_SUPER_GROUP_NAME);
         group.setGroupKey(DEFAULT_GROUP_KEY);
         group.setOrderNum(0);
         group.setCreateBy(createBy);
@@ -870,7 +872,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SysUser user = new SysUser();
       user.setCustomerId(customerId);
       user.setUserName(DEFAULT_ADMIN_USERNAME);
-      user.setNickName("租户管理员");
+      user.setNickName("机构管理员");
       user.setPassword(SecurityUtils.encryptPassword(initPassword));
       user.setStatus("0");
       user.setCreateBy(createBy);
@@ -898,7 +900,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SbWorkGroup group = new SbWorkGroup();
       group.setGroupId(groupId);
       group.setCustomerId(customerId);
-      group.setGroupName("管理员组");
+      group.setGroupName(DEFAULT_SUPER_GROUP_NAME);
       group.setGroupKey(DEFAULT_GROUP_KEY);
       group.setOrderNum(0);
       group.setCreateBy(createBy);
@@ -918,7 +920,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (existingUser != null && existingPost != null) {
       // 回填岗位租户 ID（历史数据 tenant_id 为空会导致功能重置/管理员判定失败）
       sysPostMapper.updatePostTenantIdIfBlank(existingPost.getPostId(), customerId);
-      // 岗位与用户均存在时仍可能缺少 sys_user_post（历史数据或误删），补齐后「用户管理-管理员组」筛选才能命中
+      // 岗位与用户均存在时仍可能缺少 sys_user_post（历史数据或误删），补齐后「用户管理-机构管理员」工作组筛选才能命中
       List<Long> assignedPostIds = sysPostMapper.selectPostListByUserId(existingUser.getUserId());
       if (assignedPostIds == null || !assignedPostIds.contains(existingPost.getPostId())) {
         SysUserPost userPost = new SysUserPost();
@@ -941,7 +943,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       if (post == null) {
         post = new SysPost();
         post.setPostCode(DEFAULT_GROUP_KEY);
-        post.setPostName("管理员组");
+        post.setPostName(DEFAULT_SUPER_GROUP_NAME);
         post.setPostSort(0);
         post.setStatus("0");
         post.setTenantId(customerId);
@@ -952,7 +954,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       SysUser user = new SysUser();
       user.setCustomerId(customerId);
       user.setUserName(DEFAULT_ADMIN_USERNAME);
-      user.setNickName("租户管理员");
+      user.setNickName("机构管理员");
       user.setPassword(SecurityUtils.encryptPassword(initPassword));
       user.setStatus("0");
       user.setCreateBy(createBy);
@@ -971,7 +973,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     if (existingPost == null) {
       SysPost post = new SysPost();
       post.setPostCode(DEFAULT_GROUP_KEY);
-      post.setPostName("管理员组");
+      post.setPostName(DEFAULT_SUPER_GROUP_NAME);
       post.setPostSort(0);
       post.setStatus("0");
       post.setTenantId(customerId);

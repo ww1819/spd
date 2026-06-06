@@ -59,7 +59,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 
 	<!--
-	  耗材端「租户管理员」判定：用户关联岗位 post_code=super。
+	  耗材端「机构管理员」判定：用户关联岗位 post_code=super。
 	  租户归属只看 sys_user.customer_id 或 sys_user_post.tenant_id（与 fd_* 一致即可）。
 	  不再用 sys_post.tenant_id 参与判定：若岗位表 tenant_id 与库中其它表不一致，会导致 isTenantSuper 恒为 false，仓库/科室列表 allowed* 为空 → SQL 中 1=0。
 	-->

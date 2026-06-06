@@ -4001,7 +4001,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         confirmBy = SecurityUtils.getUserIdStr();
         Set<Long> permittedDeptIdSet = null;
         List<Long> deptIds = tenantScopeService.resolveDepartmentScope(operatorUserId, customerId);
-        // null 表示租户管理员/不限制；空集合表示无权限
+        // null 表示机构管理员/不限制；空集合表示无权限
         if (deptIds != null) {
             if (deptIds.isEmpty()) {
                 throw new ServiceException("未配置科室权限，无法进行收货确认");

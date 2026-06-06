@@ -311,7 +311,7 @@ public interface IStkIoBillService
      */
     void exportOutWarehouseGroupedByBill(StkIoBill stkIoBill, HttpServletResponse response) throws IOException;
 
-    /** 出退库查询：非租户管理员按科室数据权限过滤（params.scopeDeptUserId，见 Mapper stkIoBillDepartmentScopeFilter） */
+    /** 出退库查询：非机构管理员按科室数据权限过滤（params.scopeDeptUserId，见 Mapper stkIoBillDepartmentScopeFilter） */
     void applyCtkDepartmentScopeToQuery(StkIoBill stkIoBill);
 
     /**

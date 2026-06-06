@@ -2918,3 +2918,14 @@ CALL add_table_column('stk_dep_inventory', 'his_stock_query_id', 'varchar(128)',
 /
 CALL add_table_column('stk_dep_inventory', 'his_storage_stock_id', 'varchar(128)', 'HIS药库批次ID', NULL);
 /
+
+-- ========== 机构管理员展示名（原「租户管理员」，与 SaaS 租户技术字段区分）==========
+UPDATE sys_role SET role_name = '机构管理员' WHERE role_key = 'tenant_admin' AND role_name = '租户管理员';
+/
+UPDATE sys_user SET nick_name = '机构管理员' WHERE user_name = 'super_01' AND nick_name = '租户管理员';
+/
+-- ========== 机构管理员工作组展示名（原「管理员组」，与平台管理员区分；post_code/group_key 仍为 super）==========
+UPDATE sys_post SET post_name = '机构管理员' WHERE post_code = 'super' AND post_name IN ('管理员组', '管理员');
+/
+UPDATE sb_work_group SET group_name = '机构管理员' WHERE group_key = 'super' AND group_name IN ('管理员组', '管理员');
+/

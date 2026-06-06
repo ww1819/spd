@@ -45,7 +45,7 @@ public interface IBasApplyService
     List<WarehouseApplyReminderRowVo> selectWarehouseReminderApplyMonitorList();
 
     /**
-     * 按当前用户科室数据范围写入查询条件（非租户管理员须限制；须在 PageHelper.startPage 之前调用）。
+     * 按当前用户科室数据范围写入查询条件（非机构管理员须限制；须在 PageHelper.startPage 之前调用）。
      */
     void applyDepartmentScopeToQuery(BasApply basApply);
 

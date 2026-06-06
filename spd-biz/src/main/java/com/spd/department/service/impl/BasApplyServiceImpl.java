@@ -70,7 +70,7 @@ public class BasApplyServiceImpl implements IBasApplyService
     @Autowired
     private IWhWarehouseApplyService whWarehouseApplyService;
 
-    /** 非租户管理员：仅能访问已授权科室的申领/转科等 bas_apply 单据 */
+    /** 非机构管理员：仅能访问已授权科室的申领/转科等 bas_apply 单据 */
     private void assertDepartmentInUserScope(Long departmentId) {
         Long userId = SecurityUtils.getUserId();
         String customerId = SecurityUtils.getCustomerId();

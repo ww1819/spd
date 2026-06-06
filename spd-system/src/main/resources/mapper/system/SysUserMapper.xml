@@ -108,7 +108,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="workgroupPostId != null and workgroupPostId != ''">
 			AND EXISTS (SELECT 1 FROM sb_work_group_user wgu WHERE wgu.user_id = u.user_id AND wgu.group_id = #{workgroupPostId} AND IFNULL(wgu.del_flag, '0') = '0')
 		</if>
-		<!-- 耗材工作组筛选：sys_user_post；若历史数据仅有租户管理员角色未写关联，则 post_code=super 时按 tenant_admin 角色兜底 -->
+		<!-- 耗材工作组筛选：sys_user_post；若历史数据仅有机构管理员角色未写关联，则 post_code=super 时按 tenant_admin 角色兜底 -->
 		<if test="sysPostId != null">
 			AND (
 				EXISTS (SELECT 1 FROM sys_user_post up WHERE up.user_id = u.user_id AND up.post_id = #{sysPostId})

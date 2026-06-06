@@ -55,7 +55,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
     @Autowired
     private PurchasePlanEntryDepApplyMapper purchasePlanEntryDepApplyMapper;
 
-    /** 非租户管理员：仅能访问已授权科室的科室申购单 */
+    /** 非机构管理员：仅能访问已授权科室的科室申购单 */
     private void assertDepartmentInUserScope(Long departmentId) {
         Long userId = SecurityUtils.getUserId();
         String customerId = SecurityUtils.getCustomerId();

@@ -29,7 +29,7 @@ public class TenantScopeServiceImpl implements ITenantScopeService {
   private static final String HEADER_LOGIN_CHANNEL = "X-Login-Channel";
 
   /**
-   * 与 {@link com.spd.system.service.impl.SbCustomerServiceImpl} 新租户默认管理员账号一致。
+   * 与 {@link com.spd.system.service.impl.SbCustomerServiceImpl} 新机构默认管理员账号一致。
    * 该账号需在租户内可维护全部仓库/科室以便给其他用户授权，不依赖岗位/工作组绑定是否完整。
    */
   private static final String DEFAULT_TENANT_ADMIN_USERNAME = "super_01";
@@ -82,7 +82,7 @@ public class TenantScopeServiceImpl implements ITenantScopeService {
   }
 
   /**
-   * 租户默认管理员 super_01：只要属于当前租户，即视为租户管理员（全量仓库/科室数据权限），
+   * 机构默认管理员 super_01：只要属于当前租户，即视为机构管理员（全量仓库/科室数据权限），
    * 避免因 sys_user_post 与 super 岗位脱节、或耗材/设备登录渠道差异导致 isTenantSuper 误判。
    */
   private boolean isDefaultTenantAdmin(Long userId, String customerId) {

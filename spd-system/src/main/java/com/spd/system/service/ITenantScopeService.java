@@ -10,7 +10,7 @@ import java.util.Map;
 public interface ITenantScopeService {
 
   /**
-   * 是否为当前渠道下的租户超级管理员：耗材端仅认 super 岗位，设备端仅认管理员组，未识别渠道时二者满足其一即可。
+   * 是否为当前渠道下的机构超级管理员：耗材端仅认 super 岗位，设备端仅认管理员组，未识别渠道时二者满足其一即可。
    */
   boolean isTenantSuper(Long userId, String customerId);
 
@@ -26,8 +26,8 @@ public interface ITenantScopeService {
 
   /**
    * 将科室数据范围写入 MyBatis {@code params}，供 SQL 使用子查询过滤（避免 {@code IN (大量id)} 过长）。
-   * 非租户管理员写入 {@code scopeDeptUserId}；若 {@code customerId} 非空则写入 {@code scopeDeptCustomerId}（设备端 sb_user_permission_dept 按客户过滤）。
-   * 租户管理员不写上述键，表示不限制。
+   * 非机构管理员写入 {@code scopeDeptUserId}；若 {@code customerId} 非空则写入 {@code scopeDeptCustomerId}（设备端 sb_user_permission_dept 按客户过滤）。
+   * 机构管理员不写上述键，表示不限制。
    */
   void applyDepartmentScopeQueryParams(Map<String, Object> params, Long userId, String customerId);
 }
