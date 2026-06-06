@@ -1,7 +1,7 @@
 package com.spd.foundation.constants;
 
 /**
- * 众阳 HIS 对接常量（枣强县中医院）。
+ * 众阳 HIS 对接常量（业务报文字段；租户判定见 {@link com.spd.foundation.support.MsunHisTenantRegistry}）。
  */
 public final class MsunHisConstants
 {

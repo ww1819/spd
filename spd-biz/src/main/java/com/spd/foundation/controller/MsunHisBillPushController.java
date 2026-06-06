@@ -27,7 +27,7 @@ public class MsunHisBillPushController extends BaseController
     @PostMapping("/repush/outbound/{billId}")
     public AjaxResult repushOutbound(@PathVariable Long billId)
     {
-        msunHisBillPushService.assertZaoqiangTenant(SecurityUtils.getCustomerId());
+        msunHisBillPushService.assertMsunIntegratedTenant(SecurityUtils.getCustomerId());
         msunHisBillPushService.repushOutbound(billId);
         return success("补退推送已提交");
     }

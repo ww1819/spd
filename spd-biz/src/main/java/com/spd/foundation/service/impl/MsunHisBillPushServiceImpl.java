@@ -3,7 +3,6 @@ package com.spd.foundation.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.spd.common.enums.TenantEnum;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.StringUtils;
@@ -11,6 +10,8 @@ import com.spd.common.utils.http.HttpUtils;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.constants.MsunHisConstants;
+import com.spd.foundation.support.MsunHisTenantRegistry;
+import com.spd.foundation.support.MsunHisTenantSupport;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
@@ -74,18 +75,15 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
     }
 
     @Override
-    public boolean isZaoqiangTenant(String tenantId)
+    public boolean isMsunIntegratedTenant(String tenantId)
     {
-        return TenantEnum.ZQ_TCM.getCustomerId().equals(StringUtils.trimToEmpty(tenantId));
+        return MsunHisTenantSupport.isIntegrated(tenantId);
     }
 
     @Override
-    public void assertZaoqiangTenant(String tenantId)
+    public void assertMsunIntegratedTenant(String tenantId)
     {
-        if (!isZaoqiangTenant(tenantId))
-        {
-            throw new ServiceException("仅枣强县中医院租户可使用众阳HIS单据推送");
-        }
+        MsunHisTenantSupport.assertIntegrated(tenantId);
     }
 
     @Override
@@ -93,7 +91,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
     public void pushAfterOutboundAudit(StkIoBill bill)
     {
         String tenantId = resolveTenantId(bill);
-        assertZaoqiangTenant(tenantId);
+        assertMsunIntegratedTenant(tenantId);
         List<StkIoBillEntry> toPush = filterEntriesForPush(bill.getStkIoBillEntryList(), false);
         if (toPush.isEmpty())
         {
@@ -101,7 +99,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         }
         PushContext ctx = buildOutboundContext(bill, tenantId);
         Map<String, Object> body = buildOutboundBody(bill, ctx, toPush, tenantId);
-        JSONObject response = postInterface("/api/spd/msun/push/drug-stocks-new", body);
+        JSONObject response = postInterface(tenantId, "/push/drug-stocks-new", body);
         applyOutboundResponse(bill, toPush, tenantId, response);
         updateBillPushStatus(bill.getId(), MsunHisConstants.PUSH_SUCCESS, null, extractTraceId(response));
     }
@@ -126,7 +124,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
     public void validateReturnGate(StkIoBill bill)
     {
         String tenantId = resolveTenantId(bill);
-        assertZaoqiangTenant(tenantId);
+        assertMsunIntegratedTenant(tenantId);
         PushContext ctx = buildReturnContext(bill, tenantId);
         List<StkIoBillEntry> entries = bill.getStkIoBillEntryList();
         if (entries == null || entries.isEmpty())
@@ -148,7 +146,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
     public void pushAfterReturnAudit(StkIoBill bill)
     {
         String tenantId = resolveTenantId(bill);
-        assertZaoqiangTenant(tenantId);
+        assertMsunIntegratedTenant(tenantId);
         List<StkIoBillEntry> toPush = filterEntriesForPush(bill.getStkIoBillEntryList(), true);
         if (toPush.isEmpty())
         {
@@ -156,7 +154,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         }
         PushContext ctx = buildReturnContext(bill, tenantId);
         Map<String, Object> body = buildReturnBody(bill, ctx, toPush, tenantId);
-        JSONObject response = postInterface("/api/spd/msun/push/drug-stocks-return", body);
+        JSONObject response = postInterface(tenantId, "/push/drug-stocks-return", body);
         assertHisSuccess(response);
         for (StkIoBillEntry entry : toPush)
         {
@@ -213,10 +211,11 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             throw new ServiceException("耗材未维护 HIS drugSpecPackingId");
         }
-        String url = buildInterfaceBaseUrl()
-            + "/api/spd/msun/query/drug-batch-stocks?deptId=" + deptHisId
-            + "&drugId=" + material.getHisId()
-            + "&drugSpecPackingId=" + specId;
+        String url = MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+            MsunHisTenantSupport.spdHospitalApiPrefix(tenantId)
+                + "/query/drug-batch-stocks?deptId=" + deptHisId
+                + "&drugId=" + material.getHisId()
+                + "&drugSpecPackingId=" + specId);
         String raw = HttpUtils.sendGet(url);
         JSONObject root = parseInterfaceResponse(raw);
         JSONObject wrapped = root.getJSONObject("data");
@@ -509,9 +508,10 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         return supplier.getHisId();
     }
 
-    private JSONObject postInterface(String path, Map<String, Object> body)
+    private JSONObject postInterface(String tenantId, String pathSuffix, Map<String, Object> body)
     {
-        String url = buildInterfaceBaseUrl() + path;
+        String url = MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+            MsunHisTenantSupport.spdHospitalApiPrefix(tenantId) + pathSuffix);
         try
         {
             log.info("众阳HIS推送请求 url={}", url);
@@ -578,7 +578,9 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
 
     private static String resolveTenantId(StkIoBill bill)
     {
-        return StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId().trim() : MsunHisConstants.TENANT_ZQ_TCM;
+        return StringUtils.isNotEmpty(bill.getTenantId())
+            ? bill.getTenantId().trim()
+            : MsunHisTenantRegistry.ZAOQIANG_TCM.getHospitalKey();
     }
 
     private String buildInterfaceBaseUrl()

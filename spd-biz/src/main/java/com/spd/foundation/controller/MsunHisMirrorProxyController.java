@@ -9,6 +9,7 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.http.HttpUtils;
 import com.spd.foundation.service.IMsunHisBillPushService;
+import com.spd.foundation.support.MsunHisTenantSupport;
 import com.spd.system.service.ISysConfigService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 代理 scminterface 镜像查询（枣强租户 HIS 明细查看）。
+ * 代理 scminterface 镜像查询（按当前登录租户解析 hospitalKey）。
  */
 @RestController
 @RequestMapping("/foundation/msunHis/mirror")
@@ -41,10 +42,10 @@ public class MsunHisMirrorProxyController extends BaseController
             @RequestParam String billId,
             @RequestParam(required = false) String billType)
     {
-        msunHisBillPushService.assertZaoqiangTenant(SecurityUtils.getCustomerId());
-        String base = buildInterfaceBaseUrl();
-        StringBuilder url = new StringBuilder(base)
-            .append("/api/vendor/msun/hospitals/zaoqiang-tcm-001/mirror/bill-his?billId=")
+        String tenantId = SecurityUtils.getCustomerId();
+        msunHisBillPushService.assertMsunIntegratedTenant(tenantId);
+        StringBuilder url = new StringBuilder(MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+            MsunHisTenantSupport.vendorHospitalApiPrefix(tenantId) + "/mirror/bill-his?billId="))
             .append(billId);
         appendParam(url, "billType", billType);
         try
@@ -72,10 +73,10 @@ public class MsunHisMirrorProxyController extends BaseController
             @RequestParam(required = false) String drugSpecPackingId,
             @RequestParam(required = false) String batchNumber)
     {
-        msunHisBillPushService.assertZaoqiangTenant(SecurityUtils.getCustomerId());
-        String base = buildInterfaceBaseUrl();
-        StringBuilder url = new StringBuilder(base)
-            .append("/api/vendor/msun/hospitals/zaoqiang-tcm-001/mirror/entry-his?");
+        String tenantId = SecurityUtils.getCustomerId();
+        msunHisBillPushService.assertMsunIntegratedTenant(tenantId);
+        StringBuilder url = new StringBuilder(MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+            MsunHisTenantSupport.vendorHospitalApiPrefix(tenantId) + "/mirror/entry-his?"));
         appendParam(url, "pharmacyStockId", pharmacyStockId);
         appendParam(url, "deptId", deptId);
         appendParam(url, "drugId", drugId);

@@ -504,7 +504,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
         String auditTenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId())
             ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
-        boolean zaoqiangHis = msunHisBillPushService.isZaoqiangTenant(auditTenantId);
+        boolean zaoqiangHis = msunHisBillPushService.isMsunIntegratedTenant(auditTenantId);
         if (zaoqiangHis && auditBillType != null && auditBillType == 401)
         {
             msunHisBillPushService.validateReturnGate(stkIoBill);

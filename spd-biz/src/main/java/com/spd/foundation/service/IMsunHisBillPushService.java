@@ -3,13 +3,14 @@ package com.spd.foundation.service;
 import com.spd.warehouse.domain.StkIoBill;
 
 /**
- * 众阳 HIS 出库/退库单据推送（枣强租户）。
+ * 众阳 HIS 出库/退库单据推送（已接入租户，见 {@link com.spd.foundation.support.MsunHisTenantRegistry}）。
  */
 public interface IMsunHisBillPushService
 {
-    boolean isZaoqiangTenant(String tenantId);
+    /** 当前租户是否已接入众阳 HIS */
+    boolean isMsunIntegratedTenant(String tenantId);
 
-    void assertZaoqiangTenant(String tenantId);
+    void assertMsunIntegratedTenant(String tenantId);
 
     /** 201 审核后推送 2.5.41 并回写 pharmacyStockId */
     void pushAfterOutboundAudit(StkIoBill bill);

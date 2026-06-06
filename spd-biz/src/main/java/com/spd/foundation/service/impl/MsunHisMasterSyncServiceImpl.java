@@ -3,19 +3,18 @@ package com.spd.foundation.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.core.domain.AjaxResult;
-import com.spd.common.enums.TenantEnum;
-import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.http.HttpUtils;
 import com.spd.foundation.service.IMsunHisMasterSyncService;
+import com.spd.foundation.support.MsunHisTenantSupport;
 import com.spd.system.service.ISysConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * 调用 scminterface {@code POST /api/spd/msun/sync/{type}} 一键同步众阳 HIS 主数据。
+ * 调用 scminterface {@code POST /api/spd/msun/hospitals/{hospitalKey}/sync/{type}} 一键同步众阳 HIS 主数据。
  */
 @Service
 public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
@@ -35,17 +34,18 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
     @Override
     public AjaxResult sync(String syncType)
     {
-        assertZaoqiangTenant();
+        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
+        MsunHisTenantSupport.assertIntegrated(tenantId);
         String type = StringUtils.trim(syncType);
         if (StringUtils.isEmpty(type))
         {
             return AjaxResult.error("同步类型不能为空");
         }
-        String url = buildInterfaceBaseUrl() + "/api/spd/msun/sync/" + type;
+        String url = MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+            MsunHisTenantSupport.spdHospitalApiPrefix(tenantId) + "/sync/" + type);
         try
         {
-            log.info("众阳HIS主数据同步请求 tenant={} type={} url={}",
-                    SecurityUtils.getCustomerId(), type, url);
+            log.info("众阳HIS主数据同步请求 tenant={} type={} url={}", tenantId, type, url);
             String body = HttpUtils.sendPost(url, "{}");
             if (StringUtils.isEmpty(body))
             {
@@ -64,15 +64,6 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
         {
             log.warn("众阳HIS主数据同步失败 type={} err={}", type, ex.getMessage(), ex);
             return AjaxResult.error("同步失败: " + ex.getMessage());
-        }
-    }
-
-    private void assertZaoqiangTenant()
-    {
-        String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
-        if (!TenantEnum.ZQ_TCM.getCustomerId().equals(tenantId))
-        {
-            throw new ServiceException("仅枣强县中医院租户可使用众阳HIS数据同步");
         }
     }
 
