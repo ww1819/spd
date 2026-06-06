@@ -8,7 +8,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -23,6 +25,7 @@ import com.spd.caigou.domain.PurchaseOrder;
 import com.spd.caigou.domain.PurchaseOrderEntry;
 import com.spd.caigou.mapper.PurchaseOrderMapper;
 import com.spd.common.core.page.TotalInfo;
+import com.spd.common.enums.TenantEnum;
 import com.spd.common.exception.DocRefQtyValidationException;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
@@ -123,8 +126,11 @@ import com.spd.warehouse.mapper.StkBillEntryChangeLogMapper;
 @Service
 public class StkIoBillServiceImpl implements IStkIoBillService
 {
-    /** 衡水三院等租户：出库审核通过后自动执行收货确认，确认人同审核人 */
-    private static final String TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT = "hengsui-third-001";
+    /** 出库审核通过后自动执行收货确认（确认人同审核人）：衡水三院、枣强县中医院 */
+    private static final Set<String> AUTO_OUTBOUND_RECEIPT_TENANT_IDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            TenantEnum.HS_003.getCustomerId(),
+            TenantEnum.ZQ_TCM.getCustomerId()
+    )));
 
     private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
     private static final String DEFAULT_INTERFACE_PORT = "8088";
@@ -502,13 +508,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         normalizeInboundSupplierFields(stkIoBill);
         persistInboundEntrySupplerToDb(stkIoBill);
 
-        String auditTenantId = StringUtils.isNotEmpty(stkIoBill.getTenantId())
-            ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
-        boolean zaoqiangHis = msunHisBillPushService.isMsunIntegratedTenant(auditTenantId);
-        if (zaoqiangHis && auditBillType != null && auditBillType == 401)
-        {
-            msunHisBillPushService.validateReturnGate(stkIoBill);
-        }
+        // 401 退库审核仅校验 SPD 本地科室库存（见 updateInventory）；HIS 2.5.43 在手动推送时校验
 
         //更新库存   
         updateInventory(stkIoBill,stkIoBillEntryList);
@@ -519,8 +519,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         int res = stkIoBillMapper.updateStkIoBill(stkIoBill);
         // HIS 推送与审核分离：由前端手动触发 pushOutbound / repushOutbound，避免推送失败导致审核回滚
         if (res > 0 && auditBillType != null && auditBillType == 201) {
-            String tid = auditTenantId;
-            if (TENANT_ID_HENGSHUI_THIRD_AUTO_RECEIPT.equals(tid)) {
+            String tid = StringUtils.isNotEmpty(stkIoBill.getTenantId())
+                    ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId();
+            if (AUTO_OUTBOUND_RECEIPT_TENANT_IDS.contains(tid)) {
                 tryApplyOutboundReceiptConfirmation(stkIoBill, auditBy);
             }
         }
@@ -4025,7 +4026,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
      * 出库单收货确认核心逻辑（与 confirmReceipt 单条处理一致）。
      * 审核通过后自动确认场景不校验科室数据权限，仍走同一业务校验与科室流水。
      *
-     * @param confirmBy 确认人（科室流水 create_by；衡水三院自动确认时为审核人 auditBy）
+     * @param confirmBy 确认人（科室流水 create_by；衡水三院/枣强中医院自动确认时为审核人 auditBy）
      * @return 是否完成确认（未满足条件已确认则跳过返回 false）
      */
     private boolean tryApplyOutboundReceiptConfirmation(StkIoBill stkIoBill, String confirmBy) {

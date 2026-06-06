@@ -43,4 +43,14 @@ public class MsunHisBillPushController extends BaseController
         msunHisBillPushService.repushOutbound(billId);
         return success("HIS推送已提交");
     }
+
+    /** 401 退库单手动推送：登录即可，不校验菜单权限；仅已审核单可推（见 pushReturn 服务层） */
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/push/return/{billId}")
+    public AjaxResult pushReturn(@PathVariable Long billId)
+    {
+        msunHisBillPushService.assertMsunIntegratedTenant(SecurityUtils.getCustomerId());
+        msunHisBillPushService.pushReturn(billId);
+        return success("HIS推送已提交");
+    }
 }

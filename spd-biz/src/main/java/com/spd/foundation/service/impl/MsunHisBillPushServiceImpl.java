@@ -137,6 +137,27 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void pushReturn(Long billId)
+    {
+        StkIoBill bill = stkIoBillMapper.selectStkIoBillById(billId);
+        if (bill == null)
+        {
+            throw new ServiceException("退库单不存在");
+        }
+        if (bill.getBillType() == null || bill.getBillType() != 401)
+        {
+            throw new ServiceException("非退库单不允许走退库推送");
+        }
+        if (bill.getBillStatus() == null || bill.getBillStatus() != 2)
+        {
+            throw new ServiceException("未审核退库单不允许推送HIS");
+        }
+        validateReturnGate(bill);
+        pushAfterReturnAudit(bill);
+    }
+
+    @Override
     public void validateReturnGate(StkIoBill bill)
     {
         String tenantId = resolveTenantId(bill);
@@ -209,9 +230,18 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             : entry.getHisPharmacyStockId();
         if (StringUtils.isEmpty(pharmacyStockId))
         {
-            throw new ServiceException("缺少 his_pharmacy_stock_id，请先完成出库HIS推送");
+            pharmacyStockId = resolvePharmacyStockIdFromHis(ctx.pharmacyDeptHisId, entry, tenantId);
+            entry.setHisPharmacyStockId(pharmacyStockId);
+            if (dep != null)
+            {
+                dep.setHisPharmacyStockId(pharmacyStockId);
+                stkDepInventoryMapper.updateStkDepInventory(dep);
+            }
         }
-        entry.setHisPharmacyStockId(pharmacyStockId);
+        else
+        {
+            entry.setHisPharmacyStockId(pharmacyStockId);
+        }
         BigDecimal hisQty = queryHisStockAmount(ctx.pharmacyDeptHisId, entry, tenantId);
         if (entry.getQty() != null && hisQty != null && entry.getQty().compareTo(hisQty) > 0)
         {
@@ -219,7 +249,40 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         }
     }
 
-    private BigDecimal queryHisStockAmount(String deptHisId, StkIoBillEntry entry, String tenantId)
+    private String resolvePharmacyStockIdFromHis(String deptHisId, StkIoBillEntry entry, String tenantId)
+    {
+        JSONArray data = fetchDrugBatchStocks(deptHisId, entry, tenantId);
+        if (data == null || data.isEmpty())
+        {
+            throw new ServiceException("HIS 无可用批次库存，无法退库推送");
+        }
+        String batchNumber = entry.getBatchNumber();
+        for (int i = 0; i < data.size(); i++)
+        {
+            JSONObject row = data.getJSONObject(i);
+            if (row == null)
+            {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(batchNumber))
+            {
+                String batch = row.getString("ycBatchNo");
+                if (batch != null && !batchNumber.equals(batch))
+                {
+                    continue;
+                }
+            }
+            String psId = row.getString("pharmacyStockId");
+            if (StringUtils.isNotEmpty(psId))
+            {
+                return psId;
+            }
+        }
+        throw new ServiceException("HIS 批次库存未匹配到 pharmacyStockId，批号="
+            + (batchNumber != null ? batchNumber : ""));
+    }
+
+    private JSONArray fetchDrugBatchStocks(String deptHisId, StkIoBillEntry entry, String tenantId)
     {
         FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
         if (material == null || StringUtils.isEmpty(material.getHisId()))
@@ -253,7 +316,12 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             throw new ServiceException("2.5.43 查询失败: " + hisBody.getString("message"));
         }
-        JSONArray data = hisBody.getJSONArray("data");
+        return hisBody.getJSONArray("data");
+    }
+
+    private BigDecimal queryHisStockAmount(String deptHisId, StkIoBillEntry entry, String tenantId)
+    {
+        JSONArray data = fetchDrugBatchStocks(deptHisId, entry, tenantId);
         if (data == null || data.isEmpty())
         {
             return BigDecimal.ZERO;
@@ -380,7 +448,13 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
                 ? dep.getHisPharmacyStockId() : entry.getHisPharmacyStockId();
             if (StringUtils.isEmpty(pharmacyStockId))
             {
-                throw new ServiceException("明细缺少 pharmacyStockId，entryId=" + entry.getId());
+                pharmacyStockId = resolvePharmacyStockIdFromHis(ctx.pharmacyDeptHisId, entry, tenantId);
+                entry.setHisPharmacyStockId(pharmacyStockId);
+                if (dep != null)
+                {
+                    dep.setHisPharmacyStockId(pharmacyStockId);
+                    stkDepInventoryMapper.updateStkDepInventory(dep);
+                }
             }
             String memo = StringUtils.isNotEmpty(entry.getHisMemo())
                 ? entry.getHisMemo() : MsunHisConstants.buildEntryMemo(tenantId, entry.getId());

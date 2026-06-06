@@ -15,11 +15,14 @@ public interface IMsunHisBillPushService
     /** 201 审核后推送 2.5.41 并回写 pharmacyStockId */
     void pushAfterOutboundAudit(StkIoBill bill);
 
-    /** 401 审核前门禁（含实时 2.5.43） */
+    /** 401 推送前门禁（含实时 2.5.43 查库存并补全 pharmacyStockId） */
     void validateReturnGate(StkIoBill bill);
 
     /** 401 审核后推送 2.5.42 */
     void pushAfterReturnAudit(StkIoBill bill);
+
+    /** 401 手动推送：推送前校验 HIS 库存，仅推未成功/失败明细（已审核） */
+    void pushReturn(Long billId);
 
     /** 201 手动推送：仅推未成功/失败明细（已审核） */
     void pushOutbound(Long billId);
