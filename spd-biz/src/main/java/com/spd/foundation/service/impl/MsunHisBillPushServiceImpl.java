@@ -494,17 +494,12 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             StkIoBill bill, List<StkIoBillEntry> entries, String tenantId, JSONObject response)
     {
         assertHisSuccess(response);
-        JSONObject wrapped = response.getJSONObject("data");
-        if (wrapped == null)
-        {
-            throw new ServiceException("HIS推送响应无 data");
-        }
-        Object hisBodyObj = wrapped.get("hisBody");
-        if (!(hisBodyObj instanceof JSONObject))
+        JSONObject hisBody = resolveHisBody(response);
+        if (hisBody == null)
         {
             throw new ServiceException("HIS推送响应格式异常");
         }
-        JSONArray data = ((JSONObject) hisBodyObj).getJSONArray("data");
+        JSONArray data = hisBody.getJSONArray("data");
         if (data == null)
         {
             throw new ServiceException("HIS未返回入库明细数据，请确认 inStockStatus 与 pharmacyDeptId");
@@ -665,21 +660,45 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
 
     private static void assertHisSuccess(JSONObject json)
     {
-        JSONObject data = json.getJSONObject("data");
-        if (data == null)
+        JSONObject hisBody = resolveHisBody(json);
+        if (hisBody == null)
         {
             return;
         }
-        Object hisBodyObj = data.get("hisBody");
-        if (hisBodyObj instanceof JSONObject)
+        if (!Boolean.TRUE.equals(hisBody.getBoolean("success")))
         {
-            JSONObject hisBody = (JSONObject) hisBodyObj;
-            if (!Boolean.TRUE.equals(hisBody.getBoolean("success")))
-            {
-                throw new ServiceException(hisBody.getString("message") != null
-                    ? hisBody.getString("message") : "HIS推送失败");
-            }
+            throw new ServiceException(hisBody.getString("message") != null
+                ? hisBody.getString("message") : "HIS推送失败");
         }
+    }
+
+    private static JSONObject resolveHisBody(JSONObject response)
+    {
+        if (response == null)
+        {
+            return null;
+        }
+        JSONObject hisBody = response.getJSONObject("hisBody");
+        if (hisBody != null)
+        {
+            return hisBody;
+        }
+        JSONObject data = response.getJSONObject("data");
+        if (data == null)
+        {
+            return null;
+        }
+        hisBody = data.getJSONObject("hisBody");
+        if (hisBody != null)
+        {
+            return hisBody;
+        }
+        JSONObject inner = data.getJSONObject("data");
+        if (inner != null)
+        {
+            return inner.getJSONObject("hisBody");
+        }
+        return null;
     }
 
     private void updateBillPushStatus(Long billId, String status, String msg, String traceId)
@@ -754,21 +773,8 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
 
     private static String extractTraceId(JSONObject json)
     {
-        if (json == null)
-        {
-            return null;
-        }
-        JSONObject data = json.getJSONObject("data");
-        if (data == null)
-        {
-            return null;
-        }
-        Object hisBodyObj = data.get("hisBody");
-        if (hisBodyObj instanceof JSONObject)
-        {
-            return ((JSONObject) hisBodyObj).getString("traceId");
-        }
-        return null;
+        JSONObject hisBody = resolveHisBody(json);
+        return hisBody != null ? hisBody.getString("traceId") : null;
     }
 
     private static String firstNonEmpty(String a, String b)

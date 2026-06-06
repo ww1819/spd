@@ -2943,7 +2943,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateEntryHisPushStatus">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_bill_entry set his_push_status = #{hisPushStatus},
-            <if test="hisPushMsg != null">his_push_msg = #{hisPushMsg},</if>
+            his_push_msg = #{hisPushMsg},
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
@@ -2953,7 +2953,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update stk_io_bill_entry set his_pharmacy_stock_id = #{hisPharmacyStockId},
             his_storage_stock_id = #{hisStorageStockId}, his_stock_query_id = #{hisStockQueryId},
             his_push_status = #{hisPushStatus},
-            <if test="hisPushMsg != null">his_push_msg = #{hisPushMsg},</if>
+            his_push_msg = #{hisPushMsg},
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
@@ -2961,7 +2961,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateBillHisPushStatus">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_bill set his_push_status = #{hisPushStatus}, his_push_time = #{hisPushTime},
-            <if test="hisPushMsg != null">his_push_msg = #{hisPushMsg},</if>
+            his_push_msg = #{hisPushMsg},
             <if test="hisTraceId != null">his_trace_id = #{hisTraceId},</if>
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
