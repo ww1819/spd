@@ -9,6 +9,7 @@ import com.spd.common.utils.http.HttpUtils;
 import com.spd.foundation.constants.MsunHisConstants;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.support.MsunHisBatchStockSupport;
 import com.spd.foundation.support.MsunHisTenantSupport;
 import com.spd.system.service.ISysConfigService;
 import com.spd.warehouse.domain.StkIoBill;
@@ -254,6 +255,7 @@ public class MsunHisPushVerifyService
             return false;
         }
         String pharmacyStockId = entry.getHisPharmacyStockId();
+        String stockQueryId = entry.getHisStockQueryId();
         String batchNumber = entry.getBatchNumber();
         for (int i = 0; i < batchRows.size(); i++)
         {
@@ -262,7 +264,15 @@ public class MsunHisPushVerifyService
             {
                 continue;
             }
-            if (StringUtils.isNotEmpty(pharmacyStockId))
+            if (StringUtils.isNotEmpty(stockQueryId))
+            {
+                String rowQueryId = MsunHisBatchStockSupport.resolveStockQueryId(row);
+                if (stockQueryId.equals(rowQueryId))
+                {
+                    return hasPositiveStock(row);
+                }
+            }
+            else if (StringUtils.isNotEmpty(pharmacyStockId))
             {
                 String psId = row.getString("pharmacyStockId");
                 if (pharmacyStockId.equals(psId))
@@ -288,16 +298,12 @@ public class MsunHisPushVerifyService
 
     private static boolean hasPositiveStock(JSONObject row)
     {
-        Object amt = row.get("stockAmount");
-        if (amt == null)
-        {
-            amt = row.get("quantity");
-        }
+        BigDecimal amt = MsunHisBatchStockSupport.resolveStockAmount(row);
         if (amt == null)
         {
             return true;
         }
-        return new BigDecimal(String.valueOf(amt)).compareTo(BigDecimal.ZERO) > 0;
+        return amt.compareTo(BigDecimal.ZERO) > 0;
     }
 
     private static JSONArray extractHisDataArray(JSONObject scminterfaceRoot)

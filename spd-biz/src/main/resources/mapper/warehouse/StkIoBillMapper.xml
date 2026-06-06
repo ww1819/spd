@@ -2958,6 +2958,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
+    <update id="updateEntryHisStockIds">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill_entry set his_pharmacy_stock_id = #{hisPharmacyStockId},
+            his_storage_stock_id = #{hisStorageStockId}, his_stock_query_id = #{hisStockQueryId},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
     <update id="updateBillHisPushStatus">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_io_bill set his_push_status = #{hisPushStatus}, his_push_time = #{hisPushTime},

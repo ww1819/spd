@@ -10,6 +10,7 @@ import com.spd.common.utils.http.HttpUtils;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.constants.MsunHisConstants;
+import com.spd.foundation.support.MsunHisBatchStockSupport;
 import com.spd.foundation.support.MsunHisTenantRegistry;
 import com.spd.foundation.support.MsunHisTenantSupport;
 import com.spd.foundation.domain.FdDepartment;
@@ -225,31 +226,34 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             throw new ServiceException("退库数量超过SPD科室库存");
         }
-        String pharmacyStockId = StringUtils.isNotEmpty(dep.getHisPharmacyStockId())
-            ? dep.getHisPharmacyStockId()
-            : entry.getHisPharmacyStockId();
-        if (StringUtils.isEmpty(pharmacyStockId))
+        String returnStockId = resolveReturnPushStockIdLocal(dep, entry);
+        if (StringUtils.isEmpty(returnStockId))
         {
-            pharmacyStockId = resolvePharmacyStockIdFromHis(ctx.pharmacyDeptHisId, entry, tenantId);
-            entry.setHisPharmacyStockId(pharmacyStockId);
-            if (dep != null)
-            {
-                dep.setHisPharmacyStockId(pharmacyStockId);
-                stkDepInventoryMapper.updateStkDepInventory(dep);
-            }
+            HisReturnStockIds ids = resolveReturnStockIdsFromHis(ctx.pharmacyDeptHisId, entry, tenantId);
+            returnStockId = ids.returnStockId;
+            applyReturnStockIds(entry, dep, ids);
         }
         else
         {
-            entry.setHisPharmacyStockId(pharmacyStockId);
+            entry.setHisStockQueryId(returnStockId);
         }
-        BigDecimal hisQty = queryHisStockAmount(ctx.pharmacyDeptHisId, entry, tenantId);
+        BigDecimal hisQty = queryHisStockAmount(ctx.pharmacyDeptHisId, entry, returnStockId, tenantId);
         if (entry.getQty() != null && hisQty != null && entry.getQty().compareTo(hisQty) > 0)
         {
             throw new ServiceException("退库数量超过HIS可退量，HIS库存=" + hisQty);
         }
     }
 
-    private String resolvePharmacyStockIdFromHis(String deptHisId, StkIoBillEntry entry, String tenantId)
+    private static String resolveReturnPushStockIdLocal(StkDepInventory dep, StkIoBillEntry entry)
+    {
+        if (dep != null && StringUtils.isNotEmpty(dep.getHisStockQueryId()))
+        {
+            return dep.getHisStockQueryId();
+        }
+        return StringUtils.isNotEmpty(entry.getHisStockQueryId()) ? entry.getHisStockQueryId() : null;
+    }
+
+    private HisReturnStockIds resolveReturnStockIdsFromHis(String deptHisId, StkIoBillEntry entry, String tenantId)
     {
         JSONArray data = fetchDrugBatchStocks(deptHisId, entry, tenantId);
         if (data == null || data.isEmpty())
@@ -272,14 +276,46 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
                     continue;
                 }
             }
-            String psId = row.getString("pharmacyStockId");
-            if (StringUtils.isNotEmpty(psId))
+            String returnStockId = MsunHisBatchStockSupport.resolveReturnPushStockId(row);
+            if (StringUtils.isNotEmpty(returnStockId))
             {
-                return psId;
+                HisReturnStockIds ids = new HisReturnStockIds();
+                ids.returnStockId = returnStockId;
+                ids.pharmacyStockId = row.getString("pharmacyStockId");
+                ids.storageStockId = row.getString("storageStockId");
+                return ids;
             }
         }
-        throw new ServiceException("HIS 批次库存未匹配到 pharmacyStockId，批号="
+        throw new ServiceException("HIS 批次库存未匹配到 stockQueryId，批号="
             + (batchNumber != null ? batchNumber : ""));
+    }
+
+    private void applyReturnStockIds(StkIoBillEntry entry, StkDepInventory dep, HisReturnStockIds ids)
+    {
+        entry.setHisStockQueryId(ids.returnStockId);
+        if (StringUtils.isNotEmpty(ids.pharmacyStockId))
+        {
+            entry.setHisPharmacyStockId(ids.pharmacyStockId);
+        }
+        if (StringUtils.isNotEmpty(ids.storageStockId))
+        {
+            entry.setHisStorageStockId(ids.storageStockId);
+        }
+        if (dep != null)
+        {
+            dep.setHisStockQueryId(ids.returnStockId);
+            if (StringUtils.isNotEmpty(ids.pharmacyStockId))
+            {
+                dep.setHisPharmacyStockId(ids.pharmacyStockId);
+            }
+            if (StringUtils.isNotEmpty(ids.storageStockId))
+            {
+                dep.setHisStorageStockId(ids.storageStockId);
+            }
+            stkDepInventoryMapper.updateStkDepInventory(dep);
+        }
+        stkIoBillMapper.updateEntryHisStockIds(entry.getId(), ids.pharmacyStockId,
+            ids.storageStockId, ids.returnStockId);
     }
 
     private JSONArray fetchDrugBatchStocks(String deptHisId, StkIoBillEntry entry, String tenantId)
@@ -319,14 +355,14 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         return hisBody.getJSONArray("data");
     }
 
-    private BigDecimal queryHisStockAmount(String deptHisId, StkIoBillEntry entry, String tenantId)
+    private BigDecimal queryHisStockAmount(
+            String deptHisId, StkIoBillEntry entry, String returnStockId, String tenantId)
     {
         JSONArray data = fetchDrugBatchStocks(deptHisId, entry, tenantId);
         if (data == null || data.isEmpty())
         {
             return BigDecimal.ZERO;
         }
-        String targetPharmacyStockId = entry.getHisPharmacyStockId();
         BigDecimal total = BigDecimal.ZERO;
         for (int i = 0; i < data.size(); i++)
         {
@@ -335,15 +371,12 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             {
                 continue;
             }
-            if (StringUtils.isNotEmpty(targetPharmacyStockId))
+            if (StringUtils.isNotEmpty(returnStockId)
+                    && !MsunHisBatchStockSupport.matchesReturnStockFilter(row, returnStockId))
             {
-                String psId = row.getString("pharmacyStockId");
-                if (!targetPharmacyStockId.equals(psId))
-                {
-                    continue;
-                }
+                continue;
             }
-            else if (StringUtils.isNotEmpty(entry.getBatchNumber()))
+            if (StringUtils.isEmpty(returnStockId) && StringUtils.isNotEmpty(entry.getBatchNumber()))
             {
                 String batch = row.getString("ycBatchNo");
                 if (batch != null && !entry.getBatchNumber().equals(batch))
@@ -351,14 +384,10 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
                     continue;
                 }
             }
-            Object amt = row.get("stockAmount");
-            if (amt == null)
-            {
-                amt = row.get("quantity");
-            }
+            BigDecimal amt = MsunHisBatchStockSupport.resolveStockAmount(row);
             if (amt != null)
             {
-                total = total.add(new BigDecimal(String.valueOf(amt)));
+                total = total.add(amt);
             }
         }
         return total;
@@ -444,24 +473,19 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             Long depKey = entry.resolveDepInventoryKeyForDepOps();
             StkDepInventory dep = depKey != null ? stkDepInventoryMapper.selectStkDepInventoryById(depKey) : null;
-            String pharmacyStockId = dep != null && StringUtils.isNotEmpty(dep.getHisPharmacyStockId())
-                ? dep.getHisPharmacyStockId() : entry.getHisPharmacyStockId();
-            if (StringUtils.isEmpty(pharmacyStockId))
+            String returnStockId = resolveReturnPushStockIdLocal(dep, entry);
+            if (StringUtils.isEmpty(returnStockId))
             {
-                pharmacyStockId = resolvePharmacyStockIdFromHis(ctx.pharmacyDeptHisId, entry, tenantId);
-                entry.setHisPharmacyStockId(pharmacyStockId);
-                if (dep != null)
-                {
-                    dep.setHisPharmacyStockId(pharmacyStockId);
-                    stkDepInventoryMapper.updateStkDepInventory(dep);
-                }
+                HisReturnStockIds ids = resolveReturnStockIdsFromHis(ctx.pharmacyDeptHisId, entry, tenantId);
+                returnStockId = ids.returnStockId;
+                applyReturnStockIds(entry, dep, ids);
             }
             String memo = StringUtils.isNotEmpty(entry.getHisMemo())
                 ? entry.getHisMemo() : MsunHisConstants.buildEntryMemo(tenantId, entry.getId());
             String spdDetailId = StringUtils.isNotEmpty(entry.getHisSpdDetailId())
                 ? entry.getHisSpdDetailId() : MsunHisConstants.buildSpdDetailId(bill.getId(), entry.getId());
             Map<String, Object> line = new LinkedHashMap<>();
-            line.put("pharmacyStockId", parseLongRequired(pharmacyStockId, "pharmacyStockId"));
+            line.put("pharmacyStockId", parseLongRequired(returnStockId, "pharmacyStockId"));
             line.put("quantity", entry.getQty());
             line.put("memo", memo);
             details.add(line);
@@ -541,7 +565,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             }
             String pharmacyStockId = firstNonEmpty(row.getString("pharmacyStockId"), row.getString("storageStockId"));
             String storageStockId = row.getString("storageStockId");
-            String stockQueryId = row.getString("stockQueryId");
+            String stockQueryId = MsunHisBatchStockSupport.resolveStockQueryId(row);
             stkIoBillMapper.updateEntryHisPushResult(entry.getId(), pharmacyStockId, storageStockId, stockQueryId,
                 MsunHisConstants.PUSH_SUCCESS, null);
             Long depId = entry.getDepInventoryId();
@@ -787,5 +811,12 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         private String storageDeptHisId;
         private String pharmacyDeptHisId;
         private String supplierHisId;
+    }
+
+    private static final class HisReturnStockIds
+    {
+        private String returnStockId;
+        private String pharmacyStockId;
+        private String storageStockId;
     }
 }

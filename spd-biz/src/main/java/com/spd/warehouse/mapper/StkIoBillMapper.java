@@ -479,6 +479,9 @@ public interface StkIoBillMapper
         @Param("hisStorageStockId") String hisStorageStockId, @Param("hisStockQueryId") String hisStockQueryId,
         @Param("hisPushStatus") String hisPushStatus, @Param("hisPushMsg") String hisPushMsg);
 
+    int updateEntryHisStockIds(@Param("id") Long id, @Param("hisPharmacyStockId") String hisPharmacyStockId,
+        @Param("hisStorageStockId") String hisStorageStockId, @Param("hisStockQueryId") String hisStockQueryId);
+
     int updateBillHisPushStatus(@Param("id") Long id, @Param("hisPushStatus") String hisPushStatus,
         @Param("hisPushMsg") String hisPushMsg, @Param("hisTraceId") String hisTraceId,
         @Param("hisPushTime") java.util.Date hisPushTime);
