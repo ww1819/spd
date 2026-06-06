@@ -417,7 +417,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             line.put("retailPrice", entry.getUnitPrice());
             line.put("invoiceCode", bill.getBillNo());
             line.put("produceDate", formatHisDateTime(entry.getBeginTime()));
-            line.put("effectiveDate", formatHisDateTime(entry.getEndTime()));
+            line.put("effectiveDate", formatHisEffectiveDate(entry.getEndTime()));
             line.put("ycBatchNo", entry.getBatchNumber());
             line.put("spdDetailId", spdDetailId);
             line.put("memo", memo);
@@ -740,7 +740,16 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         {
             return DateUtils.getTime();
         }
-        return DateUtils.parseDateToStr("yyyy-MM-dd HH:mm:ss", date);
+        return DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, date);
+    }
+
+    private static String formatHisEffectiveDate(Date endTime)
+    {
+        if (endTime == null)
+        {
+            throw new ServiceException("出库明细有效期不能为空");
+        }
+        return DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, endTime);
     }
 
     private static String extractTraceId(JSONObject json)
