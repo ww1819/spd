@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
@@ -31,6 +33,9 @@ import com.spd.department.dto.StocktakingAppendEntriesBody;
 import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
+import com.spd.warehouse.domain.dto.WhStocktakingProfitImportConfirmRequest;
+import com.spd.warehouse.domain.dto.WhStocktakingProfitImportRow;
+import com.spd.common.utils.file.FileUtils;
 
 /**
  * 盘点Controller
@@ -201,5 +206,42 @@ public class StkIoStocktakingController extends BaseController
     public AjaxResult checkAuditQty(@RequestBody JSONObject json)
     {
         return success(stkIoStocktakingService.checkWhStocktakingQtyMismatch(json.getString("id")));
+    }
+
+    /**
+     * 盘盈明细导入：上传 Excel 预览（不落库）
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:add')")
+    @PostMapping("/profit-import/preview")
+    public AjaxResult previewProfitImport(@RequestParam("file") MultipartFile file)
+    {
+        return stkIoStocktakingService.previewWhStocktakingProfitImport(file);
+    }
+
+    /**
+     * 盘盈明细导入：按 SPD仓库ID 拆分生成未审核盘点单
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:add')")
+    @Log(title = "仓库盘点盘盈明细导入", businessType = BusinessType.IMPORT)
+    @PostMapping("/profit-import/confirm")
+    public AjaxResult confirmProfitImport(@RequestBody WhStocktakingProfitImportConfirmRequest request)
+    {
+        if (request == null || request.getRows() == null)
+        {
+            return error("导入数据不能为空");
+        }
+        return stkIoStocktakingService.confirmWhStocktakingProfitImport(request.getRows());
+    }
+
+    /**
+     * 下载盘盈明细导入模板（权限与盘点单新增一致，复用 stocktaking:in:add）
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:add')")
+    @PostMapping("/profit-import/importTemplate")
+    public void profitImportTemplate(HttpServletResponse response) throws Exception
+    {
+        ExcelUtil<WhStocktakingProfitImportRow> util = new ExcelUtil<>(WhStocktakingProfitImportRow.class);
+        FileUtils.setAttachmentResponseHeader(response, "盘盈明细模板.xlsx");
+        util.importTemplateExcel(response, "盘盈明细");
     }
 }

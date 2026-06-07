@@ -4301,6 +4301,7 @@ WHERE @audit_menu_id IS NOT NULL
 
 -- ========== 仓库盘点入库 stocktaking/in（StkIoStocktakingController；与科室盘点 department:stocktaking 不同）==========
 -- 权限：stocktaking:in:list/query/export/add/edit/remove/audit；default_open_to_customer=1
+-- 盘盈明细导入复用 stocktaking:in:add，不单独建菜单/按钮权限
 /
 
 SET @stk_parent := COALESCE(
@@ -4388,7 +4389,7 @@ SELECT
   3,
   '#', '', NULL,
   1, 0, 'F', '0', '0', 'stocktaking:in:add', '#',
-  'admin', NOW(), '1', NOW(), '',
+  'admin', NOW(), '1', NOW(), '含手工新增盘点单与导入盘盈明细',
   '0', '1'
 FROM DUAL
 WHERE @stk_in_id IS NOT NULL

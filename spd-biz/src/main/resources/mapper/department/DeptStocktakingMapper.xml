@@ -87,6 +87,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="returnWarehouseId" column="sub_return_warehouse_id"    />
         <result property="countedFlag" column="sub_counted_flag" />
         <result property="supplierId" column="sub_supplier_id" />
+        <result property="hisId" column="sub_his_id" />
+        <result property="thirdPartyBatchNo" column="sub_third_party_batch_no" />
         <association property="material"    javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -259,6 +261,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.return_warehouse_id as sub_return_warehouse_id,
                 b.counted_flag as sub_counted_flag,
                 b.supplier_id as sub_supplier_id,
+                b.his_id as sub_his_id, b.third_party_batch_no as sub_third_party_batch_no,
                 m.id as mId, m.code as materialCode, m.name as materialName,
                 m.speci as m_speci, m.model as m_model, m.register_no as m_registerNo,
                 m.unit_id as m_unitId, m.factory_id as m_factoryId, m.supplier_id as m_supplierId,

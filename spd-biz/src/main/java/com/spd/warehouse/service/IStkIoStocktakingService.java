@@ -7,8 +7,12 @@ import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.department.vo.StocktakingQtyMismatchVo;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.spd.common.core.domain.AjaxResult;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
+import com.spd.warehouse.domain.dto.WhStocktakingProfitImportRow;
 
 /**
  * 盘点Service接口
@@ -105,4 +109,10 @@ public interface IStkIoStocktakingService
      * 仓库盘点初始化：在服务端按仓库库存生成主单+明细并落库；成功返回完整单据；失败整单回滚不落库。
      */
     StkIoStocktaking initWarehouseStocktakingFromInventory(StkIoStocktaking headPatch);
+
+    /** 仓库盘点盘盈明细导入：解析 Excel 预览（不落库） */
+    AjaxResult previewWhStocktakingProfitImport(MultipartFile file);
+
+    /** 仓库盘点盘盈明细导入：按仓库拆分生成未审核盘点单 */
+    AjaxResult confirmWhStocktakingProfitImport(List<WhStocktakingProfitImportRow> rows);
 }

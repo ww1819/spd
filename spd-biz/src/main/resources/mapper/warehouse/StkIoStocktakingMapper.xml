@@ -91,6 +91,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="origBatchId"    column="sub_orig_batch_id"    />
         <result property="origBatchNoSnapshot"    column="sub_orig_batch_no_snap"    />
         <result property="tenantId"    column="sub_tenant_id"    />
+        <result property="hisId"    column="sub_his_id"    />
+        <result property="thirdPartyBatchNo"    column="sub_third_party_batch_no"    />
         <association property="material"    javaType="FdMaterial" resultMap="materialResult" />
     </resultMap>
 
@@ -177,6 +179,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.supplier_id as sub_supplier_id,
                 b.return_warehouse_id as sub_return_warehouse_id,
                 b.counted_flag as sub_counted_flag,
+                b.his_id as sub_his_id, b.third_party_batch_no as sub_third_party_batch_no,
                 m.id as mId, m.code as materialCode, m.name as materialName,
                 m.speci as m_speci, m.model as m_model, m.register_no as m_registerNo,
                 m.unit_id as m_unitId, m.factory_id as m_factoryId, m.supplier_id as m_supplierId,
@@ -310,6 +313,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             stock_qty = #{stockQty}, profit_qty = #{profitQty}, profit_loss_flag = #{profitLossFlag}, stock_amount = #{stockAmount}, profit_amount = #{profitAmount},
             main_barcode = #{mainBarcode}, sub_barcode = #{subBarcode}, supplier_id = #{supplierId}, return_warehouse_id = #{returnWarehouseId},
             counted_flag = #{countedFlag},
+            his_id = #{hisId}, third_party_batch_no = #{thirdPartyBatchNo},
             kc_no_str = #{kcNoStr}, warehouse_id_str = #{warehouseIdStr}, department_id_str = #{departmentIdStr}, supplier_id_str = #{supplierIdStr},
             update_by = #{updateBy}, update_time = #{updateTime}
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -321,12 +325,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             warehouse_id_str, department_id_str, supplier_id_str,
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
             stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id, counted_flag,
+            his_id, third_party_batch_no,
             tenant_id, create_by, create_time, update_by, update_time)
         values (
             #{entryUuid}, #{parenId}, #{stockNo}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{kcNoStr}, #{depInventoryId},
             #{warehouseIdStr}, #{departmentIdStr}, #{supplierIdStr},
             #{origBatchId}, #{origBatchNoSnapshot}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark},
             #{stockQty}, #{profitQty}, #{profitLossFlag}, #{stockAmount}, #{profitAmount}, #{mainBarcode}, #{subBarcode}, #{supplierId}, #{returnWarehouseId}, COALESCE(#{countedFlag}, 0),
+            #{hisId}, #{thirdPartyBatchNo},
             #{tenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
 
@@ -345,6 +351,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             warehouse_id_str, department_id_str, supplier_id_str,
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
             stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id, counted_flag,
+            his_id, third_party_batch_no,
             tenant_id, create_by, create_time, update_by, update_time)
         values
         <foreach item="item" index="index" collection="list" separator=",">
@@ -352,6 +359,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
               #{item.warehouseIdStr}, #{item.departmentIdStr}, #{item.supplierIdStr},
               #{item.origBatchId}, #{item.origBatchNoSnapshot}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.remark},
               #{item.stockQty}, #{item.profitQty}, #{item.profitLossFlag}, #{item.stockAmount}, #{item.profitAmount}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplierId}, #{item.returnWarehouseId}, COALESCE(#{item.countedFlag}, 0),
+              #{item.hisId}, #{item.thirdPartyBatchNo},
               #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
     </insert>

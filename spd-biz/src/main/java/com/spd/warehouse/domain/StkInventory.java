@@ -98,6 +98,12 @@ public class StkInventory extends BaseEntity
     /** 科室库存明细id（反写） */
     private Long kcNo;
 
+    /** HIS/第三方系统库存明细唯一标识 */
+    private String hisId;
+
+    /** 第三方系统批次号 */
+    private String thirdPartyBatchNo;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -374,6 +380,22 @@ public class StkInventory extends BaseEntity
 
     public void setKcNo(Long kcNo) {
         this.kcNo = kcNo;
+    }
+
+    public String getHisId() {
+        return hisId;
+    }
+
+    public void setHisId(String hisId) {
+        this.hisId = hisId;
+    }
+
+    public String getThirdPartyBatchNo() {
+        return thirdPartyBatchNo;
+    }
+
+    public void setThirdPartyBatchNo(String thirdPartyBatchNo) {
+        this.thirdPartyBatchNo = thirdPartyBatchNo;
     }
 
     public void setDelFlag(Integer delFlag) {

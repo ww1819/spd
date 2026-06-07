@@ -194,6 +194,15 @@ public final class InventoryMaterialSnapshotHelper {
         applyMaterialSnapshotsToWarehouse(inv, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId);
     }
 
+    /** 仓库盘点审核写仓库库存：优先明细嵌套耗材，再档案。 */
+    public static void fillWarehouseRowFromStocktaking(StkInventory inv, StkIoStocktakingEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        if (inv == null) {
+            return;
+        }
+        FdMaterial nested = entry != null ? entry.getMaterial() : null;
+        applyMaterialSnapshotsToWarehouse(inv, nested, null, null, null, fdMaterialMapper, tenantId);
+    }
+
     /** 科室盘点审核生成/更新科室库存时写入单据与条码等冗余字段 */
     public static void applyDepInventoryBillContextFromStocktaking(StkDepInventory dep, StkIoStocktaking bill, StkIoStocktakingEntry entry) {
         if (dep == null) {
@@ -520,6 +529,23 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, entry != null ? entry.getMaterialNameSnap() : null, fdMaterialMapper,
+            bill != null ? bill.getTenantId() : null);
+    }
+
+    /** 仓库盘点审核直接改仓库库存时写入 t_hc_ck_flow 的快照与单号 */
+    public static void enrichHcCkFlowAfterWhStocktaking(HcCkFlow f, StkIoStocktaking bill, StkIoStocktakingEntry entry,
+        Long warehouseId, FdMaterialMapper fdMaterialMapper) {
+        if (f == null) {
+            return;
+        }
+        Long supplierId = entry != null ? entry.getSupplierId() : f.getSupplierId();
+        applyHcCkFlowWarehouseSnapshots(f, warehouseId, supplierId, bill != null ? bill.getDepartmentId() : null);
+        if (bill != null && StringUtils.isNotEmpty(bill.getStockNo())) {
+            f.setBillNo(bill.getStockNo());
+        }
+        applyHcCkFlowNumericStrMirrors(f);
+        fillHcCkFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
+            entry != null ? entry.getMaterial() : null, null, null, fdMaterialMapper,
             bill != null ? bill.getTenantId() : null);
     }
 

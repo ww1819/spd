@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,11 +17,14 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.department.dto.StocktakingEntryCountedDto;
 import com.spd.department.dto.StocktakingEntryQtyPatchDto;
 import com.spd.department.dto.StocktakingPatchSaveDto;
@@ -29,13 +33,25 @@ import com.spd.department.vo.StocktakingQtyMismatchVo;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.foundation.mapper.FdWarehouseMapper;
+import com.spd.warehouse.domain.dto.WhStocktakingProfitImportRow;
+import com.spd.warehouse.util.InitialImportDateParser;
+import com.spd.warehouse.util.WhStocktakingProfitImportUtil;
+import com.spd.warehouse.domain.HcCkFlow;
+import com.spd.warehouse.domain.StkBatch;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
+import com.spd.warehouse.mapper.HcCkFlowMapper;
+import com.spd.warehouse.mapper.StkBatchMapper;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoStocktakingService;
+import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.utils.StocktakingConcurrencyUtil;
 
 /**
@@ -58,6 +74,18 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private StkBatchMapper stkBatchMapper;
+
+    @Autowired
+    private HcCkFlowMapper hcCkFlowMapper;
+
+    @Autowired
+    private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FdSupplierMapper fdSupplierMapper;
 
     /**
      * 查询盘点
@@ -118,7 +146,11 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             stkIoStocktaking.setUuidId(UUID7.generateUUID7());
         }
         if (stkIoStocktaking.getAuditAdjustsInventory() == null) {
-            stkIoStocktaking.setAuditAdjustsInventory(0);
+            if (stkIoStocktaking.getStockType() != null && stkIoStocktaking.getStockType() == STOCK_TYPE_WH_STOCKTAKING) {
+                stkIoStocktaking.setAuditAdjustsInventory(1);
+            } else {
+                stkIoStocktaking.setAuditAdjustsInventory(0);
+            }
         }
         validateWarehouseStocktakingEntries(stkIoStocktaking);
         int rows = stkIoStocktakingMapper.insertStkIoStocktaking(stkIoStocktaking);
@@ -413,9 +445,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             if (!mismatches.isEmpty()) {
                 throw new ServiceException("盘点明细库存数量与当前仓库账面库存不一致，请先逐条确认后再审核。");
             }
+            validateWarehouseStocktakingEntries(stkIoStocktaking);
+            stkIoStocktaking.setAuditAdjustsInventory(1);
+            assertWhExistingInventoryLinesNotProfit(stkIoStocktaking);
+            updateWhInventory(stkIoStocktaking, stkIoStocktaking.getStkIoStocktakingEntryList());
+            verifyWhProfitEntriesInventoryAndBatch(stkIoStocktaking, stkIoStocktaking.getStkIoStocktakingEntryList());
         }
 
-        // 盘点单审核仅更新审核状态，不再改库存；库存变动由盈亏单审核完成
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
@@ -450,13 +486,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             boolean changed = false;
             if (book.compareTo(live) != 0) {
                 entry.setQty(live);
-                changed = true;
-            }
-            BigDecimal bookAfter = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
-            BigDecimal sq = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
-            // 来源于仓库库存的明细不允许盘盈：账面已对齐为现库存后，实盘不得大于账面
-            if (sq.compareTo(bookAfter) > 0) {
-                entry.setStockQty(bookAfter);
                 changed = true;
             }
             if (changed) {
@@ -497,7 +526,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             entry.setQty(currentQty);
             BigDecimal sq = adjust.getStockQty() == null ? currentQty : adjust.getStockQty();
             if (entry.getKcNo() != null && sq.compareTo(currentQty) > 0) {
-                sq = currentQty;
+                throwWhExistingInventoryProfitNotAllowed(entry, sq, currentQty);
             }
             entry.setStockQty(sq);
             fillProfitLossFlagWarehouse(entry);
@@ -544,6 +573,42 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
         StkInventory inv = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
         return inv == null || inv.getQty() == null ? BigDecimal.ZERO : inv.getQty();
+    }
+
+    /**
+     * 账面已与仓库现库存对齐后：仓库原有库存行（有 kc_no）不允许实盘大于账面，否则审核失败。
+     */
+    private void assertWhExistingInventoryLinesNotProfit(StkIoStocktaking bill) {
+        if (bill == null || bill.getStkIoStocktakingEntryList() == null) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
+            if (entry == null || entry.getKcNo() == null) {
+                continue;
+            }
+            BigDecimal bookQty = entry.getQty() == null ? BigDecimal.ZERO : entry.getQty();
+            BigDecimal stockQty = entry.getStockQty() == null ? BigDecimal.ZERO : entry.getStockQty();
+            if (stockQty.compareTo(bookQty) > 0) {
+                throwWhExistingInventoryProfitNotAllowed(entry, stockQty, bookQty);
+            }
+        }
+    }
+
+    private void throwWhExistingInventoryProfitNotAllowed(StkIoStocktakingEntry entry, BigDecimal stockQty, BigDecimal bookQty) {
+        String matName = entry.getMaterial() != null && StringUtils.isNotEmpty(entry.getMaterial().getName())
+            ? entry.getMaterial().getName()
+            : String.valueOf(entry.getMaterialId());
+        String batchLabel = StringUtils.isNotEmpty(entry.getBatchNo()) ? entry.getBatchNo() : "--";
+        throw new ServiceException(String.format(
+            "审核失败：耗材[%s]批次[%s]为仓库原有库存，实盘数量(%s)不能大于账面数量(%s)。盘盈请使用「新增盘盈明细」。",
+            matName, batchLabel, formatQtyForMessage(stockQty), formatQtyForMessage(bookQty)));
+    }
+
+    private static String formatQtyForMessage(BigDecimal qty) {
+        if (qty == null) {
+            return "0";
+        }
+        return qty.stripTrailingZeros().toPlainString();
     }
 
     @Override
@@ -660,12 +725,17 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 if (StringUtils.isEmpty(entry.getBatchNumber()) || entry.getEndTime() == null) {
                     throw new ServiceException("新增盘盈明细必须录入批号、有效期。");
                 }
-                if (material.getSupplierId() != null) {
+                if (entry.getSupplierId() == null && material.getSupplierId() != null) {
                     entry.setSupplierId(material.getSupplierId());
                 }
                 if (entry.getSupplierId() == null) {
                     throw new ServiceException(String.format(
-                        "耗材[%s]：产品档案未维护供应商时，请在新增盘盈明细中选择供应商后再保存。", material.getName()));
+                        "耗材[%s]：盘盈明细必须选择供应商后再保存。", material.getName()));
+                }
+                FdSupplier profitSupplier = fdSupplierMapper.selectFdSupplierById(entry.getSupplierId());
+                if (profitSupplier == null) {
+                    throw new ServiceException(String.format(
+                        "耗材[%s]：盘盈明细供应商ID「%s」在系统中不存在。", material.getName(), entry.getSupplierId()));
                 }
                 if (entry.getReturnWarehouseId() == null) {
                     Long dw = material.getDefaultWarehouseId() != null ? material.getDefaultWarehouseId() : material.getWarehouseId();
@@ -736,6 +806,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
         if (StringUtils.isEmpty(entry.getOrigBatchNoSnapshot())) {
             entry.setOrigBatchNoSnapshot(inv.getBatchNo());
+        }
+        if (StringUtils.isEmpty(entry.getHisId()) && StringUtils.isNotEmpty(inv.getHisId())) {
+            entry.setHisId(inv.getHisId().trim());
+        }
+        if (StringUtils.isEmpty(entry.getThirdPartyBatchNo()) && StringUtils.isNotEmpty(inv.getThirdPartyBatchNo())) {
+            entry.setThirdPartyBatchNo(inv.getThirdPartyBatchNo().trim());
         }
     }
 
@@ -965,6 +1041,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         e.setBeginTime(inv.getBeginTime());
         e.setEndTime(inv.getEndTime());
         e.setSupplierId(inv.getSupplierId());
+        if (StringUtils.isNotEmpty(inv.getHisId())) {
+            e.setHisId(inv.getHisId().trim());
+        }
+        if (StringUtils.isNotEmpty(inv.getThirdPartyBatchNo())) {
+            e.setThirdPartyBatchNo(inv.getThirdPartyBatchNo().trim());
+        }
         e.setCountedFlag(0);
         e.setRemark("");
         e.setDelFlag(0);
@@ -1068,5 +1150,564 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         head.setUpdateBy(opUser);
         stkIoStocktakingMapper.updateStkIoStocktaking(head);
         return clean.size();
+    }
+
+    /**
+     * 仓库盘点审核：盘亏扣减原库存行；盘盈生成 stk_batch + stk_inventory 并回写 kc_no。
+     */
+    private void updateWhInventory(StkIoStocktaking bill, List<StkIoStocktakingEntry> entryList) {
+        if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING
+            || entryList == null || bill.getWarehouseId() == null) {
+            return;
+        }
+        if (bill.getAuditAdjustsInventory() == null || bill.getAuditAdjustsInventory() != 1) {
+            return;
+        }
+        Long warehouseId = bill.getWarehouseId();
+        Date flowNow = DateUtils.getNowDate();
+        String flowUser = SecurityUtils.getUserIdStr();
+        Set<Long> materialIdSet = new HashSet<>();
+        for (StkIoStocktakingEntry e : entryList) {
+            if (e != null && e.getMaterialId() != null) {
+                materialIdSet.add(e.getMaterialId());
+            }
+        }
+        Map<Long, FdMaterial> materialById = Collections.emptyMap();
+        if (!materialIdSet.isEmpty()) {
+            List<FdMaterial> materials = fdMaterialMapper.selectFdMaterialByIds(new ArrayList<>(materialIdSet));
+            if (materials != null && !materials.isEmpty()) {
+                materialById = materials.stream()
+                    .filter(Objects::nonNull)
+                    .filter(m -> m.getId() != null)
+                    .collect(Collectors.toMap(FdMaterial::getId, m -> m, (a, b) -> a));
+            }
+        }
+        for (StkIoStocktakingEntry entry : entryList) {
+            if (entry == null) {
+                continue;
+            }
+            FdMaterial material = materialById.get(entry.getMaterialId());
+            if (material == null) {
+                throw new ServiceException(String.format("耗材ID：%s，产品档案不存在。", entry.getMaterialId()));
+            }
+            if (entry.getKcNo() != null) {
+                processWhStocktakingLossLine(bill, entry, material, warehouseId, flowNow, flowUser);
+            } else {
+                processWhStocktakingProfitLine(bill, entry, material, warehouseId, flowNow, flowUser);
+            }
+        }
+    }
+
+    private void processWhStocktakingLossLine(StkIoStocktaking bill, StkIoStocktakingEntry entry, FdMaterial material,
+        Long warehouseId, Date flowNow, String flowUser) {
+        StkInventory inv = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
+        if (inv == null) {
+            throw new ServiceException("库存已变动，请重做盘点。库存行不存在，kcNo=" + entry.getKcNo());
+        }
+        if (inv.getWarehouseId() != null && !warehouseId.equals(inv.getWarehouseId())) {
+            throw new ServiceException("盘点明细库存行不属于本盘点仓库。");
+        }
+        BigDecimal bookQty = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+        BigDecimal stockQty = entry.getStockQty() != null ? entry.getStockQty() : BigDecimal.ZERO;
+        BigDecimal liveQty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+        if (bookQty.compareTo(liveQty) != 0) {
+            throw new ServiceException(String.format("库存已变动，请重做盘点。批次：%s", entry.getBatchNo()));
+        }
+        if (stockQty.compareTo(bookQty) > 0) {
+            throw new ServiceException("来源于仓库库存的明细仅允许盘亏或持平，不允许盘盈。");
+        }
+        if (stockQty.compareTo(bookQty) == 0) {
+            return;
+        }
+        inv.setQty(stockQty);
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        if (unitPrice == null) {
+            unitPrice = inv.getUnitPrice();
+        }
+        if (unitPrice != null) {
+            inv.setAmt(stockQty.multiply(unitPrice));
+        } else {
+            inv.setAmt(BigDecimal.ZERO);
+        }
+        inv.setUpdateTime(flowNow);
+        inv.setUpdateBy(flowUser);
+        stkInventoryMapper.updateStkInventory(inv);
+        BigDecimal lossQty = bookQty.subtract(stockQty);
+        insertWhStocktakingHcCkFlow(bill, entry, inv, lossQty, "PK", "仓库盘点盘亏", flowNow, flowUser, material);
+        applyWhStocktakingEntryAuditFields(entry, false);
+        computeWhEntryAmountFields(entry);
+        if (StringUtils.isNotEmpty(bill.getStockNo())) {
+            entry.setStockNo(bill.getStockNo());
+        }
+        stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
+    }
+
+    private void processWhStocktakingProfitLine(StkIoStocktaking bill, StkIoStocktakingEntry entry, FdMaterial material,
+        Long warehouseId, Date flowNow, String flowUser) {
+        BigDecimal bookQty = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+        BigDecimal stockQty = entry.getStockQty() != null ? entry.getStockQty() : BigDecimal.ZERO;
+        if (stockQty.compareTo(bookQty) <= 0) {
+            return;
+        }
+        if (StringUtils.isEmpty(entry.getBatchNo())) {
+            entry.setBatchNo(getBatchNumber());
+        }
+        entry.setReturnWarehouseId(warehouseId);
+        StkBatch stkBatch = ensureStkBatchByWhStocktaking(bill, entry, material);
+        if (stkBatch == null || stkBatch.getId() == null) {
+            throw new ServiceException(String.format("盘盈明细审核未能生成批次对象，批次号：%s", entry.getBatchNo()));
+        }
+        BigDecimal profitQty = stockQty.subtract(bookQty);
+        StkInventory newInv = buildWhInventoryForStocktakingProfit(bill, entry, stkBatch, profitQty, flowNow, flowUser, material);
+        stkInventoryMapper.insertStkInventory(newInv);
+        entry.setKcNo(newInv.getId());
+        entry.setKcNoStr(String.valueOf(newInv.getId()));
+        applyWhStocktakingEntryAuditFields(entry, false);
+        computeWhEntryAmountFields(entry);
+        if (StringUtils.isNotEmpty(bill.getStockNo())) {
+            entry.setStockNo(bill.getStockNo());
+        }
+        stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
+        insertWhStocktakingHcCkFlow(bill, entry, newInv, profitQty, "PY", "仓库盘点盘盈入库", flowNow, flowUser, material);
+    }
+
+    private StkBatch ensureStkBatchByWhStocktaking(StkIoStocktaking bill, StkIoStocktakingEntry entry, FdMaterial material) {
+        if (entry == null || StringUtils.isEmpty(entry.getBatchNo())) {
+            return null;
+        }
+        StkBatch existing = stkBatchMapper.selectByBatchNo(entry.getBatchNo());
+        if (existing != null) {
+            return existing;
+        }
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : material.getSupplierId();
+        StkBatch b = new StkBatch();
+        b.setBatchNo(entry.getBatchNo());
+        b.setMaterialId(entry.getMaterialId());
+        b.setMaterialCode(material.getCode());
+        b.setMaterialName(material.getName());
+        b.setSpeci(material.getSpeci());
+        b.setModel(material.getModel());
+        b.setUnitId(material.getUnitId());
+        if (material.getFdUnit() != null) {
+            b.setUnitName(material.getFdUnit().getUnitName());
+        }
+        b.setUnitPrice(unitPrice);
+        b.setBatchNumber(entry.getBatchNumber());
+        b.setBeginTime(entry.getBeginTime());
+        b.setEndTime(entry.getEndTime());
+        b.setSupplierId(supplierId);
+        b.setWarehouseId(bill.getWarehouseId());
+        b.setBillId(bill.getId());
+        b.setBillNo(bill.getStockNo());
+        if (entry.getId() != null) {
+            b.setEntryId(entry.getId());
+        }
+        b.setBatchSource("仓库盘盈");
+        b.setOriginBusinessType("仓库盘点盘盈入库");
+        b.setOriginFlowLx("PY");
+        if (bill.getWarehouseId() != null) {
+            b.setOriginFromWarehouseId(bill.getWarehouseId());
+            b.setOriginToWarehouseId(bill.getWarehouseId());
+        }
+        b.setDelFlag(0);
+        Date now = DateUtils.getNowDate();
+        String user = SecurityUtils.getUserIdStr();
+        b.setCreateTime(now);
+        b.setCreateBy(user);
+        b.setUpdateTime(now);
+        b.setUpdateBy(user);
+        b.setAuditTime(now);
+        b.setAuditBy(user);
+        b.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+        stkBatchMapper.insertStkBatch(b);
+        return stkBatchMapper.selectByBatchNo(entry.getBatchNo());
+    }
+
+    private StkInventory buildWhInventoryForStocktakingProfit(StkIoStocktaking bill, StkIoStocktakingEntry entry,
+        StkBatch stkBatch, BigDecimal qty, Date now, String username, FdMaterial material) {
+        StkInventory inv = new StkInventory();
+        inv.setBatchNo(entry.getBatchNo());
+        inv.setBatchId(stkBatch != null ? stkBatch.getId() : null);
+        inv.setMaterialNo(entry.getBatchNumber());
+        inv.setBatchNumber(entry.getBatchNumber());
+        inv.setMaterialId(entry.getMaterialId());
+        inv.setWarehouseId(bill.getWarehouseId());
+        inv.setQty(qty);
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        inv.setUnitPrice(unitPrice);
+        if (unitPrice != null && qty != null) {
+            inv.setAmt(qty.multiply(unitPrice));
+        } else {
+            inv.setAmt(BigDecimal.ZERO);
+        }
+        inv.setMaterialDate(now);
+        inv.setWarehouseDate(now);
+        Long supplierId = entry.getSupplierId() != null ? entry.getSupplierId() : material.getSupplierId();
+        inv.setSupplierId(supplierId);
+        if (stkBatch != null && stkBatch.getFactoryId() != null) {
+            inv.setFactoryId(stkBatch.getFactoryId());
+        } else {
+            inv.setFactoryId(material.getFactoryId());
+        }
+        inv.setBeginTime(entry.getBeginTime());
+        inv.setEndTime(entry.getEndTime());
+        if (StringUtils.isNotEmpty(bill.getStockNo())) {
+            inv.setReceiptOrderNo(bill.getStockNo());
+        }
+        inv.setMainBarcode(entry.getMainBarcode());
+        inv.setSubBarcode(entry.getSubBarcode());
+        if (StringUtils.isNotEmpty(entry.getHisId())) {
+            inv.setHisId(entry.getHisId().trim());
+        }
+        if (StringUtils.isNotEmpty(entry.getThirdPartyBatchNo())) {
+            inv.setThirdPartyBatchNo(entry.getThirdPartyBatchNo().trim());
+        }
+        inv.setCreateTime(now);
+        inv.setCreateBy(username);
+        inv.setDelFlag(0);
+        inv.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+        InventoryMaterialSnapshotHelper.fillWarehouseRowFromStocktaking(inv, entry, fdMaterialMapper, bill.getTenantId());
+        return inv;
+    }
+
+    private void insertWhStocktakingHcCkFlow(StkIoStocktaking bill, StkIoStocktakingEntry entry, StkInventory inventory,
+        BigDecimal qty, String lx, String originBusinessType, Date flowNow, String flowUser, FdMaterial material) {
+        if (bill == null || entry == null || inventory == null || qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
+        HcCkFlow flow = new HcCkFlow();
+        flow.setBillId(bill.getId());
+        flow.setEntryId(entry.getId());
+        flow.setWarehouseId(bill.getWarehouseId());
+        flow.setMaterialId(entry.getMaterialId());
+        flow.setBatchNo(entry.getBatchNo());
+        flow.setBatchNumber(entry.getBatchNumber());
+        flow.setQty(qty);
+        flow.setUnitPrice(unitPrice);
+        if (unitPrice != null) {
+            flow.setAmt(qty.multiply(unitPrice));
+        }
+        flow.setBeginTime(entry.getBeginTime());
+        flow.setEndTime(entry.getEndTime());
+        flow.setMainBarcode(entry.getMainBarcode() != null ? entry.getMainBarcode() : inventory.getMainBarcode());
+        flow.setSubBarcode(entry.getSubBarcode() != null ? entry.getSubBarcode() : inventory.getSubBarcode());
+        flow.setSupplierId(inventory.getSupplierId() != null ? inventory.getSupplierId() : entry.getSupplierId());
+        if (material != null && material.getFactoryId() != null) {
+            flow.setFactoryId(material.getFactoryId());
+        }
+        flow.setLx(lx);
+        flow.setBatchId(inventory.getBatchId());
+        flow.setOriginBusinessType(originBusinessType);
+        flow.setKcNo(inventory.getId());
+        flow.setFlowTime(flowNow);
+        flow.setDelFlag(0);
+        flow.setCreateTime(flowNow);
+        flow.setCreateBy(flowUser);
+        flow.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
+        InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterWhStocktaking(flow, bill, entry, bill.getWarehouseId(), fdMaterialMapper);
+        hcCkFlowMapper.insertHcCkFlow(flow);
+    }
+
+    /**
+     * 审核后兜底：盘盈明细须已生成仓库库存行并关联有效批次。
+     */
+    private void verifyWhProfitEntriesInventoryAndBatch(StkIoStocktaking bill, List<StkIoStocktakingEntry> entryList) {
+        if (bill == null || entryList == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING) {
+            return;
+        }
+        for (StkIoStocktakingEntry entry : entryList) {
+            if (entry == null) {
+                continue;
+            }
+            BigDecimal bookQty = entry.getQty() != null ? entry.getQty() : BigDecimal.ZERO;
+            BigDecimal stockQty = entry.getStockQty() != null ? entry.getStockQty() : BigDecimal.ZERO;
+            if (stockQty.compareTo(bookQty) <= 0) {
+                continue;
+            }
+            if (entry.getKcNo() == null) {
+                throw new ServiceException(String.format("盘盈明细审核后未生成仓库库存，耗材ID：%s，批次号：%s",
+                    entry.getMaterialId(), entry.getBatchNo()));
+            }
+            StkInventory inv = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
+            if (inv == null || inv.getId() == null) {
+                throw new ServiceException(String.format("盘盈明细审核后未生成仓库库存，耗材ID：%s，批次号：%s",
+                    entry.getMaterialId(), entry.getBatchNo()));
+            }
+            if (inv.getBatchId() == null) {
+                StkBatch batch = StringUtils.isEmpty(entry.getBatchNo()) ? null : stkBatchMapper.selectByBatchNo(entry.getBatchNo());
+                if (batch == null || batch.getId() == null) {
+                    throw new ServiceException(String.format("盘盈明细审核后未生成批次对象，耗材ID：%s，批次号：%s",
+                        entry.getMaterialId(), entry.getBatchNo()));
+                }
+                inv.setBatchId(batch.getId());
+                inv.setUpdateTime(DateUtils.getNowDate());
+                inv.setUpdateBy(SecurityUtils.getUserIdStr());
+                stkInventoryMapper.updateStkInventory(inv);
+            }
+        }
+    }
+
+    private void applyWhStocktakingEntryAuditFields(StkIoStocktakingEntry entry, boolean newLine) {
+        if (entry == null) {
+            return;
+        }
+        Date now = DateUtils.getNowDate();
+        String user = SecurityUtils.getUserIdStr();
+        if (newLine) {
+            entry.setCreateTime(now);
+            entry.setCreateBy(user);
+        }
+        entry.setUpdateTime(now);
+        entry.setUpdateBy(user);
+    }
+
+    @Override
+    public AjaxResult previewWhStocktakingProfitImport(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return AjaxResult.error("请选择要导入的文件");
+        }
+        ExcelUtil<WhStocktakingProfitImportRow> util = new ExcelUtil<>(WhStocktakingProfitImportRow.class);
+        List<WhStocktakingProfitImportRow> rows;
+        try {
+            rows = util.importExcel(file.getInputStream());
+        } catch (Exception e) {
+            return AjaxResult.error("解析文件失败：" + e.getMessage());
+        }
+        if (rows == null || rows.isEmpty()) {
+            return AjaxResult.error("文件中没有有效数据");
+        }
+        List<Map<String, Object>> previewList = new ArrayList<>();
+        Map<Long, Map<String, Object>> warehouseSummaryMap = new LinkedHashMap<>();
+        Set<String> hisIdSeen = new HashSet<>();
+        for (int i = 0; i < rows.size(); i++) {
+            WhStocktakingProfitImportRow row = rows.get(i);
+            WhStocktakingProfitImportUtil.normalizeRow(row);
+            Map<String, Object> item = new HashMap<>();
+            int rowNum = i + 2;
+            item.put("rowIndex", rowNum);
+            item.put("data", row);
+            String err = validateWhProfitImportRow(row, hisIdSeen);
+            item.put("error", err);
+            if (err == null) {
+                enrichWhProfitImportPreviewItem(item, row);
+                Long whId = row.getWarehouseId();
+                Map<String, Object> sum = warehouseSummaryMap.computeIfAbsent(whId, k -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("warehouseId", whId);
+                    m.put("warehouseName", item.get("warehouseName"));
+                    m.put("rowCount", 0);
+                    return m;
+                });
+                sum.put("rowCount", ((Integer) sum.get("rowCount")) + 1);
+            }
+            previewList.add(item);
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", previewList);
+        data.put("warehouseSummary", new ArrayList<>(warehouseSummaryMap.values()));
+        data.put("totalRows", previewList.size());
+        long validRows = previewList.stream().filter(p -> p.get("error") == null).count();
+        data.put("validRows", validRows);
+        data.put("canImport", validRows > 0 && validRows == previewList.size());
+        return AjaxResult.success(data);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AjaxResult confirmWhStocktakingProfitImport(List<WhStocktakingProfitImportRow> rows) {
+        if (rows == null || rows.isEmpty()) {
+            throw new ServiceException("导入数据不能为空");
+        }
+        List<String> allErrors = collectWhProfitImportRowErrors(rows);
+        if (!allErrors.isEmpty()) {
+            throw new ServiceException(buildWhProfitImportFailureMessage(allErrors));
+        }
+        Set<String> hisIdSeen = new HashSet<>();
+        Map<Long, List<WhStocktakingProfitImportRow>> byWarehouse = new LinkedHashMap<>();
+        for (WhStocktakingProfitImportRow row : rows) {
+            WhStocktakingProfitImportUtil.normalizeRow(row);
+            byWarehouse.computeIfAbsent(row.getWarehouseId(), k -> new ArrayList<>()).add(row);
+        }
+        Date stockDate = DateUtils.getNowDate();
+        List<Map<String, Object>> createdBills = new ArrayList<>();
+        for (Map.Entry<Long, List<WhStocktakingProfitImportRow>> e : byWarehouse.entrySet()) {
+            Long warehouseId = e.getKey();
+            List<WhStocktakingProfitImportRow> whRows = e.getValue();
+            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(String.valueOf(warehouseId));
+            if (wh == null) {
+                throw new ServiceException("仓库ID「" + warehouseId + "」不存在");
+            }
+            SecurityUtils.ensureTenantAccess(wh.getTenantId());
+            List<StkIoStocktakingEntry> entries = new ArrayList<>();
+            for (WhStocktakingProfitImportRow row : whRows) {
+                entries.add(buildWhProfitEntryFromImportRow(row, warehouseId));
+            }
+            StkIoStocktaking head = new StkIoStocktaking();
+            head.setWarehouseId(warehouseId);
+            head.setStockDate(stockDate);
+            head.setStockStatus(1);
+            head.setStockType(STOCK_TYPE_WH_STOCKTAKING);
+            head.setAuditAdjustsInventory(1);
+            head.setRemark("盘盈明细导入，共" + entries.size() + "条");
+            head.setStkIoStocktakingEntryList(entries);
+            insertStkIoStocktaking(head);
+            Map<String, Object> billInfo = new HashMap<>();
+            billInfo.put("id", head.getId());
+            billInfo.put("stockNo", head.getStockNo());
+            billInfo.put("warehouseId", warehouseId);
+            billInfo.put("warehouseName", wh.getName());
+            billInfo.put("entryCount", entries.size());
+            createdBills.add(billInfo);
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("bills", createdBills);
+        data.put("billCount", createdBills.size());
+        return AjaxResult.success("导入成功，已按仓库生成 " + createdBills.size() + " 张盘点单", data);
+    }
+
+    private List<String> collectWhProfitImportRowErrors(List<WhStocktakingProfitImportRow> rows) {
+        List<String> errors = new ArrayList<>();
+        Set<String> hisIdSeen = new HashSet<>();
+        for (int i = 0; i < rows.size(); i++) {
+            WhStocktakingProfitImportRow row = rows.get(i);
+            WhStocktakingProfitImportUtil.normalizeRow(row);
+            String err = validateWhProfitImportRow(row, hisIdSeen);
+            if (err != null) {
+                errors.add("第" + (i + 2) + "行：" + err);
+            }
+        }
+        return errors;
+    }
+
+    private String buildWhProfitImportFailureMessage(List<String> errors) {
+        if (errors == null || errors.isEmpty()) {
+            return "导入失败";
+        }
+        StringBuilder sb = new StringBuilder("导入失败：共 ").append(errors.size()).append(" 行数据校验未通过。");
+        int show = Math.min(errors.size(), 8);
+        for (int i = 0; i < show; i++) {
+            sb.append('\n').append(errors.get(i));
+        }
+        if (errors.size() > show) {
+            sb.append("\n... 另有 ").append(errors.size() - show).append(" 行未展示");
+        }
+        return sb.toString();
+    }
+
+    private String validateWhProfitImportRow(WhStocktakingProfitImportRow row, Set<String> hisIdSeen) {
+        if (row == null) {
+            return "空行";
+        }
+        if (!isPositiveId(row.getWarehouseId())) {
+            return "SPD仓库ID不能为空或无效";
+        }
+        if (!isPositiveId(row.getMaterialId())) {
+            return "SPD产品档案ID不能为空或无效";
+        }
+        if (!isPositiveId(row.getSupplierId())) {
+            return "SPD供应商ID不能为空或无效";
+        }
+        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(String.valueOf(row.getWarehouseId()));
+        if (wh == null) {
+            return "SPD仓库ID「" + row.getWarehouseId() + "」无法匹配到系统仓库";
+        }
+        try {
+            SecurityUtils.ensureTenantAccess(wh.getTenantId());
+        } catch (Exception ex) {
+            return "SPD仓库ID「" + row.getWarehouseId() + "」无权访问";
+        }
+        FdMaterial material = fdMaterialMapper.selectFdMaterialById(row.getMaterialId());
+        if (material == null) {
+            return "SPD产品档案ID「" + row.getMaterialId() + "」无法匹配到系统产品档案";
+        }
+        FdSupplier supplier = fdSupplierMapper.selectFdSupplierById(row.getSupplierId());
+        if (supplier == null) {
+            return "SPD供应商ID「" + row.getSupplierId() + "」无法匹配到系统供应商";
+        }
+        if (row.getQty() == null || row.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+            return "数量必须大于0";
+        }
+        if (row.getUnitPrice() == null) {
+            return "单价不能为空";
+        }
+        if (row.getUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
+            return "单价不能为负数";
+        }
+        if (StringUtils.isEmpty(row.getBatchNumber())) {
+            return "批号不能为空";
+        }
+        if (StringUtils.isEmpty(row.getEndDateRaw())) {
+            return "有效期不能为空";
+        }
+        String endErr = InitialImportDateParser.validateOrError(row.getEndDateRaw(), "有效期");
+        if (endErr != null) {
+            return endErr;
+        }
+        if (StringUtils.isNotEmpty(row.getBeginDateRaw())) {
+            String beginErr = InitialImportDateParser.validateOrError(row.getBeginDateRaw(), "生产日期");
+            if (beginErr != null) {
+                return beginErr;
+            }
+            Date begin = WhStocktakingProfitImportUtil.parseBeginDate(row);
+            Date end = WhStocktakingProfitImportUtil.parseEndDate(row);
+            if (begin != null && end != null && end.before(begin)) {
+                return "有效期不能早于生产日期";
+            }
+        }
+        if (StringUtils.isNotEmpty(row.getHisId())) {
+            String hk = row.getHisId().trim();
+            if (hisIdSeen.contains(hk)) {
+                return "第三方系统库存明细id「" + hk + "」在导入文件中重复";
+            }
+            hisIdSeen.add(hk);
+        }
+        return null;
+    }
+
+    private static boolean isPositiveId(Long id) {
+        return id != null && id > 0L;
+    }
+
+    private void enrichWhProfitImportPreviewItem(Map<String, Object> item, WhStocktakingProfitImportRow row) {
+        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(String.valueOf(row.getWarehouseId()));
+        if (wh != null) {
+            item.put("warehouseName", wh.getName());
+            item.put("warehouseCode", wh.getCode());
+        }
+        FdMaterial material = fdMaterialMapper.selectFdMaterialById(row.getMaterialId());
+        if (material != null) {
+            item.put("materialCode", material.getCode());
+            item.put("materialName", material.getName());
+        }
+        FdSupplier supplier = fdSupplierMapper.selectFdSupplierById(row.getSupplierId());
+        if (supplier != null) {
+            item.put("supplierName", supplier.getName());
+        }
+    }
+
+    private StkIoStocktakingEntry buildWhProfitEntryFromImportRow(WhStocktakingProfitImportRow row, Long warehouseId) {
+        StkIoStocktakingEntry e = new StkIoStocktakingEntry();
+        e.setMaterialId(row.getMaterialId());
+        e.setSupplierId(row.getSupplierId());
+        e.setUnitPrice(row.getUnitPrice());
+        e.setPrice(row.getUnitPrice());
+        e.setQty(BigDecimal.ZERO);
+        e.setStockQty(row.getQty());
+        e.setBatchNumber(row.getBatchNumber());
+        e.setThirdPartyBatchNo(row.getThirdPartyBatchNo());
+        e.setHisId(StringUtils.trimToNull(row.getHisId()));
+        e.setBeginTime(WhStocktakingProfitImportUtil.parseBeginDate(row));
+        e.setEndTime(WhStocktakingProfitImportUtil.parseEndDate(row));
+        e.setReturnWarehouseId(warehouseId);
+        e.setCountedFlag(0);
+        e.setRemark("盘盈明细导入");
+        e.setDelFlag(0);
+        if (row.getUnitPrice() != null && row.getQty() != null) {
+            e.setAmt(row.getQty().multiply(row.getUnitPrice()));
+        }
+        fillProfitLossFlagWarehouse(e);
+        return e;
     }
 }

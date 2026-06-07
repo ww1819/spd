@@ -132,6 +132,9 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         if (deptSt && stocktaking.getAuditAdjustsInventory() != null && stocktaking.getAuditAdjustsInventory() == 1) {
             throw new ServiceException("该科室盘点单为「审核直接变更科室库存」，不可再生成科室盈亏单");
         }
+        if (!deptSt && stocktaking.getAuditAdjustsInventory() != null && stocktaking.getAuditAdjustsInventory() == 1) {
+            throw new ServiceException("该仓库盘点单为「审核直接变更仓库库存」，不可再生成盈亏单");
+        }
         Integer exist = stkIoProfitLossMapper.countByStocktakingId(stocktakingId);
         if (exist != null && exist > 0) {
             throw new ServiceException("该盘点单已生成盈亏单，不可重复生成");

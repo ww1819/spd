@@ -136,6 +136,12 @@ public class StkIoStocktakingEntry extends BaseEntity
     /** 租户ID */
     private String tenantId;
 
+    /** 第三方/HIS 系统库存明细 ID */
+    private String hisId;
+
+    /** 第三方系统批次号 */
+    private String thirdPartyBatchNo;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -344,6 +350,12 @@ public class StkIoStocktakingEntry extends BaseEntity
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
+    public String getHisId() { return hisId; }
+    public void setHisId(String hisId) { this.hisId = hisId; }
+
+    public String getThirdPartyBatchNo() { return thirdPartyBatchNo; }
+    public void setThirdPartyBatchNo(String thirdPartyBatchNo) { this.thirdPartyBatchNo = thirdPartyBatchNo; }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -376,6 +388,8 @@ public class StkIoStocktakingEntry extends BaseEntity
             .append("returnWarehouseId", getReturnWarehouseId())
             .append("countedFlag", getCountedFlag())
             .append("supplierId", getSupplierId())
+            .append("hisId", getHisId())
+            .append("thirdPartyBatchNo", getThirdPartyBatchNo())
             .toString();
     }
 }
