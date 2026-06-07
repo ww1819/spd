@@ -1,17 +1,17 @@
 package com.spd.foundation.support;
 
 import com.spd.common.utils.StringUtils;
+import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.system.service.ISysConfigService;
 import org.springframework.stereotype.Component;
 
 /**
- * scminterface 前置机基址（{@code spd.interface.ip/port}）。
+ * 枣强众阳 HIS 联调/同步/推送：scminterface 基址取自 {@code spd.internal.base_url}（参数设置「SPD内部接口基址」）。
  */
 @Component
 public class MsunHisInterfaceSupport
 {
-    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
-    private static final String DEFAULT_INTERFACE_PORT = "8088";
+    private static final String DEFAULT_BASE_URL = "http://127.0.0.1:8088";
 
     private final ISysConfigService sysConfigService;
 
@@ -22,17 +22,17 @@ public class MsunHisInterfaceSupport
 
     public String buildInterfaceBaseUrl()
     {
-        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
-        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
-        if (StringUtils.isEmpty(ip))
+        String baseUrl = StringUtils.trim(
+                sysConfigService.selectConfigByKey(HisBillingTenantConstants.CONFIG_SPD_INTERNAL_BASE_URL));
+        if (StringUtils.isEmpty(baseUrl))
         {
-            ip = DEFAULT_INTERFACE_IP;
+            return DEFAULT_BASE_URL;
         }
-        if (StringUtils.isEmpty(port))
+        if (baseUrl.endsWith("/"))
         {
-            port = DEFAULT_INTERFACE_PORT;
+            return baseUrl.substring(0, baseUrl.length() - 1);
         }
-        return "http://" + ip + ":" + port;
+        return baseUrl;
     }
 
     public String joinUrl(String path)

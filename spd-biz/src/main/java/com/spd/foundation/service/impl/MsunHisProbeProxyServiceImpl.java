@@ -239,7 +239,7 @@ public class MsunHisProbeProxyServiceImpl implements IMsunHisProbeProxyService
     {
         if (StringUtils.isEmpty(raw))
         {
-            return AjaxResult.error("前置机无响应，请检查 spd.interface.ip/port 及 scminterface 服务");
+            return AjaxResult.error("前置机无响应，请检查 spd.internal.base_url 及 scminterface 服务");
         }
         JSONObject json = JSON.parseObject(raw);
         Integer code = json.getInteger("code");

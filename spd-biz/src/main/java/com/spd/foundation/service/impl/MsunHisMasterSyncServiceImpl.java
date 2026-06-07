@@ -65,7 +65,7 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
             String body = HttpUtils.sendPost(url, "{}");
             if (StringUtils.isEmpty(body))
             {
-                return AjaxResult.error("前置机无响应，请检查 spd.interface.ip/port 及 scminterface 服务");
+                return AjaxResult.error("前置机无响应，请检查 spd.internal.base_url 及 scminterface 服务");
             }
             JSONObject json = JSON.parseObject(body);
             Integer code = json.getInteger("code");

@@ -9,9 +9,9 @@ import com.spd.common.utils.http.HttpUtils;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.foundation.service.IMsunHisBillPushService;
+import com.spd.foundation.support.MsunHisInterfaceSupport;
 import com.spd.foundation.support.MsunHisTenantRegistry;
 import com.spd.foundation.support.MsunHisTenantSupport;
-import com.spd.system.service.ISysConfigService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.mapper.StkIoBillMapper;
@@ -31,19 +31,16 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
 {
     private static final Logger log = LoggerFactory.getLogger(MsunHisBillPushServiceImpl.class);
 
-    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
-    private static final String DEFAULT_INTERFACE_PORT = "8088";
-
-    private final ISysConfigService sysConfigService;
+    private final MsunHisInterfaceSupport interfaceSupport;
     private final StkIoBillMapper stkIoBillMapper;
     private final StkDepInventoryMapper stkDepInventoryMapper;
 
     public MsunHisBillPushServiceImpl(
-            ISysConfigService sysConfigService,
+            MsunHisInterfaceSupport interfaceSupport,
             StkIoBillMapper stkIoBillMapper,
             StkDepInventoryMapper stkDepInventoryMapper)
     {
-        this.sysConfigService = sysConfigService;
+        this.interfaceSupport = interfaceSupport;
         this.stkIoBillMapper = stkIoBillMapper;
         this.stkDepInventoryMapper = stkDepInventoryMapper;
     }
@@ -154,7 +151,7 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
         StkIoBill bill = requireAuditedBill(billId, expectedBillType);
         String tenantId = resolveTenantId(bill);
         assertMsunIntegratedTenant(tenantId);
-        String url = MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+        String url = MsunHisTenantSupport.joinUrl(interfaceSupport.buildInterfaceBaseUrl(),
                 MsunHisTenantSupport.spdHospitalApiPrefix(tenantId) + "/bill-push/push/" + billId);
         try
         {
@@ -275,18 +272,4 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
                 : MsunHisTenantRegistry.ZAOQIANG_TCM.getHospitalKey();
     }
 
-    private String buildInterfaceBaseUrl()
-    {
-        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
-        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
-        if (StringUtils.isEmpty(ip))
-        {
-            ip = DEFAULT_INTERFACE_IP;
-        }
-        if (StringUtils.isEmpty(port))
-        {
-            port = DEFAULT_INTERFACE_PORT;
-        }
-        return "http://" + ip + ":" + port;
-    }
 }
