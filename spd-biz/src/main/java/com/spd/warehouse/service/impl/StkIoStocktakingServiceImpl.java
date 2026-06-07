@@ -1638,9 +1638,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (StringUtils.isEmpty(row.getBatchNumber())) {
             return "批号不能为空";
         }
-        if (StringUtils.isEmpty(row.getEndDateRaw())) {
-            return "有效期不能为空";
-        }
         String endErr = InitialImportDateParser.validateOrError(row.getEndDateRaw(), "有效期");
         if (endErr != null) {
             return endErr;
