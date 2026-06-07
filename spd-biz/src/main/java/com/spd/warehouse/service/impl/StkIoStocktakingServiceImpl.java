@@ -284,7 +284,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
         if (bill.getStockStatus() != null && bill.getStockStatus() == 2)
         {
-            throw new ServiceException("已审核的盘点单不可修改。");
+            throw new ServiceException("已审核的盘点单不可删除或变更明细。");
         }
         if (bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING)
         {
@@ -390,6 +390,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             StkIoStocktaking existing = stkIoStocktakingMapper.selectStkIoStocktakingById(id);
             if (existing != null) {
                 SecurityUtils.ensureTenantAccess(existing.getTenantId());
+                ensureWhStocktakingEditable(existing);
             }
         }
         String deleteBy = SecurityUtils.getUserIdStr();
@@ -410,6 +411,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         StkIoStocktaking existing = stkIoStocktakingMapper.selectStkIoStocktakingById(id);
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            ensureWhStocktakingEditable(existing);
         }
         String deleteBy = SecurityUtils.getUserIdStr();
         stkIoStocktakingMapper.deleteStkIoStocktakingEntryByParenId(id, deleteBy);
@@ -834,6 +836,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             throw new ServiceException("未找到盘点明细。");
         }
         lockAndAssertWhStocktakingVersion(parenId, dto.getExpectedUpdateTime());
+        StkIoStocktaking countedBill = stkIoStocktakingMapper.selectStkIoStocktakingById(parenId);
+        ensureWhStocktakingEditable(countedBill);
 
         BigDecimal stockQtyToPersist = dto.getStockQty();
         BigDecimal amt = null;
@@ -843,9 +847,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         BigDecimal profitAmount = null;
         if (stockQtyToPersist != null)
         {
-            StkIoStocktaking bill = stkIoStocktakingMapper.selectStkIoStocktakingById(parenId);
-            if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING
-                || (bill.getStockStatus() != null && bill.getStockStatus() == 2))
+            StkIoStocktaking bill = countedBill;
+            if (bill == null || bill.getStockType() == null || bill.getStockType() != STOCK_TYPE_WH_STOCKTAKING)
             {
                 throw new ServiceException("未找到可更新的明细（可能已审核或不属于仓库盘点）。");
             }
