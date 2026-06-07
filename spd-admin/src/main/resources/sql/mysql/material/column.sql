@@ -2864,6 +2864,21 @@ EXECUTE stmt_idx;
 /
 DEALLOCATE PREPARE stmt_idx;
 /
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'sys_user' AND index_name = 'uk_sys_user_customer_his'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE sys_user ADD UNIQUE KEY uk_sys_user_customer_his (customer_id, his_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
 
 -- ========== 众阳 HIS 单据推送（枣强 zaoqiang-tcm-001，评估文档 §6）==========
 CALL add_table_column('fd_warehouse', 'his_id', 'varchar(100)', 'his系统仓库ID，或其他第三方系统仓库ID（众阳对接填 storageDeptId）', NULL);
