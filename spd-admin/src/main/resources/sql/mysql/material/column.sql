@@ -2880,6 +2880,38 @@ EXECUTE stmt_idx;
 DEALLOCATE PREPARE stmt_idx;
 /
 
+-- 供应商/厂家：租户+HIS 唯一（存量库补建；执行前请先跑 cleanup_duplicate_fd_supplier_factory.sql 去重）
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_supplier' AND index_name = 'uk_fd_supplier_tenant_his'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE fd_supplier ADD UNIQUE KEY uk_fd_supplier_tenant_his (tenant_id, his_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_factory' AND index_name = 'uk_fd_factory_tenant_his'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'ALTER TABLE fd_factory ADD UNIQUE KEY uk_fd_factory_tenant_his (tenant_id, his_id)',
+  'SELECT 1');
+/
+PREPARE stmt_idx FROM @sql_idx;
+/
+EXECUTE stmt_idx;
+/
+DEALLOCATE PREPARE stmt_idx;
+/
+
 -- ========== 众阳 HIS 单据推送（枣强 zaoqiang-tcm-001，评估文档 §6）==========
 CALL add_table_column('fd_warehouse', 'his_id', 'varchar(100)', 'his系统仓库ID，或其他第三方系统仓库ID（众阳对接填 storageDeptId）', NULL);
 /
