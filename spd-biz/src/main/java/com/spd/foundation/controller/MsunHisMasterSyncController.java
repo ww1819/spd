@@ -3,8 +3,10 @@ package com.spd.foundation.controller;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.foundation.service.IMsunHisMasterSyncService;
+import java.util.Map;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,8 +28,10 @@ public class MsunHisMasterSyncController extends BaseController
      * syncType: depts | identities | suppliers | producers | categories | materials
      */
     @PostMapping("/sync/{syncType}")
-    public AjaxResult sync(@PathVariable String syncType)
+    public AjaxResult sync(
+            @PathVariable String syncType,
+            @RequestBody(required = false) Map<String, Object> probeParams)
     {
-        return msunHisMasterSyncService.sync(syncType);
+        return msunHisMasterSyncService.sync(syncType, probeParams);
     }
 }

@@ -9,8 +9,8 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.http.HttpUtils;
 import com.spd.foundation.service.IMsunHisBillPushService;
+import com.spd.foundation.support.MsunHisInterfaceSupport;
 import com.spd.foundation.support.MsunHisTenantSupport;
-import com.spd.system.service.ISysConfigService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,18 +23,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/foundation/msunHis/mirror")
 public class MsunHisMirrorProxyController extends BaseController
 {
-    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
-    private static final String DEFAULT_INTERFACE_PORT = "8088";
-
     private final IMsunHisBillPushService msunHisBillPushService;
-    private final ISysConfigService sysConfigService;
+    private final MsunHisInterfaceSupport interfaceSupport;
 
     public MsunHisMirrorProxyController(
             IMsunHisBillPushService msunHisBillPushService,
-            ISysConfigService sysConfigService)
+            MsunHisInterfaceSupport interfaceSupport)
     {
         this.msunHisBillPushService = msunHisBillPushService;
-        this.sysConfigService = sysConfigService;
+        this.interfaceSupport = interfaceSupport;
     }
 
     @GetMapping("/bill-his")
@@ -44,8 +41,8 @@ public class MsunHisMirrorProxyController extends BaseController
     {
         String tenantId = SecurityUtils.getCustomerId();
         msunHisBillPushService.assertMsunIntegratedTenant(tenantId);
-        StringBuilder url = new StringBuilder(MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
-            MsunHisTenantSupport.vendorHospitalApiPrefix(tenantId) + "/mirror/bill-his?billId="))
+        StringBuilder url = new StringBuilder(interfaceSupport.joinUrl(
+            MsunHisTenantSupport.spdMirrorApiPrefix(tenantId) + "/bill-his?billId="))
             .append(billId);
         appendParam(url, "billType", billType);
         try
@@ -75,8 +72,8 @@ public class MsunHisMirrorProxyController extends BaseController
     {
         String tenantId = SecurityUtils.getCustomerId();
         msunHisBillPushService.assertMsunIntegratedTenant(tenantId);
-        StringBuilder url = new StringBuilder(MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
-            MsunHisTenantSupport.vendorHospitalApiPrefix(tenantId) + "/mirror/entry-his?"));
+        StringBuilder url = new StringBuilder(interfaceSupport.joinUrl(
+            MsunHisTenantSupport.spdMirrorApiPrefix(tenantId) + "/entry-his?"));
         appendParam(url, "pharmacyStockId", pharmacyStockId);
         appendParam(url, "deptId", deptId);
         appendParam(url, "drugId", drugId);
@@ -97,21 +94,6 @@ public class MsunHisMirrorProxyController extends BaseController
         {
             throw new ServiceException("HIS镜像查询失败: " + ex.getMessage());
         }
-    }
-
-    private String buildInterfaceBaseUrl()
-    {
-        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
-        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
-        if (StringUtils.isEmpty(ip))
-        {
-            ip = DEFAULT_INTERFACE_IP;
-        }
-        if (StringUtils.isEmpty(port))
-        {
-            port = DEFAULT_INTERFACE_PORT;
-        }
-        return "http://" + ip + ":" + port;
     }
 
     private static void appendParam(StringBuilder url, String name, String value)

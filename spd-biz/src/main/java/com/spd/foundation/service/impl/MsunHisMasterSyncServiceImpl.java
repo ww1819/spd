@@ -7,8 +7,11 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.http.HttpUtils;
 import com.spd.foundation.service.IMsunHisMasterSyncService;
+import com.spd.foundation.service.IMsunHisProbeProxyService;
+import com.spd.foundation.support.MsunHisInterfaceSupport;
+import com.spd.foundation.support.MsunHisProbeApiRegistry;
 import com.spd.foundation.support.MsunHisTenantSupport;
-import com.spd.system.service.ISysConfigService;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,18 +24,19 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
 {
     private static final Logger log = LoggerFactory.getLogger(MsunHisMasterSyncServiceImpl.class);
 
-    private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
-    private static final String DEFAULT_INTERFACE_PORT = "8088";
+    private final MsunHisInterfaceSupport interfaceSupport;
+    private final IMsunHisProbeProxyService probeProxyService;
 
-    private final ISysConfigService sysConfigService;
-
-    public MsunHisMasterSyncServiceImpl(ISysConfigService sysConfigService)
+    public MsunHisMasterSyncServiceImpl(
+            MsunHisInterfaceSupport interfaceSupport,
+            IMsunHisProbeProxyService probeProxyService)
     {
-        this.sysConfigService = sysConfigService;
+        this.interfaceSupport = interfaceSupport;
+        this.probeProxyService = probeProxyService;
     }
 
     @Override
-    public AjaxResult sync(String syncType)
+    public AjaxResult sync(String syncType, Map<String, Object> probeParams)
     {
         String tenantId = SecurityUtils.resolveEffectiveTenantId(null);
         MsunHisTenantSupport.assertIntegrated(tenantId);
@@ -41,7 +45,19 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
         {
             return AjaxResult.error("同步类型不能为空");
         }
-        String url = MsunHisTenantSupport.joinUrl(buildInterfaceBaseUrl(),
+        if (probeParams != null && !probeParams.isEmpty())
+        {
+            String probeKey = MsunHisProbeApiRegistry.probeKeyForSyncType(type);
+            if (StringUtils.isNotEmpty(probeKey))
+            {
+                AjaxResult probeResult = probeProxyService.invoke(probeKey, probeParams);
+                if (!probeResult.isSuccess())
+                {
+                    return probeResult;
+                }
+            }
+        }
+        String url = interfaceSupport.joinUrl(
             MsunHisTenantSupport.spdHospitalApiPrefix(tenantId) + "/sync/" + type);
         try
         {
@@ -67,18 +83,4 @@ public class MsunHisMasterSyncServiceImpl implements IMsunHisMasterSyncService
         }
     }
 
-    private String buildInterfaceBaseUrl()
-    {
-        String ip = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.ip"));
-        String port = StringUtils.trim(sysConfigService.selectConfigByKey("spd.interface.port"));
-        if (StringUtils.isEmpty(ip))
-        {
-            ip = DEFAULT_INTERFACE_IP;
-        }
-        if (StringUtils.isEmpty(port))
-        {
-            port = DEFAULT_INTERFACE_PORT;
-        }
-        return "http://" + ip + ":" + port;
-    }
 }

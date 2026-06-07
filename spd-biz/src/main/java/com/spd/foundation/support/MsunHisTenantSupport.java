@@ -49,10 +49,28 @@ public final class MsunHisTenantSupport
         return "/api/vendor/" + VENDOR_CODE + "/hospitals/" + requireHospitalKey(tenantId);
     }
 
-    /** {@code /api/vendor/msun/hospitals/{hospitalKey}/spd/query}（2.5.102/82/43 等探针查询） */
+    /** {@code /api/vendor/msun/hospitals/{hospitalKey}/spd/query}（联调页 JWT，SPD 勿直连） */
     public static String spdQueryApiPrefix(String tenantId)
     {
         return vendorHospitalApiPrefix(tenantId) + "/spd/query";
+    }
+
+    /** {@code /api/spd/msun/hospitals/{hospitalKey}/probe} */
+    public static String spdProbeApiPrefix(String tenantId)
+    {
+        return spdHospitalApiPrefix(tenantId) + "/probe";
+    }
+
+    /** {@code /api/spd/msun/hospitals/{hospitalKey}/query} */
+    public static String spdQueryOnSpdApiPrefix(String tenantId)
+    {
+        return spdHospitalApiPrefix(tenantId) + "/query";
+    }
+
+    /** {@code /api/spd/msun/hospitals/{hospitalKey}/mirror} */
+    public static String spdMirrorApiPrefix(String tenantId)
+    {
+        return spdHospitalApiPrefix(tenantId) + "/mirror";
     }
 
     public static String joinUrl(String baseUrl, String path)
