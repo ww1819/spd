@@ -264,4 +264,12 @@ public interface ISysUserService
      * 仅更新用户仓库权限
      */
     void updateUserWarehousesOnly(Long userId, Long[] warehouseIds);
+
+    /**
+     * 机构管理员批量修改本租户用户密码（排除平台 admin 与机构 super 账号）
+     *
+     * @param password 新密码明文
+     * @return 成功更新用户数
+     */
+    int batchResetTenantPassword(String password);
 }

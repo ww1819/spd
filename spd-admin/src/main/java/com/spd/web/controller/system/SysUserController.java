@@ -36,6 +36,7 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.system.domain.SysPost;
+import com.spd.system.dto.BatchPasswordRequest;
 import com.spd.system.dto.BatchWorkgroupRequest;
 import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.web.dto.UserDeptGrantBody;
@@ -141,6 +142,31 @@ public class SysUserController extends BaseController
         startPage();
         List<SysUser> list = userService.selectUserList(user);
         return getDataTable(list);
+    }
+
+    /**
+     * 机构管理员批量修改本租户用户密码（排除 admin 与 super 账号）
+     */
+    @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+    @PostMapping("/batchResetPwd")
+    public AjaxResult batchResetPwd(@RequestBody BatchPasswordRequest body)
+    {
+        if (body == null || StringUtils.isEmpty(StringUtils.trimToEmpty(body.getPassword())))
+        {
+            return error("新密码不能为空");
+        }
+        Long currentUserId = SecurityUtils.getUserId();
+        String customerId = StringUtils.trimToEmpty(SecurityUtils.resolveEffectiveTenantId(null));
+        if (StringUtils.isEmpty(customerId))
+        {
+            return error("仅租户用户可执行批量修改密码");
+        }
+        if (!tenantScopeService.isTenantSuper(currentUserId, customerId))
+        {
+            return error("仅机构管理员可执行批量修改密码");
+        }
+        int n = userService.batchResetTenantPassword(body.getPassword());
+        return success("已批量修改密码，共 " + n + " 人");
     }
 
     /**

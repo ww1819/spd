@@ -1191,4 +1191,62 @@ public class SysUserServiceImpl implements ISysUserService
             throw new ServiceException("该用户已发生业务数据（申领、申购、出入库/盘点、批量消耗等），不允许删除");
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchResetTenantPassword(String password)
+    {
+        Long currentUserId = SecurityUtils.getUserId();
+        String customerId = StringUtils.trimToEmpty(SecurityUtils.resolveEffectiveTenantId(null));
+        if (StringUtils.isEmpty(customerId))
+        {
+            throw new ServiceException("仅租户用户可执行批量修改密码");
+        }
+        if (!tenantScopeService.isTenantSuper(currentUserId, customerId))
+        {
+            throw new ServiceException("仅机构管理员可执行批量修改密码");
+        }
+        String pwd = StringUtils.trimToEmpty(password);
+        if (StringUtils.isEmpty(pwd) || pwd.length() < 5 || pwd.length() > 20)
+        {
+            throw new ServiceException("密码长度必须介于 5 和 20 之间");
+        }
+        SysUser query = new SysUser();
+        query.setCustomerId(customerId);
+        List<SysUser> users = userMapper.selectUserList(query);
+        if (users == null || users.isEmpty())
+        {
+            return 0;
+        }
+        String encrypted = SecurityUtils.encryptPassword(pwd);
+        String updateBy = SecurityUtils.getUserIdStr();
+        int count = 0;
+        for (SysUser u : users)
+        {
+            if (u == null || u.getUserId() == null || isBatchPasswordProtectedUser(u, customerId))
+            {
+                continue;
+            }
+            SysUser update = new SysUser();
+            update.setUserId(u.getUserId());
+            update.setPassword(encrypted);
+            update.setUpdateBy(updateBy);
+            count += userMapper.updateUser(update);
+        }
+        return count;
+    }
+
+    /** 批量改密时跳过平台 admin 与机构 super 账号 */
+    private boolean isBatchPasswordProtectedUser(SysUser user, String customerId)
+    {
+        if (SysUser.isAdmin(user.getUserId()))
+        {
+            return true;
+        }
+        if ("admin".equalsIgnoreCase(StringUtils.trimToEmpty(user.getUserName())))
+        {
+            return true;
+        }
+        return tenantScopeService.isTenantSuper(user.getUserId(), customerId);
+    }
 }

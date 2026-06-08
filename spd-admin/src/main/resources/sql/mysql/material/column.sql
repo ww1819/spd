@@ -2886,7 +2886,7 @@ EXECUTE stmt_idx;
 DEALLOCATE PREPARE stmt_idx;
 /
 
--- 供应商/厂家：租户+HIS 唯一（存量库补建；执行前请先跑 cleanup_duplicate_fd_supplier_factory.sql 去重）
+-- 供应商/厂家：租户+HIS 唯一（存量库补建；去重见 cleanup_duplicate_fd_supplier_factory.sql，启动时于 column.sql 前自动执行）
 SET @idx_exists := (
   SELECT COUNT(*) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'fd_supplier' AND index_name = 'uk_fd_supplier_tenant_his'

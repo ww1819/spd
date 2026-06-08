@@ -35,7 +35,17 @@ public class SqlInitRunner implements ApplicationRunner
 {
     private static final Logger log = LoggerFactory.getLogger(SqlInitRunner.class);
 
-    private static final String[] SCRIPT_ORDER = { "table.sql", "column.sql", "view.sql", "trigger.sql", "procedure.sql", "function.sql", "menu.sql", "data_integrity.sql" };
+    private static final String[] SCRIPT_ORDER = {
+        "table.sql",
+        "cleanup_duplicate_fd_supplier_factory.sql",
+        "column.sql",
+        "view.sql",
+        "trigger.sql",
+        "procedure.sql",
+        "function.sql",
+        "menu.sql",
+        "data_integrity.sql"
+    };
 
     private final DataSource masterDataSource;
     private final ResourceLoader resourceLoader;

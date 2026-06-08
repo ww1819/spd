@@ -30,6 +30,7 @@ import com.spd.system.service.ISbMenuService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysPostService;
+import com.spd.system.service.ITenantScopeService;
 
 /**
  * 登录验证
@@ -68,6 +69,9 @@ public class SysLoginController
 
     @Autowired
     private ISysPostService postService;
+
+    @Autowired
+    private ITenantScopeService tenantScopeService;
 
     /**
      * 登录方法
@@ -150,6 +154,7 @@ public class SysLoginController
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
         putTenantIfPresent(ajax, user.getCustomerId());
+        putTenantSuperFlag(ajax, user);
         return ajax;
     }
 
@@ -198,7 +203,21 @@ public class SysLoginController
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
         putTenantIfPresent(ajax, user.getCustomerId());
+        putTenantSuperFlag(ajax, user);
         return ajax;
+    }
+
+    /** 是否机构管理员（super 账号），供前端控制仅 super 可见的功能 */
+    private void putTenantSuperFlag(AjaxResult ajax, SysUser user)
+    {
+        if (user == null || user.getUserId() == null)
+        {
+            ajax.put("tenantSuper", false);
+            return;
+        }
+        String customerId = StringUtils.trimToEmpty(SecurityUtils.resolveEffectiveTenantId(user.getCustomerId()));
+        ajax.put("tenantSuper", StringUtils.isNotEmpty(customerId)
+            && tenantScopeService.isTenantSuper(user.getUserId(), customerId));
     }
 
     /**
