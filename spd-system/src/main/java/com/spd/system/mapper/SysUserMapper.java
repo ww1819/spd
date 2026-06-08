@@ -22,6 +22,11 @@ public interface SysUserMapper
     public List<SysUser> selectUserList(SysUser sysUser);
 
     /**
+     * 按列表查询条件返回用户 ID（与 selectUserList 过滤一致，不分页）
+     */
+    List<Long> selectUserIdList(SysUser sysUser);
+
+    /**
      * 科室申领操作人下拉（见 ISysUserService#selectUsersForDeptApplyOperator）
      */
     List<SysUser> selectUsersForDeptApplyOperator(

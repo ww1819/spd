@@ -177,11 +177,11 @@ public class SysUserController extends BaseController
     @PostMapping("/batchWorkgroup")
     public AjaxResult batchWorkgroup(@RequestBody BatchWorkgroupRequest body)
     {
-        if (body == null || body.getUserIds() == null || body.getPostId() == null)
+        if (body == null || body.getPostId() == null)
         {
-            return error("用户与工作组不能为空");
+            return error("工作组不能为空");
         }
-        int n = userService.batchSetUserWorkgroup(body.getUserIds(), body.getPostId());
+        int n = userService.batchSetUserWorkgroup(body);
         return success("已批量设置工作组，共 " + n + " 人");
     }
 

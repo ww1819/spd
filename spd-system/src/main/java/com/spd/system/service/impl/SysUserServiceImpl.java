@@ -28,6 +28,8 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
+import com.spd.common.utils.spring.SpringUtils;
+import com.spd.system.dto.BatchWorkgroupRequest;
 import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
@@ -1096,16 +1098,70 @@ public class SysUserServiceImpl implements ISysUserService
         }
     }
 
+    @Override
+    @DataScope(deptAlias = "d", userAlias = "u")
+    public List<Long> selectUserIdList(SysUser user)
+    {
+        String tid = SecurityUtils.resolveEffectiveTenantId(null);
+        if (StringUtils.isNotEmpty(tid))
+        {
+            if (user == null)
+            {
+                user = new SysUser();
+            }
+            user.setCustomerId(tid);
+        }
+        List<Long> ids = userMapper.selectUserIdList(user);
+        return ids != null ? ids : new ArrayList<>();
+    }
+
     /**
      * 批量设置耗材工作组（sys_user_post）：先删后插，每人仅保留所选 postId
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchSetUserWorkgroup(List<Long> userIds, Long postId)
+    public int batchSetUserWorkgroup(BatchWorkgroupRequest request)
     {
+        if (request == null)
+        {
+            throw new ServiceException("请求参数不能为空");
+        }
+        List<Long> userIds = resolveBatchWorkgroupUserIds(request);
+        return doBatchSetUserWorkgroup(userIds, request.getPostId());
+    }
+
+    private List<Long> resolveBatchWorkgroupUserIds(BatchWorkgroupRequest request)
+    {
+        if (Boolean.TRUE.equals(request.getUpdateAll()))
+        {
+            SysUser query = request.getQueryCriteria();
+            if (query == null)
+            {
+                throw new ServiceException("查询条件不能为空");
+            }
+            return SpringUtils.getBean(ISysUserService.class).selectUserIdList(query);
+        }
+        List<Long> userIds = request.getUserIds();
         if (userIds == null || userIds.isEmpty())
         {
             throw new ServiceException("请至少选择一名用户");
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Long id : userIds)
+        {
+            if (id != null)
+            {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private int doBatchSetUserWorkgroup(List<Long> userIds, Long postId)
+    {
+        if (userIds == null || userIds.isEmpty())
+        {
+            throw new ServiceException("当前没有可设置的用户");
         }
         if (postId == null)
         {
