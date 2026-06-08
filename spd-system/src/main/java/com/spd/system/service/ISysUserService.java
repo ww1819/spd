@@ -19,6 +19,11 @@ public interface ISysUserService
     public List<SysUser> selectUserList(SysUser user);
 
     /**
+     * 按列表查询条件返回用户 ID（与 selectUserList 过滤一致，不分页）
+     */
+    List<Long> selectUserIdList(SysUser user);
+
+    /**
      * 科室申领操作人候选：未选申请科室时为「无 sys_user_department 关联 ∪ 当前用户科室权限内科室人员」；选定申请科室后仅该科室下人员。
      *
      * @param applyDepartmentId 申请科室 fd_department.id，可为空
@@ -248,7 +253,7 @@ public interface ISysUserService
      * @param postId  岗位/工作组 ID
      * @return 成功写入关联条数
      */
-    int batchSetUserWorkgroup(List<Long> userIds, Long postId);
+    int batchSetUserWorkgroup(com.spd.system.dto.BatchWorkgroupRequest request);
 
     /**
      * 仅更新用户菜单权限（不修改 sys_user 主表及密码）
