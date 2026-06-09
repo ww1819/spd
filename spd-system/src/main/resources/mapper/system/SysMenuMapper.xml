@@ -177,6 +177,14 @@
 		<include refid="selectMenuVo"/>
 		where menu_id = #{menuId}
 	</select>
+
+	<select id="selectMenuByIds" resultMap="SysMenuResult">
+		<include refid="selectMenuVo"/>
+		where menu_id in
+		<foreach collection="menuIds" item="id" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
 	
 	<select id="hasChildByMenuId" resultType="Integer">
 	    select count(1) from sys_menu where parent_id = #{menuId}  

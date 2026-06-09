@@ -104,6 +104,11 @@ public interface SysMenuMapper
     public SysMenu selectMenuById(Long menuId);
 
     /**
+     * 按菜单 ID 批量查询（授权树补祖先等场景，避免逐条 selectMenuById）
+     */
+    List<SysMenu> selectMenuByIds(@Param("menuIds") List<Long> menuIds);
+
+    /**
      * 是否存在菜单子节点
      *
      * @param menuId 菜单ID

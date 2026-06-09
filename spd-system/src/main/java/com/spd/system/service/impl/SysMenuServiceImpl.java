@@ -3,6 +3,7 @@ package com.spd.system.service.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -605,20 +606,71 @@ public class SysMenuServiceImpl implements ISysMenuService
         {
             return new ArrayList<>(menuIds);
         }
+        Set<Long> customerGranted = new HashSet<>(hcCustomerMenuMapper.selectMenuIdsByTenantId(tenantId));
+        if (customerGranted.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        Map<Long, SysMenu> menuMap = loadActiveMenuMap();
         List<Long> out = new ArrayList<>();
         for (Long id : menuIds)
         {
-            if (id != null && id > 0 && isMenuUnderCustomerHcScope(tenantId, id))
+            if (id == null || id <= 0)
             {
-                SysMenu menu = menuMapper.selectMenuById(id);
-                if (menu != null && "1".equals(StringUtils.trimToEmpty(menu.getIsPlatform())))
-                {
-                    continue;
-                }
-                out.add(id);
+                continue;
             }
+            if (!isMenuIdUnderCustomerGrantedScope(id, customerGranted, menuMap))
+            {
+                continue;
+            }
+            SysMenu menu = menuMap.get(id);
+            if (menu != null && "1".equals(StringUtils.trimToEmpty(menu.getIsPlatform())))
+            {
+                continue;
+            }
+            out.add(id);
         }
         return out;
+    }
+
+    /** 一次加载启用菜单的 id/parent/is_platform，供授权过滤在内存中走祖先链 */
+    private Map<Long, SysMenu> loadActiveMenuMap()
+    {
+        SysMenu query = new SysMenu();
+        query.setStatus("0");
+        List<SysMenu> list = menuMapper.selectMenuList(query);
+        Map<Long, SysMenu> map = new HashMap<>();
+        if (list != null)
+        {
+            for (SysMenu m : list)
+            {
+                if (m != null && m.getMenuId() != null)
+                {
+                    map.put(m.getMenuId(), m);
+                }
+            }
+        }
+        return map;
+    }
+
+    private boolean isMenuIdUnderCustomerGrantedScope(Long menuId, Set<Long> customerGranted, Map<Long, SysMenu> menuMap)
+    {
+        Long cur = menuId;
+        int guard = 0;
+        while (cur != null && cur > 0 && guard++ < 200)
+        {
+            if (customerGranted.contains(cur))
+            {
+                return true;
+            }
+            SysMenu m = menuMap.get(cur);
+            if (m == null || m.getParentId() == null)
+            {
+                break;
+            }
+            cur = m.getParentId();
+        }
+        return false;
     }
 
     /**
@@ -683,6 +735,7 @@ public class SysMenuServiceImpl implements ISysMenuService
         {
             return new ArrayList<>();
         }
+        Map<Long, SysMenu> menuMap = loadActiveMenuMap();
         Set<Long> have = new LinkedHashSet<>();
         for (Long id : menuIds)
         {
@@ -697,7 +750,7 @@ public class SysMenuServiceImpl implements ISysMenuService
                 {
                     break;
                 }
-                SysMenu m = menuMapper.selectMenuById(cur);
+                SysMenu m = menuMap.get(cur);
                 if (m == null)
                 {
                     break;
@@ -707,7 +760,7 @@ public class SysMenuServiceImpl implements ISysMenuService
                 {
                     break;
                 }
-                SysMenu parent = menuMapper.selectMenuById(pid);
+                SysMenu parent = menuMap.get(pid);
                 // 目录(M)被误标 is_platform=1 时仍须纳入祖先链，否则租户 sys_user_menu 无父级 ID，getRouters 无法组树
                 if (parent != null && "1".equals(String.valueOf(parent.getIsPlatform()).trim())
                         && !UserConstants.TYPE_DIR.equals(parent.getMenuType()))
@@ -822,32 +875,38 @@ public class SysMenuServiceImpl implements ISysMenuService
                 byId.put(m.getMenuId(), m);
             }
         }
-        Set<Long> pending = new HashSet<>(byId.keySet());
-        while (!pending.isEmpty())
+        while (true)
         {
-            java.util.Iterator<Long> it = pending.iterator();
-            Long mid = it.next();
-            it.remove();
-            SysMenu cur = byId.get(mid);
-            if (cur == null)
+            Set<Long> missingPids = new HashSet<>();
+            for (SysMenu m : byId.values())
             {
-                continue;
+                if (m == null)
+                {
+                    continue;
+                }
+                Long pid = m.getParentId();
+                if (pid != null && pid > 0 && !byId.containsKey(pid))
+                {
+                    missingPids.add(pid);
+                }
             }
-            Long pid = cur.getParentId();
-            if (pid == null || pid <= 0)
+            if (missingPids.isEmpty())
             {
-                continue;
+                break;
             }
-            if (byId.containsKey(pid))
+            List<SysMenu> parents = menuMapper.selectMenuByIds(new ArrayList<>(missingPids));
+            if (parents == null || parents.isEmpty())
             {
-                continue;
+                break;
             }
-            SysMenu parent = menuMapper.selectMenuById(pid);
-            // 不向上挂平台管理目录，避免在租户授权树中露出平台节点
-            if (parent != null && (parent.getIsPlatform() == null || !"1".equals(String.valueOf(parent.getIsPlatform()).trim())))
+            for (SysMenu parent : parents)
             {
-                byId.put(pid, parent);
-                pending.add(pid);
+                // 不向上挂平台管理目录，避免在租户授权树中露出平台节点
+                if (parent != null && parent.getMenuId() != null
+                        && (parent.getIsPlatform() == null || !"1".equals(String.valueOf(parent.getIsPlatform()).trim())))
+                {
+                    byId.put(parent.getMenuId(), parent);
+                }
             }
         }
         List<SysMenu> merged = new ArrayList<>(byId.values());
