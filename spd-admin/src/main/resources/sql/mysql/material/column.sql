@@ -2761,6 +2761,8 @@ CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 
 /
 CALL add_table_column('his_patient_charge_mirror_unified', 'patient_sex', 'varchar(16)', '患者性别', NULL);
 /
+CALL add_table_column('his_patient_charge_mirror_unified', 'patient_name_referred', 'varchar(128)', '患者姓名拼音简码(首字母)', NULL);
+/
 
 -- ========== 采购链路：高低值标志（1高值 2低值） ==========
 CALL add_table_column('dep_purchase_apply', 'is_gz', 'char(1)', '高低值标志（1高值 2低值）', NULL);

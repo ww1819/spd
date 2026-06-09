@@ -59,7 +59,12 @@
     <sql id="unifiedListWhere">
         where m.tenant_id = #{tenantId}
         <if test="visitKind != null and visitKind != ''"> and m.visit_kind = #{visitKind}</if>
-        <if test="patientName != null and patientName != ''"> and m.patient_name like concat('%', #{patientName}, '%')</if>
+        <if test="patientName != null and patientName != ''">
+            and (
+                m.patient_name like concat('%', #{patientName}, '%')
+                or ifnull(m.patient_name_referred, '') like concat('%', #{patientName}, '%')
+            )
+        </if>
         <if test='"INPATIENT".equals(visitKind) and inpatientNo != null'>
             and m.inpatient_no like concat('%', #{inpatientNo}, '%')
         </if>
@@ -69,7 +74,24 @@
         <if test="(visitKind == null or visitKind == '') and visitNo != null and visitNo != ''">
             and (m.inpatient_no like concat('%', #{visitNo}, '%') or m.outpatient_no like concat('%', #{visitNo}, '%'))
         </if>
-        <if test="chargeItemId != null and chargeItemId != ''"> and m.charge_item_id = #{chargeItemId}</if>
+        <if test="chargeItemId != null and chargeItemId != ''">
+            and (
+                m.charge_item_id like concat('%', #{chargeItemId}, '%')
+                or m.item_name like concat('%', #{chargeItemId}, '%')
+                or exists (
+                    select 1 from his_charge_item_mirror cim_kw
+                    where cim_kw.tenant_id = m.tenant_id
+                      and trim(cim_kw.charge_item_id) = trim(m.charge_item_id)
+                      and (cim_kw.deleted_flag is null or cim_kw.deleted_flag != 1)
+                      and (
+                          cim_kw.charge_item_id like concat('%', #{chargeItemId}, '%')
+                          or ifnull(cim_kw.item_code, '') like concat('%', #{chargeItemId}, '%')
+                          or cim_kw.item_name like concat('%', #{chargeItemId}, '%')
+                          or ifnull(cim_kw.referred_code, '') like concat('%', #{chargeItemId}, '%')
+                      )
+                )
+            )
+        </if>
         <if test="hisChargeId != null and hisChargeId != ''">
             <choose>
                 <when test='"INPATIENT".equals(visitKind)'>
@@ -204,7 +226,7 @@
         insert into his_patient_charge_mirror_unified (
             id, tenant_id, visit_kind, fetch_batch_id,
             his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
-            patient_id, patient_name, inpatient_no, outpatient_no,
+            patient_id, patient_name, patient_name_referred, inpatient_no, outpatient_no,
             dept_code, dept_name, clinic_code, clinic_name,
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
@@ -214,7 +236,7 @@
         select
             m.id, m.tenant_id, 'INPATIENT', m.fetch_batch_id,
             m.his_inpatient_charge_id, null, m.his_inpatient_charge_id_tf, null,
-            m.patient_id, m.patient_name, m.inpatient_no, null,
+            m.patient_id, m.patient_name, null, m.inpatient_no, null,
             m.dept_code, m.dept_name, null, null,
             m.doctor_id, m.doctor_name, trim(m.charge_item_id), m.item_name, m.spec_model, m.batch_no, m.expire_date,
             case when m.use_date is null or trim(ifnull(m.use_date,'')) = '' then null else str_to_date(left(trim(m.use_date), 19), '%Y-%m-%d %H:%i:%s') end,
@@ -240,7 +262,7 @@
         insert into his_patient_charge_mirror_unified (
             id, tenant_id, visit_kind, fetch_batch_id,
             his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
-            patient_id, patient_name, inpatient_no, outpatient_no,
+            patient_id, patient_name, patient_name_referred, inpatient_no, outpatient_no,
             dept_code, dept_name, clinic_code, clinic_name,
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
@@ -250,7 +272,7 @@
         select
             m.id, m.tenant_id, 'OUTPATIENT', m.fetch_batch_id,
             null, m.his_outpatient_charge_id, null, m.his_outpatient_charge_id_tf,
-            m.patient_id, m.patient_name, null, m.outpatient_no,
+            m.patient_id, m.patient_name, null, null, m.outpatient_no,
             null, null, m.clinic_code, m.clinic_name,
             m.doctor_id, m.doctor_name, trim(m.charge_item_id), m.item_name, m.spec_model, m.batch_no, m.expire_date,
             null,
@@ -275,7 +297,7 @@
         insert into his_patient_charge_mirror_unified (
             id, tenant_id, visit_kind, fetch_batch_id,
             his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
-            patient_id, patient_name, inpatient_no, outpatient_no,
+            patient_id, patient_name, patient_name_referred, inpatient_no, outpatient_no,
             dept_code, dept_name, clinic_code, clinic_name,
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
@@ -285,7 +307,7 @@
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.fetchBatchId},
             #{e.hisInpatientChargeId}, #{e.hisOutpatientChargeId}, #{e.hisInpatientChargeIdTf}, #{e.hisOutpatientChargeIdTf},
-            #{e.patientId}, #{e.patientName}, #{e.inpatientNo}, #{e.outpatientNo},
+            #{e.patientId}, #{e.patientName}, #{e.patientNameReferred}, #{e.inpatientNo}, #{e.outpatientNo},
             #{e.deptCode}, #{e.deptName}, #{e.clinicCode}, #{e.clinicName},
             #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel}, #{e.batchNo}, #{e.expireDate},
             #{e.useDate}, #{e.chargeDateDisplay}, #{e.chargeAt},

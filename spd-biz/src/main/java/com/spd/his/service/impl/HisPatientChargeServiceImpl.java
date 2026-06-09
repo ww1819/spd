@@ -1250,6 +1250,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     private UnifiedMirrorPageSlice selectUnifiedMirrorPageSlice(HisPatientChargeMirrorUnifiedQuery uq)
     {
+        HisPatientChargeMirrorUnifiedSupport.normalizeListQueryKeywords(uq);
         PageUtils.startPage(false);
         List<HisPatientChargeMirrorUnified> rows = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);

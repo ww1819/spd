@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PinyinUtils;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.HisPatientChargeMirrorUnified;
@@ -36,6 +37,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setHisInpatientChargeIdTf(e.getHisInpatientChargeIdTf());
         m.setPatientId(e.getPatientId());
         m.setPatientName(e.getPatientName());
+        fillPatientNameReferred(m);
         m.setInpatientNo(e.getInpatientNo());
         m.setDeptCode(e.getDeptCode());
         m.setDeptName(e.getDeptName());
@@ -82,6 +84,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setHisOutpatientChargeIdTf(e.getHisOutpatientChargeIdTf());
         m.setPatientId(e.getPatientId());
         m.setPatientName(e.getPatientName());
+        fillPatientNameReferred(m);
         m.setOutpatientNo(e.getOutpatientNo());
         m.setClinicCode(e.getClinicCode());
         m.setClinicName(e.getClinicName());
@@ -454,5 +457,57 @@ public final class HisPatientChargeMirrorUnifiedSupport
     public static String normalizeChargeItemId(String chargeItemId)
     {
         return StringUtils.trimToNull(chargeItemId);
+    }
+
+    public static void fillPatientNameReferred(HisPatientChargeMirrorUnified m)
+    {
+        if (m == null)
+        {
+            return;
+        }
+        m.setPatientNameReferred(PinyinUtils.getPinyinInitials(StringUtils.trimToEmpty(m.getPatientName())));
+    }
+
+    /** 列表检索关键词：去首尾空白，首字母检索统一转大写 */
+    public static void normalizeListQueryKeywords(HisPatientChargeMirrorUnifiedQuery u)
+    {
+        if (u == null)
+        {
+            return;
+        }
+        if (StringUtils.isNotBlank(u.getPatientName()))
+        {
+            u.setPatientName(normalizeSearchKeyword(u.getPatientName()));
+        }
+        if (StringUtils.isNotBlank(u.getChargeItemId()))
+        {
+            u.setChargeItemId(normalizeSearchKeyword(u.getChargeItemId()));
+        }
+        if (StringUtils.isNotBlank(u.getVisitNo()))
+        {
+            u.setVisitNo(StringUtils.trim(u.getVisitNo()));
+        }
+        if (StringUtils.isNotBlank(u.getInpatientNo()))
+        {
+            u.setInpatientNo(StringUtils.trim(u.getInpatientNo()));
+        }
+        if (StringUtils.isNotBlank(u.getOutpatientNo()))
+        {
+            u.setOutpatientNo(StringUtils.trim(u.getOutpatientNo()));
+        }
+    }
+
+    private static String normalizeSearchKeyword(String raw)
+    {
+        String trimmed = StringUtils.trim(raw);
+        if (StringUtils.isEmpty(trimmed))
+        {
+            return trimmed;
+        }
+        if (trimmed.matches("[A-Za-z0-9]+"))
+        {
+            return trimmed.toUpperCase();
+        }
+        return trimmed;
     }
 }
