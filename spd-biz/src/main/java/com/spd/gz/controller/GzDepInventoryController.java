@@ -41,6 +41,22 @@ public class GzDepInventoryController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(GzDepInventory gzDepInventory)
     {
+        return listGzDepInventoryTable(gzDepInventory);
+    }
+
+    /**
+     * 弹窗/跨模块选科室库存明细：仅需登录，查询逻辑与 {@link #list} 一致，
+     * 避免备货退库等仅有 gzOrder:goodsApply:* 权限时 403 导致添加明细无数据。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/list")
+    public TableDataInfo pickList(GzDepInventory gzDepInventory)
+    {
+        return listGzDepInventoryTable(gzDepInventory);
+    }
+
+    private TableDataInfo listGzDepInventoryTable(GzDepInventory gzDepInventory)
+    {
         startPage();
         List<GzDepInventory> list = gzDepInventoryService.selectGzDepInventoryList(gzDepInventory);
         return getDataTable(list);

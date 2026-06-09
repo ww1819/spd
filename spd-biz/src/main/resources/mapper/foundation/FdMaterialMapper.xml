@@ -202,7 +202,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>
-        <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
+        <if test="udiNo != null and udiNo != ''"> and ifnull(m.udi_no, '') like concat('%', #{udiNo}, '%') escape '\\'</if>
+        <if test="factoryKeyword != null and factoryKeyword != ''"> and (
+            ifnull(f.factory_code, '') like concat('%', #{factoryKeyword}, '%') escape '\\'
+            OR ifnull(f.factory_name, '') like concat('%', #{factoryKeyword}, '%') escape '\\'
+            OR ifnull(f.factory_referred_code, '') like concat('%', #{factoryKeyword}, '%') escape '\\'
+        )</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
         <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
@@ -578,7 +583,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
         <if test="id != null "> and m.id = #{id}</if>
-        <if test="udiNo != null "> and m.udi_no = #{udiNo}</if>
+        <if test="udiNo != null and udiNo != ''"> and ifnull(m.udi_no, '') like concat('%', #{udiNo}, '%') escape '\\'</if>
+        <if test="factoryKeyword != null and factoryKeyword != ''"> and (
+            ifnull(f.factory_code, '') like concat('%', #{factoryKeyword}, '%') escape '\\'
+            OR ifnull(f.factory_name, '') like concat('%', #{factoryKeyword}, '%') escape '\\'
+            OR ifnull(f.factory_referred_code, '') like concat('%', #{factoryKeyword}, '%') escape '\\'
+        )</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
         <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>

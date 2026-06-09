@@ -276,6 +276,9 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：名称搜索（首字母） */
     private String nameSearch;
 
+    /** 查询参数：生产厂家（名称/编码/首字母模糊） */
+    private String factoryKeyword;
+
     /** 查询参数：排除的物料ID，逗号分隔（用于定数监测新增明细：排除已有+未保存的） */
     private String excludeMaterialIds;
 

@@ -118,6 +118,8 @@ public class FdMaterialController extends BaseController
         @RequestParam(value = "name", required = false) String name,
         @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(value = "speci", required = false) String speci,
+        @RequestParam(value = "factoryKeyword", required = false) String factoryKeyword,
+        @RequestParam(value = "udiNo", required = false) String udiNo,
         @RequestParam(value = "isGz", required = false) String isGz)
     {
         FdMaterial query = new FdMaterial();
@@ -136,6 +138,22 @@ public class FdMaterialController extends BaseController
             if (StringUtils.isNotEmpty(normalizedSpeci))
             {
                 query.setSpeci(normalizedSpeci);
+            }
+        }
+        if (StringUtils.isNotEmpty(factoryKeyword))
+        {
+            String normalizedFactory = com.spd.common.utils.MaterialSearchKeywordUtils.normalizeAndEscapeLike(factoryKeyword.trim());
+            if (StringUtils.isNotEmpty(normalizedFactory))
+            {
+                query.setFactoryKeyword(normalizedFactory);
+            }
+        }
+        if (StringUtils.isNotEmpty(udiNo))
+        {
+            String normalizedUdi = com.spd.common.utils.MaterialSearchKeywordUtils.normalizeAndEscapeLike(udiNo.trim());
+            if (StringUtils.isNotEmpty(normalizedUdi))
+            {
+                query.setUdiNo(normalizedUdi);
             }
         }
         if (StringUtils.isNotEmpty(isGz))
