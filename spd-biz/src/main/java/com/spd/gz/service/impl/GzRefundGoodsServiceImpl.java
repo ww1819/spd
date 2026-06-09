@@ -36,7 +36,9 @@ import com.spd.hc.service.IHcBarcodeLifecycleService;
 import com.spd.gz.service.GzStockValidationService;
 import com.spd.gz.service.GzLineRefWriteService;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdSupplierMapper;
 
 /**
  * 高值退货Service业务层处理
@@ -59,6 +61,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private FdSupplierMapper fdSupplierMapper;
 
     @Autowired
     private GzStockValidationService gzStockValidationService;
@@ -85,21 +90,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if(gzRefundGoods == null){
             return null;
         }
-
-        List<GzRefundGoodsEntry> gzRefundGoodsEntryList = gzRefundGoods.getGzRefundGoodsEntryList();
-        if(gzRefundGoodsEntryList != null && !gzRefundGoodsEntryList.isEmpty()){
-            List<FdMaterial> materialList = new ArrayList<FdMaterial>();
-            for(GzRefundGoodsEntry entry : gzRefundGoodsEntryList){
-                Long materialId = entry.getMaterialId();
-                if(materialId != null){
-                    FdMaterial fdMaterial = fdMaterialMapper.selectFdMaterialById(materialId);
-                    if(fdMaterial != null){
-                        materialList.add(fdMaterial);
-                    }
-                }
-            }
-            gzRefundGoods.setMaterialList(materialList);
-        }
+        enrichRefundDetailDisplay(gzRefundGoods);
         return gzRefundGoods;
     }
 
@@ -121,7 +112,75 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
     @Override
     public GzRefundGoods selectGzRefundStockById(Long id)
     {
-        return gzRefundGoodsMapper.selectGzRefundStockById(id);
+        GzRefundGoods gzRefundGoods = gzRefundGoodsMapper.selectGzRefundStockById(id);
+        if (gzRefundGoods == null) {
+            return null;
+        }
+        enrichRefundDetailDisplay(gzRefundGoods);
+        return gzRefundGoods;
+    }
+
+    /** 明细回显：产品档案、生产厂家、供应商、UDI 等 */
+    private void enrichRefundDetailDisplay(GzRefundGoods gzRefundGoods) {
+        List<GzRefundGoodsEntry> entries = gzRefundGoods.getGzRefundGoodsEntryList();
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+        List<FdMaterial> materialList = new ArrayList<>();
+        Set<Long> seenMaterialIds = new HashSet<>();
+        for (GzRefundGoodsEntry entry : entries) {
+            if (entry == null) {
+                continue;
+            }
+            FdMaterial material = null;
+            if (entry.getMaterialId() != null) {
+                material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+                if (material != null && seenMaterialIds.add(material.getId())) {
+                    materialList.add(material);
+                }
+            }
+            applyMaterialDisplayToEntry(entry, material);
+            if (StringUtils.isEmpty(entry.getSupplierName()) && entry.getSupplierId() != null) {
+                FdSupplier supplier = fdSupplierMapper.selectFdSupplierById(entry.getSupplierId());
+                if (supplier != null && StringUtils.isNotEmpty(supplier.getName())) {
+                    entry.setSupplierName(supplier.getName());
+                }
+            }
+            if (StringUtils.isEmpty(entry.getUdiNo()) && StringUtils.isNotEmpty(entry.getMasterBarcode())) {
+                entry.setUdiNo(entry.getMasterBarcode());
+            }
+        }
+        gzRefundGoods.setMaterialList(materialList);
+    }
+
+    private void applyMaterialDisplayToEntry(GzRefundGoodsEntry entry, FdMaterial material) {
+        if (material == null) {
+            return;
+        }
+        if (StringUtils.isEmpty(entry.getMaterialName())) {
+            entry.setMaterialName(material.getName());
+        }
+        if (StringUtils.isEmpty(entry.getSpeci())) {
+            entry.setSpeci(material.getSpeci());
+        }
+        if (StringUtils.isEmpty(entry.getModel())) {
+            entry.setModel(material.getModel());
+        }
+        if (StringUtils.isEmpty(entry.getFactoryName()) && material.getFdFactory() != null
+                && StringUtils.isNotEmpty(material.getFdFactory().getFactoryName())) {
+            entry.setFactoryName(material.getFdFactory().getFactoryName());
+        }
+        if (StringUtils.isEmpty(entry.getSupplierName()) && material.getSupplier() != null
+                && StringUtils.isNotEmpty(material.getSupplier().getName())) {
+            entry.setSupplierName(material.getSupplier().getName());
+        }
+        if (StringUtils.isEmpty(entry.getUdiNo())) {
+            if (StringUtils.isNotEmpty(material.getUdiNo())) {
+                entry.setUdiNo(material.getUdiNo());
+            } else if (StringUtils.isNotEmpty(material.getCode())) {
+                entry.setUdiNo(material.getCode());
+            }
+        }
     }
 
     @Override

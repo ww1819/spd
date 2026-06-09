@@ -95,6 +95,14 @@ public class GzRefundGoodsEntry extends BaseEntity
     private String refSrcShipmentNo;
     private String refSrcShipmentEntryId;
 
+    /** 展示字段（非表字段，详情/列表回显） */
+    private String materialName;
+    private String speci;
+    private String model;
+    private String factoryName;
+    private String supplierName;
+    private String udiNo;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -246,6 +254,19 @@ public class GzRefundGoodsEntry extends BaseEntity
     public void setRefSrcShipmentNo(String refSrcShipmentNo) { this.refSrcShipmentNo = refSrcShipmentNo; }
     public String getRefSrcShipmentEntryId() { return refSrcShipmentEntryId; }
     public void setRefSrcShipmentEntryId(String refSrcShipmentEntryId) { this.refSrcShipmentEntryId = refSrcShipmentEntryId; }
+
+    public String getMaterialName() { return materialName; }
+    public void setMaterialName(String materialName) { this.materialName = materialName; }
+    public String getSpeci() { return speci; }
+    public void setSpeci(String speci) { this.speci = speci; }
+    public String getModel() { return model; }
+    public void setModel(String model) { this.model = model; }
+    public String getFactoryName() { return factoryName; }
+    public void setFactoryName(String factoryName) { this.factoryName = factoryName; }
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+    public String getUdiNo() { return udiNo; }
+    public void setUdiNo(String udiNo) { this.udiNo = udiNo; }
 
     @Override
     public String toString() {
