@@ -52,14 +52,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hisChargeItemUnit" column="his_charge_item_unit" />
         <result property="hisChargeItemPrice" column="his_charge_item_price" />
         <result property="unitId"  column="materialUnitId"   />
+        <result property="storeroomId"  column="materialWarehouseCategoryId"   />
+        <result property="financeCategoryId"  column="materialFinanceCategoryId"   />
         <association property="fdFactory"    column="factoryId" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="supplier"    column="materialSupplierId" javaType="FdSupplier" resultMap="materialSupplierResult" />
         <association property="fdUnit"    column="materialUnitId" javaType="FdUnit" resultMap="unitResult" />
+        <association property="fdFinanceCategory"    column="materialFinanceCategoryId" javaType="FdFinanceCategory" resultMap="financeCategoryResult" />
+        <association property="fdWarehouseCategory"    column="materialWarehouseCategoryId" javaType="FdWarehouseCategory" resultMap="warehouseCategoryResult" />
     </resultMap>
     
     <resultMap id="unitResult" type="FdUnit">
         <id     property="unitId"    column="uId"     />
         <result property="unitName"  column="unitName"   />
+    </resultMap>
+
+    <resultMap id="financeCategoryResult" type="FdFinanceCategory">
+        <id     property="financeCategoryId"    column="fcId"     />
+        <result property="financeCategoryName"  column="financeCategoryName"   />
+    </resultMap>
+
+    <resultMap id="warehouseCategoryResult" type="FdWarehouseCategory">
+        <id     property="warehouseCategoryId"    column="wcId"     />
+        <result property="warehouseCategoryName"  column="warehouseCategoryName"   />
     </resultMap>
     
     <resultMap id="fdFactoryResult" type="FdFactory">
@@ -95,10 +109,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				m.udi_no as materialUdiNo,
 				m.supplier_id as materialSupplierId,
 				m.unit_id as materialUnitId,
+				m.finance_category_id as materialFinanceCategoryId,
+				m.storeroom_id as materialWarehouseCategoryId,
 				f.factory_id as factoryId,f.factory_name as factoryName,
 				ms.id msId,ms.code materialSupplierCode,ms.name materialSupplierName,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				u.unit_id uId,u.unit_name as unitName,
+				fc.finance_category_id fcId,fc.finance_category_name as financeCategoryName,
+				wc.warehouse_category_id wcId,wc.warehouse_category_name as warehouseCategoryName,
 				gs.shipment_no as shipmentNo,
 				gs.create_by as createBy,
 				gs.create_time as createTime,
@@ -119,6 +137,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join gz_order_entry goe on gz.batch_no = goe.batch_no and goe.del_flag != 1
         left join gz_order go on goe.paren_id = go.id and go.del_flag != 1
         left join fd_warehouse w on go.warehouse_id = w.id

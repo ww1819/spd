@@ -262,6 +262,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
         <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0"> and m.id not in <foreach collection="excludeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
         <if test="includeMaterialIdList != null and includeMaterialIdList.size() > 0"> and m.id in <foreach collection="includeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+        order by ifnull(m.update_time, m.create_time) desc, m.id desc
     </select>
 
     <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">
