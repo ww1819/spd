@@ -177,8 +177,6 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         if (StringUtils.isEmpty(entry.getUdiNo())) {
             if (StringUtils.isNotEmpty(material.getUdiNo())) {
                 entry.setUdiNo(material.getUdiNo());
-            } else if (StringUtils.isNotEmpty(material.getCode())) {
-                entry.setUdiNo(material.getCode());
             }
         }
     }
