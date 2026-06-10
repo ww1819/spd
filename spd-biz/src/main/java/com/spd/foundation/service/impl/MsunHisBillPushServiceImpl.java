@@ -138,6 +138,11 @@ public class MsunHisBillPushServiceImpl implements IMsunHisBillPushService
             {
                 throw new ServiceException("科室库存未收货确认，不能退库");
             }
+            // 已审核(2)退库单在审核环节已校验数量并扣减 stk_dep_inventory，推送时不应再用「扣减后余额」与明细数量比较（会误报超库存）
+            if (bill.getBillStatus() != null && bill.getBillStatus() == 2)
+            {
+                continue;
+            }
             BigDecimal depQty = dep.getQty() != null ? dep.getQty() : BigDecimal.ZERO;
             if (entry.getQty() != null && entry.getQty().compareTo(depQty) > 0)
             {
