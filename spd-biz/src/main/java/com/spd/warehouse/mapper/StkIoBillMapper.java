@@ -488,4 +488,10 @@ public interface StkIoBillMapper
 
     int updateDepInventoryHisStock(@Param("id") Long id, @Param("hisPharmacyStockId") String hisPharmacyStockId,
         @Param("hisStorageStockId") String hisStorageStockId, @Param("hisStockQueryId") String hisStockQueryId);
+
+    /** 按明细主键读取 HIS 库存三字段（退库回填用） */
+    StkIoBillEntry selectEntryHisStockById(@Param("id") Long id);
+
+    /** 按科室库存主键查找已出库明细的 HIS 库存三字段（退库回填用） */
+    StkIoBillEntry selectOutboundEntryHisStockByDepInventoryId(@Param("depInventoryId") Long depInventoryId);
 }

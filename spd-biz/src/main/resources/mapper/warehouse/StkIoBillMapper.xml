@@ -1313,6 +1313,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode,
                suppler_id, settlement_type, wh_apply_entry_id, dep_pur_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode,
                warehouse_id_str, supplier_id_str, department_id_str,
+               his_pharmacy_stock_id, his_storage_stock_id, his_stock_query_id,
                tenant_id, create_by, create_time, update_by, update_time,
                delete_by, delete_time
         from stk_io_bill_entry
@@ -1358,6 +1359,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseIdStr != null">warehouse_id_str = #{warehouseIdStr},</if>
             <if test="supplierIdStr != null">supplier_id_str = #{supplierIdStr},</if>
             <if test="departmentIdStr != null">department_id_str = #{departmentIdStr},</if>
+            <if test="hisPharmacyStockId != null">his_pharmacy_stock_id = #{hisPharmacyStockId},</if>
+            <if test="hisStorageStockId != null">his_storage_stock_id = #{hisStorageStockId},</if>
+            <if test="hisStockQueryId != null">his_stock_query_id = #{hisStockQueryId},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -1372,9 +1376,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchStkIoBillEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, dep_pur_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode, warehouse_id_str, supplier_id_str, department_id_str, tenant_id) values
+        insert into stk_io_bill_entry(paren_id, bill_no, commodity_id, material_id, material_name, material_speci, material_model, material_factory_id, unit_price, qty, price, amt, batch_no, batch_number, begin_time, end_time, del_flag, remark, kc_no, stk_inventory_id, dep_inventory_id, warehouse_id, main_barcode, sub_barcode, suppler_id, settlement_type, wh_apply_entry_id, dep_pur_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode, warehouse_id_str, supplier_id_str, department_id_str, his_pharmacy_stock_id, his_storage_stock_id, his_stock_query_id, tenant_id) values
 		<foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parenId}, #{item.billNo}, #{item.commodityId}, #{item.materialId}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, COALESCE(#{item.delFlag}, 0), #{item.remark}, #{item.kcNo}, #{item.stkInventoryId}, #{item.depInventoryId}, #{item.warehouseId}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.settlementType}, #{item.whApplyEntryId}, #{item.depPurApplyEntryId}, #{item.deliveryLineSign}, #{item.deliveryLineQtyCap}, #{item.fixedPackageBarcode}, #{item.warehouseIdStr}, #{item.supplierIdStr}, #{item.departmentIdStr}, #{scopedTenantId})
+            (#{item.parenId}, #{item.billNo}, #{item.commodityId}, #{item.materialId}, #{item.materialName}, #{item.materialSpeci}, #{item.materialModel}, #{item.materialFactoryId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.beginTime}, #{item.endTime}, COALESCE(#{item.delFlag}, 0), #{item.remark}, #{item.kcNo}, #{item.stkInventoryId}, #{item.depInventoryId}, #{item.warehouseId}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.settlementType}, #{item.whApplyEntryId}, #{item.depPurApplyEntryId}, #{item.deliveryLineSign}, #{item.deliveryLineQtyCap}, #{item.fixedPackageBarcode}, #{item.warehouseIdStr}, #{item.supplierIdStr}, #{item.departmentIdStr}, #{item.hisPharmacyStockId}, #{item.hisStorageStockId}, #{item.hisStockQueryId}, #{scopedTenantId})
         </foreach>
     </insert>
 
@@ -2982,4 +2986,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
+
+    <select id="selectEntryHisStockById" resultType="StkIoBillEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, his_pharmacy_stock_id, his_storage_stock_id, his_stock_query_id
+        from stk_io_bill_entry
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag is null or del_flag != 1)
+        limit 1
+    </select>
+
+    <select id="selectOutboundEntryHisStockByDepInventoryId" resultType="StkIoBillEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select e.id, e.his_pharmacy_stock_id, e.his_storage_stock_id, e.his_stock_query_id
+        from stk_io_bill_entry e
+        inner join stk_io_bill b on b.id = e.paren_id and b.tenant_id = e.tenant_id
+        where e.tenant_id = #{scopedTenantId}
+          and e.dep_inventory_id = #{depInventoryId}
+          and b.bill_type = 201
+          and (e.del_flag is null or e.del_flag != 1)
+          and (b.del_flag is null or b.del_flag != 1)
+        order by
+            case when e.his_stock_query_id is not null and e.his_stock_query_id != '' then 0 else 1 end,
+            e.id desc
+        limit 1
+    </select>
 </mapper>
