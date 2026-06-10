@@ -193,7 +193,7 @@ public class FixedNumberController extends BaseController
             return getDataTable(new ArrayList<>());
         }
         normalizePurchaseMaterialQuery(whQuery);
-        // 科室申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案（仅展示该仓库定数监测中的产品）
+        // 科室申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案；仅展示启用产品档案（is_use=1）
         whQuery.setOnlyEnabled(Boolean.TRUE);
         startPage();
         List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);
@@ -245,7 +245,7 @@ public class FixedNumberController extends BaseController
             whQuery = new WhFixedNumber();
         }
         normalizePurchaseMaterialQuery(whQuery);
-        // 科室汇总申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案
+        // 科室汇总申购：不按 is_gz 过滤，允许选择高值与非高值耗材档案；仅展示启用产品档案（is_use=1）
         whQuery.setOnlyEnabled(Boolean.TRUE);
         startPage();
         List<WhFixedNumber> list = fixedNumberService.selectWhFixedNumberList(whQuery);

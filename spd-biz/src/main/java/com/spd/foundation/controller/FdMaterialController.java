@@ -120,7 +120,8 @@ public class FdMaterialController extends BaseController
         @RequestParam(value = "speci", required = false) String speci,
         @RequestParam(value = "factoryKeyword", required = false) String factoryKeyword,
         @RequestParam(value = "udiNo", required = false) String udiNo,
-        @RequestParam(value = "isGz", required = false) String isGz)
+        @RequestParam(value = "isGz", required = false) String isGz,
+        @RequestParam(value = "onlyEnabled", required = false) Boolean onlyEnabled)
     {
         FdMaterial query = new FdMaterial();
         String searchKey = StringUtils.isNotEmpty(keyword) ? keyword : name;
@@ -160,19 +161,16 @@ public class FdMaterialController extends BaseController
         {
             query.setIsGz(isGz);
         }
+        if (Boolean.TRUE.equals(onlyEnabled))
+        {
+            query.setIsUse("1");
+        }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         // 业务选耗材：再次排除已删除、已停用（与定数申购等入口一致，避免仅 SQL 时遗漏）
         list = list.stream()
             .filter(m -> m != null)
             .filter(m -> !(m.getDelFlag() != null && m.getDelFlag() == 1))
-            .filter(m -> {
-                Object u = m.getIsUse();
-                if (u == null) {
-                    return true;
-                }
-                String s = u.toString().trim();
-                return s.isEmpty() || !"2".equals(s);
-            })
+            .filter(m -> Boolean.TRUE.equals(onlyEnabled) ? isMaterialEnabled(m) : isMaterialNotDisabled(m))
             .collect(Collectors.toList());
         List<Map<String, Object>> safeList = new ArrayList<>();
         for (FdMaterial material : list)
@@ -652,6 +650,32 @@ public class FdMaterialController extends BaseController
             stripMaterialForPurchasePlanPick(m);
         }
         return getDataTable(list);
+    }
+
+    /** 产品档案启用（is_use=1） */
+    private static boolean isMaterialEnabled(FdMaterial m)
+    {
+        if (m == null || m.getIsUse() == null)
+        {
+            return false;
+        }
+        return "1".equals(m.getIsUse().toString().trim());
+    }
+
+    /** 产品档案未停用（is_use 为空或非 2） */
+    private static boolean isMaterialNotDisabled(FdMaterial m)
+    {
+        if (m == null)
+        {
+            return false;
+        }
+        Object u = m.getIsUse();
+        if (u == null)
+        {
+            return true;
+        }
+        String s = u.toString().trim();
+        return s.isEmpty() || !"2".equals(s);
     }
 
     /** 采购计划选耗材：去掉不必要且偏敏感的产品档案字段 */

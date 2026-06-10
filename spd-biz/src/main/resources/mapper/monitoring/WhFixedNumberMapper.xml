@@ -162,7 +162,7 @@
         </if>
         <if test="onlyEnabled != null and onlyEnabled">
             and (f.enable_status = '0' or f.enable_status is null)
-            and (m.is_use is null or m.is_use = '' or m.is_use != '2')
+            and m.is_use = '1'
         </if>
         <if test="enableStatus != null and enableStatus != ''">
             and f.enable_status = #{enableStatus}

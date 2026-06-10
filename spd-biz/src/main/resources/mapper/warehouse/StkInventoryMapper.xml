@@ -165,6 +165,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
     </sql>
 
+    <!-- 科室申领：有库存即可选明细/审核拆分，不因产品档案停用而排除（仍排除已逻辑删除档案） -->
+    <sql id="stkInventoryMaterialForDeptApply">
+        and (m.id is null or (m.del_flag is null or m.del_flag != 1))
+    </sql>
+
     <!-- 库存报表（明细/汇总/预警等）：不剔除已停用产品档案；仍排除已逻辑删除的产品档案 -->
     <sql id="stkInventoryMaterialReportVisible">
         and (m.id is null or (m.del_flag is null or m.del_flag != 1))
@@ -927,7 +932,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by stk.material_id
     </select>
 
-    <!-- 科室申领：按「耗材+仓库」聚合可用库存（排除高值/设备仓），明细保存 stock_warehouse_id 后审核仅在该仓拆分 -->
+    <!-- 科室申领：按「耗材+仓库」聚合可用库存（排除高值/设备仓；停用产品档案有库存仍可选） -->
     <select id="selectMaterialAvailableAggForDeptApply" parameterType="StkInventory" resultType="java.util.HashMap">
         select stk.material_id materialId,
                stk.warehouse_id warehouseId,
@@ -960,7 +965,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{tenantId}
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialForDeptApply"/>
         <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
@@ -986,7 +991,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by w.code, m.code
     </select>
 
-    <!-- 科室申领审核拆分：指定仓库内按耗材 FIFO（入库日期、id）取可分配库存行 -->
+    <!-- 科室申领审核拆分：指定仓库内按耗材 FIFO（入库日期、id）取可分配库存行（停用产品档案有库存仍可拆分） -->
     <select id="selectStkInventoryFifoForDeptApply" resultMap="StkInventoryResult">
         <include refid="selectStkInventoryVo"/>
         where stk.qty &gt; 0
@@ -995,7 +1000,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.material_id = #{materialId}
           and stk.warehouse_id = #{warehouseId}
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialForDeptApply"/>
         order by stk.warehouse_date asc, stk.id asc
     </select>
 

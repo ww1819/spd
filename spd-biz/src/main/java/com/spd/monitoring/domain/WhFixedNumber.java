@@ -55,7 +55,7 @@ public class WhFixedNumber extends BaseEntity {
     /** 停用时间 */
     private java.util.Date disableTime;
 
-    /** 查询参数：仅查询启用中的定数（科室申购/入库等下游业务） */
+    /** 查询参数：仅查询启用中的定数（科室申购等下游业务）；产品档案须 is_use=1 */
     private Boolean onlyEnabled;
 
     /** 租户ID（同sb_customer.customer_id） */
