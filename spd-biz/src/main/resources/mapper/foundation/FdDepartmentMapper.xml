@@ -102,6 +102,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and <include refid="fdDepartmentTenantMatch"/>
     </select>
 
+    <select id="selectFdDepartmentByIdIgnoreTenant" resultMap="FdDepartmentResult">
+        <include refid="selectFdDepartmentVo"/>
+        where id = #{id} and del_flag != 1
+        limit 1
+    </select>
+
     <!-- 按编码+租户查一条（导入去重；平台 tenantId 为空时匹配 tenant_id 为空） -->
     <select id="selectFdDepartmentByCodeAndTenantId" resultMap="FdDepartmentResult">
         <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

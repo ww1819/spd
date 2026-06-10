@@ -14,6 +14,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="shipmentType"    column="shipment_type"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
+        <result property="auditBy"    column="audit_by"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -21,8 +22,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="remark"    />
         <result property="refAcceptanceId"    column="ref_acceptance_id"    />
         <result property="totalAmt"    column="totalAmt"    />
-        <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
-        <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="warehouse" javaType="FdWarehouse" resultMap="warehouseResult" />
+        <association property="department" javaType="FdDepartment" resultMap="departmentResult" />
+        <association property="creater" javaType="SysUser" resultMap="createrResult" />
+        <association property="auditor" javaType="SysUser" resultMap="auditorResult" />
     </resultMap>
 
     <resultMap id="warehouseResult" type="FdWarehouse">
@@ -35,6 +38,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="dId"     />
         <result property="code"  column="departmentCode"   />
         <result property="name"  column="departmentName"   />
+    </resultMap>
+
+    <resultMap id="createrResult" type="SysUser">
+        <id     property="userId"    column="createrUserId"     />
+        <result property="nickName"  column="createrNickName"   />
+        <result property="userName"  column="createrUserName"   />
+    </resultMap>
+
+    <resultMap id="auditorResult" type="SysUser">
+        <id     property="userId"    column="auditorUserId"     />
+        <result property="nickName"  column="auditorNickName"   />
+        <result property="userName"  column="auditorUserName"   />
     </resultMap>
 
     <resultMap id="GzShipmentGzShipmentEntryResult" type="GzShipment" extends="GzShipmentResult">
@@ -77,14 +92,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectGzShipmentList" parameterType="GzShipment" resultMap="GzShipmentResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
-				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
+				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.audit_by, gs.create_by,
 				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
+				cu.user_id createrUserId, cu.nick_name createrNickName, cu.user_name createrUserName,
 				COALESCE(SUM(gse.amt), 0) as totalAmt
         from gz_shipment gs
         left join fd_warehouse w on gs.warehouse_id = w.id
         left join fd_department d on gs.department_id = d.id
+        left join sys_user cu on gs.create_by = cu.user_id
         left join gz_shipment_entry gse on gse.paren_id = gs.id and gse.del_flag != 1
         where gs.del_flag != 1
         and gs.tenant_id = #{scopedTenantId}
@@ -96,9 +113,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="shipmentType != null "> and gs.shipment_type = #{shipmentType}</if>
         <if test="auditDate != null "> and gs.audit_date = #{auditDate}</if>
         group by gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
-				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.create_by,
+				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.audit_by, gs.create_by,
 				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,
-				w.id, w.code, w.name, d.id, d.code, d.name
+				w.id, w.code, w.name, d.id, d.code, d.name,
+				cu.user_id, cu.nick_name, cu.user_name
         order by
             case when gs.shipment_status = 2 then 1 else 0 end asc,
             case when gs.shipment_status = 2 then gs.audit_date else null end desc,
@@ -110,13 +128,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.shipment_no, a.department_id, a.shipment_date, a.warehouse_id, a.ref_acceptance_id,
 				a.shipment_status, a.shipment_type, a.del_flag,
-                a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                a.audit_date, a.audit_by, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+                w.id wId, w.code warehouseCode, w.name warehouseName,
+                d.id dId, d.code departmentCode, d.name departmentName,
+                cu.user_id createrUserId, cu.nick_name createrNickName, cu.user_name createrUserName,
+                au.user_id auditorUserId, au.nick_name auditorNickName, au.user_name auditorUserName,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
                 b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
                 b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, 
                 b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode, b.in_hospital_code as sub_in_hospital_code, b.supplier_id as sub_supplier_id,
                 b.warehouse_id as sub_warehouse_id, b.department_id as sub_department_id, b.bill_no as sub_bill_no, b.remark as sub_remark
         from gz_shipment a
+        left join fd_warehouse w on a.warehouse_id = w.id
+        left join fd_department d on a.department_id = d.id
+        left join sys_user cu on (cu.user_id = a.create_by or cu.user_name = a.create_by)
+        left join sys_user au on (au.user_id = coalesce(nullif(trim(a.audit_by), ''), a.update_by)
+            or au.user_name = coalesce(nullif(trim(a.audit_by), ''), a.update_by))
         left join gz_shipment_entry b on b.paren_id = a.id and b.del_flag != 1
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>
@@ -172,6 +199,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="shipmentType != null">shipment_type = #{shipmentType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

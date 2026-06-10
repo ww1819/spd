@@ -1262,6 +1262,8 @@ CALL add_table_column('gz_shipment', 'delete_time', 'datetime', '删除时间', 
 /
 CALL add_table_column('gz_shipment', 'tenant_id', 'varchar(36)', '租户ID', NULL);
 /
+CALL add_table_column('gz_shipment', 'audit_by', 'varchar(64)', '审核人', NULL);
+/
 
 -- gz_shipment_entry
 CALL add_table_column('gz_shipment_entry', 'del_flag', 'int', '删除标志', 0);

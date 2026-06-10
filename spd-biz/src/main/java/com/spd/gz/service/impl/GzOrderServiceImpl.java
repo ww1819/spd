@@ -18,7 +18,13 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.FdSupplier;
+import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdSupplierMapper;
+import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.gz.domain.GzBillEntryChangeLog;
 import com.spd.gz.domain.GzDepotInventory;
 import com.spd.gz.domain.GzOrderEntry;
@@ -55,6 +61,12 @@ public class GzOrderServiceImpl implements IGzOrderService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FdSupplierMapper fdSupplierMapper;
 
     @Autowired
     private SysSheetIdMapper sysSheetIdMapper;
@@ -100,7 +112,108 @@ public class GzOrderServiceImpl implements IGzOrderService
             }
         }
         gzOrder.setMaterialList(materialList);
+        enrichOrderDetailDisplay(gzOrder);
         return gzOrder;
+    }
+
+    /** 明细 join 查询未关联仓库/供应商，此处补齐展示字段 */
+    private void enrichOrderDetailDisplay(GzOrder gzOrder)
+    {
+        if (gzOrder == null)
+        {
+            return;
+        }
+        Long warehouseId = resolveOrderWarehouseId(gzOrder);
+        if (warehouseId != null)
+        {
+            FdWarehouse warehouse = loadWarehouseById(warehouseId);
+            if (warehouse != null)
+            {
+                gzOrder.setWarehouse(warehouse);
+                gzOrder.setWarehouseName(warehouse.getName());
+            }
+        }
+        Long supplierId = resolveOrderSupplierId(gzOrder);
+        if (supplierId != null)
+        {
+            FdSupplier supplier = loadSupplierById(supplierId);
+            if (supplier != null)
+            {
+                gzOrder.setSupplier(supplier);
+                gzOrder.setSupplierName(supplier.getName());
+            }
+        }
+    }
+
+    private Long resolveOrderWarehouseId(GzOrder gzOrder)
+    {
+        if (gzOrder.getWarehouseId() != null)
+        {
+            return gzOrder.getWarehouseId();
+        }
+        List<GzOrderEntry> entries = gzOrder.getGzOrderEntryList();
+        if (entries == null)
+        {
+            return null;
+        }
+        for (GzOrderEntry entry : entries)
+        {
+            if (entry != null && entry.getWarehouseId() != null)
+            {
+                return entry.getWarehouseId();
+            }
+        }
+        return null;
+    }
+
+    private Long resolveOrderSupplierId(GzOrder gzOrder)
+    {
+        if (gzOrder.getSupplerId() != null)
+        {
+            return gzOrder.getSupplerId();
+        }
+        List<GzOrderEntry> entries = gzOrder.getGzOrderEntryList();
+        if (entries == null)
+        {
+            return null;
+        }
+        for (GzOrderEntry entry : entries)
+        {
+            if (entry != null && entry.getSupplierId() != null)
+            {
+                return entry.getSupplierId();
+            }
+        }
+        return null;
+    }
+
+    private FdWarehouse loadWarehouseById(Long warehouseId)
+    {
+        if (warehouseId == null)
+        {
+            return null;
+        }
+        String id = String.valueOf(warehouseId);
+        FdWarehouse warehouse = fdWarehouseMapper.selectFdWarehouseById(id);
+        if (warehouse == null)
+        {
+            warehouse = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(id);
+        }
+        return warehouse;
+    }
+
+    private FdSupplier loadSupplierById(Long supplierId)
+    {
+        if (supplierId == null)
+        {
+            return null;
+        }
+        FdSupplier supplier = fdSupplierMapper.selectFdSupplierById(supplierId);
+        if (supplier == null)
+        {
+            supplier = fdSupplierMapper.selectFdSupplierByIdIgnoreTenant(supplierId);
+        }
+        return supplier;
     }
 
     /**

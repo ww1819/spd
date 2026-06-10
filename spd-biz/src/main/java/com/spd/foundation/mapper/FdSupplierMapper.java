@@ -21,6 +21,11 @@ public interface FdSupplierMapper
     public FdSupplier selectFdSupplierById(Long id);
 
     /**
+     * 按主键查询供应商（忽略租户，用于跨租户兼容展示）
+     */
+    FdSupplier selectFdSupplierByIdIgnoreTenant(@Param("id") Long id);
+
+    /**
      * 按编码+租户查一条（未删除）
      */
     FdSupplier selectFdSupplierByCodeAndTenantId(@Param("code") String code, @Param("tenantId") String tenantId);

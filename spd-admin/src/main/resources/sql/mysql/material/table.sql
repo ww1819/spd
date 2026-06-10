@@ -1348,6 +1348,7 @@ CREATE TABLE IF NOT EXISTS `gz_shipment` (
   `shipment_status` int DEFAULT NULL COMMENT '状态 1未审核 2已审核',
   `shipment_type` int DEFAULT NULL COMMENT '类型',
   `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',

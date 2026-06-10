@@ -95,6 +95,12 @@ public class GzOrder extends BaseEntity
     /** 总金额 */
     private java.math.BigDecimal totalAmt;
 
+    /** 仓库名称（展示字段，不落库） */
+    private String warehouseName;
+
+    /** 供应商名称（展示字段，不落库） */
+    private String supplierName;
+
     /** 高值退货明细信息 */
     private List<GzOrderEntry> gzOrderEntryList;
 
@@ -291,6 +297,28 @@ public class GzOrder extends BaseEntity
 
     public void setWarehouse(FdWarehouse warehouse) {
         this.warehouse = warehouse;
+    }
+
+    public String getWarehouseName() {
+        if (warehouseName != null && !warehouseName.isEmpty()) {
+            return warehouseName;
+        }
+        return warehouse != null ? warehouse.getName() : null;
+    }
+
+    public void setWarehouseName(String warehouseName) {
+        this.warehouseName = warehouseName;
+    }
+
+    public String getSupplierName() {
+        if (supplierName != null && !supplierName.isEmpty()) {
+            return supplierName;
+        }
+        return supplier != null ? supplier.getName() : null;
+    }
+
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
     }
 
     public FdDepartment getDepartment() {

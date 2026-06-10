@@ -23,6 +23,11 @@ public interface FdDepartmentMapper
     public FdDepartment selectFdDepartmentById(String id);
 
     /**
+     * 按主键查询科室（忽略租户，用于跨租户兼容展示）
+     */
+    FdDepartment selectFdDepartmentByIdIgnoreTenant(@Param("id") String id);
+
+    /**
      * 按科室编码与租户查询（未删除）
      *
      * @param code     科室编码

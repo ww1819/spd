@@ -3,6 +3,7 @@ package com.spd.gz.domain;
 import java.util.List;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.spd.common.core.domain.entity.SysUser;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.domain.FdDepartment;
@@ -69,6 +70,12 @@ public class GzShipment extends BaseEntity
     /** 科室对象 */
     private FdDepartment department;
 
+    /** 制单人 */
+    private SysUser creater;
+
+    /** 审核人 */
+    private SysUser auditor;
+
     private List<FdMaterial> materialList;
 
     /** 总金额（用于列表显示） */
@@ -79,6 +86,12 @@ public class GzShipment extends BaseEntity
 
     /** 引用的备货验收单主表ID（varchar36，绑定后不可变更） */
     private String refAcceptanceId;
+
+    /** 仓库名称（展示字段，不落库） */
+    private String warehouseName;
+
+    /** 科室名称（展示字段，不落库） */
+    private String departmentName;
 
     public void setId(Long id)
     {
@@ -274,6 +287,44 @@ public class GzShipment extends BaseEntity
 
     public void setDepartment(FdDepartment department) {
         this.department = department;
+    }
+
+    public String getWarehouseName() {
+        if (warehouseName != null && !warehouseName.isEmpty()) {
+            return warehouseName;
+        }
+        return warehouse != null ? warehouse.getName() : null;
+    }
+
+    public void setWarehouseName(String warehouseName) {
+        this.warehouseName = warehouseName;
+    }
+
+    public String getDepartmentName() {
+        if (departmentName != null && !departmentName.isEmpty()) {
+            return departmentName;
+        }
+        return department != null ? department.getName() : null;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
+    public SysUser getCreater() {
+        return creater;
+    }
+
+    public void setCreater(SysUser creater) {
+        this.creater = creater;
+    }
+
+    public SysUser getAuditor() {
+        return auditor;
+    }
+
+    public void setAuditor(SysUser auditor) {
+        this.auditor = auditor;
     }
 
     public List<FdMaterial> getMaterialList() {

@@ -18,7 +18,13 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.mapper.FdWarehouseMapper;
+import com.spd.common.core.domain.entity.SysUser;
+import com.spd.system.mapper.SysUserMapper;
 import com.spd.gz.domain.GzBillEntryChangeLog;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzDepotInventory;
@@ -55,6 +61,15 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+
+    @Autowired
+    private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FdDepartmentMapper fdDepartmentMapper;
+
+    @Autowired
+    private SysUserMapper sysUserMapper;
 
     @Autowired
     private com.spd.gz.mapper.GzDepInventoryMapper gzDepInventoryMapper;
@@ -116,7 +131,149 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             }
         }
         gzShipment.setMaterialList(materialList);
+        enrichShipmentDetailDisplay(gzShipment);
         return gzShipment;
+    }
+
+    /** 明细+明细行 join 查询时，MyBatis 对父级 association 映射不稳定，此处补齐展示字段 */
+    private void enrichShipmentDetailDisplay(GzShipment gzShipment)
+    {
+        if (gzShipment == null)
+        {
+            return;
+        }
+        Long warehouseId = resolveShipmentWarehouseId(gzShipment);
+        if (warehouseId != null)
+        {
+            FdWarehouse warehouse = loadWarehouseById(warehouseId);
+            if (warehouse != null)
+            {
+                gzShipment.setWarehouse(warehouse);
+                gzShipment.setWarehouseName(warehouse.getName());
+            }
+        }
+        Long departmentId = resolveShipmentDepartmentId(gzShipment);
+        if (departmentId != null)
+        {
+            FdDepartment department = loadDepartmentById(departmentId);
+            if (department != null)
+            {
+                gzShipment.setDepartment(department);
+                gzShipment.setDepartmentName(department.getName());
+            }
+        }
+        if (gzShipment.getCreater() == null || StringUtils.isBlank(gzShipment.getCreater().getNickName()))
+        {
+            SysUser creater = resolveSysUser(gzShipment.getCreateBy());
+            if (creater != null)
+            {
+                gzShipment.setCreater(creater);
+            }
+        }
+        String auditorKey = StringUtils.defaultIfBlank(gzShipment.getAuditBy(), gzShipment.getUpdateBy());
+        if (gzShipment.getAuditor() == null || StringUtils.isBlank(gzShipment.getAuditor().getNickName()))
+        {
+            SysUser auditor = resolveSysUser(auditorKey);
+            if (auditor != null)
+            {
+                gzShipment.setAuditor(auditor);
+            }
+        }
+    }
+
+    private Long resolveShipmentWarehouseId(GzShipment gzShipment)
+    {
+        if (gzShipment.getWarehouseId() != null)
+        {
+            return gzShipment.getWarehouseId();
+        }
+        List<GzShipmentEntry> entries = gzShipment.getGzShipmentEntryList();
+        if (entries == null)
+        {
+            return null;
+        }
+        for (GzShipmentEntry entry : entries)
+        {
+            if (entry != null && entry.getWarehouseId() != null)
+            {
+                return entry.getWarehouseId();
+            }
+        }
+        return null;
+    }
+
+    private Long resolveShipmentDepartmentId(GzShipment gzShipment)
+    {
+        if (gzShipment.getDepartmentId() != null)
+        {
+            return gzShipment.getDepartmentId();
+        }
+        List<GzShipmentEntry> entries = gzShipment.getGzShipmentEntryList();
+        if (entries == null)
+        {
+            return null;
+        }
+        for (GzShipmentEntry entry : entries)
+        {
+            if (entry != null && entry.getDepartmentId() != null)
+            {
+                return entry.getDepartmentId();
+            }
+        }
+        return null;
+    }
+
+    private FdWarehouse loadWarehouseById(Long warehouseId)
+    {
+        if (warehouseId == null)
+        {
+            return null;
+        }
+        String id = String.valueOf(warehouseId);
+        FdWarehouse warehouse = fdWarehouseMapper.selectFdWarehouseById(id);
+        if (warehouse == null)
+        {
+            warehouse = fdWarehouseMapper.selectFdWarehouseByIdIgnoreTenant(id);
+        }
+        return warehouse;
+    }
+
+    private FdDepartment loadDepartmentById(Long departmentId)
+    {
+        if (departmentId == null)
+        {
+            return null;
+        }
+        String id = String.valueOf(departmentId);
+        FdDepartment department = fdDepartmentMapper.selectFdDepartmentById(id);
+        if (department == null)
+        {
+            department = fdDepartmentMapper.selectFdDepartmentByIdIgnoreTenant(id);
+        }
+        return department;
+    }
+
+    private SysUser resolveSysUser(String userKey)
+    {
+        if (StringUtils.isBlank(userKey))
+        {
+            return null;
+        }
+        String key = userKey.trim();
+        try
+        {
+            Long uid = Long.parseLong(key);
+            SysUser byId = sysUserMapper.selectUserById(uid);
+            if (byId != null)
+            {
+                return byId;
+            }
+        }
+        catch (NumberFormatException ignored)
+        {
+            // fall through to userName lookup
+        }
+        return sysUserMapper.selectUserByUserName(key);
     }
 
     /**
@@ -265,6 +422,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
 
         gzShipment.setShipmentStatus(2);
         gzShipment.setAuditDate(new Date());
+        gzShipment.setAuditBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
         gzShipment.setUpdateTime(new Date());
         int res = gzShipmentMapper.updateGzShipment(gzShipment);
