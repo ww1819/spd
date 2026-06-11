@@ -956,13 +956,24 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         return out;
     }
 
-    private void patchMasterAfterDeptConsume(HcBarcodeMaster master, BigDecimal signedQty, Long departmentId) {
+    private String resolveHcBarcodeTenantId(HcBarcodeMaster master, String fallbackTenantId) {
+        if (master != null && StringUtils.isNotEmpty(master.getTenantId())) {
+            return master.getTenantId();
+        }
+        if (StringUtils.isNotEmpty(fallbackTenantId)) {
+            return fallbackTenantId;
+        }
+        return SecurityUtils.getCustomerId();
+    }
+
+    private void patchMasterAfterDeptConsume(HcBarcodeMaster master, BigDecimal signedQty, Long departmentId,
+        String fallbackTenantId) {
         if (master == null || signedQty == null || signedQty.compareTo(BigDecimal.ZERO) == 0) {
             return;
         }
         HcBarcodeMaster patch = new HcBarcodeMaster();
         patch.setId(master.getId());
-        patch.setTenantId(master.getTenantId());
+        patch.setTenantId(resolveHcBarcodeTenantId(master, fallbackTenantId));
         patch.setUpdateBy(uid());
         if (signedQty.compareTo(BigDecimal.ZERO) > 0) {
             patch.setCurrentHolderType("UNKNOWN");
@@ -994,10 +1005,12 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         String strDept = bill.getDepartmentId() != null ? String.valueOf(bill.getDepartmentId()) : null;
         String fromDept = consume ? strDept : null;
         String toDept = consume ? null : strDept;
-        Integer seq = hcBarcodeTraceMapper.selectNextFlowSeq(master.getTenantId(), master.getId());
+        String tenantId = resolveHcBarcodeTenantId(master,
+            bill != null ? bill.getTenantId() : null);
+        Integer seq = hcBarcodeTraceMapper.selectNextFlowSeq(tenantId, master.getId());
         HcBarcodeFlow flow = new HcBarcodeFlow();
         flow.setId(UUID7.generateUUID7());
-        flow.setTenantId(master.getTenantId());
+        flow.setTenantId(tenantId);
         flow.setHcBarcodeMasterId(master.getId());
         flow.setBarcodeValue(master.getBarcodeValue());
         flow.setValueLevel(master.getValueLevel());
@@ -1023,7 +1036,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         flow.setCreateBy(uid());
         flow.setCreateTime(new Date());
         hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
-        patchMasterAfterDeptConsume(master, signedQty, bill.getDepartmentId());
+        patchMasterAfterDeptConsume(master, signedQty, bill.getDepartmentId(), tenantId);
     }
 
     @Override
@@ -1179,11 +1192,12 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         {
             return;
         }
+        String tenantId = resolveHcBarcodeTenantId(master, trace.getTenantId());
         String strDept = trace.getExecDeptId() != null ? String.valueOf(trace.getExecDeptId()) : null;
-        Integer seq = hcBarcodeTraceMapper.selectNextFlowSeq(master.getTenantId(), master.getId());
+        Integer seq = hcBarcodeTraceMapper.selectNextFlowSeq(tenantId, master.getId());
         HcBarcodeFlow flow = new HcBarcodeFlow();
         flow.setId(UUID7.generateUUID7());
-        flow.setTenantId(master.getTenantId());
+        flow.setTenantId(tenantId);
         flow.setHcBarcodeMasterId(master.getId());
         flow.setBarcodeValue(master.getBarcodeValue());
         flow.setValueLevel(master.getValueLevel());
@@ -1207,7 +1221,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         flow.setCreateBy(uid());
         flow.setCreateTime(new Date());
         hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
-        patchMasterAfterDeptConsume(master, signedQty, trace.getExecDeptId());
+        patchMasterAfterDeptConsume(master, signedQty, trace.getExecDeptId(), tenantId);
     }
 
     /** 高值科室库存变动：写入 gz_dep_flow（与条码主档是否存在无关）。 */

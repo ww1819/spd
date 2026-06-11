@@ -9,7 +9,7 @@ public final class HisMirrorProcessConstants
 {
     public static final String PARTY_MANUAL = "手动处理";
     public static final String PARTY_AUTO = "自动处理";
-    public static final String RESULT_SUCCESS = "处理成功";
+    public static final String RESULT_SUCCESS = "核销成功";
 
     private HisMirrorProcessConstants()
     {
