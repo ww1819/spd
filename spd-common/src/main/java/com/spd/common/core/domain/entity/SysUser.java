@@ -128,6 +128,12 @@ public class SysUser extends BaseEntity
     /** 仅列无耗材工作组用户：sys_user_post 无记录（列表筛选） */
     private Boolean withoutWorkgroup;
 
+    /** 密码错误超限锁定（Redis，非帐号停用） */
+    private Boolean pwdLocked;
+
+    /** 密码锁定预计自动解锁时间 */
+    private Date pwdUnlockTime;
+
     public SysUser()
     {
 
@@ -444,6 +450,26 @@ public class SysUser extends BaseEntity
     public void setWithoutWorkgroup(Boolean withoutWorkgroup)
     {
         this.withoutWorkgroup = withoutWorkgroup;
+    }
+
+    public Boolean getPwdLocked()
+    {
+        return pwdLocked;
+    }
+
+    public void setPwdLocked(Boolean pwdLocked)
+    {
+        this.pwdLocked = pwdLocked;
+    }
+
+    public Date getPwdUnlockTime()
+    {
+        return pwdUnlockTime;
+    }
+
+    public void setPwdUnlockTime(Date pwdUnlockTime)
+    {
+        this.pwdUnlockTime = pwdUnlockTime;
     }
 
     @Override
