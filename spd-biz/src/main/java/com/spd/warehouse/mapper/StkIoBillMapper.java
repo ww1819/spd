@@ -486,6 +486,8 @@ public interface StkIoBillMapper
         @Param("hisPushMsg") String hisPushMsg, @Param("hisTraceId") String hisTraceId,
         @Param("hisPushTime") java.util.Date hisPushTime);
 
+    int updateStkIoBillPrintRecord(StkIoBill stkIoBill);
+
     int updateDepInventoryHisStock(@Param("id") Long id, @Param("hisPharmacyStockId") String hisPharmacyStockId,
         @Param("hisStorageStockId") String hisStorageStockId, @Param("hisStockQueryId") String hisStockQueryId);
 

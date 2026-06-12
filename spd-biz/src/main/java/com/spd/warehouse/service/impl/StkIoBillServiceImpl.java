@@ -281,6 +281,35 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public int recordStkIoBillPrint(Long id)
+    {
+        if (id == null)
+        {
+            throw new ServiceException("单据ID不能为空");
+        }
+        StkIoBill bill = stkIoBillMapper.selectStkIoBillById(id);
+        if (bill == null)
+        {
+            throw new ServiceException("单据不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(bill.getTenantId());
+        StkIoBill update = new StkIoBill();
+        update.setId(id);
+        update.setPrintDate(DateUtils.getNowDate());
+        String printPerson = null;
+        if (SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null)
+        {
+            printPerson = SecurityUtils.getLoginUser().getUser().getNickName();
+        }
+        if (StringUtils.isEmpty(printPerson))
+        {
+            printPerson = SecurityUtils.getUsername();
+        }
+        update.setPrintPerson(printPerson);
+        return stkIoBillMapper.updateStkIoBillPrintRecord(update);
+    }
+
+    @Override
     public List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList()
     {
         StkIoBill q = new StkIoBill();
