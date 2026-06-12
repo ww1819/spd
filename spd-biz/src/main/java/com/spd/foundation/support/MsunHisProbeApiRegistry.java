@@ -114,7 +114,7 @@ public final class MsunHisProbeApiRegistry
             case "categories":
                 return "dictCategory";
             case "materials":
-                return "drugDict";
+                return null;
             default:
                 return null;
         }

@@ -340,4 +340,12 @@ public interface IStkIoBillService
      * 高值核销确认：写入 G-RK/G-CK 已审核单据 + 仓库流水（hc_ck_flow），不写 stk_inventory / 科室库存。
      */
     Long insertHighValueSettlementBill(StkIoBill bill, String billNoPrefix);
+
+    /**
+     * 记录单据打印（更新打印时间、打印人）
+     *
+     * @param id 出入库单主键
+     * @return 结果
+     */
+    int recordStkIoBillPrint(Long id);
 }

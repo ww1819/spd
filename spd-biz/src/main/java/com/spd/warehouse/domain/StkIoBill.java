@@ -46,6 +46,9 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 查询参数：仓库多选 */
+    private Long[] warehouseIds;
+
     /** 科室ID */
     @Excel(name = "科室ID")
     private Long departmentId;
@@ -198,6 +201,13 @@ public class StkIoBill extends BaseEntity
     /** 收货确认状态（0=未确认，1=已确认） */
     private Integer receiptConfirmStatus;
 
+    /** 最近打印时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date printDate;
+
+    /** 最近打印人（昵称） */
+    private String printPerson;
+
     /** 查询参数：起始日期 */
     private Date beginDate;
 
@@ -347,6 +357,17 @@ public class StkIoBill extends BaseEntity
     {
         return warehouseId;
     }
+
+    public Long[] getWarehouseIds()
+    {
+        return warehouseIds;
+    }
+
+    public void setWarehouseIds(Long[] warehouseIds)
+    {
+        this.warehouseIds = warehouseIds;
+    }
+
     public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
@@ -519,6 +540,22 @@ public class StkIoBill extends BaseEntity
 
     public void setAuditDate(Date auditDate) {
         this.auditDate = auditDate;
+    }
+
+    public Date getPrintDate() {
+        return printDate;
+    }
+
+    public void setPrintDate(Date printDate) {
+        this.printDate = printDate;
+    }
+
+    public String getPrintPerson() {
+        return printPerson;
+    }
+
+    public void setPrintPerson(String printPerson) {
+        this.printPerson = printPerson;
     }
 
     public Date getBeginDate() {

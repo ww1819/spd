@@ -88,6 +88,7 @@ public class FixedNumberController extends BaseController
                     map.put("isProcure", item.getMaterial().getIsProcure());
                     map.put("isGz", item.getMaterial().getIsGz());
                     map.put("materialIsUse", item.getMaterial().getIsUse());
+                    map.put("isBilling", item.getMaterial().getIsBilling());
                     if (item.getMaterial().getSupplierId() != null) {
                         map.put("supplierId", item.getMaterial().getSupplierId());
                     }

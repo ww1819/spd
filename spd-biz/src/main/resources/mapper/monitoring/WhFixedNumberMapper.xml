@@ -53,6 +53,7 @@
         <result property="isProcure" column="isProcure"/>
         <result property="isGz" column="isGz"/>
         <result property="isUse" column="materialIsUse"/>
+        <result property="isBilling" column="isBilling"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -92,6 +93,7 @@
             m.is_procure as isProcure,
             m.is_gz as isGz,
             m.is_use as materialIsUse,
+            m.is_billing as isBilling,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName,

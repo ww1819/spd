@@ -174,6 +174,16 @@ public final class HisMirrorProcessUserMessages
         }
     }
 
+    public static String highApplyFailed()
+    {
+        return "核销未完成，请重试或联系信息科";
+    }
+
+    public static String lowApplyFailed()
+    {
+        return "核销未完成，请重试或联系信息科";
+    }
+
     /** 非业务异常写入处理情况时使用通用文案，避免暴露技术细节 */
     public static String safeFailureMessage(Throwable e, String defaultMessage)
     {

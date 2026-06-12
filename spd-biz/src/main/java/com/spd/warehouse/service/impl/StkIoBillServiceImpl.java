@@ -281,6 +281,35 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public int recordStkIoBillPrint(Long id)
+    {
+        if (id == null)
+        {
+            throw new ServiceException("单据ID不能为空");
+        }
+        StkIoBill bill = stkIoBillMapper.selectStkIoBillById(id);
+        if (bill == null)
+        {
+            throw new ServiceException("单据不存在或已删除");
+        }
+        SecurityUtils.ensureTenantAccess(bill.getTenantId());
+        StkIoBill update = new StkIoBill();
+        update.setId(id);
+        update.setPrintDate(DateUtils.getNowDate());
+        String printPerson = null;
+        if (SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getUser() != null)
+        {
+            printPerson = SecurityUtils.getLoginUser().getUser().getNickName();
+        }
+        if (StringUtils.isEmpty(printPerson))
+        {
+            printPerson = SecurityUtils.getUsername();
+        }
+        update.setPrintPerson(printPerson);
+        return stkIoBillMapper.updateStkIoBillPrintRecord(update);
+    }
+
+    @Override
     public List<StkIoBill> selectDepartmentUnreceivedReceiptReminderList()
     {
         StkIoBill q = new StkIoBill();
@@ -795,6 +824,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (entry.getEndTime() == null && dep.getEndDate() != null) {
             entry.setEndTime(dep.getEndDate());
         }
+        fillTk401EntryHisStockFromSources(entry, dep);
         if (bill != null) {
             applyStkIoBillEntryRefSnapshots(bill, entry, 401);
         } else {
@@ -827,7 +857,57 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         patch.setSupplierIdStr(entry.getSupplierIdStr());
         patch.setBeginTime(entry.getBeginTime());
         patch.setEndTime(entry.getEndTime());
+        patch.setHisPharmacyStockId(entry.getHisPharmacyStockId());
+        patch.setHisStorageStockId(entry.getHisStorageStockId());
+        patch.setHisStockQueryId(entry.getHisStockQueryId());
         stkIoBillMapper.updateStkIoBillEntryById(patch);
+    }
+
+    /**
+     * 退库明细 HIS 库存键：优先科室库存，其次原出库明细（bill_entry_id / 同 dep_inventory_id 的 201 明细）。
+     */
+    private void fillTk401EntryHisStockFromSources(StkIoBillEntry entry, StkDepInventory dep) {
+        if (entry == null || dep == null || !needsTk401HisStockBackfill(entry)) {
+            return;
+        }
+        mergeTk401HisStockIds(entry, dep.getHisPharmacyStockId(), dep.getHisStorageStockId(), dep.getHisStockQueryId());
+        if (needsTk401HisStockBackfill(entry) && dep.getBillEntryId() != null) {
+            mergeTk401HisStockFromEntry(entry, stkIoBillMapper.selectEntryHisStockById(dep.getBillEntryId()));
+        }
+        if (needsTk401HisStockBackfill(entry) && dep.getId() != null) {
+            mergeTk401HisStockFromEntry(entry,
+                stkIoBillMapper.selectOutboundEntryHisStockByDepInventoryId(dep.getId()));
+        }
+    }
+
+    private static boolean needsTk401HisStockBackfill(StkIoBillEntry entry) {
+        return StringUtils.isEmpty(entry.getHisPharmacyStockId())
+            || StringUtils.isEmpty(entry.getHisStorageStockId())
+            || StringUtils.isEmpty(entry.getHisStockQueryId());
+    }
+
+    private static void mergeTk401HisStockFromEntry(StkIoBillEntry target, StkIoBillEntry source) {
+        if (target == null || source == null) {
+            return;
+        }
+        mergeTk401HisStockIds(target, source.getHisPharmacyStockId(),
+            source.getHisStorageStockId(), source.getHisStockQueryId());
+    }
+
+    private static void mergeTk401HisStockIds(
+            StkIoBillEntry entry, String pharmacyStockId, String storageStockId, String stockQueryId) {
+        if (entry == null) {
+            return;
+        }
+        if (StringUtils.isEmpty(entry.getHisPharmacyStockId()) && StringUtils.isNotEmpty(pharmacyStockId)) {
+            entry.setHisPharmacyStockId(pharmacyStockId.trim());
+        }
+        if (StringUtils.isEmpty(entry.getHisStorageStockId()) && StringUtils.isNotEmpty(storageStockId)) {
+            entry.setHisStorageStockId(storageStockId.trim());
+        }
+        if (StringUtils.isEmpty(entry.getHisStockQueryId()) && StringUtils.isNotEmpty(stockQueryId)) {
+            entry.setHisStockQueryId(stockQueryId.trim());
+        }
     }
 
     private static Date coalesceDate(Date primary, Date fallback) {

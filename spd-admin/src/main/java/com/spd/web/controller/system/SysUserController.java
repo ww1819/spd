@@ -50,6 +50,8 @@ import com.spd.system.service.ISysPostService;
 import com.spd.system.service.ISysRoleService;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysUserService;
+import com.spd.framework.web.service.SysPasswordService;
+import com.spd.framework.web.service.SysPasswordService.PasswordLockStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +94,9 @@ public class SysUserController extends BaseController
 
     @Autowired
     private ISysMenuService sysMenuService;
+
+    @Autowired
+    private SysPasswordService passwordService;
 
     /**
      * 耗材租户用户授权：菜单树 = 本客户 hc_customer_menu 已开通的全部功能；checkedKeys = 该用户已分配的 sys_user_menu
@@ -141,7 +146,42 @@ public class SysUserController extends BaseController
         }
         startPage();
         List<SysUser> list = userService.selectUserList(user);
+        enrichPasswordLockInfo(list);
         return getDataTable(list);
+    }
+
+    /**
+     * 解除密码错误锁定（清除 Redis 错误次数缓存）
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.OTHER)
+    @PutMapping("/unlock/{userName}")
+    public AjaxResult unlock(@PathVariable("userName") String userName)
+    {
+        if (StringUtils.isEmpty(StringUtils.trim(userName)))
+        {
+            return error("用户账户不能为空");
+        }
+        passwordService.clearLoginRecordCache(userName.trim());
+        return success("用户 " + userName.trim() + " 已解除锁定");
+    }
+
+    private void enrichPasswordLockInfo(List<SysUser> list)
+    {
+        if (list == null || list.isEmpty())
+        {
+            return;
+        }
+        for (SysUser u : list)
+        {
+            if (u == null || StringUtils.isEmpty(u.getUserName()))
+            {
+                continue;
+            }
+            PasswordLockStatus lock = passwordService.getLockStatus(u.getUserName());
+            u.setPwdLocked(lock.isLocked());
+            u.setPwdUnlockTime(lock.getUnlockTime());
+        }
     }
 
     /**

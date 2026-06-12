@@ -18,11 +18,10 @@ public final class HisMatchTextUtils
         {
             return "";
         }
-        String s = raw;
-        StringBuilder sb = new StringBuilder(s.length());
-        for (int i = 0; i < s.length(); i++)
+        StringBuilder sb = new StringBuilder(raw.length());
+        for (int i = 0; i < raw.length(); i++)
         {
-            char c = s.charAt(i);
+            char c = raw.charAt(i);
             if (Character.isISOControl(c) && c != '\t')
             {
                 continue;
@@ -32,8 +31,22 @@ public final class HisMatchTextUtils
             {
                 continue;
             }
-            sb.append(c);
+            sb.append(toHalfWidthChar(c));
         }
         return sb.toString().trim();
+    }
+
+    /** 全角 ASCII 及全角空格转半角，兼容中文输入法下扫码枪输入 */
+    private static char toHalfWidthChar(char c)
+    {
+        if (c == '\u3000')
+        {
+            return ' ';
+        }
+        if (c >= '\uFF01' && c <= '\uFF5E')
+        {
+            return (char) (c - 0xFEE0);
+        }
+        return c;
     }
 }

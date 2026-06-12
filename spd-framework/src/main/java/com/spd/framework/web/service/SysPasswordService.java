@@ -1,5 +1,6 @@
 package com.spd.framework.web.service;
 
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -89,6 +90,77 @@ public class SysPasswordService
         if (redisCache.hasKey(getCacheKey(loginName)))
         {
             redisCache.deleteObject(getCacheKey(loginName));
+        }
+    }
+
+    /**
+     * 查询账户是否因密码错误次数超限被锁定，及预计自动解锁时间（Redis TTL）。
+     */
+    public PasswordLockStatus getLockStatus(String username)
+    {
+        PasswordLockStatus status = new PasswordLockStatus();
+        if (username == null || username.trim().isEmpty())
+        {
+            return status;
+        }
+        String key = getCacheKey(username.trim());
+        if (!Boolean.TRUE.equals(redisCache.hasKey(key)))
+        {
+            return status;
+        }
+        Integer retryCount = redisCache.getCacheObject(key);
+        if (retryCount == null)
+        {
+            retryCount = 0;
+        }
+        status.setErrCount(retryCount);
+        boolean locked = retryCount >= maxRetryCount;
+        status.setLocked(locked);
+        if (locked)
+        {
+            long ttlSeconds = redisCache.getExpire(key);
+            if (ttlSeconds > 0)
+            {
+                status.setUnlockTime(new Date(System.currentTimeMillis() + ttlSeconds * 1000L));
+            }
+        }
+        return status;
+    }
+
+    public static final class PasswordLockStatus
+    {
+        private boolean locked;
+        private Integer errCount;
+        private Date unlockTime;
+
+        public boolean isLocked()
+        {
+            return locked;
+        }
+
+        public void setLocked(boolean locked)
+        {
+            this.locked = locked;
+        }
+
+        public Integer getErrCount()
+        {
+            return errCount;
+        }
+
+        public void setErrCount(Integer errCount)
+        {
+            this.errCount = errCount;
+        }
+
+        public Date getUnlockTime()
+        {
+            return unlockTime;
+        }
+
+        public void setUnlockTime(Date unlockTime)
+        {
+            this.unlockTime = unlockTime;
         }
     }
 }

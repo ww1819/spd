@@ -116,7 +116,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (Exception e)
         {
-            String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, "低值核销失败");
+            log.error("HIS镜像低值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
+            String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.lowApplyFailed());
             hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, msg);
             throw new ServiceException(msg);
         }
@@ -297,7 +298,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (Exception e)
         {
-            String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, "高值核销失败");
+            log.error("HIS镜像高值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
+            String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.highApplyFailed());
             hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, msg);
             throw new ServiceException(msg);
         }
