@@ -258,6 +258,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="stkInventoryMaterialReportVisible"/>
         <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="excludeZeroQty != null and excludeZeroQty == true"> and IFNULL(stk.qty, 0) &gt; 0 </if>
+        <if test="onlyZeroQty != null and onlyZeroQty == true"> and IFNULL(stk.qty, 0) = 0 </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -296,6 +297,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="stkInventoryMaterialReportVisible"/>
         <include refid="stkInventoryMaterialIsUseQuery"/>
         <if test="excludeZeroQty != null and excludeZeroQty == true"> and IFNULL(stk.qty, 0) &gt; 0 </if>
+        <if test="onlyZeroQty != null and onlyZeroQty == true"> and IFNULL(stk.qty, 0) = 0 </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
@@ -389,6 +391,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <include refid="materialHisChargeItemIdWhere"/>
         GROUP BY stk.material_id, stk.warehouse_id, m.code, m.name, m.speci, m.model, u.unit_name
+        <choose>
+            <when test="onlyZeroQty != null and onlyZeroQty == true">
+                HAVING SUM(IFNULL(stk.qty, 0)) = 0
+            </when>
+            <when test="excludeZeroQty != null and excludeZeroQty == true">
+                HAVING SUM(IFNULL(stk.qty, 0)) &gt; 0
+            </when>
+        </choose>
         order by IFNULL(m.name, '') asc, MAX(w.name) asc, IFNULL(m.code, '') asc
     </select>
 
@@ -406,6 +416,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.tenant_id = #{tenantId}
         <include refid="stkInventoryMaterialReportVisible"/>
         <include refid="stkInventoryMaterialIsUseQuery"/>
+        <if test="excludeZeroQty != null and excludeZeroQty == true"> and IFNULL(stk.qty, 0) &gt; 0 </if>
+        <if test="onlyZeroQty != null and onlyZeroQty == true"> and IFNULL(stk.qty, 0) = 0 </if>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
