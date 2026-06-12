@@ -48,6 +48,15 @@ public class FdMaterialCategoryController extends BaseController
     }
 
     /**
+     * 查询所有耗材分类（下拉/筛选等场景，仅需登录，不要求 materialCategory:list 权限）
+     */
+    @GetMapping("/listAll")
+    public List<FdMaterialCategory> listAll(FdMaterialCategory fdMaterialCategory)
+    {
+        return fdMaterialCategoryService.selectFdMaterialCategoryList(fdMaterialCategory);
+    }
+
+    /**
      * 导出耗材分类维护列表
      */
     @PreAuthorize("@ss.hasPermi('foundation:materialCategory:export')")

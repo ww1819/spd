@@ -875,7 +875,8 @@ public class SysMenuServiceImpl implements ISysMenuService
                 byId.put(m.getMenuId(), m);
             }
         }
-        while (true)
+        int guard = 0;
+        while (guard++ < 64)
         {
             Set<Long> missingPids = new HashSet<>();
             for (SysMenu m : byId.values())
@@ -899,14 +900,29 @@ public class SysMenuServiceImpl implements ISysMenuService
             {
                 break;
             }
+            int added = 0;
             for (SysMenu parent : parents)
             {
-                // 不向上挂平台管理目录，避免在租户授权树中露出平台节点
-                if (parent != null && parent.getMenuId() != null
-                        && (parent.getIsPlatform() == null || !"1".equals(String.valueOf(parent.getIsPlatform()).trim())))
+                if (parent == null || parent.getMenuId() == null)
+                {
+                    continue;
+                }
+                // 与 expandMenuIdsWithAncestorsForTenant 一致：目录(M) 即 is_platform=1 亦须纳入，否则子节点 parent 永远缺失导致死循环查库
+                boolean platformNonDir = "1".equals(StringUtils.trimToEmpty(parent.getIsPlatform()))
+                        && !UserConstants.TYPE_DIR.equals(StringUtils.trimToEmpty(parent.getMenuType()));
+                if (platformNonDir)
+                {
+                    continue;
+                }
+                if (!byId.containsKey(parent.getMenuId()))
                 {
                     byId.put(parent.getMenuId(), parent);
+                    added++;
                 }
+            }
+            if (added == 0)
+            {
+                break;
             }
         }
         List<SysMenu> merged = new ArrayList<>(byId.values());

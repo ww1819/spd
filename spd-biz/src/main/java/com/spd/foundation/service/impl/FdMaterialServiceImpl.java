@@ -40,6 +40,7 @@ import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -67,6 +68,8 @@ import javax.validation.Validator;
 public class FdMaterialServiceImpl implements IFdMaterialService
 {
     private static final String HS_THIRD_CUSTOMER_ID = TenantEnum.HS_003.getCustomerId();
+    /** 枣强县中医院：产品档案修改暂仅允许财务分类、生产厂家、供应商、单价 */
+    private static final String ZQ_TCM_CUSTOMER_ID = TenantEnum.ZQ_TCM.getCustomerId();
     private static final String HS_PREFIX_GZ = "GZ";
     private static final String HS_PREFIX_DZ = "DZ";
     private static final String HS_PREFIX_SJ = "SJ";
@@ -412,6 +415,13 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public int updateFdMaterial(FdMaterial fdMaterial)
     {
+        FdMaterial oldMaterial = fdMaterial != null && fdMaterial.getId() != null
+            ? fdMaterialMapper.selectFdMaterialById(fdMaterial.getId())
+            : null;
+        if (oldMaterial != null)
+        {
+            applyZqTcmLimitedMaterialUpdate(fdMaterial, oldMaterial);
+        }
         sanitizeUdiNo(fdMaterial);
         validateMaterialForUpdate(fdMaterial);
         Date now = DateUtils.getNowDate();
@@ -420,7 +430,6 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         if (operator == null) {
             operator = fdMaterial.getUpdateBy() != null ? fdMaterial.getUpdateBy() : "";
         }
-        FdMaterial oldMaterial = fdMaterialMapper.selectFdMaterialById(fdMaterial.getId());
         if (oldMaterial != null) {
             Long effectiveFinanceCategoryId = fdMaterial.getFinanceCategoryId() != null ? fdMaterial.getFinanceCategoryId() : oldMaterial.getFinanceCategoryId();
             String effectiveIsGz = StringUtils.isNotEmpty(fdMaterial.getIsGz()) ? fdMaterial.getIsGz() : oldMaterial.getIsGz();
@@ -457,6 +466,41 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         SecurityUtils.ensureTenantAccess(material.getTenantId());
         return fdMaterialMapper.clearHisChargeItemIdByMaterialId(materialId, SecurityUtils.getUserIdStr());
+    }
+
+    private static boolean isZqTcmTenant(String tenantId)
+    {
+        return ZQ_TCM_CUSTOMER_ID.equals(tenantId);
+    }
+
+    /**
+     * 枣强县中医院：修改产品档案时仅应用财务分类、生产厂家、供应商、单价，其余字段保持库内原值。
+     */
+    private void applyZqTcmLimitedMaterialUpdate(FdMaterial incoming, FdMaterial old)
+    {
+        if (incoming == null || old == null || !isZqTcmTenant(old.getTenantId()))
+        {
+            return;
+        }
+        Long id = incoming.getId();
+        Long financeCategoryId = incoming.getFinanceCategoryId();
+        Long factoryId = incoming.getFactoryId();
+        Long supplierId = incoming.getSupplierId();
+        java.math.BigDecimal price = incoming.getPrice();
+        BeanUtils.copyProperties(old, incoming);
+        incoming.setId(id);
+        incoming.setFinanceCategoryId(financeCategoryId);
+        incoming.setFactoryId(factoryId);
+        incoming.setSupplierId(supplierId);
+        incoming.setPrice(price);
+    }
+
+    private void assertZqTcmMaterialBulkUpdateAllowed()
+    {
+        if (isZqTcmTenant(SecurityUtils.getCustomerId()))
+        {
+            throw new ServiceException("枣强县中医院暂仅支持逐条修改产品档案的财务分类、生产厂家、供应商与单价");
+        }
     }
 
     /**
@@ -875,6 +919,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchUpdateMaterials(MaterialBatchUpdateDto dto) {
+        assertZqTcmMaterialBulkUpdateAllowed();
         if (dto == null) {
             throw new ServiceException("请求参数不能为空");
         }
@@ -1422,6 +1467,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public Map<String, Object> validateMaterialImportUpdate(List<MaterialImportUpdateDto> list)
     {
+        assertZqTcmMaterialBulkUpdateAllowed();
         clearMaterialUpdateImportValidation(list);
         ImportRowErrorCollector c = new ImportRowErrorCollector();
         String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
@@ -1549,6 +1595,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     @Override
     public String importMaterialImportUpdate(List<MaterialImportUpdateDto> list, String operName, boolean confirm)
     {
+        assertZqTcmMaterialBulkUpdateAllowed();
         if (!confirm)
         {
             throw new ServiceException("请先完成校验并在确认后再导入");
