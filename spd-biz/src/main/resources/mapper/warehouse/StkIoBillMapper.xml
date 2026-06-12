@@ -2412,7 +2412,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (201, 401)
           and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <choose>
+            <when test="warehouseIds != null and warehouseIds.length > 0">
+                and stk.warehouse_id in
+                <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                    #{wId}
+                </foreach>
+            </when>
+            <when test="warehouseId != null">
+                and stk.warehouse_id = #{warehouseId}
+            </when>
+        </choose>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
@@ -2486,7 +2496,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (201, 401)
           and stk.bill_status = 2
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <choose>
+            <when test="warehouseIds != null and warehouseIds.length > 0">
+                and stk.warehouse_id in
+                <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                    #{wId}
+                </foreach>
+            </when>
+            <when test="warehouseId != null">
+                and stk.warehouse_id = #{warehouseId}
+            </when>
+        </choose>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>

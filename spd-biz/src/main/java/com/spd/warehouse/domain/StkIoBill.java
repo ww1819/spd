@@ -46,6 +46,9 @@ public class StkIoBill extends BaseEntity
     @Excel(name = "仓库ID")
     private Long warehouseId;
 
+    /** 查询参数：仓库多选 */
+    private Long[] warehouseIds;
+
     /** 科室ID */
     @Excel(name = "科室ID")
     private Long departmentId;
@@ -347,6 +350,17 @@ public class StkIoBill extends BaseEntity
     {
         return warehouseId;
     }
+
+    public Long[] getWarehouseIds()
+    {
+        return warehouseIds;
+    }
+
+    public void setWarehouseIds(Long[] warehouseIds)
+    {
+        this.warehouseIds = warehouseIds;
+    }
+
     public void setDepartmentId(Long departmentId)
     {
         this.departmentId = departmentId;
