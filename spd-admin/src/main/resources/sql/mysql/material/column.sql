@@ -2991,3 +2991,9 @@ UPDATE sys_post SET post_name = '机构管理员' WHERE post_code = 'super' AND 
 /
 UPDATE sb_work_group SET group_name = '机构管理员' WHERE group_key = 'super' AND group_name IN ('管理员组', '管理员');
 /
+
+-- ========== 出入库单打印记录（列表打印状态/打印人/打印日期）==========
+CALL add_table_column('stk_io_bill', 'print_date', 'datetime', '最近打印时间', NULL);
+/
+CALL add_table_column('stk_io_bill', 'print_person', 'varchar(64)', '最近打印人', NULL);
+/

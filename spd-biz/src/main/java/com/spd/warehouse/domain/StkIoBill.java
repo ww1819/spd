@@ -201,6 +201,13 @@ public class StkIoBill extends BaseEntity
     /** 收货确认状态（0=未确认，1=已确认） */
     private Integer receiptConfirmStatus;
 
+    /** 最近打印时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date printDate;
+
+    /** 最近打印人（昵称） */
+    private String printPerson;
+
     /** 查询参数：起始日期 */
     private Date beginDate;
 
@@ -533,6 +540,22 @@ public class StkIoBill extends BaseEntity
 
     public void setAuditDate(Date auditDate) {
         this.auditDate = auditDate;
+    }
+
+    public Date getPrintDate() {
+        return printDate;
+    }
+
+    public void setPrintDate(Date printDate) {
+        this.printDate = printDate;
+    }
+
+    public String getPrintPerson() {
+        return printPerson;
+    }
+
+    public void setPrintPerson(String printPerson) {
+        this.printPerson = printPerson;
     }
 
     public Date getBeginDate() {

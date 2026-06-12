@@ -79,6 +79,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hisPushStatus"    column="his_push_status"    />
         <result property="hisPushMsg"    column="his_push_msg"    />
         <result property="hisPushTime"    column="his_push_time"    />
+        <result property="printDate"    column="print_date"    />
+        <result property="printPerson"    column="print_person"    />
 
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
@@ -264,7 +266,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag, stk.tenant_id, stk.delete_by, stk.delete_time, stk.settlement_type, stk.audit_date, stk.create_by, stk.create_time,
 				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
-				stk.his_push_status,stk.his_push_msg,stk.his_push_time,
+				stk.his_push_status,stk.his_push_msg,stk.his_push_time,stk.print_date,stk.print_person,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
 				stk.delivery_ref_warehouse_id,stk.delivery_ref_warehouse_name,stk.delivery_ref_supplier_id,
 				stk.delivery_ref_supplier_name,stk.delivery_ref_dept_id,stk.delivery_ref_dept_name,
@@ -2997,6 +2999,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="hisTraceId != null">his_trace_id = #{hisTraceId},</if>
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
+    </update>
+
+    <update id="updateStkIoBillPrintRecord">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_io_bill
+        set print_date = #{printDate},
+            print_person = #{printPerson},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId} and del_flag != 1
     </update>
 
     <update id="updateDepInventoryHisStock">

@@ -158,6 +158,17 @@ public class StkIoBillOutController extends BaseController {
     }
 
     /**
+     * 记录出库单打印（更新打印状态、打印人、打印时间）
+     */
+    @Log(title = "出库单打印", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:query') || @ss.hasPermi('outWarehouse:apply:audit')")
+    @PutMapping("/recordPrint/{id}")
+    public AjaxResult recordPrint(@PathVariable("id") Long id)
+    {
+        return toAjax(stkIoBillService.recordStkIoBillPrint(id));
+    }
+
+    /**
      * 新增出库
      */
     @Log(title = "出库", businessType = BusinessType.INSERT)
