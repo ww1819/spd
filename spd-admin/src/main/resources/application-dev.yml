@@ -121,8 +121,8 @@ spring:
                 # url: jdbc:mysql://192.168.3.7s5:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 # username: root
                 # password: hssy_2018
-                # 本机 MySQL（备用）
-                 url: jdbc:mysql://127.0.0.1:3306/hssy?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                # 本机 MySQL（与 prod 本地库名 aspt 一致）
+                 url: jdbc:mysql://127.0.0.1:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                  username: root
                  password: root
                  # password: root
@@ -142,7 +142,7 @@ spring:
                 maxWait: 60000
                 timeBetweenEvictionRunsMillis: 60000
                 minEvictableIdleTimeMillis: 300000
-                maxEvictableIdleTimeMillis: 900000image.png
+                maxEvictableIdleTimeMillis: 900000
                 validationQuery: SELECT 1 FROM DUAL
                 testWhileIdle: true
                 testOnBorrow: false

@@ -6703,6 +6703,82 @@ FROM DUAL WHERE @gz_zyjf_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_men
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
 /
 
+-- 23.9.2 高值追溯（gz/retrospect/index）：页面 + 按钮权限（与 FE、GzTraceabilityController/GzDepotInventoryController 一致）
+SET @gz_root := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_name = '高值管理' AND menu_type = 'M' AND path = 'gz'
+  ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 1238, '高值追溯', COALESCE(@gz_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@gz_root, 1)), 'retrospect', 'gz/retrospect/index', NULL, 1, 0, 'C', '0', '0', 'gz:retrospect:list', 'search', 'admin', NOW(), '1', NOW(), '高值使用追溯查询页', '0', '1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/retrospect/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 1238)
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @gz_retrospect_menu := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_type = 'C' AND component = 'gz/retrospect/index'
+  ORDER BY menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3886, '追溯明细列表', @gz_retrospect_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:list', '#', 'admin', NOW(), '1', NOW(), 'GET /gz/traceability/entry/list、/usageReport/list', '0', '1'
+FROM DUAL WHERE @gz_retrospect_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_retrospect_menu AND perms = 'gz:traceability:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3886))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3887, '追溯报表导出', @gz_retrospect_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:traceability:export', '#', 'admin', NOW(), '1', NOW(), 'POST /gz/traceability/usageReport/export', '0', '1'
+FROM DUAL WHERE @gz_retrospect_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_retrospect_menu AND perms = 'gz:traceability:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3887))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3888, '使用追溯导出', @gz_retrospect_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:retrospect:export', '#', 'admin', NOW(), '1', NOW(), 'gz/retrospect/index 导出按钮 v-hasPermi', '0', '1'
+FROM DUAL WHERE @gz_retrospect_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_retrospect_menu AND perms = 'gz:retrospect:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3888))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3889, '备货库存列表(追溯汇总)', @gz_retrospect_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:depotInventory:list', '#', 'admin', NOW(), '1', NOW(), '追溯汇总表 GET /gz/depotInventory/list', '0', '1'
+FROM DUAL WHERE @gz_retrospect_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_retrospect_menu AND perms = 'gz:depotInventory:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3889))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3886);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3887);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3888);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3889);
+/
+
+-- 23.9.2.1 高值追溯按钮须写入 hc_customer_menu，否则租户「用户管理」授权树勾不到、sys_user_menu 无法落库 3889
+UPDATE sys_menu
+SET default_open_to_customer = '1',
+    update_time = NOW()
+WHERE menu_id IN (1238, 3886, 3887, 3888, 3889)
+  AND (default_open_to_customer IS NULL OR default_open_to_customer != '1');
+/
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM sb_customer c
+JOIN sys_menu m ON m.menu_id IN (1238, 3886, 3887, 3888, 3889)
+WHERE c.hc_status = '0'
+  AND NOT EXISTS (
+    SELECT 1 FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
+  );
+/
+-- 已开通「高值追溯」页面的租户用户：补全追溯页依赖的按钮权限到 sys_user_menu（登录权限读此表，非 sys_role_menu）
+INSERT INTO sys_user_menu (user_id, menu_id, tenant_id)
+SELECT DISTINCT um.user_id, btn.menu_id, um.tenant_id
+FROM sys_user_menu um
+JOIN sys_menu page ON page.menu_id = um.menu_id AND page.component = 'gz/retrospect/index'
+JOIN sys_menu btn ON btn.menu_id IN (3886, 3887, 3888, 3889)
+WHERE um.tenant_id IS NOT NULL AND um.tenant_id != ''
+  AND NOT EXISTS (
+    SELECT 1 FROM sys_user_menu x WHERE x.user_id = um.user_id AND x.menu_id = btn.menu_id
+  );
+/
+
 -- 23.10 高值使用：HIS 计费镜像高值扫描核销（从患者收费查询剥离；GzHighChargeMirrorController）
 -- 【MCP aspt 库结构】sys_menu：path/component/query/is_frame/is_cache/is_platform/default_open_to_customer；无 del_flag/url
 -- 【MCP 现网】高值管理 menu_id=1064(path=gz)；高值使用 menu_id=1256(parent=1064)；住院高值扫码 1258 已占 order_num 1–2
