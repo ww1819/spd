@@ -13,4 +13,9 @@ public interface IMsunHisMasterSyncService
      * @param probeParams 可选；非空时先按条件探针拉取（落镜像），再执行全量 sync
      */
     AjaxResult sync(String syncType, Map<String, Object> probeParams);
+
+    /**
+     * 单条耗材档案从众阳 HIS 同步（按 SPD 产品档案 hisId / hisSpecPackingId）。
+     */
+    AjaxResult syncSingleMaterial(Long materialId);
 }

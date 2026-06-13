@@ -34,4 +34,11 @@ public class MsunHisMasterSyncController extends BaseController
     {
         return msunHisMasterSyncService.sync(syncType, probeParams);
     }
+
+    /** 单条耗材档案从众阳 HIS 同步（枣强等已接入租户） */
+    @PostMapping("/sync/materials/single/{materialId}")
+    public AjaxResult syncSingleMaterial(@PathVariable Long materialId)
+    {
+        return msunHisMasterSyncService.syncSingleMaterial(materialId);
+    }
 }
