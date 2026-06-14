@@ -148,7 +148,12 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             cl.setTenantId(tenantId);
             cl.setConfirmId(confirmId);
             cl.setConsumeLinkId(row.getLinkId());
+            cl.setDeptBatchConsumeEntryId(row.getDeptBatchConsumeEntryId());
             cl.setTraceabilityEntryId(row.getConsumeEntryId());
+            if (cl.getDeptBatchConsumeEntryId() == null && cl.getTraceabilityEntryId() == null)
+            {
+                throw new ServiceException("消耗明细缺少追溯关联，无法确认");
+            }
             cl.setDelFlag(0);
             cl.setCreateTime(confirmTime);
             confirmLines.add(cl);

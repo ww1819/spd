@@ -15,6 +15,8 @@ public class GzHighChargeConfirmRowVo
     private String visitKind;
     private String mirrorRowId;
     private BigDecimal allocQty;
+    /** 科室批量消耗明细 ID（低值/历史高值；HIS 镜像高值路径可为空） */
+    private Long deptBatchConsumeEntryId;
     private String inHospitalCode;
     private Integer confirmStatus;
     private String confirmId;
