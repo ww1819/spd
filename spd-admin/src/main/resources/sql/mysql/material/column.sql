@@ -2997,6 +2997,16 @@ ALTER TABLE `gz_high_consume_confirm_line`
   MODIFY COLUMN `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '消耗明细ID（历史）';
 /
 
+-- ========== 高值追溯单：audit_date 须为 datetime 以保留审核时分秒 ==========
+ALTER TABLE `gz_traceability`
+  MODIFY COLUMN `audit_date` datetime DEFAULT NULL COMMENT '审核时间';
+/
+UPDATE `gz_traceability`
+SET `audit_date` = `create_time`
+WHERE `create_time` IS NOT NULL
+  AND (`audit_date` IS NULL OR TIME(CAST(`audit_date` AS DATETIME)) = '00:00:00');
+/
+
 -- ========== 出入库单打印记录（列表打印状态/打印人/打印日期）==========
 CALL add_table_column('stk_io_bill', 'print_date', 'datetime', '最近打印时间', NULL);
 /

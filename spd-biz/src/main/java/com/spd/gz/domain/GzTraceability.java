@@ -114,9 +114,9 @@ public class GzTraceability extends BaseEntity
     @Excel(name = "单据状态", readConverterExp = "1=未审核,2=已审核")
     private Integer orderStatus;
 
-    /** 审核日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "审核日期", width = 30, dateFormat = "yyyy-MM-dd")
+    /** 审核时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditDate;
 
     /** 审核人 */

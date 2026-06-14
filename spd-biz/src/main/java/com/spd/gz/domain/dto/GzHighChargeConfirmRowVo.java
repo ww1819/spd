@@ -28,6 +28,12 @@ public class GzHighChargeConfirmRowVo
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date consumeAuditTime;
+    /** 高值计费单制单时间（gz_traceability.create_time） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date consumeCreateTime;
+    /** 高值计费单审核时间（gz_traceability.audit_date） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date consumeAuditDate;
     private String consumeBillNo;
     private Long consumeEntryId;
     private Long materialId;
