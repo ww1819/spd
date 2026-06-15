@@ -259,6 +259,7 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse` (
   `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `lv_audit_gen_inhospital_in` tinyint DEFAULT 0 COMMENT '低值入库审核是否生成院内码定数包 0否1是',
   `lv_audit_gen_inhospital_out` tinyint DEFAULT 0 COMMENT '低值出库审核是否生成院内码定数包 0否1是',
+  `is_settlement_warehouse` tinyint NOT NULL DEFAULT 0 COMMENT '结算仓库标识 0否1是（高值核销确认可选）',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='仓库';
 /

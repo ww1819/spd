@@ -61,6 +61,10 @@ public class FdWarehouse extends BaseEntity
     /** HIS 药库科室 ID（众阳 storageDeptId） */
     private String hisId;
 
+    /** 结算仓库标识：0否 1是（高值核销确认可选） */
+    @Excel(name = "结算仓库", readConverterExp = "0=否,1=是")
+    private Integer isSettlementWarehouse;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -169,6 +173,14 @@ public class FdWarehouse extends BaseEntity
         this.hisId = hisId;
     }
 
+    public Integer getIsSettlementWarehouse() {
+        return isSettlementWarehouse;
+    }
+
+    public void setIsSettlementWarehouse(Integer isSettlementWarehouse) {
+        this.isSettlementWarehouse = isSettlementWarehouse;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -188,6 +200,7 @@ public class FdWarehouse extends BaseEntity
             .append("tenantId", getTenantId())
             .append("lvAuditGenInhospitalIn", getLvAuditGenInhospitalIn())
             .append("lvAuditGenInhospitalOut", getLvAuditGenInhospitalOut())
+            .append("isSettlementWarehouse", getIsSettlementWarehouse())
             .toString();
     }
 }

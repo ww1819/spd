@@ -77,9 +77,9 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         {
             throw new ServiceException("仓库不存在");
         }
-        if ("高值".equals(StringUtils.trimToEmpty(wh.getWarehouseType())))
+        if (!Integer.valueOf(1).equals(wh.getIsSettlementWarehouse()))
         {
-            throw new ServiceException("不能选择仓库类型为高值的仓库");
+            throw new ServiceException("请选择已标识为结算仓库的仓库");
         }
         List<String> linkIds = body.getLinkIds().stream()
             .filter(StringUtils::isNotBlank)

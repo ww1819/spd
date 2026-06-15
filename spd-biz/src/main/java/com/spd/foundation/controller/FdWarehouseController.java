@@ -173,4 +173,21 @@ public class FdWarehouseController extends BaseController
         }
         return success(fdWarehouseList != null ? fdWarehouseList : new ArrayList<>());
     }
+
+    /**
+     * 结算仓库下拉（高值核销确认等）：租户下全部 is_settlement_warehouse=1，不按用户仓库权限过滤。
+     */
+    @GetMapping("/settlementPick")
+    public AjaxResult settlementPick()
+    {
+        FdWarehouse query = new FdWarehouse();
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
+        if (StringUtils.isNotEmpty(customerId))
+        {
+            query.setTenantId(customerId);
+        }
+        query.setIsSettlementWarehouse(1);
+        List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(query);
+        return success(list != null ? list : new ArrayList<>());
+    }
 }
