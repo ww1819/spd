@@ -2,6 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.gz.mapper.GzHighConsumeConfirmMapper">
 
+    <!-- audit_date 历史库表为 date 时无时分秒，优先取含时间的 create_time -->
+    <sql id="traceConsumeAuditTimeExpr">
+        case
+            when t.audit_date is not null and time(cast(t.audit_date as datetime)) &gt; '00:00:00'
+            then cast(t.audit_date as datetime)
+            else t.create_time
+        end
+    </sql>
+
     <sql id="confirmListFrom">
         from his_mirror_consume_link l
         inner join gz_traceability t on t.id = l.traceability_id
@@ -39,13 +48,16 @@
             l.visit_kind as visitKind,
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
+            l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             l.in_hospital_code as inHospitalCode,
             ifnull(l.confirm_status, 0) as confirmStatus,
             l.confirm_id as confirmId,
             c.confirm_no as confirmNo,
             in_bill.bill_no as inboundBillNo,
             out_bill.bill_no as outboundBillNo,
-            coalesce(t.audit_date, t.create_time) as consumeAuditTime,
+            t.create_time as consumeCreateTime,
+            cast(t.audit_date as datetime) as consumeAuditDate,
+            (<include refid="traceConsumeAuditTimeExpr"/>) as consumeAuditTime,
             t.trace_no as consumeBillNo,
             te.id as consumeEntryId,
             te.material_id as materialId,
@@ -85,10 +97,10 @@
             and ifnull(l.confirm_status, 0) = #{confirmStatus}
         </if>
         <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
-            and coalesce(t.audit_date, t.create_time) &gt;= #{beginConsumeAuditTime}
+            and (<include refid="traceConsumeAuditTimeExpr"/>) &gt;= #{beginConsumeAuditTime}
         </if>
         <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
-            and coalesce(t.audit_date, t.create_time) &lt;= #{endConsumeAuditTime}
+            and (<include refid="traceConsumeAuditTimeExpr"/>) &lt;= #{endConsumeAuditTime}
         </if>
         <if test="patientName != null and patientName != ''">
             and coalesce(inp.patient_name, outp.patient_name) like concat('%', #{patientName}, '%')
@@ -111,8 +123,11 @@
             l.visit_kind as visitKind,
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
+            l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             ifnull(l.confirm_status, 0) as confirmStatus,
-            coalesce(t.audit_date, t.create_time) as consumeAuditTime,
+            t.create_time as consumeCreateTime,
+            cast(t.audit_date as datetime) as consumeAuditDate,
+            (<include refid="traceConsumeAuditTimeExpr"/>) as consumeAuditTime,
             te.id as consumeEntryId,
             te.material_id as materialId,
             te.material_name as materialName,

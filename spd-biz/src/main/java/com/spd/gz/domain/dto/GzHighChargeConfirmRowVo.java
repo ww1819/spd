@@ -15,6 +15,8 @@ public class GzHighChargeConfirmRowVo
     private String visitKind;
     private String mirrorRowId;
     private BigDecimal allocQty;
+    /** 科室批量消耗明细 ID（低值/历史高值；HIS 镜像高值路径可为空） */
+    private Long deptBatchConsumeEntryId;
     private String inHospitalCode;
     private Integer confirmStatus;
     private String confirmId;
@@ -26,6 +28,12 @@ public class GzHighChargeConfirmRowVo
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date consumeAuditTime;
+    /** 高值计费单制单时间（gz_traceability.create_time） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date consumeCreateTime;
+    /** 高值计费单审核时间（gz_traceability.audit_date） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date consumeAuditDate;
     private String consumeBillNo;
     private Long consumeEntryId;
     private Long materialId;
