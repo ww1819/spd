@@ -73,6 +73,7 @@ import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.his.support.HisChargeMirrorAmountSupport;
 import com.spd.his.support.HisInternalRequestContext;
 import com.spd.his.support.HisMirrorValueLevelSupport;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
@@ -1005,9 +1006,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         e.setExpireDate(rs.getString("expire_date"));
         e.setUseDate(parseHisDateTime(rs.getObject("use_date")));
         e.setChargeDate(parseHisDateTime(rs.getObject("charge_date")));
-        e.setQuantity(rs.getBigDecimal("quantity"));
-        e.setUnitPrice(rs.getBigDecimal("unit_price"));
-        e.setTotalAmount(rs.getBigDecimal("total_amount"));
+        BigDecimal quantity = rs.getBigDecimal("quantity");
+        BigDecimal unitPrice = rs.getBigDecimal("unit_price");
+        e.setQuantity(quantity);
+        e.setUnitPrice(unitPrice);
+        e.setTotalAmount(HisChargeMirrorAmountSupport.resolveDetailLineAmount(
+            quantity, unitPrice, rs.getBigDecimal("total_amount")));
         e.setChargeOperator(rs.getString("charge_operator"));
         e.setRemark(rs.getString("remark"));
         e.setTenantId(tenantId);
@@ -1055,9 +1059,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         e.setBatchNo(rs.getString("batch_no"));
         e.setExpireDate(rs.getString("expire_date"));
         e.setChargeDate(rs.getString("charge_date"));
-        e.setQuantity(rs.getBigDecimal("quantity"));
-        e.setUnitPrice(rs.getBigDecimal("unit_price"));
-        e.setTotalAmount(rs.getBigDecimal("total_amount"));
+        BigDecimal quantity = rs.getBigDecimal("quantity");
+        BigDecimal unitPrice = rs.getBigDecimal("unit_price");
+        e.setQuantity(quantity);
+        e.setUnitPrice(unitPrice);
+        e.setTotalAmount(HisChargeMirrorAmountSupport.resolveDetailLineAmount(
+            quantity, unitPrice, rs.getBigDecimal("total_amount")));
         e.setChargeOperator(rs.getString("charge_operator"));
         e.setPaymentType(rs.getString("payment_type"));
         e.setReceiptNo(trimToNull(rs.getString("receipt_no")));
