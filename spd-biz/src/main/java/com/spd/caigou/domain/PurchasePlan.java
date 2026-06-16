@@ -47,8 +47,8 @@ public class PurchasePlan extends BaseEntity
     @Excel(name = "计划日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date planDate;
 
-    /** 计划状态（0未提交 1未提交 2已审核 3已执行 4已取消） */
-    @Excel(name = "计划状态", readConverterExp = "0=未提交,1=未提交,2=已审核,3=已执行,4=已取消")
+    /** 计划状态（0未提交 1待审核 2已审核） */
+    @Excel(name = "计划状态", readConverterExp = "0=未提交,1=待审核,2=已审核")
     private String planStatus;
 
     /** 采购员 */

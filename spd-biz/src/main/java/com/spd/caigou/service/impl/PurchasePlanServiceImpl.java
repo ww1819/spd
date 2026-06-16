@@ -448,7 +448,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         if (result > 0) {
             try {
                 purchaseOrderService.generateOrdersFromPlan(id);
-                // 订单生成成功，计划状态已在generateOrdersFromPlan中更新为"已执行"
+                // 订单生成成功，计划状态保持「已审核」(2)
             } catch (Exception e) {
                 // 如果生成订单失败，记录日志但不影响审核结果
                 // 可以在这里添加日志记录
