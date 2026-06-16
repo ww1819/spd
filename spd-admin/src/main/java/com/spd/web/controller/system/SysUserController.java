@@ -527,6 +527,10 @@ public class SysUserController extends BaseController
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SysUser user)
     {
+        // 租户用户创建的用户继承当前租户ID（前端通常不传 customerId）；须在唯一性校验前写入，与 uk_sys_user_name_customer 一致
+        if (StringUtils.isEmpty(user.getCustomerId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            user.setCustomerId(SecurityUtils.getCustomerId());
+        }
         if (!userService.checkUserNameUnique(user))
         {
             return error("新增用户'" + user.getUserName() + "'失败，登录账号已存在");
@@ -541,10 +545,6 @@ public class SysUserController extends BaseController
         }
         user.setCreateBy(getUserIdStr());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
-        // 租户用户创建的用户继承当前租户ID（前端通常不传 customerId）
-        if (StringUtils.isEmpty(user.getCustomerId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
-            user.setCustomerId(SecurityUtils.getCustomerId());
-        }
         return toAjax(userService.insertUser(user));
     }
 

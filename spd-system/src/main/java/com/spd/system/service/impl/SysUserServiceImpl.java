@@ -996,12 +996,17 @@ public class SysUserServiceImpl implements ISysUserService
         StringBuilder successMsg = new StringBuilder();
         StringBuilder failureMsg = new StringBuilder();
         String password = configService.selectConfigByKey("sys.user.initPassword");
+        String tenantCustomerId = SecurityUtils.getCustomerId();
         for (SysUser user : userList)
         {
             try
             {
-                // 验证是否存在这个用户
-                SysUser u = userMapper.selectUserByUserName(user.getUserName());
+                if (StringUtils.isEmpty(user.getCustomerId()) && StringUtils.isNotEmpty(tenantCustomerId))
+                {
+                    user.setCustomerId(tenantCustomerId);
+                }
+                // 与 uk_sys_user_name_customer 一致：按租户+登录名判重（含已软删用户，避免插入撞唯一索引）
+                SysUser u = userMapper.checkUserNameUnique(user);
                 if (StringUtils.isNull(u))
                 {
                     BeanValidators.validateWithException(validator, user);
