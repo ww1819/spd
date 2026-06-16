@@ -602,6 +602,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by totalAmt desc
     </select>
 
+    <!-- 首页/大屏：当月已审核出退库（201/401）按耗材财务分类汇总金额，退库冲减，按金额降序 -->
+    <select id="selectBiScreenOutboundFinanceCategoryMonth" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            case
+                when m.finance_category_id is not null then
+                    ifnull(nullif(trim(max(fc.finance_category_name)), ''), concat('财务分类#', cast(m.finance_category_id as char)))
+                else '未分类'
+            end as financeCategoryName,
+            coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) as totalAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_material m on b.material_id = m.id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
+          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+        group by m.finance_category_id
+        having coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) &gt; 0
+        order by totalAmt desc
+    </select>
+
     <!-- 数据可视化大屏：今日已审核出库单(201)笔数、今日已审核入库单(101)笔数（按单据 id 去重） -->
     <select id="selectBiScreenTodayInboundOutboundBillCount" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

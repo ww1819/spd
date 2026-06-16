@@ -151,6 +151,9 @@ public interface IStkIoBillService
     /** 大屏：当月入退货按财务分类汇总入库金额（降序） */
     List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth();
 
+    /** 首页/大屏：当月出退库按财务分类汇总出库金额（降序） */
+    List<Map<String, Object>> selectBiScreenOutboundFinanceCategoryMonth();
+
     /** 大屏：今日已审核出库单笔数、今日已审核入库单(101)笔数 */
     Map<String, Object> selectBiScreenTodayInboundOutboundBillCount();
 

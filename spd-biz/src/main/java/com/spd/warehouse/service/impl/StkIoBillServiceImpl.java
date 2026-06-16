@@ -2406,6 +2406,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public List<Map<String, Object>> selectBiScreenOutboundFinanceCategoryMonth() {
+        return stkIoBillMapper.selectBiScreenOutboundFinanceCategoryMonth();
+    }
+
+    @Override
     public Map<String, Object> selectBiScreenTodayInboundOutboundBillCount() {
         return stkIoBillMapper.selectBiScreenTodayInboundOutboundBillCount();
     }
