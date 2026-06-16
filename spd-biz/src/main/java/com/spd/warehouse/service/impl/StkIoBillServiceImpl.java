@@ -425,6 +425,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         // 仅当请求中带了明细列表且非空时，才同步明细（增量更新）；否则保留原明细，只更新主表
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
+        if (stkIoBill.getId() != null) {
+            StkIoBill dbBill = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+            if (dbBill != null) {
+                if (dbBill.getBillStatus() != null && dbBill.getBillStatus() == 2) {
+                    if (entryList != null && !entryList.isEmpty()) {
+                        throw new ServiceException(stkIoBillDocLabel(dbBill) + "已审核，不能修改明细；如需调整请走退货流程");
+                    }
+                    // 防止保存接口把已审核单回写成未审核（否则可重复审核产生重复库存）
+                    stkIoBill.setBillStatus(2);
+                    stkIoBill.setAuditDate(dbBill.getAuditDate());
+                    stkIoBill.setAuditBy(dbBill.getAuditBy());
+                }
+            }
+        }
         if (entryList != null) {
             MasterDetailValidateUtil.assertHasMaterialLine(
                 entryList, StkIoBillEntry::getMaterialId, stkIoBillDocLabel(stkIoBill));
@@ -986,6 +1000,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 continue;
             }
             if (entry.getDelFlag() != null && entry.getDelFlag() == 1) {
+                continue;
+            }
+            // 入库明细已写过仓库库存则跳过，避免重复审核或异常改单后再次写入
+            if (billType != null && billType == 101 && entry.getStkInventoryId() != null) {
                 continue;
             }
             Long lineSupplerId = resolveInboundLineSupplierId(stkIoBill, entry);
@@ -2054,18 +2072,29 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             for (Long existingId : existingIds) {
                 StkIoBillEntry incoming = incomingById.get(existingId);
                 if (incoming != null) {
+                    StkIoBillEntry old = oldEntryMap.get(existingId);
+                    if (old != null && old.getStkInventoryId() != null && isStkIoBillEntryChanged(old, incoming)) {
+                        throw new ServiceException(String.format(
+                            "明细已生成仓库库存（批次：%s），不能修改；若数量有误请走退货流程",
+                            StringUtils.isNotEmpty(old.getBatchNo()) ? old.getBatchNo() : existingId));
+                    }
                     incoming.setUpdateBy(operator);
                     incoming.setUpdateTime(now);
                     incoming.setDeleteBy(null);
                     incoming.setDeleteTime(null);
                     incoming.setDelFlag(0);
                     stkIoBillMapper.updateStkIoBillEntryById(incoming);
-                    StkIoBillEntry old = oldEntryMap.get(existingId);
                     if (old != null && isStkIoBillEntryChanged(old, incoming)) {
                         saveEntryChangeLog(resolveStkBillTypeForChangeLog(billType), parenId, "STK_IO_BILL_ENTRY", existingId,
                             "UPDATE", old, incoming, operator, tenantId);
                     }
                 } else {
+                    StkIoBillEntry old = oldEntryMap.get(existingId);
+                    if (old != null && old.getStkInventoryId() != null) {
+                        throw new ServiceException(String.format(
+                            "明细已生成仓库库存（批次：%s），不能删除行；若数量有误请走退货流程",
+                            StringUtils.isNotEmpty(old.getBatchNo()) ? old.getBatchNo() : existingId));
+                    }
                     StkIoBillEntry deleted = new StkIoBillEntry();
                     deleted.setId(existingId);
                     deleted.setDelFlag(1);
