@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.apache.commons.lang3.StringUtils;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
@@ -39,8 +41,10 @@ public class GzDepInventoryController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('gzDepartment:gzDepInventory:list')")
     @GetMapping("/list")
-    public TableDataInfo list(GzDepInventory gzDepInventory)
+    public TableDataInfo list(GzDepInventory gzDepInventory,
+            @RequestParam(value = "materialKeyword", required = false) String materialKeyword)
     {
+        applyMaterialKeyword(gzDepInventory, materialKeyword);
         return listGzDepInventoryTable(gzDepInventory);
     }
 
@@ -50,9 +54,19 @@ public class GzDepInventoryController extends BaseController
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/pick/list")
-    public TableDataInfo pickList(GzDepInventory gzDepInventory)
+    public TableDataInfo pickList(GzDepInventory gzDepInventory,
+            @RequestParam(value = "materialKeyword", required = false) String materialKeyword)
     {
+        applyMaterialKeyword(gzDepInventory, materialKeyword);
         return listGzDepInventoryTable(gzDepInventory);
+    }
+
+    private void applyMaterialKeyword(GzDepInventory gzDepInventory, String materialKeyword)
+    {
+        if (StringUtils.isNotBlank(materialKeyword))
+        {
+            gzDepInventory.setMaterialKeyword(materialKeyword.trim());
+        }
     }
 
     private TableDataInfo listGzDepInventoryTable(GzDepInventory gzDepInventory)

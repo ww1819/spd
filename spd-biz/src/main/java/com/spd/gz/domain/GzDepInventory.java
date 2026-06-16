@@ -44,6 +44,9 @@ public class GzDepInventory extends BaseEntity
     /** 耗材名称（用于查询条件） */
     private String materialName;
 
+    /** 产品模糊查询（耗材编码/名称/简码） */
+    private String materialKeyword;
+
     /** HIS收费项目ID（用于查询条件，模糊） */
     private String hisChargeItemId;
 
@@ -182,6 +185,16 @@ public class GzDepInventory extends BaseEntity
     public String getMaterialName()
     {
         return materialName;
+    }
+
+    public String getMaterialKeyword()
+    {
+        return materialKeyword;
+    }
+
+    public void setMaterialKeyword(String materialKeyword)
+    {
+        this.materialKeyword = materialKeyword;
     }
 
     public String getHisChargeItemId()
