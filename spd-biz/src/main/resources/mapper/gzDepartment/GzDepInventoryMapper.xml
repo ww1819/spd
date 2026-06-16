@@ -158,6 +158,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and gz.qty &gt; 0
         </if>
         <if test="materialId != null "> and gz.material_id = #{materialId}</if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.name like concat('%', #{materialKeyword}, '%')
+                or m.code like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
         <if test="departmentId != null "> and gz.department_id = #{departmentId}</if>
         <if test="supplierId != null "> and gz.supplier_id = #{supplierId}</if>
         <if test="batchNo != null  and batchNo != ''"> and gz.batch_no = #{batchNo}</if>
