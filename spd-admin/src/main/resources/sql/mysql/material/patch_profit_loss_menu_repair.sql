@@ -1,6 +1,11 @@
 -- 修复「盈亏处理」侧栏显示为下拉目录（期初查询/新增…）的问题
 -- 原因：menu_type=M 时，子节点（含 F 按钮）会进入侧栏子菜单；应为 C 页面菜单 + F 按钮权限
+--
+-- 【DBeaver 生产环境请用】patch_profit_loss_menu_repair_dbeaver.sql（无 @变量，可逐条执行）
+-- 【本文件】含 SET @变量，须同一连接 Alt+X 整脚本执行，且先 USE aspt、选中数据库
 -- 执行后请重新登录刷新路由
+
+USE aspt;
 
 SET @stk_parent := COALESCE(
   (SELECT menu_id FROM sys_menu WHERE menu_name = '盘点管理' AND menu_type = 'M' ORDER BY menu_id LIMIT 1),
