@@ -1969,6 +1969,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''">
+            AND (m.name LIKE CONCAT('%', #{materialNameLike}, '%')
+                 OR m.code LIKE CONCAT('%', #{materialNameLike}, '%')
+                 OR m.referred_name LIKE CONCAT('%', #{materialNameLike}, '%'))
+        </if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            AND m.finance_category_id IN
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
     </sql>
@@ -2111,13 +2122,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.speci materialSpeci, m.model materialModel,
             u.unit_name unitName, AVG(b.unit_price) unitPrice,
             SUM(b.qty) totalQty, SUM(b.amt) totalAmt,
-            ROUND((SUM(b.amt) / (SELECT IFNULL(SUM(amt), 1) FROM stk_io_bill_entry entry
+            ROUND((SUM(b.amt) / (SELECT IFNULL(SUM(entry.amt), 1) FROM stk_io_bill_entry entry
                 INNER JOIN stk_io_bill bill ON bill.id = entry.paren_id
+                LEFT JOIN fd_material mat ON entry.material_id = mat.id
                 WHERE bill.del_flag != 1 AND bill.bill_status = 2 AND bill.bill_type = 201
                 AND bill.tenant_id = #{scopedTenantId}
                 AND entry.del_flag != 1
                 <if test="warehouseId != null"> AND bill.warehouse_id = #{warehouseId}</if>
                 <if test="departmentId != null"> AND bill.department_id = #{departmentId}</if>
+                <if test="materialNameLike != null and materialNameLike != ''">
+                    AND (mat.name LIKE CONCAT('%', #{materialNameLike}, '%')
+                         OR mat.code LIKE CONCAT('%', #{materialNameLike}, '%')
+                         OR mat.referred_name LIKE CONCAT('%', #{materialNameLike}, '%'))
+                </if>
+                <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+                    AND mat.finance_category_id IN
+                    <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                        #{fcId}
+                    </foreach>
+                </if>
                 <if test="beginDate != null"> AND bill.bill_date &gt;= #{beginDate}</if>
                 <if test="endDate != null"> AND bill.bill_date &lt;= #{endDate}</if>
             )) * 100, 2) as percentage,
