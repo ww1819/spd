@@ -28,6 +28,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditAdjustsInventory"    column="audit_adjusts_inventory"    />
         <result property="profitAmount"    column="profit_amount"    />
         <result property="totalAmount"    column="total_amount"    />
+        <result property="createUserNickName" column="create_user_nickname" />
+        <result property="auditUserNickName" column="audit_user_nickname" />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="department"    column="id" javaType="FdDepartment" resultMap="departmentResult" />
         <association property="warehouse"    column="id" javaType="FdWarehouse" resultMap="warehouseResult" />
@@ -175,8 +177,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
         <result property="speci"    column="m_speci"    />
+        <result property="model"    column="m_model"    />
+        <result property="registerNo"    column="m_registerNo"    />
+        <result property="isBilling"    column="m_isBilling"    />
         <result property="supplierId"    column="m_supplierId"    />
+        <result property="factoryId"    column="m_factoryId"    />
         <association property="fdUnit" javaType="FdUnit" resultMap="fdUnitResult" />
+        <association property="fdFactory" javaType="FdFactory" resultMap="fdFactoryResult" />
+        <association property="supplier" javaType="FdSupplier" resultMap="materialSupplierResult" />
     </resultMap>
 
     <sql id="stocktakingEntryLightColumns">
@@ -194,8 +202,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         b.entry_uuid as sub_entry_uuid,
         b.his_id as sub_his_id, b.third_party_batch_no as sub_third_party_batch_no,
         m.id as mId, m.code as materialCode, m.name as materialName,
-        m.speci as m_speci, m.supplier_id as m_supplierId,
-        u.unit_id as u_id, u.unit_code as u_code, u.unit_name as u_name
+        m.speci as m_speci, m.model as m_model, m.register_no as m_registerNo, m.is_billing as m_isBilling,
+        m.supplier_id as m_supplierId, m.factory_id as m_factoryId,
+        u.unit_id as u_id, u.unit_code as u_code, u.unit_name as u_name,
+        f.factory_id as f_id, f.factory_code as f_code, f.factory_name as f_name,
+        ms.id as ms_id, ms.code as ms_code, ms.name as ms_name
     </sql>
 
     <sql id="selectStkIoStocktakingVo">
@@ -204,10 +215,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.update_by, stk.update_time, stk.remark, stk.reject_reason,
 				COALESCE((select SUM(IFNULL(entry.profit_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as profit_amount,
 				COALESCE((select SUM(IFNULL(entry.stock_amount, 0)) from stk_io_stocktaking_entry entry where entry.paren_id = stk.id and (entry.del_flag is null or entry.del_flag != 1)), 0) as total_amount,
+				cu.nick_name as create_user_nickname,
+				au.nick_name as audit_user_nickname,
 				s.id sId,s.code supplierCode,s.name supplierName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				w.id wId,w.code warehouseCode,w.name warehouseName
         from stk_io_stocktaking stk
+        left join sys_user cu on stk.create_by = cu.user_id
+        left join sys_user au on stk.update_by = au.user_id
         left join fd_supplier s on stk.suppler_id = s.id
         left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
@@ -241,6 +256,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from stk_io_stocktaking_entry b
         left join fd_material m on b.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier ms on m.supplier_id = ms.id
         where b.paren_id = #{parenId}
           and (b.del_flag is null or b.del_flag != 1)
         order by b.id asc
@@ -544,5 +561,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where stk.id = #{id} and stk.tenant_id = #{scopedTenantId}
           and (stk.del_flag is null or stk.del_flag != 1)
         for update
+    </select>
+
+    <select id="selectPendingWhStocktakingStockNos" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select stk.stock_no
+        from stk_io_stocktaking stk
+        where stk.del_flag != 1
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.warehouse_id = #{warehouseId}
+          and stk.stock_type = 501
+          and (stk.stock_status is null or stk.stock_status != 2)
+        <if test="excludeId != null">
+          and stk.id != #{excludeId}
+        </if>
+        order by stk.id asc
     </select>
 </mapper>

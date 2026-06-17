@@ -926,6 +926,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         {
             throw new ServiceException("请先选择仓库。");
         }
+        assertNoOtherPendingWhStocktaking(patch.getWarehouseId(), patch.getId());
         Long billId = patch.getId();
         List<StkInventory> invRows = loadWhInventoryForStocktaking(patch.getWarehouseId());
         if (invRows == null || invRows.isEmpty())
@@ -1000,6 +1001,20 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         head.setUpdateBy(SecurityUtils.getUserIdStr());
         stkIoStocktakingMapper.updateStkIoStocktaking(head);
         return selectStkIoStocktakingById(billId);
+    }
+
+    /** 同仓库仅允许一张未审核仓库盘点单（排除当前编辑中的单据） */
+    private void assertNoOtherPendingWhStocktaking(Long warehouseId, Long excludeBillId)
+    {
+        if (warehouseId == null)
+        {
+            return;
+        }
+        List<String> stockNos = stkIoStocktakingMapper.selectPendingWhStocktakingStockNos(warehouseId, excludeBillId);
+        if (stockNos != null && !stockNos.isEmpty())
+        {
+            throw new ServiceException("你有盘点单，单号（" + stockNos.get(0) + "）未处理！请先处理。");
+        }
     }
 
     private List<StkInventory> loadWhInventoryForStocktaking(Long warehouseId)
