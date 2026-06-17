@@ -285,6 +285,9 @@ public class StkIoBill extends BaseEntity
     /** 科室申购单号（冗余） */
     private String depPurchaseApplyBillNo;
 
+    /** 领用人姓名（引用科室申领/库房申请时展示，来自科室申领审核人） */
+    private String recipientName;
+
     /** 引用配送单入库：配送侧仓库ID快照（varchar） */
     private String deliveryRefWarehouseId;
     /** 引用配送单入库：配送侧仓库名称 */
@@ -970,6 +973,14 @@ public class StkIoBill extends BaseEntity
 
     public void setDepPurchaseApplyBillNo(String depPurchaseApplyBillNo) {
         this.depPurchaseApplyBillNo = depPurchaseApplyBillNo;
+    }
+
+    public String getRecipientName() {
+        return recipientName;
+    }
+
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
     }
 
     public String getDeliveryRefWarehouseId()

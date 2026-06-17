@@ -262,7 +262,29 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType().intValue() == 401) {
             fillTkSourceEntryReturnChannelConsumption(stkIoBill);
         }
+        fillRecipientName(stkIoBill);
         return stkIoBill;
+    }
+
+    /** 引用科室申领/库房申请出库：填充领用人（科室申领审核人姓名） */
+    private void fillRecipientName(StkIoBill stkIoBill) {
+        if (stkIoBill == null || StringUtils.isNotEmpty(stkIoBill.getRecipientName())) {
+            return;
+        }
+        fillRecipientNameFromBasApplyId(stkIoBill, stkIoBill.getDApplyId());
+    }
+
+    private void fillRecipientNameFromBasApplyId(StkIoBill stkIoBill, String basApplyId) {
+        if (stkIoBill == null || StringUtils.isEmpty(basApplyId)) {
+            return;
+        }
+        try {
+            BasApply basApply = basApplyMapper.selectBasApplyById(Long.valueOf(basApplyId.trim()));
+            if (basApply != null && StringUtils.isNotEmpty(basApply.getAuditPersonName())) {
+                stkIoBill.setRecipientName(basApply.getAuditPersonName());
+            }
+        } catch (NumberFormatException ignored) {
+        }
     }
 
     /**
@@ -3160,6 +3182,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setDApplyId(wh.getBasApplyId());
         stkIoBill.setWhWarehouseApplyId(wh.getId());
         stkIoBill.setWhWarehouseApplyBillNo(wh.getApplyBillNo());
+        fillRecipientNameFromBasApplyId(stkIoBill, wh.getBasApplyId());
         String tenantId = StringUtils.isNotEmpty(wh.getTenantId())
             ? wh.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
         List<StkIoBillEntry> entryList = new ArrayList<>();
