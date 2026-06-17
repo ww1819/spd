@@ -96,10 +96,13 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     @Override
     public StkIoStocktaking selectStkIoStocktakingById(Long id)
     {
-        StkIoStocktaking stk = stkIoStocktakingMapper.selectStkIoStocktakingById(id);
-        if (stk != null) {
-            SecurityUtils.ensureTenantAccess(stk.getTenantId());
+        StkIoStocktaking stk = stkIoStocktakingMapper.selectStkIoStocktakingHeadById(id);
+        if (stk == null) {
+            return null;
         }
+        SecurityUtils.ensureTenantAccess(stk.getTenantId());
+        List<StkIoStocktakingEntry> entries = stkIoStocktakingMapper.selectStkIoStocktakingEntryListByParenId(id);
+        stk.setStkIoStocktakingEntryList(entries != null ? entries : new ArrayList<>());
         return stk;
     }
 
