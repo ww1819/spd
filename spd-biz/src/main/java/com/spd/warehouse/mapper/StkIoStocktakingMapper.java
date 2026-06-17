@@ -21,6 +21,12 @@ public interface StkIoStocktakingMapper
      */
     public StkIoStocktaking selectStkIoStocktakingById(Long id);
 
+    /** 盘点主单（不含明细，编辑弹窗首屏更快） */
+    StkIoStocktaking selectStkIoStocktakingHeadById(Long id);
+
+    /** 盘点明细列表（仅关联耗材与单位，不含厂家/耗材默认供应商） */
+    List<StkIoStocktakingEntry> selectStkIoStocktakingEntryListByParenId(Long parenId);
+
     /**
      * 事务内锁定盘点主表行（FOR UPDATE），用于与并发校验配合。
      */

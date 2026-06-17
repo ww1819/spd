@@ -29,6 +29,8 @@
         <result property="lineVoidedEntryCount" column="line_voided_entry_count"/>
         <result property="lastLineVoidTime" column="last_line_void_time"/>
         <result property="lastLineVoidBy" column="last_line_void_by"/>
+        <result property="createrName" column="creater_name"/>
+        <result property="auditPersonName" column="audit_person_name"/>
         <association property="warehouse" javaType="FdWarehouse" resultMap="whRes"/>
         <association property="department" javaType="FdDepartment" resultMap="deptRes"/>
     </resultMap>
@@ -282,10 +284,15 @@
                coalesce(agg.linked_sum, 0) as linked_ck_total,
                coalesce(agg.line_voided_entry_count, 0) as line_voided_entry_count,
                lst.last_line_void_time,
-               lst.last_line_void_by
+               lst.last_line_void_by,
+               coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as creater_name,
+               coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name
         from wh_warehouse_apply m
         left join fd_warehouse w on m.warehouse_id = w.id
         left join fd_department d on m.department_id = d.id
+        left join sys_user cu on m.create_by = cu.user_id
+        left join bas_apply ba on m.bas_apply_id = ba.id
+        left join sys_user au on ba.audit_by = au.user_id
         left join (
             select e.paren_id as agg_apply_id,
                    coalesce(sum(greatest(0, e.qty - coalesce(e.line_void_qty, 0) - coalesce(lk.linked_qty, 0))), 0) as pending_sum,

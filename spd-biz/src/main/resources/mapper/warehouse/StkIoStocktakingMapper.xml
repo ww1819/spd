@@ -129,6 +129,75 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"  column="ms_name"   />
     </resultMap>
 
+    <resultMap type="StkIoStocktakingEntry" id="StkIoStocktakingEntryLightResult">
+        <result property="id"    column="sub_id"    />
+        <result property="parenId"    column="sub_paren_id"    />
+        <result property="stockNo"    column="sub_stock_no"    />
+        <result property="commodityId"    column="sub_commodity_id"    />
+        <result property="materialId"    column="sub_material_id"    />
+        <result property="unitPrice"    column="sub_unit_price"    />
+        <result property="qty"    column="sub_qty"    />
+        <result property="price"    column="sub_price"    />
+        <result property="amt"    column="sub_amt"    />
+        <result property="batchNo"    column="sub_batch_no"    />
+        <result property="kcNo"    column="sub_kc_no"    />
+        <result property="kcNoStr" column="sub_kc_no_str" />
+        <result property="depInventoryId" column="sub_dep_inventory_id" />
+        <result property="warehouseIdStr" column="sub_warehouse_id_str" />
+        <result property="departmentIdStr" column="sub_department_id_str" />
+        <result property="supplierIdStr" column="sub_supplier_id_str" />
+        <result property="batchNumber"    column="sub_batch_number"    />
+        <result property="beginTime"    column="sub_begin_time"    />
+        <result property="endTime"    column="sub_end_time"    />
+        <result property="delFlag"    column="sub_del_flag"    />
+        <result property="remark"    column="sub_remark"    />
+        <result property="stockQty"    column="sub_stock_qty"    />
+        <result property="profitQty"    column="sub_profit_qty"    />
+        <result property="profitLossFlag" column="sub_profit_loss_flag" />
+        <result property="stockAmount"    column="sub_stock_amount"    />
+        <result property="profitAmount"    column="sub_profit_amount"    />
+        <result property="mainBarcode"    column="sub_main_barcode"    />
+        <result property="subBarcode"    column="sub_sub_barcode"    />
+        <result property="supplierId"    column="sub_supplier_id"    />
+        <result property="returnWarehouseId" column="sub_return_warehouse_id" />
+        <result property="countedFlag" column="sub_counted_flag" />
+        <result property="entryUuid"    column="sub_entry_uuid"    />
+        <result property="origBatchId"    column="sub_orig_batch_id"    />
+        <result property="origBatchNoSnapshot"    column="sub_orig_batch_no_snap"    />
+        <result property="tenantId"    column="sub_tenant_id"    />
+        <result property="hisId"    column="sub_his_id"    />
+        <result property="thirdPartyBatchNo"    column="sub_third_party_batch_no"    />
+        <association property="material" javaType="FdMaterial" resultMap="materialLightResult" />
+    </resultMap>
+
+    <resultMap id="materialLightResult" type="FdMaterial">
+        <id     property="id"    column="mId"     />
+        <result property="code"  column="materialCode"   />
+        <result property="name"  column="materialName"   />
+        <result property="speci"    column="m_speci"    />
+        <result property="supplierId"    column="m_supplierId"    />
+        <association property="fdUnit" javaType="FdUnit" resultMap="fdUnitResult" />
+    </resultMap>
+
+    <sql id="stocktakingEntryLightColumns">
+        b.id as sub_id, b.paren_id as sub_paren_id, b.stock_no as sub_stock_no, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
+        b.unit_price as sub_unit_price, b.qty as sub_qty, b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.kc_no as sub_kc_no, b.kc_no_str as sub_kc_no_str, b.dep_inventory_id as sub_dep_inventory_id,
+        b.warehouse_id_str as sub_warehouse_id_str, b.department_id_str as sub_department_id_str, b.supplier_id_str as sub_supplier_id_str,
+        b.orig_batch_id as sub_orig_batch_id, b.orig_batch_no_snapshot as sub_orig_batch_no_snap,
+        b.batch_number as sub_batch_number, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.tenant_id as sub_tenant_id,
+        b.del_flag as sub_del_flag, b.remark as sub_remark, b.stock_qty as sub_stock_qty, b.profit_qty as sub_profit_qty,
+        b.profit_loss_flag as sub_profit_loss_flag,
+        b.stock_amount as sub_stock_amount, b.profit_amount as sub_profit_amount,
+        b.main_barcode as sub_main_barcode, b.sub_barcode as sub_sub_barcode, b.supplier_id as sub_supplier_id,
+        b.return_warehouse_id as sub_return_warehouse_id,
+        b.counted_flag as sub_counted_flag,
+        b.entry_uuid as sub_entry_uuid,
+        b.his_id as sub_his_id, b.third_party_batch_no as sub_third_party_batch_no,
+        m.id as mId, m.code as materialCode, m.name as materialName,
+        m.speci as m_speci, m.supplier_id as m_supplierId,
+        u.unit_id as u_id, u.unit_code as u_code, u.unit_name as u_name
+    </sql>
+
     <sql id="selectStkIoStocktakingVo">
         select stk.id, stk.uuid_id, stk.stock_no, stk.suppler_id, stk.stock_date, stk.warehouse_id, stk.department_id,
 				stk.stock_status, stk.user_id as user_id, stk.stock_type, stk.audit_adjusts_inventory, stk.del_flag, stk.tenant_id, stk.audit_date, stk.create_by, stk.create_time,
@@ -159,6 +228,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="auditDate != null "> and stk.audit_date = #{auditDate}</if>
     </select>
 
+    <select id="selectStkIoStocktakingHeadById" parameterType="Long" resultMap="StkIoStocktakingResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectStkIoStocktakingVo"/>
+        where stk.id = #{id}
+          and stk.del_flag != 1
+          and stk.tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectStkIoStocktakingEntryListByParenId" parameterType="Long" resultMap="StkIoStocktakingEntryLightResult">
+        select <include refid="stocktakingEntryLightColumns"/>
+        from stk_io_stocktaking_entry b
+        left join fd_material m on b.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        where b.paren_id = #{parenId}
+          and (b.del_flag is null or b.del_flag != 1)
+        order by b.id asc
+    </select>
+
+    <!-- 保留：服务内局部逻辑仍可能直接调用；详情接口已改为主单+明细分查 -->
     <select id="selectStkIoStocktakingById" parameterType="Long" resultMap="StkIoStocktakingStkIoStocktakingEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.uuid_id, a.stock_no, a.suppler_id, a.stock_date, a.warehouse_id, a.department_id, a.stock_status, a.user_id,
@@ -196,6 +284,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
         where a.id = #{id} and a.tenant_id = #{scopedTenantId}
+        order by b.id asc
     </select>
 
     <insert id="insertStkIoStocktaking" parameterType="StkIoStocktaking" useGeneratedKeys="true" keyProperty="id">
