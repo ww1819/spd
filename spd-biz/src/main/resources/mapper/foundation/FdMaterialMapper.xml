@@ -187,7 +187,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and (m.is_use is null or m.is_use = '' or m.is_use != '2')
             </otherwise>
         </choose>
-        <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
+        <if test="code != null  and code != ''"> and m.code like concat('%', #{code}, '%') escape '\\'</if>
         <if test="name != null  and name != ''"> and (
             m.code like concat('%', #{name}, '%') escape '\\'
             OR m.name like concat('%', #{name}, '%') escape '\\'
@@ -568,7 +568,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and (m.is_use is null or m.is_use = '' or m.is_use != '2')
             </otherwise>
         </choose>
-        <if test="code != null  and code != ''"> and (m.code like concat('%', #{code}, '%') OR m.name like concat('%', #{code}, '%') OR m.referred_name like concat('%', #{code}, '%'))</if>
+        <if test="code != null  and code != ''"> and m.code like concat('%', #{code}, '%') escape '\\'</if>
         <if test="name != null  and name != ''"> and (
             m.code like concat('%', #{name}, '%') escape '\\'
             OR m.name like concat('%', #{name}, '%') escape '\\'
