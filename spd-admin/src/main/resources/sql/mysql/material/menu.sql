@@ -4456,6 +4456,56 @@ WHERE @stk_in_id IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @stk_in_id AND perms = 'stocktaking:in:audit');
 /
 
+-- ========== 仓库盈亏处理 warehouse/profitLoss（StkIoProfitLossController）==========
+-- 权限：warehouse:profitLoss:list/query/add/edit/remove/audit；default_open_to_customer=1
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '盈亏处理',
+  @stk_parent,
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @stk_parent),
+  'profitLoss',
+  'warehouse/profitLoss/index',
+  NULL,
+  1, 0, 'C', '0', '0', 'warehouse:profitLoss:list', 'lifebuoy',
+  'admin', NOW(), '1', NOW(), '仓库盈亏单 /warehouse/profitLoss',
+  '0', '1'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouse/profitLoss/index');
+/
+
+SET @profit_loss_c := (
+  SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouse/profitLoss/index' ORDER BY menu_id DESC LIMIT 1
+);
+/
+
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t),
+  '盈亏单查询',
+  @profit_loss_c,
+  1,
+  '#', '', NULL,
+  1, 0, 'F', '0', '0', 'warehouse:profitLoss:query', '#',
+  'admin', NOW(), '1', NOW(), 'GET /{id}',
+  '0', '1'
+FROM DUAL
+WHERE @profit_loss_c IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @profit_loss_c AND perms = 'warehouse:profitLoss:query');
+/
+
 -- ========== 定数监测 monitoring/fixedNumber（FixedNumberController）==========
 -- 权限：monitoring:fixedNumber:list/add/remove/disable/enable/export；default_open_to_customer=1
 /
@@ -6913,8 +6963,13 @@ INNER JOIN (
 ) tgt ON 1 = 1;
 /
 
--- 23.7 盈亏单：add/edit/remove/audit（父：warehouse/profitLoss/index；扫描 FE∩BE 相对 menu.sql 曾缺 audit/edit/remove 三项）
+-- 23.7 盈亏单：query/add/edit/remove/audit（父：warehouse/profitLoss/index；扫描 FE∩BE 相对 menu.sql 曾缺 audit/edit/remove 三项）
 SET @profit_loss_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'warehouse/profitLoss/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM (SELECT menu_id FROM sys_menu) t), '盈亏单查询', @profit_loss_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'warehouse:profitLoss:query', '#', 'admin', NOW(), '1', NOW(), 'GET /{id}', '0', '1'
+FROM DUAL WHERE @profit_loss_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @profit_loss_menu AND perms = 'warehouse:profitLoss:query');
 /
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
 SELECT 3464, '盈亏单新增', @profit_loss_menu, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @profit_loss_menu), '#', '', NULL, 1, 0, 'F', '0', '0', 'warehouse:profitLoss:add', '#', 'admin', NOW(), '1', NOW(), 'StkIoProfitLossController 新增/保存草稿', '0', '1'

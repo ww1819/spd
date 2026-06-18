@@ -95,15 +95,15 @@
         <if test="hisChargeId != null and hisChargeId != ''">
             <choose>
                 <when test='"INPATIENT".equals(visitKind)'>
-                    and trim(ifnull(m.his_inpatient_charge_id,'')) = trim(#{hisChargeId})
+                    and m.his_inpatient_charge_id like concat('%', #{hisChargeId}, '%')
                 </when>
                 <when test='"OUTPATIENT".equals(visitKind)'>
-                    and trim(ifnull(m.his_outpatient_charge_id,'')) = trim(#{hisChargeId})
+                    and m.his_outpatient_charge_id like concat('%', #{hisChargeId}, '%')
                 </when>
                 <otherwise>
                     and (
-                        (m.visit_kind = 'INPATIENT' and trim(ifnull(m.his_inpatient_charge_id,'')) = trim(#{hisChargeId}))
-                        or (m.visit_kind = 'OUTPATIENT' and trim(ifnull(m.his_outpatient_charge_id,'')) = trim(#{hisChargeId}))
+                        (m.visit_kind = 'INPATIENT' and m.his_inpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+                        or (m.visit_kind = 'OUTPATIENT' and m.his_outpatient_charge_id like concat('%', #{hisChargeId}, '%'))
                     )
                 </otherwise>
             </choose>

@@ -18,7 +18,7 @@ public class PurchasePlanEntrySupplierExportVO
     @Excel(name = "计划日期", width = 14, dateFormat = "yyyy-MM-dd")
     private Date planDate;
 
-    @Excel(name = "计划状态", readConverterExp = "0=未提交,1=未提交,2=已审核,3=已执行,4=已取消")
+    @Excel(name = "计划状态", readConverterExp = "0=未提交,1=待审核,2=已审核")
     private String planStatus;
 
     @Excel(name = "送货仓库", width = 20)

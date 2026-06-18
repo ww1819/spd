@@ -27,7 +27,7 @@ SET dict_label='停用'
 WHERE dict_type='is_use_status' and dict_value='2' and dict_label='启用';
 /
 
--- 采购计划状态 plan_status（前端 dict.type.plan_status）：0未提交 1待审核 2已审核 3已执行 4已取消
+-- 采购计划状态 plan_status（前端 dict.type.plan_status）：0未提交 1待审核 2已审核
 INSERT INTO sys_dict_type (dict_name, dict_type, status, create_time)
 SELECT '采购计划状态', 'plan_status', '0', NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'plan_status');
@@ -44,13 +44,9 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status,
 SELECT 3, '已审核', '2', 'plan_status', '0', NOW(), '采购计划状态：已审核'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '2');
 /
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time, remark)
-SELECT 4, '已执行', '3', 'plan_status', '0', NOW(), '采购计划状态：已执行'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '3');
+DELETE FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value IN ('3', '4');
 /
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time, remark)
-SELECT 5, '已取消', '4', 'plan_status', '0', NOW(), '采购计划状态：已取消'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '4');
+UPDATE sys_dict_type SET remark = '计划状态（0未提交 1待审核 2已审核）' WHERE dict_type = 'plan_status';
 /
 
 -- 将客户管理、客户菜单功能管理挂到「系统管理」下（修复 parent_id，派生表避免同表 UPDATE 报错）
@@ -524,10 +520,9 @@ WHERE s.supplier_id IS NULL AND (s.del_flag IS NULL OR s.del_flag != 1);
 /
 
 -- ========== 采购计划状态字典（purchase_plan.plan_status） ==========
--- 代码逻辑：0=未提交 1=待审核 2=已审核 3=已执行 4=已取消（与字段注释 1待审核 2已审核 3已执行 4已取消 一致，仅实体类注释有笔误写为 1未提交，此处按实际逻辑补全）
--- 若不存在字典类型则先插入
+-- 代码逻辑：0=未提交 1=待审核 2=已审核
 INSERT INTO sys_dict_type (dict_name, dict_type, status, remark, create_time)
-SELECT '采购计划状态', 'plan_status', '0', '计划状态（0未提交 1待审核 2已审核 3已执行 4已取消）', NOW()
+SELECT '采购计划状态', 'plan_status', '0', '计划状态（0未提交 1待审核 2已审核）', NOW()
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'plan_status');
 /
@@ -540,11 +535,9 @@ SELECT 2, '待审核', '1', 'plan_status', '0', NOW() FROM DUAL WHERE NOT EXISTS
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time)
 SELECT 3, '已审核', '2', 'plan_status', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '2');
 /
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time)
-SELECT 4, '已执行', '3', 'plan_status', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '3');
+DELETE FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value IN ('3', '4');
 /
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_time)
-SELECT 5, '已取消', '4', 'plan_status', '0', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'plan_status' AND dict_value = '4');
+UPDATE sys_dict_type SET remark = '计划状态（0未提交 1待审核 2已审核）' WHERE dict_type = 'plan_status';
 /
 
 -- ========== 耗材登录默认客户 + 岗位「同步仓库/科室/菜单」按钮（与 maintenance/add_hc_default_customer_config_and_post_sync_menu.sql 一致）==========

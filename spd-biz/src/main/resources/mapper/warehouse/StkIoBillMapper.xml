@@ -602,6 +602,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by totalAmt desc
     </select>
 
+    <!-- 首页/大屏：当月已审核出退库（201/401）按耗材财务分类汇总金额，退库冲减，按金额降序 -->
+    <select id="selectBiScreenOutboundFinanceCategoryMonth" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            case
+                when m.finance_category_id is not null then
+                    ifnull(nullif(trim(max(fc.finance_category_name)), ''), concat('财务分类#', cast(m.finance_category_id as char)))
+                else '未分类'
+            end as financeCategoryName,
+            coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) as totalAmt
+        from stk_io_bill stk
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        left join fd_material m on b.material_id = m.id
+        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (201, 401)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
+          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+        group by m.finance_category_id
+        having coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
+                              else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) &gt; 0
+        order by totalAmt desc
+    </select>
+
     <!-- 数据可视化大屏：今日已审核出库单(201)笔数、今日已审核入库单(101)笔数（按单据 id 去重） -->
     <select id="selectBiScreenTodayInboundOutboundBillCount" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
@@ -1941,6 +1969,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null"> AND stk.warehouse_id = #{warehouseId}</if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         <if test="departmentId != null"> AND stk.department_id = #{departmentId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''">
+            AND (m.name LIKE CONCAT('%', #{materialNameLike}, '%')
+                 OR m.code LIKE CONCAT('%', #{materialNameLike}, '%')
+                 OR m.referred_name LIKE CONCAT('%', #{materialNameLike}, '%'))
+        </if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            AND m.finance_category_id IN
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <if test="beginDate != null"> AND stk.bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> AND stk.bill_date &lt;= #{endDate}</if>
     </sql>
@@ -2083,13 +2122,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.speci materialSpeci, m.model materialModel,
             u.unit_name unitName, AVG(b.unit_price) unitPrice,
             SUM(b.qty) totalQty, SUM(b.amt) totalAmt,
-            ROUND((SUM(b.amt) / (SELECT IFNULL(SUM(amt), 1) FROM stk_io_bill_entry entry
+            ROUND((SUM(b.amt) / (SELECT IFNULL(SUM(entry.amt), 1) FROM stk_io_bill_entry entry
                 INNER JOIN stk_io_bill bill ON bill.id = entry.paren_id
+                LEFT JOIN fd_material mat ON entry.material_id = mat.id
                 WHERE bill.del_flag != 1 AND bill.bill_status = 2 AND bill.bill_type = 201
                 AND bill.tenant_id = #{scopedTenantId}
                 AND entry.del_flag != 1
                 <if test="warehouseId != null"> AND bill.warehouse_id = #{warehouseId}</if>
                 <if test="departmentId != null"> AND bill.department_id = #{departmentId}</if>
+                <if test="materialNameLike != null and materialNameLike != ''">
+                    AND (mat.name LIKE CONCAT('%', #{materialNameLike}, '%')
+                         OR mat.code LIKE CONCAT('%', #{materialNameLike}, '%')
+                         OR mat.referred_name LIKE CONCAT('%', #{materialNameLike}, '%'))
+                </if>
+                <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+                    AND mat.finance_category_id IN
+                    <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                        #{fcId}
+                    </foreach>
+                </if>
                 <if test="beginDate != null"> AND bill.bill_date &gt;= #{beginDate}</if>
                 <if test="endDate != null"> AND bill.bill_date &lt;= #{endDate}</if>
             )) * 100, 2) as percentage,

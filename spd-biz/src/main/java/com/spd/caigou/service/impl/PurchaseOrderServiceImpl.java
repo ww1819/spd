@@ -493,12 +493,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             throw new ServiceException("计划明细中采购数量未填写或均不大于0，无法生成订单。请检查计划明细的采购数量后再审核。");
         }
 
-        // 更新计划状态为已执行
-        purchasePlan.setPlanStatus("3"); // 已执行
-        purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
-        purchasePlan.setUpdateTime(new Date());
-        purchasePlanMapper.updatePurchasePlan(purchasePlan);
-
+        // 计划状态保持「已审核」(2)，不再使用已执行(3)
         return orderCount;
     }
 

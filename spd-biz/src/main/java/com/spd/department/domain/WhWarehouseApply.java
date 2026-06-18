@@ -87,6 +87,12 @@ public class WhWarehouseApply extends BaseEntity {
     /** 出库引用候选列表用：本单剩余可下推出库数量合计（非表字段） */
     private BigDecimal pendingOutboundTotal;
 
+    /** 制单人姓名（列表展示，非表字段） */
+    private String createrName;
+
+    /** 审核人姓名（来自科室申领审核，非表字段） */
+    private String auditPersonName;
+
     public String getId() {
         return id;
     }
@@ -293,5 +299,21 @@ public class WhWarehouseApply extends BaseEntity {
 
     public void setPendingOutboundTotal(BigDecimal pendingOutboundTotal) {
         this.pendingOutboundTotal = pendingOutboundTotal;
+    }
+
+    public String getCreaterName() {
+        return createrName;
+    }
+
+    public void setCreaterName(String createrName) {
+        this.createrName = createrName;
+    }
+
+    public String getAuditPersonName() {
+        return auditPersonName;
+    }
+
+    public void setAuditPersonName(String auditPersonName) {
+        this.auditPersonName = auditPersonName;
     }
 }

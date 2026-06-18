@@ -21,6 +21,12 @@ public interface StkIoStocktakingMapper
      */
     public StkIoStocktaking selectStkIoStocktakingById(Long id);
 
+    /** 盘点主单（不含明细，编辑弹窗首屏更快） */
+    StkIoStocktaking selectStkIoStocktakingHeadById(Long id);
+
+    /** 盘点明细列表（仅关联耗材与单位，不含厂家/耗材默认供应商） */
+    List<StkIoStocktakingEntry> selectStkIoStocktakingEntryListByParenId(Long parenId);
+
     /**
      * 事务内锁定盘点主表行（FOR UPDATE），用于与并发校验配合。
      */
@@ -152,4 +158,8 @@ public interface StkIoStocktakingMapper
         @Param("stockAmount") java.math.BigDecimal stockAmount,
         @Param("profitAmount") java.math.BigDecimal profitAmount,
         @Param("countedFlag") Integer countedFlag);
+
+    /** 同仓库下除 excludeId 外未审核仓库盘点单（stock_type=501）业务单号，按 id 升序 */
+    List<String> selectPendingWhStocktakingStockNos(@Param("warehouseId") Long warehouseId,
+        @Param("excludeId") Long excludeId);
 }

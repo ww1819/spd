@@ -345,6 +345,28 @@ public class HomeDashboardController extends BaseController
     }
 
     /**
+     * 出库统计占比：当月已审核出退库（201/401）按耗材财务分类汇总金额（退库冲减），与入库财务分类图口径对称。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/outboundFinanceCategoryProportion")
+    public AjaxResult outboundFinanceCategoryProportion()
+    {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenOutboundFinanceCategoryMonth();
+        return success(list);
+    }
+
+    /**
+     * 入库统计占比：当月已审核入退货（101/301）按耗材财务分类汇总金额（退货冲减）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/inboundFinanceCategoryProportion")
+    public AjaxResult inboundFinanceCategoryProportion()
+    {
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenInboundFinanceCategoryMonth();
+        return success(list);
+    }
+
+    /**
      * 仓库消息提醒：当前用户科室数据范围内，待审核申领单（bill_type=1）与待审核申购单单据数（与各自审核列表口径一致）。
      */
     @PreAuthorize("isAuthenticated()")
