@@ -244,9 +244,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_factory f on m.factory_id = f.factory_id
         left join fd_supplier ms on m.supplier_id = ms.id
-        where m.del_flag != 1 and m.is_gz != 1 and stk.qty &gt; 0 and stk.tenant_id = #{tenantId}
-          and (m.is_use is null or m.is_use = '' or m.is_use != '2')
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{tenantId}
+          and m.del_flag != 1
+          and stk.qty &gt; 0
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
+        <if test="materialIsUse != null and materialIsUse != ''">
+          and (m.is_use = #{materialIsUse})
+        </if>
         order by IFNULL(m.name, '') asc, IFNULL(m.code, '') asc, stk.batch_no asc, stk.id asc
     </select>
 

@@ -271,9 +271,7 @@ public class StkInventoryController extends BaseController
     }
 
     /**
-     * 按仓库过滤库存明细耗材、基础耗材
-     * @param stkInventory
-     * @return
+     * 仓库盘点选库存 / 盘点初始化：按仓库返回 qty&gt;0 的库存明细（口径与库存明细查询一致，含高值耗材；可选 materialIsUse 筛选）
      */
     @GetMapping("/listPDFilter")
     public TableDataInfo ListPDInventoryFilter(StkInventory stkInventory)
