@@ -1,15 +1,30 @@
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "spd-maven-install",
-            "type": "shell",
-            "command": "mvn",
-            "args": ["install", "-DskipTests", "-q"],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        }
-    ]
-}
+{
+
+    "version": "2.0.0",
+
+    "tasks": [
+
+        {
+
+            "label": "spd-maven-install",
+
+            "type": "shell",
+
+            "command": "mvn",
+
+            "args": ["install", "-DskipTests", "-q"],
+
+            "options": {
+
+                "cwd": "${workspaceFolder}"
+
+            },
+
+            "problemMatcher": []
+
+        }
+
+    ]
+
+}
+

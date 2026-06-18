@@ -122,7 +122,7 @@ spring:
                 # username: root
                 # password: hssy_2018
                 # 本机 MySQL（与 prod 本地库名 aspt 一致）
-                 url: jdbc:mysql://127.0.0.1:3306/hssy?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                 url: jdbc:mysql://127.0.0.1:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                  username: root
                  password: root
                  # password: root

@@ -164,7 +164,7 @@ spring:
 # 日志配置
 logging:
     level:
-        com.spd: debug
+        com.spd: info
         org.springframework: warn
 
 # 用户配置
