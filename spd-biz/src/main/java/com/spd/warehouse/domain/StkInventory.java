@@ -142,6 +142,9 @@ public class StkInventory extends BaseEntity
     /** 查询参数：库房分类ID（与产品档案 fd_material.storeroom_id 一致） */
     private Long warehouseCategoryId;
 
+    /** 查询参数：财务分类ID多选（fd_material.finance_category_id） */
+    private Long[] financeCategoryIds;
+
     /** 查询参数：业务日期起（yyyy-MM-dd，按 stk.warehouse_date） */
     private String beginDate;
 
@@ -489,6 +492,14 @@ public class StkInventory extends BaseEntity
         this.warehouseCategoryId = warehouseCategoryId;
     }
 
+    public Long[] getFinanceCategoryIds() {
+        return financeCategoryIds;
+    }
+
+    public void setFinanceCategoryIds(Long[] financeCategoryIds) {
+        this.financeCategoryIds = financeCategoryIds;
+    }
+
     public String getBeginDate() {
         return beginDate;
     }
@@ -569,6 +580,7 @@ public class StkInventory extends BaseEntity
             .append("materialName", getMaterialName())
             .append("excludeMaterialWarehousePairs", getExcludeMaterialWarehousePairs())
             .append("warehouseCategoryId", getWarehouseCategoryId())
+            .append("financeCategoryIds", getFinanceCategoryIds())
             .append("beginDate", getBeginDate())
             .append("endDate", getEndDate())
             .append("isBilling", getIsBilling())
