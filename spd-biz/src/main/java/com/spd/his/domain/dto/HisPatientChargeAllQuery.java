@@ -26,6 +26,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     /** 退费记录对应的原收费明细ID（住院/门诊统一筛选） */
     private String chargeIdTf;
     private Long departmentId;
+    /** 执行科室名称模糊 */
+    private String execDeptName;
     /** Y=已处理 N=未处理 */
     private String processed;
     /** 收费项目高低值筛选：1高值 2低值，空=全部 */

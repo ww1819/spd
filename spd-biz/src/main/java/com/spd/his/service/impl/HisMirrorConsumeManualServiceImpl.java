@@ -558,7 +558,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 throw new ServiceException(HisMirrorProcessUserMessages.chargeNotFound(true));
             }
             ml.fetchBatchId = r.getFetchBatchId();
-            ml.deptHisCode = r.getDeptCode();
+            ml.deptHisCode = r.getExecDeptId();
             ml.chargeItemId = r.getChargeItemId();
             ml.itemName = r.getItemName();
             ml.quantity = r.getQuantity();
@@ -572,7 +572,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException(HisMirrorProcessUserMessages.chargeNotFound(false));
         }
         ml.fetchBatchId = r.getFetchBatchId();
-        ml.deptHisCode = r.getClinicCode();
+        ml.deptHisCode = r.getExecDeptId();
         ml.chargeItemId = r.getChargeItemId();
         ml.itemName = r.getItemName();
         ml.quantity = r.getQuantity();

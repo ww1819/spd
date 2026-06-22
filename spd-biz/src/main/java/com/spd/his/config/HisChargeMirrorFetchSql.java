@@ -12,6 +12,7 @@ public final class HisChargeMirrorFetchSql
 
     public static final String SQLSERVER_INPATIENT_RANGE =
         "SELECT inpatient_charge_id, inpatient_charge_id_tf, patient_id, patient_name, inpatient_no, dept_code, dept_name, "
+            + "exec_dept_id, exec_dept_name, "
             + "doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date, "
             + "use_date, charge_date, quantity, unit_price, total_amount, charge_operator, remark "
             + "FROM dbo.v_inpatient_consumable_charge "
@@ -22,6 +23,7 @@ public final class HisChargeMirrorFetchSql
 
     public static final String SQLSERVER_OUTPATIENT_RANGE =
         "SELECT outpatient_charge_id, outpatient_charge_id_tf, patient_id, patient_name, outpatient_no, clinic_code, clinic_name, "
+            + "exec_dept_id, exec_dept_name, "
             + "doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date, "
             + "charge_date, quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark "
             + "FROM dbo.v_outpatient_consumable_charge "

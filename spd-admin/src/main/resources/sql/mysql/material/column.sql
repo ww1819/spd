@@ -2146,6 +2146,10 @@ CALL add_table_column('his_inpatient_charge_mirror', 'process_situation', 'varch
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
 /
+CALL add_table_column('his_inpatient_charge_mirror', 'exec_dept_id', 'varchar(12)', '执行科室ID(HIS)', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'exec_dept_name', 'varchar(32)', '执行科室名称(HIS)', NULL);
+/
 
 CALL add_table_column('his_outpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
 /
@@ -2220,6 +2224,10 @@ CALL add_table_column('his_outpatient_charge_mirror', 'process_by', 'varchar(64)
 CALL add_table_column('his_outpatient_charge_mirror', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'exec_dept_id', 'varchar(12)', '执行科室ID(HIS)', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'exec_dept_name', 'varchar(32)', '执行科室名称(HIS)', NULL);
 /
 
 CALL add_table_column('his_charge_fetch_batch', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
@@ -2769,6 +2777,10 @@ CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 
 CALL add_table_column('his_patient_charge_mirror_unified', 'patient_sex', 'varchar(16)', '患者性别', NULL);
 /
 CALL add_table_column('his_patient_charge_mirror_unified', 'patient_name_referred', 'varchar(128)', '患者姓名拼音简码(首字母)', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'exec_dept_id', 'varchar(12)', '执行科室ID(HIS)', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'exec_dept_name', 'varchar(32)', '执行科室名称(HIS)', NULL);
 /
 
 -- ========== 采购链路：高低值标志（1高值 2低值） ==========

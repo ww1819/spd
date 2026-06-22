@@ -16,8 +16,11 @@ public class HisPatientChargeMirrorExportVo
     @Excel(name = "号")
     private String visitNo;
 
-    @Excel(name = "科室/就诊")
+    @Excel(name = "开单科室")
     private String deptDisplayName;
+
+    @Excel(name = "执行科室")
+    private String execDeptName;
 
     @Excel(name = "患者")
     private String patientName;
@@ -79,6 +82,8 @@ public class HisPatientChargeMirrorExportVo
     public void setVisitNo(String visitNo) { this.visitNo = visitNo; }
     public String getDeptDisplayName() { return deptDisplayName; }
     public void setDeptDisplayName(String deptDisplayName) { this.deptDisplayName = deptDisplayName; }
+    public String getExecDeptName() { return execDeptName; }
+    public void setExecDeptName(String execDeptName) { this.execDeptName = execDeptName; }
     public String getPatientName() { return patientName; }
     public void setPatientName(String patientName) { this.patientName = patientName; }
     public String getChargeItemId() { return chargeItemId; }

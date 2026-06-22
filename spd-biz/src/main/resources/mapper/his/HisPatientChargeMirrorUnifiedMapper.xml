@@ -8,11 +8,7 @@
                 select 1 from fd_department dscope
                 where (dscope.del_flag = 0 or dscope.del_flag is null)
                   and dscope.tenant_id = #{tenantId}
-                  and (
-                    (m.visit_kind = 'INPATIENT' and trim(dscope.his_id) = trim(m.dept_code))
-                    or
-                    (m.visit_kind = 'OUTPATIENT' and trim(dscope.his_id) = trim(m.clinic_code))
-                  )
+                  and trim(dscope.his_id) = trim(m.exec_dept_id)
                   and dscope.id in (
                     select distinct x.did from (
                         select cast(upd.dept_id as unsigned) as did
@@ -49,6 +45,7 @@
         m.his_inpatient_charge_id, m.his_outpatient_charge_id, m.his_inpatient_charge_id_tf, m.his_outpatient_charge_id_tf,
         m.patient_id, m.patient_name, m.patient_sex, m.inpatient_no, m.outpatient_no,
         m.dept_code, m.dept_name, m.clinic_code, m.clinic_name,
+        m.exec_dept_id, m.exec_dept_name,
         m.doctor_id, m.doctor_name, m.charge_item_id, m.item_name, m.spec_model, m.batch_no, m.expire_date,
         m.use_date, m.charge_date_display, m.charge_at,
         m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
@@ -130,10 +127,7 @@
                 where (dsel.del_flag = 0 or dsel.del_flag is null)
                   and dsel.tenant_id = #{tenantId}
                   and dsel.id = #{departmentId}
-                  and (
-                    (m.visit_kind = 'INPATIENT' and trim(dsel.his_id) = trim(m.dept_code))
-                    or (m.visit_kind = 'OUTPATIENT' and trim(dsel.his_id) = trim(m.clinic_code))
-                  )
+                  and trim(dsel.his_id) = trim(m.exec_dept_id)
             )
         </if>
         <if test='processed != null and processed == "Y"'>
@@ -160,6 +154,9 @@
         <if test="(visitKind == null or visitKind == '') and deptNameLike != null and deptNameLike != ''">
             and (m.dept_name like concat('%', #{deptNameLike}, '%') or m.clinic_name like concat('%', #{deptNameLike}, '%'))
         </if>
+        <if test="execDeptNameLike != null and execDeptNameLike != ''">
+            and m.exec_dept_name like concat('%', #{execDeptNameLike}, '%')
+        </if>
         <include refid="unifiedDepartmentScopeFilter"/>
     </sql>
 
@@ -181,6 +178,8 @@
         <result property="deptName" column="dept_name"/>
         <result property="clinicCode" column="clinic_code"/>
         <result property="clinicName" column="clinic_name"/>
+        <result property="execDeptId" column="exec_dept_id"/>
+        <result property="execDeptName" column="exec_dept_name"/>
         <result property="doctorId" column="doctor_id"/>
         <result property="doctorName" column="doctor_name"/>
         <result property="chargeItemId" column="charge_item_id"/>
@@ -227,7 +226,7 @@
             id, tenant_id, visit_kind, fetch_batch_id,
             his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
             patient_id, patient_name, patient_name_referred, inpatient_no, outpatient_no,
-            dept_code, dept_name, clinic_code, clinic_name,
+            dept_code, dept_name, clinic_code, clinic_name, exec_dept_id, exec_dept_name,
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
             quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
@@ -237,7 +236,7 @@
             m.id, m.tenant_id, 'INPATIENT', m.fetch_batch_id,
             m.his_inpatient_charge_id, null, m.his_inpatient_charge_id_tf, null,
             m.patient_id, m.patient_name, null, m.inpatient_no, null,
-            m.dept_code, m.dept_name, null, null,
+            m.dept_code, m.dept_name, null, null, m.exec_dept_id, m.exec_dept_name,
             m.doctor_id, m.doctor_name, trim(m.charge_item_id), m.item_name, m.spec_model, m.batch_no, m.expire_date,
             case when m.use_date is null or trim(ifnull(m.use_date,'')) = '' then null else str_to_date(left(trim(m.use_date), 19), '%Y-%m-%d %H:%i:%s') end,
             left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 64),
@@ -263,7 +262,7 @@
             id, tenant_id, visit_kind, fetch_batch_id,
             his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
             patient_id, patient_name, patient_name_referred, inpatient_no, outpatient_no,
-            dept_code, dept_name, clinic_code, clinic_name,
+            dept_code, dept_name, clinic_code, clinic_name, exec_dept_id, exec_dept_name,
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
             quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
@@ -273,7 +272,7 @@
             m.id, m.tenant_id, 'OUTPATIENT', m.fetch_batch_id,
             null, m.his_outpatient_charge_id, null, m.his_outpatient_charge_id_tf,
             m.patient_id, m.patient_name, null, null, m.outpatient_no,
-            null, null, m.clinic_code, m.clinic_name,
+            null, null, m.clinic_code, m.clinic_name, m.exec_dept_id, m.exec_dept_name,
             m.doctor_id, m.doctor_name, trim(m.charge_item_id), m.item_name, m.spec_model, m.batch_no, m.expire_date,
             null,
             left(replace(trim(ifnull(cast(m.charge_date as char), '')), '/', '-'), 64),
@@ -298,7 +297,7 @@
             id, tenant_id, visit_kind, fetch_batch_id,
             his_inpatient_charge_id, his_outpatient_charge_id, his_inpatient_charge_id_tf, his_outpatient_charge_id_tf,
             patient_id, patient_name, patient_name_referred, inpatient_no, outpatient_no,
-            dept_code, dept_name, clinic_code, clinic_name,
+            dept_code, dept_name, clinic_code, clinic_name, exec_dept_id, exec_dept_name,
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
             quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
@@ -308,7 +307,7 @@
             (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.fetchBatchId},
             #{e.hisInpatientChargeId}, #{e.hisOutpatientChargeId}, #{e.hisInpatientChargeIdTf}, #{e.hisOutpatientChargeIdTf},
             #{e.patientId}, #{e.patientName}, #{e.patientNameReferred}, #{e.inpatientNo}, #{e.outpatientNo},
-            #{e.deptCode}, #{e.deptName}, #{e.clinicCode}, #{e.clinicName},
+            #{e.deptCode}, #{e.deptName}, #{e.clinicCode}, #{e.clinicName}, #{e.execDeptId}, #{e.execDeptName},
             #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel}, #{e.batchNo}, #{e.expireDate},
             #{e.useDate}, #{e.chargeDateDisplay}, #{e.chargeAt},
             #{e.quantity}, #{e.unitPrice}, #{e.totalAmount}, #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint},

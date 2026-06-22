@@ -30,6 +30,10 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String outpatientNo;
     private String clinicCode;
     private String clinicName;
+    /** 执行科室ID（HIS exec_dept_id） */
+    private String execDeptId;
+    /** 执行科室名称（HIS exec_dept_name） */
+    private String execDeptName;
     private String doctorId;
     private String doctorName;
     private String chargeItemId;

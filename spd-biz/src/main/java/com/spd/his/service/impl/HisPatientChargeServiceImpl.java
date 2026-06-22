@@ -868,21 +868,21 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         if ("INPATIENT".equalsIgnoreCase(visitKind))
         {
             HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
-            if (r == null || StringUtils.isBlank(r.getDeptCode()))
+            if (r == null || StringUtils.isBlank(r.getExecDeptId()))
             {
                 return null;
             }
-            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getDeptCode()));
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getExecDeptId()));
             return d != null ? d.getId() : null;
         }
         if ("OUTPATIENT".equalsIgnoreCase(visitKind))
         {
             HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
-            if (r == null || StringUtils.isBlank(r.getClinicCode()))
+            if (r == null || StringUtils.isBlank(r.getExecDeptId()))
             {
                 return null;
             }
-            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getClinicCode()));
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getExecDeptId()));
             return d != null ? d.getId() : null;
         }
         return null;
@@ -997,6 +997,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         e.setInpatientNo(rs.getString("inpatient_no"));
         e.setDeptCode(trimToNull(rs.getString("dept_code")));
         e.setDeptName(rs.getString("dept_name"));
+        e.setExecDeptId(trimToNull(rs.getString("exec_dept_id")));
+        e.setExecDeptName(trimToNull(rs.getString("exec_dept_name")));
         e.setDoctorId(trimToNull(rs.getString("doctor_id")));
         e.setDoctorName(rs.getString("doctor_name"));
         e.setChargeItemId(trimToNull(rs.getString("charge_item_id")));
@@ -1051,6 +1053,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         e.setOutpatientNo(rs.getString("outpatient_no"));
         e.setClinicCode(trimToNull(rs.getString("clinic_code")));
         e.setClinicName(rs.getString("clinic_name"));
+        e.setExecDeptId(trimToNull(rs.getString("exec_dept_id")));
+        e.setExecDeptName(trimToNull(rs.getString("exec_dept_name")));
         e.setDoctorId(trimToNull(rs.getString("doctor_id")));
         e.setDoctorName(rs.getString("doctor_name"));
         e.setChargeItemId(trimToNull(rs.getString("charge_item_id")));
@@ -1440,7 +1444,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             nz(e.getUnitPrice()),
             nz(e.getTotalAmount()),
             nz(e.getChargeDate()),
-            nz(e.getDeptCode()));
+            nz(e.getExecDeptId()));
         return DigestUtils.md5DigestAsHex(raw.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -1455,7 +1459,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             nz(e.getUnitPrice()),
             nz(e.getTotalAmount()),
             nz(e.getChargeDate()),
-            nz(e.getClinicCode()));
+            nz(e.getExecDeptId()));
         return DigestUtils.md5DigestAsHex(raw.getBytes(StandardCharsets.UTF_8));
     }
 

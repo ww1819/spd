@@ -41,6 +41,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setInpatientNo(e.getInpatientNo());
         m.setDeptCode(e.getDeptCode());
         m.setDeptName(e.getDeptName());
+        m.setExecDeptId(e.getExecDeptId());
+        m.setExecDeptName(e.getExecDeptName());
         m.setDoctorId(e.getDoctorId());
         m.setDoctorName(e.getDoctorName());
         m.setChargeItemId(normalizeChargeItemId(e.getChargeItemId()));
@@ -88,6 +90,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         m.setOutpatientNo(e.getOutpatientNo());
         m.setClinicCode(e.getClinicCode());
         m.setClinicName(e.getClinicName());
+        m.setExecDeptId(e.getExecDeptId());
+        m.setExecDeptName(e.getExecDeptName());
         m.setDoctorId(e.getDoctorId());
         m.setDoctorName(e.getDoctorName());
         m.setChargeItemId(normalizeChargeItemId(e.getChargeItemId()));
@@ -152,6 +156,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setBeginProcessTime(q.getBeginProcessTime());
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(q.getDeptName());
+        u.setExecDeptNameLike(q.getExecDeptName());
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -180,6 +185,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setBeginProcessTime(q.getBeginProcessTime());
         u.setEndProcessTime(q.getEndProcessTime());
         u.setClinicNameLike(q.getClinicName());
+        u.setExecDeptNameLike(q.getExecDeptName());
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -209,6 +215,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(null);
         u.setClinicNameLike(null);
+        u.setExecDeptNameLike(q.getExecDeptName());
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -233,6 +240,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setInpatientNo(u.getInpatientNo());
         r.setDeptCode(u.getDeptCode());
         r.setDeptName(u.getDeptName());
+        r.setExecDeptId(u.getExecDeptId());
+        r.setExecDeptName(u.getExecDeptName());
         r.setDoctorId(u.getDoctorId());
         r.setDoctorName(u.getDoctorName());
         r.setChargeItemId(u.getChargeItemId());
@@ -283,6 +292,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setOutpatientNo(u.getOutpatientNo());
         r.setClinicCode(u.getClinicCode());
         r.setClinicName(u.getClinicName());
+        r.setExecDeptId(u.getExecDeptId());
+        r.setExecDeptName(u.getExecDeptName());
         r.setDoctorId(u.getDoctorId());
         r.setDoctorName(u.getDoctorName());
         r.setChargeItemId(u.getChargeItemId());
@@ -348,6 +359,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
             r.setHisChargeId(u.getHisInpatientChargeId());
             r.setChargeIdTf(u.getHisInpatientChargeIdTf());
         }
+        r.setExecDeptId(u.getExecDeptId());
+        r.setExecDeptName(u.getExecDeptName());
         r.setChargeItemId(u.getChargeItemId());
         r.setItemName(u.getItemName());
         r.setSpecModel(u.getSpecModel());
@@ -384,6 +397,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         vo.setVisitType(d.getVisitType());
         vo.setVisitNo(d.getVisitNo());
         vo.setDeptDisplayName(d.getDeptDisplayName());
+        vo.setExecDeptName(d.getExecDeptName());
         vo.setPatientName(d.getPatientName());
         vo.setChargeItemId(d.getChargeItemId());
         vo.setHisChargeId(d.getHisChargeId());
@@ -429,18 +443,14 @@ public final class HisPatientChargeMirrorUnifiedSupport
         return uq;
     }
 
-    /** 库存汇总用：住院=dept_code，门诊=clinic_code */
+    /** 库存汇总用：执行科室 exec_dept_id */
     public static String stockLocHisCode(HisPatientChargeMirrorUnified u)
     {
         if (u == null)
         {
             return "";
         }
-        if ("OUTPATIENT".equals(u.getVisitKind()))
-        {
-            return StringUtils.trimToEmpty(u.getClinicCode());
-        }
-        return StringUtils.trimToEmpty(u.getDeptCode());
+        return StringUtils.trimToEmpty(u.getExecDeptId());
     }
 
     public static String stockPairKey(HisPatientChargeMirrorUnified u)

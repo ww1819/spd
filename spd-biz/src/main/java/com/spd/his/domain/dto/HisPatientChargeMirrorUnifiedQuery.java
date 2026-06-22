@@ -47,8 +47,10 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     private Date endProcessTime;
     /** 住院：科室名称模糊 */
     private String deptNameLike;
-    /** 门诊：就诊名称模糊 */
+    /** 门诊：开单科室名称模糊 */
     private String clinicNameLike;
+    /** 执行科室名称模糊（住院/门诊/全部） */
+    private String execDeptNameLike;
     /** highValueStockQty / lowValueStockQty：仅用于分页后内存排序 */
     private String orderByColumn;
     private String isAsc;

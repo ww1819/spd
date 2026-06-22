@@ -25,6 +25,10 @@ public class HisPatientChargeDetailRow
     private String clinicName;
     /** 展示统一科室/就诊 */
     private String deptDisplayName;
+    /** 执行科室ID（HIS） */
+    private String execDeptId;
+    /** 执行科室名称（HIS） */
+    private String execDeptName;
     private String chargeItemId;
     /** HIS 费用明细主键 */
     private String hisChargeId;

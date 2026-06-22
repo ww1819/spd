@@ -30,6 +30,10 @@ public class HisInpatientChargeMirror extends BaseEntity
     private String inpatientNo;
     private String deptCode;
     private String deptName;
+    /** 执行科室ID（HIS exec_dept_id） */
+    private String execDeptId;
+    /** 执行科室名称（HIS exec_dept_name） */
+    private String execDeptName;
     private String doctorId;
     private String doctorName;
     private String chargeItemId;
@@ -68,7 +72,7 @@ public class HisInpatientChargeMirror extends BaseEntity
     /** 收费项目高低值：1高值 2低值（来自 his_charge_item_mirror，仅查询展示） */
     private String valueLevel;
 
-    /** 查询：科室主键（fd_department.id），与 HIS 科室 his_id 对照 */
+    /** 查询：科室主键（fd_department.id），与执行科室 HIS exec_dept_id 对照 */
     private Long departmentId;
     /** 查询：是否已处理 Y=已处理(含部分/完成) N=仅待处理 */
     private String processed;
