@@ -207,6 +207,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="hisChargeItemId != null and hisChargeItemId != ''">
             and m.his_charge_item_id like concat('%', #{hisChargeItemId}, '%')
         </if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="qty != null "> and stk.qty = #{qty}</if>
         <if test="unitPrice != null "> and stk.unit_price = #{unitPrice}</if>
