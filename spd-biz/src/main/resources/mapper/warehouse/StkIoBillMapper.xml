@@ -971,6 +971,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -1024,6 +1025,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -2484,6 +2486,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         group by
             case
@@ -2568,6 +2576,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         group by stk.department_id
         having ABS(IFNULL(plainConsumablesAmt, 0)) + ABS(IFNULL(highValueConsumablesAmt, 0)) + ABS(IFNULL(reagentAmt, 0)) &gt; 0.0000001
