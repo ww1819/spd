@@ -147,7 +147,11 @@
         <if test="factoryId != null">
             and m.factory_id = #{factoryId}
         </if>
-        <if test="storeroomId != null">
+        <if test="storeroomIds != null and storeroomIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="storeroomIds" item="sid" open="(" separator="," close=")">#{sid}</foreach>
+        </if>
+        <if test="(storeroomIds == null or storeroomIds.length == 0) and storeroomId != null">
             and m.storeroom_id = #{storeroomId}
         </if>
         <if test="isGz != null and isGz != ''">

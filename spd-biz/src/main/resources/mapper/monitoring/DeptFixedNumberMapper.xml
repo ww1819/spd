@@ -122,6 +122,10 @@
         <if test="isGz != null and isGz != ''">
             and m.is_gz = #{isGz}
         </if>
+        <if test="storeroomIds != null and storeroomIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="storeroomIds" item="sid" open="(" separator="," close=")">#{sid}</foreach>
+        </if>
         order by m.code
     </select>
 
