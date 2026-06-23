@@ -149,6 +149,19 @@
         limit 1
     </select>
 
+    <update id="updateExecDeptIfMissing">
+        update his_inpatient_charge_mirror
+        set exec_dept_id = #{execDeptId},
+            exec_dept_name = #{execDeptName},
+            row_fingerprint = #{rowFingerprint},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and his_inpatient_charge_id = #{hisChargeId}
+          and (exec_dept_id is null or trim(exec_dept_id) = '')
+          and #{execDeptId} is not null and trim(#{execDeptId}) != ''
+    </update>
+
     <select id="selectLinkedRefundByChargeIdTf" resultMap="HisInpatientChargeMirrorResult">
         select m.*, cim.value_level as value_level
         from his_inpatient_charge_mirror m

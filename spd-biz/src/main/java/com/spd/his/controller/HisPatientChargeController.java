@@ -130,6 +130,22 @@ public class HisPatientChargeController extends BaseController
         return success(vo);
     }
 
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:fetchInpatient')")
+    @Log(title = "HIS住院执行科室补全", businessType = BusinessType.UPDATE)
+    @PostMapping("/mirror/backfillExecDept/inpatient")
+    public AjaxResult backfillInpatientExecDept(@RequestBody HisPatientChargeFetchBody body)
+    {
+        return success(hisPatientChargeService.backfillInpatientExecDept(body));
+    }
+
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:fetchOutpatient')")
+    @Log(title = "HIS门诊执行科室补全", businessType = BusinessType.UPDATE)
+    @PostMapping("/mirror/backfillExecDept/outpatient")
+    public AjaxResult backfillOutpatientExecDept(@RequestBody HisPatientChargeFetchBody body)
+    {
+        return success(hisPatientChargeService.backfillOutpatientExecDept(body));
+    }
+
     @PreAuthorize("@ss.hasPermi('department:patientCharge:list') or @ss.hasPermi('department:patientCharge:fetchBatchList')")
     @GetMapping("/fetchBatch/list")
     public TableDataInfo fetchBatchList(@RequestParam(value = "limit", defaultValue = "30") int limit)

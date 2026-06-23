@@ -49,4 +49,12 @@ public interface HisOutpatientChargeMirrorMapper
 
     List<HisOutpatientChargeMirror> selectLinkedRefundByChargeIdTf(@Param("tenantId") String tenantId,
         @Param("chargeIdTf") String chargeIdTf);
+
+    int updateExecDeptIfMissing(
+        @Param("tenantId") String tenantId,
+        @Param("hisChargeId") String hisChargeId,
+        @Param("execDeptId") String execDeptId,
+        @Param("execDeptName") String execDeptName,
+        @Param("rowFingerprint") String rowFingerprint,
+        @Param("updateBy") String updateBy);
 }

@@ -348,6 +348,58 @@
         <include refid="unifiedListWhere"/>
     </select>
 
+    <update id="updateInpatientExecDeptIfMissing">
+        update his_patient_charge_mirror_unified
+        set exec_dept_id = #{execDeptId},
+            exec_dept_name = #{execDeptName},
+            row_fingerprint = #{rowFingerprint},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and visit_kind = 'INPATIENT'
+          and his_inpatient_charge_id = #{hisChargeId}
+          and (exec_dept_id is null or trim(exec_dept_id) = '')
+          and #{execDeptId} is not null and trim(#{execDeptId}) != ''
+    </update>
+
+    <update id="updateOutpatientExecDeptIfMissing">
+        update his_patient_charge_mirror_unified
+        set exec_dept_id = #{execDeptId},
+            exec_dept_name = #{execDeptName},
+            row_fingerprint = #{rowFingerprint},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and visit_kind = 'OUTPATIENT'
+          and his_outpatient_charge_id = #{hisChargeId}
+          and (exec_dept_id is null or trim(exec_dept_id) = '')
+          and #{execDeptId} is not null and trim(#{execDeptId}) != ''
+    </update>
+
+    <update id="syncInpatientExecDeptFromMirror">
+        update his_patient_charge_mirror_unified u
+        inner join his_inpatient_charge_mirror m on u.id = m.id and u.tenant_id = m.tenant_id
+        set u.exec_dept_id = m.exec_dept_id,
+            u.exec_dept_name = m.exec_dept_name,
+            u.row_fingerprint = m.row_fingerprint,
+            u.update_time = now()
+        where u.tenant_id = #{tenantId}
+          and u.visit_kind = 'INPATIENT'
+          and (u.exec_dept_id is null or trim(u.exec_dept_id) = '')
+          and m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+    </update>
+
+    <update id="syncOutpatientExecDeptFromMirror">
+        update his_patient_charge_mirror_unified u
+        inner join his_outpatient_charge_mirror m on u.id = m.id and u.tenant_id = m.tenant_id
+        set u.exec_dept_id = m.exec_dept_id,
+            u.exec_dept_name = m.exec_dept_name,
+            u.row_fingerprint = m.row_fingerprint,
+            u.update_time = now()
+        where u.tenant_id = #{tenantId}
+          and u.visit_kind = 'OUTPATIENT'
+          and (u.exec_dept_id is null or trim(u.exec_dept_id) = '')
+          and m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+    </update>
+
     <select id="selectList" resultMap="UnifiedResult">
         select
             <include refid="unifiedSelectColumns"/>,

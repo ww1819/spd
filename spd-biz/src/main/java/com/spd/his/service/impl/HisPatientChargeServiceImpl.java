@@ -37,6 +37,7 @@ import com.spd.his.domain.HisChargeFetchBatch;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.HisPatientChargeMirrorUnified;
+import com.spd.his.domain.dto.HisExecDeptBackfillResultVo;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisIdFingerprint;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
@@ -170,7 +171,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 next = win[1];
             }
             List<HisInpatientChargeMirror> chunkRows = queryInpatientChunk(hisDb, cursor, next, tenantId, batchId, createBy, now);
-            int[] c = mergeInpatientChunk(tenantId, chunkRows);
+            int[] c = mergeInpatientChunk(tenantId, chunkRows, createBy);
             inserted += c[0];
             skipped += c[1];
             drift += c[2];
@@ -233,7 +234,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 next = win[1];
             }
             List<HisOutpatientChargeMirror> chunkRows = queryOutpatientChunk(hisDb, cursor, next, tenantId, batchId, createBy, now);
-            int[] c = mergeOutpatientChunk(tenantId, chunkRows);
+            int[] c = mergeOutpatientChunk(tenantId, chunkRows, createBy);
             inserted += c[0];
             skipped += c[1];
             drift += c[2];
@@ -260,6 +261,92 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setDriftCount(drift);
         maybeAutoLvConsumeAfterFetch(tenantId, batchId, "OUTPATIENT");
         maybeAutoRefundAfterFetch(tenantId, batchId, "OUTPATIENT");
+        return vo;
+    }
+
+    @Override
+    public HisExecDeptBackfillResultVo backfillInpatientExecDept(HisPatientChargeFetchBody body)
+    {
+        assertTenantAllowed();
+        LocalDateTime[] win = parseWindow(body);
+        String tenantId = SecurityUtils.getCustomerId();
+        String updateBy = SecurityUtils.getUserIdStr();
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        String batchId = IdUtils.fastUUID();
+        Date now = new Date();
+        LocalDateTime cursor = win[0];
+        while (cursor.isBefore(win[1]))
+        {
+            LocalDateTime next = cursor.plusDays(chunkDays);
+            if (next.isAfter(win[1]))
+            {
+                next = win[1];
+            }
+            List<HisInpatientChargeMirror> chunkRows = queryInpatientChunk(hisDb, cursor, next, tenantId, batchId, updateBy, now);
+            int[] c = backfillInpatientExecDeptChunk(tenantId, chunkRows, updateBy);
+            updated += c[0];
+            skipped += c[1];
+            hisMissingExec += c[2];
+            notFound += c[3];
+            cursor = next;
+        }
+        int unifiedSynced = hisPatientChargeMirrorUnifiedMapper.syncInpatientExecDeptFromMirror(tenantId);
+        HisExecDeptBackfillResultVo vo = new HisExecDeptBackfillResultVo();
+        vo.setUpdatedCount(updated);
+        vo.setSkippedCount(skipped);
+        vo.setHisMissingExecCount(hisMissingExec);
+        vo.setNotFoundCount(notFound);
+        vo.setUnifiedSyncedCount(unifiedSynced);
+        log.info("住院执行科室补全: tenantId={}, window=[{} ~ {}), updated={}, skipped={}, hisMissingExec={}, notFound={}, unifiedSynced={}",
+            tenantId, win[0], win[1], updated, skipped, hisMissingExec, notFound, unifiedSynced);
+        return vo;
+    }
+
+    @Override
+    public HisExecDeptBackfillResultVo backfillOutpatientExecDept(HisPatientChargeFetchBody body)
+    {
+        assertTenantAllowed();
+        LocalDateTime[] win = parseWindow(body);
+        String tenantId = SecurityUtils.getCustomerId();
+        String updateBy = SecurityUtils.getUserIdStr();
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        String batchId = IdUtils.fastUUID();
+        Date now = new Date();
+        LocalDateTime cursor = win[0];
+        while (cursor.isBefore(win[1]))
+        {
+            LocalDateTime next = cursor.plusDays(chunkDays);
+            if (next.isAfter(win[1]))
+            {
+                next = win[1];
+            }
+            List<HisOutpatientChargeMirror> chunkRows = queryOutpatientChunk(hisDb, cursor, next, tenantId, batchId, updateBy, now);
+            int[] c = backfillOutpatientExecDeptChunk(tenantId, chunkRows, updateBy);
+            updated += c[0];
+            skipped += c[1];
+            hisMissingExec += c[2];
+            notFound += c[3];
+            cursor = next;
+        }
+        int unifiedSynced = hisPatientChargeMirrorUnifiedMapper.syncOutpatientExecDeptFromMirror(tenantId);
+        HisExecDeptBackfillResultVo vo = new HisExecDeptBackfillResultVo();
+        vo.setUpdatedCount(updated);
+        vo.setSkippedCount(skipped);
+        vo.setHisMissingExecCount(hisMissingExec);
+        vo.setNotFoundCount(notFound);
+        vo.setUnifiedSyncedCount(unifiedSynced);
+        log.info("门诊执行科室补全: tenantId={}, window=[{} ~ {}), updated={}, skipped={}, hisMissingExec={}, notFound={}, unifiedSynced={}",
+            tenantId, win[0], win[1], updated, skipped, hisMissingExec, notFound, unifiedSynced);
         return vo;
     }
 
@@ -1082,7 +1169,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return e;
     }
 
-    private int[] mergeInpatientChunk(String tenantId, List<HisInpatientChargeMirror> chunkRows)
+    private int[] mergeInpatientChunk(String tenantId, List<HisInpatientChargeMirror> chunkRows, String updateBy)
     {
         List<HisInpatientChargeMirror> candidates = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -1126,6 +1213,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 skipped++;
             }
+            else if (applyInpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                skipped++;
+            }
             else
             {
                 drift++;
@@ -1135,7 +1226,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return new int[] { toInsert.size(), skipped, drift };
     }
 
-    private int[] mergeOutpatientChunk(String tenantId, List<HisOutpatientChargeMirror> chunkRows)
+    private int[] mergeOutpatientChunk(String tenantId, List<HisOutpatientChargeMirror> chunkRows, String updateBy)
     {
         List<HisOutpatientChargeMirror> candidates = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -1179,6 +1270,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 skipped++;
             }
+            else if (applyOutpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                skipped++;
+            }
             else
             {
                 drift++;
@@ -1186,6 +1281,108 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         insertOutpatientInBatches(toInsert);
         return new int[] { toInsert.size(), skipped, drift };
+    }
+
+    private int[] backfillInpatientExecDeptChunk(String tenantId, List<HisInpatientChargeMirror> chunkRows, String updateBy)
+    {
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        Set<String> seen = new HashSet<>();
+        for (HisInpatientChargeMirror r : chunkRows)
+        {
+            if (r == null || StringUtils.isEmpty(r.getHisInpatientChargeId()) || !seen.add(r.getHisInpatientChargeId()))
+            {
+                continue;
+            }
+            if (StringUtils.isBlank(r.getExecDeptId()))
+            {
+                hisMissingExec++;
+                continue;
+            }
+            if (applyInpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                updated++;
+            }
+            else if (hisInpatientChargeMirrorMapper.selectMirrorIdByHisChargeId(tenantId, r.getHisInpatientChargeId()) == null)
+            {
+                notFound++;
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+        return new int[] { updated, skipped, hisMissingExec, notFound };
+    }
+
+    private int[] backfillOutpatientExecDeptChunk(String tenantId, List<HisOutpatientChargeMirror> chunkRows, String updateBy)
+    {
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        Set<String> seen = new HashSet<>();
+        for (HisOutpatientChargeMirror r : chunkRows)
+        {
+            if (r == null || StringUtils.isEmpty(r.getHisOutpatientChargeId()) || !seen.add(r.getHisOutpatientChargeId()))
+            {
+                continue;
+            }
+            if (StringUtils.isBlank(r.getExecDeptId()))
+            {
+                hisMissingExec++;
+                continue;
+            }
+            if (applyOutpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                updated++;
+            }
+            else if (hisOutpatientChargeMirrorMapper.selectMirrorIdByHisChargeId(tenantId, r.getHisOutpatientChargeId()) == null)
+            {
+                notFound++;
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+        return new int[] { updated, skipped, hisMissingExec, notFound };
+    }
+
+    private boolean applyInpatientExecDeptBackfill(String tenantId, HisInpatientChargeMirror r, String updateBy)
+    {
+        if (r == null || StringUtils.isBlank(r.getExecDeptId()) || StringUtils.isBlank(r.getHisInpatientChargeId()))
+        {
+            return false;
+        }
+        int n = hisInpatientChargeMirrorMapper.updateExecDeptIfMissing(
+            tenantId, r.getHisInpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint(), updateBy);
+        if (n <= 0)
+        {
+            return false;
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateInpatientExecDeptIfMissing(
+            tenantId, r.getHisInpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint());
+        return true;
+    }
+
+    private boolean applyOutpatientExecDeptBackfill(String tenantId, HisOutpatientChargeMirror r, String updateBy)
+    {
+        if (r == null || StringUtils.isBlank(r.getExecDeptId()) || StringUtils.isBlank(r.getHisOutpatientChargeId()))
+        {
+            return false;
+        }
+        int n = hisOutpatientChargeMirrorMapper.updateExecDeptIfMissing(
+            tenantId, r.getHisOutpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint(), updateBy);
+        if (n <= 0)
+        {
+            return false;
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateOutpatientExecDeptIfMissing(
+            tenantId, r.getHisOutpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint());
+        return true;
     }
 
     private Map<String, String> loadInpatientFingerprints(String tenantId, List<String> ids)

@@ -4,6 +4,7 @@ import java.util.List;
 import com.spd.his.domain.HisChargeFetchBatch;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
+import com.spd.his.domain.dto.HisExecDeptBackfillResultVo;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
 import com.spd.his.domain.dto.HisMirrorHighApplyBody;
@@ -29,6 +30,12 @@ public interface IHisPatientChargeService
     HisFetchResultVo fetchInpatientMirror(HisPatientChargeFetchBody body);
 
     HisFetchResultVo fetchOutpatientMirror(HisPatientChargeFetchBody body);
+
+    /** 从 HIS 按计费时间区间补全历史住院镜像缺失的执行科室 */
+    HisExecDeptBackfillResultVo backfillInpatientExecDept(HisPatientChargeFetchBody body);
+
+    /** 从 HIS 按计费时间区间补全历史门诊镜像缺失的执行科室 */
+    HisExecDeptBackfillResultVo backfillOutpatientExecDept(HisPatientChargeFetchBody body);
 
     List<HisInpatientChargeMirror> selectInpatientMirrorList(HisInpatientChargeMirror query);
 

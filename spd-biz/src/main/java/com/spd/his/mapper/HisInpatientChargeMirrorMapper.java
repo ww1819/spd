@@ -51,4 +51,12 @@ public interface HisInpatientChargeMirrorMapper
     /** 关联到原收费明细的退费镜像行（已处理或已退费返还） */
     List<HisInpatientChargeMirror> selectLinkedRefundByChargeIdTf(@Param("tenantId") String tenantId,
         @Param("chargeIdTf") String chargeIdTf);
+
+    int updateExecDeptIfMissing(
+        @Param("tenantId") String tenantId,
+        @Param("hisChargeId") String hisChargeId,
+        @Param("execDeptId") String execDeptId,
+        @Param("execDeptName") String execDeptName,
+        @Param("rowFingerprint") String rowFingerprint,
+        @Param("updateBy") String updateBy);
 }
