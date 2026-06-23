@@ -47,6 +47,10 @@ public class GzHighChargeConfirmRowVo
     private String batchNumber;
     private Long departmentId;
     private String departmentName;
+    /** 开单科室名称（HIS 镜像 / SPD 对照） */
+    private String orderingDeptName;
+    /** 执行科室名称（HIS 镜像 / SPD 对照） */
+    private String execDeptName;
     private Long factoryId;
     private String materialSpeci;
     private String materialModel;

@@ -10,6 +10,10 @@ public class GzHighChargeConfirmQuery
 {
     private String tenantId;
     private Long departmentId;
+    /** 开单科室（fd_department.id） */
+    private Long orderingDepartmentId;
+    /** 执行科室（fd_department.id） */
+    private Long execDepartmentId;
     /** 0 未确认 / 1 已确认 / 空 全部 */
     private String confirmStatus;
     /** 核销完成时间起 */

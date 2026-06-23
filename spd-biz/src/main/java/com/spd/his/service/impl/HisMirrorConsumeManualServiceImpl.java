@@ -258,10 +258,10 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
         }
         requireMirrorUnitPrice(line);
-        FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);
+        FdDepartment writeOffDept = resolveConsumeDepartment(tenantId, body == null ? null : body.getConsumeDepartmentId(), line);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
         assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, line.itemName, mat);
-        GzDepInventory hit = findGzByNormalizedCode(tenantId, dept, mat, codeRaw, line.unitPrice);
+        GzDepInventory hit = findGzByNormalizedCode(tenantId, writeOffDept, mat, codeRaw, line.unitPrice);
         if (hit.getQty() == null || hit.getQty().compareTo(BigDecimal.ZERO) <= 0)
         {
             throwInsufficientStock(mat);
@@ -328,7 +328,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
         }
         requireMirrorUnitPrice(line);
-        FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);
+        FdDepartment writeOffDept = resolveConsumeDepartment(tenantId, body == null ? null : body.getConsumeDepartmentId(), line);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
         assertChargeItemValueLevelForHigh(tenantId, line.chargeItemId, line.itemName, mat);
         Map<Long, BigDecimal> mergedByGz = new LinkedHashMap<>();
@@ -360,7 +360,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             {
                 throw new ServiceException(HisMirrorProcessUserMessages.stockInsufficient(productDisplayName(mat)));
             }
-            if (gz.getDepartmentId() == null || !gz.getDepartmentId().equals(dept.getId()))
+            if (gz.getDepartmentId() == null || !gz.getDepartmentId().equals(writeOffDept.getId()))
             {
                 throw new ServiceException(HisMirrorProcessUserMessages.wrongDeptScan());
             }
@@ -388,8 +388,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         trace.setVisitKind(visitKind);
         trace.setMirrorRowId(mirrorRowId);
         trace.setTraceSource(GzTraceSourceConstants.HIS_MIRROR_HIGH);
-        trace.setExecDeptId(dept.getId());
-        trace.setApplyDeptId(dept.getId());
+        fillTraceabilityBillingDepts(trace, tenantId, visitKind, mirrorRowId);
+        trace.setWriteOffDeptId(writeOffDept.getId());
         trace.setCreateBy(createBy);
         trace.setRemark("HIS高值扫码核销 mirrorRowId=" + mirrorRowId);
         fillTraceabilityPatientFromMirror(trace, tenantId, visitKind, mirrorRowId, line);
@@ -424,6 +424,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 : (te.getInHospitalCode() != null ? te.getInHospitalCode() : null));
             lk.setReturnedQty(BigDecimal.ZERO);
             lk.setRefundableRemainingQty(te.getQuantity());
+            lk.setWriteOffDeptId(writeOffDept.getId());
             lk.setDelFlag(0);
             lk.setCreateTime(linkTime);
             links.add(lk);
@@ -593,6 +594,80 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException(HisMirrorProcessUserMessages.deptNotMapped());
         }
         return dept;
+    }
+
+    /** 核销科室：优先用户所选 SPD 科室，否则按计费执行科室映射 */
+    private FdDepartment resolveConsumeDepartment(String tenantId, Long consumeDepartmentId, MirrorLine line)
+    {
+        if (consumeDepartmentId != null)
+        {
+            FdDepartment dept = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(consumeDepartmentId));
+            if (dept == null || dept.getId() == null)
+            {
+                throw new ServiceException("核销科室不存在");
+            }
+            if (StringUtils.isNotBlank(tenantId) && StringUtils.isNotBlank(dept.getTenantId())
+                && !tenantId.equals(dept.getTenantId()))
+            {
+                throw new ServiceException("核销科室不属于当前租户");
+            }
+            return dept;
+        }
+        return resolveDepartment(tenantId, line.deptHisCode);
+    }
+
+    private FdDepartment resolveDepartmentOptional(String tenantId, String deptHisCode)
+    {
+        if (StringUtils.isBlank(deptHisCode))
+        {
+            return null;
+        }
+        FdDepartment dept = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(
+            tenantId, HisMatchTextUtils.normalizeMatchKey(deptHisCode));
+        if (dept == null || dept.getId() == null)
+        {
+            return null;
+        }
+        return dept;
+    }
+
+    /** 高值追溯单：回填计费开单/执行科室（与核销科室分离） */
+    private void fillTraceabilityBillingDepts(GzTraceability trace, String tenantId, String visitKind, String mirrorRowId)
+    {
+        if (KIND_IN.equals(visitKind))
+        {
+            HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
+            if (r == null)
+            {
+                return;
+            }
+            FdDepartment apply = resolveDepartmentOptional(tenantId, r.getDeptCode());
+            FdDepartment exec = resolveDepartmentOptional(tenantId, r.getExecDeptId());
+            if (apply != null)
+            {
+                trace.setApplyDeptId(apply.getId());
+            }
+            if (exec != null)
+            {
+                trace.setExecDeptId(exec.getId());
+            }
+            return;
+        }
+        HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
+        if (r == null)
+        {
+            return;
+        }
+        FdDepartment apply = resolveDepartmentOptional(tenantId, r.getClinicCode());
+        FdDepartment exec = resolveDepartmentOptional(tenantId, r.getExecDeptId());
+        if (apply != null)
+        {
+            trace.setApplyDeptId(apply.getId());
+        }
+        if (exec != null)
+        {
+            trace.setExecDeptId(exec.getId());
+        }
     }
 
     private FdMaterial resolveMaterial(String tenantId, String chargeItemId, String itemName)

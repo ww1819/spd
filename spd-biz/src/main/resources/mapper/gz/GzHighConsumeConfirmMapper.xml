@@ -11,6 +11,10 @@
         end
     </sql>
 
+    <sql id="writeOffDeptIdExpr">
+        coalesce(l.write_off_dept_id, t.write_off_dept_id)
+    </sql>
+
     <sql id="confirmListFrom">
         from his_mirror_consume_link l
         inner join gz_traceability t on t.id = l.traceability_id
@@ -21,7 +25,9 @@
         inner join gz_traceability_entry te on te.id = l.traceability_entry_id
             and te.tenant_id = l.tenant_id
             and ifnull(te.del_flag, 0) = 0
-        left join fd_department d on d.id = t.exec_dept_id
+        left join fd_department d on d.id = <include refid="writeOffDeptIdExpr"/>
+        left join fd_department ad on ad.id = t.apply_dept_id
+        left join fd_department ed on ed.id = t.exec_dept_id
         left join fd_supplier sup on sup.id = te.supplier_id and sup.tenant_id = l.tenant_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
         left join gz_high_consume_confirm_bill in_bill on in_bill.confirm_id = l.confirm_id
@@ -69,8 +75,10 @@
             cast(te.supplier_id as char) as supplierId,
             sup.name as supplierName,
             te.batch_no as batchNo,
-            t.exec_dept_id as departmentId,
+            <include refid="writeOffDeptIdExpr"/> as departmentId,
             d.name as departmentName,
+            coalesce(nullif(trim(coalesce(inp.dept_name, outp.clinic_name)), ''), ad.name) as orderingDeptName,
+            coalesce(nullif(trim(coalesce(inp.exec_dept_name, outp.exec_dept_name)), ''), ed.name) as execDeptName,
             coalesce(inp.patient_name, outp.patient_name) as patientName,
             coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
             coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
@@ -91,7 +99,32 @@
                 order by cm.id limit 1) as itemModel
         <include refid="confirmListFrom"/>
         <if test="departmentId != null">
-            and t.exec_dept_id = #{departmentId}
+            and <include refid="writeOffDeptIdExpr"/> = #{departmentId}
+        </if>
+        <if test="orderingDepartmentId != null">
+            and (
+                t.apply_dept_id = #{orderingDepartmentId}
+                or exists (
+                    select 1 from fd_department od
+                    where od.id = #{orderingDepartmentId}
+                      and od.tenant_id = l.tenant_id
+                      and (
+                        (l.visit_kind = 'INPATIENT' and inp.id is not null and trim(od.his_id) = trim(inp.dept_code))
+                        or (l.visit_kind = 'OUTPATIENT' and outp.id is not null and trim(od.his_id) = trim(outp.clinic_code))
+                      )
+                )
+            )
+        </if>
+        <if test="execDepartmentId != null">
+            and (
+                t.exec_dept_id = #{execDepartmentId}
+                or exists (
+                    select 1 from fd_department xd
+                    where xd.id = #{execDepartmentId}
+                      and xd.tenant_id = l.tenant_id
+                      and trim(xd.his_id) = trim(coalesce(inp.exec_dept_id, outp.exec_dept_id))
+                )
+            )
         </if>
         <if test="confirmStatus != null and confirmStatus != ''">
             and ifnull(l.confirm_status, 0) = #{confirmStatus}
@@ -146,7 +179,7 @@
             te.specification as materialSpeci,
             te.model as materialModel,
             null as factoryId,
-            t.exec_dept_id as departmentId
+            <include refid="writeOffDeptIdExpr"/> as departmentId
         from his_mirror_consume_link l
         inner join gz_traceability t on t.id = l.traceability_id
             and t.tenant_id = l.tenant_id

@@ -11,4 +11,6 @@ public class GzHighChargeConfirmBody
 {
     private List<String> linkIds;
     private Long warehouseId;
+    /** 核销科室（SPD fd_department.id）；空则取所选明细科室 */
+    private Long departmentId;
 }

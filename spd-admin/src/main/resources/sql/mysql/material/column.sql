@@ -2315,6 +2315,28 @@ CALL add_table_column('gz_traceability', 'trace_source', 'varchar(32)', 'HIS_MIR
 CALL add_table_column('gz_high_consume_confirm_line', 'traceability_entry_id', 'bigint', '高值计费明细 gz_traceability_entry.id', NULL);
 /
 
+-- HIS 高值扫码核销：单独保存核销科室（与计费执行科室区分）
+CALL add_table_column('gz_traceability', 'write_off_dept_id', 'bigint', '核销科室ID（HIS镜像高值扫码实际扣减科室）', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'write_off_dept_id', 'bigint', '核销科室ID（用户所选实际扣减科室）', NULL);
+/
+UPDATE his_mirror_consume_link l
+INNER JOIN gz_traceability t ON t.id = l.traceability_id
+    AND t.tenant_id = l.tenant_id
+    AND ifnull(t.del_flag, 0) = 0
+    AND t.trace_source = 'HIS_MIRROR_HIGH'
+SET l.write_off_dept_id = t.exec_dept_id
+WHERE l.write_off_dept_id IS NULL
+  AND l.traceability_id IS NOT NULL
+  AND t.exec_dept_id IS NOT NULL;
+/
+UPDATE gz_traceability t
+SET t.write_off_dept_id = t.exec_dept_id
+WHERE t.trace_source = 'HIS_MIRROR_HIGH'
+  AND t.write_off_dept_id IS NULL
+  AND t.exec_dept_id IS NOT NULL;
+/
+
 CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',
   `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',

@@ -6,7 +6,7 @@
         insert into his_mirror_consume_link (
             id, tenant_id, visit_kind, mirror_row_id, fetch_batch_id,
             dept_batch_consume_id, dept_batch_consume_entry_id,
-            traceability_id, traceability_entry_id,
+            traceability_id, traceability_entry_id, write_off_dept_id,
             alloc_qty,
             dep_inventory_id, gz_dep_inventory_id, stk_dep_end_date, in_hospital_code,
             returned_qty, refundable_remaining_qty, create_time, del_flag
@@ -14,7 +14,7 @@
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.mirrorRowId}, #{e.fetchBatchId},
             #{e.deptBatchConsumeId}, #{e.deptBatchConsumeEntryId},
-            #{e.traceabilityId}, #{e.traceabilityEntryId},
+            #{e.traceabilityId}, #{e.traceabilityEntryId}, #{e.writeOffDeptId},
             #{e.allocQty},
             #{e.depInventoryId}, #{e.gzDepInventoryId}, #{e.stkDepEndDate}, #{e.inHospitalCode},
             ifnull(#{e.returnedQty}, 0), #{e.refundableRemainingQty}, #{e.createTime}, ifnull(#{e.delFlag}, 0))
@@ -60,7 +60,9 @@
                 then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
             null as beginTime,
             null as endTime,
-            trim(ifnull(te.in_hospital_code, l.in_hospital_code)) as inHospitalCode
+            trim(ifnull(te.in_hospital_code, l.in_hospital_code)) as inHospitalCode,
+            coalesce(l.write_off_dept_id, t.write_off_dept_id) as writeOffDeptId,
+            wod.name as writeOffDeptName
         from his_mirror_consume_link l
         inner join gz_traceability t on t.id = l.traceability_id
             and ifnull(t.del_flag, 0) = 0
@@ -69,6 +71,7 @@
         inner join gz_traceability_entry te on te.id = l.traceability_entry_id
             and ifnull(te.del_flag, 0) = 0
             and te.tenant_id = l.tenant_id
+        left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, t.write_off_dept_id)
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
           and l.mirror_row_id = #{mirrorRowId}
@@ -102,7 +105,9 @@
             case
                 when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
                 else trim(ifnull(e.sub_barcode, ''))
-            end as inHospitalCode
+            end as inHospitalCode,
+            coalesce(l.write_off_dept_id, h.department_id) as writeOffDeptId,
+            wod.name as writeOffDeptName
         from his_mirror_consume_link l
         inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
             and ifnull(h.del_flag, 0) = 0
@@ -110,6 +115,7 @@
             and ifnull(h.reverse_flag, 0) = 0
             and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
         left join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id and ifnull(e.del_flag, 0) = 0
+        left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
           and l.mirror_row_id = #{mirrorRowId}
@@ -143,7 +149,9 @@
             case
                 when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
                 else trim(ifnull(re.sub_barcode, ''))
-            end as inHospitalCode
+            end as inHospitalCode,
+            coalesce(l.write_off_dept_id, h.department_id) as writeOffDeptId,
+            wod.name as writeOffDeptName
         from his_mirror_consume_link l
         inner join t_hc_ks_xh_entry fe on fe.id = l.dept_batch_consume_entry_id
             and ifnull(fe.del_flag, 0) = 0
@@ -156,6 +164,7 @@
             and ifnull(h.del_flag, 0) = 0
             and h.tenant_id = l.tenant_id
             and ifnull(h.reverse_flag, 0) = 1
+        left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
           and l.mirror_row_id = #{mirrorRowId}

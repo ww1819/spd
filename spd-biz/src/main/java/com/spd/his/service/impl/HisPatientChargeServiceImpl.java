@@ -94,6 +94,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     /** HIS 区间查询占位符绑定格式（字符串比较，与内置 SQL 一致） */
     private static final DateTimeFormatter HIS_FETCH_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int DEFAULT_FETCH_CHUNK_DAYS = 5;
+    private static final int MAX_FETCH_CHUNK_DAYS = 7;
 
     /** 患者费用明细单次导出最大行数 */
     private static final int MIRROR_EXPORT_MAX_ROWS = 50000;
@@ -161,7 +163,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         int skipped = 0;
         int drift = 0;
 
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int chunkDays = resolveChunkDays(body);
         LocalDateTime cursor = win[0];
         while (cursor.isBefore(win[1]))
         {
@@ -207,7 +209,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         assertTenantAllowed();
         LocalDateTime[] win = parseWindow(body);
         String tenantId = SecurityUtils.getCustomerId();
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int chunkDays = resolveChunkDays(body);
         int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
         log.info("门诊收费镜像抓取: tenantId={}, window=[{} ~ {}), chunkDays={}, queryTimeoutSec={}",
             tenantId, win[0], win[1], chunkDays, queryTimeoutSec);
@@ -272,7 +274,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String tenantId = SecurityUtils.getCustomerId();
         String updateBy = SecurityUtils.getUserIdStr();
         HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int chunkDays = resolveChunkDays(body);
         int updated = 0;
         int skipped = 0;
         int hisMissingExec = 0;
@@ -315,7 +317,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String tenantId = SecurityUtils.getCustomerId();
         String updateBy = SecurityUtils.getUserIdStr();
         HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int chunkDays = resolveChunkDays(body);
         int updated = 0;
         int skipped = 0;
         int hisMissingExec = 0;
@@ -910,8 +912,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         assertTenantAllowed();
         if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
         {
-            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
-                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+            assertMirrorHighConsumeDepartmentAllowed(SecurityUtils.getCustomerId(), body);
         }
         return hisMirrorConsumeManualService.scanHighBarcode(body);
     }
@@ -922,10 +923,64 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         assertTenantAllowed();
         if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
         {
-            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
-                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+            assertMirrorHighConsumeDepartmentAllowed(SecurityUtils.getCustomerId(), body);
         }
         return hisMirrorConsumeManualService.applyHighConsume(body);
+    }
+
+    private void assertMirrorHighConsumeDepartmentAllowed(String tenantId, HisMirrorHighScanBody body)
+    {
+        if (body == null)
+        {
+            return;
+        }
+        if (body.getConsumeDepartmentId() != null)
+        {
+            assertDepartmentInUserScope(tenantId, body.getConsumeDepartmentId());
+            return;
+        }
+        assertMirrorRowDepartmentAllowed(tenantId,
+            normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+    }
+
+    private void assertMirrorHighConsumeDepartmentAllowed(String tenantId, HisMirrorHighApplyBody body)
+    {
+        if (body == null)
+        {
+            return;
+        }
+        if (body.getConsumeDepartmentId() != null)
+        {
+            assertDepartmentInUserScope(tenantId, body.getConsumeDepartmentId());
+            return;
+        }
+        assertMirrorRowDepartmentAllowed(tenantId,
+            normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
+    }
+
+    private void assertDepartmentInUserScope(String tenantId, Long departmentId)
+    {
+        if (departmentId == null)
+        {
+            throw new ServiceException("请选择核销科室");
+        }
+        if (StringUtils.isEmpty(tenantId))
+        {
+            throw new ServiceException("无法解析当前租户");
+        }
+        if (tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), tenantId))
+        {
+            return;
+        }
+        List<Long> allowed = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), tenantId);
+        if (allowed == null || allowed.isEmpty())
+        {
+            throw new ServiceException("无科室数据权限");
+        }
+        if (!allowed.contains(departmentId))
+        {
+            throw new ServiceException("核销科室不在您的科室权限范围内");
+        }
     }
 
     private void assertMirrorRowDepartmentAllowed(String tenantId, String visitKind, String mirrorRowId)
@@ -1001,6 +1056,25 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             throw new ServiceException("当前租户不允许执行 HIS 计费抓取");
         }
+    }
+
+    private int resolveChunkDays(HisPatientChargeFetchBody body)
+    {
+        if (body != null && body.getChunkDays() != null)
+        {
+            int v = body.getChunkDays();
+            if (v < 1 || v > MAX_FETCH_CHUNK_DAYS)
+            {
+                throw new ServiceException("分段间隔天数须为 1～" + MAX_FETCH_CHUNK_DAYS + " 天");
+            }
+            return v;
+        }
+        int cfg = hisSqlServerProperties.getFetch().getChunkDays();
+        if (cfg >= 1 && cfg <= MAX_FETCH_CHUNK_DAYS)
+        {
+            return cfg;
+        }
+        return DEFAULT_FETCH_CHUNK_DAYS;
     }
 
     private LocalDateTime[] parseWindow(HisPatientChargeFetchBody body)

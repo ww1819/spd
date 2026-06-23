@@ -44,4 +44,8 @@ public class HisMirrorConsumeRecordVo
     private Date endTime;
     /** 高值场景可能记在条码字段 */
     private String inHospitalCode;
+    /** 核销科室（SPD fd_department.id） */
+    private Long writeOffDeptId;
+    /** 核销科室名称 */
+    private String writeOffDeptName;
 }

@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="bedNo"    column="bed_no"    />
         <result property="applyDeptId"    column="apply_dept_id"    />
         <result property="execDeptId"    column="exec_dept_id"    />
+        <result property="writeOffDeptId"    column="write_off_dept_id"    />
         <result property="hospitalDate"    column="hospital_date"    />
         <result property="contactPhone"    column="contact_phone"    />
         <result property="contactAddress"    column="contact_address"    />
@@ -186,6 +187,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="bedNo != null">bed_no,</if>
             <if test="applyDeptId != null">apply_dept_id,</if>
             <if test="execDeptId != null">exec_dept_id,</if>
+            <if test="writeOffDeptId != null">write_off_dept_id,</if>
             <if test="hospitalDate != null">hospital_date,</if>
             <if test="contactPhone != null">contact_phone,</if>
             <if test="contactAddress != null">contact_address,</if>
@@ -220,6 +222,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="bedNo != null">#{bedNo},</if>
             <if test="applyDeptId != null">#{applyDeptId},</if>
             <if test="execDeptId != null">#{execDeptId},</if>
+            <if test="writeOffDeptId != null">#{writeOffDeptId},</if>
             <if test="hospitalDate != null">#{hospitalDate},</if>
             <if test="contactPhone != null">#{contactPhone},</if>
             <if test="contactAddress != null">#{contactAddress},</if>
@@ -259,6 +262,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="bedNo != null">bed_no = #{bedNo},</if>
             <if test="applyDeptId != null">apply_dept_id = #{applyDeptId},</if>
             <if test="execDeptId != null">exec_dept_id = #{execDeptId},</if>
+            <if test="writeOffDeptId != null">write_off_dept_id = #{writeOffDeptId},</if>
             <if test="hospitalDate != null">hospital_date = #{hospitalDate},</if>
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
             <if test="contactAddress != null">contact_address = #{contactAddress},</if>
