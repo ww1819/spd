@@ -243,6 +243,10 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException("请扫描院内码");
         }
+        if (body.getConsumeDepartmentId() == null)
+        {
+            throw new ServiceException("请选择核销科室");
+        }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
         if (!STATUS_PENDING.equals(line.processStatus) && !STATUS_PARTIAL.equals(line.processStatus))
@@ -312,6 +316,10 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         if (StringUtils.isEmpty(mirrorRowId) || body.getLines() == null || body.getLines().isEmpty())
         {
             throw new ServiceException("请添加高值消耗明细");
+        }
+        if (body.getConsumeDepartmentId() == null)
+        {
+            throw new ServiceException("请选择核销科室");
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);

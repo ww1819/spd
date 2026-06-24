@@ -60,6 +60,9 @@ public interface IHisPatientChargeService
      */
     List<HisMirrorConsumeRecordVo> listMirrorConsumeRecords(String visitKind, String mirrorRowId);
 
+    /** 高值扫码核销：消耗记录（不按用户科室权限过滤） */
+    List<HisMirrorConsumeRecordVo> listHighChargeMirrorConsumeRecords(String visitKind, String mirrorRowId);
+
     List<HisPatientChargeSummaryRow> selectChargeSummary(String beginChargeDate, String endChargeDate);
 
     List<HisChargeFetchBatch> listRecentFetchBatches(int limit);

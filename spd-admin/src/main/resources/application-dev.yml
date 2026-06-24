@@ -115,16 +115,16 @@ spring:
             # 主库数据源
             master:
                 # 阿里云 RDS（开发环境主库）
-                         url: jdbc:mysql://rm-bp1tov1b3948fc5inbo.mysql.rds.aliyuncs.com:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                         username: spd
-                         password: Spd@456ww
+                        #  url: jdbc:mysql://rm-bp1tov1b3948fc5inbo.mysql.rds.aliyuncs.com:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                        #  username: spd
+                        #  password: Spd@456ww
                 # url: jdbc:mysql://192.168.3.7s5:3306/aspt?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 # username: root
                 # password: hssy_2018
                 # 本机 MySQL（与 prod 本地库名 aspt 一致）
-                #url: jdbc:mysql://127.0.0.1:3306/hssy?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                #username: root
-                #password: root
+                url: jdbc:mysql://127.0.0.1:3306/hssy?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                username: root
+                password: root
                  # password: root
                 #driver-class-name: com.mysql.cj.jdbc.Driver
             # 从库数据源

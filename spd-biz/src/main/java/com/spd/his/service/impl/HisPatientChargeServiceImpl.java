@@ -645,10 +645,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
         HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
@@ -670,10 +666,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
         HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
@@ -695,10 +687,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = q.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
         HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
@@ -767,6 +755,28 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         String rowId = StringUtils.trimToEmpty(mirrorRowId);
         assertMirrorRowDepartmentAllowed(tenantId, vk, rowId);
+        return loadMirrorConsumeRecordsMerged(tenantId, vk, rowId);
+    }
+
+    @Override
+    public List<HisMirrorConsumeRecordVo> listHighChargeMirrorConsumeRecords(String visitKind, String mirrorRowId)
+    {
+        assertTenantAllowed();
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isAnyBlank(tenantId, visitKind, mirrorRowId))
+        {
+            return new ArrayList<>();
+        }
+        String vk = normalizeVisitKindForAuth(visitKind);
+        if (!"INPATIENT".equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        return loadMirrorConsumeRecordsMerged(tenantId, vk, StringUtils.trimToEmpty(mirrorRowId));
+    }
+
+    private List<HisMirrorConsumeRecordVo> loadMirrorConsumeRecordsMerged(String tenantId, String vk, String rowId)
+    {
         List<HisMirrorConsumeRecordVo> forward = hisMirrorConsumeLinkMapper.selectConsumeRecordsByMirrorRow(
             tenantId, vk, rowId);
         List<HisMirrorConsumeRecordVo> reverse = hisMirrorConsumeLinkMapper.selectReverseConsumeRecordsByMirrorRow(
@@ -910,10 +920,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body)
     {
         assertTenantAllowed();
-        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
-        {
-            assertMirrorHighConsumeDepartmentAllowed(SecurityUtils.getCustomerId(), body);
-        }
+        assertHighConsumeDepartmentRequired(body == null ? null : body.getConsumeDepartmentId());
+        assertDepartmentInUserScope(SecurityUtils.getCustomerId(), body.getConsumeDepartmentId());
         return hisMirrorConsumeManualService.scanHighBarcode(body);
     }
 
@@ -921,41 +929,17 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public HisMirrorHighApplyResultVo applyMirrorHighConsume(HisMirrorHighApplyBody body)
     {
         assertTenantAllowed();
-        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
-        {
-            assertMirrorHighConsumeDepartmentAllowed(SecurityUtils.getCustomerId(), body);
-        }
+        assertHighConsumeDepartmentRequired(body == null ? null : body.getConsumeDepartmentId());
+        assertDepartmentInUserScope(SecurityUtils.getCustomerId(), body.getConsumeDepartmentId());
         return hisMirrorConsumeManualService.applyHighConsume(body);
     }
 
-    private void assertMirrorHighConsumeDepartmentAllowed(String tenantId, HisMirrorHighScanBody body)
+    private void assertHighConsumeDepartmentRequired(Long consumeDepartmentId)
     {
-        if (body == null)
+        if (consumeDepartmentId == null)
         {
-            return;
+            throw new ServiceException("请选择核销科室");
         }
-        if (body.getConsumeDepartmentId() != null)
-        {
-            assertDepartmentInUserScope(tenantId, body.getConsumeDepartmentId());
-            return;
-        }
-        assertMirrorRowDepartmentAllowed(tenantId,
-            normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
-    }
-
-    private void assertMirrorHighConsumeDepartmentAllowed(String tenantId, HisMirrorHighApplyBody body)
-    {
-        if (body == null)
-        {
-            return;
-        }
-        if (body.getConsumeDepartmentId() != null)
-        {
-            assertDepartmentInUserScope(tenantId, body.getConsumeDepartmentId());
-            return;
-        }
-        assertMirrorRowDepartmentAllowed(tenantId,
-            normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
     }
 
     private void assertDepartmentInUserScope(String tenantId, Long departmentId)

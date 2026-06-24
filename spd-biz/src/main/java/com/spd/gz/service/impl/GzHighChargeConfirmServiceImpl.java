@@ -28,7 +28,6 @@ import com.spd.gz.domain.dto.GzHighChargeConfirmResultVo;
 import com.spd.gz.domain.dto.GzHighChargeConfirmRowVo;
 import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
 import com.spd.gz.service.IGzHighChargeConfirmService;
-import com.spd.system.service.ITenantScopeService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -48,8 +47,6 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
     private FdWarehouseMapper fdWarehouseMapper;
     @Autowired
     private IStkIoBillService stkIoBillService;
-    @Autowired
-    private ITenantScopeService tenantScopeService;
 
     @Override
     public List<GzHighChargeConfirmRowVo> selectConfirmList(GzHighChargeConfirmQuery query)
@@ -115,7 +112,6 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         {
             throw new ServiceException("所选核销科室与核销记录不一致，请刷新后重试");
         }
-        assertDepartmentInUserScope(tenantId, departmentId);
         Date confirmTime = DateUtils.getNowDate();
         String userId = SecurityUtils.getUserIdStr();
         String confirmId = UUID7.generateUUID7();
@@ -362,27 +358,6 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             throw new ServiceException("请选择同一核销科室的消耗明细进行确认");
         }
         return deptIds.get(0);
-    }
-
-    private void assertDepartmentInUserScope(String tenantId, Long departmentId)
-    {
-        if (departmentId == null)
-        {
-            throw new ServiceException("请选择核销科室");
-        }
-        if (tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), tenantId))
-        {
-            return;
-        }
-        List<Long> allowed = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), tenantId);
-        if (allowed == null || allowed.isEmpty())
-        {
-            throw new ServiceException("无科室数据权限");
-        }
-        if (!allowed.contains(departmentId))
-        {
-            throw new ServiceException("核销科室不在您的科室权限范围内");
-        }
     }
 
     private String nextConfirmNo(String tenantId)
