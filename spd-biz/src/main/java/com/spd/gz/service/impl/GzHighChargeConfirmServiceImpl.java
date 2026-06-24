@@ -115,7 +115,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         Long departmentId = resolveSingleWriteOffDepartment(lines);
         if (body.getDepartmentId() != null && !body.getDepartmentId().equals(departmentId))
         {
-            throw new ServiceException("所选核销科室与核销记录不一致，请刷新后重试");
+            throw new ServiceException("核销科室与所选明细不一致，请刷新后重试");
         }
         assertWriteOffDepartmentInUserScope(tenantId, departmentId);
         Date confirmTime = DateUtils.getNowDate();
