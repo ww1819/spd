@@ -363,7 +363,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
 
         int n = stkIoStocktakingMapper.updateStocktakingEntryQtyPatch(old.getId(), STOCK_TYPE_DEPT_STOCKTAKING, opUser,
             bookQty, stockQty, calc.getAmt(), calc.getProfitLossFlag(), calc.getProfitQty(),
-            calc.getStockAmount(), calc.getProfitAmount(), countedFlag);
+            calc.getStockAmount(), calc.getProfitAmount(), countedFlag, null, null);
         if (n == 0)
         {
             throw new com.spd.common.exception.ServiceException("明细保存失败（可能已审核或无权访问）。");

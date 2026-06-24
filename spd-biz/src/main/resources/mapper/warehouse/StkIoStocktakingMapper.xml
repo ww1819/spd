@@ -241,6 +241,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="stockStatus != null "> and stk.stock_status = #{stockStatus}</if>
         <if test="stockType != null "> and stk.stock_type = #{stockType}</if>
         <if test="auditDate != null "> and stk.audit_date = #{auditDate}</if>
+        <if test="forProfitLossPick != null and forProfitLossPick == 1">
+            and stk.stock_status = 2
+            and (stk.audit_adjusts_inventory is null or stk.audit_adjusts_inventory != 1)
+            and exists (
+                select 1 from stk_io_stocktaking_entry e
+                where e.paren_id = stk.id
+                  and e.tenant_id = #{scopedTenantId}
+                  and (e.del_flag is null or e.del_flag != 1)
+                  and (
+                    (e.profit_qty is not null and e.profit_qty != 0)
+                    or (e.profit_amount is not null and e.profit_amount != 0)
+                  )
+            )
+            and not exists (
+                select 1 from stk_io_profit_loss pl
+                where pl.stocktaking_id = stk.id
+                  and pl.tenant_id = #{scopedTenantId}
+                  and (pl.del_flag is null or pl.del_flag != 1)
+            )
+        </if>
+        <choose>
+            <when test="forProfitLossPick != null and forProfitLossPick == 1">
+                order by stk.audit_date desc, stk.id desc
+            </when>
+        </choose>
     </select>
 
     <select id="selectStkIoStocktakingHeadById" parameterType="Long" resultMap="StkIoStocktakingResult">
@@ -541,6 +566,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             e.update_time = now()
             <if test="countedFlag != null">
             , e.counted_flag = #{countedFlag}
+            </if>
+            <if test="batchNumber != null">
+            , e.batch_number = #{batchNumber}
+            </if>
+            <if test="remark != null">
+            , e.remark = #{remark}
             </if>
         where e.id = #{entryId} and e.tenant_id = #{scopedTenantId}
           and (e.del_flag is null or e.del_flag != 1)

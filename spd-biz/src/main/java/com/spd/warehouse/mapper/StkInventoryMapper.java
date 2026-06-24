@@ -30,6 +30,11 @@ public interface StkInventoryMapper
     public StkInventory selectStkInventoryById(Long id);
 
     /**
+     * 按主键批量查询库存行（仅 stk_inventory 必要列；盘点保存对账等）
+     */
+    List<StkInventory> selectStkInventoryRowsByIds(@Param("ids") List<Long> ids);
+
+    /**
      * 按主键查询库存行（仅 stk_inventory，无关联表；用于出库扣减等高频路径）。
      */
     StkInventory selectStkInventoryRowById(Long id);

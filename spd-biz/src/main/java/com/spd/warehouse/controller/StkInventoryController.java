@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -115,6 +116,38 @@ public class StkInventoryController extends BaseController
         totalInfo.setSubTotalAmt(subTotalAmt);
         Long total = new PageInfo<StkInventory>(list).getTotal();
         return getDataTable(list, totalInfo, total);
+    }
+
+    /**
+     * 盘点保存前对账：按库存主键批量返回 qty 等轻量字段（避免拉全仓库存）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pick/qty-by-ids")
+    public AjaxResult pickQtyByIds(@RequestParam(value = "ids", required = false) String ids)
+    {
+        if (StringUtils.isEmpty(ids))
+        {
+            return success(Collections.emptyList());
+        }
+        String[] parts = ids.split(",");
+        List<Long> idList = new ArrayList<>();
+        for (String part : parts)
+        {
+            if (StringUtils.isEmpty(part))
+            {
+                continue;
+            }
+            Long id = Convert.toLong(part.trim(), null);
+            if (id != null)
+            {
+                idList.add(id);
+            }
+        }
+        if (idList.isEmpty())
+        {
+            return success(Collections.emptyList());
+        }
+        return success(stkInventoryService.selectStkInventoryRowsByIds(idList));
     }
 
     /**

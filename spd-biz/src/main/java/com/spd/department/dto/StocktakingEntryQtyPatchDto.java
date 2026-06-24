@@ -9,6 +9,10 @@ public class StocktakingEntryQtyPatchDto
     private Long id;
     /** 实盘数量（盘点数量） */
     private BigDecimal stockQty;
+    /** 批号（盘盈行等可改；不传则不修改） */
+    private String batchNumber;
+    /** 备注（不传则不修改） */
+    private String remark;
     /**
      * 明细账面数量；仅当与当前科室/仓库实时库存一致时服务端才接受更新 qty。
      * 用于保存前「账面与实物不一致」逐条确认场景。
@@ -35,6 +39,26 @@ public class StocktakingEntryQtyPatchDto
     public void setStockQty(BigDecimal stockQty)
     {
         this.stockQty = stockQty;
+    }
+
+    public String getBatchNumber()
+    {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber)
+    {
+        this.batchNumber = batchNumber;
+    }
+
+    public String getRemark()
+    {
+        return remark;
+    }
+
+    public void setRemark(String remark)
+    {
+        this.remark = remark;
     }
 
     public BigDecimal getBookQty()

@@ -321,48 +321,90 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
+    <!-- 盈亏报表：已审核盘点单中有盈亏的明细行 -->
+    <sql id="profitLossReportStocktakingEntryBase">
+        from stk_io_stocktaking_entry e
+        inner join stk_io_stocktaking s on e.paren_id = s.id
+            and s.tenant_id = #{scopedTenantId}
+            and (s.del_flag is null or s.del_flag != 1)
+            and s.stock_status = 2
+        left join stk_io_profit_loss p on p.stocktaking_id = s.id
+            and p.tenant_id = #{scopedTenantId}
+            and (p.del_flag is null or p.del_flag != 1)
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join sys_user cu on s.create_by = cu.user_id
+        left join sys_user au on s.update_by = au.user_id
+        <choose>
+            <when test="bizScope != null and bizScope == 'DEP'">
+                left join fd_department d on s.department_id = d.id
+            </when>
+            <otherwise>
+                left join fd_warehouse w on s.warehouse_id = w.id
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="profitLossReportStocktakingEntryWhere">
+        where (e.del_flag is null or e.del_flag != 1)
+            and (
+                (e.profit_qty is not null and e.profit_qty != 0)
+                or (e.profit_amount is not null and e.profit_amount != 0)
+            )
+            <choose>
+                <when test="bizScope != null and bizScope == 'DEP'">
+                    and s.stock_type = 502
+                </when>
+                <otherwise>
+                    and s.stock_type = 501
+                </otherwise>
+            </choose>
+            <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="stocktakingNo != null and stocktakingNo != ''"> and s.stock_no like concat('%', #{stocktakingNo}, '%')</if>
+            <if test="warehouseId != null">
+                <choose>
+                    <when test="bizScope != null and bizScope == 'DEP'">
+                        and s.department_id = #{warehouseId}
+                    </when>
+                    <otherwise>
+                        and s.warehouse_id = #{warehouseId}
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
+            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(COALESCE(s.audit_date, s.stock_date, s.create_time)) >= #{beginDate}]]></if>
+            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(COALESCE(s.audit_date, s.stock_date, s.create_time)) <= #{endDate}]]></if>
+    </sql>
+
     <!-- 查询盈亏明细列表（用于报表） -->
     <select id="selectProfitLossEntryList" resultType="com.spd.warehouse.vo.StkProfitLossEntryVo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
             e.id,
             p.bill_no as billNo,
-            p.stocktaking_no as stocktakingNo,
-            w.name as warehouseName,
+            s.stock_no as stocktakingNo,
+            <choose>
+                <when test="bizScope != null and bizScope == 'DEP'">d.name as warehouseName,</when>
+                <otherwise>w.name as warehouseName,</otherwise>
+            </choose>
             m.code as materialCode,
             m.name as materialName,
             m.speci as materialSpeci,
             m.model as materialModel,
             u.unit_name as unitName,
             e.batch_no as batchNo,
-            e.book_qty as bookQty,
+            e.qty as bookQty,
             e.stock_qty as stockQty,
             e.profit_qty as profitQty,
-            e.unit_price as unitPrice,
+            COALESCE(e.unit_price, e.price) as unitPrice,
             e.profit_amount as profitAmount,
-            p.create_time as createTime,
+            s.create_time as createTime,
             cu.nick_name as createrName,
-            p.audit_date as auditDate,
-            au.user_name as auditBy
-        from stk_io_profit_loss_entry e
-        left join stk_io_profit_loss p on e.paren_id = p.id
-        left join fd_warehouse w on p.warehouse_id = w.id
-        left join fd_material m on e.material_id = m.id
-        left join fd_unit u on m.unit_id = u.unit_id
-        left join sys_user cu on p.create_by = cu.user_id
-        left join sys_user au on p.audit_by = au.user_id
-        <where>
-            (e.del_flag is null or e.del_flag != 1)
-            and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{scopedTenantId}
-            <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
-            <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
-            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
-            <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
-            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
-            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
-        </where>
-        order by p.create_time desc, e.id desc
+            s.audit_date as auditDate,
+            COALESCE(au.nick_name, au.user_name) as auditBy
+        <include refid="profitLossReportStocktakingEntryBase"/>
+        <include refid="profitLossReportStocktakingEntryWhere"/>
+        order by s.audit_date desc, s.id desc, e.id desc
     </select>
 
     <!-- 查询盈亏明细汇总列表（用于报表） -->
@@ -375,25 +417,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.speci as materialSpeci,
             m.model as materialModel,
             u.unit_name as unitName,
-            AVG(e.unit_price) as unitPrice,
+            AVG(COALESCE(e.unit_price, e.price)) as unitPrice,
             SUM(e.profit_qty) as profitQty,
             SUM(e.profit_amount) as profitAmount,
-            w.name as warehouseName
-        from stk_io_profit_loss_entry e
-        left join stk_io_profit_loss p on e.paren_id = p.id
-        left join fd_warehouse w on p.warehouse_id = w.id
-        left join fd_material m on e.material_id = m.id
-        left join fd_unit u on m.unit_id = u.unit_id
-        <where>
-            (e.del_flag is null or e.del_flag != 1)
-            and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{scopedTenantId}
-            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
-            <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%'))</if>
-            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
-            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
-        </where>
-        group by m.id, m.code, m.name, m.speci, m.model, u.unit_name, w.name
+            <choose>
+                <when test="bizScope != null and bizScope == 'DEP'">d.name as warehouseName</when>
+                <otherwise>w.name as warehouseName</otherwise>
+            </choose>
+        <include refid="profitLossReportStocktakingEntryBase"/>
+        <include refid="profitLossReportStocktakingEntryWhere"/>
+        group by m.id, m.code, m.name, m.speci, m.model, u.unit_name,
+            <choose>
+                <when test="bizScope != null and bizScope == 'DEP'">d.name</when>
+                <otherwise>w.name</otherwise>
+            </choose>
+        having SUM(e.profit_qty) != 0 or SUM(e.profit_amount) != 0
         order by m.code
     </select>
 
@@ -403,37 +441,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select
             COALESCE(SUM(e.profit_qty), 0) as totalQty,
             COALESCE(SUM(e.profit_amount), 0) as totalAmt
-        from stk_io_profit_loss_entry e
-        left join stk_io_profit_loss p on e.paren_id = p.id
-        <where>
-            (e.del_flag is null or e.del_flag != 1)
-            and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{scopedTenantId}
-            <if test="billNo != null and billNo != ''"> and p.bill_no like concat('%', #{billNo}, '%')</if>
-            <if test="stocktakingNo != null and stocktakingNo != ''"> and p.stocktaking_no like concat('%', #{stocktakingNo}, '%')</if>
-            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
-            <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_profit_loss_entry e2 left join fd_material m2 on e2.material_id = m2.id where e2.paren_id = p.id and (m2.name like concat('%', #{materialName}, '%') or m2.code like concat('%', #{materialName}, '%')))</if>
-            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
-            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
-        </where>
+        <include refid="profitLossReportStocktakingEntryBase"/>
+        <include refid="profitLossReportStocktakingEntryWhere"/>
     </select>
 
     <!-- 查询盈亏明细汇总列表合计（用于报表） -->
     <select id="selectProfitLossEntrySummaryListTotal" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
-            COALESCE(SUM(e.profit_qty), 0) as totalQty,
-            COALESCE(SUM(e.profit_amount), 0) as totalAmt
-        from stk_io_profit_loss_entry e
-        left join stk_io_profit_loss p on e.paren_id = p.id
-        <where>
-            (e.del_flag is null or e.del_flag != 1)
-            and (p.del_flag is null or p.del_flag != 1)
-            and p.tenant_id = #{scopedTenantId}
-            <if test="warehouseId != null"> and p.warehouse_id = #{warehouseId}</if>
-            <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_profit_loss_entry e2 left join fd_material m2 on e2.material_id = m2.id where e2.paren_id = p.id and (m2.name like concat('%', #{materialName}, '%') or m2.code like concat('%', #{materialName}, '%')))</if>
-            <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(p.create_time) >= #{beginDate}]]></if>
-            <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(p.create_time) <= #{endDate}]]></if>
-        </where>
+            COALESCE(SUM(t.profit_qty), 0) as totalQty,
+            COALESCE(SUM(t.profit_amount), 0) as totalAmt
+        from (
+            select
+                SUM(e.profit_qty) as profit_qty,
+                SUM(e.profit_amount) as profit_amount
+            <include refid="profitLossReportStocktakingEntryBase"/>
+            <include refid="profitLossReportStocktakingEntryWhere"/>
+            group by m.id,
+                <choose>
+                    <when test="bizScope != null and bizScope == 'DEP'">d.id</when>
+                    <otherwise>w.id</otherwise>
+                </choose>
+            having SUM(e.profit_qty) != 0 or SUM(e.profit_amount) != 0
+        ) t
     </select>
 </mapper>
