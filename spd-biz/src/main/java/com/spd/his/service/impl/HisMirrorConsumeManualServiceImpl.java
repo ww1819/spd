@@ -67,6 +67,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private static final String STATUS_PENDING = "PENDING_CONSUME";
     private static final String STATUS_PARTIAL = "PARTIALLY_CONSUMED";
     private static final String STATUS_CONSUMED = "CONSUMED";
+    private static final String STATUS_REFUNDED = "REFUNDED";
     private static final String BILL_LOW = "HIS_MIRROR_ROW_LOW";
     private static final String BILL_HIGH = "HIS_MIRROR_ROW_HIGH";
     private static final String LEGACY_BATCH = "HIS_MIRROR_BATCH";
@@ -249,18 +250,11 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
-        if (!STATUS_PENDING.equals(line.processStatus) && !STATUS_PARTIAL.equals(line.processStatus))
-        {
-            throw new ServiceException(HisMirrorProcessUserMessages.highScanNotAllowed(line.processStatus));
-        }
-        assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         BigDecimal billQty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
-        BigDecimal allocated = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
-        BigDecimal remaining = billQty.subtract(allocated);
-        if (remaining.compareTo(BigDecimal.ZERO) <= 0)
-        {
-            throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
-        }
+        BigDecimal netAllocated = netAllocatedQty(tenantId, visitKind, mirrorRowId);
+        BigDecimal remaining = billQty.subtract(netAllocated);
+        assertHighMirrorConsumable(line, remaining);
+        assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         requireMirrorUnitPrice(line);
         FdDepartment writeOffDept = resolveConsumeDepartment(tenantId, body == null ? null : body.getConsumeDepartmentId(), line);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
@@ -276,7 +270,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         vo.setInHospitalCode(hit.getInHospitalCode());
         vo.setGzAvailableQty(hit.getQty());
         vo.setBillQty(billQty);
-        vo.setAlreadyConsumedQty(allocated);
+        vo.setAlreadyConsumedQty(netAllocated);
         vo.setBillRemainingQty(remaining);
         vo.setMaxApplyQty(maxApply);
         vo.setMaterialName(mat.getName());
@@ -323,18 +317,11 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
-        if (!STATUS_PENDING.equals(line.processStatus) && !STATUS_PARTIAL.equals(line.processStatus))
-        {
-            throw new ServiceException(HisMirrorProcessUserMessages.highScanNotAllowed(line.processStatus));
-        }
-        assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         BigDecimal billQty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
-        BigDecimal allocatedBefore = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
-        BigDecimal remaining = billQty.subtract(allocatedBefore);
-        if (remaining.compareTo(BigDecimal.ZERO) <= 0)
-        {
-            throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
-        }
+        BigDecimal netAllocatedBefore = netAllocatedQty(tenantId, visitKind, mirrorRowId);
+        BigDecimal remaining = billQty.subtract(netAllocatedBefore);
+        assertHighMirrorConsumable(line, remaining);
+        assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         requireMirrorUnitPrice(line);
         FdDepartment writeOffDept = resolveConsumeDepartment(tenantId, body == null ? null : body.getConsumeDepartmentId(), line);
         FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
@@ -387,9 +374,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             }
             traceEntries.add(buildTraceabilityEntryFromGz(gz, lineQty, line.unitPrice, mat, createBy));
         }
-        if (applySum.compareTo(remaining) > 0)
+        if (applySum.compareTo(remaining) != 0)
         {
-            throw new ServiceException(HisMirrorProcessUserMessages.qtyExceedRemaining());
+            throw new ServiceException(HisMirrorProcessUserMessages.highConsumeQtyMustMatchRemaining(remaining));
         }
         GzTraceability trace = new GzTraceability();
         trace.setTenantId(tenantId);
@@ -442,9 +429,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException("高值计费明细关联失败");
         }
         flushLinks(links);
-        BigDecimal allocatedAfter = nz(hisMirrorConsumeLinkMapper.sumAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
-        BigDecimal newRemaining = billQty.subtract(allocatedAfter);
-        String newStatus = newRemaining.compareTo(BigDecimal.ZERO) <= 0 ? STATUS_CONSUMED : STATUS_PARTIAL;
+        BigDecimal netAllocatedAfter = netAllocatedQty(tenantId, visitKind, mirrorRowId);
+        BigDecimal newRemaining = billQty.subtract(netAllocatedAfter);
+        String newStatus = newRemaining.compareTo(BigDecimal.ZERO) <= 0 ? STATUS_CONSUMED : STATUS_PENDING;
         persistProcessSuccess(tenantId, visitKind, mirrorRowId, newStatus, PROC_TYPE_HIGH, processParty);
         HisMirrorHighApplyResultVo vo = new HisMirrorHighApplyResultVo();
         vo.setTraceBillId(persisted.getId());
@@ -458,6 +445,40 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private static BigDecimal nz(BigDecimal v)
     {
         return v == null ? BigDecimal.ZERO : v;
+    }
+
+    private BigDecimal netAllocatedQty(String tenantId, String visitKind, String mirrorRowId)
+    {
+        return nz(hisMirrorConsumeLinkMapper.sumNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
+    }
+
+    /** 高值核销：须一次性消耗全部待核销数量；退费返还后可再次核销 */
+    private void assertHighMirrorConsumable(MirrorLine line, BigDecimal remaining)
+    {
+        if (line.quantity == null || line.quantity.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.zeroQuantity());
+        }
+        if (STATUS_REFUNDED.equals(line.processStatus))
+        {
+            throw new ServiceException("退费记录不可高值扫码核销");
+        }
+        if (STATUS_PARTIAL.equals(line.processStatus))
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.legacyPartialHighConsume());
+        }
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
+        }
+        if (!STATUS_PENDING.equals(line.processStatus))
+        {
+            if (STATUS_CONSUMED.equals(line.processStatus))
+            {
+                throw new ServiceException("该行已核销，如需再次核销请先冲销");
+            }
+            throw new ServiceException(HisMirrorProcessUserMessages.highScanNotAllowed(line.processStatus));
+        }
     }
 
     private String requireTenant()

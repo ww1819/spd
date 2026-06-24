@@ -27,6 +27,12 @@
           and ifnull(l.del_flag, 0) = 0
     </select>
 
+    <select id="sumNetAllocQtyForMirrorRow" resultType="java.math.BigDecimal">
+        select coalesce(sum(ifnull(l.alloc_qty, 0) - ifnull(l.returned_qty, 0)), 0) from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
+    </select>
+
     <select id="selectDistinctBillSourcesForMirror" resultType="java.lang.String">
         select distinct ifnull(h.bill_source, '')
         from his_mirror_consume_link l
