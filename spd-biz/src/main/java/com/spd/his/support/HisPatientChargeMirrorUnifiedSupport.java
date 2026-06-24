@@ -149,6 +149,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setHisChargeId(StringUtils.trimToNull(q.getHisInpatientChargeId()));
         u.setChargeIdTf(q.getHisInpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
+        u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
@@ -178,6 +179,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setHisChargeId(StringUtils.trimToNull(q.getHisOutpatientChargeId()));
         u.setChargeIdTf(q.getHisOutpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
+        u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
@@ -207,6 +209,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setHisChargeId(StringUtils.trimToNull(q.getHisChargeId()));
         u.setChargeIdTf(q.getChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
+        u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());

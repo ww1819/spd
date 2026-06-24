@@ -223,6 +223,23 @@ public class FdDepartmentController extends BaseController
     }
 
     /**
+     * 租户下全部科室下拉（不按用户科室权限过滤；用于开单科室筛选等）
+     */
+    @GetMapping("/tenantOptionselect")
+    public AjaxResult tenantOptionselect()
+    {
+        List<FdDepartment> fdDepartmentList = fdDepartmentService.selectdepartmenAll();
+        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
+        if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null)
+        {
+            fdDepartmentList = fdDepartmentList.stream()
+                .filter(d -> d != null && customerId.equals(d.getTenantId()))
+                .collect(Collectors.toList());
+        }
+        return success(fdDepartmentList != null ? fdDepartmentList : new ArrayList<>());
+    }
+
+    /**
      * 科室变更记录（字段级）
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:list')")

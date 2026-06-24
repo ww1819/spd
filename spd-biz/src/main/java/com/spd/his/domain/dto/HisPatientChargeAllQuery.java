@@ -26,6 +26,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     /** 退费记录对应的原收费明细ID（住院/门诊统一筛选） */
     private String chargeIdTf;
     private Long departmentId;
+    /** 开单科室（fd_department.id），与 HIS dept_code / clinic_code 对照 */
+    private Long orderingDepartmentId;
     /** 执行科室名称模糊 */
     private String execDeptName;
     /** Y=已处理 N=未处理 */

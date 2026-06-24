@@ -29,6 +29,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     private String hisChargeId;
     private String chargeIdTf;
     private Long departmentId;
+    /** 开单科室（fd_department.id） */
+    private Long orderingDepartmentId;
     private String processed;
     private String valueLevel;
     /** 高低值 IN 筛选，如高值页传 1,0 */

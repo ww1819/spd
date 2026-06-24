@@ -130,6 +130,18 @@
                   and trim(dsel.his_id) = trim(m.exec_dept_id)
             )
         </if>
+        <if test="orderingDepartmentId != null">
+            and exists (
+                select 1 from fd_department od
+                where (od.del_flag = 0 or od.del_flag is null)
+                  and od.tenant_id = #{tenantId}
+                  and od.id = #{orderingDepartmentId}
+                  and (
+                    (m.visit_kind = 'INPATIENT' and trim(od.his_id) = trim(m.dept_code))
+                    or (m.visit_kind = 'OUTPATIENT' and trim(od.his_id) = trim(m.clinic_code))
+                  )
+            )
+        </if>
         <if test='processed != null and processed == "Y"'>
             and m.process_status != 'PENDING_CONSUME'
         </if>
