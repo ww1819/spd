@@ -81,6 +81,7 @@
             coalesce(nullif(trim(coalesce(inp.exec_dept_name, outp.exec_dept_name)), ''), ed.name) as execDeptName,
             coalesce(inp.patient_name, outp.patient_name) as patientName,
             coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
+            coalesce(inp.his_inpatient_charge_id, outp.his_outpatient_charge_id) as hisChargeId,
             coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
             coalesce(inp.item_name, outp.item_name) as itemName,
             coalesce(
@@ -140,6 +141,12 @@
         </if>
         <if test="visitNo != null and visitNo != ''">
             and coalesce(inp.inpatient_no, outp.outpatient_no) like concat('%', #{visitNo}, '%')
+        </if>
+        <if test="hisChargeId != null and hisChargeId != ''">
+            and (
+                (l.visit_kind = 'INPATIENT' and inp.his_inpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+                or (l.visit_kind = 'OUTPATIENT' and outp.his_outpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+            )
         </if>
         <if test="chargeItemId != null and chargeItemId != ''">
             and coalesce(inp.charge_item_id, outp.charge_item_id) like concat('%', #{chargeItemId}, '%')

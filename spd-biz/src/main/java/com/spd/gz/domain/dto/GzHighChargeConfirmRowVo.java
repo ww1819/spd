@@ -61,6 +61,8 @@ public class GzHighChargeConfirmRowVo
 
     private String patientName;
     private String visitNo;
+    /** HIS 费用明细主键 */
+    private String hisChargeId;
     private String chargeItemId;
     private String itemName;
     /** 计费项目规格（HIS 镜像） */
