@@ -23,5 +23,7 @@ public class GzHighChargeConfirmQuery
     private String patientName;
     private String visitNo;
     private String chargeItemId;
+    /** HIS 收费/费用明细主键（模糊） */
+    private String hisChargeId;
     private String materialName;
 }
