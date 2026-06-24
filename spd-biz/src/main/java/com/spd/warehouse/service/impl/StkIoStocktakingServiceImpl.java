@@ -53,6 +53,7 @@ import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.utils.StocktakingConcurrencyUtil;
+import com.spd.warehouse.vo.WhStocktakingExportRow;
 
 /**
  * 盘点Service业务层处理
@@ -119,6 +120,15 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
         }
         return stkIoStocktakingMapper.selectStkIoStocktakingList(stkIoStocktaking);
+    }
+
+    @Override
+    public List<WhStocktakingExportRow> selectWhStocktakingExportList(StkIoStocktaking stkIoStocktaking)
+    {
+        if (stkIoStocktaking != null && StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkIoStocktakingMapper.selectWhStocktakingExportList(stkIoStocktaking);
     }
 
     /**
