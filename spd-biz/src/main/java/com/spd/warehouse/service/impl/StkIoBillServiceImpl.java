@@ -2205,6 +2205,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         syncBillTotalAmountFromEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, null);
+        if (stkIoBill.getBillType() == null) {
+            stkIoBill.setBillType(201);
+        }
         stkIoBill.setBillNo(getBillNumber("CK"));
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -2229,14 +2232,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return rows;
     }
 
-    //str：单号前缀
-    //date：日期
-    //result：最终结果，需要的流水号
+    private static final Object CK_BILL_NO_LOCK = new Object();
+
+    /** 出库单号：CK + yyyyMMdd + 流水（租户内当日唯一递增） */
     public String getBillNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectOutMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (CK_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            Long maxSerial = stkIoBillMapper.selectOutMaxCkSerial(date);
+            return FillRuleUtil.buildBillNo(str, date, maxSerial);
+        }
     }
 
     @Transactional

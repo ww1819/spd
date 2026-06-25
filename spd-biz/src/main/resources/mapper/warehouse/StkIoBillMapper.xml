@@ -1454,8 +1454,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectOutMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
-        where bill_no like concat('%',#{billNo},'%')
-        and bill_type = 201
+        where bill_no like concat('CK', #{date}, '%')
+        and (del_flag is null or del_flag != 1)
+        and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectOutMaxCkSerial" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(cast(substring(bill_no, 11) as unsigned))
+        from stk_io_bill
+        where bill_no like concat('CK', #{date}, '%')
+        and length(bill_no) &gt; 10
+        and (del_flag is null or del_flag != 1)
         and tenant_id = #{scopedTenantId}
     </select>
 

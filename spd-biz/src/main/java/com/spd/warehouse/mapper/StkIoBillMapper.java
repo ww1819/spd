@@ -143,7 +143,10 @@ public interface StkIoBillMapper
      */
     String selectMaxBillNo(String date);
 
-    String selectOutMaxBillNo(String date);
+    String selectOutMaxBillNo(@Param("date") String date);
+
+    /** 出库单（CK+日期）当日最大流水号，不按 bill_type 过滤，避免漏计已占号单据 */
+    Long selectOutMaxCkSerial(@Param("date") String date);
 
     /**
      * 逻辑删除
