@@ -579,6 +579,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisInpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
@@ -603,6 +604,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisOutpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
@@ -627,6 +629,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
@@ -716,6 +719,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.buildExportUnifiedQuery(
             q, visitKind, inpatientNo, outpatientNo);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
         if (total > MIRROR_EXPORT_MAX_ROWS)
         {
@@ -994,21 +998,39 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         if ("INPATIENT".equalsIgnoreCase(visitKind))
         {
             HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
-            if (r == null || StringUtils.isBlank(r.getExecDeptId()))
+            if (r == null)
             {
                 return null;
             }
-            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getExecDeptId()));
+            String hisDeptId = StringUtils.trimToEmpty(r.getExecDeptId());
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                hisDeptId = StringUtils.trimToEmpty(r.getDeptCode());
+            }
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                return null;
+            }
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, hisDeptId);
             return d != null ? d.getId() : null;
         }
         if ("OUTPATIENT".equalsIgnoreCase(visitKind))
         {
             HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
-            if (r == null || StringUtils.isBlank(r.getExecDeptId()))
+            if (r == null)
             {
                 return null;
             }
-            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getExecDeptId()));
+            String hisDeptId = StringUtils.trimToEmpty(r.getExecDeptId());
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                hisDeptId = StringUtils.trimToEmpty(r.getClinicCode());
+            }
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                return null;
+            }
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, hisDeptId);
             return d != null ? d.getId() : null;
         }
         return null;
@@ -1630,14 +1652,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
     }
 
-    /** 入库前从收费项镜像补齐 value_level（默认低值 2） */
+    /** 入库前补齐 value_level（以耗材档案 is_gz 为准） */
     private void enrichUnifiedValueLevel(String tenantId, List<HisPatientChargeMirrorUnified> list)
     {
         if (list == null || list.isEmpty() || StringUtils.isEmpty(tenantId))
         {
             return;
         }
-        Set<String> needLookup = new HashSet<>();
         for (HisPatientChargeMirrorUnified m : list)
         {
             if (m == null)
@@ -1645,46 +1666,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 continue;
             }
             m.setChargeItemId(HisPatientChargeMirrorUnifiedSupport.normalizeChargeItemId(m.getChargeItemId()));
-            if (StringUtils.isBlank(m.getValueLevel()) && StringUtils.isNotBlank(m.getChargeItemId()))
-            {
-                needLookup.add(m.getChargeItemId());
-            }
-        }
-        Map<String, String> levelByItemId = new HashMap<>();
-        if (!needLookup.isEmpty())
-        {
-            List<String> ids = new ArrayList<>(needLookup);
-            for (int i = 0; i < ids.size(); i += HIS_ID_QUERY_BATCH)
-            {
-                int end = Math.min(i + HIS_ID_QUERY_BATCH, ids.size());
-                List<HisChargeItemMirror> mirrors = hisChargeItemMirrorMapper.selectValueLevelsByChargeItemIds(
-                    tenantId, ids.subList(i, end));
-                if (mirrors == null)
-                {
-                    continue;
-                }
-                for (HisChargeItemMirror cim : mirrors)
-                {
-                    if (cim != null && StringUtils.isNotBlank(cim.getChargeItemId()))
-                    {
-                        levelByItemId.put(cim.getChargeItemId(), StringUtils.trimToEmpty(cim.getValueLevel()));
-                    }
-                }
-            }
-        }
-        for (HisPatientChargeMirrorUnified m : list)
-        {
-            if (m == null)
-            {
-                continue;
-            }
-            if (StringUtils.isNotBlank(m.getValueLevel()))
-            {
-                m.setValueLevel(StringUtils.trim(m.getValueLevel()));
-                continue;
-            }
-            String fromMirror = levelByItemId.get(m.getChargeItemId());
-            m.setValueLevel(StringUtils.isNotBlank(fromMirror) ? fromMirror : "2");
+            m.setValueLevel(HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, m.getChargeItemId()));
         }
     }
 

@@ -55,6 +55,8 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.foundation.service.IFdUnitService;
 import com.spd.foundation.service.IFdLocationService;
+import com.spd.his.mapper.HisChargeItemMirrorMapper;
+import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 
 import javax.validation.Validator;
 
@@ -119,6 +121,12 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     @Autowired
     private FdMaterialChangeLogMapper fdMaterialChangeLogMapper;
+
+    @Autowired
+    private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
+
+    @Autowired
+    private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
 
     private static final Logger log = LoggerFactory.getLogger(FdMaterialServiceImpl.class);
 
@@ -301,7 +309,12 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
         }
-        return fdMaterialMapper.insertFdMaterial(fdMaterial);
+        int rows = fdMaterialMapper.insertFdMaterial(fdMaterial);
+        if (rows > 0)
+        {
+            syncHisChargeItemValueLevelFromMaterial(null, fdMaterial);
+        }
+        return rows;
     }
 
     /**
@@ -449,7 +462,52 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             // 字段变更记录
             saveChangeLogs(fdMaterial.getId(), oldMaterial, fdMaterial, now, operator);
         }
-        return fdMaterialMapper.updateFdMaterial(fdMaterial);
+        int rows = fdMaterialMapper.updateFdMaterial(fdMaterial);
+        if (rows > 0)
+        {
+            syncHisChargeItemValueLevelFromMaterial(oldMaterial, fdMaterial);
+        }
+        return rows;
+    }
+
+    /** 衡水三院：产品档案 is_gz 变更时同步到已对照 HIS 收费项目镜像 value_level */
+    private void syncHisChargeItemValueLevelFromMaterial(FdMaterial before, FdMaterial after)
+    {
+        if (after == null)
+        {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(after.getTenantId())
+            ? after.getTenantId()
+            : (before != null ? before.getTenantId() : null);
+        if (!HS_THIRD_CUSTOMER_ID.equals(tenantId))
+        {
+            return;
+        }
+        String chargeItemId = StringUtils.trimToNull(StringUtils.isNotEmpty(after.getHisChargeItemId())
+            ? after.getHisChargeItemId()
+            : (before != null ? before.getHisChargeItemId() : null));
+        if (chargeItemId == null)
+        {
+            return;
+        }
+        String isGz = StringUtils.trimToEmpty(StringUtils.isNotEmpty(after.getIsGz())
+            ? after.getIsGz()
+            : (before != null ? before.getIsGz() : null));
+        if (!"1".equals(isGz) && !"2".equals(isGz))
+        {
+            return;
+        }
+        try
+        {
+            hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, isGz);
+            hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(tenantId, chargeItemId, isGz);
+        }
+        catch (Exception e)
+        {
+            log.warn("同步收费项目高低值失败 materialId={} chargeItemId={} err={}",
+                after.getId(), chargeItemId, e.toString());
+        }
     }
 
     @Override

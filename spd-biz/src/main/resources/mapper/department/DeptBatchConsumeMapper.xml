@@ -176,8 +176,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentId != null "> and a.department_id = #{departmentId}</if>
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="consumeBillStatus != null "> and a.consume_bill_status = #{consumeBillStatus}</if>
-            <if test="beginDate != null and beginDate != ''"> and a.consume_bill_date &gt;= #{beginDate}</if>
-            <if test="endDate != null and endDate != ''"> and a.consume_bill_date &lt;= #{endDate}</if>
+            <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
+            <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
             <include refid="deptBatchConsumeDepartmentScopeFilter"/>
         </where>
         order by

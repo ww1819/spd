@@ -121,17 +121,28 @@ public final class HisPatientChargeMirrorUnifiedSupport
         return m;
     }
 
-    /** 高值扫码核销列表：未指定高低值筛选时默认仅高值（未维护 is_gz 视同低值，见 resolvedValueLevelExpr） */
+    public static final String LIST_MODE_HIGH = "HIGH";
+    public static final String LIST_MODE_LOW = "LOW";
+
+    /** 高值扫描核销：固定仅显示耗材档案 is_gz=1 的计费 */
     public static void applyHighChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
+    {
+        if (u == null)
+        {
+            return;
+        }
+        u.setChargeListMode(LIST_MODE_HIGH);
+        u.setValueLevel(null);
+    }
+
+    /** 患者收费查询：未选手动高低值时固定仅显示 is_gz≠1（未对照视同低值） */
+    public static void applyPatientChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
         if (u == null || StringUtils.isNotBlank(u.getValueLevel()))
         {
             return;
         }
-        if (u.getValueLevelIn() == null || u.getValueLevelIn().isEmpty())
-        {
-            u.setValueLevel(HisMirrorValueLevelSupport.LEVEL_HIGH);
-        }
+        u.setChargeListMode(LIST_MODE_LOW);
     }
 
     public static HisPatientChargeMirrorUnifiedQuery fromInpatientQuery(HisInpatientChargeMirror q)

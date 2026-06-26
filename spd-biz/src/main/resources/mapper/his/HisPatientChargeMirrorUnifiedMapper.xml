@@ -2,13 +2,30 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper">
 
+    <!-- 科室数据权限：优先执行科室；执行科室为空时回退开单科室（住院 dept_code / 门诊 clinic_code） -->
+    <sql id="unifiedDeptScopeHisIdMatch">
+        (
+            m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+            and trim(dscope.his_id) = trim(m.exec_dept_id)
+        )
+        or (
+            (m.exec_dept_id is null or trim(m.exec_dept_id) = '')
+            and (
+                (m.visit_kind = 'INPATIENT' and m.dept_code is not null and trim(m.dept_code) != ''
+                    and trim(dscope.his_id) = trim(m.dept_code))
+                or (m.visit_kind = 'OUTPATIENT' and m.clinic_code is not null and trim(m.clinic_code) != ''
+                    and trim(dscope.his_id) = trim(m.clinic_code))
+            )
+        )
+    </sql>
+
     <sql id="unifiedDepartmentScopeFilter">
         <if test="params != null and params.scopeDeptUserId != null">
             and exists (
                 select 1 from fd_department dscope
                 where (dscope.del_flag = 0 or dscope.del_flag is null)
                   and dscope.tenant_id = #{tenantId}
-                  and trim(dscope.his_id) = trim(m.exec_dept_id)
+                  and <include refid="unifiedDeptScopeHisIdMatch"/>
                   and dscope.id in (
                     select distinct x.did from (
                         select cast(upd.dept_id as unsigned) as did
@@ -30,14 +47,26 @@
         </if>
     </sql>
 
-    <sql id="unifiedMaterialJoin">
-        left join fd_material fm on fm.tenant_id = m.tenant_id
-            and trim(fm.his_charge_item_id) = trim(m.charge_item_id)
-            and (fm.del_flag = 0 or fm.del_flag is null)
+    <!-- 高低值判定：仅以耗材档案 fd_material.is_gz 为准（通过 his_charge_item_id 对照 charge_item_id） -->
+    <sql id="unifiedHighMaterialJoin">
+        left join (
+            select distinct fm.tenant_id as tenant_id, trim(fm.his_charge_item_id) as charge_item_id
+            from fd_material fm
+            where fm.tenant_id = #{tenantId}
+              and (fm.del_flag = 0 or fm.del_flag is null)
+              and trim(fm.is_gz) = '1'
+              and fm.his_charge_item_id is not null
+              and trim(fm.his_charge_item_id) != ''
+        ) fm_high on fm_high.tenant_id = m.tenant_id and fm_high.charge_item_id = trim(m.charge_item_id)
     </sql>
 
     <sql id="resolvedValueLevelExpr">
-        case when fm.is_gz = '1' then '1' else '2' end
+        case when fm_high.charge_item_id is not null then '1' else '2' end
+    </sql>
+
+    <sql id="unifiedListFrom">
+        from his_patient_charge_mirror_unified m
+        <include refid="unifiedHighMaterialJoin"/>
     </sql>
 
     <sql id="unifiedSelectColumns">
@@ -127,7 +156,19 @@
                 where (dsel.del_flag = 0 or dsel.del_flag is null)
                   and dsel.tenant_id = #{tenantId}
                   and dsel.id = #{departmentId}
-                  and trim(dsel.his_id) = trim(m.exec_dept_id)
+                  and (
+                    (m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+                        and trim(dsel.his_id) = trim(m.exec_dept_id))
+                    or (
+                        (m.exec_dept_id is null or trim(m.exec_dept_id) = '')
+                        and (
+                            (m.visit_kind = 'INPATIENT' and m.dept_code is not null and trim(m.dept_code) != ''
+                                and trim(dsel.his_id) = trim(m.dept_code))
+                            or (m.visit_kind = 'OUTPATIENT' and m.clinic_code is not null and trim(m.clinic_code) != ''
+                                and trim(dsel.his_id) = trim(m.clinic_code))
+                        )
+                    )
+                  )
             )
         </if>
         <if test="orderingDepartmentId != null">
@@ -152,7 +193,12 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="valueLevel != null and valueLevel != ''"> and (<include refid="resolvedValueLevelExpr"/>) = #{valueLevel}</if>
+        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and fm_high.charge_item_id is not null</if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and fm_high.charge_item_id is null</if>
+        <if test="chargeListMode == null or chargeListMode == ''">
+            <if test='valueLevel != null and valueLevel.toString() == "1"'> and fm_high.charge_item_id is not null</if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and fm_high.charge_item_id is null</if>
+        </if>
         <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
             and (<include refid="resolvedValueLevelExpr"/>) in
             <foreach collection="valueLevelIn" item="vl" open="(" separator="," close=")">#{vl}</foreach>
@@ -355,8 +401,7 @@
 
     <select id="countList" resultType="long">
         select count(*)
-        from his_patient_charge_mirror_unified m
-        <include refid="unifiedMaterialJoin"/>
+        <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
     </select>
 
@@ -416,9 +461,41 @@
         select
             <include refid="unifiedSelectColumns"/>,
             <include refid="resolvedValueLevelExpr"/> as value_level
-        from his_patient_charge_mirror_unified m
-        <include refid="unifiedMaterialJoin"/>
+        <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
         order by m.charge_at desc, m.id desc
     </select>
+
+    <update id="refreshValueLevelByChargeItemId">
+        update his_patient_charge_mirror_unified
+        set value_level = #{valueLevel},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and trim(charge_item_id) = trim(#{chargeItemId})
+    </update>
+
+    <update id="refreshAllValueLevelsForTenant">
+        update his_patient_charge_mirror_unified u
+        left join (
+            select distinct fm.tenant_id as tenant_id, trim(fm.his_charge_item_id) as charge_item_id
+            from fd_material fm
+            where fm.tenant_id = #{tenantId}
+              and (fm.del_flag = 0 or fm.del_flag is null)
+              and trim(fm.is_gz) = '1'
+              and fm.his_charge_item_id is not null
+              and trim(fm.his_charge_item_id) != ''
+        ) hf on hf.tenant_id = u.tenant_id and hf.charge_item_id = trim(u.charge_item_id)
+        left join (
+            select distinct cim.tenant_id as tenant_id, trim(cim.charge_item_id) as charge_item_id
+            from his_charge_item_mirror cim
+            where cim.tenant_id = #{tenantId}
+              and (cim.deleted_flag is null or cim.deleted_flag != 1)
+              and cim.value_level = '1'
+              and cim.charge_item_id is not null
+              and trim(cim.charge_item_id) != ''
+        ) hcf on hcf.tenant_id = u.tenant_id and hcf.charge_item_id = trim(u.charge_item_id)
+        set u.value_level = case when hf.charge_item_id is not null or hcf.charge_item_id is not null then '1' else '2' end,
+            u.update_time = now()
+        where u.tenant_id = #{tenantId}
+    </update>
 </mapper>

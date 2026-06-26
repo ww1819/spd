@@ -32,6 +32,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     /** 开单科室（fd_department.id） */
     private Long orderingDepartmentId;
     private String processed;
+    /** 列表页预设：HIGH=高值扫描核销仅高值，LOW=患者收费查询仅低值；与手动 valueLevel 筛选互斥 */
+    private String chargeListMode;
     private String valueLevel;
     /** 高低值 IN 筛选，如高值页传 1,0 */
     private java.util.List<String> valueLevelIn;

@@ -60,4 +60,13 @@ public interface HisPatientChargeMirrorUnifiedMapper
     int syncInpatientExecDeptFromMirror(@Param("tenantId") String tenantId);
 
     int syncOutpatientExecDeptFromMirror(@Param("tenantId") String tenantId);
+
+    /** 按收费项目刷新统一镜像表 value_level（产品档案 is_gz 变更后） */
+    int refreshValueLevelByChargeItemId(
+        @Param("tenantId") String tenantId,
+        @Param("chargeItemId") String chargeItemId,
+        @Param("valueLevel") String valueLevel);
+
+    /** 按耗材档案/收费项镜像重算租户全部统一镜像行 value_level（一次性回填，避免列表相关子查询超时） */
+    int refreshAllValueLevelsForTenant(@Param("tenantId") String tenantId);
 }
