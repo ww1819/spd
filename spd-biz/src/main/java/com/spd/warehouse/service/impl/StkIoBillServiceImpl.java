@@ -370,6 +370,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     {
         MasterDetailValidateUtil.assertHasMaterialLine(
             stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, stkIoBillDocLabel(stkIoBill));
+        assertInboundEntryBatchAndExpiry(stkIoBill, "保存");
         if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -467,6 +468,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         if (entryList != null && !entryList.isEmpty()) {
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
+                assertInboundEntryBatchAndExpiry(stkIoBill, "保存");
                 normalizeInboundSupplierFields(stkIoBill);
                 mergeDeliveryLineMetaFromDb(stkIoBill, entryList);
                 assertInboundDeliveryLineQtyWithinCap(stkIoBill, stkIoBill.getId());
@@ -560,6 +562,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntryList,
                 e -> e != null && MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
                 stkIoBillDocLabel(stkIoBill));
+            assertInboundEntryBatchAndExpiry(stkIoBill, "审核");
         }
         if (auditBillType != null) {
             if (auditBillType == 201 || auditBillType == 301) {
@@ -781,6 +784,34 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         if (unified != null) {
             bill.setSupplerId(unified);
+        }
+    }
+
+    /** 低值入库：明细批号、有效期不能为空 */
+    private void assertInboundEntryBatchAndExpiry(StkIoBill bill, String actionLabel) {
+        if (bill == null || bill.getBillType() == null || bill.getBillType() != 101) {
+            return;
+        }
+        List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
+        if (list == null) {
+            return;
+        }
+        String action = StringUtils.isNotEmpty(actionLabel) ? actionLabel : "保存";
+        for (int i = 0; i < list.size(); i++) {
+            StkIoBillEntry e = list.get(i);
+            if (e == null || !MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag())) {
+                continue;
+            }
+            if (e.getMaterialId() == null) {
+                continue;
+            }
+            String lineLabel = StringUtils.isNotEmpty(e.getMaterialName())
+                ? e.getMaterialName()
+                : ("第" + (i + 1) + "行");
+            if (StringUtils.isEmpty(StringUtils.trim(e.getBatchNumber())) || e.getEndTime() == null) {
+                throw new ServiceException(String.format(
+                    "明细【%s】批号或有效期为空，请维护批号和效期后再%s", lineLabel, action));
+            }
         }
     }
 
