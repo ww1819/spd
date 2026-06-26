@@ -170,6 +170,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user au on a.audit_by = au.user_id
     </sql>
 
+    <sql id="basApplyCreateTimeRangeFilter">
+        <if test="beginDate != null"> and DATE(a.create_time) &gt;= DATE(#{beginDate})</if>
+        <if test="endDate != null"> and DATE(a.create_time) &lt;= DATE(#{endDate})</if>
+    </sql>
+
     <select id="selectBasApplyList" parameterType="BasApply" resultMap="BasApplyResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectBasApplyVo"/>
@@ -181,6 +186,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
             <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
+            <include refid="basApplyCreateTimeRangeFilter"/>
             <include refid="basApplyDepartmentScopeFilter"/>
             and a.tenant_id = #{scopedTenantId}
             and (a.del_flag = 0 or a.del_flag is null)
@@ -417,6 +423,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="applyBillDate != null"> and a.apply_bill_date = #{applyBillDate}</if>
         <if test="applyBillStatus != null"> and a.apply_bill_status = #{applyBillStatus}</if>
         <if test="billType != null"> and COALESCE(a.bill_type, 1) = #{billType}</if>
+        <include refid="basApplyCreateTimeRangeFilter"/>
         <include refid="basApplyDepartmentScopeFilter"/>
     </select>
 
@@ -432,6 +439,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null "> and a.user_id = #{userId}</if>
             <if test="applyBillStatus != null "> and a.apply_bill_status = #{applyBillStatus}</if>
             <if test="billType != null "> and COALESCE(a.bill_type, 1) = #{billType}</if>
+            <include refid="basApplyCreateTimeRangeFilter"/>
             <include refid="basApplyDepartmentScopeFilter"/>
             and a.tenant_id = #{scopedTenantId}
             and (a.del_flag = 0 or a.del_flag is null)

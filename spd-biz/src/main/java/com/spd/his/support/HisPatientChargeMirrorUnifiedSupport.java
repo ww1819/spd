@@ -135,14 +135,16 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setValueLevel(null);
     }
 
-    /** 患者收费查询：未选手动高低值时固定仅显示 is_gz≠1（未对照视同低值） */
+    /** 患者收费查询：固定仅显示 is_gz≠1（未对照视同低值），忽略前端 valueLevel */
     public static void applyPatientChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
-        if (u == null || StringUtils.isNotBlank(u.getValueLevel()))
+        if (u == null)
         {
             return;
         }
         u.setChargeListMode(LIST_MODE_LOW);
+        u.setValueLevel(null);
+        u.setValueLevelIn(null);
     }
 
     public static HisPatientChargeMirrorUnifiedQuery fromInpatientQuery(HisInpatientChargeMirror q)
