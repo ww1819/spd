@@ -47,8 +47,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="auditBy"    column="audit_by"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="remark"    column="remark"    />
-        <result property="auditPersonName"    column="auditUserName"    />
-        <result property="createrName"    column="createUserName"    />
+        <result property="auditPersonName"    column="auditDisplayName"    />
+        <result property="createrName"    column="createDisplayName"    />
         <result property="totalAmount"    column="total_amount"    />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="tenantId"    column="tenant_id"    />
@@ -84,7 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap id="createrResult" type="SysUser">
-        <id     property="userId"    column="create_by"     />
+        <id     property="userId"    column="createUserId"     />
         <result property="nickName"  column="createNickName"   />
         <result property="userName"  column="createUserName"   />
     </resultMap>
@@ -155,13 +155,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
                cu.nick_name createNickName,cu.user_name createUserName,
                au.nick_name auditNickName,au.user_name auditUserName,
+               CASE
+                   WHEN NULLIF(TRIM(a.create_by), '') = '自动核销' THEN NULL
+                   WHEN NULLIF(TRIM(a.create_by), '') REGEXP '^[0-9]+$' THEN CAST(TRIM(a.create_by) AS UNSIGNED)
+                   ELSE NULL
+               END AS createUserId,
+               CASE
+                   WHEN NULLIF(TRIM(a.create_by), '') = '自动核销' THEN '自动核销'
+                   ELSE COALESCE(NULLIF(TRIM(cu.nick_name), ''), cu.user_name, NULLIF(TRIM(u.nick_name), ''), u.user_name)
+               END AS createDisplayName,
+               CASE
+                   WHEN NULLIF(TRIM(a.audit_by), '') = '自动核销' THEN '自动核销'
+                   ELSE COALESCE(NULLIF(TRIM(au.nick_name), ''), au.user_name)
+               END AS auditDisplayName,
                COALESCE((select SUM(IFNULL(entry.amt, 0)) from t_hc_ks_xh_entry entry where entry.paren_id = a.id and entry.del_flag != 1), 0) as total_amount
         from t_hc_ks_xh a
         left join fd_warehouse w on a.warehouse_id = w.id
         left join sys_user u on a.user_id = u.user_id
         left join fd_department d on a.department_id = d.id
-        left join sys_user cu on a.create_by = cu.user_id
-        left join sys_user au on au.user_id = cast(nullif(trim(a.audit_by), '') as unsigned)
+        left join sys_user cu on NULLIF(TRIM(a.create_by), '自动核销') = cu.user_id
+        left join sys_user au on NULLIF(TRIM(a.audit_by), '自动核销') = au.user_id
     </sql>
 
     <select id="selectDeptBatchConsumeList" parameterType="DeptBatchConsume" resultMap="DeptBatchConsumeResult">
@@ -204,11 +217,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.src_consume_id as sub_src_consume_id, b.src_consume_bill_no as sub_src_consume_bill_no, b.src_consume_entry_id as sub_src_consume_entry_id,
                 b.src_consume_qty as sub_src_consume_qty, b.src_can_reverse_qty as sub_src_can_reverse_qty,
                au.nick_name auditNickName,au.user_name auditUserName,
-               cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,m.code materialCode,m.name materialName
+               cu.nick_name createNickName,cu.user_name createUserName,
+               CASE
+                   WHEN NULLIF(TRIM(a.create_by), '') = '自动核销' THEN NULL
+                   WHEN NULLIF(TRIM(a.create_by), '') REGEXP '^[0-9]+$' THEN CAST(TRIM(a.create_by) AS UNSIGNED)
+                   ELSE NULL
+               END AS createUserId,
+               CASE
+                   WHEN NULLIF(TRIM(a.create_by), '') = '自动核销' THEN '自动核销'
+                   ELSE COALESCE(NULLIF(TRIM(cu.nick_name), ''), cu.user_name, NULLIF(TRIM(u.nick_name), ''), u.user_name)
+               END AS createDisplayName,
+               CASE
+                   WHEN NULLIF(TRIM(a.audit_by), '') = '自动核销' THEN '自动核销'
+                   ELSE COALESCE(NULLIF(TRIM(au.nick_name), ''), au.user_name)
+               END AS auditDisplayName,
+               a.audit_by,m.code materialCode,m.name materialName
         from t_hc_ks_xh a
         left join t_hc_ks_xh_entry b on b.paren_id = a.id and b.del_flag != 1
-        left join sys_user au on au.user_id = cast(nullif(trim(a.audit_by), '') as unsigned)
-        left join sys_user cu on a.create_by = cu.user_id
+        left join sys_user u on a.user_id = u.user_id
+        left join sys_user au on NULLIF(TRIM(a.audit_by), '自动核销') = au.user_id
+        left join sys_user cu on NULLIF(TRIM(a.create_by), '自动核销') = cu.user_id
         left join fd_material m on b.material_id = m.id
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>

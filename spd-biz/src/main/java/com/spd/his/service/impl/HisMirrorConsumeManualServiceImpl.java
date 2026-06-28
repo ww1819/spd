@@ -24,6 +24,7 @@ import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.domain.DeptBatchConsumeEntry;
 import com.spd.department.domain.StkDepInventory;
+import com.spd.department.support.DeptBatchConsumeConstants;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.foundation.domain.FdDepartment;
@@ -165,7 +166,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         vo.setMirrorLineSkippedZeroQty(skipped);
         List<HisMirrorConsumeLink> linkBuffer = new ArrayList<>();
         Date linkTime = DateUtils.getNowDate();
-        String createBy = SecurityUtils.getUserIdStr();
+        String createBy = HisMirrorProcessConstants.PARTY_AUTO.equals(processParty)
+            ? DeptBatchConsumeConstants.AUTO_WRITE_OFF_OPERATOR
+            : SecurityUtils.getUserIdStr();
         for (Map.Entry<String, List<AllocPiece>> en : groups.entrySet())
         {
             List<AllocPiece> gPieces = en.getValue();

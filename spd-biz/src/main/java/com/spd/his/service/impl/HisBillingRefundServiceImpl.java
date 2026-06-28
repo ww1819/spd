@@ -21,6 +21,7 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsumeReverseReq;
 import com.spd.department.service.IDeptBatchConsumeService;
+import com.spd.department.support.DeptBatchConsumeConstants;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzTraceability;
 import com.spd.gz.domain.GzTraceabilityEntry;
@@ -239,7 +240,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         HisBillingRefundOrder order = buildOrderHeader(tenantId, visitKind, body, originMirrorRowId, "2", inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
 
-        String operator = SecurityUtils.getUserIdStr();
+        String operator = resolveRefundOperator(body == null ? null : body.getRemark());
         List<HisBillingRefundOrderLine> lineRows = new ArrayList<>();
         Date now = DateUtils.getNowDate();
         String uid = SecurityUtils.getUserIdStr();
@@ -824,7 +825,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         HisBillingRefundOrder order = buildOrderHeaderHigh(tenantId, visitKind, body, originMirrorRowId, inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
 
-        String operator = SecurityUtils.getUserIdStr();
+        String operator = resolveRefundOperator(body == null ? null : body.getRemark());
         Date now = DateUtils.getNowDate();
         String uid = SecurityUtils.getUserIdStr();
 
@@ -942,6 +943,15 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             throw new ServiceException("高值科室库存不存在，无法退费返还");
         }
         hcBarcodeLifecycleService.onMirrorHighChargeRefund(trace, entry, gz, returnQty);
+    }
+
+    private String resolveRefundOperator(String remark)
+    {
+        if (StringUtils.contains(remark, "自动退费"))
+        {
+            return DeptBatchConsumeConstants.AUTO_WRITE_OFF_OPERATOR;
+        }
+        return SecurityUtils.getUserIdStr();
     }
 
     private static class RefundAllocationPlan

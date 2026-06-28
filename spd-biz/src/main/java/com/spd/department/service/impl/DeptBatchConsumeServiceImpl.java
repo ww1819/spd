@@ -554,9 +554,10 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         reverseBill.setUserId(srcBill.getUserId());
         reverseBill.setConsumeBillStatus(2);
         reverseBill.setDelFlag(0);
-        reverseBill.setCreateBy(SecurityUtils.getUserIdStr());
+        String op = StringUtils.defaultIfBlank(operator, SecurityUtils.getUserIdStr());
+        reverseBill.setCreateBy(op);
         reverseBill.setCreateTime(DateUtils.getNowDate());
-        reverseBill.setAuditBy(operator);
+        reverseBill.setAuditBy(op);
         reverseBill.setAuditDate(DateUtils.getNowDate());
         reverseBill.setConsumeBillNo(getNumber());
         reverseBill.setRemark(StringUtils.isNotBlank(req.getRemark()) ? req.getRemark() : String.format("反消耗来源：%s", srcBill.getConsumeBillNo()));
