@@ -40,6 +40,7 @@
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
           and ifnull(l.del_flag, 0) = 0
           and l.dept_batch_consume_id is not null
+          and (ifnull(l.alloc_qty, 0) - ifnull(l.returned_qty, 0)) > 0
     </select>
 
     <select id="selectConsumeRecordsByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorConsumeRecordVo">
@@ -252,6 +253,18 @@
         update his_mirror_consume_link
         set returned_qty = 0,
             refundable_remaining_qty = ifnull(alloc_qty, 0),
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and visit_kind = #{visitKind}
+          and mirror_row_id = #{mirrorRowId}
+          and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="markLinksFullyReturnedForWriteOff">
+        update his_mirror_consume_link
+        set returned_qty = ifnull(alloc_qty, 0),
+            refundable_remaining_qty = 0,
             update_by = #{updateBy},
             update_time = now()
         where tenant_id = #{tenantId}

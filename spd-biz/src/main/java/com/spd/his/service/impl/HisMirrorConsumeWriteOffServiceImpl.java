@@ -360,7 +360,7 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
                 vo.getReverseConsumeBillIds().add(rev.getId());
             }
         }
-        hisMirrorConsumeLinkMapper.resetReturnedQtyForMirror(tenantId, visitKind, mirrorRowId, operator);
+        hisMirrorConsumeLinkMapper.markLinksFullyReturnedForWriteOff(tenantId, visitKind, mirrorRowId, operator);
     }
 
     private void resetMirrorToPending(String tenantId, String visitKind, String mirrorRowId)

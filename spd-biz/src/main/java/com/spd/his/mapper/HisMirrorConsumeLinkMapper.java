@@ -50,4 +50,8 @@ public interface HisMirrorConsumeLinkMapper
 
     int resetReturnedQtyForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId, @Param("updateBy") String updateBy);
+
+    /** 低值冲销完成后：关联行视为已全部返还，释放待核销数量 */
+    int markLinksFullyReturnedForWriteOff(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
+        @Param("mirrorRowId") String mirrorRowId, @Param("updateBy") String updateBy);
 }
