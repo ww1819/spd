@@ -40,6 +40,10 @@ public interface HisMirrorConsumeLinkMapper
     int increaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
         @Param("updateBy") String updateBy);
 
+    /** 低值反消耗后：按来源消耗明细回写关联行的 returned_qty */
+    int increaseReturnedQtyBySrcConsumeEntryId(@Param("srcConsumeEntryId") Long srcConsumeEntryId,
+        @Param("delta") java.math.BigDecimal delta, @Param("updateBy") String updateBy);
+
     int decreaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
         @Param("updateBy") String updateBy);
 

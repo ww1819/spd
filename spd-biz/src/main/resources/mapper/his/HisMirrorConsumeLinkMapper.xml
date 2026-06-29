@@ -21,6 +21,32 @@
         </foreach>
     </insert>
 
+    <!-- 低值关联行：取 returned_qty 与已审核反消耗明细数量的较大值，避免冲销后未回写关联表 -->
+    <sql id="lowValueEffectiveReturnedQty">
+        greatest(
+            ifnull(l.returned_qty, 0),
+            coalesce((
+                select sum(abs(ifnull(re.qty, 0)))
+                from t_hc_ks_xh_entry re
+                inner join t_hc_ks_xh rh on rh.id = re.paren_id
+                    and ifnull(rh.del_flag, 0) = 0
+                    and ifnull(rh.reverse_flag, 0) = 1
+                where re.src_consume_entry_id = l.dept_batch_consume_entry_id
+                  and ifnull(re.del_flag, 0) = 0
+                  and re.qty &lt; 0
+            ), 0)
+        )
+    </sql>
+
+    <sql id="linkNetAllocQtyExpr">
+        greatest(0, ifnull(l.alloc_qty, 0) - (
+            case
+                when l.dept_batch_consume_entry_id is not null then (<include refid="lowValueEffectiveReturnedQty"/>)
+                else ifnull(l.returned_qty, 0)
+            end
+        ))
+    </sql>
+
     <select id="sumAllocQtyForMirrorRow" resultType="java.math.BigDecimal">
         select coalesce(sum(l.alloc_qty), 0) from his_mirror_consume_link l
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
@@ -28,7 +54,7 @@
     </select>
 
     <select id="sumNetAllocQtyForMirrorRow" resultType="java.math.BigDecimal">
-        select coalesce(sum(ifnull(l.alloc_qty, 0) - ifnull(l.returned_qty, 0)), 0) from his_mirror_consume_link l
+        select coalesce(sum(<include refid="linkNetAllocQtyExpr"/>), 0) from his_mirror_consume_link l
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
           and ifnull(l.del_flag, 0) = 0
     </select>
@@ -40,7 +66,20 @@
         where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
           and ifnull(l.del_flag, 0) = 0
           and l.dept_batch_consume_id is not null
-          and (ifnull(l.alloc_qty, 0) - ifnull(l.returned_qty, 0)) > 0
+          and (<include refid="linkNetAllocQtyExpr"/>) > 0
+
+        union
+
+        select distinct 'HIS_MIRROR_ROW_HIGH'
+        from his_mirror_consume_link l
+        inner join gz_traceability t on t.id = l.traceability_id
+            and ifnull(t.del_flag, 0) = 0
+            and t.tenant_id = l.tenant_id
+            and t.trace_source = 'HIS_MIRROR_HIGH'
+        where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.traceability_id is not null
+          and (<include refid="linkNetAllocQtyExpr"/>) > 0
     </select>
 
     <select id="selectConsumeRecordsByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorConsumeRecordVo">
@@ -120,7 +159,7 @@
             and ifnull(h.del_flag, 0) = 0
             and h.tenant_id = l.tenant_id
             and ifnull(h.reverse_flag, 0) = 0
-            and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
+            and h.bill_source in ('HIS_MIRROR_ROW_HIGH', 'HIS_MIRROR_ROW_LOW')
         left join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id and ifnull(e.del_flag, 0) = 0
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
@@ -209,6 +248,16 @@
             update_by = #{updateBy},
             update_time = now()
         where id = #{id} and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="increaseReturnedQtyBySrcConsumeEntryId">
+        update his_mirror_consume_link
+        set returned_qty = least(ifnull(alloc_qty, 0), ifnull(returned_qty, 0) + #{delta}),
+            refundable_remaining_qty = ifnull(alloc_qty, 0) - least(ifnull(alloc_qty, 0), ifnull(returned_qty, 0) + #{delta}),
+            update_by = #{updateBy},
+            update_time = now()
+        where dept_batch_consume_entry_id = #{srcConsumeEntryId}
+          and ifnull(del_flag, 0) = 0
     </update>
 
     <update id="decreaseReturnedQtyById">

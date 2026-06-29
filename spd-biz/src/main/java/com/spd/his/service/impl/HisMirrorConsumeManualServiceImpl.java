@@ -145,10 +145,16 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException(HisMirrorProcessUserMessages.zeroQuantity());
         }
+        BigDecimal netAllocated = netAllocatedQty(tenantId, visitKind, mirrorRowId);
+        BigDecimal remaining = qty.subtract(netAllocated);
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
+        }
         requireMirrorUnitPrice(line);
         List<AllocPiece> pieces = new ArrayList<>();
         int skipped = appendPiecesForLine(tenantId, line.fetchBatchId, visitKind, line.id, line.deptHisCode, line.chargeItemId,
-            line.itemName, qty, line.unitPrice, pieces);
+            line.itemName, remaining, line.unitPrice, pieces);
         if (skipped > 0 || pieces.isEmpty())
         {
             FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);

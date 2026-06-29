@@ -34,6 +34,7 @@ import com.spd.department.mapper.DeptBatchConsumeMapper;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.hc.service.IHcBarcodeLifecycleService;
+import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 
@@ -62,6 +63,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
 
     @Autowired
     private ITenantScopeService tenantScopeService;
+
+    @Autowired
+    private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
 
     /** 非机构管理员：仅能访问已授权科室的批量消耗单 */
     private void assertDepartmentInUserScope(Long departmentId) {
@@ -570,7 +574,25 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         deptBatchConsumeMapper.insertDeptBatchConsume(reverseBill);
         insertDeptBatchConsumeEntry(reverseBill);
         applyInventoryAndFlow(reverseBill, reverseEntries, operator);
+        syncMirrorConsumeLinksAfterReverse(requestQtyMap, op);
         return reverseBill;
+    }
+
+    /** 低值反消耗后回写 HIS 计费镜像关联行的 returned_qty，释放待核销数量 */
+    private void syncMirrorConsumeLinksAfterReverse(Map<Long, BigDecimal> requestQtyMap, String operator)
+    {
+        if (requestQtyMap == null || requestQtyMap.isEmpty())
+        {
+            return;
+        }
+        for (Map.Entry<Long, BigDecimal> en : requestQtyMap.entrySet())
+        {
+            if (en.getKey() == null || en.getValue() == null || en.getValue().compareTo(BigDecimal.ZERO) <= 0)
+            {
+                continue;
+            }
+            hisMirrorConsumeLinkMapper.increaseReturnedQtyBySrcConsumeEntryId(en.getKey(), en.getValue(), operator);
+        }
     }
 
     private DeptBatchConsumeEntry cloneReverseEntry(DeptBatchConsume srcBill, DeptBatchConsumeEntry srcEntry, BigDecimal reverseQty, BigDecimal canReverseQty) {
