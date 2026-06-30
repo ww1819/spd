@@ -573,10 +573,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
         HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
@@ -598,10 +594,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
         HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
@@ -623,10 +615,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = q.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
         HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
@@ -712,10 +700,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = q.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.buildExportUnifiedQuery(
             q, visitKind, inpatientNo, outpatientNo);

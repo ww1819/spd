@@ -30,6 +30,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     private Long orderingDepartmentId;
     /** 执行科室名称模糊 */
     private String execDeptName;
+    /** 项目名称模糊 */
+    private String itemName;
     /** Y=已处理 N=未处理 */
     private String processed;
     /** 收费项目高低值筛选：1高值 2低值，空=全部 */

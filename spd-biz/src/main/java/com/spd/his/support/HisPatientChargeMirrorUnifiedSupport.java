@@ -171,6 +171,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(q.getDeptName());
         u.setExecDeptNameLike(q.getExecDeptName());
+        u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -201,6 +202,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setClinicNameLike(q.getClinicName());
         u.setExecDeptNameLike(q.getExecDeptName());
+        u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -232,6 +234,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setDeptNameLike(null);
         u.setClinicNameLike(null);
         u.setExecDeptNameLike(q.getExecDeptName());
+        u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -508,6 +511,11 @@ public final class HisPatientChargeMirrorUnifiedSupport
         if (StringUtils.isNotBlank(u.getChargeItemId()))
         {
             u.setChargeItemId(normalizeSearchKeyword(u.getChargeItemId()));
+            u.setChargeItemIdExact(u.getChargeItemId().matches("[A-Za-z0-9]+"));
+        }
+        else
+        {
+            u.setChargeItemIdExact(null);
         }
         if (StringUtils.isNotBlank(u.getVisitNo()))
         {
@@ -520,6 +528,10 @@ public final class HisPatientChargeMirrorUnifiedSupport
         if (StringUtils.isNotBlank(u.getOutpatientNo()))
         {
             u.setOutpatientNo(StringUtils.trim(u.getOutpatientNo()));
+        }
+        if (StringUtils.isNotBlank(u.getItemNameLike()))
+        {
+            u.setItemNameLike(StringUtils.trim(u.getItemNameLike()));
         }
     }
 

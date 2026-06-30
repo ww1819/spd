@@ -2,14 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper">
 
-    <!-- 科室数据权限：优先执行科室；执行科室为空时回退开单科室（住院 dept_code / 门诊 clinic_code） -->
+    <!-- 列表筛选/排序统一用 charge_at（datetime，可走 idx 索引） -->
+    <!-- 科室数据权限：优先执行科室；执行科室为空或未对照时回退开单科室 -->
     <sql id="unifiedDeptScopeHisIdMatch">
         (
             m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
             and trim(dscope.his_id) = trim(m.exec_dept_id)
         )
         or (
-            (m.exec_dept_id is null or trim(m.exec_dept_id) = '')
+            (
+                m.exec_dept_id is null or trim(m.exec_dept_id) = ''
+                or not exists (
+                    select 1 from fd_department dmap
+                    where (dmap.del_flag = 0 or dmap.del_flag is null)
+                      and dmap.tenant_id = #{tenantId}
+                      and trim(dmap.his_id) = trim(m.exec_dept_id)
+                )
+            )
             and (
                 (m.visit_kind = 'INPATIENT' and m.dept_code is not null and trim(m.dept_code) != ''
                     and trim(dscope.his_id) = trim(m.dept_code))
@@ -101,22 +110,29 @@
             and (m.inpatient_no like concat('%', #{visitNo}, '%') or m.outpatient_no like concat('%', #{visitNo}, '%'))
         </if>
         <if test="chargeItemId != null and chargeItemId != ''">
-            and (
-                m.charge_item_id like concat('%', #{chargeItemId}, '%')
-                or m.item_name like concat('%', #{chargeItemId}, '%')
-                or exists (
-                    select 1 from his_charge_item_mirror cim_kw
-                    where cim_kw.tenant_id = m.tenant_id
-                      and trim(cim_kw.charge_item_id) = trim(m.charge_item_id)
-                      and (cim_kw.deleted_flag is null or cim_kw.deleted_flag != 1)
-                      and (
-                          cim_kw.charge_item_id like concat('%', #{chargeItemId}, '%')
-                          or ifnull(cim_kw.item_code, '') like concat('%', #{chargeItemId}, '%')
-                          or cim_kw.item_name like concat('%', #{chargeItemId}, '%')
-                          or ifnull(cim_kw.referred_code, '') like concat('%', #{chargeItemId}, '%')
-                      )
-                )
-            )
+            <choose>
+                <when test="chargeItemIdExact != null and chargeItemIdExact">
+                    and trim(m.charge_item_id) = #{chargeItemId}
+                </when>
+                <otherwise>
+                    and (
+                        m.charge_item_id like concat('%', #{chargeItemId}, '%')
+                        or m.item_name like concat('%', #{chargeItemId}, '%')
+                        or exists (
+                            select 1 from his_charge_item_mirror cim_kw
+                            where cim_kw.tenant_id = m.tenant_id
+                              and trim(cim_kw.charge_item_id) = trim(m.charge_item_id)
+                              and (cim_kw.deleted_flag is null or cim_kw.deleted_flag != 1)
+                              and (
+                                  cim_kw.charge_item_id like concat('%', #{chargeItemId}, '%')
+                                  or ifnull(cim_kw.item_code, '') like concat('%', #{chargeItemId}, '%')
+                                  or cim_kw.item_name like concat('%', #{chargeItemId}, '%')
+                                  or ifnull(cim_kw.referred_code, '') like concat('%', #{chargeItemId}, '%')
+                              )
+                        )
+                    )
+                </otherwise>
+            </choose>
         </if>
         <if test="hisChargeId != null and hisChargeId != ''">
             <choose>
@@ -214,6 +230,9 @@
         </if>
         <if test="execDeptNameLike != null and execDeptNameLike != ''">
             and m.exec_dept_name like concat('%', #{execDeptNameLike}, '%')
+        </if>
+        <if test="itemNameLike != null and itemNameLike != ''">
+            and m.item_name like concat('%', #{itemNameLike}, '%')
         </if>
         <include refid="unifiedDepartmentScopeFilter"/>
     </sql>
