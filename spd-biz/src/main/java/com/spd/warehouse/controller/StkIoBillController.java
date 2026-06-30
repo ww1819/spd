@@ -87,6 +87,17 @@ public class StkIoBillController extends BaseController
     }
 
     /**
+     * 记录入库单打印（更新打印人、打印时间）
+     */
+    @Log(title = "入库单打印", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('inWarehouse:apply:query') || @ss.hasPermi('inWarehouse:apply:audit') || @ss.hasPermi('inWarehouse:apply:list')")
+    @PutMapping("/recordPrint/{id}")
+    public AjaxResult recordPrint(@PathVariable("id") Long id)
+    {
+        return toAjax(stkIoBillService.recordStkIoBillPrint(id));
+    }
+
+    /**
      * 新增入库
      * 返回带 id、billNo 的实体，供前端展示单据号并后续保存走修改逻辑
      */
