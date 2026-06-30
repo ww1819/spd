@@ -5,7 +5,10 @@ package com.spd.department.support;
  */
 public final class DeptBatchConsumeConstants
 {
-    /** 系统自动核销时制单人/审核人显示名称，同时写入 create_by、audit_by。 */
+    /**
+     * 历史数据：早期自动核销写入 create_by/audit_by 的占位文案（新数据改写 sys_user.user_id，如 3105）。
+     * 列表查询仍兼容此值展示为「自动核销」。
+     */
     public static final String AUTO_WRITE_OFF_OPERATOR = "自动核销";
 
     private DeptBatchConsumeConstants()

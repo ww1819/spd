@@ -24,13 +24,13 @@ import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsume;
 import com.spd.department.domain.DeptBatchConsumeEntry;
 import com.spd.department.domain.StkDepInventory;
-import com.spd.department.support.DeptBatchConsumeConstants;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzTraceability;
 import com.spd.gz.domain.GzTraceabilityEntry;
@@ -54,6 +54,7 @@ import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisMirrorConsumeManualService;
+import com.spd.his.support.HisAutoWriteOffOperatorSupport;
 import com.spd.his.support.HisMirrorProcessUserMessages;
 import com.spd.gz.support.GzTraceSourceConstants;
 import com.spd.his.support.HisMirrorValueLevelSupport;
@@ -99,6 +100,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private HisMirrorProcessOutcomeRecorder hisMirrorProcessOutcomeRecorder;
     @Autowired
     private IGzTraceabilityService gzTraceabilityService;
+    @Autowired
+    private ISbTenantSettingService sbTenantSettingService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -172,9 +175,10 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         vo.setMirrorLineSkippedZeroQty(skipped);
         List<HisMirrorConsumeLink> linkBuffer = new ArrayList<>();
         Date linkTime = DateUtils.getNowDate();
-        String createBy = HisMirrorProcessConstants.PARTY_AUTO.equals(processParty)
-            ? DeptBatchConsumeConstants.AUTO_WRITE_OFF_OPERATOR
-            : SecurityUtils.getUserIdStr();
+        String createBy = HisAutoWriteOffOperatorSupport.resolveCreateBy(tenantId, processParty, sbTenantSettingService);
+        Long operatorUserId = HisAutoWriteOffOperatorSupport.isAutoParty(processParty)
+            ? HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService)
+            : SecurityUtils.getUserId();
         for (Map.Entry<String, List<AllocPiece>> en : groups.entrySet())
         {
             List<AllocPiece> gPieces = en.getValue();
@@ -189,7 +193,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             DeptBatchConsume bill = new DeptBatchConsume();
             bill.setDepartmentId(deptId);
             bill.setWarehouseId(warehouseId);
-            bill.setUserId(SecurityUtils.getUserId());
+            bill.setUserId(operatorUserId);
             bill.setConsumeBillDate(DateUtils.getNowDate());
             bill.setRemark("HIS计费镜像低值手动处理 mirrorRowId=" + mirrorRowId);
             bill.setBillSource(BILL_LOW);
@@ -498,11 +502,6 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException("无法解析当前租户");
         }
         return tenantId;
-    }
-
-    private String currentMirrorProcessBy()
-    {
-        return SecurityUtils.getUserIdStr();
     }
 
     private String resolveVisitKind(String raw)
@@ -1256,7 +1255,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         List<String> ids = java.util.Collections.singletonList(mirrorRowId);
         Date procTime = DateUtils.getNowDate();
-        String procBy = currentMirrorProcessBy();
+        String procBy = HisAutoWriteOffOperatorSupport.resolveProcessBy(tenantId, processParty, sbTenantSettingService);
         String situation = HisMirrorProcessConstants.RESULT_SUCCESS;
         String party = HisMirrorProcessConstants.resolveParty(processParty);
         if (KIND_IN.equals(visitKind))

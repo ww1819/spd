@@ -74,6 +74,7 @@ import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.his.support.HisAutoWriteOffOperatorSupport;
 import com.spd.his.support.HisChargeMirrorAmountSupport;
 import com.spd.his.support.HisInternalRequestContext;
 import com.spd.his.support.HisMirrorValueLevelSupport;
@@ -408,6 +409,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             return;
         }
+        long operatorUserId = HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService);
+        HisInternalRequestContext.run(tenantId, operatorUserId, () -> runAutoLvConsumeForFetchBatch(tenantId, fetchBatchId, chargeKind));
+    }
+
+    private void runAutoLvConsumeForFetchBatch(String tenantId, String fetchBatchId, String chargeKind)
+    {
         if ("INPATIENT".equals(chargeKind))
         {
             List<HisInpatientChargeMirror> pending = hisInpatientChargeMirrorMapper.selectPendingByFetchBatch(tenantId, fetchBatchId);
@@ -489,18 +496,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
         }
         Long opUid = operatorUserId;
-        if (opUid == null)
+        if (opUid == null || opUid <= 0L)
         {
-            String raw = sbTenantSettingService.getSettingValue(tenantId,
-                HisBillingTenantConstants.SETTING_INTERNAL_OPERATOR_USER_ID, "0");
-            try
-            {
-                opUid = Long.parseLong(StringUtils.trimToEmpty(raw));
-            }
-            catch (Exception e)
-            {
-                opUid = 0L;
-            }
+            opUid = HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService);
         }
         Long finalOpUid = opUid;
         HisInternalRequestContext.run(tenantId, finalOpUid, () -> {
@@ -521,14 +519,17 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             return;
         }
-        try
-        {
-            hisBillingRefundService.processAutoRefundForFetchBatch(tenantId, fetchBatchId, chargeKind);
-        }
-        catch (Exception e)
-        {
-            log.warn("HIS自动退费批次处理异常 fetchBatchId={} err={}", fetchBatchId, e.toString());
-        }
+        long operatorUserId = HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService);
+        HisInternalRequestContext.run(tenantId, operatorUserId, () -> {
+            try
+            {
+                hisBillingRefundService.processAutoRefundForFetchBatch(tenantId, fetchBatchId, chargeKind);
+            }
+            catch (Exception e)
+            {
+                log.warn("HIS自动退费批次处理异常 fetchBatchId={} err={}", fetchBatchId, e.toString());
+            }
+        });
     }
 
     private static boolean isLowValueMirrorRow(String valueLevel)

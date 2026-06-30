@@ -21,7 +21,7 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsumeReverseReq;
 import com.spd.department.service.IDeptBatchConsumeService;
-import com.spd.department.support.DeptBatchConsumeConstants;
+import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzTraceability;
 import com.spd.gz.domain.GzTraceabilityEntry;
@@ -45,6 +45,7 @@ import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.refund.LvRefundConsumeLinkOrderStrategy;
+import com.spd.his.support.HisAutoWriteOffOperatorSupport;
 
 @Service
 public class HisBillingRefundServiceImpl implements IHisBillingRefundService
@@ -80,6 +81,8 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
     private GzDepInventoryMapper gzDepInventoryMapper;
     @Autowired
     private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
+    @Autowired
+    private ISbTenantSettingService sbTenantSettingService;
 
     /** 避免同类自调用导致 @Transactional 失效 */
     @Lazy
@@ -947,11 +950,8 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
 
     private String resolveRefundOperator(String remark)
     {
-        if (StringUtils.contains(remark, "自动退费"))
-        {
-            return DeptBatchConsumeConstants.AUTO_WRITE_OFF_OPERATOR;
-        }
-        return SecurityUtils.getUserIdStr();
+        return HisAutoWriteOffOperatorSupport.resolveRefundOperator(
+            SecurityUtils.getCustomerId(), remark, sbTenantSettingService);
     }
 
     private static class RefundAllocationPlan
