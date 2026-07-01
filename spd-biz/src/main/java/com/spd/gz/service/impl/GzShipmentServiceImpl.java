@@ -431,7 +431,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
     }
 
     private void updateDepotInventory(GzShipment gzShipment, List<GzShipmentEntry> gzShipmentEntryList){
-        // 出库时减少库存，根据批次号和物料ID匹配库存记录
+        // 出库时减少库存；有院内码时优先按院内码精确扣减，避免同批次多码扣错行
         if (gzShipmentEntryList == null || gzShipmentEntryList.isEmpty()) {
             return;
         }
@@ -447,20 +447,34 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 if (shipmentEntry.getMaterialId() == null) {
                     throw new ServiceException(String.format("出库明细物料ID不能为空，出库单ID：%s", gzShipment.getId()));
                 }
-                
-                // 查询库存记录，按批次号和物料ID匹配
+
+                int remainingQty = qty;
+                String inHospitalCode = shipmentEntry.getInHospitalCode();
+                if (StringUtils.isNotEmpty(inHospitalCode)) {
+                    GzDepotInventory codeRow = gzDepotInventoryMapper.selectByInHospitalCodeAndWarehouse(
+                        inHospitalCode.trim(), gzShipment.getWarehouseId());
+                    if (codeRow == null || codeRow.getQty() == null || codeRow.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new ServiceException(String.format("院内码 %s 在出库仓库无可用备货库存", inHospitalCode.trim()));
+                    }
+                    remainingQty -= deductDepotInventoryRow(codeRow, remainingQty);
+                }
+
+                if (remainingQty <= 0) {
+                    hcBarcodeLifecycleService.onGzShipmentWarehouseOutbound(gzShipment, shipmentEntry);
+                    continue;
+                }
+
+                // 无院内码或院内码行数量不足时，按批次号+物料ID FIFO 扣减
                 GzDepotInventory queryInventory = new GzDepotInventory();
                 queryInventory.setBatchNo(shipmentEntry.getBatchNo());
                 queryInventory.setMaterialId(shipmentEntry.getMaterialId());
                 queryInventory.setWarehouseId(gzShipment.getWarehouseId());
-                
+
                 List<GzDepotInventory> inventoryList = gzDepotInventoryMapper.selectGzDepotInventoryList(queryInventory);
                 if (inventoryList == null) {
                     inventoryList = new ArrayList<>();
                 }
-                
-                // 按数量减少库存，优先减少数量为1的记录
-                int remainingQty = qty;
+
                 for(GzDepotInventory inventory : inventoryList){
                     if(remainingQty <= 0){
                         break;
@@ -469,13 +483,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         continue;
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) == 0 && remainingQty > 0){
-                        // 出库扣减：将数量、金额置零，保留备货行（不做软删，便于追溯与列表外统计）
-                        zeroOutDepotInventoryRow(inventory);
-                        remainingQty--;
+                        remainingQty -= deductDepotInventoryRow(inventory, remainingQty);
                     }
                 }
-                
-                // 如果还有剩余数量，减少其他记录的数量
+
                 for(GzDepotInventory inventory : inventoryList){
                     if(remainingQty <= 0){
                         break;
@@ -484,25 +495,38 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         continue;
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) > 0){
-                        BigDecimal reduceQty = BigDecimal.valueOf(Math.min(remainingQty, inventory.getQty().intValue()));
-                        inventory.setQty(inventory.getQty().subtract(reduceQty));
-                        if(inventory.getQty().compareTo(BigDecimal.ZERO) <= 0){
-                            zeroOutDepotInventoryRow(inventory);
-                        } else {
-                            syncDepotInventoryAmt(inventory);
-                            gzDepotInventoryMapper.updateGzDepotInventory(inventory);
-                        }
-                        remainingQty -= reduceQty.intValue();
+                        remainingQty -= deductDepotInventoryRow(inventory, remainingQty);
                     }
                 }
-                
+
                 if(remainingQty > 0){
-                    throw new ServiceException(String.format("批次号 %s 的库存不足，需要出库 %d，但只有 %d 可用", 
+                    throw new ServiceException(String.format("批次号 %s 的库存不足，需要出库 %d，但只有 %d 可用",
                         shipmentEntry.getBatchNo(), qty, qty - remainingQty));
                 }
                 hcBarcodeLifecycleService.onGzShipmentWarehouseOutbound(gzShipment, shipmentEntry);
             }
         }
+    }
+
+    /** @return 实际扣减数量 */
+    private int deductDepotInventoryRow(GzDepotInventory inventory, int remainingQty) {
+        if (inventory == null || inventory.getQty() == null || remainingQty <= 0) {
+            return 0;
+        }
+        if (inventory.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        int available = inventory.getQty().intValue();
+        int deduct = Math.min(remainingQty, available);
+        BigDecimal newQty = inventory.getQty().subtract(BigDecimal.valueOf(deduct));
+        if (newQty.compareTo(BigDecimal.ZERO) <= 0) {
+            zeroOutDepotInventoryRow(inventory);
+        } else {
+            inventory.setQty(newQty);
+            syncDepotInventoryAmt(inventory);
+            gzDepotInventoryMapper.updateGzDepotInventory(inventory);
+        }
+        return deduct;
     }
 
     /** 备货出库扣减后库存为 0：更新 qty/amt，不软删备货行 */

@@ -39,7 +39,7 @@ public class GzDepotInventoryController extends BaseController
      * 查询高值备货库存明细列表
      * @param filterBySupplier 是否按供应商过滤，为 false 时忽略 supplierId 条件（与前端“按供应商过滤”取消时一致）
      */
-    @PreAuthorize("@ss.hasPermi('gz:depotInventory:list')")
+    @PreAuthorize("@ss.hasPermi('gz:depotInventory:list') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzDepotInventory gzDepotInventory,
             @RequestParam(value = "filterBySupplier", required = false) Boolean filterBySupplier)

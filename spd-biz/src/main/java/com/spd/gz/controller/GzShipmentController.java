@@ -50,7 +50,7 @@ public class GzShipmentController extends BaseController
     /**
      * 查询高值备货出库列表
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:apply:list')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:list') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzShipment gzShipment)
     {
@@ -75,7 +75,7 @@ public class GzShipmentController extends BaseController
     /**
      * 获取高值备货出库详细信息
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

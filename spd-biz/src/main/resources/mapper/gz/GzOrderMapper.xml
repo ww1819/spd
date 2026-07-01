@@ -387,11 +387,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 主单下备货生成的院内码明细（不依赖备货库存 qty，用于打印条码兜底） -->
     <select id="selectInhospitalcodeListByParentId" resultType="com.spd.gz.domain.GzOrderEntryInhospitalcodeList">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select id, parent_id, code, detail_id, material_id, price, qty, batch_no, batch_number,
-               master_barcode, secondary_barcode, end_date, in_hospital_code, warehouse_id, supplier_id,
-               material_name, material_speci, material_model, material_unit_name, factory_id, factory_name,
-               supplier_name, warehouse_name, finance_category_name, register_no, brand_name, hc_barcode_master_id,
-               del_flag, create_date, create_by, create_time, update_by, update_time, tenant_id
+        select id,
+               parent_id as parentId,
+               code,
+               detail_id as detailId,
+               material_id as materialId,
+               price,
+               qty,
+               batch_no as batchNo,
+               batch_number as batchNumber,
+               master_barcode as masterBarcode,
+               secondary_barcode as secondaryBarcode,
+               end_date as endDate,
+               in_hospital_code as inHospitalCode,
+               warehouse_id as warehouseId,
+               supplier_id as supplierId,
+               material_name as materialName,
+               material_speci as materialSpeci,
+               material_model as materialModel,
+               material_unit_name as materialUnitName,
+               factory_id as factoryId,
+               factory_name as factoryName,
+               supplier_name as supplierName,
+               warehouse_name as warehouseName,
+               finance_category_name as financeCategoryName,
+               register_no as registerNo,
+               brand_name as brandName,
+               hc_barcode_master_id as hcBarcodeMasterId,
+               del_flag as delFlag,
+               create_date as createDate,
+               create_by as createBy,
+               create_time as createTime,
+               update_by as updateBy,
+               update_time as updateTime,
+               tenant_id as tenantId
         from gz_order_entry_inhospitalcode_list
         where parent_id = #{parentId}
           and IFNULL(del_flag, 0) = 0

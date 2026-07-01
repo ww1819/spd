@@ -40,7 +40,7 @@ public class GzOrderController extends BaseController
     /**
      * 查询高值备货入库列表
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:apply:list')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:list') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzOrder gzOrder)
     {
@@ -65,7 +65,7 @@ public class GzOrderController extends BaseController
     /**
      * 主单下院内码明细（打印条码：备货库存为 0 或无库存行时仍可取审核生成的院内码）
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping("/{id}/inhospitalcodeList")
     public AjaxResult inhospitalcodeList(@PathVariable("id") Long id)
     {
@@ -76,7 +76,7 @@ public class GzOrderController extends BaseController
     /**
      * 获取高值备货入库详细信息
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:apply:query') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

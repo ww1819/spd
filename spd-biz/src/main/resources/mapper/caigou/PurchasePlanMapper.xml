@@ -155,7 +155,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and date_format(pp.plan_date,'%y%m%d') &lt;= date_format(#{endDate},'%y%m%d')
             </if>
         </where>
-        order by pp.plan_date desc
     </select>
 
     <sql id="selectPurchasePlanEntrySupplierExportColumns">
