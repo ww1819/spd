@@ -82,6 +82,9 @@ public class DepPurchaseApplyAgg extends BaseEntity {
     /** 制单人姓名（列表关联查询，非表字段） */
     private String createrPersonName;
 
+    /** 拆分仓库申购的计划驳回原因摘要（列表关联，非表字段） */
+    private String splitPlanRejectReason;
+
     public String getId() {
         return id;
     }
@@ -280,5 +283,13 @@ public class DepPurchaseApplyAgg extends BaseEntity {
 
     public void setCreaterPersonName(String createrPersonName) {
         this.createrPersonName = createrPersonName;
+    }
+
+    public String getSplitPlanRejectReason() {
+        return splitPlanRejectReason;
+    }
+
+    public void setSplitPlanRejectReason(String splitPlanRejectReason) {
+        this.splitPlanRejectReason = splitPlanRejectReason;
     }
 }

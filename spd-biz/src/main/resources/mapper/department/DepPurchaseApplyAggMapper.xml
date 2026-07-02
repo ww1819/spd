@@ -36,6 +36,7 @@
         <result property="auditDate" column="audit_date"/>
         <result property="auditPersonName" column="audit_person_name"/>
         <result property="createrPersonName" column="creater_person_name"/>
+        <result property="splitPlanRejectReason" column="split_plan_reject_reason"/>
         <result property="remark" column="remark"/>
         <association property="department" javaType="FdDepartment">
             <result property="id" column="d_id"/>
@@ -100,6 +101,13 @@
                     else m.audit_date end as audit_date,
                coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_person_name,
                coalesce(nullif(trim(u.nick_name), ''), u.user_name) as creater_person_name,
+               (select group_concat(distinct trim(dpa_r.reject_reason) order by dpa_r.update_time desc separator '；')
+                from dep_purchase_apply dpa_r
+                where dpa_r.src_agg_apply_id = m.id
+                  and dpa_r.tenant_id = m.tenant_id
+                  and (dpa_r.del_flag = 0 or dpa_r.del_flag is null)
+                  and dpa_r.purchase_plan_ref_status = 3
+                  and ifnull(trim(dpa_r.reject_reason), '') &lt;&gt; '') as split_plan_reject_reason,
                d.id as d_id, d.name as d_name,
                u.user_id as u_user_id,
                u.user_name as u_user_name,
@@ -128,14 +136,23 @@
         <where>
             m.tenant_id = #{scopedTenantId}
             and (m.del_flag = 0 or m.del_flag is null)
-            <if test="purchaseBillNo != null and purchaseBillNo != ''">and m.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
+            <if test="purchaseBillNo != null and purchaseBillNo != ''">and (
+                m.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')
+                or exists (
+                    select 1 from dep_purchase_apply dpa_sn
+                    where dpa_sn.src_agg_apply_id = m.id
+                      and dpa_sn.tenant_id = #{scopedTenantId}
+                      and (dpa_sn.del_flag = 0 or dpa_sn.del_flag is null)
+                      and dpa_sn.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')
+                )
+            )</if>
             <if test="purchaseBillDate != null">and m.purchase_bill_date = #{purchaseBillDate}</if>
             <if test="departmentId != null">and m.department_id = #{departmentId}</if>
             <if test="userId != null">and m.user_id = #{userId}</if>
             <if test="purchaseBillStatus != null">and m.purchase_bill_status = #{purchaseBillStatus}</if>
             <if test="splitStatus != null">and m.split_status = #{splitStatus}</if>
-            <if test="beginDate != null">and m.purchase_bill_date &gt;= #{beginDate}</if>
-            <if test="endDate != null">and m.purchase_bill_date &lt;= #{endDate}</if>
+            <if test="beginDate != null">and date(coalesce(m.create_time, m.purchase_bill_date)) &gt;= #{beginDate}</if>
+            <if test="endDate != null">and date(coalesce(m.create_time, m.purchase_bill_date)) &lt;= #{endDate}</if>
             <if test="warehouseId != null">and exists (
                 select 1 from dep_purchase_apply_agg_entry e2
                 where e2.parent_id = m.id and (e2.del_flag = 0 or e2.del_flag is null)
@@ -157,8 +174,8 @@
           and (e.del_flag = 0 or e.del_flag is null)
         <if test="purchaseBillStatus != null">and m.purchase_bill_status = #{purchaseBillStatus}</if>
         <if test="departmentId != null">and m.department_id = #{departmentId}</if>
-        <if test="beginDate != null">and m.purchase_bill_date &gt;= #{beginDate}</if>
-        <if test="endDate != null">and m.purchase_bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null">and date(coalesce(m.create_time, m.purchase_bill_date)) &gt;= #{beginDate}</if>
+        <if test="endDate != null">and date(coalesce(m.create_time, m.purchase_bill_date)) &lt;= #{endDate}</if>
         <if test="warehouseId != null">and cast(e.warehouse_id as unsigned) = #{warehouseId}</if>
         <if test="params != null and params.scopeDeptUserId != null">
             and m.department_id in (<include refid="depPurchaseAggScopedDeptIdsSubquery"/>)

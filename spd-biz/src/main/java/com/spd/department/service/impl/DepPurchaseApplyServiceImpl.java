@@ -434,29 +434,46 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
 
     /**
      * 驳回科室申购
-     * 
+     * <p>状态 1：科室审核阶段驳回；状态 2：采购计划引用阶段驳回（科室已审核）</p>
+     *
      * @param id 科室申购主键
      * @param rejectReason 驳回原因
      * @return 结果
      */
     @Override
     public int rejectPurchaseApply(String id, String rejectReason) {
+        if (StringUtils.isEmpty(rejectReason) || rejectReason.trim().isEmpty()) {
+            throw new ServiceException("驳回原因不能为空");
+        }
         DepPurchaseApply depPurchaseApply = depPurchaseApplyMapper.selectDepPurchaseApplyById(Long.parseLong(id));
         if (depPurchaseApply == null) {
             throw new ServiceException(String.format("科室申购ID：%s，不存在!", id));
         }
         SecurityUtils.ensureTenantAccess(depPurchaseApply.getTenantId());
-        assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
-        if (depPurchaseApply.getPurchaseBillStatus() == null || depPurchaseApply.getPurchaseBillStatus() != 1) {
-            throw new ServiceException("只有待审核状态(1)的科室申购可驳回，当前状态：" + depPurchaseApply.getPurchaseBillStatus());
+        Integer status = depPurchaseApply.getPurchaseBillStatus();
+        if (status == null) {
+            throw new ServiceException("申购单状态异常，无法驳回");
         }
-        depPurchaseApply.setPurchasePlanRefStatus(3); // 采购计划引用驳回
-        depPurchaseApply.setPlanStatus(2); // 历史字段兼容
-        depPurchaseApply.setRejectReason(rejectReason);
+        depPurchaseApply.setRejectReason(rejectReason.trim());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
         depPurchaseApply.setUpdateTime(new Date());
-        int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
-        return res;
+        if (status == 1) {
+            assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
+            depPurchaseApply.setPurchaseBillStatus(3);
+        } else if (status == 2) {
+            Integer planRef = depPurchaseApply.getPurchasePlanRefStatus();
+            if (planRef != null && planRef == 3) {
+                throw new ServiceException("该申购单已被采购计划驳回");
+            }
+            if (planRef != null && (planRef == 1 || planRef == 2)) {
+                throw new ServiceException("申购单已被采购计划引用，无法驳回");
+            }
+            depPurchaseApply.setPurchasePlanRefStatus(3);
+            depPurchaseApply.setPlanStatus(2);
+        } else {
+            throw new ServiceException("当前状态不可驳回，当前状态：" + status);
+        }
+        return depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
     }
 
     /**

@@ -239,8 +239,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and dpa.tenant_id = #{scopedTenantId}
             <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
             <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
-            <if test="beginDate != null"> and dpa.purchase_bill_date &gt;= #{beginDate}</if>
-            <if test="endDate != null"> and dpa.purchase_bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null"> and date(coalesce(dpa.create_time, dpa.purchase_bill_date)) &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and date(coalesce(dpa.create_time, dpa.purchase_bill_date)) &lt;= #{endDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
             <if test="isGz != null and isGz != ''"> and dpa.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
@@ -572,8 +572,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and dpa.tenant_id = #{scopedTenantId}
             <if test="purchaseBillNo != null  and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
             <if test="purchaseBillDate != null "> and dpa.purchase_bill_date = #{purchaseBillDate}</if>
-            <if test="beginDate != null"> and dpa.purchase_bill_date &gt;= #{beginDate}</if>
-            <if test="endDate != null"> and dpa.purchase_bill_date &lt;= #{endDate}</if>
+        <if test="beginDate != null"> and date(coalesce(dpa.create_time, dpa.purchase_bill_date)) &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and date(coalesce(dpa.create_time, dpa.purchase_bill_date)) &lt;= #{endDate}</if>
             <if test="warehouseId != null "> and dpa.warehouse_id = #{warehouseId}</if>
             <if test="isGz != null and isGz != ''"> and dpa.is_gz = #{isGz}</if>
             <if test="departmentId != null "> and dpa.department_id = #{departmentId}</if>
