@@ -30,7 +30,6 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
 import com.spd.common.utils.spring.SpringUtils;
 import com.spd.system.dto.BatchWorkgroupRequest;
-import com.spd.system.service.ISbUserPermissionService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysUserService;
@@ -74,13 +73,7 @@ public class SysUserServiceImpl implements ISysUserService
     private ISysConfigService configService;
 
     @Autowired
-    private ISbUserPermissionService sbUserPermissionService;
-
-    @Autowired
     private ISysMenuService menuService;
-
-    @Autowired
-    private com.spd.system.service.ISbWorkGroupService sbWorkGroupService;
 
     @Autowired
     private ITenantScopeService tenantScopeService;
@@ -427,15 +420,6 @@ public class SysUserServiceImpl implements ISysUserService
         insertUserWarehouse(user);
         // 新增用户科室关联
         insertUserDepartment(user);
-        // 租户用户：同步写入 sb_user_permission_dept、sb_user_permission_warehouse
-        if (StringUtils.isNotEmpty(user.getCustomerId())) {
-            sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
-            sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
-            // 设备系统工作组写入 sb_work_group_user（非 sys_user_post）
-            if (user.getWorkGroupIds() != null && user.getWorkGroupIds().length > 0) {
-                sbWorkGroupService.setUserWorkGroups(user.getUserId(), user.getCustomerId(), user.getWorkGroupIds());
-            }
-        }
         return rows;
     }
 
@@ -462,7 +446,7 @@ public class SysUserServiceImpl implements ISysUserService
     public int updateUser(SysUser user)
     {
         Long userId = user.getUserId();
-        log.info("更新用户信息 - userId: {}, menuIds: {}", userId, user.getMenuIds() != null ? java.util.Arrays.toString(user.getMenuIds()) : "null");
+        log.debug("更新用户信息 - userId: {}, menuIdsCount: {}", userId, user.getMenuIds() != null ? user.getMenuIds().length : 0);
         // 删除用户与角色关联
         userRoleMapper.deleteUserRoleByUserId(userId);
         // 新增用户与角色管理
@@ -473,14 +457,12 @@ public class SysUserServiceImpl implements ISysUserService
         userWarehouseMapper.deleteUserWarehouseByUserId(userId);
         // 删除用户与科室关联
         userDepartmentMapper.deleteUserDepartmentByUserId(userId);
-        // 删除用户与菜单关联：平台用户全量替换；租户用户仅在本次提交包含耗材数字菜单或清空时清理 sys_user_menu，避免设备端只改 UUID 菜单时误删耗材菜单
         if (StringUtils.isEmpty(user.getCustomerId())) {
             userMenuMapper.deleteUserMenuByUserId(userId, null);
-        } else if (user.getMenuIds() != null
-            && (user.getMenuIds().length == 0 || containsMaterialMenuId(user.getMenuIds()))) {
+        } else if (user.getMenuIds() != null) {
             userMenuMapper.deleteUserMenuByUserId(userId, user.getCustomerId());
         }
-        log.info("已处理用户菜单关联清理 - userId: {}", userId);
+        log.debug("已处理用户菜单关联清理 - userId: {}", userId);
 
         // 新增用户与岗位管理
         insertUserPost(user);
@@ -490,16 +472,6 @@ public class SysUserServiceImpl implements ISysUserService
         insertUserDepartment(user);
         // 新增用户菜单关联
         insertUserMenu(user);
-        // 租户用户：同步写入 sb_user_permission_dept、sb_user_permission_warehouse
-        if (StringUtils.isNotEmpty(user.getCustomerId())) {
-            sbUserPermissionService.saveUserDepts(user.getUserId(), user.getCustomerId(), user.getDepartmentIds());
-            sbUserPermissionService.saveUserWarehouses(user.getUserId(), user.getCustomerId(), user.getWarehouseIds());
-            // 设备系统工作组写入 sb_work_group_user（非 sys_user_post）
-            // 仅当请求体显式携带 workGroupIds 时同步；为 null 表示未传（如耗材端改权限、导入更新昵称等），保留库中已有归属，避免误清空
-            if (user.getWorkGroupIds() != null) {
-                sbWorkGroupService.setUserWorkGroups(user.getUserId(), user.getCustomerId(), user.getWorkGroupIds());
-            }
-        }
         return userMapper.updateUser(user);
     }
 
@@ -706,11 +678,11 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 新增用户菜单信息：平台用户写入 sys_user_menu；租户用户数字 ID 写入 sys_user_menu（耗材），非数字写入 sb_user_permission_menu（设备），互不覆盖。
+     * 新增用户菜单信息：平台用户写入 sys_user_menu；租户用户数字 ID 写入 sys_user_menu。
      */
     public void insertUserMenu(SysUser user) {
         String[] menuIds = user.getMenuIds();
-        log.info("保存用户菜单权限 - userId: {}, menuIds长度: {}", user.getUserId(), menuIds != null ? menuIds.length : 0);
+        log.debug("保存用户菜单权限 - userId: {}, menuIds长度: {}", user.getUserId(), menuIds != null ? menuIds.length : 0);
         if (menuIds == null) {
             return;
         }
@@ -720,15 +692,13 @@ public class SysUserServiceImpl implements ISysUserService
             if (tenantIdForHc == null) {
                 tenantIdForHc = StringUtils.trimToNull(SecurityUtils.getCustomerId());
             }
-            List<String> sbIds = new ArrayList<>();
             List<SysUserMenu> materialRows = new ArrayList<>();
             for (String raw : menuIds) {
                 if (StringUtils.isEmpty(raw)) {
                     continue;
                 }
-                String t = raw.trim();
                 try {
-                    long mid = Long.parseLong(t);
+                    long mid = Long.parseLong(raw.trim());
                     if (mid > 0) {
                         SysUserMenu um = new SysUserMenu();
                         um.setUserId(uid);
@@ -736,14 +706,9 @@ public class SysUserServiceImpl implements ISysUserService
                         um.setTenantId(tenantIdForHc);
                         materialRows.add(um);
                     }
-                } catch (NumberFormatException e) {
-                    sbIds.add(t);
+                } catch (NumberFormatException ignored) {
+                    log.debug("跳过非数字 menuId - userId: {}", uid);
                 }
-            }
-            if (!sbIds.isEmpty()) {
-                sbUserPermissionService.saveUserMenus(uid, user.getCustomerId(), sbIds.toArray(new String[0]));
-            } else if (menuIds.length == 0) {
-                sbUserPermissionService.saveUserMenus(uid, user.getCustomerId(), new String[0]);
             }
             if (!materialRows.isEmpty()) {
                 List<Long> mids = new ArrayList<>();
@@ -769,6 +734,7 @@ public class SysUserServiceImpl implements ISysUserService
                 }
                 if (!toSave.isEmpty()) {
                     userMenuMapper.batchUserMenu(toSave);
+                    log.debug("保存用户菜单权限成功 - userId: {}, 保存数量: {}", user.getUserId(), toSave.size());
                 }
             }
             return;
@@ -793,7 +759,7 @@ public class SysUserServiceImpl implements ISysUserService
             }
             if (!list.isEmpty()) {
                 userMenuMapper.batchUserMenu(list);
-                log.info("保存用户菜单权限成功 - userId: {}, 保存数量: {}", user.getUserId(), list.size());
+                log.debug("保存用户菜单权限成功 - userId: {}, 保存数量: {}", user.getUserId(), list.size());
             }
         } catch (Exception e) {
             log.error("保存用户菜单权限异常 - userId: {}, 错误: {}", user.getUserId(), e.getMessage(), e);
@@ -828,11 +794,11 @@ public class SysUserServiceImpl implements ISysUserService
         user.setMenuIds(menuIdStrs);
         if (StringUtils.isEmpty(user.getCustomerId())) {
             userMenuMapper.deleteUserMenuByUserId(userId, null);
-        } else if (containsMaterialMenuId(menuIdStrs)) {
+        } else {
             userMenuMapper.deleteUserMenuByUserId(userId, user.getCustomerId());
         }
         insertUserMenu(user);
-        log.info("仅更新用户菜单权限 - userId: {}, count: {}", userId, menuIdStrs.length);
+        log.debug("仅更新用户菜单权限 - userId: {}, count: {}", userId, menuIdStrs.length);
     }
 
     @Override
@@ -847,10 +813,7 @@ public class SysUserServiceImpl implements ISysUserService
         userDepartmentMapper.deleteUserDepartmentByUserId(userId);
         user.setDepartmentIds(departmentIds != null ? departmentIds : new Long[0]);
         insertUserDepartment(user);
-        if (StringUtils.isNotEmpty(user.getCustomerId())) {
-            sbUserPermissionService.saveUserDepts(userId, user.getCustomerId(), user.getDepartmentIds());
-        }
-        log.info("仅更新用户科室权限 - userId: {}", userId);
+        log.debug("仅更新用户科室权限 - userId: {}", userId);
     }
 
     @Override
@@ -865,10 +828,7 @@ public class SysUserServiceImpl implements ISysUserService
         userWarehouseMapper.deleteUserWarehouseByUserId(userId);
         user.setWarehouseIds(warehouseIds != null ? warehouseIds : new Long[0]);
         insertUserWarehouse(user);
-        if (StringUtils.isNotEmpty(user.getCustomerId())) {
-            sbUserPermissionService.saveUserWarehouses(userId, user.getCustomerId(), user.getWarehouseIds());
-        }
-        log.info("仅更新用户仓库权限 - userId: {}", userId);
+        log.debug("仅更新用户仓库权限 - userId: {}", userId);
     }
 
     private static String[] toMenuIdStrings(Long[] menuIds) {
@@ -1071,7 +1031,7 @@ public class SysUserServiceImpl implements ISysUserService
     public List<Long> selectMenuListByUserId(Long userId)
     {
         List<Long> menuIds = userMenuMapper.selectMenuListByUserId(userId);
-        log.info("获取用户菜单权限 - userId: {}, menuIds: {}", userId, menuIds);
+        log.debug("获取用户菜单权限 - userId: {}, menuIdsCount: {}", userId, menuIds != null ? menuIds.size() : 0);
         return menuIds != null ? menuIds : new ArrayList<>();
     }
 

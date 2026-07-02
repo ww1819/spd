@@ -42,8 +42,7 @@ import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.web.dto.UserDeptGrantBody;
 import com.spd.web.dto.UserMenuGrantBody;
 import com.spd.web.dto.UserWarehouseGrantBody;
-import com.spd.system.service.ISbUserPermissionService;
-import com.spd.system.service.ISbWorkGroupService;
+import com.spd.foundation.support.TenantScopeHelper;
 import com.spd.system.service.ITenantScopeService;
 import com.spd.system.service.ISysDeptService;
 import com.spd.system.service.ISysPostService;
@@ -84,13 +83,10 @@ public class SysUserController extends BaseController
     private IFdDepartmentService fdDepartmentService;
 
     @Autowired
+    private TenantScopeHelper tenantScopeHelper;
+
+    @Autowired
     private ITenantScopeService tenantScopeService;
-
-    @Autowired
-    private ISbWorkGroupService sbWorkGroupService;
-
-    @Autowired
-    private ISbUserPermissionService sbUserPermissionService;
 
     @Autowired
     private ISysMenuService sysMenuService;
@@ -441,36 +437,17 @@ public class SysUserController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:user:query')")
     @GetMapping(value = { "/", "/{userId}" })
-    public AjaxResult getInfo(@PathVariable(value = "userId", required = false) Long userId,
-        @RequestParam(value = "systemType", required = false) String systemType)
+    public AjaxResult getInfo(@PathVariable(value = "userId", required = false) Long userId)
     {
         userService.checkUserDataScope(userId);
         AjaxResult ajax = AjaxResult.success();
         List<SysRole> roles = roleService.selectRoleAll();
         ajax.put("roles", SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
-        // 全部岗位下拉选项（租户内见本租户岗位）；不是「当前 userId 已关联的岗位」。用户已关联的 post_id 列表见下方 postIds（sys_user_post）
         List<SysPost> postSelectList = postService.selectPostAll();
         ajax.put("posts", postSelectList);
         ajax.put("postOptions", postSelectList);
-        // 科室/仓库：客户名下；非超级管理员仅见本人权限（设备 sb_user_permission_* 与耗材 sys_user_* 并集，见 TenantScopeService）
-        String customerId = SecurityUtils.resolveEffectiveTenantId(null);
-        List<com.spd.foundation.domain.FdDepartment> allDepts = fdDepartmentService.selectdepartmenAll();
-        List<com.spd.foundation.domain.FdWarehouse> allWarehouses = fdWarehouseService.selectwarehouseAll();
-        if (StringUtils.isNotEmpty(customerId)) {
-            Long currentUserId = SecurityUtils.getUserId();
-            if (!tenantScopeService.isTenantSuper(currentUserId, customerId)) {
-                List<Long> allowedDeptIds = tenantScopeService.resolveDepartmentScope(currentUserId, customerId);
-                List<Long> allowedWarehouseIds = tenantScopeService.resolveWarehouseScope(currentUserId, customerId);
-                if (allowedDeptIds != null && !allowedDeptIds.isEmpty() && allDepts != null)
-                    allDepts = allDepts.stream().filter(d -> d.getId() != null && allowedDeptIds.contains(d.getId())).collect(Collectors.toList());
-                else if (allowedDeptIds == null || allowedDeptIds.isEmpty())
-                    allDepts = new ArrayList<>();
-                if (allowedWarehouseIds != null && !allowedWarehouseIds.isEmpty() && allWarehouses != null)
-                    allWarehouses = allWarehouses.stream().filter(w -> w.getId() != null && allowedWarehouseIds.contains(w.getId())).collect(Collectors.toList());
-                else if (allowedWarehouseIds == null || allowedWarehouseIds.isEmpty())
-                    allWarehouses = new ArrayList<>();
-            }
-        }
+        List<com.spd.foundation.domain.FdDepartment> allDepts = tenantScopeHelper.selectScopedDepartments();
+        List<com.spd.foundation.domain.FdWarehouse> allWarehouses = tenantScopeHelper.selectScopedWarehouses();
         ajax.put("warehouses", allWarehouses);
         ajax.put("departments", allDepts);
         if (StringUtils.isNotNull(userId))
@@ -479,42 +456,18 @@ public class SysUserController extends BaseController
             ajax.put(AjaxResult.DATA_TAG, sysUser);
             ajax.put("postIds", postService.selectPostListByUserId(userId));
             ajax.put("roleIds", sysUser.getRoles().stream().map(SysRole::getRoleId).collect(Collectors.toList()));
-            // 租户：耗材端 systemType=hc 读 sys_user_*；设备端读 sb_user_permission_* 与工作组
-            String userCustomerId = sysUser.getCustomerId();
-            if (StringUtils.isNotEmpty(userCustomerId)) {
-                if ("hc".equalsIgnoreCase(systemType)) {
-                    ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
-                    ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
-                    // 与设备端 sb_work_group_user 一致：耗材端查询/改权限时仍需带回真实设备工作组 ID，避免合并进 updateUser 时误传空列表清空归属
-                    List<String> hcWgIds = sbWorkGroupService.selectGroupIdsByUserId(userId, userCustomerId);
-                    ajax.put("workGroupIds", hcWgIds != null ? hcWgIds : new ArrayList<>());
-                    List<Long> midLongs = userService.selectMenuListByUserId(userId);
-                    List<String> menuStr = new ArrayList<>();
-                    if (midLongs != null) {
-                        for (Long m : midLongs) {
-                            if (m != null) {
-                                menuStr.add(m.toString());
-                            }
-                        }
+            ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
+            ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
+            List<Long> midLongs = userService.selectMenuListByUserId(userId);
+            List<String> menuStr = new ArrayList<>();
+            if (midLongs != null) {
+                for (Long m : midLongs) {
+                    if (m != null) {
+                        menuStr.add(m.toString());
                     }
-                    ajax.put("menuIds", menuStr);
-                } else {
-                    List<Long> whIds = sbUserPermissionService.selectWarehouseIdsByUserId(userId, userCustomerId);
-                    List<Long> deptIds = sbUserPermissionService.selectDeptIdsByUserId(userId, userCustomerId);
-                    ajax.put("warehouseIds", whIds != null ? whIds : new ArrayList<>());
-                    ajax.put("departmentIds", deptIds != null ? deptIds : new ArrayList<>());
-                    List<String> wgIds = sbWorkGroupService.selectGroupIdsByUserId(userId, userCustomerId);
-                    ajax.put("workGroupIds", wgIds != null ? wgIds : new ArrayList<>());
-                    List<String> menuIds = sbUserPermissionService.selectMenuIdsByUserId(userId, userCustomerId);
-                    ajax.put("menuIds", menuIds != null ? menuIds : new ArrayList<>());
                 }
-            } else {
-                ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
-                ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
-                List<Long> menuIdLongs = userService.selectMenuListByUserId(userId);
-                List<String> menuIds = menuIdLongs != null ? menuIdLongs.stream().map(Object::toString).collect(Collectors.toList()) : new ArrayList<>();
-                ajax.put("menuIds", menuIds);
             }
+            ajax.put("menuIds", menuStr);
         }
         return ajax;
     }

@@ -58,7 +58,8 @@ public class StkDepInventoryController extends BaseController
         if (tenantScopeService.isTenantSuper(userId, customerId)) {
             return;
         }
-        q.getParams().put("scopeUserId", userId);
+        tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), userId, customerId);
+        tenantScopeService.applyWarehouseScopeQueryParams(q.getParams(), userId, customerId);
     }
 
     /**

@@ -1,9 +1,9 @@
 package com.spd.foundation.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
-import com.spd.common.core.domain.entity.SysUser;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,9 +24,7 @@ import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
-import com.spd.system.service.ITenantScopeService;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
+import com.spd.foundation.support.TenantScopeHelper;
 
 /**
  * 仓库Controller
@@ -42,10 +40,10 @@ public class FdWarehouseController extends BaseController
     private IFdWarehouseService fdWarehouseService;
 
     @Autowired
-    private ITenantScopeService tenantScopeService;
+    private TenantScopeHelper tenantScopeHelper;
 
     /**
-     * 查询仓库列表（租户非 super 组用户按 sb_user_permission_warehouse 过滤）
+     * 查询仓库列表（租户非 super 用户按 sys_user_warehouse 子查询过滤）
      */
     @PreAuthorize("@ss.hasPermi('foundation:warehouse:list')")
     @GetMapping("/list")
@@ -54,14 +52,7 @@ public class FdWarehouseController extends BaseController
         String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId)) {
             fdWarehouse.setTenantId(customerId);
-            if (!tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-                if (allowedIds != null && !allowedIds.isEmpty()) {
-                    fdWarehouse.getParams().put("allowedWarehouseIds", allowedIds);
-                } else {
-                    fdWarehouse.getParams().put("allowedWarehouseIds", new ArrayList<Long>());
-                }
-            }
+            tenantScopeHelper.applyWarehouseListScope(fdWarehouse);
         }
         startPage();
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(fdWarehouse);
@@ -69,29 +60,16 @@ public class FdWarehouseController extends BaseController
     }
 
     /**
-     * 根据用户查询所有仓库列表（租户下：super 组返回客户下全部，否则返回当前用户有权限的仓库）
+     * 根据用户查询所有仓库列表（租户下：super 返回客户下全部，否则返回当前用户有权限的仓库）
      */
     @GetMapping("/listAll/{userId}")
     public List<FdWarehouse> listAll(@PathVariable(value = "userId") Long userId)
     {
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        List<FdWarehouse> list;
-        if (StringUtils.isNotEmpty(customerId)) {
-            list = fdWarehouseService.selectwarehouseAll();
-            if (list != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-                if (allowedIds == null || allowedIds.isEmpty()) list = new ArrayList<>();
-                else list = list.stream().filter(w -> w.getId() != null && allowedIds.contains(w.getId())).collect(Collectors.toList());
-            }
-        } else {
-            if (SysUser.isAdmin(userId)) list = fdWarehouseService.selectwarehouseAll();
-            else list = fdWarehouseService.selectUserWarehouseAll(userId);
-        }
-        return list != null ? list : new ArrayList<>();
+        return tenantScopeHelper.selectScopedWarehouses();
     }
 
     /**
-     * 导出仓库列表（租户非 super 组用户按权限过滤）
+     * 导出仓库列表（租户非 super 用户按权限过滤）
      */
     @PreAuthorize("@ss.hasPermi('foundation:warehouse:export')")
     @Log(title = "仓库", businessType = BusinessType.EXPORT)
@@ -101,14 +79,7 @@ public class FdWarehouseController extends BaseController
         String customerId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotEmpty(customerId)) {
             fdWarehouse.setTenantId(customerId);
-            if (!tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-                if (allowedIds != null && !allowedIds.isEmpty()) {
-                    fdWarehouse.getParams().put("allowedWarehouseIds", allowedIds);
-                } else {
-                    fdWarehouse.getParams().put("allowedWarehouseIds", new ArrayList<Long>());
-                }
-            }
+            tenantScopeHelper.applyWarehouseListScope(fdWarehouse);
         }
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(fdWarehouse);
         ExcelUtil<FdWarehouse> util = new ExcelUtil<FdWarehouse>(FdWarehouse.class);
@@ -164,14 +135,7 @@ public class FdWarehouseController extends BaseController
     @GetMapping("/optionselect")
     public AjaxResult optionselect()
     {
-        List<FdWarehouse> fdWarehouseList = fdWarehouseService.selectwarehouseAll();
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        if (StringUtils.isNotEmpty(customerId) && fdWarehouseList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-            if (allowedIds == null || allowedIds.isEmpty()) fdWarehouseList = new ArrayList<>();
-            else fdWarehouseList = fdWarehouseList.stream().filter(w -> w.getId() != null && allowedIds.contains(w.getId())).collect(Collectors.toList());
-        }
-        return success(fdWarehouseList != null ? fdWarehouseList : new ArrayList<>());
+        return success(tenantScopeHelper.selectScopedWarehouses());
     }
 
     /**

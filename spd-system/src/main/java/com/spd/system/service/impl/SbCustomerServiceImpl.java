@@ -16,25 +16,11 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbCustomer;
-import com.spd.system.domain.SbCustomerMenu;
 import com.spd.system.domain.SbCustomerPeriodLog;
 import com.spd.system.domain.SbCustomerStatusLog;
-import com.spd.system.domain.SbRole;
-import com.spd.system.domain.SbUserRole;
-import com.spd.system.domain.SbUserPermissionMenu;
-import com.spd.system.domain.SbWorkGroup;
-import com.spd.system.domain.SbWorkGroupMenu;
-import com.spd.system.domain.SbWorkGroupUser;
-import com.spd.system.mapper.SbCustomerMenuMapper;
 import com.spd.system.mapper.SbCustomerMapper;
 import com.spd.system.mapper.SbCustomerPeriodLogMapper;
 import com.spd.system.mapper.SbCustomerStatusLogMapper;
-import com.spd.system.mapper.SbMenuMapper;
-import com.spd.system.mapper.SbUserRoleMapper;
-import com.spd.system.mapper.SbWorkGroupMapper;
-import com.spd.system.mapper.SbUserPermissionMenuMapper;
-import com.spd.system.mapper.SbWorkGroupMenuMapper;
-import com.spd.system.mapper.SbWorkGroupUserMapper;
 import com.spd.system.mapper.SysMenuMapper;
 import com.spd.system.mapper.SysPostMapper;
 import com.spd.system.mapper.SysUserPostMapper;
@@ -54,7 +40,6 @@ import com.spd.system.domain.SysUserMenu;
 import com.spd.system.domain.hc.HcUserPermissionMenu;
 import com.spd.system.service.ISbCustomerCategory68Service;
 import com.spd.system.service.ISbCustomerService;
-import com.spd.system.service.ISbRoleService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysUserService;
 
@@ -74,23 +59,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   private SbCustomerPeriodLogMapper sbCustomerPeriodLogMapper;
 
   @Autowired
-  private SbWorkGroupMapper sbWorkGroupMapper;
-  @Autowired
-  private SbWorkGroupUserMapper sbWorkGroupUserMapper;
-  @Autowired
-  private SbWorkGroupMenuMapper sbWorkGroupMenuMapper;
-  @Autowired
-  private SbMenuMapper sbMenuMapper;
-  @Autowired
-  private SbCustomerMenuMapper sbCustomerMenuMapper;
-  @Autowired
-  private SbUserPermissionMenuMapper sbUserPermissionMenuMapper;
-  @Autowired
-  private ISbRoleService sbRoleService;
-  @Autowired
   private ISysUserService sysUserService;
-  @Autowired
-  private SbUserRoleMapper sbUserRoleMapper;
   @Autowired
   private ISysConfigService configService;
   @Autowired
@@ -114,14 +83,11 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   @Autowired
   private ISbCustomerCategory68Service sbCustomerCategory68Service;
 
-  /** 新增客户时默认机构管理员工作组标识（post_code / group_key） */
+  /** 新增客户时默认机构管理员岗位标识 */
   private static final String DEFAULT_GROUP_KEY = "super";
-  /** 新增客户时默认机构管理员工作组展示名（与平台管理员区分） */
   private static final String DEFAULT_SUPER_GROUP_NAME = "机构管理员";
   /** 新增客户时默认管理员账号 */
   private static final String DEFAULT_ADMIN_USERNAME = "super_01";
-  /** 新增客户时默认角色标识（机构管理员） */
-  private static final String DEFAULT_ROLE_KEY = "tenant_admin";
 
   @Override
   public List<SbCustomer> selectSbCustomerList(SbCustomer customer) {
@@ -186,33 +152,9 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   }
 
   /**
-   * 新增客户后自动创建：
-   * 1）设备侧：机构管理员工作组(super)、机构管理员角色、管理员账号(super_01)并加入该组；新租户与 super 组默认包含系统设置下非平台管理功能。
-   * 2）耗材侧：耗材系统工作组「机构管理员」(super)（sys_post 岗位）、super_01 加入该岗位，并为该工作组与 super_01 授予系统设置下非平台管理功能的权限（客户管理、客户菜单功能管理已设为平台管理功能，不授予租户）。
+   * 新增客户后自动创建耗材侧机构管理员：super_01 账号、super 岗位及默认菜单权限。
    */
   private void createDefaultTenantAdmin(String customerId, String customerName, String createBy) {
-    String groupId = UUID7.generateUUID7();
-    String roleId = UUID7.generateUUID7();
-
-    SbRole role = new SbRole();
-    role.setRoleId(roleId);
-    role.setCustomerId(customerId);
-    role.setRoleName("机构管理员");
-    role.setRoleKey(DEFAULT_ROLE_KEY);
-    role.setRoleSort(0);
-    role.setStatus("0");
-    role.setCreateBy(createBy);
-    sbRoleService.insertSbRole(role);
-
-    SbWorkGroup group = new SbWorkGroup();
-    group.setGroupId(groupId);
-    group.setCustomerId(customerId);
-    group.setGroupName(DEFAULT_SUPER_GROUP_NAME);
-    group.setGroupKey(DEFAULT_GROUP_KEY);
-    group.setOrderNum(0);
-    group.setCreateBy(createBy);
-    sbWorkGroupMapper.insertSbWorkGroup(group);
-
     String initPassword = configService.selectConfigByKey("sys.user.initPassword");
     if (StringUtils.isEmpty(initPassword)) {
       initPassword = "admin123";
@@ -228,67 +170,6 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     user.setCreateBy(createBy);
     sysUserService.insertUser(user);
 
-    List<SbUserRole> urList = new ArrayList<>();
-    SbUserRole ur = new SbUserRole();
-    ur.setUserId(user.getUserId());
-    ur.setRoleId(roleId);
-    ur.setCustomerId(customerId);
-    urList.add(ur);
-    sbUserRoleMapper.batchSbUserRole(urList);
-
-    SbWorkGroupUser wgu = new SbWorkGroupUser();
-    wgu.setGroupId(groupId);
-    wgu.setUserId(user.getUserId());
-    wgu.setCustomerId(customerId);
-    wgu.setCreateBy(createBy);
-    sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
-
-    // 新租户与 super 组默认包含「默认对客户开放」的菜单，若无则退化为系统设置下非平台管理功能
-    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsDefaultForCustomer();
-    if (defaultMenuIds == null || defaultMenuIds.isEmpty()) {
-      defaultMenuIds = sbMenuMapper.selectMenuIdsSystemSettingsNonPlatform();
-    }
-    if (defaultMenuIds != null && !defaultMenuIds.isEmpty()) {
-      List<SbCustomerMenu> customerMenus = new ArrayList<>();
-      for (String menuId : defaultMenuIds) {
-        SbCustomerMenu cm = new SbCustomerMenu();
-        cm.setCustomerId(customerId);
-        cm.setMenuId(menuId);
-        cm.setStatus("0");
-        cm.setIsEnabled("1");
-        cm.setCreateBy(createBy);
-        customerMenus.add(cm);
-      }
-      sbCustomerMenuMapper.batchSbCustomerMenu(customerMenus);
-
-      List<SbWorkGroupMenu> groupMenus = new ArrayList<>();
-      java.util.Set<String> menuIdSet = new java.util.LinkedHashSet<>(defaultMenuIds);
-      for (String menuId : menuIdSet) {
-        SbWorkGroupMenu wgm = new SbWorkGroupMenu();
-        wgm.setId(UUID7.generateUUID7());
-        wgm.setGroupId(groupId);
-        wgm.setMenuId(menuId);
-        wgm.setCustomerId(customerId);
-        wgm.setCreateBy(createBy);
-        groupMenus.add(wgm);
-      }
-      sbWorkGroupMenuMapper.batchInsert(groupMenus);
-
-      // super_01 同步写入用户权限表，登录后以用户权限表作为菜单权限数据
-      List<SbUserPermissionMenu> userMenus = new ArrayList<>();
-      for (String menuId : defaultMenuIds) {
-        SbUserPermissionMenu upm = new SbUserPermissionMenu();
-        upm.setId(UUID7.generateUUID7());
-        upm.setUserId(user.getUserId());
-        upm.setCustomerId(customerId);
-        upm.setMenuId(menuId);
-        upm.setCreateBy(createBy);
-        userMenus.add(upm);
-      }
-      sbUserPermissionMenuMapper.batchInsert(userMenus);
-    }
-
-    // 耗材系统工作组：创建默认岗位「机构管理员」(super)，将 super_01 加入该岗位，并授予系统设置下非平台管理功能（is_platform!=1；客户管理、客户菜单功能管理为平台管理不授予）
     SysPost post = new SysPost();
     post.setPostCode(DEFAULT_GROUP_KEY);
     post.setPostName(DEFAULT_SUPER_GROUP_NAME);
@@ -334,7 +215,6 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       }
       hcUserPermissionMenuMapper.batchInsert(hcUserMenus);
 
-      // 耗材客户菜单权限：新增客户时增加系统设置下非平台管理功能的权限
       List<HcCustomerMenu> hcCustomerMenus = new ArrayList<>();
       for (Long menuId : materialMenuIds) {
         if (menuId != null && menuId > 0) {
@@ -654,82 +534,6 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     return hcCustomerPeriodLogMapper.selectByTenantId(tenantId);
   }
 
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public void resetEquipmentFunctions(String customerId) {
-    if (StringUtils.isEmpty(customerId)) {
-      throw new IllegalArgumentException("客户ID不能为空");
-    }
-    SbCustomer customer = sbCustomerMapper.selectSbCustomerById(customerId);
-    if (customer == null) {
-      throw new IllegalArgumentException("客户不存在");
-    }
-    String createBy = SecurityUtils.getUserIdStr();
-
-    List<SbWorkGroup> groups = sbWorkGroupMapper.selectListByCustomerId(customerId);
-    SbWorkGroup superGroup = groups == null ? null : groups.stream().filter(g -> DEFAULT_GROUP_KEY.equals(g.getGroupKey())).findFirst().orElse(null);
-    SysUser super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
-
-    if (superGroup == null && super01 == null) {
-      createDefaultTenantAdmin(customerId, customer.getCustomerName() != null ? customer.getCustomerName() : "客户", createBy);
-      return;
-    }
-    ensureEquipmentSuperAndUser(customerId, customer.getCustomerName(), createBy, superGroup, super01);
-    superGroup = sbWorkGroupMapper.selectListByCustomerId(customerId).stream().filter(g -> DEFAULT_GROUP_KEY.equals(g.getGroupKey())).findFirst().orElse(null);
-    super01 = sysUserService.selectUserByUserNameAndCustomerId(DEFAULT_ADMIN_USERNAME, customerId);
-    if (superGroup == null || super01 == null) {
-      return;
-    }
-
-    // 设备功能重置：仅将「默认对客户开放」的权限开放给客户、super 组、super_01 用户（不再回退到系统设置下非平台管理）
-    List<String> defaultMenuIds = sbMenuMapper.selectMenuIdsDefaultForCustomer();
-    if (defaultMenuIds == null) {
-      defaultMenuIds = new ArrayList<>();
-    }
-
-    sbCustomerMenuMapper.deleteSbCustomerMenuByCustomerId(customerId);
-    List<SbCustomerMenu> customerMenus = new ArrayList<>();
-    for (String menuId : defaultMenuIds) {
-      SbCustomerMenu cm = new SbCustomerMenu();
-      cm.setCustomerId(customerId);
-      cm.setMenuId(menuId);
-      cm.setStatus("0");
-      cm.setIsEnabled("1");
-      cm.setCreateBy(createBy);
-      customerMenus.add(cm);
-    }
-    sbCustomerMenuMapper.batchSbCustomerMenu(customerMenus);
-
-    sbWorkGroupMenuMapper.deleteByGroupId(superGroup.getGroupId(), createBy);
-    List<SbWorkGroupMenu> groupMenus = new ArrayList<>();
-    java.util.Set<String> menuIdSet = new java.util.LinkedHashSet<>(defaultMenuIds);
-    for (String menuId : menuIdSet) {
-      SbWorkGroupMenu wgm = new SbWorkGroupMenu();
-      wgm.setId(UUID7.generateUUID7());
-      wgm.setGroupId(superGroup.getGroupId());
-      wgm.setMenuId(menuId);
-      wgm.setCustomerId(customerId);
-      wgm.setCreateBy(createBy);
-      groupMenus.add(wgm);
-    }
-    sbWorkGroupMenuMapper.batchInsert(groupMenus);
-
-    sbUserPermissionMenuMapper.deleteByUserIdAndCustomerId(super01.getUserId(), customerId, createBy);
-    List<SbUserPermissionMenu> userMenus = new ArrayList<>();
-    for (String menuId : defaultMenuIds) {
-      SbUserPermissionMenu upm = new SbUserPermissionMenu();
-      upm.setId(UUID7.generateUUID7());
-      upm.setUserId(super01.getUserId());
-      upm.setCustomerId(customerId);
-      upm.setMenuId(menuId);
-      upm.setCreateBy(createBy);
-      userMenus.add(upm);
-    }
-    sbUserPermissionMenuMapper.batchInsert(userMenus);
-
-    sbCustomerCategory68Service.syncFromStandard(customerId);
-  }
-
   /**
    * 耗材功能重置：仅下发「客户名下」默认开放的功能菜单（{@link #resolveDefaultMaterialMenuIds}），不含平台独占菜单；
    * 若 super 岗位、super_01 或其关联、tenant_id 缺失，则自动补齐并回填租户字段，保证管理员组用户可见租户内全部仓库与科室（见 {@link com.spd.system.service.ITenantScopeService#isTenantSuper}）。
@@ -824,95 +628,6 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     sysUserMenuMapper.deleteUserMenusNotInHcCustomerMenus(customerId);
 
     syncSysUserMenusForMaterial(super01.getUserId(), materialMenuIds, customerId);
-  }
-
-  /** 设备侧：若 super 组或 super_01 缺失则补齐（不创建菜单） */
-  private void ensureEquipmentSuperAndUser(String customerId, String customerName, String createBy, SbWorkGroup existingGroup, SysUser existingUser) {
-    if (existingUser != null && existingGroup != null) {
-      // 工作组与用户均存在时仍可能缺少 sb_work_group_user（历史数据或误删），否则 isTenantSuper 设备侧恒为 false
-      if (sbWorkGroupUserMapper.countByGroupIdAndUserId(existingGroup.getGroupId(), existingUser.getUserId()) == 0) {
-        SbWorkGroupUser wgu = new SbWorkGroupUser();
-        wgu.setGroupId(existingGroup.getGroupId());
-        wgu.setUserId(existingUser.getUserId());
-        wgu.setCustomerId(customerId);
-        wgu.setCreateBy(createBy);
-        sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
-      }
-      return;
-    }
-    String initPassword = configService.selectConfigByKey("sys.user.initPassword");
-    if (StringUtils.isEmpty(initPassword)) initPassword = "admin123";
-    else initPassword = initPassword.trim();
-
-    if (existingUser == null) {
-      String roleId = UUID7.generateUUID7();
-      String groupId = existingGroup != null ? existingGroup.getGroupId() : UUID7.generateUUID7();
-
-      SbRole role = new SbRole();
-      role.setRoleId(roleId);
-      role.setCustomerId(customerId);
-      role.setRoleName("机构管理员");
-      role.setRoleKey(DEFAULT_ROLE_KEY);
-      role.setRoleSort(0);
-      role.setStatus("0");
-      role.setCreateBy(createBy);
-      sbRoleService.insertSbRole(role);
-
-      if (existingGroup == null) {
-        SbWorkGroup group = new SbWorkGroup();
-        group.setGroupId(groupId);
-        group.setCustomerId(customerId);
-        group.setGroupName(DEFAULT_SUPER_GROUP_NAME);
-        group.setGroupKey(DEFAULT_GROUP_KEY);
-        group.setOrderNum(0);
-        group.setCreateBy(createBy);
-        sbWorkGroupMapper.insertSbWorkGroup(group);
-      }
-
-      SysUser user = new SysUser();
-      user.setCustomerId(customerId);
-      user.setUserName(DEFAULT_ADMIN_USERNAME);
-      user.setNickName("机构管理员");
-      user.setPassword(SecurityUtils.encryptPassword(initPassword));
-      user.setStatus("0");
-      user.setCreateBy(createBy);
-      sysUserService.insertUser(user);
-
-      List<SbUserRole> urList = new ArrayList<>();
-      SbUserRole ur = new SbUserRole();
-      ur.setUserId(user.getUserId());
-      ur.setRoleId(roleId);
-      ur.setCustomerId(customerId);
-      urList.add(ur);
-      sbUserRoleMapper.batchSbUserRole(urList);
-
-      SbWorkGroupUser wgu = new SbWorkGroupUser();
-      wgu.setGroupId(groupId);
-      wgu.setUserId(user.getUserId());
-      wgu.setCustomerId(customerId);
-      wgu.setCreateBy(createBy);
-      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
-      return;
-    }
-
-    if (existingGroup == null) {
-      String groupId = UUID7.generateUUID7();
-      SbWorkGroup group = new SbWorkGroup();
-      group.setGroupId(groupId);
-      group.setCustomerId(customerId);
-      group.setGroupName(DEFAULT_SUPER_GROUP_NAME);
-      group.setGroupKey(DEFAULT_GROUP_KEY);
-      group.setOrderNum(0);
-      group.setCreateBy(createBy);
-      sbWorkGroupMapper.insertSbWorkGroup(group);
-
-      SbWorkGroupUser wgu = new SbWorkGroupUser();
-      wgu.setGroupId(groupId);
-      wgu.setUserId(existingUser.getUserId());
-      wgu.setCustomerId(customerId);
-      wgu.setCreateBy(createBy);
-      sbWorkGroupUserMapper.insertSbWorkGroupUser(wgu);
-    }
   }
 
   /** 耗材侧：若 super 岗位或 super_01 缺失则补齐（不创建菜单） */

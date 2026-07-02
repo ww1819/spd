@@ -4,27 +4,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.warehouse.mapper.StkIoBillMapper">
 
-    <!-- 科室数据范围：与 TenantScopeService 双表并集一致，避免 params.deptIds IN 过长 -->
+    <!-- 科室数据范围：sys_user_department 子查询 -->
     <sql id="stkIoBillDepartmentScopeFilter">
-        <if test="params != null and params.scopeDeptUserId != null">
-            and stk.department_id in (
-                select distinct x.did from (
-                    select cast(upd.dept_id as unsigned) as did
-                    from sb_user_permission_dept upd
-                    where upd.user_id = #{params.scopeDeptUserId}
-                      and ifnull(upd.del_flag, '0') = '0'
-                    <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
-                      and upd.customer_id = #{params.scopeDeptCustomerId}
-                    </if>
-                    union
-                    select ud.department_id as did
-                    from sys_user_department ud
-                    where ud.user_id = #{params.scopeDeptUserId}
-                      and (ud.status = 0 or ud.status = '0' or ud.status is null)
-                ) x
-                where x.did is not null
-            )
-        </if>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+            <property name="deptColumn" value="stk.department_id"/>
+        </include>
     </sql>
 
     <resultMap type="StkIoBill" id="StkIoBillResult">

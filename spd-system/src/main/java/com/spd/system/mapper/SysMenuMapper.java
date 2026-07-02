@@ -154,21 +154,6 @@ public interface SysMenuMapper
         @Param("excludeMenuId") Long excludeMenuId, @Param("menuType") String menuType);
 
   /**
-   * 查询设备前端（sb_menu）全部菜单树
-   *
-   * @return 菜单列表
-   */
-  public List<SysMenu> selectSbMenuTreeAll();
-
-  /**
-   * 根据用户ID查询设备前端（sb_menu）菜单树
-   *
-   * @param userId 用户ID
-   * @return 菜单列表
-   */
-  public List<SysMenu> selectSbMenuTreeByUserId(@Param("userId") Long userId);
-
-  /**
    * 耗材系统：查询「系统设置」下除「客户管理」「客户菜单功能管理」外的菜单ID（用于新租户默认授权 super 组和 super_01）
    *
    * @return 菜单ID列表

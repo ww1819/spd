@@ -82,12 +82,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
         <if test="warehouseType != null and warehouseType != ''"> and COALESCE(warehouse_type, '低值') = #{warehouseType}</if>
         <if test="isSettlementWarehouse != null"> and COALESCE(is_settlement_warehouse, 0) = #{isSettlementWarehouse}</if>
-        <if test="params != null and params.allowedWarehouseIds != null">
-            <choose>
-                <when test="params.allowedWarehouseIds.size() > 0"> and id in <foreach collection="params.allowedWarehouseIds" item="id" open="(" separator="," close=")">#{id}</foreach></when>
-                <otherwise> and 1=0</otherwise>
-            </choose>
-        </if>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.warehouseScopeFilter">
+            <property name="warehouseColumn" value="id"/>
+        </include>
     </select>
 
     <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">

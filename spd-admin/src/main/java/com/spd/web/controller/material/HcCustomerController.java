@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.spd.common.core.controller.BaseController;
+import com.spd.common.annotation.Log;
+import com.spd.common.constant.UserConstants;
+import com.spd.common.enums.BusinessType;
+import com.spd.common.enums.TenantEnum;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
@@ -63,8 +69,8 @@ public class HcCustomerController extends BaseController {
   @Autowired
   private ITenantDataPurgeService tenantDataPurgeService;
 
-  /** 耗材侧客户列表（供客户菜单功能管理下拉等使用，与设备共用 sb_customer） */
-  @PreAuthorize("@ss.hasPermi('hc:system:customerMenuManage:list')")
+  /** 耗材侧客户列表 */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:list') or @ss.hasPermi('hc:system:customerMenuManage:list')")
   @GetMapping("/list")
   public TableDataInfo listCustomers(SbCustomer query) {
     startPage();
@@ -98,9 +104,36 @@ public class HcCustomerController extends BaseController {
     existing.setRemark(body.getRemark());
     existing.setHcStatus(body.getHcStatus());
     existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
-    existing.setPlannedDisableTime(body.getPlannedDisableTime());
+    existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
     existing.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(existing));
+  }
+
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:list')")
+  @GetMapping("/tenantEnumList")
+  public AjaxResult tenantEnumList() {
+    return success(TenantEnum.toVoList());
+  }
+
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:list')")
+  @Log(title = "耗材客户", businessType = BusinessType.INSERT)
+  @PostMapping
+  public AjaxResult add(@Validated @RequestBody SbCustomer customer) {
+    if (StringUtils.isEmpty(customer.getTenantKey())) {
+      return error("请从代码内租户列表选择租户类型（tenantKey）");
+    }
+    if (UserConstants.NOT_UNIQUE == sbCustomerService.checkSbCustomerCodeUnique(customer)) {
+      return error("新增客户'" + customer.getCustomerName() + "'失败，客户编码已存在");
+    }
+    customer.setCreateBy(SecurityUtils.getUserIdStr());
+    return toAjax(sbCustomerService.insertSbCustomer(customer));
+  }
+
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:list')")
+  @Log(title = "耗材客户", businessType = BusinessType.DELETE)
+  @DeleteMapping("/{customerId}")
+  public AjaxResult remove(@PathVariable String customerId) {
+    return toAjax(sbCustomerService.deleteSbCustomerById(customerId));
   }
 
   /** 耗材侧客户启停用（更新 hc_status，写 hc_customer_status_log、hc_customer_period_log） */
@@ -225,16 +258,6 @@ public class HcCustomerController extends BaseController {
     private List<Object> menuIds;
     public List<Object> getMenuIds() { return menuIds; }
     public void setMenuIds(List<Object> menuIds) { this.menuIds = menuIds; }
-  }
-
-  /**
-   * 设备功能重置：若 super 组和 super_01 不存在则创建；将默认对客户开放的权限开放给客户、super 组、super_01 用户。
-   */
-  @PreAuthorize("@ss.hasPermi('hc:system:customerMenuManage:edit')")
-  @PutMapping("/resetEquipment/{customerId}")
-  public AjaxResult resetEquipment(@PathVariable String customerId) {
-    sbCustomerService.resetEquipmentFunctions(customerId);
-    return success();
   }
 
   /**

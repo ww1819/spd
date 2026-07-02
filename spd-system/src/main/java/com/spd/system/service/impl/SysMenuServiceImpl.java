@@ -517,27 +517,6 @@ public class SysMenuServiceImpl implements ISysMenuService
         return StringUtils.isNull(info) ? UserConstants.UNIQUE : UserConstants.NOT_UNIQUE;
     }
 
-    /**
-     * 根据用户ID查询设备前端（sb_menu）菜单树
-     *
-     * @param userId 用户ID
-     * @return 菜单列表
-     */
-    @Override
-    public List<SysMenu> selectSbMenuTreeByUserId(Long userId)
-    {
-        List<SysMenu> menus;
-        if (SecurityUtils.isAdmin(userId))
-        {
-            menus = menuMapper.selectSbMenuTreeAll();
-        }
-        else
-        {
-            menus = menuMapper.selectSbMenuTreeByUserId(userId);
-        }
-        return getChildPerms(menus, 0);
-    }
-
     @Override
     public List<TreeSelect> selectMenuTreeForHcCustomerAssign()
     {

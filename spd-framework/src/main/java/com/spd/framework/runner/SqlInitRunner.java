@@ -135,33 +135,6 @@ public class SqlInitRunner implements ApplicationRunner
             }
         }
 
-        // 设备管理
-        for (String scriptName : SCRIPT_ORDER)
-        {
-            String path = loc + "equipment/" + scriptName;
-            Resource resource = resourceLoader.getResource(path);
-            if (!resource.exists())
-            {
-                log.debug("设备管理SQL 脚本不存在，跳过: {}", path);
-                continue;
-            }
-
-            try
-            {
-                String content = readResource(resource);
-                List<String> statements = parseStatements(content);
-                executeStatements(statements, scriptName, fail);
-                log.info("设备管理SQL 脚本执行完成: {}", scriptName);
-            }
-            catch (Exception e)
-            {
-                log.error("设备管理SQL 脚本执行失败: {}", scriptName, e);
-                if (fail)
-                {
-                    throw e;
-                }
-            }
-        }
     }
 
     private static String normalizeLocation(String location)
