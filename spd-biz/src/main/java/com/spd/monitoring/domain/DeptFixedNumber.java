@@ -78,6 +78,8 @@ public class DeptFixedNumber extends BaseEntity {
     private String isProcure;
     /** 查询参数：是否高值（1=高值 2=非高值） */
     private String isGz;
+    /** 查询参数：库房分类多选（用于列表筛选） */
+    private Long[] storeroomIds;
 
     public String getId() {
         return id;
@@ -261,6 +263,14 @@ public class DeptFixedNumber extends BaseEntity {
 
     public void setIsGz(String isGz) {
         this.isGz = isGz;
+    }
+
+    public Long[] getStoreroomIds() {
+        return storeroomIds;
+    }
+
+    public void setStoreroomIds(Long[] storeroomIds) {
+        this.storeroomIds = storeroomIds;
     }
 
     @Override

@@ -72,6 +72,9 @@ public class GzTraceability extends BaseEntity
     /** 执行科室ID */
     private Long execDeptId;
 
+    /** 核销科室ID（HIS镜像高值扫码实际扣减科室） */
+    private Long writeOffDeptId;
+
     /** 住院日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "住院日期", width = 30, dateFormat = "yyyy-MM-dd")
@@ -285,6 +288,16 @@ public class GzTraceability extends BaseEntity
     public Long getExecDeptId()
     {
         return execDeptId;
+    }
+
+    public void setWriteOffDeptId(Long writeOffDeptId)
+    {
+        this.writeOffDeptId = writeOffDeptId;
+    }
+
+    public Long getWriteOffDeptId()
+    {
+        return writeOffDeptId;
     }
 
     public void setHospitalDate(Date hospitalDate)

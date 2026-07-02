@@ -778,6 +778,9 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     {
         MasterDetailValidateUtil.assertHasMaterialLine(
             stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, "出库");
+        if (stkIoBill.getBillType() == null) {
+            stkIoBill.setBillType(201);
+        }
         stkIoBill.setBillNo(getBillNumber("CK"));
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -785,14 +788,14 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         return rows;
     }
 
-    //str：单号前缀
-    //date：日期
-    //result：最终结果，需要的流水号
+    private static final Object CK_BILL_NO_LOCK = new Object();
+
     public String getBillNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectOutMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (CK_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            Long maxSerial = stkIoBillMapper.selectOutMaxCkSerial(date);
+            return FillRuleUtil.buildBillNo(str, date, maxSerial);
+        }
     }
 
     @Transactional

@@ -136,11 +136,17 @@ public class StkInventory extends BaseEntity
     /** 查询参数：HIS收费项目ID（模糊） */
     private String hisChargeItemId;
 
+    /** 查询参数：供应商编码/名称（模糊） */
+    private String supplierKeyword;
+
     /** 查询参数：排除的明细组合，格式 materialId__warehouseId 逗号分隔 */
     private String excludeMaterialWarehousePairs;
 
     /** 查询参数：库房分类ID（与产品档案 fd_material.storeroom_id 一致） */
     private Long warehouseCategoryId;
+
+    /** 查询参数：财务分类ID多选（fd_material.finance_category_id） */
+    private Long[] financeCategoryIds;
 
     /** 查询参数：业务日期起（yyyy-MM-dd，按 stk.warehouse_date） */
     private String beginDate;
@@ -473,6 +479,14 @@ public class StkInventory extends BaseEntity
         this.hisChargeItemId = hisChargeItemId;
     }
 
+    public String getSupplierKeyword() {
+        return supplierKeyword;
+    }
+
+    public void setSupplierKeyword(String supplierKeyword) {
+        this.supplierKeyword = supplierKeyword;
+    }
+
     public String getExcludeMaterialWarehousePairs() {
         return excludeMaterialWarehousePairs;
     }
@@ -487,6 +501,14 @@ public class StkInventory extends BaseEntity
 
     public void setWarehouseCategoryId(Long warehouseCategoryId) {
         this.warehouseCategoryId = warehouseCategoryId;
+    }
+
+    public Long[] getFinanceCategoryIds() {
+        return financeCategoryIds;
+    }
+
+    public void setFinanceCategoryIds(Long[] financeCategoryIds) {
+        this.financeCategoryIds = financeCategoryIds;
     }
 
     public String getBeginDate() {
@@ -569,6 +591,7 @@ public class StkInventory extends BaseEntity
             .append("materialName", getMaterialName())
             .append("excludeMaterialWarehousePairs", getExcludeMaterialWarehousePairs())
             .append("warehouseCategoryId", getWarehouseCategoryId())
+            .append("financeCategoryIds", getFinanceCategoryIds())
             .append("beginDate", getBeginDate())
             .append("endDate", getEndDate())
             .append("isBilling", getIsBilling())

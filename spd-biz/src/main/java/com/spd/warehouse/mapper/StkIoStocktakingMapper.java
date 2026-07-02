@@ -3,6 +3,7 @@ package com.spd.warehouse.mapper;
 import java.util.List;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
+import com.spd.warehouse.vo.WhStocktakingExportRow;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -39,6 +40,11 @@ public interface StkIoStocktakingMapper
      * @return 盘点集合
      */
     public List<StkIoStocktaking> selectStkIoStocktakingList(StkIoStocktaking stkIoStocktaking);
+
+    /**
+     * 仓库盘点导出：主单 + 明细扁平化
+     */
+    List<WhStocktakingExportRow> selectWhStocktakingExportList(StkIoStocktaking stkIoStocktaking);
 
     /**
      * 新增盘点
@@ -157,7 +163,9 @@ public interface StkIoStocktakingMapper
         @Param("profitQty") java.math.BigDecimal profitQty,
         @Param("stockAmount") java.math.BigDecimal stockAmount,
         @Param("profitAmount") java.math.BigDecimal profitAmount,
-        @Param("countedFlag") Integer countedFlag);
+        @Param("countedFlag") Integer countedFlag,
+        @Param("batchNumber") String batchNumber,
+        @Param("remark") String remark);
 
     /** 同仓库下除 excludeId 外未审核仓库盘点单（stock_type=501）业务单号，按 id 升序 */
     List<String> selectPendingWhStocktakingStockNos(@Param("warehouseId") Long warehouseId,

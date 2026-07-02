@@ -47,6 +47,10 @@ public class GzHighChargeConfirmRowVo
     private String batchNumber;
     private Long departmentId;
     private String departmentName;
+    /** 开单科室名称（HIS 镜像 / SPD 对照） */
+    private String orderingDeptName;
+    /** 执行科室名称（HIS 镜像 / SPD 对照） */
+    private String execDeptName;
     private Long factoryId;
     private String materialSpeci;
     private String materialModel;
@@ -57,6 +61,8 @@ public class GzHighChargeConfirmRowVo
 
     private String patientName;
     private String visitNo;
+    /** HIS 费用明细主键 */
+    private String hisChargeId;
     private String chargeItemId;
     private String itemName;
     /** 计费项目规格（HIS 镜像） */

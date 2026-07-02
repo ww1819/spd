@@ -69,6 +69,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String valueLevel;
 
     private Long departmentId;
+    /** 查询：开单科室（fd_department.id），与 HIS clinic_code 对照 */
+    private Long orderingDepartmentId;
     private String processed;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

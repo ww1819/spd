@@ -37,6 +37,7 @@ import com.spd.his.domain.HisChargeFetchBatch;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.HisPatientChargeMirrorUnified;
+import com.spd.his.domain.dto.HisExecDeptBackfillResultVo;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisIdFingerprint;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
@@ -73,6 +74,7 @@ import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.IHisMirrorConsumeManualService;
 import com.spd.his.service.IHisPatientChargeService;
+import com.spd.his.support.HisAutoWriteOffOperatorSupport;
 import com.spd.his.support.HisChargeMirrorAmountSupport;
 import com.spd.his.support.HisInternalRequestContext;
 import com.spd.his.support.HisMirrorValueLevelSupport;
@@ -93,6 +95,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     /** HIS 区间查询占位符绑定格式（字符串比较，与内置 SQL 一致） */
     private static final DateTimeFormatter HIS_FETCH_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int DEFAULT_FETCH_CHUNK_DAYS = 5;
+    private static final int MAX_FETCH_CHUNK_DAYS = 7;
 
     /** 患者费用明细单次导出最大行数 */
     private static final int MIRROR_EXPORT_MAX_ROWS = 50000;
@@ -160,7 +164,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         int skipped = 0;
         int drift = 0;
 
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int chunkDays = resolveChunkDays(body);
         LocalDateTime cursor = win[0];
         while (cursor.isBefore(win[1]))
         {
@@ -170,7 +174,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 next = win[1];
             }
             List<HisInpatientChargeMirror> chunkRows = queryInpatientChunk(hisDb, cursor, next, tenantId, batchId, createBy, now);
-            int[] c = mergeInpatientChunk(tenantId, chunkRows);
+            int[] c = mergeInpatientChunk(tenantId, chunkRows, createBy);
             inserted += c[0];
             skipped += c[1];
             drift += c[2];
@@ -206,7 +210,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         assertTenantAllowed();
         LocalDateTime[] win = parseWindow(body);
         String tenantId = SecurityUtils.getCustomerId();
-        int chunkDays = Math.max(1, hisSqlServerProperties.getFetch().getChunkDays());
+        int chunkDays = resolveChunkDays(body);
         int queryTimeoutSec = Math.max(1, hisSqlServerProperties.getFetch().getQueryTimeoutSeconds());
         log.info("门诊收费镜像抓取: tenantId={}, window=[{} ~ {}), chunkDays={}, queryTimeoutSec={}",
             tenantId, win[0], win[1], chunkDays, queryTimeoutSec);
@@ -233,7 +237,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 next = win[1];
             }
             List<HisOutpatientChargeMirror> chunkRows = queryOutpatientChunk(hisDb, cursor, next, tenantId, batchId, createBy, now);
-            int[] c = mergeOutpatientChunk(tenantId, chunkRows);
+            int[] c = mergeOutpatientChunk(tenantId, chunkRows, createBy);
             inserted += c[0];
             skipped += c[1];
             drift += c[2];
@@ -260,6 +264,92 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         vo.setDriftCount(drift);
         maybeAutoLvConsumeAfterFetch(tenantId, batchId, "OUTPATIENT");
         maybeAutoRefundAfterFetch(tenantId, batchId, "OUTPATIENT");
+        return vo;
+    }
+
+    @Override
+    public HisExecDeptBackfillResultVo backfillInpatientExecDept(HisPatientChargeFetchBody body)
+    {
+        assertTenantAllowed();
+        LocalDateTime[] win = parseWindow(body);
+        String tenantId = SecurityUtils.getCustomerId();
+        String updateBy = SecurityUtils.getUserIdStr();
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        int chunkDays = resolveChunkDays(body);
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        String batchId = IdUtils.fastUUID();
+        Date now = new Date();
+        LocalDateTime cursor = win[0];
+        while (cursor.isBefore(win[1]))
+        {
+            LocalDateTime next = cursor.plusDays(chunkDays);
+            if (next.isAfter(win[1]))
+            {
+                next = win[1];
+            }
+            List<HisInpatientChargeMirror> chunkRows = queryInpatientChunk(hisDb, cursor, next, tenantId, batchId, updateBy, now);
+            int[] c = backfillInpatientExecDeptChunk(tenantId, chunkRows, updateBy);
+            updated += c[0];
+            skipped += c[1];
+            hisMissingExec += c[2];
+            notFound += c[3];
+            cursor = next;
+        }
+        int unifiedSynced = hisPatientChargeMirrorUnifiedMapper.syncInpatientExecDeptFromMirror(tenantId);
+        HisExecDeptBackfillResultVo vo = new HisExecDeptBackfillResultVo();
+        vo.setUpdatedCount(updated);
+        vo.setSkippedCount(skipped);
+        vo.setHisMissingExecCount(hisMissingExec);
+        vo.setNotFoundCount(notFound);
+        vo.setUnifiedSyncedCount(unifiedSynced);
+        log.info("住院执行科室补全: tenantId={}, window=[{} ~ {}), updated={}, skipped={}, hisMissingExec={}, notFound={}, unifiedSynced={}",
+            tenantId, win[0], win[1], updated, skipped, hisMissingExec, notFound, unifiedSynced);
+        return vo;
+    }
+
+    @Override
+    public HisExecDeptBackfillResultVo backfillOutpatientExecDept(HisPatientChargeFetchBody body)
+    {
+        assertTenantAllowed();
+        LocalDateTime[] win = parseWindow(body);
+        String tenantId = SecurityUtils.getCustomerId();
+        String updateBy = SecurityUtils.getUserIdStr();
+        HisTenantDbHandle hisDb = hisTenantJdbcAccess.obtainHandle(tenantId);
+        int chunkDays = resolveChunkDays(body);
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        String batchId = IdUtils.fastUUID();
+        Date now = new Date();
+        LocalDateTime cursor = win[0];
+        while (cursor.isBefore(win[1]))
+        {
+            LocalDateTime next = cursor.plusDays(chunkDays);
+            if (next.isAfter(win[1]))
+            {
+                next = win[1];
+            }
+            List<HisOutpatientChargeMirror> chunkRows = queryOutpatientChunk(hisDb, cursor, next, tenantId, batchId, updateBy, now);
+            int[] c = backfillOutpatientExecDeptChunk(tenantId, chunkRows, updateBy);
+            updated += c[0];
+            skipped += c[1];
+            hisMissingExec += c[2];
+            notFound += c[3];
+            cursor = next;
+        }
+        int unifiedSynced = hisPatientChargeMirrorUnifiedMapper.syncOutpatientExecDeptFromMirror(tenantId);
+        HisExecDeptBackfillResultVo vo = new HisExecDeptBackfillResultVo();
+        vo.setUpdatedCount(updated);
+        vo.setSkippedCount(skipped);
+        vo.setHisMissingExecCount(hisMissingExec);
+        vo.setNotFoundCount(notFound);
+        vo.setUnifiedSyncedCount(unifiedSynced);
+        log.info("门诊执行科室补全: tenantId={}, window=[{} ~ {}), updated={}, skipped={}, hisMissingExec={}, notFound={}, unifiedSynced={}",
+            tenantId, win[0], win[1], updated, skipped, hisMissingExec, notFound, unifiedSynced);
         return vo;
     }
 
@@ -319,6 +409,12 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             return;
         }
+        long operatorUserId = HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService);
+        HisInternalRequestContext.run(tenantId, operatorUserId, () -> runAutoLvConsumeForFetchBatch(tenantId, fetchBatchId, chargeKind));
+    }
+
+    private void runAutoLvConsumeForFetchBatch(String tenantId, String fetchBatchId, String chargeKind)
+    {
         if ("INPATIENT".equals(chargeKind))
         {
             List<HisInpatientChargeMirror> pending = hisInpatientChargeMirrorMapper.selectPendingByFetchBatch(tenantId, fetchBatchId);
@@ -400,18 +496,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
         }
         Long opUid = operatorUserId;
-        if (opUid == null)
+        if (opUid == null || opUid <= 0L)
         {
-            String raw = sbTenantSettingService.getSettingValue(tenantId,
-                HisBillingTenantConstants.SETTING_INTERNAL_OPERATOR_USER_ID, "0");
-            try
-            {
-                opUid = Long.parseLong(StringUtils.trimToEmpty(raw));
-            }
-            catch (Exception e)
-            {
-                opUid = 0L;
-            }
+            opUid = HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService);
         }
         Long finalOpUid = opUid;
         HisInternalRequestContext.run(tenantId, finalOpUid, () -> {
@@ -432,14 +519,17 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             return;
         }
-        try
-        {
-            hisBillingRefundService.processAutoRefundForFetchBatch(tenantId, fetchBatchId, chargeKind);
-        }
-        catch (Exception e)
-        {
-            log.warn("HIS自动退费批次处理异常 fetchBatchId={} err={}", fetchBatchId, e.toString());
-        }
+        long operatorUserId = HisAutoWriteOffOperatorSupport.resolveOperatorUserId(tenantId, sbTenantSettingService);
+        HisInternalRequestContext.run(tenantId, operatorUserId, () -> {
+            try
+            {
+                hisBillingRefundService.processAutoRefundForFetchBatch(tenantId, fetchBatchId, chargeKind);
+            }
+            catch (Exception e)
+            {
+                log.warn("HIS自动退费批次处理异常 fetchBatchId={} err={}", fetchBatchId, e.toString());
+            }
+        });
     }
 
     private static boolean isLowValueMirrorRow(String valueLevel)
@@ -484,12 +574,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisInpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
@@ -508,12 +595,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisOutpatientChargeMirror> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
@@ -532,12 +616,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = q.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         UnifiedMirrorPageSlice slice = selectUnifiedMirrorPageSlice(uq);
         List<HisPatientChargeDetailRow> out = new ArrayList<>(slice.rows.size());
         for (HisPatientChargeMirrorUnified u : slice.rows)
@@ -556,10 +637,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromInpatientQuery(query);
         HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
@@ -581,10 +658,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             query.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = query.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(query.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromOutpatientQuery(query);
         HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
@@ -606,10 +679,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = q.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
         HisPatientChargeMirrorUnifiedSupport.applyHighChargeListScope(uq);
@@ -632,13 +701,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         String customerId = q.getTenantId();
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(q.getParams(), SecurityUtils.getUserId(), customerId);
-        }
         ensureUnifiedMirrorBackfill(customerId);
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.buildExportUnifiedQuery(
             q, visitKind, inpatientNo, outpatientNo);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
         if (total > MIRROR_EXPORT_MAX_ROWS)
         {
@@ -678,6 +744,28 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         String rowId = StringUtils.trimToEmpty(mirrorRowId);
         assertMirrorRowDepartmentAllowed(tenantId, vk, rowId);
+        return loadMirrorConsumeRecordsMerged(tenantId, vk, rowId);
+    }
+
+    @Override
+    public List<HisMirrorConsumeRecordVo> listHighChargeMirrorConsumeRecords(String visitKind, String mirrorRowId)
+    {
+        assertTenantAllowed();
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isAnyBlank(tenantId, visitKind, mirrorRowId))
+        {
+            return new ArrayList<>();
+        }
+        String vk = normalizeVisitKindForAuth(visitKind);
+        if (!"INPATIENT".equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        return loadMirrorConsumeRecordsMerged(tenantId, vk, StringUtils.trimToEmpty(mirrorRowId));
+    }
+
+    private List<HisMirrorConsumeRecordVo> loadMirrorConsumeRecordsMerged(String tenantId, String vk, String rowId)
+    {
         List<HisMirrorConsumeRecordVo> forward = hisMirrorConsumeLinkMapper.selectConsumeRecordsByMirrorRow(
             tenantId, vk, rowId);
         List<HisMirrorConsumeRecordVo> reverse = hisMirrorConsumeLinkMapper.selectReverseConsumeRecordsByMirrorRow(
@@ -821,11 +909,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public HisMirrorHighScanResultVo scanMirrorHighBarcode(HisMirrorHighScanBody body)
     {
         assertTenantAllowed();
-        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
-        {
-            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
-                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
-        }
+        assertHighConsumeDepartmentRequired(body == null ? null : body.getConsumeDepartmentId());
+        assertDepartmentInUserScope(SecurityUtils.getCustomerId(), body.getConsumeDepartmentId());
         return hisMirrorConsumeManualService.scanHighBarcode(body);
     }
 
@@ -833,12 +918,42 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public HisMirrorHighApplyResultVo applyMirrorHighConsume(HisMirrorHighApplyBody body)
     {
         assertTenantAllowed();
-        if (body != null && StringUtils.isNoneBlank(body.getMirrorRowId(), body.getVisitKind()))
-        {
-            assertMirrorRowDepartmentAllowed(SecurityUtils.getCustomerId(),
-                normalizeVisitKindForAuth(body.getVisitKind()), StringUtils.trimToEmpty(body.getMirrorRowId()));
-        }
+        assertHighConsumeDepartmentRequired(body == null ? null : body.getConsumeDepartmentId());
+        assertDepartmentInUserScope(SecurityUtils.getCustomerId(), body.getConsumeDepartmentId());
         return hisMirrorConsumeManualService.applyHighConsume(body);
+    }
+
+    private void assertHighConsumeDepartmentRequired(Long consumeDepartmentId)
+    {
+        if (consumeDepartmentId == null)
+        {
+            throw new ServiceException("请选择核销科室");
+        }
+    }
+
+    private void assertDepartmentInUserScope(String tenantId, Long departmentId)
+    {
+        if (departmentId == null)
+        {
+            throw new ServiceException("请选择核销科室");
+        }
+        if (StringUtils.isEmpty(tenantId))
+        {
+            throw new ServiceException("无法解析当前租户");
+        }
+        if (tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), tenantId))
+        {
+            return;
+        }
+        List<Long> allowed = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), tenantId);
+        if (allowed == null || allowed.isEmpty())
+        {
+            throw new ServiceException("无科室数据权限");
+        }
+        if (!allowed.contains(departmentId))
+        {
+            throw new ServiceException("核销科室不在您的科室权限范围内");
+        }
     }
 
     private void assertMirrorRowDepartmentAllowed(String tenantId, String visitKind, String mirrorRowId)
@@ -868,21 +983,39 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         if ("INPATIENT".equalsIgnoreCase(visitKind))
         {
             HisInpatientChargeMirror r = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
-            if (r == null || StringUtils.isBlank(r.getExecDeptId()))
+            if (r == null)
             {
                 return null;
             }
-            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getExecDeptId()));
+            String hisDeptId = StringUtils.trimToEmpty(r.getExecDeptId());
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                hisDeptId = StringUtils.trimToEmpty(r.getDeptCode());
+            }
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                return null;
+            }
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, hisDeptId);
             return d != null ? d.getId() : null;
         }
         if ("OUTPATIENT".equalsIgnoreCase(visitKind))
         {
             HisOutpatientChargeMirror r = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, mirrorRowId);
-            if (r == null || StringUtils.isBlank(r.getExecDeptId()))
+            if (r == null)
             {
                 return null;
             }
-            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, StringUtils.trimToEmpty(r.getExecDeptId()));
+            String hisDeptId = StringUtils.trimToEmpty(r.getExecDeptId());
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                hisDeptId = StringUtils.trimToEmpty(r.getClinicCode());
+            }
+            if (StringUtils.isBlank(hisDeptId))
+            {
+                return null;
+            }
+            FdDepartment d = fdDepartmentMapper.selectFdDepartmentByTenantAndHisId(tenantId, hisDeptId);
             return d != null ? d.getId() : null;
         }
         return null;
@@ -914,6 +1047,25 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             throw new ServiceException("当前租户不允许执行 HIS 计费抓取");
         }
+    }
+
+    private int resolveChunkDays(HisPatientChargeFetchBody body)
+    {
+        if (body != null && body.getChunkDays() != null)
+        {
+            int v = body.getChunkDays();
+            if (v < 1 || v > MAX_FETCH_CHUNK_DAYS)
+            {
+                throw new ServiceException("分段间隔天数须为 1～" + MAX_FETCH_CHUNK_DAYS + " 天");
+            }
+            return v;
+        }
+        int cfg = hisSqlServerProperties.getFetch().getChunkDays();
+        if (cfg >= 1 && cfg <= MAX_FETCH_CHUNK_DAYS)
+        {
+            return cfg;
+        }
+        return DEFAULT_FETCH_CHUNK_DAYS;
     }
 
     private LocalDateTime[] parseWindow(HisPatientChargeFetchBody body)
@@ -1082,7 +1234,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return e;
     }
 
-    private int[] mergeInpatientChunk(String tenantId, List<HisInpatientChargeMirror> chunkRows)
+    private int[] mergeInpatientChunk(String tenantId, List<HisInpatientChargeMirror> chunkRows, String updateBy)
     {
         List<HisInpatientChargeMirror> candidates = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -1126,6 +1278,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 skipped++;
             }
+            else if (applyInpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                skipped++;
+            }
             else
             {
                 drift++;
@@ -1135,7 +1291,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return new int[] { toInsert.size(), skipped, drift };
     }
 
-    private int[] mergeOutpatientChunk(String tenantId, List<HisOutpatientChargeMirror> chunkRows)
+    private int[] mergeOutpatientChunk(String tenantId, List<HisOutpatientChargeMirror> chunkRows, String updateBy)
     {
         List<HisOutpatientChargeMirror> candidates = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -1179,6 +1335,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 skipped++;
             }
+            else if (applyOutpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                skipped++;
+            }
             else
             {
                 drift++;
@@ -1186,6 +1346,108 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         insertOutpatientInBatches(toInsert);
         return new int[] { toInsert.size(), skipped, drift };
+    }
+
+    private int[] backfillInpatientExecDeptChunk(String tenantId, List<HisInpatientChargeMirror> chunkRows, String updateBy)
+    {
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        Set<String> seen = new HashSet<>();
+        for (HisInpatientChargeMirror r : chunkRows)
+        {
+            if (r == null || StringUtils.isEmpty(r.getHisInpatientChargeId()) || !seen.add(r.getHisInpatientChargeId()))
+            {
+                continue;
+            }
+            if (StringUtils.isBlank(r.getExecDeptId()))
+            {
+                hisMissingExec++;
+                continue;
+            }
+            if (applyInpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                updated++;
+            }
+            else if (hisInpatientChargeMirrorMapper.selectMirrorIdByHisChargeId(tenantId, r.getHisInpatientChargeId()) == null)
+            {
+                notFound++;
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+        return new int[] { updated, skipped, hisMissingExec, notFound };
+    }
+
+    private int[] backfillOutpatientExecDeptChunk(String tenantId, List<HisOutpatientChargeMirror> chunkRows, String updateBy)
+    {
+        int updated = 0;
+        int skipped = 0;
+        int hisMissingExec = 0;
+        int notFound = 0;
+        Set<String> seen = new HashSet<>();
+        for (HisOutpatientChargeMirror r : chunkRows)
+        {
+            if (r == null || StringUtils.isEmpty(r.getHisOutpatientChargeId()) || !seen.add(r.getHisOutpatientChargeId()))
+            {
+                continue;
+            }
+            if (StringUtils.isBlank(r.getExecDeptId()))
+            {
+                hisMissingExec++;
+                continue;
+            }
+            if (applyOutpatientExecDeptBackfill(tenantId, r, updateBy))
+            {
+                updated++;
+            }
+            else if (hisOutpatientChargeMirrorMapper.selectMirrorIdByHisChargeId(tenantId, r.getHisOutpatientChargeId()) == null)
+            {
+                notFound++;
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+        return new int[] { updated, skipped, hisMissingExec, notFound };
+    }
+
+    private boolean applyInpatientExecDeptBackfill(String tenantId, HisInpatientChargeMirror r, String updateBy)
+    {
+        if (r == null || StringUtils.isBlank(r.getExecDeptId()) || StringUtils.isBlank(r.getHisInpatientChargeId()))
+        {
+            return false;
+        }
+        int n = hisInpatientChargeMirrorMapper.updateExecDeptIfMissing(
+            tenantId, r.getHisInpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint(), updateBy);
+        if (n <= 0)
+        {
+            return false;
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateInpatientExecDeptIfMissing(
+            tenantId, r.getHisInpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint());
+        return true;
+    }
+
+    private boolean applyOutpatientExecDeptBackfill(String tenantId, HisOutpatientChargeMirror r, String updateBy)
+    {
+        if (r == null || StringUtils.isBlank(r.getExecDeptId()) || StringUtils.isBlank(r.getHisOutpatientChargeId()))
+        {
+            return false;
+        }
+        int n = hisOutpatientChargeMirrorMapper.updateExecDeptIfMissing(
+            tenantId, r.getHisOutpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint(), updateBy);
+        if (n <= 0)
+        {
+            return false;
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateOutpatientExecDeptIfMissing(
+            tenantId, r.getHisOutpatientChargeId(), r.getExecDeptId(), r.getExecDeptName(), r.getRowFingerprint());
+        return true;
     }
 
     private Map<String, String> loadInpatientFingerprints(String tenantId, List<String> ids)
@@ -1375,14 +1637,13 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
     }
 
-    /** 入库前从收费项镜像补齐 value_level（默认低值 2） */
+    /** 入库前补齐 value_level（以耗材档案 is_gz 为准） */
     private void enrichUnifiedValueLevel(String tenantId, List<HisPatientChargeMirrorUnified> list)
     {
         if (list == null || list.isEmpty() || StringUtils.isEmpty(tenantId))
         {
             return;
         }
-        Set<String> needLookup = new HashSet<>();
         for (HisPatientChargeMirrorUnified m : list)
         {
             if (m == null)
@@ -1390,46 +1651,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 continue;
             }
             m.setChargeItemId(HisPatientChargeMirrorUnifiedSupport.normalizeChargeItemId(m.getChargeItemId()));
-            if (StringUtils.isBlank(m.getValueLevel()) && StringUtils.isNotBlank(m.getChargeItemId()))
-            {
-                needLookup.add(m.getChargeItemId());
-            }
-        }
-        Map<String, String> levelByItemId = new HashMap<>();
-        if (!needLookup.isEmpty())
-        {
-            List<String> ids = new ArrayList<>(needLookup);
-            for (int i = 0; i < ids.size(); i += HIS_ID_QUERY_BATCH)
-            {
-                int end = Math.min(i + HIS_ID_QUERY_BATCH, ids.size());
-                List<HisChargeItemMirror> mirrors = hisChargeItemMirrorMapper.selectValueLevelsByChargeItemIds(
-                    tenantId, ids.subList(i, end));
-                if (mirrors == null)
-                {
-                    continue;
-                }
-                for (HisChargeItemMirror cim : mirrors)
-                {
-                    if (cim != null && StringUtils.isNotBlank(cim.getChargeItemId()))
-                    {
-                        levelByItemId.put(cim.getChargeItemId(), StringUtils.trimToEmpty(cim.getValueLevel()));
-                    }
-                }
-            }
-        }
-        for (HisPatientChargeMirrorUnified m : list)
-        {
-            if (m == null)
-            {
-                continue;
-            }
-            if (StringUtils.isNotBlank(m.getValueLevel()))
-            {
-                m.setValueLevel(StringUtils.trim(m.getValueLevel()));
-                continue;
-            }
-            String fromMirror = levelByItemId.get(m.getChargeItemId());
-            m.setValueLevel(StringUtils.isNotBlank(fromMirror) ? fromMirror : "2");
+            m.setValueLevel(HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, m.getChargeItemId()));
         }
     }
 

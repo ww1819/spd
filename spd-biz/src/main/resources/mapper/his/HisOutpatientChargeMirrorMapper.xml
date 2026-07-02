@@ -77,6 +77,19 @@
         <foreach collection="hisIds" item="hid" open="(" separator="," close=")">#{hid}</foreach>
     </select>
 
+    <update id="updateExecDeptIfMissing">
+        update his_outpatient_charge_mirror
+        set exec_dept_id = #{execDeptId},
+            exec_dept_name = #{execDeptName},
+            row_fingerprint = #{rowFingerprint},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and his_outpatient_charge_id = #{hisChargeId}
+          and (exec_dept_id is null or trim(exec_dept_id) = '')
+          and #{execDeptId} is not null and trim(#{execDeptId}) != ''
+    </update>
+
     <select id="selectSummary" resultType="com.spd.his.domain.dto.HisPatientChargeSummaryRow">
         select 'OUTPATIENT' as visitType, patient_name as patientName, outpatient_no as visitNo,
                ifnull(clinic_name,'') as deptName, count(*) as lineCount, ifnull(sum(total_amount),0) as sumAmount

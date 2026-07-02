@@ -54,6 +54,7 @@
         <result property="isGz" column="isGz"/>
         <result property="isUse" column="materialIsUse"/>
         <result property="isBilling" column="isBilling"/>
+        <result property="brand" column="brand"/>
     </resultMap>
 
     <sql id="selectWhFixedNumberVo">
@@ -94,6 +95,7 @@
             m.is_gz as isGz,
             m.is_use as materialIsUse,
             m.is_billing as isBilling,
+            m.brand as brand,
             s.name as supplierName,
             fac.factory_name as factoryName,
             wc.warehouse_category_name as warehouseCategoryName,
@@ -147,7 +149,11 @@
         <if test="factoryId != null">
             and m.factory_id = #{factoryId}
         </if>
-        <if test="storeroomId != null">
+        <if test="storeroomIds != null and storeroomIds.length > 0">
+            and m.storeroom_id in
+            <foreach collection="storeroomIds" item="sid" open="(" separator="," close=")">#{sid}</foreach>
+        </if>
+        <if test="(storeroomIds == null or storeroomIds.length == 0) and storeroomId != null">
             and m.storeroom_id = #{storeroomId}
         </if>
         <if test="isGz != null and isGz != ''">

@@ -45,6 +45,11 @@ public interface FdMaterialMapper
     FdMaterial selectFdMaterialByTenantAndHisChargeItemId(@Param("tenantId") String tenantId, @Param("hisChargeItemId") String hisChargeItemId);
 
     /**
+     * 该收费项目下是否存在 is_gz=1 的耗材（多条对照时任一条为高值即视为高值）
+     */
+    int countHighValueMaterialByChargeItemId(@Param("tenantId") String tenantId, @Param("hisChargeItemId") String hisChargeItemId);
+
+    /**
      * 按租户 + 耗材编码查一条（未删除）
      */
     FdMaterial selectFdMaterialByTenantAndCode(@Param("tenantId") String tenantId, @Param("code") String code);

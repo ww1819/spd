@@ -120,6 +120,11 @@ public class StkIoStocktaking extends BaseEntity
     /** 审核人昵称（列表/详情联查 sys_user，不落库） */
     private String auditUserNickName;
 
+    /**
+     * 查询参数：盈亏单「引入盘点单」场景（1=已审核、存在盈亏明细、未生成盈亏单、非审核直改库存）
+     */
+    private Integer forProfitLossPick;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -318,6 +323,14 @@ public class StkIoStocktaking extends BaseEntity
 
     public void setAuditUserNickName(String auditUserNickName) {
         this.auditUserNickName = auditUserNickName;
+    }
+
+    public Integer getForProfitLossPick() {
+        return forProfitLossPick;
+    }
+
+    public void setForProfitLossPick(Integer forProfitLossPick) {
+        this.forProfitLossPick = forProfitLossPick;
     }
 
     public String getTenantId() { return tenantId; }

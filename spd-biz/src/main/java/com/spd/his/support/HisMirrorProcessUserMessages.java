@@ -121,6 +121,21 @@ public final class HisMirrorProcessUserMessages
         return "本次消耗数量超过剩余计费数量";
     }
 
+    /** 高值须一次性核销全部待核销数量，不支持部分核销 */
+    public static String highConsumeQtyMustMatchRemaining(java.math.BigDecimal remaining)
+    {
+        if (remaining == null)
+        {
+            return "高值核销须一次性消耗全部待核销计费数量，不支持部分核销";
+        }
+        return String.format("高值核销须一次性消耗全部待核销计费数量（%s），不支持部分核销", remaining.stripTrailingZeros().toPlainString());
+    }
+
+    public static String legacyPartialHighConsume()
+    {
+        return "存在历史部分核销数据，请联系管理员处理后再核销";
+    }
+
     public static String legacyBatchLow()
     {
         return "该记录已按历史方式处理过，无法低值核销";

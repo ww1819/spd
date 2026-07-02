@@ -310,6 +310,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and m.tenant_id = #{tenantId}
         limit 1
     </select>
+    <select id="countHighValueMaterialByChargeItemId" resultType="int">
+        select count(1) from fd_material m
+        where trim(m.his_charge_item_id) = trim(#{hisChargeItemId})
+          and (m.del_flag = 0 or m.del_flag is null)
+          and m.tenant_id = #{tenantId}
+          and trim(m.is_gz) = '1'
+    </select>
 
     <select id="selectFdMaterialByTenantAndCode" resultMap="FdMaterialResult">
         <include refid="selectFdMaterialVo"/>

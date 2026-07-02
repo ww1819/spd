@@ -53,6 +53,17 @@ public class StkTkInventoryController extends BaseController {
     }
 
     /**
+     * 记录退库单打印（更新打印人、打印时间）
+     */
+    @Log(title = "退库单打印", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('outWarehouse:refundDepotApply:query') || @ss.hasPermi('outWarehouse:refundDepotApply:audit') || @ss.hasPermi('outWarehouse:refundDepotApply:list')")
+    @PutMapping("/recordPrint/{id}")
+    public AjaxResult recordPrint(@PathVariable("id") Long id)
+    {
+        return toAjax(stkIoBillService.recordStkIoBillPrint(id));
+    }
+
+    /**
      * 新增退库
      */
     @Log(title = "退库", businessType = BusinessType.INSERT)

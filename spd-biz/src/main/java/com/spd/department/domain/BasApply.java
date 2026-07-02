@@ -67,6 +67,14 @@ public class BasApply extends BaseEntity
     /** 单据类型 (1-申领单, 2-申购单, 3-转科申请单) */
     private Integer billType;
 
+    /** 查询：制单日期起（仅查询用，非表字段；列表制单日期为 create_time） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date beginDate;
+
+    /** 查询：制单日期止（仅查询用，非表字段） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date endDate;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -331,5 +339,21 @@ public class BasApply extends BaseEntity
 
     public void setBillType(Integer billType) {
         this.billType = billType;
+    }
+
+    public Date getBeginDate() {
+        return beginDate;
+    }
+
+    public void setBeginDate(Date beginDate) {
+        this.beginDate = beginDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 }

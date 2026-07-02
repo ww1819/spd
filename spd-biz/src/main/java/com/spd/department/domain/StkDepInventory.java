@@ -37,6 +37,9 @@ public class StkDepInventory extends BaseEntity
     /** 查询参数：产品档案启停用（fd_material.is_use：1启用，2停用） */
     private String materialIsUse;
 
+    /** 查询参数：财务分类ID多选（fd_material.finance_category_id） */
+    private Long[] financeCategoryIds;
+
     /** 产品名称（表 material_name，快照） */
     private String snapMaterialName;
     /** 规格（表 material_speci） */
@@ -216,6 +219,14 @@ public class StkDepInventory extends BaseEntity
 
     public void setMaterialIsUse(String materialIsUse) {
         this.materialIsUse = materialIsUse;
+    }
+
+    public Long[] getFinanceCategoryIds() {
+        return financeCategoryIds;
+    }
+
+    public void setFinanceCategoryIds(Long[] financeCategoryIds) {
+        this.financeCategoryIds = financeCategoryIds;
     }
 
     public String getSnapMaterialName() {

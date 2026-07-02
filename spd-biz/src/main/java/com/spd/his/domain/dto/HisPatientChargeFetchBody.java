@@ -13,4 +13,7 @@ public class HisPatientChargeFetchBody
     private String beginDate;
     /** 结束时间：yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss */
     private String endDate;
+
+    /** 分段间隔天数（自然日，默认 5，最大 7；单次请求内按此间隔查询 HIS） */
+    private Integer chunkDays;
 }

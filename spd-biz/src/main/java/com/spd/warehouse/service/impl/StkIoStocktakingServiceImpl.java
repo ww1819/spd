@@ -53,6 +53,7 @@ import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoStocktakingService;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.utils.StocktakingConcurrencyUtil;
+import com.spd.warehouse.vo.WhStocktakingExportRow;
 
 /**
  * 盘点Service业务层处理
@@ -119,6 +120,15 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
         }
         return stkIoStocktakingMapper.selectStkIoStocktakingList(stkIoStocktaking);
+    }
+
+    @Override
+    public List<WhStocktakingExportRow> selectWhStocktakingExportList(StkIoStocktaking stkIoStocktaking)
+    {
+        if (stkIoStocktaking != null && StringUtils.isEmpty(stkIoStocktaking.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoStocktaking.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkIoStocktakingMapper.selectWhStocktakingExportList(stkIoStocktaking);
     }
 
     /**
@@ -192,13 +202,14 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         List<Long> keepIds = new ArrayList<>();
         String opUser = SecurityUtils.getUserIdStr();
         if (StringUtils.isNotNull(entryList)) {
+            Map<Long, StkInventory> invCache = buildInventoryCacheForEntries(entryList);
             for (StkIoStocktakingEntry entry : entryList) {
                 entry.setParenId(parenId);
                 if (StringUtils.isEmpty(entry.getBatchNo())) {
                     entry.setBatchNo(getBatchNumber());
                 }
                 boolean isNew = entry.getId() == null;
-                prepareStocktakingEntry(stkIoStocktaking, entry, isNew);
+                prepareStocktakingEntry(stkIoStocktaking, entry, isNew, invCache);
                 if (entry.getId() != null) {
                     stkIoStocktakingMapper.updateStkIoStocktakingEntry(entry);
                     keepIds.add(entry.getId());
@@ -221,7 +232,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         }
         Long billId = save.getId();
         lockAndAssertWhStocktakingVersion(billId, save.getExpectedUpdateTime());
-        StkIoStocktaking head = stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
+        StkIoStocktaking head = selectStkIoStocktakingById(billId);
         ensureWhStocktakingEditable(head);
         SecurityUtils.ensureTenantAccess(head.getTenantId());
 
@@ -246,6 +257,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (patches != null && !patches.isEmpty())
         {
             String opUser = SecurityUtils.getUserIdStr();
+            Map<Long, BigDecimal> liveQtyMap = buildLiveWhInventoryQtyMapForPatches(patches, oldEntryMap);
             for (StocktakingEntryQtyPatchDto patch : patches)
             {
                 if (patch == null || patch.getId() == null)
@@ -257,10 +269,10 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 {
                     throw new ServiceException("存在无法识别的历史明细，禁止保存。");
                 }
-                applyWhEntryQtyPatch(head, old, patch, opUser);
+                applyWhEntryQtyPatch(head, old, patch, opUser, liveQtyMap);
             }
         }
-        return stkIoStocktakingMapper.selectStkIoStocktakingById(billId);
+        return selectStkIoStocktakingById(billId);
     }
 
     private Map<Long, StkIoStocktakingEntry> buildWhEntryMap(StkIoStocktaking bill)
@@ -312,7 +324,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     }
 
     private void applyWhEntryQtyPatch(StkIoStocktaking bill, StkIoStocktakingEntry old,
-        StocktakingEntryQtyPatchDto patch, String opUser)
+        StocktakingEntryQtyPatchDto patch, String opUser, Map<Long, BigDecimal> liveQtyMap)
     {
         BigDecimal stockQty = patch.getStockQty();
         if (stockQty == null)
@@ -322,7 +334,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         BigDecimal bookQty = old.getQty() == null ? BigDecimal.ZERO : old.getQty();
         if (patch.getBookQty() != null)
         {
-            BigDecimal live = queryCurrentWhInventoryQty(old);
+            BigDecimal live = resolveLiveWhInventoryQty(old, liveQtyMap);
             if (patch.getBookQty().compareTo(live) != 0)
             {
                 throw new ServiceException(String.format(
@@ -351,7 +363,8 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
 
         int n = stkIoStocktakingMapper.updateStocktakingEntryQtyPatch(old.getId(), STOCK_TYPE_WH_STOCKTAKING, opUser,
             bookQty, stockQty, calc.getAmt(), calc.getProfitLossFlag(), calc.getProfitQty(),
-            calc.getStockAmount(), calc.getProfitAmount(), countedFlag);
+            calc.getStockAmount(), calc.getProfitAmount(), countedFlag,
+            patch.getBatchNumber(), patch.getRemark());
         if (n == 0)
         {
             throw new ServiceException("明细保存失败（可能已审核或无权访问）。");
@@ -573,11 +586,129 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     }
 
     private BigDecimal queryCurrentWhInventoryQty(StkIoStocktakingEntry entry) {
+        return resolveLiveWhInventoryQty(entry, null);
+    }
+
+    private BigDecimal resolveLiveWhInventoryQty(StkIoStocktakingEntry entry, Map<Long, BigDecimal> liveQtyMap) {
         if (entry == null || entry.getKcNo() == null) {
             return BigDecimal.ZERO;
         }
-        StkInventory inv = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
+        if (liveQtyMap != null && liveQtyMap.containsKey(entry.getKcNo())) {
+            BigDecimal cached = liveQtyMap.get(entry.getKcNo());
+            return cached != null ? cached : BigDecimal.ZERO;
+        }
+        StkInventory inv = stkInventoryMapper.selectStkInventoryRowById(entry.getKcNo());
         return inv == null || inv.getQty() == null ? BigDecimal.ZERO : inv.getQty();
+    }
+
+    private Map<Long, BigDecimal> buildLiveWhInventoryQtyMapForPatches(
+        List<StocktakingEntryQtyPatchDto> patches, Map<Long, StkIoStocktakingEntry> oldEntryMap)
+    {
+        if (patches == null || patches.isEmpty() || oldEntryMap == null || oldEntryMap.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        Set<Long> kcIds = new HashSet<>();
+        for (StocktakingEntryQtyPatchDto patch : patches)
+        {
+            if (patch == null || patch.getBookQty() == null || patch.getId() == null)
+            {
+                continue;
+            }
+            StkIoStocktakingEntry old = oldEntryMap.get(patch.getId());
+            if (old != null && old.getKcNo() != null)
+            {
+                kcIds.add(old.getKcNo());
+            }
+        }
+        return buildLiveWhInventoryQtyMap(kcIds);
+    }
+
+    private Map<Long, BigDecimal> buildLiveWhInventoryQtyMap(Set<Long> kcIds)
+    {
+        if (kcIds == null || kcIds.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        List<StkInventory> rows = stkInventoryMapper.selectStkInventoryRowsByIds(new ArrayList<>(kcIds));
+        Map<Long, BigDecimal> map = new HashMap<>();
+        if (rows != null)
+        {
+            for (StkInventory inv : rows)
+            {
+                if (inv != null && inv.getId() != null)
+                {
+                    map.put(inv.getId(), inv.getQty() == null ? BigDecimal.ZERO : inv.getQty());
+                }
+            }
+        }
+        return map;
+    }
+
+    private Map<Long, StkInventory> buildInventoryCacheForEntries(List<StkIoStocktakingEntry> entries)
+    {
+        if (entries == null || entries.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        Set<Long> ids = new HashSet<>();
+        for (StkIoStocktakingEntry entry : entries)
+        {
+            if (entry != null && entry.getKcNo() != null)
+            {
+                ids.add(entry.getKcNo());
+            }
+        }
+        if (ids.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        List<StkInventory> rows = stkInventoryMapper.selectStkInventoryRowsByIds(new ArrayList<>(ids));
+        Map<Long, StkInventory> map = new HashMap<>();
+        if (rows != null)
+        {
+            for (StkInventory inv : rows)
+            {
+                if (inv != null && inv.getId() != null)
+                {
+                    map.put(inv.getId(), inv);
+                }
+            }
+        }
+        return map;
+    }
+
+    private Map<Long, FdMaterial> buildMaterialMapForStocktakingEntries(List<StkIoStocktakingEntry> entries)
+    {
+        if (entries == null || entries.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        Set<Long> materialIds = new HashSet<>();
+        for (StkIoStocktakingEntry entry : entries)
+        {
+            if (entry != null && entry.getMaterialId() != null)
+            {
+                materialIds.add(entry.getMaterialId());
+            }
+        }
+        if (materialIds.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        List<FdMaterial> materials = fdMaterialMapper.selectFdMaterialByIds(new ArrayList<>(materialIds));
+        Map<Long, FdMaterial> map = new HashMap<>();
+        if (materials != null)
+        {
+            for (FdMaterial m : materials)
+            {
+                if (m != null && m.getId() != null)
+                {
+                    map.put(m.getId(), m);
+                }
+            }
+        }
+        return map;
     }
 
     /**
@@ -632,6 +763,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         Long id = stkIoStocktaking.getId();
         if (StringUtils.isNotNull(stkIoStocktakingEntryList))
         {
+            Map<Long, StkInventory> invCache = buildInventoryCacheForEntries(stkIoStocktakingEntryList);
             List<StkIoStocktakingEntry> list = new ArrayList<StkIoStocktakingEntry>();
             for (StkIoStocktakingEntry stkIoStocktakingEntry : stkIoStocktakingEntryList)
             {
@@ -639,7 +771,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
                 if(StringUtils.isEmpty(stkIoStocktakingEntry.getBatchNo())){
                     stkIoStocktakingEntry.setBatchNo(getBatchNumber());
                 }
-                prepareStocktakingEntry(stkIoStocktaking, stkIoStocktakingEntry, true);
+                prepareStocktakingEntry(stkIoStocktaking, stkIoStocktakingEntry, true, invCache);
                 list.add(stkIoStocktakingEntry);
             }
             if (list.size() > 0)
@@ -659,8 +791,10 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
     /**
      * 保存前：明细 UUID、租户、审计字段；有 kc_no 时回填账面批次快照（供盘亏/盈亏追溯）。
      */
-    private void prepareStocktakingEntry(StkIoStocktaking parent, StkIoStocktakingEntry entry, boolean newLine) {
-        enrichOrigBatchFromInventory(entry);
+    private void prepareStocktakingEntry(StkIoStocktaking parent, StkIoStocktakingEntry entry, boolean newLine,
+        Map<Long, StkInventory> invCache)
+    {
+        enrichOrigBatchFromInventory(entry, invCache);
         if (StringUtils.isEmpty(entry.getEntryUuid())) {
             entry.setEntryUuid(UUID7.generateUUID7());
         }
@@ -698,6 +832,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (bill.getWarehouseId() == null) {
             throw new ServiceException("仓库盘点必须选择仓库。");
         }
+        Map<Long, FdMaterial> materialMap = buildMaterialMapForStocktakingEntries(bill.getStkIoStocktakingEntryList());
         Set<String> kcSeen = new HashSet<>();
         for (StkIoStocktakingEntry entry : bill.getStkIoStocktakingEntryList()) {
             if (entry == null) {
@@ -706,7 +841,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             if (entry.getMaterialId() == null) {
                 throw new ServiceException("盘点明细缺少耗材。");
             }
-            FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+            FdMaterial material = materialMap.get(entry.getMaterialId());
             if (material == null) {
                 throw new ServiceException(String.format("耗材ID：%s，产品档案不存在。", entry.getMaterialId()));
             }
@@ -795,14 +930,17 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         entry.setSupplierIdStr(entry.getSupplierId() != null ? String.valueOf(entry.getSupplierId()) : null);
     }
 
-    private void enrichOrigBatchFromInventory(StkIoStocktakingEntry entry) {
+    private void enrichOrigBatchFromInventory(StkIoStocktakingEntry entry, Map<Long, StkInventory> invCache) {
         if (entry.getKcNo() == null) {
             return;
         }
         if (entry.getOrigBatchId() != null && StringUtils.isNotEmpty(entry.getOrigBatchNoSnapshot())) {
             return;
         }
-        StkInventory inv = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
+        StkInventory inv = invCache != null ? invCache.get(entry.getKcNo()) : null;
+        if (inv == null) {
+            inv = stkInventoryMapper.selectStkInventoryRowById(entry.getKcNo());
+        }
         if (inv == null) {
             return;
         }
@@ -1157,6 +1295,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         validateWarehouseStocktakingEntries(slice);
         Date now = DateUtils.getNowDate();
         String opUser = SecurityUtils.getUserIdStr();
+        Map<Long, StkInventory> invCache = buildInventoryCacheForEntries(clean);
         for (StkIoStocktakingEntry entry : clean)
         {
             entry.setParenId(billId);
@@ -1164,7 +1303,7 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
             {
                 entry.setBatchNo(getBatchNumber());
             }
-            prepareStocktakingEntry(head, entry, true);
+            prepareStocktakingEntry(head, entry, true, invCache);
             stkIoStocktakingMapper.insertStkIoStocktakingEntrySingle(entry);
         }
         head.setUpdateTime(now);

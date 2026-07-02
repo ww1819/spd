@@ -13,6 +13,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.warehouse.domain.StkIoStocktaking;
 import com.spd.warehouse.domain.StkIoStocktakingEntry;
 import com.spd.warehouse.domain.dto.WhStocktakingProfitImportRow;
+import com.spd.warehouse.vo.WhStocktakingExportRow;
 
 /**
  * 盘点Service接口
@@ -37,6 +38,11 @@ public interface IStkIoStocktakingService
      * @return 盘点集合
      */
     public List<StkIoStocktaking> selectStkIoStocktakingList(StkIoStocktaking stkIoStocktaking);
+
+    /**
+     * 仓库盘点导出明细行（主单 + 明细扁平化）
+     */
+    List<WhStocktakingExportRow> selectWhStocktakingExportList(StkIoStocktaking stkIoStocktaking);
 
     /**
      * 新增盘点

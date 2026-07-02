@@ -38,7 +38,7 @@ public class GzRefundGoodsController extends BaseController
     /**
      * 查询高值备货退货列表
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:list')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:list') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzRefundGoods gzRefundGoods)
     {
@@ -63,7 +63,7 @@ public class GzRefundGoodsController extends BaseController
     /**
      * 获取高值备货退货详细信息
      */
-    @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:query')")
+    @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:query') or @ss.hasPermi('gz:stockQuery:list')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

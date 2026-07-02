@@ -53,6 +53,17 @@ public class StkThInventoryController extends BaseController {
     }
 
     /**
+     * 记录退货单打印（更新打印人、打印时间）
+     */
+    @Log(title = "退货单打印", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:query') || @ss.hasPermi('inWarehouse:refundGoodsApply:audit') || @ss.hasPermi('inWarehouse:refundGoodsApply:list')")
+    @PutMapping("/recordPrint/{id}")
+    public AjaxResult recordPrint(@PathVariable("id") Long id)
+    {
+        return toAjax(stkIoBillService.recordStkIoBillPrint(id));
+    }
+
+    /**
      * 新增退货
      */
     @Log(title = "退货", businessType = BusinessType.INSERT)

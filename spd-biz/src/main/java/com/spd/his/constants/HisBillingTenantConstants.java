@@ -28,6 +28,9 @@ public final class HisBillingTenantConstants
     /** scminterface 调用 SPD 内部接口基址（耗材 sys_config） */
     public static final String CONFIG_SPD_INTERNAL_BASE_URL = "spd.internal.base_url";
 
-    /** 内部处理操作人用户 ID（sb_user.user_id） */
+    /**
+     * 内部/自动核销操作人用户 ID（sys_user.user_id）。
+     * 衡水三院默认 3105（系统自动核销），未配置时由代码兜底。
+     */
     public static final String SETTING_INTERNAL_OPERATOR_USER_ID = "his.internal.operator_user_id";
 }

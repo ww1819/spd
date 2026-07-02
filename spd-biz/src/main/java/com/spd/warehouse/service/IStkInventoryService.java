@@ -24,6 +24,11 @@ public interface IStkInventoryService
     public StkInventory selectStkInventoryById(Long id);
 
     /**
+     * 按主键批量查询库存行（轻量列，盘点保存对账等）
+     */
+    List<StkInventory> selectStkInventoryRowsByIds(List<Long> ids);
+
+    /**
      * 查询库存明细列表
      *
      * @param stkInventory 库存明细

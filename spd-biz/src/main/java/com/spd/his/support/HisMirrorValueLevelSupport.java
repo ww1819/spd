@@ -47,8 +47,8 @@ public final class HisMirrorValueLevelSupport
         {
             return LEVEL_LOW;
         }
-        FdMaterial mat = mapper.selectFdMaterialByTenantAndHisChargeItemId(tenantId, chargeItemId.trim());
-        return resolveFromMaterial(mat);
+        int highCount = mapper.countHighValueMaterialByChargeItemId(tenantId, chargeItemId.trim());
+        return highCount > 0 ? LEVEL_HIGH : LEVEL_LOW;
     }
 
     public static void assertKnownForConsume(String level)

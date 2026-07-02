@@ -21,6 +21,7 @@ import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.department.domain.DeptBatchConsumeReverseReq;
 import com.spd.department.service.IDeptBatchConsumeService;
+import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzTraceability;
 import com.spd.gz.domain.GzTraceabilityEntry;
@@ -44,6 +45,7 @@ import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.service.IHisBillingRefundService;
 import com.spd.his.service.refund.LvRefundConsumeLinkOrderStrategy;
+import com.spd.his.support.HisAutoWriteOffOperatorSupport;
 
 @Service
 public class HisBillingRefundServiceImpl implements IHisBillingRefundService
@@ -79,6 +81,8 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
     private GzDepInventoryMapper gzDepInventoryMapper;
     @Autowired
     private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
+    @Autowired
+    private ISbTenantSettingService sbTenantSettingService;
 
     /** 避免同类自调用导致 @Transactional 失效 */
     @Lazy
@@ -239,7 +243,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         HisBillingRefundOrder order = buildOrderHeader(tenantId, visitKind, body, originMirrorRowId, "2", inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
 
-        String operator = SecurityUtils.getUserIdStr();
+        String operator = resolveRefundOperator(body == null ? null : body.getRemark());
         List<HisBillingRefundOrderLine> lineRows = new ArrayList<>();
         Date now = DateUtils.getNowDate();
         String uid = SecurityUtils.getUserIdStr();
@@ -824,7 +828,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         HisBillingRefundOrder order = buildOrderHeaderHigh(tenantId, visitKind, body, originMirrorRowId, inProbe, outProbe);
         hisBillingRefundOrderMapper.insertHisBillingRefundOrder(order);
 
-        String operator = SecurityUtils.getUserIdStr();
+        String operator = resolveRefundOperator(body == null ? null : body.getRemark());
         Date now = DateUtils.getNowDate();
         String uid = SecurityUtils.getUserIdStr();
 
@@ -942,6 +946,12 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
             throw new ServiceException("高值科室库存不存在，无法退费返还");
         }
         hcBarcodeLifecycleService.onMirrorHighChargeRefund(trace, entry, gz, returnQty);
+    }
+
+    private String resolveRefundOperator(String remark)
+    {
+        return HisAutoWriteOffOperatorSupport.resolveRefundOperator(
+            SecurityUtils.getCustomerId(), remark, sbTenantSettingService);
     }
 
     private static class RefundAllocationPlan

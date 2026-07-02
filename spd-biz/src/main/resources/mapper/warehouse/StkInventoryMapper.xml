@@ -282,6 +282,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="isBilling != null">
             <choose>
                 <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
@@ -289,6 +290,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </choose>
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="materialHisChargeItemIdWhere"/>
         <if test="id != null"> and stk.id = #{id}</if>
         <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
@@ -321,6 +328,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="isBilling != null">
             <choose>
                 <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
@@ -328,6 +336,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </choose>
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="materialHisChargeItemIdWhere"/>
         <if test="id != null"> and stk.id = #{id}</if>
         <if test="onlyPositiveQty != null and onlyPositiveQty"> and IFNULL(stk.qty, 0) &gt; 0 </if>
@@ -394,6 +408,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </choose>
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="materialHisChargeItemIdWhere"/>
         GROUP BY stk.material_id, stk.warehouse_id, m.code, m.name, m.speci, m.model, u.unit_name
         <choose>
@@ -448,6 +468,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </choose>
         </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="materialHisChargeItemIdWhere"/>
     </select>
 
@@ -488,6 +514,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="materialHisChargeItemIdWhere"/>
         group by
         <choose>
@@ -532,6 +564,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
           and tenant_id = #{scopedTenantId}
           and (del_flag = 0 or del_flag is null)
+    </select>
+
+    <select id="selectStkInventoryRowsByIds" resultMap="StkInventoryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select id, qty, batch_id, batch_no, his_id, third_party_batch_no
+        from stk_inventory
+        where tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </select>
 
     <insert id="insertStkInventory" parameterType="StkInventory" useGeneratedKeys="true" keyProperty="id">

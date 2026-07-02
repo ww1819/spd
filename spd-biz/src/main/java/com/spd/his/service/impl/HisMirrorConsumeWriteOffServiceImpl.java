@@ -46,6 +46,7 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
     private static final String STATUS_CONSUMED = "CONSUMED";
     private static final String STATUS_REFUNDED = "REFUNDED";
     private static final String PROC_TYPE_LOW = "LOW_VALUE";
+    private static final String PROC_TYPE_HIGH = "HIGH_VALUE";
     private static final String PROC_TYPE_EMPTY = "";
     private static final String REFUND_ORDER_REVERSED = "REVERSED";
 
@@ -359,7 +360,7 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
                 vo.getReverseConsumeBillIds().add(rev.getId());
             }
         }
-        hisMirrorConsumeLinkMapper.resetReturnedQtyForMirror(tenantId, visitKind, mirrorRowId, operator);
+        hisMirrorConsumeLinkMapper.markLinksFullyReturnedForWriteOff(tenantId, visitKind, mirrorRowId, operator);
     }
 
     private void resetMirrorToPending(String tenantId, String visitKind, String mirrorRowId)
@@ -432,6 +433,23 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
 
     private void assertLowValueMirror(MirrorSnapshot snap)
     {
+        // 冲销资格以实际核销路径 processType 为准，不以耗材档案当前高低值为准
+        if (PROC_TYPE_LOW.equals(StringUtils.trimToEmpty(snap.processType)))
+        {
+            return;
+        }
+        if (snap.isRefundRow())
+        {
+            if (!"1".equals(StringUtils.trimToEmpty(snap.valueLevel)))
+            {
+                return;
+            }
+            throw new ServiceException("高值退费返还请使用高值相关处理，不支持低值冲销");
+        }
+        if (PROC_TYPE_HIGH.equals(StringUtils.trimToEmpty(snap.processType)))
+        {
+            throw new ServiceException("高值核销的计费行请在高值模块处理，不支持低值冲销");
+        }
         if ("1".equals(StringUtils.trimToEmpty(snap.valueLevel)))
         {
             throw new ServiceException("高值计费行请使用高值相关处理，不支持低值冲销");

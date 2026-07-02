@@ -25,11 +25,17 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     /** 全部模式下住院号/门诊号统一筛选 */
     private String visitNo;
     private String chargeItemId;
+    /** 收费编码为纯字母数字时走等值匹配，避免 LIKE + EXISTS 全表扫描 */
+    private Boolean chargeItemIdExact;
     /** HIS 费用明细主键（住院 his_inpatient_charge_id / 门诊 his_outpatient_charge_id） */
     private String hisChargeId;
     private String chargeIdTf;
     private Long departmentId;
+    /** 开单科室（fd_department.id） */
+    private Long orderingDepartmentId;
     private String processed;
+    /** 列表页预设：HIGH=高值扫描核销仅高值，LOW=患者收费查询仅低值；与手动 valueLevel 筛选互斥 */
+    private String chargeListMode;
     private String valueLevel;
     /** 高低值 IN 筛选，如高值页传 1,0 */
     private java.util.List<String> valueLevelIn;
@@ -51,6 +57,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     private String clinicNameLike;
     /** 执行科室名称模糊（住院/门诊/全部） */
     private String execDeptNameLike;
+    /** 项目名称模糊 */
+    private String itemNameLike;
     /** highValueStockQty / lowValueStockQty：仅用于分页后内存排序 */
     private String orderByColumn;
     private String isAsc;

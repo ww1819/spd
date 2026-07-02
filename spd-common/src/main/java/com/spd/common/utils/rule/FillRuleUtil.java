@@ -40,16 +40,33 @@ public class FillRuleUtil {
         return autoCode;
     }
 
-    public static String getNumber(String str,String maxNum,String date) {
-        String newNum = "";
-        int beginIndex = str.length();
-        if (StringUtils.isNotBlank(maxNum)) {
-            maxNum = maxNum.substring(beginIndex);
-            newNum = date + String.format("%05d",(Integer.parseInt(maxNum.substring(8)) + 1));
-        }else {
-            newNum = date + "00001";
+    public static String getNumber(String str, String maxNum, String date) {
+        return buildBillNo(str, date, parseSerialFromBillNo(str, maxNum, date));
+    }
+
+    /**
+     * 从已有单号解析流水号；解析失败或与当日日期不匹配时返回 null。
+     */
+    public static Long parseSerialFromBillNo(String prefix, String billNo, String date) {
+        if (StringUtils.isBlank(billNo) || StringUtils.isBlank(prefix) || StringUtils.isBlank(date)) {
+            return null;
         }
-        return str + newNum ;
+        String body = billNo.startsWith(prefix) ? billNo.substring(prefix.length()) : billNo;
+        if (!body.startsWith(date) || body.length() <= date.length()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(body.substring(date.length()));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    /** 按前缀+日期生成下一流水号（流水不足 5 位左补零，超过 5 位不截断）。 */
+    public static String buildBillNo(String prefix, String date, Long maxSerial) {
+        long next = (maxSerial == null ? 0L : maxSerial) + 1L;
+        String serial = next < 100000L ? String.format("%05d", next) : String.valueOf(next);
+        return prefix + date + serial;
     }
 
     /** 单据号中的日期部分，取电脑（JVM 默认时区）的当天 yyyyMMdd */

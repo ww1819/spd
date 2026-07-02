@@ -121,17 +121,30 @@ public final class HisPatientChargeMirrorUnifiedSupport
         return m;
     }
 
-    /** 高值扫码核销列表：未指定高低值筛选时默认仅高值（未维护 is_gz 视同低值，见 resolvedValueLevelExpr） */
+    public static final String LIST_MODE_HIGH = "HIGH";
+    public static final String LIST_MODE_LOW = "LOW";
+
+    /** 高值扫描核销：固定仅显示耗材档案 is_gz=1 的计费 */
     public static void applyHighChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
-        if (u == null || StringUtils.isNotBlank(u.getValueLevel()))
+        if (u == null)
         {
             return;
         }
-        if (u.getValueLevelIn() == null || u.getValueLevelIn().isEmpty())
+        u.setChargeListMode(LIST_MODE_HIGH);
+        u.setValueLevel(null);
+    }
+
+    /** 患者收费查询：固定仅显示 is_gz≠1（未对照视同低值），忽略前端 valueLevel */
+    public static void applyPatientChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
+    {
+        if (u == null)
         {
-            u.setValueLevel(HisMirrorValueLevelSupport.LEVEL_HIGH);
+            return;
         }
+        u.setChargeListMode(LIST_MODE_LOW);
+        u.setValueLevel(null);
+        u.setValueLevelIn(null);
     }
 
     public static HisPatientChargeMirrorUnifiedQuery fromInpatientQuery(HisInpatientChargeMirror q)
@@ -149,6 +162,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setHisChargeId(StringUtils.trimToNull(q.getHisInpatientChargeId()));
         u.setChargeIdTf(q.getHisInpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
+        u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
@@ -157,6 +171,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(q.getDeptName());
         u.setExecDeptNameLike(q.getExecDeptName());
+        u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -178,6 +193,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setHisChargeId(StringUtils.trimToNull(q.getHisOutpatientChargeId()));
         u.setChargeIdTf(q.getHisOutpatientChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
+        u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
@@ -186,6 +202,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setClinicNameLike(q.getClinicName());
         u.setExecDeptNameLike(q.getExecDeptName());
+        u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -207,6 +224,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setHisChargeId(StringUtils.trimToNull(q.getHisChargeId()));
         u.setChargeIdTf(q.getChargeIdTf());
         u.setDepartmentId(q.getDepartmentId());
+        u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
@@ -216,6 +234,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setDeptNameLike(null);
         u.setClinicNameLike(null);
         u.setExecDeptNameLike(q.getExecDeptName());
+        u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
         u.setParams(q.getParams());
@@ -492,6 +511,11 @@ public final class HisPatientChargeMirrorUnifiedSupport
         if (StringUtils.isNotBlank(u.getChargeItemId()))
         {
             u.setChargeItemId(normalizeSearchKeyword(u.getChargeItemId()));
+            u.setChargeItemIdExact(u.getChargeItemId().matches("[A-Za-z0-9]+"));
+        }
+        else
+        {
+            u.setChargeItemIdExact(null);
         }
         if (StringUtils.isNotBlank(u.getVisitNo()))
         {
@@ -504,6 +528,10 @@ public final class HisPatientChargeMirrorUnifiedSupport
         if (StringUtils.isNotBlank(u.getOutpatientNo()))
         {
             u.setOutpatientNo(StringUtils.trim(u.getOutpatientNo()));
+        }
+        if (StringUtils.isNotBlank(u.getItemNameLike()))
+        {
+            u.setItemNameLike(StringUtils.trim(u.getItemNameLike()));
         }
     }
 

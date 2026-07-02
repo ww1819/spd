@@ -198,7 +198,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 </choose>
             </if>
         </where>
-        order by po.create_time desc
     </select>
     
     <select id="selectPurchaseOrderById" parameterType="Long" resultMap="PurchaseOrderResult">

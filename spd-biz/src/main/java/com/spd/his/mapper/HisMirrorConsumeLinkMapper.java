@@ -13,6 +13,10 @@ public interface HisMirrorConsumeLinkMapper
     BigDecimal sumAllocQtyForMirrorRow(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
 
+    /** 净已核销数量 = sum(alloc_qty - returned_qty) */
+    BigDecimal sumNetAllocQtyForMirrorRow(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
+        @Param("mirrorRowId") String mirrorRowId);
+
     List<String> selectDistinctBillSourcesForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
 
@@ -36,6 +40,10 @@ public interface HisMirrorConsumeLinkMapper
     int increaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
         @Param("updateBy") String updateBy);
 
+    /** 低值反消耗后：按来源消耗明细回写关联行的 returned_qty */
+    int increaseReturnedQtyBySrcConsumeEntryId(@Param("srcConsumeEntryId") Long srcConsumeEntryId,
+        @Param("delta") java.math.BigDecimal delta, @Param("updateBy") String updateBy);
+
     int decreaseReturnedQtyById(@Param("id") String id, @Param("delta") java.math.BigDecimal delta,
         @Param("updateBy") String updateBy);
 
@@ -45,5 +53,9 @@ public interface HisMirrorConsumeLinkMapper
         @Param("visitKind") String visitKind, @Param("mirrorRowId") String mirrorRowId);
 
     int resetReturnedQtyForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
+        @Param("mirrorRowId") String mirrorRowId, @Param("updateBy") String updateBy);
+
+    /** 低值冲销完成后：关联行视为已全部返还，释放待核销数量 */
+    int markLinksFullyReturnedForWriteOff(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId, @Param("updateBy") String updateBy);
 }

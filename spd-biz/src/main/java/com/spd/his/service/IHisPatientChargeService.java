@@ -4,6 +4,7 @@ import java.util.List;
 import com.spd.his.domain.HisChargeFetchBatch;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
+import com.spd.his.domain.dto.HisExecDeptBackfillResultVo;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
 import com.spd.his.domain.dto.HisMirrorHighApplyBody;
@@ -30,6 +31,12 @@ public interface IHisPatientChargeService
 
     HisFetchResultVo fetchOutpatientMirror(HisPatientChargeFetchBody body);
 
+    /** 从 HIS 按计费时间区间补全历史住院镜像缺失的执行科室 */
+    HisExecDeptBackfillResultVo backfillInpatientExecDept(HisPatientChargeFetchBody body);
+
+    /** 从 HIS 按计费时间区间补全历史门诊镜像缺失的执行科室 */
+    HisExecDeptBackfillResultVo backfillOutpatientExecDept(HisPatientChargeFetchBody body);
+
     List<HisInpatientChargeMirror> selectInpatientMirrorList(HisInpatientChargeMirror query);
 
     List<HisOutpatientChargeMirror> selectOutpatientMirrorList(HisOutpatientChargeMirror query);
@@ -52,6 +59,9 @@ public interface IHisPatientChargeService
      * 查询某条计费镜像行关联的科室消耗记录（含消耗单号、明细、分摊数量等）
      */
     List<HisMirrorConsumeRecordVo> listMirrorConsumeRecords(String visitKind, String mirrorRowId);
+
+    /** 高值扫码核销：消耗记录（不按用户科室权限过滤） */
+    List<HisMirrorConsumeRecordVo> listHighChargeMirrorConsumeRecords(String visitKind, String mirrorRowId);
 
     List<HisPatientChargeSummaryRow> selectChargeSummary(String beginChargeDate, String endChargeDate);
 

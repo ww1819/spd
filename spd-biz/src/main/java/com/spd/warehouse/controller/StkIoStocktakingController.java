@@ -35,6 +35,7 @@ import com.spd.department.dto.StocktakingPatchSaveDto;
 import com.spd.department.dto.StocktakingQtyAdjustDto;
 import com.spd.warehouse.domain.dto.WhStocktakingProfitImportConfirmRequest;
 import com.spd.warehouse.domain.dto.WhStocktakingProfitImportRow;
+import com.spd.warehouse.vo.WhStocktakingExportRow;
 import com.spd.common.utils.file.FileUtils;
 
 /**
@@ -84,9 +85,19 @@ public class StkIoStocktakingController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, StkIoStocktaking stkIoStocktaking)
     {
-        List<StkIoStocktaking> list = stkIoStocktakingService.selectStkIoStocktakingList(stkIoStocktaking);
-        ExcelUtil<StkIoStocktaking> util = new ExcelUtil<StkIoStocktaking>(StkIoStocktaking.class);
-        util.exportExcel(response, list, "盘点数据");
+        List<WhStocktakingExportRow> list = stkIoStocktakingService.selectWhStocktakingExportList(stkIoStocktaking);
+        ExcelUtil<WhStocktakingExportRow> util = new ExcelUtil<WhStocktakingExportRow>(WhStocktakingExportRow.class);
+        util.exportExcel(response, list, "仓库盘点明细");
+    }
+
+    /**
+     * 仓库盘点导出明细数据（JSON，供前端生成与出退库明细表一致版式的 xlsx）
+     */
+    @PreAuthorize("@ss.hasPermi('stocktaking:in:export')")
+    @GetMapping("/export/rows")
+    public AjaxResult exportRows(StkIoStocktaking stkIoStocktaking)
+    {
+        return success(stkIoStocktakingService.selectWhStocktakingExportList(stkIoStocktaking));
     }
 
     /**

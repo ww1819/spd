@@ -2,6 +2,7 @@ package com.spd.warehouse.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +46,16 @@ public class StkInventoryServiceImpl implements IStkInventoryService
             SecurityUtils.ensureTenantAccess(inv.getTenantId());
         }
         return inv;
+    }
+
+    @Override
+    public List<StkInventory> selectStkInventoryRowsByIds(List<Long> ids)
+    {
+        if (ids == null || ids.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return stkInventoryMapper.selectStkInventoryRowsByIds(ids);
     }
 
     /**

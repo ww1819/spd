@@ -28,6 +28,7 @@ import com.spd.gz.domain.dto.GzHighChargeConfirmResultVo;
 import com.spd.gz.domain.dto.GzHighChargeConfirmRowVo;
 import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
 import com.spd.gz.service.IGzHighChargeConfirmService;
+import com.spd.system.service.ITenantScopeService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -40,6 +41,8 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
     private static final String PREFIX_OUT = "G-CK";
     private static final int BILL_TYPE_IN = 101;
     private static final int BILL_TYPE_OUT = 201;
+    private static final String MSG_NO_WRITE_OFF_DEPT_PERM =
+        "没有核销科室权限，不允许确认。如需确认请添加核销科室权限之后再做确认操作";
 
     @Autowired
     private GzHighConsumeConfirmMapper gzHighConsumeConfirmMapper;
@@ -47,6 +50,8 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
     private FdWarehouseMapper fdWarehouseMapper;
     @Autowired
     private IStkIoBillService stkIoBillService;
+    @Autowired
+    private ITenantScopeService tenantScopeService;
 
     @Override
     public List<GzHighChargeConfirmRowVo> selectConfirmList(GzHighChargeConfirmQuery query)
@@ -107,7 +112,12 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
                     + "】缺少供应商，无法确认");
             }
         }
-        Long departmentId = resolveSingleDepartment(lines);
+        Long departmentId = resolveSingleWriteOffDepartment(lines);
+        if (body.getDepartmentId() != null && !body.getDepartmentId().equals(departmentId))
+        {
+            throw new ServiceException("核销科室与所选明细不一致，请刷新后重试");
+        }
+        assertWriteOffDepartmentInUserScope(tenantId, departmentId);
         Date confirmTime = DateUtils.getNowDate();
         String userId = SecurityUtils.getUserIdStr();
         String confirmId = UUID7.generateUUID7();
@@ -338,7 +348,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         return ref;
     }
 
-    private Long resolveSingleDepartment(List<GzHighChargeConfirmRowVo> lines)
+    private Long resolveSingleWriteOffDepartment(List<GzHighChargeConfirmRowVo> lines)
     {
         List<Long> deptIds = lines.stream()
             .map(GzHighChargeConfirmRowVo::getDepartmentId)
@@ -347,11 +357,11 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             .collect(Collectors.toList());
         if (deptIds.isEmpty())
         {
-            throw new ServiceException("消耗明细缺少科室信息");
+            throw new ServiceException("核销记录缺少核销科室，无法确认");
         }
         if (deptIds.size() > 1)
         {
-            throw new ServiceException("请选择同一科室的消耗明细进行确认");
+            throw new ServiceException("请选择同一核销科室的消耗明细进行确认");
         }
         return deptIds.get(0);
     }
@@ -372,5 +382,23 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             throw new ServiceException("无法解析当前租户");
         }
         return tenantId.trim();
+    }
+
+    private void assertWriteOffDepartmentInUserScope(String tenantId, Long departmentId)
+    {
+        if (departmentId == null)
+        {
+            throw new ServiceException("核销记录缺少核销科室，无法确认");
+        }
+        Long userId = SecurityUtils.getUserId();
+        if (tenantScopeService.isTenantSuper(userId, tenantId))
+        {
+            return;
+        }
+        List<Long> allowed = tenantScopeService.resolveDepartmentScope(userId, tenantId);
+        if (allowed == null || allowed.isEmpty() || !allowed.contains(departmentId))
+        {
+            throw new ServiceException(MSG_NO_WRITE_OFF_DEPT_PERM);
+        }
     }
 }

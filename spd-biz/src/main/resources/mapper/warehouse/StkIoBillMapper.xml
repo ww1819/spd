@@ -955,6 +955,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -1008,6 +1009,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -1436,8 +1438,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectOutMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
-        where bill_no like concat('%',#{billNo},'%')
-        and bill_type = 201
+        where bill_no like concat('CK', #{date}, '%')
+        and (del_flag is null or del_flag != 1)
+        and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectOutMaxCkSerial" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(cast(substring(bill_no, 11) as unsigned))
+        from stk_io_bill
+        where bill_no like concat('CK', #{date}, '%')
+        and length(bill_no) &gt; 10
+        and (del_flag is null or del_flag != 1)
         and tenant_id = #{scopedTenantId}
     </select>
 
@@ -2468,6 +2480,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         group by
             case
@@ -2552,6 +2570,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
+        </if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
         group by stk.department_id
         having ABS(IFNULL(plainConsumablesAmt, 0)) + ABS(IFNULL(highValueConsumablesAmt, 0)) + ABS(IFNULL(reagentAmt, 0)) &gt; 0.0000001

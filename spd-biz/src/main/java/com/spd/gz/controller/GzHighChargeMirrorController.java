@@ -68,7 +68,7 @@ public class GzHighChargeMirrorController extends BaseController
     public AjaxResult mirrorConsumeRecords(@RequestParam("visitKind") String visitKind,
         @RequestParam("mirrorRowId") String mirrorRowId)
     {
-        List<HisMirrorConsumeRecordVo> list = hisPatientChargeService.listMirrorConsumeRecords(visitKind, mirrorRowId);
+        List<HisMirrorConsumeRecordVo> list = hisPatientChargeService.listHighChargeMirrorConsumeRecords(visitKind, mirrorRowId);
         return success(list);
     }
 
