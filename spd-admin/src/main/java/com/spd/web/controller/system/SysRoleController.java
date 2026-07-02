@@ -26,7 +26,6 @@ import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
-import com.spd.framework.web.service.SbPermissionService;
 import com.spd.framework.web.service.SysPermissionService;
 import com.spd.framework.web.service.TokenService;
 import com.spd.system.domain.SysUserRole;
@@ -51,9 +50,6 @@ public class SysRoleController extends BaseController
 
     @Autowired
     private SysPermissionService permissionService;
-
-    @Autowired
-    private SbPermissionService sbPermissionService;
 
     @Autowired
     private ISysUserService userService;
@@ -139,7 +135,6 @@ public class SysRoleController extends BaseController
             if (StringUtils.isNotNull(loginUser.getUser()) && !loginUser.getUser().isAdmin())
             {
                 Set<String> merged = new HashSet<>(permissionService.getMenuPermission(loginUser.getUser()));
-                merged.addAll(sbPermissionService.getMenuPermission(loginUser.getUser()));
                 loginUser.setPermissions(merged);
                 loginUser.setUser(userService.selectUserByUserName(loginUser.getUser().getUserName()));
                 tokenService.setLoginUser(loginUser);

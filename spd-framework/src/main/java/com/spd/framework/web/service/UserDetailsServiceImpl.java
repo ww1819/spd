@@ -43,9 +43,6 @@ public class UserDetailsServiceImpl implements UserDetailsService
     @Autowired
     private SysPermissionService permissionService;
 
-    @Autowired
-    private SbPermissionService sbPermissionService;
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
     {
@@ -162,7 +159,6 @@ public class UserDetailsServiceImpl implements UserDetailsService
     public UserDetails createLoginUser(SysUser user)
     {
         Set<String> perms = new HashSet<>(permissionService.getMenuPermission(user));
-        perms.addAll(sbPermissionService.getMenuPermission(user));
         return new LoginUser(user.getUserId(), user.getDeptId(), user, perms);
     }
 }

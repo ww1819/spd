@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.common.mybatis.TenantScopeFragments">
+
+    <sql id="scopedDeptIdsSubquery">
+        select ud.department_id
+        from sys_user_department ud
+        where ud.user_id = #{params.scopeDeptUserId}
+          and (ud.status = 0 or ud.status = '0' or ud.status is null)
+    </sql>
+
+    <sql id="scopedWarehouseIdsSubquery">
+        select uw.warehouse_id
+        from sys_user_warehouse uw
+        where uw.user_id = #{params.scopeWarehouseUserId}
+          and (uw.status = 0 or uw.status = '0' or uw.status is null)
+    </sql>
+
+    <!-- deptColumn 通过 include property 传入，如 id、stk.department_id -->
+    <sql id="departmentScopeFilter">
+        <if test="params != null and params.scopeDeptUserId != null">
+            and ${deptColumn} in (<include refid="com.spd.common.mybatis.TenantScopeFragments.scopedDeptIdsSubquery"/>)
+        </if>
+    </sql>
+
+    <!-- warehouseColumn 通过 include property 传入，如 id、stk.warehouse_id -->
+    <sql id="warehouseScopeFilter">
+        <if test="params != null and params.scopeWarehouseUserId != null">
+            and ${warehouseColumn} in (<include refid="com.spd.common.mybatis.TenantScopeFragments.scopedWarehouseIdsSubquery"/>)
+        </if>
+    </sql>
+
+</mapper>

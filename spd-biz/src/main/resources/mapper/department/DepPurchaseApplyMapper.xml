@@ -5,21 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.department.mapper.DepPurchaseApplyMapper">
 
     <sql id="depPurchaseScopedDeptIdsSubquery">
-        select distinct x.did from (
-            select cast(upd.dept_id as unsigned) as did
-            from sb_user_permission_dept upd
-            where upd.user_id = #{params.scopeDeptUserId}
-              and ifnull(upd.del_flag, '0') = '0'
-            <if test="params.scopeDeptCustomerId != null and params.scopeDeptCustomerId != ''">
-              and upd.customer_id = #{params.scopeDeptCustomerId}
-            </if>
-            union
-            select ud.department_id as did
-            from sys_user_department ud
-            where ud.user_id = #{params.scopeDeptUserId}
-              and (ud.status = 0 or ud.status = '0' or ud.status is null)
-        ) x
-        where x.did is not null
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.scopedDeptIdsSubquery"/>
     </sql>
 
     <sql id="depPurchaseDepartmentScopeFilter">

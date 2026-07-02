@@ -39,8 +39,7 @@ import com.spd.department.service.IStkDepInventoryService;
 import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.foundation.domain.FdWarehouse;
-import com.spd.foundation.service.IFdWarehouseService;
-import com.spd.system.service.ITenantScopeService;
+import com.spd.foundation.support.TenantScopeHelper;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkInventoryService;
@@ -55,10 +54,7 @@ import com.spd.warehouse.service.IStkIoBillService;
 public class HomeDashboardController extends BaseController
 {
     @Autowired
-    private IFdWarehouseService fdWarehouseService;
-
-    @Autowired
-    private ITenantScopeService tenantScopeService;
+    private TenantScopeHelper tenantScopeHelper;
 
     @Autowired
     @Qualifier("stkIoBillServiceImpl")
@@ -565,25 +561,6 @@ public class HomeDashboardController extends BaseController
      */
     private List<FdWarehouse> scopedWarehouses()
     {
-        List<FdWarehouse> fdWarehouseList = fdWarehouseService.selectwarehouseAll();
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        if (StringUtils.isNotEmpty(customerId) && fdWarehouseList != null
-            && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(SecurityUtils.getUserId(), customerId);
-            // resolveWarehouseScope 对租户超管返回 null 表示不限制；非超管为具体 id 列表，空列表表示未绑定仓库
-            if (allowedIds != null && !allowedIds.isEmpty())
-            {
-                fdWarehouseList = fdWarehouseList.stream()
-                    .filter(w -> w.getId() != null && allowedIds.contains(w.getId()))
-                    .collect(java.util.stream.Collectors.toList());
-            }
-            // allowedIds == null 或 isEmpty：null 超管已排除；empty 未绑仓库 → 保留租户全量仓库供首页展示
-        }
-        if (fdWarehouseList == null)
-        {
-            return new ArrayList<>();
-        }
-        return fdWarehouseList;
+        return tenantScopeHelper.selectScopedWarehousesForHomeDashboard();
     }
 }

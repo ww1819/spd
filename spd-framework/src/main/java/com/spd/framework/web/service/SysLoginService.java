@@ -65,9 +65,6 @@ public class SysLoginService
     private SysPermissionService permissionService;
 
     @Autowired
-    private SbPermissionService sbPermissionService;
-
-    @Autowired
     private ISysConfigService configService;
 
     /**
@@ -134,7 +131,7 @@ public class SysLoginService
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         if (StringUtils.isNotEmpty(customerId))
         {
-            loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+            loginUser.setLoginChannel("hc");
         }
         else
         {
@@ -177,7 +174,7 @@ public class SysLoginService
             AuthenticationContextHolder.clearContext();
         }
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
-        loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        loginUser.setLoginChannel("hc");
         recordLoginInfo(loginUser.getUserId());
         return tokenService.createToken(loginUser, expireMinutes);
     }
@@ -208,7 +205,7 @@ public class SysLoginService
         }
         tenantSuperUser.setCustomerId(tenantId);
         LoginUser loginUser = createLoginUser(tenantSuperUser);
-        loginUser.setLoginChannel("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType)) ? "hc" : "equipment");
+        loginUser.setLoginChannel("hc");
         recordLoginInfo(loginUser.getUserId());
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(TENANT_SUPER_USERNAME, Constants.LOGIN_SUCCESS, "平台管理员租户切换接口登录成功"));
         return tokenService.createToken(loginUser);
@@ -246,7 +243,6 @@ public class SysLoginService
 
     private LoginUser createLoginUser(SysUser user) {
         Set<String> perms = new HashSet<>(permissionService.getMenuPermission(user));
-        perms.addAll(sbPermissionService.getMenuPermission(user));
         return new LoginUser(user.getUserId(), user.getDeptId(), user, perms);
     }
 

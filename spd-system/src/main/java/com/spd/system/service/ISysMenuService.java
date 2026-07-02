@@ -151,14 +151,6 @@ public interface ISysMenuService
     public boolean checkMenuNameUnique(SysMenu menu);
 
   /**
-   * 根据用户ID查询设备前端（sb_menu）菜单树信息
-   *
-   * @param userId 用户ID
-   * @return 菜单列表
-   */
-  public List<SysMenu> selectSbMenuTreeByUserId(Long userId);
-
-  /**
    * 耗材客户权限分配用菜单树（排除客户管理、客户菜单功能管理及其子节点）
    *
    * @return 下拉树结构列表

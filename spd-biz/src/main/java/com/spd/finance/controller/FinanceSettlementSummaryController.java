@@ -19,7 +19,7 @@ import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.foundation.service.IFdSupplierService;
 import com.spd.foundation.service.IFdWarehouseService;
-import com.spd.system.service.ITenantScopeService;
+import com.spd.foundation.support.TenantScopeHelper;
 import com.spd.warehouse.domain.StkIoBill;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,7 +48,7 @@ public class FinanceSettlementSummaryController extends BaseController
     private IFdSupplierService fdSupplierService;
 
     @Autowired
-    private ITenantScopeService tenantScopeService;
+    private TenantScopeHelper tenantScopeHelper;
 
     /**
      * 汇总数据（不分页）。仅需登录，数据仍受租户及出退库科室范围 SQL 约束，避免仅有导出权等用户无法查看。
@@ -112,75 +112,11 @@ public class FinanceSettlementSummaryController extends BaseController
 
     private List<FdWarehouse> resolveScopedWarehouses()
     {
-        Long userId = SecurityUtils.getUserId();
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        List<FdWarehouse> list;
-        if (StringUtils.isNotEmpty(customerId))
-        {
-            list = fdWarehouseService.selectwarehouseAll();
-            if (list != null && !tenantScopeService.isTenantSuper(userId, customerId))
-            {
-                List<Long> allowedIds = tenantScopeService.resolveWarehouseScope(userId, customerId);
-                if (allowedIds == null || allowedIds.isEmpty())
-                {
-                    list = new ArrayList<>();
-                }
-                else
-                {
-                    list = list.stream()
-                        .filter(w -> w.getId() != null && allowedIds.contains(w.getId()))
-                        .collect(Collectors.toList());
-                }
-            }
-        }
-        else
-        {
-            if (SysUser.isAdmin(userId))
-            {
-                list = fdWarehouseService.selectwarehouseAll();
-            }
-            else
-            {
-                list = fdWarehouseService.selectUserWarehouseAll(userId);
-            }
-        }
-        return list != null ? list : new ArrayList<>();
+        return tenantScopeHelper.selectScopedWarehouses();
     }
 
     private List<FdDepartment> resolveScopedDepartments()
     {
-        Long userId = SecurityUtils.getUserId();
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        List<FdDepartment> list;
-        if (StringUtils.isNotEmpty(customerId))
-        {
-            list = fdDepartmentService.selectdepartmenAll();
-            if (list != null && !tenantScopeService.isTenantSuper(userId, customerId))
-            {
-                List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
-                if (allowedIds == null || allowedIds.isEmpty())
-                {
-                    list = new ArrayList<>();
-                }
-                else
-                {
-                    list = list.stream()
-                        .filter(d -> d.getId() != null && allowedIds.contains(d.getId()))
-                        .collect(Collectors.toList());
-                }
-            }
-        }
-        else
-        {
-            if (SysUser.isAdmin(userId))
-            {
-                list = fdDepartmentService.selectdepartmenAll();
-            }
-            else
-            {
-                list = fdDepartmentService.selectUserDepartmenAll(userId);
-            }
-        }
-        return list != null ? list : new ArrayList<>();
+        return tenantScopeHelper.selectScopedDepartments();
     }
 }

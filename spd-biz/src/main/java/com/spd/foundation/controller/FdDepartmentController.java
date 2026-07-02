@@ -31,6 +31,7 @@ import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.PinyinUtils;
+import com.spd.foundation.support.TenantScopeHelper;
 import com.spd.system.service.ITenantScopeService;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -52,21 +53,15 @@ public class FdDepartmentController extends BaseController
     private IFdDepartmentService fdDepartmentService;
 
     @Autowired
+    private TenantScopeHelper tenantScopeHelper;
+
+    @Autowired
     private ITenantScopeService tenantScopeService;
 
     /** 租户与科室数据权限（与列表一致） */
     private void applyTenantDepartmentListScope(FdDepartment fdDepartment)
     {
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        if (StringUtils.isNotEmpty(customerId))
-        {
-            fdDepartment.setTenantId(customerId);
-        }
-        if (StringUtils.isNotEmpty(customerId) && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId))
-        {
-            tenantScopeService.applyDepartmentScopeQueryParams(
-                fdDepartment.getParams(), SecurityUtils.getUserId(), customerId);
-        }
+        tenantScopeHelper.applyDepartmentListScope(fdDepartment);
     }
 
     /**
@@ -103,20 +98,7 @@ public class FdDepartmentController extends BaseController
     @GetMapping("/listAll/{userId}")
     public List<FdDepartment> listAll(@PathVariable(value = "userId") Long userId)
     {
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        List<FdDepartment> list;
-        if (StringUtils.isNotEmpty(customerId)) {
-            list = fdDepartmentService.selectdepartmenAll();
-            if (list != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-                List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
-                if (allowedIds == null || allowedIds.isEmpty()) list = new ArrayList<>();
-                else list = list.stream().filter(d -> d.getId() != null && allowedIds.contains(d.getId())).collect(Collectors.toList());
-            }
-        } else {
-            if (SysUser.isAdmin(userId)) list = fdDepartmentService.selectdepartmenAll();
-            else list = fdDepartmentService.selectUserDepartmenAll(userId);
-        }
-        return list != null ? list : new ArrayList<>();
+        return tenantScopeHelper.selectScopedDepartments();
     }
 
     /**
@@ -212,14 +194,7 @@ public class FdDepartmentController extends BaseController
     @GetMapping("/optionselect")
     public AjaxResult optionselect()
     {
-        List<FdDepartment> fdDepartmentList = fdDepartmentService.selectdepartmenAll();
-        String customerId = SecurityUtils.requiredScopedTenantIdForSql();
-        if (StringUtils.isNotEmpty(customerId) && fdDepartmentList != null && !tenantScopeService.isTenantSuper(SecurityUtils.getUserId(), customerId)) {
-            List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(SecurityUtils.getUserId(), customerId);
-            if (allowedIds == null || allowedIds.isEmpty()) fdDepartmentList = new ArrayList<>();
-            else fdDepartmentList = fdDepartmentList.stream().filter(d -> d.getId() != null && allowedIds.contains(d.getId())).collect(Collectors.toList());
-        }
-        return success(fdDepartmentList != null ? fdDepartmentList : new ArrayList<>());
+        return success(tenantScopeHelper.selectScopedDepartments());
     }
 
     /**

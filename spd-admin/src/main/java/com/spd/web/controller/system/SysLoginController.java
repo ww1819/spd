@@ -18,15 +18,12 @@ import com.spd.common.core.domain.model.LoginBody;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.core.domain.model.LoginUser;
-import com.spd.framework.web.service.SbPermissionService;
 import com.spd.framework.web.service.SysLoginService;
 import com.spd.framework.web.service.SysPermissionService;
 import com.spd.framework.web.service.TokenService;
 import com.spd.system.domain.SbCustomer;
-import com.spd.system.domain.SbMenu;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.service.ISbCustomerService;
-import com.spd.system.service.ISbMenuService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysPostService;
@@ -48,12 +45,6 @@ public class SysLoginController
 
     @Autowired
     private SysPermissionService permissionService;
-
-    @Autowired
-    private SbPermissionService sbPermissionService;
-
-    @Autowired
-    private ISbMenuService sbMenuService;
 
     @Autowired
     private ISbCustomerService sbCustomerService;
@@ -104,11 +95,7 @@ public class SysLoginController
     public AjaxResult getCustomerOptions(String systemType)
     {
         SbCustomer q = new SbCustomer();
-        if ("hc".equalsIgnoreCase(StringUtils.trimToEmpty(systemType))) {
-            q.setHcStatus("0");
-        } else {
-            q.setStatus("0");
-        }
+        q.setHcStatus("0");
         List<SbCustomer> list = sbCustomerService.selectSbCustomerList(q);
         List<java.util.Map<String, String>> options = new java.util.ArrayList<>();
         for (SbCustomer c : list) {
@@ -141,12 +128,8 @@ public class SysLoginController
         LoginUser loginUser = SecurityUtils.getLoginUser();
         SysUser user = loginUser.getUser();
         refreshHcConsumablePostIds(user);
-        // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
-        // 权限集合：与 UserDetailsServiceImpl.createLoginUser 一致（sys_user_menu 耗材权限 + 设备 sb 权限）
-        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
-        permissions.addAll(sbPermissionService.getMenuPermission(user));
-        // 与 @PreAuthorize 一致：必须写回 LoginUser 并刷新 Redis，否则仅前端 getInfo 有最新权限、接口仍用登录时旧权限 → 403
+        Set<String> permissions = permissionService.getMenuPermission(user);
         loginUser.setPermissions(permissions);
         tokenService.setLoginUser(loginUser);
         AjaxResult ajax = AjaxResult.success();
@@ -158,9 +141,7 @@ public class SysLoginController
         return ajax;
     }
 
-    /**
-     * 从 sys_user_post 刷新当前用户的耗材工作组（岗位）ID，避免管理员维护后登录态仍缺 postIds 引发前端异常
-     */
+    /** 从 sys_user_post 刷新当前用户的耗材工作组（岗位）ID */
     private void refreshHcConsumablePostIds(SysUser user)
     {
         if (user == null || user.getUserId() == null)
@@ -176,35 +157,6 @@ public class SysLoginController
         {
             user.setPostIds(null);
         }
-    }
-
-    /**
-     * 获取设备前端用户信息（基于 sb_*）
-     * 含租户信息 tenant（首页可展示租户名称；customerId、customerCode 供前端请求使用，界面可隐藏不展示）
-     *
-     * @return 用户信息
-     */
-    @GetMapping("getEquipmentInfo")
-    public AjaxResult getEquipmentInfo()
-    {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        SysUser user = loginUser.getUser();
-        refreshHcConsumablePostIds(user);
-        // 设备角色集合
-        Set<String> roles = sbPermissionService.getRolePermission(user);
-        // 设备菜单权限集合（与登录时一致：平台 + 设备，供前端 v-hasPermi 使用）
-        Set<String> permissions = new HashSet<>(permissionService.getMenuPermission(user));
-        permissions.addAll(sbPermissionService.getMenuPermission(user));
-        // 同步到 Redis 中 LoginUser，避免「能看到按钮但点击 403」
-        loginUser.setPermissions(permissions);
-        tokenService.setLoginUser(loginUser);
-        AjaxResult ajax = AjaxResult.success();
-        ajax.put("user", user);
-        ajax.put("roles", roles);
-        ajax.put("permissions", permissions);
-        putTenantIfPresent(ajax, user.getCustomerId());
-        putTenantSuperFlag(ajax, user);
-        return ajax;
     }
 
     /** 是否机构管理员（super 账号），供前端控制仅 super 可见的功能 */
@@ -275,18 +227,5 @@ public class SysLoginController
             }
         }
         return AjaxResult.success(menuService.buildMenus(menus, pausedMenuIds));
-    }
-
-    /**
-     * 获取设备前端路由信息（基于 sb_menu）
-     *
-     * @return 路由信息
-     */
-    @GetMapping("getEquipmentRouters")
-    public AjaxResult getEquipmentRouters()
-    {
-        Long userId = SecurityUtils.getUserId();
-        List<SbMenu> sbMenus = sbMenuService.selectSbMenuTreeByUserId(userId);
-        return AjaxResult.success(sbMenuService.buildMenusFromSb(sbMenus));
     }
 }

@@ -181,20 +181,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and stk.qty &gt; 0
             </otherwise>
         </choose>
-        <if test="params != null and params.scopeUserId != null">
-            and stk.department_id in (
-                select ud.department_id
-                from sys_user_department ud
-                where ud.user_id = #{params.scopeUserId}
-                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
-            )
-            and stk.warehouse_id in (
-                select uw.warehouse_id
-                from sys_user_warehouse uw
-                where uw.user_id = #{params.scopeUserId}
-                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
-            )
-        </if>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+            <property name="deptColumn" value="stk.department_id"/>
+        </include>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.warehouseScopeFilter">
+            <property name="warehouseColumn" value="stk.warehouse_id"/>
+        </include>
         <if test="materialId != null "> and stk.material_id = #{materialId}</if>
         <if test="materialIsUse != null and materialIsUse != ''"> and (m.id is null or m.is_use = #{materialIsUse})</if>
         <if test="materialKeyword != null and materialKeyword != ''">
@@ -523,20 +515,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         stk.qty &gt; 0
           and (stk.del_flag = 0 or stk.del_flag is null)
           and (m.id is null or (m.del_flag is null or m.del_flag != 1))
-        <if test="params != null and params.scopeUserId != null">
-            and stk.department_id in (
-                select ud.department_id
-                from sys_user_department ud
-                where ud.user_id = #{params.scopeUserId}
-                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
-            )
-            and stk.warehouse_id in (
-                select uw.warehouse_id
-                from sys_user_warehouse uw
-                where uw.user_id = #{params.scopeUserId}
-                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
-            )
-        </if>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+            <property name="deptColumn" value="stk.department_id"/>
+        </include>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.warehouseScopeFilter">
+            <property name="warehouseColumn" value="stk.warehouse_id"/>
+        </include>
         <if test="materialId != null"> and stk.material_id = #{materialId}</if>
         <if test="materialIsUse != null and materialIsUse != ''"> and (m.id is null or m.is_use = #{materialIsUse})</if>
         <if test="materialKeyword != null and materialKeyword != ''">
@@ -626,20 +610,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where bill.del_flag = 0
           and bill.tenant_id = #{scopedTenantId}
           and (entry.del_flag = 0 or entry.del_flag is null)
-        <if test="params != null and params.scopeUserId != null">
-            and bill.department_id in (
-                select ud.department_id
-                from sys_user_department ud
-                where ud.user_id = #{params.scopeUserId}
-                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
-            )
-            and bill.warehouse_id in (
-                select uw.warehouse_id
-                from sys_user_warehouse uw
-                where uw.user_id = #{params.scopeUserId}
-                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
-            )
-        </if>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+            <property name="deptColumn" value="bill.department_id"/>
+        </include>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.warehouseScopeFilter">
+            <property name="warehouseColumn" value="bill.warehouse_id"/>
+        </include>
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
         <if test="materialKeyword != null and materialKeyword != ''">
             and (
@@ -682,20 +658,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where bill.del_flag = 0
           and bill.tenant_id = #{scopedTenantId}
           and (entry.del_flag = 0 or entry.del_flag is null)
-        <if test="params != null and params.scopeUserId != null">
-            and bill.department_id in (
-                select ud.department_id
-                from sys_user_department ud
-                where ud.user_id = #{params.scopeUserId}
-                  and (ud.status = 0 or ud.status = '0' or ud.status is null)
-            )
-            and bill.warehouse_id in (
-                select uw.warehouse_id
-                from sys_user_warehouse uw
-                where uw.user_id = #{params.scopeUserId}
-                  and (uw.status = 0 or uw.status = '0' or uw.status is null)
-            )
-        </if>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+            <property name="deptColumn" value="bill.department_id"/>
+        </include>
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.warehouseScopeFilter">
+            <property name="warehouseColumn" value="bill.warehouse_id"/>
+        </include>
         <if test="materialId != null"> and entry.material_id = #{materialId}</if>
         <if test="materialKeyword != null and materialKeyword != ''">
             and (
