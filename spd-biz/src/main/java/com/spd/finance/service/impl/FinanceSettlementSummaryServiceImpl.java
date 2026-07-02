@@ -5,15 +5,23 @@ import java.math.RoundingMode;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.spd.common.core.domain.entity.SysUser;
+import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.finance.domain.vo.FinanceDeptConsumablePickupRowVo;
+import com.spd.finance.domain.vo.FinanceDeptMonthlyConsumptionRowVo;
 import com.spd.finance.domain.vo.FinanceSettlementSummaryBundleVo;
 import com.spd.finance.domain.vo.FinanceSettlementSummaryRowVo;
 import com.spd.finance.service.IFinanceSettlementSummaryService;
+import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.service.IFdDepartmentService;
+import com.spd.system.service.ITenantScopeService;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.mapper.StkIoBillMapper;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -32,6 +40,12 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
     @Autowired
     private IStkIoBillService stkIoBillService;
 
+    @Autowired
+    private IFdDepartmentService fdDepartmentService;
+
+    @Autowired
+    private ITenantScopeService tenantScopeService;
+
     @Override
     public FinanceSettlementSummaryBundleVo summarize(StkIoBill query)
     {
@@ -42,6 +56,7 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         stkIoBillService.applyCtkDepartmentScopeToQuery(query);
         List<Map<String, Object>> raw = stkIoBillMapper.selectFinanceSettlementSupplierSummary(query);
         List<Map<String, Object>> rawDept = stkIoBillMapper.selectFinanceDeptConsumablePickupSummary(query);
+        List<Map<String, Object>> rawDeptMonthly = stkIoBillMapper.selectFinanceDeptMonthlyConsumptionSummary(query);
 
         List<FinanceSettlementSummaryRowVo> material = new ArrayList<>();
         List<FinanceSettlementSummaryRowVo> reagent = new ArrayList<>();
@@ -122,6 +137,9 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         }
         deptRows.sort(byDeptName);
 
+        List<FinanceDeptMonthlyConsumptionRowVo> deptMonthlyRows =
+            buildDeptMonthlyConsumptionRows(query, rawDeptMonthly, zh);
+
         FinanceSettlementSummaryBundleVo bundle = new FinanceSettlementSummaryBundleVo();
         bundle.setMaterialSuppliers(material);
         bundle.setMaterialWholesaleTotal(materialSum.setScale(2, RoundingMode.HALF_UP));
@@ -130,6 +148,7 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         bundle.setUnrecognizedSuppliers(unrecognized);
         bundle.setUnrecognizedWholesaleTotal(unrecognizedSum.setScale(2, RoundingMode.HALF_UP));
         bundle.setDeptConsumablePickupRows(deptRows);
+        bundle.setDeptMonthlyConsumptionRows(deptMonthlyRows);
         return bundle;
     }
 
@@ -152,6 +171,131 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
             return 1;
         }
         return 2;
+    }
+
+    /**
+     * 表三：补全当前账号有权限的全部科室（无消耗记 0），按合计金额从高到低排序。
+     */
+    private List<FinanceDeptMonthlyConsumptionRowVo> buildDeptMonthlyConsumptionRows(
+        StkIoBill query, List<Map<String, Object>> rawDeptMonthly, Collator zh)
+    {
+        Map<Long, FinanceDeptMonthlyConsumptionRowVo> amountByDeptId = new HashMap<>();
+        if (rawDeptMonthly != null)
+        {
+            for (Map<String, Object> row : rawDeptMonthly)
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+                Object did = row.get("departmentId");
+                if (!(did instanceof Number))
+                {
+                    continue;
+                }
+                Long deptId = ((Number) did).longValue();
+                FinanceDeptMonthlyConsumptionRowVo dr = new FinanceDeptMonthlyConsumptionRowVo();
+                dr.setDepartmentId(deptId);
+                dr.setDepartmentName(row.get("departmentName") != null ? row.get("departmentName").toString() : "");
+                dr.setBillingConsumablesAmt(toBigDecimal(row.get("billingConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
+                dr.setNonBillingConsumablesAmt(toBigDecimal(row.get("nonBillingConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
+                amountByDeptId.put(deptId, dr);
+            }
+        }
+
+        List<FdDepartment> scopedDepts = resolveScopedDepartments();
+        if (query != null && query.getDepartmentId() != null)
+        {
+            Long filterId = query.getDepartmentId();
+            scopedDepts = scopedDepts.stream()
+                .filter(d -> d.getId() != null && filterId.equals(d.getId()))
+                .collect(Collectors.toList());
+        }
+
+        List<FinanceDeptMonthlyConsumptionRowVo> rows = new ArrayList<>();
+        for (FdDepartment dept : scopedDepts)
+        {
+            if (dept == null || dept.getId() == null)
+            {
+                continue;
+            }
+            FinanceDeptMonthlyConsumptionRowVo existing = amountByDeptId.get(dept.getId());
+            if (existing != null)
+            {
+                if (StringUtils.isEmpty(existing.getDepartmentName()))
+                {
+                    existing.setDepartmentName(StringUtils.nvl(dept.getName(), ""));
+                }
+                rows.add(existing);
+                continue;
+            }
+            FinanceDeptMonthlyConsumptionRowVo dr = new FinanceDeptMonthlyConsumptionRowVo();
+            dr.setDepartmentId(dept.getId());
+            dr.setDepartmentName(StringUtils.nvl(dept.getName(), ""));
+            dr.setBillingConsumablesAmt(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            dr.setNonBillingConsumablesAmt(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            rows.add(dr);
+        }
+
+        Comparator<FinanceDeptMonthlyConsumptionRowVo> byTotalDesc = (a, b) -> {
+            int cmp = deptMonthlyTotal(b).compareTo(deptMonthlyTotal(a));
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+            return zh.compare(StringUtils.nvl(a.getDepartmentName(), ""), StringUtils.nvl(b.getDepartmentName(), ""));
+        };
+        rows.sort(byTotalDesc);
+        return rows;
+    }
+
+    private static BigDecimal deptMonthlyTotal(FinanceDeptMonthlyConsumptionRowVo row)
+    {
+        if (row == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal billing = row.getBillingConsumablesAmt() != null ? row.getBillingConsumablesAmt() : BigDecimal.ZERO;
+        BigDecimal nonBilling = row.getNonBillingConsumablesAmt() != null ? row.getNonBillingConsumablesAmt() : BigDecimal.ZERO;
+        return billing.add(nonBilling);
+    }
+
+    /** 与财务结算汇总筛选下拉科室列表口径一致 */
+    private List<FdDepartment> resolveScopedDepartments()
+    {
+        Long userId = SecurityUtils.getUserId();
+        String customerId = SecurityUtils.getCustomerId();
+        List<FdDepartment> list;
+        if (StringUtils.isNotEmpty(customerId))
+        {
+            list = fdDepartmentService.selectdepartmenAll();
+            if (list != null && !tenantScopeService.isTenantSuper(userId, customerId))
+            {
+                List<Long> allowedIds = tenantScopeService.resolveDepartmentScope(userId, customerId);
+                if (allowedIds == null || allowedIds.isEmpty())
+                {
+                    list = new ArrayList<>();
+                }
+                else
+                {
+                    list = list.stream()
+                        .filter(d -> d.getId() != null && allowedIds.contains(d.getId()))
+                        .collect(Collectors.toList());
+                }
+            }
+        }
+        else
+        {
+            if (SysUser.isAdmin(userId))
+            {
+                list = fdDepartmentService.selectdepartmenAll();
+            }
+            else
+            {
+                list = fdDepartmentService.selectUserDepartmenAll(userId);
+            }
+        }
+        return list != null ? list : new ArrayList<>();
     }
 
     private static BigDecimal toBigDecimal(Object v)

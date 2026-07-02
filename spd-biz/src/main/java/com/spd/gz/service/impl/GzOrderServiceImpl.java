@@ -20,8 +20,7 @@ import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdWarehouse;
-import com.spd.foundation.domain.FdSupplier;
-import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.util.WarehouseStatusUtil;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FdWarehouseMapper;
@@ -248,6 +247,7 @@ public class GzOrderServiceImpl implements IGzOrderService
             gzOrder.setTenantId(SecurityUtils.getCustomerId());
         }
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzOrder.getGzOrderEntryList(), gzOrderDocLabel(gzOrder));
+        assertWarehouseEnabledForStockInbound(gzOrder);
         gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
@@ -306,6 +306,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         }
         gzOrder.setCreateTime(null);
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzOrder.getGzOrderEntryList(), gzOrderDocLabel(gzOrder));
+        assertWarehouseEnabledForStockInbound(gzOrder);
         syncGzOrderEntry(gzOrder);
         alignActiveGzOrderEntriesSupplierFromHeader(gzOrder);
         return gzOrderMapper.updateGzOrder(gzOrder);
@@ -321,6 +322,25 @@ public class GzOrderServiceImpl implements IGzOrderService
             case 401: return "高值跟台";
             default: return "高值入库";
         }
+    }
+
+    /** 高值备货入库（101）：停用仓库不允许入库，出库/退库等不受影响 */
+    private void assertWarehouseEnabledForStockInbound(GzOrder gzOrder) {
+        if (gzOrder == null || gzOrder.getWarehouseId() == null) {
+            return;
+        }
+        Integer orderType = gzOrder.getOrderType();
+        if (orderType == null && gzOrder.getId() != null) {
+            GzOrder existing = gzOrderMapper.selectGzOrderById(gzOrder.getId());
+            if (existing != null) {
+                orderType = existing.getOrderType();
+            }
+        }
+        if (orderType != null && orderType != 101) {
+            return;
+        }
+        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(gzOrder.getWarehouseId()));
+        WarehouseStatusUtil.assertEnabledForInbound(wh, "该仓库已经停用，不能进行备货入库");
     }
 
     /**

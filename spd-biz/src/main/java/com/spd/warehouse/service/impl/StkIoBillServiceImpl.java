@@ -53,6 +53,7 @@ import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.domain.FdWarehouseCategory;
+import com.spd.foundation.util.WarehouseStatusUtil;
 import com.spd.foundation.mapper.FdFactoryMapper;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -371,6 +372,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         MasterDetailValidateUtil.assertHasMaterialLine(
             stkIoBill.getStkIoBillEntryList(), StkIoBillEntry::getMaterialId, stkIoBillDocLabel(stkIoBill));
         assertInboundEntryBatchAndExpiry(stkIoBill, "保存");
+        assertWarehouseEnabledForLowValueInbound(stkIoBill.getWarehouseId(), stkIoBill.getBillType());
         if (StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -460,8 +462,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkIoBill.setAuditDate(dbBill.getAuditDate());
                     stkIoBill.setAuditBy(dbBill.getAuditBy());
                 }
+                if (stkIoBill.getBillType() == null) {
+                    stkIoBill.setBillType(dbBill.getBillType());
+                }
             }
         }
+        assertWarehouseEnabledForLowValueInbound(stkIoBill.getWarehouseId(), stkIoBill.getBillType());
         if (entryList != null) {
             MasterDetailValidateUtil.assertHasMaterialLine(
                 entryList, StkIoBillEntry::getMaterialId, stkIoBillDocLabel(stkIoBill));
@@ -785,6 +791,19 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (unified != null) {
             bill.setSupplerId(unified);
         }
+    }
+
+    /** 低值入库（101）：停用仓库不允许入库，出库不受影响 */
+    private void assertWarehouseEnabledForLowValueInbound(Long warehouseId, Integer billType) {
+        if (warehouseId == null) {
+            return;
+        }
+        int type = billType != null ? billType.intValue() : 101;
+        if (type != 101) {
+            return;
+        }
+        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(warehouseId));
+        WarehouseStatusUtil.assertEnabledForInbound(wh, "该仓库已经停用，不能在进行入库");
     }
 
     /** 低值入库：明细批号、有效期不能为空 */

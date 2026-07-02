@@ -91,6 +91,9 @@ public class GzOrderController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody GzOrder gzOrder)
     {
+        if (gzOrder.getOrderType() == null) {
+            gzOrder.setOrderType(101);
+        }
         int rows = gzOrderService.insertGzOrder(gzOrder);
         if (rows > 0) {
             return AjaxResult.success(gzOrder.getId());
@@ -106,6 +109,9 @@ public class GzOrderController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody GzOrder gzOrder)
     {
+        if (gzOrder.getOrderType() == null) {
+            gzOrder.setOrderType(101);
+        }
         return toAjax(gzOrderService.updateGzOrder(gzOrder));
     }
 

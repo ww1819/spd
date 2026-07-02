@@ -20,6 +20,9 @@ public class FinanceSettlementSummaryBundleVo
     /** 表二：按科室汇总（storeroom_id 12/11/13 对应普通耗材/高值耗材/试剂） */
     private List<FinanceDeptConsumablePickupRowVo> deptConsumablePickupRows = new ArrayList<>();
 
+    /** 表三：科室月消耗（按计费/不计费耗材金额汇总） */
+    private List<FinanceDeptMonthlyConsumptionRowVo> deptMonthlyConsumptionRows = new ArrayList<>();
+
     public List<FinanceSettlementSummaryRowVo> getMaterialSuppliers()
     {
         return materialSuppliers;
@@ -88,5 +91,15 @@ public class FinanceSettlementSummaryBundleVo
     public void setDeptConsumablePickupRows(List<FinanceDeptConsumablePickupRowVo> deptConsumablePickupRows)
     {
         this.deptConsumablePickupRows = deptConsumablePickupRows != null ? deptConsumablePickupRows : new ArrayList<>();
+    }
+
+    public List<FinanceDeptMonthlyConsumptionRowVo> getDeptMonthlyConsumptionRows()
+    {
+        return deptMonthlyConsumptionRows;
+    }
+
+    public void setDeptMonthlyConsumptionRows(List<FinanceDeptMonthlyConsumptionRowVo> deptMonthlyConsumptionRows)
+    {
+        this.deptMonthlyConsumptionRows = deptMonthlyConsumptionRows != null ? deptMonthlyConsumptionRows : new ArrayList<>();
     }
 }

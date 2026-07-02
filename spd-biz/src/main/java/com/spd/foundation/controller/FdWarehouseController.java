@@ -20,6 +20,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.service.IFdWarehouseService;
+import com.spd.foundation.util.WarehouseStatusUtil;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.utils.SecurityUtils;
@@ -113,6 +114,25 @@ public class FdWarehouseController extends BaseController
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(fdWarehouse);
         ExcelUtil<FdWarehouse> util = new ExcelUtil<FdWarehouse>(FdWarehouse.class);
         util.exportExcel(response, list, "仓库数据");
+    }
+
+    /**
+     * 校验仓库是否允许入库（仅需登录；停用仓库不允许低值/高值备货入库）
+     */
+    @GetMapping("/checkInboundEnabled/{id}")
+    public AjaxResult checkInboundEnabled(@PathVariable("id") Long id)
+    {
+        if (id == null) {
+            return error("仓库不存在");
+        }
+        FdWarehouse wh = fdWarehouseService.selectFdWarehouseById(String.valueOf(id));
+        if (wh == null) {
+            return error("仓库不存在");
+        }
+        if (!WarehouseStatusUtil.isEnabled(wh)) {
+            return error("该仓库已经停用，不能在进行入库");
+        }
+        return success();
     }
 
     /**

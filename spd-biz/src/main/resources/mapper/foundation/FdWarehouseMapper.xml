@@ -30,6 +30,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
+        <result property="warehouseStatus"    column="warehouse_status"    />
+        <result property="warehouseType"    column="warehouse_type"    />
     </resultMap>
 
     <sql id="selectFdWarehouseVo">
@@ -92,7 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectUserWarehouseAll" resultMap="FdUserWarehouseResult">
         <bind name="scopedTenantId" value="tenantId != null and tenantId != '' ? tenantId : @com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select w.id,w.code,w.name
+        select w.id,w.code,w.name,w.warehouse_status,COALESCE(w.warehouse_type, '低值') as warehouse_type
         from fd_warehouse w
         left join sys_user_warehouse uw on uw.warehouse_id = w.id
         left join sys_user u on u.user_id = uw.user_id

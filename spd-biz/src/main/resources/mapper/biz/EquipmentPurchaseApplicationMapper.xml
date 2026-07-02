@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.biz.mapper.EquipmentPurchaseApplicationMapper">
     
-    <resultMap type="EquipmentPurchaseApplication" id="EquipmentPurchaseApplicationResult">
+    <resultMap type="com.spd.biz.domain.EquipmentPurchaseApplication" id="EquipmentPurchaseApplicationResult">
         <result property="id"    column="id"    />
         <result property="applicationNo"    column="application_no"    />
         <result property="applicationTitle"    column="application_title"    />
@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, application_no, application_title, equipment_name, equipment_model, equipment_specification, equipment_brand, quantity, unit_price, total_amount, budget_amount, urgency_level, application_reason, technical_requirements, supplier_suggestion, expected_delivery_date, application_department, applicant, applicant_phone, application_date, status, reviewer, review_date, review_opinion, purchase_order_no, purchase_date, actual_amount, delivery_date, installation_date, acceptance_date, warranty_period, maintenance_contact, maintenance_phone, remark, del_flag, create_by, create_time, update_by, update_time from equipment_purchase_application
     </sql>
 
-    <select id="selectEquipmentPurchaseApplicationList" parameterType="EquipmentPurchaseApplication" resultMap="EquipmentPurchaseApplicationResult">
+    <select id="selectEquipmentPurchaseApplicationList" parameterType="com.spd.biz.domain.EquipmentPurchaseApplication" resultMap="EquipmentPurchaseApplicationResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectEquipmentPurchaseApplicationVo"/>
         <where>  
@@ -89,7 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and tenant_id = #{scopedTenantId} and del_flag = '0'
     </select>
         
-    <insert id="insertEquipmentPurchaseApplication" parameterType="EquipmentPurchaseApplication" useGeneratedKeys="false">
+    <insert id="insertEquipmentPurchaseApplication" parameterType="com.spd.biz.domain.EquipmentPurchaseApplication" useGeneratedKeys="false">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into equipment_purchase_application
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -178,7 +178,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
     </insert>
 
-    <update id="updateEquipmentPurchaseApplication" parameterType="EquipmentPurchaseApplication">
+    <update id="updateEquipmentPurchaseApplication" parameterType="com.spd.biz.domain.EquipmentPurchaseApplication">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update equipment_purchase_application
         <trim prefix="SET" suffixOverrides=",">

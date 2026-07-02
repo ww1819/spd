@@ -106,6 +106,9 @@ public class StkIoBillController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody StkIoBill stkIoBill)
     {
+        if (stkIoBill.getBillType() == null) {
+            stkIoBill.setBillType(101);
+        }
         int rows = stkIoBillService.insertStkIoBill(stkIoBill);
         if (rows > 0) {
             return success(stkIoBill);
@@ -121,6 +124,9 @@ public class StkIoBillController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody StkIoBill stkIoBill)
     {
+        if (stkIoBill.getBillType() == null) {
+            stkIoBill.setBillType(101);
+        }
         return toAjax(stkIoBillService.updateStkIoBill(stkIoBill));
     }
 
