@@ -880,6 +880,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="isBilling != null and isBilling != ''">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -956,6 +962,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <if test="isBilling != null and isBilling != ''">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -1010,6 +1022,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
+        <if test="isBilling != null and isBilling != ''">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -1068,6 +1086,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="isBilling != null and isBilling != ''">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
