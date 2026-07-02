@@ -663,7 +663,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                 f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                 s.name supplierName, w.name warehouseName,b.material_id materialId
-                ,m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay, m.is_gz materialIsGz
+                ,m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay, m.is_billing materialIsBilling, m.is_gz materialIsGz
                 ,wc.warehouse_category_name materialWarehouseCategoryName
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
@@ -691,6 +691,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="isBilling != null and isBilling != ''">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
@@ -808,6 +814,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
+        <if test="isBilling != null and isBilling != ''">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
+            </choose>
+        </if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
             and m.finance_category_id in
             <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
