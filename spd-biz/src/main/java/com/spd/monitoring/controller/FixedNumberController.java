@@ -85,6 +85,7 @@ public class FixedNumberController extends BaseController
                     map.put("specification", item.getMaterial().getSpeci());
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
+                    map.put("packageSpeci", item.getMaterial().getPackageSpeci());
                     map.put("isProcure", item.getMaterial().getIsProcure());
                     map.put("isGz", item.getMaterial().getIsGz());
                     map.put("materialIsUse", item.getMaterial().getIsUse());
@@ -146,6 +147,7 @@ public class FixedNumberController extends BaseController
                     map.put("specification", item.getMaterial().getSpeci());
                     map.put("model", item.getMaterial().getModel());
                     map.put("registerNo", item.getMaterial().getRegisterNo());
+                    map.put("packageSpeci", item.getMaterial().getPackageSpeci());
                     map.put("isProcure", item.getMaterial().getIsProcure());
                     map.put("isGz", item.getMaterial().getIsGz());
                 }
@@ -211,6 +213,7 @@ public class FixedNumberController extends BaseController
             map.put("model", item.getMaterial() != null ? item.getMaterial().getModel() : null);
             map.put("brand", item.getMaterial() != null ? item.getMaterial().getBrand() : null);
             map.put("registerNo", item.getRegisterNo());
+            map.put("packageSpeci", item.getMaterial() != null ? item.getMaterial().getPackageSpeci() : null);
             map.put("unitName", item.getUnitName());
             map.put("price", item.getPrice());
             map.put("supplierName", item.getSupplierName());
@@ -278,6 +281,7 @@ public class FixedNumberController extends BaseController
             map.put("model", item.getMaterial() != null ? item.getMaterial().getModel() : null);
             map.put("brand", item.getMaterial() != null ? item.getMaterial().getBrand() : null);
             map.put("registerNo", item.getRegisterNo());
+            map.put("packageSpeci", item.getMaterial() != null ? item.getMaterial().getPackageSpeci() : null);
             map.put("unitName", item.getUnitName());
             map.put("price", item.getPrice());
             map.put("supplierName", item.getSupplierName());

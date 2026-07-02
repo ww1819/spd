@@ -110,9 +110,12 @@ public class FdSupplier extends BaseEntity
     @Excel(name = "经营范围")
     private String supplierRange;
 
-    /** 状态（启用/停用，存库 0/1） */
-    @Excel(name = "状态", readConverterExp = "0=启用,1=停用")
+    /** 状态（启用/停用，字典 is_use_status：1=启用，2=停用） */
+    @Excel(name = "状态", readConverterExp = "1=启用,2=停用")
     private String supplierStatus;
+
+    /** 查询参数：仅启用（下拉选供应商等场景） */
+    private Boolean onlyEnabled;
 
     /** 供应商类型 */
     @Excel(name = "供应商类型")
@@ -333,6 +336,15 @@ public class FdSupplier extends BaseEntity
     {
         return supplierStatus;
     }
+
+    public Boolean getOnlyEnabled() {
+        return onlyEnabled;
+    }
+
+    public void setOnlyEnabled(Boolean onlyEnabled) {
+        this.onlyEnabled = onlyEnabled;
+    }
+
     public void setSupplierType(String supplierType)
     {
         this.supplierType = supplierType;

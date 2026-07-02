@@ -44,6 +44,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="factoryAddress != null  and factoryAddress != ''"> and factory_address = #{factoryAddress}</if>
         <if test="factoryContact != null  and factoryContact != ''"> and factory_contact = #{factoryContact}</if>
+        <if test="onlyEnabled != null and onlyEnabled == true">
+            and (factory_status is null or factory_status = '' or factory_status = '1')
+        </if>
     </select>
 
     <select id="selectFdFactoryByFactoryId" parameterType="Long" resultMap="FdFactoryResult">

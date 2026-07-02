@@ -48,9 +48,12 @@ public class FdFactory extends BaseEntity
     @Excel(name = "厂家简码")
     private String factoryReferredCode;
 
-    /** 厂家状态（启用/停用，存库 0/1） */
-    @Excel(name = "厂家状态", readConverterExp = "0=启用,1=停用")
+    /** 厂家状态（启用/停用，字典 is_use_status：1=启用，2=停用） */
+    @Excel(name = "厂家状态", readConverterExp = "1=启用,2=停用")
     private String factoryStatus;
+
+    /** 查询参数：仅启用（用于下拉选厂家等场景） */
+    private Boolean onlyEnabled;
 
     @Excel(name = "数据校验结果", width = 40, sort = 99999)
     private String validationResult;
@@ -137,6 +140,14 @@ public class FdFactory extends BaseEntity
 
     public void setFactoryStatus(String factoryStatus) {
         this.factoryStatus = factoryStatus;
+    }
+
+    public Boolean getOnlyEnabled() {
+        return onlyEnabled;
+    }
+
+    public void setOnlyEnabled(Boolean onlyEnabled) {
+        this.onlyEnabled = onlyEnabled;
     }
 
     public String getValidationResult() {

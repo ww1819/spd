@@ -30,6 +30,7 @@ import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdSupplierService;
+import com.spd.foundation.util.WarehouseStatusUtil;
 
 /**
  * 供应商Service业务层处理
@@ -125,6 +126,10 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         else
         {
             assertHisIdUnique(fdSupplier.getTenantId(), fdSupplier.getHisId(), null);
+        }
+        if (StringUtils.isEmpty(fdSupplier.getSupplierStatus()))
+        {
+            fdSupplier.setSupplierStatus(WarehouseStatusUtil.STATUS_ENABLED);
         }
         return fdSupplierMapper.insertFdSupplier(fdSupplier);
     }

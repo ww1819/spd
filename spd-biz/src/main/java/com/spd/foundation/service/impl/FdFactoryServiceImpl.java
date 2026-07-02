@@ -29,6 +29,7 @@ import com.spd.foundation.mapper.FdFactoryMapper;
 import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.service.FoundationSnapshotRecorder;
 import com.spd.foundation.service.IFdFactoryService;
+import com.spd.foundation.util.WarehouseStatusUtil;
 
 /**
  * 厂家维护Service业务层处理
@@ -124,6 +125,10 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         else
         {
             assertHisIdUnique(fdFactory.getTenantId(), fdFactory.getHisId(), null);
+        }
+        if (StringUtils.isEmpty(fdFactory.getFactoryStatus()))
+        {
+            fdFactory.setFactoryStatus(WarehouseStatusUtil.STATUS_ENABLED);
         }
         return fdFactoryMapper.insertFdFactory(fdFactory);
     }

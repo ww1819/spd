@@ -408,6 +408,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setCreateTime(DateUtils.getNowDate());
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
             normalizeInboundSupplierFields(stkIoBill);
+            assertSupplierEnabledForLowValueInbound(stkIoBill);
         }
         assertInboundDeliveryLineQtyWithinCap(stkIoBill, null);
         int rows = stkIoBillMapper.insertStkIoBill(stkIoBill);
@@ -476,6 +477,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101) {
                 assertInboundEntryBatchAndExpiry(stkIoBill, "保存");
                 normalizeInboundSupplierFields(stkIoBill);
+                assertSupplierEnabledForLowValueInbound(stkIoBill);
                 mergeDeliveryLineMetaFromDb(stkIoBill, entryList);
                 assertInboundDeliveryLineQtyWithinCap(stkIoBill, stkIoBill.getId());
             }
@@ -485,6 +487,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101 && stkIoBill.getSupplerId() != null
             && stkIoBill.getId() != null && (entryList == null || entryList.isEmpty())) {
             persistInboundEntrySupplerToDb(stkIoBill);
+        }
+        if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101
+            && (entryList == null || entryList.isEmpty())) {
+            assertSupplierEnabledForLowValueInbound(stkIoBill);
         }
         return rows;
     }
@@ -569,6 +575,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 e -> e != null && MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()),
                 stkIoBillDocLabel(stkIoBill));
             assertInboundEntryBatchAndExpiry(stkIoBill, "审核");
+            assertSupplierEnabledForLowValueInbound(stkIoBill);
         }
         if (auditBillType != null) {
             if (auditBillType == 201 || auditBillType == 301) {
@@ -804,6 +811,43 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(warehouseId));
         WarehouseStatusUtil.assertEnabledForInbound(wh, "该仓库已经停用，不能在进行入库");
+    }
+
+    /** 低值入库（101）：停用供应商不允许入库 */
+    private void assertSupplierEnabledForLowValueInbound(StkIoBill bill) {
+        if (bill == null || bill.getBillType() == null || bill.getBillType().intValue() != 101) {
+            return;
+        }
+        java.util.Set<Long> supplierIds = new java.util.LinkedHashSet<>();
+        if (bill.getSupplerId() != null) {
+            supplierIds.add(bill.getSupplerId());
+        }
+        List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
+        if (list != null) {
+            for (StkIoBillEntry e : list) {
+                if (e == null || !MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag())) {
+                    continue;
+                }
+                Long lineSid = resolveInboundLineSupplierId(bill, e);
+                if (lineSid != null) {
+                    supplierIds.add(lineSid);
+                }
+                if (StringUtils.isNotEmpty(e.getSupplerId())) {
+                    try {
+                        supplierIds.add(Long.parseLong(e.getSupplerId().trim()));
+                    } catch (NumberFormatException ignored) {
+                        // ignore invalid suppler_id on line
+                    }
+                }
+            }
+        }
+        for (Long sid : supplierIds) {
+            FdSupplier sup = fdSupplierMapper.selectFdSupplierById(sid);
+            if (sup != null && WarehouseStatusUtil.isDisabledStatus(sup.getSupplierStatus())) {
+                String name = StringUtils.isNotEmpty(sup.getName()) ? sup.getName() : String.valueOf(sid);
+                throw new ServiceException("供应商「" + name + "」已停用，不能进行入库");
+            }
+        }
     }
 
     /** 低值入库：明细批号、有效期不能为空 */

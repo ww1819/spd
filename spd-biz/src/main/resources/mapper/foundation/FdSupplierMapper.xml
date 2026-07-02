@@ -62,6 +62,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="referredCode != null and referredCode != ''"> and referred_code like concat('%', #{referredCode}, '%')</if>
         <if test="taxNumber != null and taxNumber != ''"> and tax_number like concat('%', #{taxNumber}, '%')</if>
         <if test="supplierStatus != null and supplierStatus != ''"> and supplier_status = #{supplierStatus}</if>
+        <if test="onlyEnabled != null and onlyEnabled == true">
+            and (supplier_status is null or supplier_status = '' or supplier_status = '1')
+        </if>
         <if test="supplierType != null and supplierType != ''"> and supplier_type like concat('%', #{supplierType}, '%')</if>
     </select>
 
