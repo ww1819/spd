@@ -2670,6 +2670,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 0))
     </sql>
 
+    <sql id="medicalSummaryWarehouseFilter">
+        <choose>
+            <when test="warehouseIds != null and warehouseIds.length > 0">
+                and stk.warehouse_id in
+                <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                    #{wId}
+                </foreach>
+            </when>
+            <when test="warehouseId != null">
+                and stk.warehouse_id = #{warehouseId}
+            </when>
+        </choose>
+    </sql>
+
     <!-- 卫材入库汇总（耗材出退库 201/401，出库为正退库为负）：日期 + 供应商 + 材料类别 + 金额；外层查询便于 PageHelper 在聚合后对结果集 LIMIT -->
     <select id="selectMedicalInboundSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
@@ -2696,7 +2710,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <include refid="medicalSummaryWarehouseFilter"/>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="warehouseKeyword != null and warehouseKeyword != ''">
@@ -2748,7 +2762,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <include refid="medicalSummaryWarehouseFilter"/>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="warehouseKeyword != null and warehouseKeyword != ''">
@@ -2796,7 +2810,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <include refid="medicalSummaryWarehouseFilter"/>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="warehouseKeyword != null and warehouseKeyword != ''">
@@ -2852,7 +2866,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <include refid="medicalSummaryWarehouseFilter"/>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="warehouseKeyword != null and warehouseKeyword != ''">
@@ -2905,7 +2919,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <include refid="medicalSummaryWarehouseFilter"/>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="warehouseKeyword != null and warehouseKeyword != ''">
@@ -2954,7 +2968,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
         <if test="beginDate != null"> and stk.audit_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="warehouseId != null"> and stk.warehouse_id = #{warehouseId}</if>
+        <include refid="medicalSummaryWarehouseFilter"/>
         <if test="departmentId != null"> and stk.department_id = #{departmentId}</if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <if test="warehouseKeyword != null and warehouseKeyword != ''">
