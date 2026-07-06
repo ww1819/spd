@@ -474,6 +474,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 if (inventoryList == null) {
                     inventoryList = new ArrayList<>();
                 }
+                sortDepotInventoryForDeduction(inventoryList, shipmentEntry.getInHospitalCode());
 
                 for(GzDepotInventory inventory : inventoryList){
                     if(remainingQty <= 0){
@@ -524,16 +525,58 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         } else {
             inventory.setQty(newQty);
             syncDepotInventoryAmt(inventory);
-            gzDepotInventoryMapper.updateGzDepotInventory(inventory);
+            assertDepotInventoryUpdated(inventory);
         }
         return deduct;
+    }
+
+    /** FIFO 扣减时优先匹配出库明细院内码，避免同批次多码扣错行 */
+    private void sortDepotInventoryForDeduction(List<GzDepotInventory> inventoryList, String inHospitalCode) {
+        if (inventoryList == null || inventoryList.size() <= 1 || StringUtils.isEmpty(inHospitalCode)) {
+            return;
+        }
+        String code = inHospitalCode.trim();
+        inventoryList.sort((a, b) -> {
+            boolean aMatch = a != null && code.equals(a.getInHospitalCode());
+            boolean bMatch = b != null && code.equals(b.getInHospitalCode());
+            if (aMatch == bMatch) {
+                Long aId = a != null ? a.getId() : null;
+                Long bId = b != null ? b.getId() : null;
+                if (aId == null || bId == null) {
+                    return 0;
+                }
+                return aId.compareTo(bId);
+            }
+            return aMatch ? -1 : 1;
+        });
+    }
+
+    private void touchDepotInventoryForUpdate(GzDepotInventory inventory) {
+        if (inventory == null) {
+            return;
+        }
+        if (StringUtils.isEmpty(inventory.getTenantId())) {
+            inventory.setTenantId(SecurityUtils.getCustomerId());
+        }
+        inventory.setUpdateBy(SecurityUtils.getUserIdStr());
+        inventory.setUpdateTime(DateUtils.getNowDate());
+    }
+
+    private void assertDepotInventoryUpdated(GzDepotInventory inventory) {
+        touchDepotInventoryForUpdate(inventory);
+        int rows = gzDepotInventoryMapper.updateGzDepotInventory(inventory);
+        if (rows <= 0) {
+            throw new ServiceException(String.format(
+                "备货库存扣减失败（库存ID=%s，院内码=%s），请刷新后重试或联系管理员",
+                inventory.getId(), inventory.getInHospitalCode()));
+        }
     }
 
     /** 备货出库扣减后库存为 0：更新 qty/amt，不软删备货行 */
     private void zeroOutDepotInventoryRow(GzDepotInventory inventory) {
         inventory.setQty(BigDecimal.ZERO);
         inventory.setAmt(BigDecimal.ZERO);
-        gzDepotInventoryMapper.updateGzDepotInventory(inventory);
+        assertDepotInventoryUpdated(inventory);
     }
 
     private void syncDepotInventoryAmt(GzDepotInventory inventory) {

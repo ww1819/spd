@@ -810,3 +810,15 @@ WHERE bill_type = 201
   AND status = '0'
   AND tenant_id = 'hengsui-third-001';
 /
+-- 备货出库已审核但备货库存 qty 未扣减（历史脏数据修复）
+UPDATE gz_depot_inventory di
+INNER JOIN gz_shipment_entry e ON e.in_hospital_code = di.in_hospital_code AND IFNULL(e.del_flag, 0) = 0
+INNER JOIN gz_shipment s ON s.id = e.paren_id AND IFNULL(s.del_flag, 0) = 0 AND s.shipment_status = 2
+SET di.qty = 0,
+    di.amt = 0,
+    di.update_time = NOW()
+WHERE IFNULL(di.del_flag, 0) != 1
+  AND di.qty > 0
+  AND di.warehouse_id = s.warehouse_id
+  AND di.tenant_id = s.tenant_id;
+/

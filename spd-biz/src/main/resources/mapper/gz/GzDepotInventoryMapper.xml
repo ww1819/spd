@@ -265,8 +265,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="inhospitalcodeListId != null">inhospitalcode_list_id = #{inhospitalcodeListId},</if>
             <if test="masterBarcode != null">master_barcode = #{masterBarcode},</if>
             <if test="secondaryBarcode != null">secondary_barcode = #{secondaryBarcode},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where id = #{id} and tenant_id = #{scopedTenantId}
+        where id = #{id}
+        <choose>
+            <when test="tenantId != null and tenantId != ''">
+                and tenant_id = #{tenantId}
+            </when>
+            <otherwise>
+                and tenant_id = #{scopedTenantId}
+            </otherwise>
+        </choose>
     </update>
 
     <delete id="deleteGzDepotInventoryById">
