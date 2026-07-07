@@ -17,6 +17,7 @@ import com.spd.gz.mapper.GzTraceabilityMapper;
 import com.spd.gz.domain.GzTraceability;
 import com.spd.gz.domain.GzMaterialUsageReportQuery;
 import com.spd.gz.domain.GzMaterialUsageReportVo;
+import com.spd.gz.domain.GzTraceabilitySummaryVo;
 import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.gz.domain.GzDepInventory;
@@ -443,6 +444,24 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     public List<GzMaterialUsageReportVo> selectMaterialUsageReportList(GzMaterialUsageReportQuery query)
     {
         return gzTraceabilityMapper.selectMaterialUsageReportList(query);
+    }
+
+    @Override
+    public List<GzTraceabilitySummaryVo> selectTraceabilitySummaryByExecDept(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilitySummaryByExecDept(gzTraceability);
+    }
+
+    @Override
+    public List<GzTraceabilitySummaryVo> selectTraceabilitySummaryByApplyDept(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilitySummaryByApplyDept(gzTraceability);
+    }
+
+    @Override
+    public List<GzTraceabilitySummaryVo> selectTraceabilitySummaryBySupplier(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilitySummaryBySupplier(gzTraceability);
     }
 
     /**

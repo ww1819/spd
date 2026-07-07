@@ -151,6 +151,27 @@ public class GzTraceabilityEntry extends BaseEntity
     /** 来源业务类型（来自 stk_batch.origin_business_type） */
     private String originBusinessType;
 
+    /** 供应商展示名（关联供应商档案或明细快照） */
+    private String supplierDisplayName;
+
+    /** 收费编码（HIS 收费项目编码或 ID） */
+    private String chargeCode;
+
+    /** 病人住院号/门诊号（来自追溯单 hospital_number） */
+    private String hospitalNumber;
+
+    /** 就诊类型（来自追溯单 visit_kind） */
+    private String visitKind;
+
+    /** 开单科室名称（来自追溯单 apply_dept_id） */
+    private String applyDeptName;
+
+    /** 执行科室名称（来自追溯单 exec_dept_id） */
+    private String execDeptName;
+
+    /** 核销科室名称（来自追溯单 write_off_dept_id） */
+    private String writeOffDeptName;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -520,6 +541,76 @@ public class GzTraceabilityEntry extends BaseEntity
     public String getOriginBusinessType()
     {
         return originBusinessType;
+    }
+
+    public String getSupplierDisplayName()
+    {
+        return supplierDisplayName;
+    }
+
+    public void setSupplierDisplayName(String supplierDisplayName)
+    {
+        this.supplierDisplayName = supplierDisplayName;
+    }
+
+    public String getChargeCode()
+    {
+        return chargeCode;
+    }
+
+    public void setChargeCode(String chargeCode)
+    {
+        this.chargeCode = chargeCode;
+    }
+
+    public String getHospitalNumber()
+    {
+        return hospitalNumber;
+    }
+
+    public void setHospitalNumber(String hospitalNumber)
+    {
+        this.hospitalNumber = hospitalNumber;
+    }
+
+    public String getVisitKind()
+    {
+        return visitKind;
+    }
+
+    public void setVisitKind(String visitKind)
+    {
+        this.visitKind = visitKind;
+    }
+
+    public String getApplyDeptName()
+    {
+        return applyDeptName;
+    }
+
+    public void setApplyDeptName(String applyDeptName)
+    {
+        this.applyDeptName = applyDeptName;
+    }
+
+    public String getExecDeptName()
+    {
+        return execDeptName;
+    }
+
+    public void setExecDeptName(String execDeptName)
+    {
+        this.execDeptName = execDeptName;
+    }
+
+    public String getWriteOffDeptName()
+    {
+        return writeOffDeptName;
+    }
+
+    public void setWriteOffDeptName(String writeOffDeptName)
+    {
+        this.writeOffDeptName = writeOffDeptName;
     }
 
     @Override

@@ -34,6 +34,12 @@ public class GzTraceability extends BaseEntity
     @Excel(name = "批号")
     private String materialNo;
 
+    /** 扫描日期起（使用追溯明细表查询） */
+    private String startDate;
+
+    /** 扫描日期止（使用追溯明细表查询） */
+    private String endDate;
+
     /** 病历号 */
     @Excel(name = "病历号")
     private String medicalRecordNo;
@@ -150,6 +156,48 @@ public class GzTraceability extends BaseEntity
     /** 追溯单明细列表 */
     private List<GzTraceabilityEntry> traceabilityEntryList;
 
+    /** 查询：院内码（模糊） */
+    private String inHospitalCode;
+
+    /** 查询：耗材名称/编码/简码（模糊） */
+    private String materialKeyword;
+
+    /** 查询：规格（模糊） */
+    private String materialSpeci;
+
+    /** 查询：生产厂家ID */
+    private Long factoryId;
+
+    /** 查询：供应商ID */
+    private Long supplierId;
+
+    /** 查询：供应商关键词（编码/名称/简码） */
+    private String supplierKeyword;
+
+    /** 查询：仓库ID */
+    private Long warehouseId;
+
+    /** 查询：收费编码（模糊） */
+    private String chargeCodeKeyword;
+
+    /** 查询：UDI码（模糊） */
+    private String udiKeyword;
+
+    /** 查询：阳光平台编码（模糊） */
+    private String sunshineCodeKeyword;
+
+    /** 查询：医保编码（模糊） */
+    private String medicalNoKeyword;
+
+    /** 查询：计费（1=是，2=否） */
+    private String isBilling;
+
+    /** 查询：集采（1=是，2=否） */
+    private String isProcure;
+
+    /** 查询：重点耗材（1=是，2=否） */
+    private String isMonitor;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -188,6 +236,26 @@ public class GzTraceability extends BaseEntity
     public String getMaterialNo()
     {
         return materialNo;
+    }
+
+    public String getStartDate()
+    {
+        return startDate;
+    }
+
+    public void setStartDate(String startDate)
+    {
+        this.startDate = startDate;
+    }
+
+    public String getEndDate()
+    {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate)
+    {
+        this.endDate = endDate;
     }
 
     public void setMedicalRecordNo(String medicalRecordNo)
@@ -464,6 +532,118 @@ public class GzTraceability extends BaseEntity
 
     public void setTraceabilityEntryList(List<GzTraceabilityEntry> traceabilityEntryList) {
         this.traceabilityEntryList = traceabilityEntryList;
+    }
+
+    public String getInHospitalCode() {
+        return inHospitalCode;
+    }
+
+    public void setInHospitalCode(String inHospitalCode) {
+        this.inHospitalCode = inHospitalCode;
+    }
+
+    public String getMaterialKeyword() {
+        return materialKeyword;
+    }
+
+    public void setMaterialKeyword(String materialKeyword) {
+        this.materialKeyword = materialKeyword;
+    }
+
+    public String getMaterialSpeci() {
+        return materialSpeci;
+    }
+
+    public void setMaterialSpeci(String materialSpeci) {
+        this.materialSpeci = materialSpeci;
+    }
+
+    public Long getFactoryId() {
+        return factoryId;
+    }
+
+    public void setFactoryId(Long factoryId) {
+        this.factoryId = factoryId;
+    }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
+    }
+
+    public String getSupplierKeyword() {
+        return supplierKeyword;
+    }
+
+    public void setSupplierKeyword(String supplierKeyword) {
+        this.supplierKeyword = supplierKeyword;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
+    }
+
+    public String getChargeCodeKeyword() {
+        return chargeCodeKeyword;
+    }
+
+    public void setChargeCodeKeyword(String chargeCodeKeyword) {
+        this.chargeCodeKeyword = chargeCodeKeyword;
+    }
+
+    public String getUdiKeyword() {
+        return udiKeyword;
+    }
+
+    public void setUdiKeyword(String udiKeyword) {
+        this.udiKeyword = udiKeyword;
+    }
+
+    public String getSunshineCodeKeyword() {
+        return sunshineCodeKeyword;
+    }
+
+    public void setSunshineCodeKeyword(String sunshineCodeKeyword) {
+        this.sunshineCodeKeyword = sunshineCodeKeyword;
+    }
+
+    public String getMedicalNoKeyword() {
+        return medicalNoKeyword;
+    }
+
+    public void setMedicalNoKeyword(String medicalNoKeyword) {
+        this.medicalNoKeyword = medicalNoKeyword;
+    }
+
+    public String getIsBilling() {
+        return isBilling;
+    }
+
+    public void setIsBilling(String isBilling) {
+        this.isBilling = isBilling;
+    }
+
+    public String getIsProcure() {
+        return isProcure;
+    }
+
+    public void setIsProcure(String isProcure) {
+        this.isProcure = isProcure;
+    }
+
+    public String getIsMonitor() {
+        return isMonitor;
+    }
+
+    public void setIsMonitor(String isMonitor) {
+        this.isMonitor = isMonitor;
     }
 
     @Override

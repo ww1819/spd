@@ -104,4 +104,22 @@ public interface IGzTraceabilityService
      */
     public List<com.spd.gz.domain.GzMaterialUsageReportVo> selectMaterialUsageReportList(
         com.spd.gz.domain.GzMaterialUsageReportQuery query);
+
+    /**
+     * 使用追溯汇总：按执行科室+耗材汇总
+     */
+    public List<com.spd.gz.domain.GzTraceabilitySummaryVo> selectTraceabilitySummaryByExecDept(
+        GzTraceability gzTraceability);
+
+    /**
+     * 使用追溯汇总：按开单科室+耗材汇总
+     */
+    public List<com.spd.gz.domain.GzTraceabilitySummaryVo> selectTraceabilitySummaryByApplyDept(
+        GzTraceability gzTraceability);
+
+    /**
+     * 使用追溯汇总：按供应商+耗材汇总
+     */
+    public List<com.spd.gz.domain.GzTraceabilitySummaryVo> selectTraceabilitySummaryBySupplier(
+        GzTraceability gzTraceability);
 }

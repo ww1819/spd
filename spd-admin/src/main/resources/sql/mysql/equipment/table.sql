@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS `fd_material` (
   `is_temporary_purchase` char(4) DEFAULT '2' COMMENT '是否临购：1=是,2=否',
   `is_service_fee` char(4) DEFAULT '2' COMMENT '是否服务费：1=是,2=否',
   `is_sunshine_procurement` char(4) DEFAULT '2' COMMENT '是否阳采：1=是,2=否',
+  `sunshine_code` varchar(100) DEFAULT NULL COMMENT '阳光平台编码',
   `material_category_id` varchar(36) DEFAULT NULL COMMENT '材料类别ID',
   `min_package_qty` decimal(18,6) DEFAULT NULL COMMENT '最小包装数（每最小包装所含数量，如 10 支/盒）',
   PRIMARY KEY (`id`) USING BTREE,
