@@ -2,6 +2,8 @@ package com.spd.department.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +49,13 @@ import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 @Service
 public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
 {
+    private static final Set<String> AUDITED_DETAIL_SORT_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "materialCode", "materialName", "specification", "model", "unitName", "quantity", "unitPrice", "amount"
+    )));
+    private static final Set<String> AUDITED_SUMMARY_SORT_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "materialCode", "materialName", "specification", "model", "unit", "totalQuantity", "averagePrice", "totalAmount"
+    )));
+
     @Autowired
     private DeptBatchConsumeMapper deptBatchConsumeMapper;
     @Autowired
@@ -391,6 +400,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public List<Map<String, Object>> selectAuditedConsumeDetailList(DeptBatchConsume deptBatchConsume)
     {
+        normalizeAuditedConsumeDetailSort(deptBatchConsume);
         return deptBatchConsumeMapper.selectAuditedConsumeDetailList(deptBatchConsume);
     }
 
@@ -419,6 +429,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     @Override
     public List<Map<String, Object>> selectAuditedConsumeSummaryList(DeptBatchConsume deptBatchConsume)
     {
+        normalizeAuditedConsumeSummarySort(deptBatchConsume);
         return deptBatchConsumeMapper.selectAuditedConsumeSummaryList(deptBatchConsume);
     }
 
@@ -747,5 +758,32 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private void normalizeAuditedConsumeDetailSort(DeptBatchConsume query)
+    {
+        normalizeReportSort(query, AUDITED_DETAIL_SORT_FIELDS);
+    }
+
+    private void normalizeAuditedConsumeSummarySort(DeptBatchConsume query)
+    {
+        normalizeReportSort(query, AUDITED_SUMMARY_SORT_FIELDS);
+    }
+
+    private void normalizeReportSort(DeptBatchConsume query, Set<String> allowedFields)
+    {
+        if (query == null)
+        {
+            return;
+        }
+        String field = StringUtils.trim(query.getSortField());
+        if (StringUtils.isEmpty(field) || allowedFields == null || !allowedFields.contains(field))
+        {
+            query.setSortField(null);
+            query.setSortOrder(null);
+            return;
+        }
+        query.setSortField(field);
+        query.setSortOrder("desc".equalsIgnoreCase(StringUtils.trim(query.getSortOrder())) ? "desc" : "asc");
     }
 }

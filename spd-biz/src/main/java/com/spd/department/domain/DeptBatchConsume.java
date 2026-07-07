@@ -154,6 +154,12 @@ public class DeptBatchConsume extends BaseEntity
     /** 查询参数：患者住院号/门诊号 */
     private String patientId;
 
+    /** 报表排序字段（不落库） */
+    private transient String sortField;
+
+    /** 报表排序方向 asc/desc（不落库） */
+    private transient String sortOrder;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -410,6 +416,22 @@ public class DeptBatchConsume extends BaseEntity
 
     public void setPatientId(String patientId) {
         this.patientId = patientId;
+    }
+
+    public String getSortField() {
+        return sortField;
+    }
+
+    public void setSortField(String sortField) {
+        this.sortField = sortField;
+    }
+
+    public String getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(String sortOrder) {
+        this.sortOrder = sortOrder;
     }
 
     public String getTenantId() { return tenantId; }
