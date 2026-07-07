@@ -180,7 +180,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="batchNo != null  and batchNo != ''"> and gz.batch_no = #{batchNo}</if>
         <if test="supplierId != null "> and gz.supplier_id = #{supplierId}</if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.name like concat('%', #{materialKeyword}, '%')
+                or m.code like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
+        <if test="materialName != null and materialName != '' and (materialKeyword == null or materialKeyword == '')"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="hisChargeItemId != null and hisChargeItemId != ''">
             and m.his_charge_item_id like concat('%', #{hisChargeItemId}, '%')
         </if>
