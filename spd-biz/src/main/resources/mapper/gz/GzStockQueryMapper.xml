@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.gz.mapper.GzStockQueryMapper">
+
+    <sql id="stockQueryDateFilterShipment">
+        <choose>
+            <when test="timeField != null and timeField == 'auditDate'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="stockQueryDateFilterRefundStock">
+        <choose>
+            <when test="timeField != null and timeField == 'auditDate'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="selectOutboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="com.spd.gz.domain.vo.GzStockQueryEntryVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select * from (
+            select
+                se.id as entryId,
+                'shipment' as billKind,
+                '备货出库' as billTypeName,
+                gs.shipment_no as orderNo,
+                gs.shipment_status as orderStatus,
+                gs.shipment_date as orderDate,
+                gs.audit_date as auditDate,
+                gs.create_by as createBy,
+                gs.update_by as updateBy,
+                gs.audit_by as auditBy,
+                se.material_id as materialId,
+                m.code as materialCode,
+                m.name as materialName,
+                m.speci as materialSpeci,
+                m.model as materialModel,
+                u.unit_name as unitName,
+                f.factory_name as factoryName,
+                m.register_no as registerNo,
+                m.period_date as periodDate,
+                m.udi_no as udiNo,
+                se.price as price,
+                se.qty as qty,
+                se.amt as amt,
+                se.batch_no as batchNo,
+                se.batch_number as batchNumber,
+                se.begin_time as beginTime,
+                se.end_time as endTime,
+                se.in_hospital_code as inHospitalCode,
+                gs.warehouse_id as warehouseId,
+                w.name as warehouseName,
+                gs.department_id as departmentId,
+                d.name as departmentName,
+                coalesce(se.supplier_id, m.supplier_id) as supplierId,
+                gs.create_time as sortTime
+            from gz_shipment_entry se
+            inner join gz_shipment gs on gs.id = se.paren_id and gs.del_flag != 1
+            left join fd_warehouse w on gs.warehouse_id = w.id
+            left join fd_department d on gs.department_id = d.id
+            left join fd_material m on se.material_id = m.id
+            left join fd_unit u on m.unit_id = u.unit_id
+            left join fd_factory f on m.factory_id = f.factory_id
+            where se.del_flag != 1
+              and gs.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null"> and gs.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null"> and gs.department_id = #{departmentId}</if>
+            <if test="materialId != null"> and se.material_id = #{materialId}</if>
+            <if test="orderStatus != null"> and gs.shipment_status = #{orderStatus}</if>
+            <if test="inHospitalCode != null and inHospitalCode != ''">
+                and se.in_hospital_code = #{inHospitalCode}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                and gs.shipment_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="supplierId != null">
+                and (se.supplier_id = #{supplierId} or m.supplier_id = #{supplierId})
+            </if>
+            <if test="inHospitalCode == null or inHospitalCode == ''">
+                <include refid="stockQueryDateFilterShipment"/>
+            </if>
+            <if test="billKindScope == null or billKindScope == '' or billKindScope == 'shipment'">
+            </if>
+            <if test="billKindScope != null and billKindScope == 'refundStock'">
+                and 1 = 0
+            </if>
+
+            union all
+
+            select
+                rse.id as entryId,
+                'refundStock' as billKind,
+                '备货退库' as billTypeName,
+                rs.refund_no as orderNo,
+                rs.refund_status as orderStatus,
+                rs.refund_date as orderDate,
+                rs.audit_date as auditDate,
+                rs.create_by as createBy,
+                rs.update_by as updateBy,
+                rs.audit_by as auditBy,
+                rse.material_id as materialId,
+                m.code as materialCode,
+                m.name as materialName,
+                m.speci as materialSpeci,
+                m.model as materialModel,
+                u.unit_name as unitName,
+                f.factory_name as factoryName,
+                m.register_no as registerNo,
+                m.period_date as periodDate,
+                m.udi_no as udiNo,
+                rse.price as price,
+                rse.qty as qty,
+                rse.amt as amt,
+                rse.batch_no as batchNo,
+                rse.batch_number as batchNumber,
+                rse.begin_time as beginTime,
+                rse.end_time as endTime,
+                rse.in_hospital_code as inHospitalCode,
+                rs.warehouse_id as warehouseId,
+                w.name as warehouseName,
+                rs.department_id as departmentId,
+                d.name as departmentName,
+                m.supplier_id as supplierId,
+                rs.create_time as sortTime
+            from gz_refund_stock_entry rse
+            inner join gz_refund_stock rs on rs.id = rse.paren_id and rs.del_flag != 1
+            left join fd_warehouse w on rs.warehouse_id = w.id
+            left join fd_department d on rs.department_id = d.id
+            left join fd_material m on rse.material_id = m.id
+            left join fd_unit u on m.unit_id = u.unit_id
+            left join fd_factory f on m.factory_id = f.factory_id
+            where rse.del_flag != 1
+              and rs.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null"> and rs.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null"> and rs.department_id = #{departmentId}</if>
+            <if test="materialId != null"> and rse.material_id = #{materialId}</if>
+            <if test="orderStatus != null"> and rs.refund_status = #{orderStatus}</if>
+            <if test="inHospitalCode != null and inHospitalCode != ''">
+                and rse.in_hospital_code = #{inHospitalCode}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                and rs.refund_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="supplierId != null">
+                and m.supplier_id = #{supplierId}
+            </if>
+            <if test="inHospitalCode == null or inHospitalCode == ''">
+                <include refid="stockQueryDateFilterRefundStock"/>
+            </if>
+            <if test="billKindScope != null and billKindScope == 'shipment'">
+                and 1 = 0
+            </if>
+
+            <if test="inHospitalCode != null and inHospitalCode != ''">
+            union all
+
+            select
+                se.id as entryId,
+                'shipmentBatch' as billKind,
+                '备货出库(同批次关联)' as billTypeName,
+                gs.shipment_no as orderNo,
+                gs.shipment_status as orderStatus,
+                gs.shipment_date as orderDate,
+                gs.audit_date as auditDate,
+                gs.create_by as createBy,
+                gs.update_by as updateBy,
+                gs.audit_by as auditBy,
+                se.material_id as materialId,
+                m.code as materialCode,
+                m.name as materialName,
+                m.speci as materialSpeci,
+                m.model as materialModel,
+                u.unit_name as unitName,
+                f.factory_name as factoryName,
+                m.register_no as registerNo,
+                m.period_date as periodDate,
+                m.udi_no as udiNo,
+                se.price as price,
+                se.qty as qty,
+                se.amt as amt,
+                se.batch_no as batchNo,
+                se.batch_number as batchNumber,
+                se.begin_time as beginTime,
+                se.end_time as endTime,
+                se.in_hospital_code as inHospitalCode,
+                gs.warehouse_id as warehouseId,
+                w.name as warehouseName,
+                gs.department_id as departmentId,
+                d.name as departmentName,
+                coalesce(se.supplier_id, m.supplier_id) as supplierId,
+                gs.create_time as sortTime
+            from gz_depot_inventory di
+            inner join gz_shipment_entry se on se.batch_no = di.batch_no and se.material_id = di.material_id and se.del_flag != 1
+            inner join gz_shipment gs on gs.id = se.paren_id and gs.del_flag != 1 and gs.shipment_status = 2
+            left join fd_warehouse w on gs.warehouse_id = w.id
+            left join fd_department d on gs.department_id = d.id
+            left join fd_material m on se.material_id = m.id
+            left join fd_unit u on m.unit_id = u.unit_id
+            left join fd_factory f on m.factory_id = f.factory_id
+            where di.del_flag != 1
+              and di.tenant_id = #{scopedTenantId}
+              and gs.warehouse_id = di.warehouse_id
+              and gs.tenant_id = #{scopedTenantId}
+              and di.in_hospital_code = #{inHospitalCode}
+              and (se.in_hospital_code is null or trim(se.in_hospital_code) = ''
+                   or se.in_hospital_code not like concat('%', #{inHospitalCode}, '%'))
+              and coalesce(gs.audit_date, gs.create_time) &gt;= coalesce(di.warehouse_date, di.create_time)
+            <if test="warehouseId != null"> and gs.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null"> and gs.department_id = #{departmentId}</if>
+            <if test="materialId != null"> and se.material_id = #{materialId}</if>
+            <if test="orderStatus != null"> and gs.shipment_status = #{orderStatus}</if>
+            <if test="orderNo != null and orderNo != ''">
+                and gs.shipment_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="supplierId != null">
+                and (se.supplier_id = #{supplierId} or m.supplier_id = #{supplierId})
+            </if>
+            <if test="billKindScope != null and billKindScope == 'refundStock'">
+                and 1 = 0
+            </if>
+
+            union all
+
+            select
+                rge.id as entryId,
+                'refundGoodsBatch' as billKind,
+                '备货退货(同批次关联)' as billTypeName,
+                rg.goods_no as orderNo,
+                rg.goods_status as orderStatus,
+                rg.goods_date as orderDate,
+                rg.audit_date as auditDate,
+                rg.create_by as createBy,
+                rg.update_by as updateBy,
+                rg.audit_by as auditBy,
+                rge.material_id as materialId,
+                m.code as materialCode,
+                m.name as materialName,
+                m.speci as materialSpeci,
+                m.model as materialModel,
+                u.unit_name as unitName,
+                f.factory_name as factoryName,
+                m.register_no as registerNo,
+                m.period_date as periodDate,
+                m.udi_no as udiNo,
+                rge.price as price,
+                rge.qty as qty,
+                rge.amt as amt,
+                rge.batch_no as batchNo,
+                rge.batch_number as batchNumber,
+                rge.begin_time as beginTime,
+                rge.end_time as endTime,
+                rge.in_hospital_code as inHospitalCode,
+                rg.warehouse_id as warehouseId,
+                w.name as warehouseName,
+                rg.department_id as departmentId,
+                d.name as departmentName,
+                m.supplier_id as supplierId,
+                rg.create_time as sortTime
+            from gz_depot_inventory di
+            inner join gz_refund_goods_entry rge on rge.batch_no = di.batch_no and rge.material_id = di.material_id and rge.del_flag != 1
+            inner join gz_refund_goods rg on rg.id = rge.paren_id and rg.del_flag != 1 and rg.goods_status = 2 and rg.goods_no like 'GZTH%'
+            left join fd_warehouse w on rg.warehouse_id = w.id
+            left join fd_department d on rg.department_id = d.id
+            left join fd_material m on rge.material_id = m.id
+            left join fd_unit u on m.unit_id = u.unit_id
+            left join fd_factory f on m.factory_id = f.factory_id
+            where di.del_flag != 1
+              and di.tenant_id = #{scopedTenantId}
+              and rg.warehouse_id = di.warehouse_id
+              and rg.tenant_id = #{scopedTenantId}
+              and di.in_hospital_code = #{inHospitalCode}
+              and (rge.in_hospital_code is null or trim(rge.in_hospital_code) = ''
+                   or rge.in_hospital_code not like concat('%', #{inHospitalCode}, '%'))
+              and coalesce(rg.audit_date, rg.create_time) &gt;= coalesce(di.warehouse_date, di.create_time)
+            <if test="warehouseId != null"> and rg.warehouse_id = #{warehouseId}</if>
+            <if test="departmentId != null"> and rg.department_id = #{departmentId}</if>
+            <if test="materialId != null"> and rge.material_id = #{materialId}</if>
+            <if test="orderStatus != null"> and rg.goods_status = #{orderStatus}</if>
+            <if test="orderNo != null and orderNo != ''">
+                and rg.goods_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="supplierId != null">
+                and m.supplier_id = #{supplierId}
+            </if>
+            </if>
+        ) t
+        order by t.sortTime desc, t.entryId desc
+    </select>
+
+    <select id="selectDepotInventoryTraceByInHospitalCode" resultType="com.spd.gz.domain.vo.GzDepotInventoryTraceVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select traceKind, lx, originBusinessType, billNo, qty, flowTime, warehouseName, departmentName,
+               inHospitalCode, orderStatus, remark
+        from (
+            select
+                '仓库流水' as traceKind,
+                wf.lx as lx,
+                wf.origin_business_type as originBusinessType,
+                wf.bill_no as billNo,
+                wf.qty as qty,
+                wf.flow_time as flowTime,
+                wf.warehouse_name as warehouseName,
+                wf.department_name as departmentName,
+                wf.in_hospital_code as inHospitalCode,
+                null as orderStatus,
+                null as remark
+            from gz_wh_flow wf
+            where wf.tenant_id = #{scopedTenantId}
+              and wf.in_hospital_code = #{inHospitalCode}
+              and ifnull(wf.del_flag, 0) = 0
+
+            union all
+
+            select
+                '备货出库' as traceKind,
+                'CK' as lx,
+                '备货出库单' as originBusinessType,
+                gs.shipment_no as billNo,
+                se.qty as qty,
+                coalesce(gs.audit_date, gs.create_time) as flowTime,
+                w.name as warehouseName,
+                d.name as departmentName,
+                se.in_hospital_code as inHospitalCode,
+                gs.shipment_status as orderStatus,
+                case when gs.shipment_status = 2 then '已审核' else '未审核' end as remark
+            from gz_shipment_entry se
+            inner join gz_shipment gs on gs.id = se.paren_id and gs.del_flag != 1
+            left join fd_warehouse w on gs.warehouse_id = w.id
+            left join fd_department d on gs.department_id = d.id
+            where se.del_flag != 1
+              and gs.tenant_id = #{scopedTenantId}
+              and se.in_hospital_code = #{inHospitalCode}
+
+            union all
+
+            select
+                '备货退货' as traceKind,
+                'TH' as lx,
+                '备货退货给供应商' as originBusinessType,
+                rg.goods_no as billNo,
+                rge.qty as qty,
+                coalesce(rg.audit_date, rg.create_time) as flowTime,
+                w.name as warehouseName,
+                d.name as departmentName,
+                rge.in_hospital_code as inHospitalCode,
+                rg.goods_status as orderStatus,
+                case when rg.goods_status = 2 then '已审核' else '未审核' end as remark
+            from gz_refund_goods_entry rge
+            inner join gz_refund_goods rg on rg.id = rge.paren_id and rg.del_flag != 1
+            left join fd_warehouse w on rg.warehouse_id = w.id
+            left join fd_department d on rg.department_id = d.id
+            where rge.del_flag != 1
+              and rg.tenant_id = #{scopedTenantId}
+              and rge.in_hospital_code = #{inHospitalCode}
+              and rg.goods_no like 'GZTH%'
+
+            union all
+
+            select
+                '科室库存' as traceKind,
+                'KC' as lx,
+                '科室备货库存' as originBusinessType,
+                null as billNo,
+                gdi.qty as qty,
+                coalesce(gdi.update_time, gdi.create_time) as flowTime,
+                null as warehouseName,
+                fd.name as departmentName,
+                gdi.in_hospital_code as inHospitalCode,
+                null as orderStatus,
+                case when ifnull(gdi.qty, 0) &gt; 0 then '科室仍有库存' else '科室零库存' end as remark
+            from gz_dep_inventory gdi
+            left join fd_department fd on gdi.department_id = fd.id
+            where gdi.del_flag != 1
+              and gdi.tenant_id = #{scopedTenantId}
+              and gdi.in_hospital_code = #{inHospitalCode}
+        ) trace
+        order by trace.flowTime asc, trace.billNo asc
+    </select>
+
+    <select id="selectDepotInventorySnapshotByInHospitalCode"
+            resultType="com.spd.gz.domain.vo.GzDepotInventoryTraceResultVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            di.id as depotInventoryId,
+            di.qty as currentQty,
+            di.batch_no as batchNo,
+            go.order_no as orderNo,
+            di.warehouse_date as warehouseDate,
+            di.update_time as updateTime,
+            w.name as warehouseName,
+            (select sum(ifnull(gzdi.qty, 0))
+             from gz_dep_inventory gzdi
+             where gzdi.in_hospital_code = #{inHospitalCode}
+               and gzdi.del_flag != 1
+               and gzdi.tenant_id = #{scopedTenantId}) as depInventoryQty,
+            (select group_concat(distinct fd.name separator '、')
+             from gz_dep_inventory gzdi
+             left join fd_department fd on gzdi.department_id = fd.id
+             where gzdi.in_hospital_code = #{inHospitalCode}
+               and ifnull(gzdi.qty, 0) &gt; 0
+               and gzdi.del_flag != 1
+               and gzdi.tenant_id = #{scopedTenantId}) as depDepartmentName
+        from gz_depot_inventory di
+        left join fd_warehouse w on di.warehouse_id = w.id
+        left join gz_order go on di.order_id = go.id and go.del_flag != 1
+        where di.del_flag != 1
+          and di.tenant_id = #{scopedTenantId}
+          and di.in_hospital_code = #{inHospitalCode}
+        order by di.id desc
+        limit 1
+    </select>
+
+    <select id="selectSuspectBatchDeductionByInHospitalCode"
+            resultType="com.spd.gz.domain.vo.GzDepotInventoryTraceVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select traceKind, lx, originBusinessType, billNo, qty, flowTime, warehouseName, departmentName,
+               inHospitalCode, orderStatus, remark
+        from (
+            select
+                '疑似同批次扣减' as traceKind,
+                'CK' as lx,
+                '备货出库(未填院内码)' as originBusinessType,
+                gs.shipment_no as billNo,
+                se.qty as qty,
+                coalesce(gs.audit_date, gs.create_time) as flowTime,
+                w.name as warehouseName,
+                d.name as departmentName,
+                se.in_hospital_code as inHospitalCode,
+                gs.shipment_status as orderStatus,
+                concat('出库明细未指定该院内码，与同批次 ', di.batch_no, ' 相同，可能误扣了 ', di.in_hospital_code) as remark
+            from gz_depot_inventory di
+            inner join gz_shipment_entry se on se.batch_no = di.batch_no and se.material_id = di.material_id and se.del_flag != 1
+            inner join gz_shipment gs on gs.id = se.paren_id and gs.del_flag != 1 and gs.shipment_status = 2
+            left join fd_warehouse w on gs.warehouse_id = w.id
+            left join fd_department d on gs.department_id = d.id
+            where di.del_flag != 1
+              and di.tenant_id = #{scopedTenantId}
+              and gs.warehouse_id = di.warehouse_id
+              and gs.tenant_id = #{scopedTenantId}
+              and di.in_hospital_code = #{inHospitalCode}
+              and (se.in_hospital_code is null or trim(se.in_hospital_code) = '' or se.in_hospital_code != di.in_hospital_code)
+              and coalesce(gs.audit_date, gs.create_time) &gt;= coalesce(di.warehouse_date, di.create_time)
+
+            union all
+
+            select
+                '疑似同批次扣减' as traceKind,
+                'TH' as lx,
+                '备货退货(未填院内码)' as originBusinessType,
+                rg.goods_no as billNo,
+                rge.qty as qty,
+                coalesce(rg.audit_date, rg.create_time) as flowTime,
+                w.name as warehouseName,
+                d.name as departmentName,
+                rge.in_hospital_code as inHospitalCode,
+                rg.goods_status as orderStatus,
+                concat('退货明细未指定该院内码，与同批次 ', di.batch_no, ' 相同，可能误扣了 ', di.in_hospital_code) as remark
+            from gz_depot_inventory di
+            inner join gz_refund_goods_entry rge on rge.batch_no = di.batch_no and rge.material_id = di.material_id and rge.del_flag != 1
+            inner join gz_refund_goods rg on rg.id = rge.paren_id and rg.del_flag != 1 and rg.goods_status = 2 and rg.goods_no like 'GZTH%'
+            left join fd_warehouse w on rg.warehouse_id = w.id
+            left join fd_department d on rg.department_id = d.id
+            where di.del_flag != 1
+              and di.tenant_id = #{scopedTenantId}
+              and rg.warehouse_id = di.warehouse_id
+              and rg.tenant_id = #{scopedTenantId}
+              and di.in_hospital_code = #{inHospitalCode}
+              and (rge.in_hospital_code is null or trim(rge.in_hospital_code) = '' or rge.in_hospital_code != di.in_hospital_code)
+              and coalesce(rg.audit_date, rg.create_time) &gt;= coalesce(di.warehouse_date, di.create_time)
+
+            union all
+
+            select
+                '疑似同批次扣减' as traceKind,
+                'CK' as lx,
+                '仓库流水(未填院内码)' as originBusinessType,
+                wf.bill_no as billNo,
+                wf.qty as qty,
+                wf.flow_time as flowTime,
+                wf.warehouse_name as warehouseName,
+                wf.department_name as departmentName,
+                wf.in_hospital_code as inHospitalCode,
+                null as orderStatus,
+                concat('流水未带院内码，与同批次 ', di.batch_no, ' 相同，可能关联 ', di.in_hospital_code) as remark
+            from gz_depot_inventory di
+            inner join gz_wh_flow wf on wf.batch_no = di.batch_no and wf.lx = 'CK'
+                and (wf.in_hospital_code is null or trim(wf.in_hospital_code) = '')
+                and ifnull(wf.del_flag, 0) = 0
+            where di.del_flag != 1
+              and di.tenant_id = #{scopedTenantId}
+              and di.in_hospital_code = #{inHospitalCode}
+              and wf.tenant_id = #{scopedTenantId}
+              and (wf.material_id is null or wf.material_id = cast(di.material_id as char))
+              and wf.flow_time &gt;= coalesce(di.warehouse_date, di.create_time)
+        ) suspect
+        order by suspect.flowTime asc, suspect.billNo asc
+    </select>
+
+    <select id="selectDepInventoryCodeRepairCandidate" resultType="com.spd.gz.domain.vo.GzDepInventoryCodeRepairVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            se.id as shipmentEntryId,
+            gs.id as shipmentId,
+            gs.shipment_no as shipmentNo,
+            gs.department_id as departmentId,
+            d.name as departmentName,
+            se.batch_no as batchNo,
+            se.material_id as materialId,
+            gs.warehouse_id as warehouseId,
+            se.in_hospital_code as wrongInHospitalCode,
+            di.in_hospital_code as correctInHospitalCode,
+            gdi.id as depInventoryId
+        from gz_depot_inventory di
+        inner join gz_shipment_entry se on se.batch_no = di.batch_no
+            and se.material_id = di.material_id
+            and se.del_flag != 1
+        inner join gz_shipment gs on gs.id = se.paren_id
+            and gs.del_flag != 1
+            and gs.shipment_status = 2
+        left join fd_department d on d.id = gs.department_id
+        left join gz_dep_inventory gdi on gdi.department_id = gs.department_id
+            and gdi.in_hospital_code = se.in_hospital_code
+            and gdi.del_flag != 1
+            and gdi.tenant_id = #{scopedTenantId}
+        where di.del_flag != 1
+          and di.tenant_id = #{scopedTenantId}
+          and gs.tenant_id = #{scopedTenantId}
+          and di.in_hospital_code = #{inHospitalCode}
+          and (se.in_hospital_code is null or trim(se.in_hospital_code) = '' or se.in_hospital_code != di.in_hospital_code)
+        <if test="shipmentNo != null and shipmentNo != ''">
+          and gs.shipment_no = #{shipmentNo}
+        </if>
+        order by coalesce(gs.audit_date, gs.create_time) desc, se.id desc
+        limit 1
+    </select>
+
+    <update id="updateDepFlowInHospitalCode">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_dep_flow
+        set in_hospital_code = #{correctCode}
+        where tenant_id = #{scopedTenantId}
+          and in_hospital_code = #{wrongCode}
+          and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="updateWhFlowInHospitalCodeForShipment">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update gz_wh_flow
+        set in_hospital_code = #{correctCode}
+        where tenant_id = #{scopedTenantId}
+          and in_hospital_code = #{wrongCode}
+          and bill_no = #{shipmentNo}
+          and lx = 'CK'
+          and ifnull(del_flag, 0) = 0
+    </update>
+</mapper>

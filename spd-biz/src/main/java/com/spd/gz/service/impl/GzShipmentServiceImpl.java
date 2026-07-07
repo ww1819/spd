@@ -457,14 +457,16 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         throw new ServiceException(String.format("院内码 %s 在出库仓库无可用备货库存", inHospitalCode.trim()));
                     }
                     remainingQty -= deductDepotInventoryRow(codeRow, remainingQty);
-                }
-
-                if (remainingQty <= 0) {
+                    if (remainingQty > 0) {
+                        throw new ServiceException(String.format(
+                            "院内码 %s 在出库仓库可用备货不足，需出库 %d，仍缺 %d",
+                            inHospitalCode.trim(), qty, remainingQty));
+                    }
                     hcBarcodeLifecycleService.onGzShipmentWarehouseOutbound(gzShipment, shipmentEntry);
                     continue;
                 }
 
-                // 无院内码或院内码行数量不足时，按批次号+物料ID FIFO 扣减
+                // 无院内码时按批次号+物料ID FIFO 扣减（不得扣减已赋院内码的备货行，避免误扣其他条码）
                 GzDepotInventory queryInventory = new GzDepotInventory();
                 queryInventory.setBatchNo(shipmentEntry.getBatchNo());
                 queryInventory.setMaterialId(shipmentEntry.getMaterialId());
@@ -483,6 +485,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     if (inventory == null || inventory.getQty() == null) {
                         continue;
                     }
+                    if (StringUtils.isNotEmpty(inventory.getInHospitalCode())) {
+                        continue;
+                    }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) == 0 && remainingQty > 0){
                         remainingQty -= deductDepotInventoryRow(inventory, remainingQty);
                     }
@@ -493,6 +498,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                         break;
                     }
                     if (inventory == null || inventory.getQty() == null) {
+                        continue;
+                    }
+                    if (StringUtils.isNotEmpty(inventory.getInHospitalCode())) {
                         continue;
                     }
                     if(inventory.getQty().compareTo(BigDecimal.ONE) > 0){
@@ -586,6 +594,58 @@ public class GzShipmentServiceImpl implements IGzShipmentService
     }
 
     /**
+     * 出库审核落科室库存时定位备货行：有院内码必须精确命中，禁止回退到同批次其它赋码行。
+     */
+    private GzDepotInventory resolveDepotInventoryForDepInbound(
+        GzShipment gzShipment, GzShipmentEntry shipmentEntry, String inHospitalCode)
+    {
+        Long warehouseId = gzShipment.getWarehouseId();
+        if (StringUtils.isNotEmpty(inHospitalCode)) {
+            GzDepotInventory codeRow = gzDepotInventoryMapper.selectByInHospitalCodeAndWarehouse(
+                inHospitalCode, warehouseId);
+            if (codeRow == null || codeRow.getQty() == null || codeRow.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ServiceException(String.format(
+                    "院内码 %s 在出库仓库无可用备货库存，无法生成科室库存", inHospitalCode));
+            }
+            if (shipmentEntry.getMaterialId() != null && codeRow.getMaterialId() != null
+                && !shipmentEntry.getMaterialId().equals(codeRow.getMaterialId())) {
+                throw new ServiceException(String.format(
+                    "院内码 %s 对应物料与出库明细不一致", inHospitalCode));
+            }
+            if (StringUtils.isNotEmpty(shipmentEntry.getBatchNo()) && StringUtils.isNotEmpty(codeRow.getBatchNo())
+                && !shipmentEntry.getBatchNo().equals(codeRow.getBatchNo())) {
+                throw new ServiceException(String.format(
+                    "院内码 %s 对应批次与出库明细不一致", inHospitalCode));
+            }
+            return codeRow;
+        }
+
+        GzDepotInventory queryInventory = new GzDepotInventory();
+        queryInventory.setBatchNo(shipmentEntry.getBatchNo());
+        queryInventory.setMaterialId(shipmentEntry.getMaterialId());
+        queryInventory.setWarehouseId(warehouseId);
+        List<GzDepotInventory> depotInventoryList = gzDepotInventoryMapper.selectGzDepotInventoryList(queryInventory);
+        if (depotInventoryList == null || depotInventoryList.isEmpty()) {
+            return null;
+        }
+        GzDepotInventory uncodedRow = null;
+        for (GzDepotInventory inv : depotInventoryList) {
+            if (inv == null || inv.getQty() == null || inv.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            if (StringUtils.isEmpty(inv.getInHospitalCode())) {
+                uncodedRow = inv;
+                break;
+            }
+        }
+        if (uncodedRow != null) {
+            return uncodedRow;
+        }
+        throw new ServiceException(String.format(
+            "批次 %s 的备货均已赋院内码，出库必须扫描院内码后再审核", shipmentEntry.getBatchNo()));
+    }
+
+    /**
      * 更新科室库存（出库审核时增加科室库存）
      * @param gzShipment 出库单
      * @param gzShipmentEntryList 出库明细列表
@@ -600,43 +660,14 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 continue;
             }
             if(shipmentEntry.getQty() != null && BigDecimal.ZERO.compareTo(shipmentEntry.getQty()) != 0){
-                // 优先使用出库明细中的院内码
-                String inHospitalCode = shipmentEntry.getInHospitalCode();
-                
-                // 从备货库存中根据院内码精确查询库存信息（用于获取生产日期、入库日期、有效期等）
-                GzDepotInventory depotInventory = null;
-                if(inHospitalCode != null && !inHospitalCode.trim().isEmpty()){
-                    // 根据院内码精确查询备货库存（使用 like 查询，然后在代码中精确匹配）
-                    GzDepotInventory queryInventory = new GzDepotInventory();
-                    queryInventory.setInHospitalCode(inHospitalCode);
-                    queryInventory.setMaterialId(shipmentEntry.getMaterialId());
-                    queryInventory.setWarehouseId(gzShipment.getWarehouseId());
-                    List<GzDepotInventory> depotInventoryList = gzDepotInventoryMapper.selectGzDepotInventoryList(queryInventory);
-                    if(depotInventoryList != null && depotInventoryList.size() > 0){
-                        // 精确匹配院内码（因为查询使用的是 like，需要精确匹配）
-                        for(GzDepotInventory inv : depotInventoryList){
-                            if(inHospitalCode.equals(inv.getInHospitalCode())){
-                                depotInventory = inv;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                // 如果备货库存中没找到，尝试根据批次号和物料ID查询（取第一条）
-                if(depotInventory == null){
-                    GzDepotInventory queryInventory = new GzDepotInventory();
-                    queryInventory.setBatchNo(shipmentEntry.getBatchNo());
-                    queryInventory.setMaterialId(shipmentEntry.getMaterialId());
-                    queryInventory.setWarehouseId(gzShipment.getWarehouseId());
-                    List<GzDepotInventory> depotInventoryList = gzDepotInventoryMapper.selectGzDepotInventoryList(queryInventory);
-                    if(depotInventoryList != null && depotInventoryList.size() > 0){
-                        depotInventory = depotInventoryList.get(0);
-                        // 如果出库明细中没有院内码，从备货库存中获取
-                        if((inHospitalCode == null || inHospitalCode.trim().isEmpty()) && depotInventory.getInHospitalCode() != null){
-                            inHospitalCode = depotInventory.getInHospitalCode();
-                        }
-                    }
+                String inHospitalCode = StringUtils.isNotEmpty(shipmentEntry.getInHospitalCode())
+                    ? shipmentEntry.getInHospitalCode().trim() : null;
+
+                GzDepotInventory depotInventory = resolveDepotInventoryForDepInbound(
+                    gzShipment, shipmentEntry, inHospitalCode);
+                if (depotInventory != null && StringUtils.isEmpty(inHospitalCode)
+                    && StringUtils.isNotEmpty(depotInventory.getInHospitalCode())) {
+                    inHospitalCode = depotInventory.getInHospitalCode().trim();
                 }
                 
                 BigDecimal addQty = shipmentEntry.getQty() != null ? shipmentEntry.getQty() : BigDecimal.ONE;

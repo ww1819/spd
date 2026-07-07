@@ -171,7 +171,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialNo != null  and materialNo != ''"> and gz.material_no = #{materialNo}</if>
         <if test="materialDate != null "> and gz.material_date = #{materialDate}</if>
         <if test="warehouseDate != null "> and gz.warehouse_date = #{warehouseDate}</if>
-        <if test="inHospitalCode != null  and inHospitalCode != ''"> and gz.in_hospital_code like concat('%', #{inHospitalCode}, '%')</if>
+        <if test="inHospitalCode != null  and inHospitalCode != ''"> and gz.in_hospital_code = #{inHospitalCode}</if>
         <if test="materialName != null  and materialName != ''"> and m.name like concat('%', #{materialName}, '%')</if>
         <if test="hisChargeItemId != null and hisChargeItemId != ''">
             and m.his_charge_item_id like concat('%', #{hisChargeItemId}, '%')

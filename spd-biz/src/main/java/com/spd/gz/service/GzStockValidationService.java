@@ -108,6 +108,23 @@ public class GzStockValidationService
                 {
                     addLine(errs, idx, e, "备货库存数量不足，当前可出 " + sum + "，申请出库 " + qty);
                 }
+                else
+                {
+                    boolean allCoded = true;
+                    for (GzDepotInventory r : rows)
+                    {
+                        if (r != null && r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0
+                            && StringUtils.isEmpty(r.getInHospitalCode()))
+                        {
+                            allCoded = false;
+                            break;
+                        }
+                    }
+                    if (allCoded)
+                    {
+                        addLine(errs, idx, e, "该批次备货均已赋院内码，出库必须扫描院内码");
+                    }
+                }
             }
         }
         if (!errs.isEmpty())

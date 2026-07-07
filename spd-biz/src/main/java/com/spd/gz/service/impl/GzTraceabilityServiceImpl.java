@@ -406,22 +406,27 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 // 根据inventoryId扣减库存
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
                 if (inventory != null && inventory.getQty() != null) {
-                    BigDecimal newQty = inventory.getQty().subtract(entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE);
+                    assertTraceEntryMatchesDepInventory(entry, inventory);
+                    BigDecimal deductQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE;
+                    BigDecimal newQty = inventory.getQty().subtract(deductQty);
                     if (newQty.compareTo(BigDecimal.ZERO) < 0) {
                         newQty = BigDecimal.ZERO;
                     }
                     inventory.setQty(newQty);
+                    syncDepInventoryAmt(inventory);
                     gzDepInventoryMapper.updateGzDepInventory(inventory);
                 }
             } else if (entry.getInHospitalCode() != null && !entry.getInHospitalCode().trim().isEmpty()) {
                 // 如果没有inventoryId，根据院内码和执行科室查找库存（不过滤数量为0的记录）
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(entry.getInHospitalCode(), execDeptId);
                 if (inventory != null && inventory.getQty() != null) {
-                    BigDecimal newQty = inventory.getQty().subtract(entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE);
+                    BigDecimal deductQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE;
+                    BigDecimal newQty = inventory.getQty().subtract(deductQty);
                     if (newQty.compareTo(BigDecimal.ZERO) < 0) {
                         newQty = BigDecimal.ZERO;
                     }
                     inventory.setQty(newQty);
+                    syncDepInventoryAmt(inventory);
                     gzDepInventoryMapper.updateGzDepInventory(inventory);
                 }
             }
@@ -492,19 +497,48 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 // 根据inventoryId恢复库存
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
                 if (inventory != null && inventory.getQty() != null) {
-                    BigDecimal newQty = inventory.getQty().add(entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE);
-                    inventory.setQty(newQty);
+                    BigDecimal addQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE;
+                    inventory.setQty(inventory.getQty().add(addQty));
+                    syncDepInventoryAmt(inventory);
                     gzDepInventoryMapper.updateGzDepInventory(inventory);
                 }
             } else if (entry.getInHospitalCode() != null && !entry.getInHospitalCode().trim().isEmpty()) {
                 // 如果没有inventoryId，根据院内码和执行科室查找库存（不过滤数量为0的记录）
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(entry.getInHospitalCode(), execDeptId);
                 if (inventory != null && inventory.getQty() != null) {
-                    BigDecimal newQty = inventory.getQty().add(entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE);
-                    inventory.setQty(newQty);
+                    BigDecimal addQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE;
+                    inventory.setQty(inventory.getQty().add(addQty));
+                    syncDepInventoryAmt(inventory);
                     gzDepInventoryMapper.updateGzDepInventory(inventory);
                 }
             }
         }
+    }
+
+    /** 核销扣减科室库存时，明细院内码必须与库存行一致，避免 inventoryId 命中错码行 */
+    private void assertTraceEntryMatchesDepInventory(GzTraceabilityEntry entry, GzDepInventory inventory)
+    {
+        if (entry == null || inventory == null || StringUtils.isEmpty(entry.getInHospitalCode())
+            || StringUtils.isEmpty(inventory.getInHospitalCode()))
+        {
+            return;
+        }
+        if (!entry.getInHospitalCode().trim().equals(inventory.getInHospitalCode().trim()))
+        {
+            throw new ServiceException(String.format(
+                "核销院内码 %s 与科室库存院内码 %s 不一致，请重新扫码",
+                entry.getInHospitalCode().trim(), inventory.getInHospitalCode().trim()));
+        }
+    }
+
+    private void syncDepInventoryAmt(GzDepInventory inventory)
+    {
+        if (inventory == null)
+        {
+            return;
+        }
+        BigDecimal qty = inventory.getQty() != null ? inventory.getQty() : BigDecimal.ZERO;
+        BigDecimal unitPrice = inventory.getUnitPrice() != null ? inventory.getUnitPrice() : BigDecimal.ZERO;
+        inventory.setAmt(unitPrice.multiply(qty));
     }
 }

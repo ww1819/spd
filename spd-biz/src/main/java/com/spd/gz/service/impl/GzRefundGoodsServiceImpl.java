@@ -571,6 +571,9 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             if (q.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            if (StringUtils.isNotEmpty(row.getInHospitalCode())) {
+                continue;
+            }
             BigDecimal take = q.min(remaining);
             row.setQty(q.subtract(take));
             if (row.getUnitPrice() != null) {
