@@ -54,5 +54,14 @@ public interface SysSheetIdMapper
      */
     @Select("SELECT COUNT(*) FROM sys_sheet_id WHERE business_type = #{businessType} AND sheet_type = #{sheetType}")
     int countSheetId(@Param("businessType") String businessType, @Param("sheetType") String sheetType);
+
+    /**
+     * 原子递增序列号并返回新值（并发审核时避免院内码重复）
+     */
+    @Update("UPDATE sys_sheet_id SET sheet_id = LAST_INSERT_ID(sheet_id + 1) WHERE business_type = #{businessType} AND sheet_type = #{sheetType}")
+    int incrementSheetId(@Param("businessType") String businessType, @Param("sheetType") String sheetType);
+
+    @Select("SELECT LAST_INSERT_ID()")
+    Long selectLastInsertSheetId();
 }
 

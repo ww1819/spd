@@ -401,9 +401,6 @@ public class GzOrderServiceImpl implements IGzOrderService
     }
 
     private void updateDepotInventory(GzOrder gzOrder,List<GzOrderEntry> gzOrderEntryList){
-        // 获取或初始化序列号
-        Long sheetId = getOrInitSheetId();
-        
         if (gzOrderEntryList == null || gzOrderEntryList.isEmpty()) {
             return;
         }
@@ -415,11 +412,9 @@ public class GzOrderServiceImpl implements IGzOrderService
                 if (orderEntry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
                     throw new ServiceException(String.format("高值入库明细数量必须大于0，物料ID：%s", orderEntry.getMaterialId()));
                 }
-                // 根据数量循环生成多条库存记录，每条数量为1，并生成一个院内码
                 int qty = orderEntry.getQty().intValue();
                 for(int i = 0; i < qty; i++){
-                    sheetId = sheetId + 1;
-                    String inHospitalCode = generateInHospitalCode(sheetId);
+                    String inHospitalCode = allocateInHospitalCode(gzOrder.getWarehouseId());
                     
                     GzDepotInventory gzDepotInventory = new GzDepotInventory();
                     gzDepotInventory.setMaterialNo(orderEntry.getBatchNumber());
@@ -476,36 +471,38 @@ public class GzOrderServiceImpl implements IGzOrderService
                 }
             }
         }
-        
-        // 更新序列号
-        updateSheetId(sheetId);
     }
 
-    /**
-     * 获取或初始化序列号
-     */
-    private Long getOrInitSheetId(){
+    /** 原子取号并生成院内码，避免并发审核重复 */
+    private String allocateInHospitalCode(Long warehouseId) {
         String businessType = "高值";
         String sheetType = "gzynm";
-        
         int count = sysSheetIdMapper.countSheetId(businessType, sheetType);
-        if(count == 0){
-            // 如果不存在，插入初始记录
+        if (count == 0) {
             sysSheetIdMapper.insertSheetId(businessType, sheetType, 0L);
-            return 0L;
-        } else {
-            Long sheetId = sysSheetIdMapper.selectSheetId(businessType, sheetType);
-            return sheetId != null ? sheetId : 0L;
         }
+        int rows = sysSheetIdMapper.incrementSheetId(businessType, sheetType);
+        if (rows <= 0) {
+            throw new ServiceException("院内码序列号分配失败，请稍后重试");
+        }
+        Long sheetId = sysSheetIdMapper.selectLastInsertSheetId();
+        if (sheetId == null || sheetId <= 0) {
+            throw new ServiceException("院内码序列号分配失败，请稍后重试");
+        }
+        String code = generateInHospitalCode(sheetId);
+        assertInHospitalCodeUnused(code, warehouseId);
+        return code;
     }
 
-    /**
-     * 更新序列号
-     */
-    private void updateSheetId(Long sheetId){
-        String businessType = "高值";
-        String sheetType = "gzynm";
-        sysSheetIdMapper.updateSheetId(businessType, sheetType, sheetId);
+    private void assertInHospitalCodeUnused(String inHospitalCode, Long warehouseId) {
+        if (warehouseId == null || StringUtils.isEmpty(inHospitalCode)) {
+            return;
+        }
+        GzDepotInventory existing = gzDepotInventoryMapper.selectLatestDepotByInHospitalCodeAndWarehouse(
+            inHospitalCode, warehouseId);
+        if (existing != null) {
+            throw new ServiceException(String.format("院内码 %s 已存在，请重新审核或联系管理员", inHospitalCode));
+        }
     }
 
     /**
