@@ -12,6 +12,8 @@ public interface GzStockQueryMapper
 {
     List<GzStockQueryEntryVo> selectOutboundRefundEntryList(GzStockQueryParam param);
 
+    long countOutboundRefundEntryList(GzStockQueryParam param);
+
     List<GzDepotInventoryTraceVo> selectDepotInventoryTraceByInHospitalCode(String inHospitalCode);
 
     List<GzDepotInventoryTraceVo> selectSuspectBatchDeductionByInHospitalCode(String inHospitalCode);

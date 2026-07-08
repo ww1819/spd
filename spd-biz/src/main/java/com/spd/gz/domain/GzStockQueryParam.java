@@ -17,6 +17,8 @@ public class GzStockQueryParam
     private String timeField;
     /** shipment / refundStock / refundGoods，空=出库+退库 */
     private String billKindScope;
+    /** UNION 各分支预取行数（分页查询性能优化，由 Controller 注入） */
+    private Integer branchFetchLimit;
 
     public Long getWarehouseId() { return warehouseId; }
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
@@ -40,4 +42,6 @@ public class GzStockQueryParam
     public void setTimeField(String timeField) { this.timeField = timeField; }
     public String getBillKindScope() { return billKindScope; }
     public void setBillKindScope(String billKindScope) { this.billKindScope = billKindScope; }
+    public Integer getBranchFetchLimit() { return branchFetchLimit; }
+    public void setBranchFetchLimit(Integer branchFetchLimit) { this.branchFetchLimit = branchFetchLimit; }
 }

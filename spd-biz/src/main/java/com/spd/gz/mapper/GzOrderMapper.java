@@ -102,6 +102,9 @@ public interface GzOrderMapper
      */
     List<GzOrderEntryInhospitalcodeList> selectInhospitalcodeListByParentId(@Param("parentId") Long parentId);
 
+    /** 按院内码统计已生成的备货验收条码行（全局唯一校验） */
+    int countInhospitalcodeByCode(@Param("inHospitalCode") String inHospitalCode);
+
     /**
      * 根据院内码查询是否有未出库的出库单
      * @param inHospitalCode 院内码

@@ -1304,7 +1304,9 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_stock_no` (`refund_no`),
-  KEY `idx_gz_refund_stock_tenant` (`tenant_id`)
+  KEY `idx_gz_refund_stock_tenant` (`tenant_id`),
+  KEY `idx_gz_refund_stock_tenant_ct` (`tenant_id`, `create_time`),
+  KEY `idx_gz_refund_stock_tenant_ad` (`tenant_id`, `audit_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值备货退库主表';
 /
 
@@ -1336,6 +1338,7 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock_entry` (
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_stock_entry_paren` (`paren_id`),
   KEY `idx_gz_refund_stock_entry_batch` (`batch_no`),
+  KEY `idx_gz_refund_stock_entry_code` (`in_hospital_code`),
   KEY `idx_gz_refund_stock_entry_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值备货退库明细表';
 /
@@ -1363,6 +1366,8 @@ CREATE TABLE IF NOT EXISTS `gz_shipment` (
   PRIMARY KEY (`id`),
   KEY `idx_gz_shipment_no` (`shipment_no`),
   KEY `idx_gz_shipment_tenant` (`tenant_id`),
+  KEY `idx_gz_shipment_tenant_ct` (`tenant_id`, `create_time`),
+  KEY `idx_gz_shipment_tenant_ad` (`tenant_id`, `audit_date`),
   KEY `idx_gz_shipment_ref_acc` (`ref_acceptance_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值出库主表';
 /
@@ -1397,6 +1402,7 @@ CREATE TABLE IF NOT EXISTS `gz_shipment_entry` (
   PRIMARY KEY (`id`),
   KEY `idx_gz_shipment_entry_paren` (`paren_id`),
   KEY `idx_gz_shipment_entry_batch` (`batch_no`),
+  KEY `idx_gz_shipment_entry_code` (`in_hospital_code`),
   KEY `idx_gz_shipment_entry_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值出库明细表';
 /

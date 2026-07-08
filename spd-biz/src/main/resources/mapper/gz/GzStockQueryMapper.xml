@@ -5,12 +5,12 @@
     <sql id="stockQueryDateFilterShipment">
         <choose>
             <when test="timeField != null and timeField == 'auditDate'">
-                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
-                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.audit_date >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.audit_date <= #{endDate} ]]></if>
             </when>
             <otherwise>
-                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
-                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.create_time >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.create_time <= #{endDate} ]]></if>
             </otherwise>
         </choose>
     </sql>
@@ -18,20 +18,94 @@
     <sql id="stockQueryDateFilterRefundStock">
         <choose>
             <when test="timeField != null and timeField == 'auditDate'">
-                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
-                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.audit_date >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.audit_date <= #{endDate} ]]></if>
             </when>
             <otherwise>
-                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
-                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rs.create_time >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rs.create_time <= #{endDate} ]]></if>
             </otherwise>
         </choose>
     </sql>
+
+    <sql id="outboundShipmentEntryFilters">
+        <if test="warehouseId != null"> and gs.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and gs.department_id = #{departmentId}</if>
+        <if test="materialId != null"> and se.material_id = #{materialId}</if>
+        <if test="orderStatus != null"> and gs.shipment_status = #{orderStatus}</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and se.in_hospital_code = #{inHospitalCode}
+        </if>
+        <if test="orderNo != null and orderNo != ''">
+            and gs.shipment_no like concat('%', #{orderNo}, '%')
+        </if>
+        <if test="supplierId != null">
+            and (se.supplier_id = #{supplierId} or m.supplier_id = #{supplierId})
+        </if>
+        <if test="inHospitalCode == null or inHospitalCode == ''">
+            <include refid="stockQueryDateFilterShipment"/>
+        </if>
+    </sql>
+
+    <sql id="outboundRefundStockEntryFilters">
+        <if test="warehouseId != null"> and rs.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and rs.department_id = #{departmentId}</if>
+        <if test="materialId != null"> and rse.material_id = #{materialId}</if>
+        <if test="orderStatus != null"> and rs.refund_status = #{orderStatus}</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and rse.in_hospital_code = #{inHospitalCode}
+        </if>
+        <if test="orderNo != null and orderNo != ''">
+            and rs.refund_no like concat('%', #{orderNo}, '%')
+        </if>
+        <if test="supplierId != null">
+            and m.supplier_id = #{supplierId}
+        </if>
+        <if test="inHospitalCode == null or inHospitalCode == ''">
+            <include refid="stockQueryDateFilterRefundStock"/>
+        </if>
+    </sql>
+
+    <select id="countOutboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+        <trim suffixOverrides="+">
+            <if test="billKindScope == null or billKindScope == '' or billKindScope == 'shipment'">
+                (select count(*)
+                 from gz_shipment_entry se
+                 inner join gz_shipment gs on gs.id = se.paren_id
+                     and ifnull(gs.del_flag, 0) != 1
+                     and gs.tenant_id = #{scopedTenantId}
+                 <if test="supplierId != null">
+                 left join fd_material m on se.material_id = m.id
+                 </if>
+                 where ifnull(se.del_flag, 0) != 1
+                 <include refid="outboundShipmentEntryFilters"/>
+                )
+            </if>
+            <if test="billKindScope == null or billKindScope == ''"> + </if>
+            <if test="billKindScope == null or billKindScope == '' or billKindScope == 'refundStock'">
+                (select count(*)
+                 from gz_refund_stock_entry rse
+                 inner join gz_refund_stock rs on rs.id = rse.paren_id
+                     and ifnull(rs.del_flag, 0) != 1
+                     and rs.tenant_id = #{scopedTenantId}
+                 <if test="supplierId != null">
+                 left join fd_material m on rse.material_id = m.id
+                 </if>
+                 where ifnull(rse.del_flag, 0) != 1
+                 <include refid="outboundRefundStockEntryFilters"/>
+                )
+            </if>
+        </trim>
+    </select>
 
     <select id="selectOutboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
             resultType="com.spd.gz.domain.vo.GzStockQueryEntryVo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select * from (
+            (
             select
                 se.id as entryId,
                 'shipment' as billKind,
@@ -68,38 +142,28 @@
                 coalesce(se.supplier_id, m.supplier_id) as supplierId,
                 gs.create_time as sortTime
             from gz_shipment_entry se
-            inner join gz_shipment gs on gs.id = se.paren_id and gs.del_flag != 1
+            inner join gz_shipment gs on gs.id = se.paren_id
+                and ifnull(gs.del_flag, 0) != 1
+                and gs.tenant_id = #{scopedTenantId}
             left join fd_warehouse w on gs.warehouse_id = w.id
             left join fd_department d on gs.department_id = d.id
             left join fd_material m on se.material_id = m.id
             left join fd_unit u on m.unit_id = u.unit_id
             left join fd_factory f on m.factory_id = f.factory_id
-            where se.del_flag != 1
-              and gs.tenant_id = #{scopedTenantId}
-            <if test="warehouseId != null"> and gs.warehouse_id = #{warehouseId}</if>
-            <if test="departmentId != null"> and gs.department_id = #{departmentId}</if>
-            <if test="materialId != null"> and se.material_id = #{materialId}</if>
-            <if test="orderStatus != null"> and gs.shipment_status = #{orderStatus}</if>
-            <if test="inHospitalCode != null and inHospitalCode != ''">
-                and se.in_hospital_code = #{inHospitalCode}
-            </if>
-            <if test="orderNo != null and orderNo != ''">
-                and gs.shipment_no like concat('%', #{orderNo}, '%')
-            </if>
-            <if test="supplierId != null">
-                and (se.supplier_id = #{supplierId} or m.supplier_id = #{supplierId})
-            </if>
-            <if test="inHospitalCode == null or inHospitalCode == ''">
-                <include refid="stockQueryDateFilterShipment"/>
-            </if>
-            <if test="billKindScope == null or billKindScope == '' or billKindScope == 'shipment'">
-            </if>
+            where ifnull(se.del_flag, 0) != 1
+            <include refid="outboundShipmentEntryFilters"/>
             <if test="billKindScope != null and billKindScope == 'refundStock'">
                 and 1 = 0
             </if>
+            order by gs.create_time desc, se.id desc
+            <if test="branchFetchLimit != null">
+                limit #{branchFetchLimit}
+            </if>
+            )
 
             union all
 
+            (
             select
                 rse.id as entryId,
                 'refundStock' as billKind,
@@ -136,33 +200,24 @@
                 m.supplier_id as supplierId,
                 rs.create_time as sortTime
             from gz_refund_stock_entry rse
-            inner join gz_refund_stock rs on rs.id = rse.paren_id and rs.del_flag != 1
+            inner join gz_refund_stock rs on rs.id = rse.paren_id
+                and ifnull(rs.del_flag, 0) != 1
+                and rs.tenant_id = #{scopedTenantId}
             left join fd_warehouse w on rs.warehouse_id = w.id
             left join fd_department d on rs.department_id = d.id
             left join fd_material m on rse.material_id = m.id
             left join fd_unit u on m.unit_id = u.unit_id
             left join fd_factory f on m.factory_id = f.factory_id
-            where rse.del_flag != 1
-              and rs.tenant_id = #{scopedTenantId}
-            <if test="warehouseId != null"> and rs.warehouse_id = #{warehouseId}</if>
-            <if test="departmentId != null"> and rs.department_id = #{departmentId}</if>
-            <if test="materialId != null"> and rse.material_id = #{materialId}</if>
-            <if test="orderStatus != null"> and rs.refund_status = #{orderStatus}</if>
-            <if test="inHospitalCode != null and inHospitalCode != ''">
-                and rse.in_hospital_code = #{inHospitalCode}
-            </if>
-            <if test="orderNo != null and orderNo != ''">
-                and rs.refund_no like concat('%', #{orderNo}, '%')
-            </if>
-            <if test="supplierId != null">
-                and m.supplier_id = #{supplierId}
-            </if>
-            <if test="inHospitalCode == null or inHospitalCode == ''">
-                <include refid="stockQueryDateFilterRefundStock"/>
-            </if>
+            where ifnull(rse.del_flag, 0) != 1
+            <include refid="outboundRefundStockEntryFilters"/>
             <if test="billKindScope != null and billKindScope == 'shipment'">
                 and 1 = 0
             </if>
+            order by rs.create_time desc, rse.id desc
+            <if test="branchFetchLimit != null">
+                limit #{branchFetchLimit}
+            </if>
+            )
         ) t
         order by t.sortTime desc, t.entryId desc
     </select>

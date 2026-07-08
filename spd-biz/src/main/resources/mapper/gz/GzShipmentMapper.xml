@@ -112,6 +112,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="shipmentStatus != null "> and gs.shipment_status = #{shipmentStatus}</if>
         <if test="shipmentType != null "> and gs.shipment_type = #{shipmentType}</if>
         <if test="auditDate != null "> and gs.audit_date = #{auditDate}</if>
+        <choose>
+            <when test="timeField != null and timeField == 'auditDate'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.audit_date >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.audit_date <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gs.create_time >= STR_TO_DATE(#{beginDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
+            </otherwise>
+        </choose>
         group by gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
 				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.audit_by, gs.create_by,
 				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,

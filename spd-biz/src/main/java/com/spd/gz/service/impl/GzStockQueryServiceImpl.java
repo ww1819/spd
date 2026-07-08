@@ -42,6 +42,17 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
     @Override
     public List<GzStockQueryEntryVo> selectOutboundRefundEntryList(GzStockQueryParam param)
     {
+        return gzStockQueryMapper.selectOutboundRefundEntryList(prepareOutboundRefundParam(param));
+    }
+
+    @Override
+    public long countOutboundRefundEntryList(GzStockQueryParam param)
+    {
+        return gzStockQueryMapper.countOutboundRefundEntryList(prepareOutboundRefundParam(param));
+    }
+
+    private GzStockQueryParam prepareOutboundRefundParam(GzStockQueryParam param)
+    {
         if (param == null) {
             param = new GzStockQueryParam();
         }
@@ -49,7 +60,19 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
         if (StringUtils.isEmpty(param.getTimeField())) {
             param.setTimeField("createTime");
         }
-        return gzStockQueryMapper.selectOutboundRefundEntryList(param);
+        normalizeDateRange(param);
+        return param;
+    }
+
+    /** 日期仅传 yyyy-MM-dd 时补全时分秒，便于走 create_time/audit_date 索引 */
+    private void normalizeDateRange(GzStockQueryParam param)
+    {
+        if (StringUtils.isNotEmpty(param.getBeginDate()) && param.getBeginDate().trim().length() <= 10) {
+            param.setBeginDate(param.getBeginDate().trim() + " 00:00:00");
+        }
+        if (StringUtils.isNotEmpty(param.getEndDate()) && param.getEndDate().trim().length() <= 10) {
+            param.setEndDate(param.getEndDate().trim() + " 23:59:59");
+        }
     }
 
     @Override

@@ -8,9 +8,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.github.pagehelper.PageHelper;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
+import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TableSupport;
 import com.spd.common.utils.StringUtils;
 import com.spd.gz.domain.GzStockQueryParam;
 import com.spd.gz.domain.vo.GzDepotInventoryTraceResultVo;
@@ -32,9 +35,23 @@ public class GzStockQueryController extends BaseController
     @GetMapping("/outboundRefund/entry/list")
     public TableDataInfo listOutboundRefundEntries(GzStockQueryParam param)
     {
-        startPage();
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        int pageNum = pageDomain.getPageNum() != null ? pageDomain.getPageNum() : 1;
+        int pageSize = pageDomain.getPageSize() != null ? pageDomain.getPageSize() : 10;
+        if (param == null) {
+            param = new GzStockQueryParam();
+        }
+        // 各 UNION 分支先限流，避免全量排序导致接口超时
+        boolean preciseLookup = StringUtils.isNotEmpty(param.getInHospitalCode())
+            || StringUtils.isNotEmpty(param.getOrderNo());
+        if (!preciseLookup) {
+            param.setBranchFetchLimit(Math.min(Math.max(pageNum * pageSize + pageSize, 50), 2000));
+        }
+        PageHelper.startPage(pageNum, pageSize, false);
         List<GzStockQueryEntryVo> list = gzStockQueryService.selectOutboundRefundEntryList(param);
-        return getDataTable(list);
+        TableDataInfo rspData = getDataTable(list);
+        rspData.setTotal(gzStockQueryService.countOutboundRefundEntryList(param));
+        return rspData;
     }
 
     @PreAuthorize("@ss.hasPermi('gz:stockQuery:list')")

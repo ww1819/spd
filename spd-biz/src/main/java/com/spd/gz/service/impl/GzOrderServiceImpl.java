@@ -377,6 +377,15 @@ public class GzOrderServiceImpl implements IGzOrderService
             throw new ServiceException(String.format("高值入库业务ID：%s，不存在!", id));
         }
         SecurityUtils.ensureTenantAccess(gzOrder.getTenantId());
+        if (gzOrder.getOrderStatus() != null && Integer.valueOf(2).equals(gzOrder.getOrderStatus()))
+        {
+            throw new ServiceException(String.format("单据 %s 已审核，不能重复审核", gzOrder.getOrderNo()));
+        }
+        List<GzOrderEntryInhospitalcodeList> existingCodes = gzOrderMapper.selectInhospitalcodeListByParentId(billId);
+        if (existingCodes != null && !existingCodes.isEmpty())
+        {
+            throw new ServiceException(String.format("单据 %s 已生成院内码，请勿重复审核", gzOrder.getOrderNo()));
+        }
         alignActiveGzOrderEntriesSupplierFromHeader(gzOrder);
         gzOrder = gzOrderMapper.selectGzOrderById(billId);
         if (gzOrder == null) {
@@ -473,29 +482,46 @@ public class GzOrderServiceImpl implements IGzOrderService
         }
     }
 
-    /** 原子取号并生成院内码，避免并发审核重复 */
+    /** 事务内行锁取号并生成院内码，避免并发审核重复 */
     private String allocateInHospitalCode(Long warehouseId) {
         String businessType = "高值";
         String sheetType = "gzynm";
-        int count = sysSheetIdMapper.countSheetId(businessType, sheetType);
-        if (count == 0) {
-            sysSheetIdMapper.insertSheetId(businessType, sheetType, 0L);
+        ensureSheetIdRow(businessType, sheetType);
+        Long currentId = sysSheetIdMapper.selectSheetIdForUpdate(businessType, sheetType);
+        if (currentId == null) {
+            throw new ServiceException("院内码序列号分配失败，请稍后重试");
         }
-        int rows = sysSheetIdMapper.incrementSheetId(businessType, sheetType);
+        Long newSheetId = currentId + 1;
+        int rows = sysSheetIdMapper.updateSheetId(businessType, sheetType, newSheetId);
         if (rows <= 0) {
             throw new ServiceException("院内码序列号分配失败，请稍后重试");
         }
-        Long sheetId = sysSheetIdMapper.selectLastInsertSheetId();
-        if (sheetId == null || sheetId <= 0) {
-            throw new ServiceException("院内码序列号分配失败，请稍后重试");
-        }
-        String code = generateInHospitalCode(sheetId);
+        String code = generateInHospitalCode(newSheetId);
         assertInHospitalCodeUnused(code, warehouseId);
         return code;
     }
 
+    private void ensureSheetIdRow(String businessType, String sheetType) {
+        if (sysSheetIdMapper.countSheetId(businessType, sheetType) > 0) {
+            return;
+        }
+        try {
+            sysSheetIdMapper.insertSheetId(businessType, sheetType, 0L);
+        } catch (RuntimeException e) {
+            if (sysSheetIdMapper.countSheetId(businessType, sheetType) == 0) {
+                throw new ServiceException("院内码序列号初始化失败，请稍后重试");
+            }
+        }
+    }
+
     private void assertInHospitalCodeUnused(String inHospitalCode, Long warehouseId) {
-        if (warehouseId == null || StringUtils.isEmpty(inHospitalCode)) {
+        if (StringUtils.isEmpty(inHospitalCode)) {
+            return;
+        }
+        if (gzOrderMapper.countInhospitalcodeByCode(inHospitalCode) > 0) {
+            throw new ServiceException(String.format("院内码 %s 已存在，请重新审核或联系管理员", inHospitalCode));
+        }
+        if (warehouseId == null) {
             return;
         }
         GzDepotInventory existing = gzDepotInventoryMapper.selectLatestDepotByInHospitalCodeAndWarehouse(

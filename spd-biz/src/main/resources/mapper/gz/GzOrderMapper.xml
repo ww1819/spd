@@ -430,6 +430,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by id asc
     </select>
 
+    <select id="countInhospitalcodeByCode" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from gz_order_entry_inhospitalcode_list
+        where tenant_id = #{scopedTenantId}
+          and IFNULL(del_flag, 0) = 0
+          and in_hospital_code = #{inHospitalCode}
+    </select>
+
     <!-- 备货出库引用窗：已审核验收单（order_type=101） -->
     <select id="selectAuditedAcceptanceForShipmentRef" parameterType="GzOrder" resultMap="GzOrderResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

@@ -93,6 +93,15 @@ public class GzShipment extends BaseEntity
     /** 科室名称（展示字段，不落库） */
     private String departmentName;
 
+    /** 开始日期（用于查询） */
+    private String beginDate;
+
+    /** 结束日期（用于查询） */
+    private String endDate;
+
+    /** 时间筛选字段：createTime/auditDate */
+    private String timeField;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -359,6 +368,36 @@ public class GzShipment extends BaseEntity
     public void setRefAcceptanceId(String refAcceptanceId)
     {
         this.refAcceptanceId = refAcceptanceId;
+    }
+
+    public String getBeginDate()
+    {
+        return beginDate;
+    }
+
+    public void setBeginDate(String beginDate)
+    {
+        this.beginDate = beginDate;
+    }
+
+    public String getEndDate()
+    {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate)
+    {
+        this.endDate = endDate;
+    }
+
+    public String getTimeField()
+    {
+        return timeField;
+    }
+
+    public void setTimeField(String timeField)
+    {
+        this.timeField = timeField;
     }
 
     @Override

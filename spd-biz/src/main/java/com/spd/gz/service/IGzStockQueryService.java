@@ -10,6 +10,8 @@ public interface IGzStockQueryService
 {
     List<GzStockQueryEntryVo> selectOutboundRefundEntryList(GzStockQueryParam param);
 
+    long countOutboundRefundEntryList(GzStockQueryParam param);
+
     List<GzDepotInventoryTraceVo> selectDepotInventoryTrace(String inHospitalCode);
 
     GzDepotInventoryTraceResultVo buildDepotInventoryTraceResult(String inHospitalCode);
