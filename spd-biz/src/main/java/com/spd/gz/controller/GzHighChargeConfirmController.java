@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.spd.common.utils.StringUtils;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
@@ -32,11 +34,25 @@ public class GzHighChargeConfirmController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:list')")
     @GetMapping("/list")
-    public TableDataInfo list(GzHighChargeConfirmQuery query)
+    public TableDataInfo list(GzHighChargeConfirmQuery query,
+        @RequestParam(value = "sortField", required = false) String sortField,
+        @RequestParam(value = "sortOrder", required = false) String sortOrder)
     {
-        startPage();
-        List<GzHighChargeConfirmRowVo> list = gzHighChargeConfirmService.selectConfirmList(query);
-        return getDataTable(list);
+        if (StringUtils.isNotBlank(sortField))
+        {
+            query.setSortField(sortField.trim());
+            query.setSortOrder(sortOrder);
+        }
+        clearPage();
+        try
+        {
+            List<GzHighChargeConfirmRowVo> list = gzHighChargeConfirmService.selectConfirmList(query);
+            return getDataTable(list);
+        }
+        finally
+        {
+            clearPage();
+        }
     }
 
     @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:confirm')")

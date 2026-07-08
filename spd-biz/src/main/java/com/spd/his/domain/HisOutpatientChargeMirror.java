@@ -89,4 +89,7 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String orderByColumn;
     /** 查询排序方向：asc/desc */
     private String isAsc;
+    /** 列表排序字段（白名单，不走 PageHelper orderByColumn） */
+    private String sortField;
+    private String sortOrder;
 }

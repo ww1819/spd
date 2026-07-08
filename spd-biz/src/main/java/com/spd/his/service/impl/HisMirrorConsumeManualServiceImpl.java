@@ -1170,6 +1170,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         BigDecimal chargePrice = mirrorUnitPrice != null ? mirrorUnitPrice : gz.getUnitPrice();
         te.setChargePrice(chargePrice);
         te.setBatchNo(gz.getBatchNo());
+        te.setBatchNumber(gz.getMaterialNo());
+        te.setBeginTime(gz.getMaterialDate());
+        te.setMaterialDate(gz.getMaterialDate());
         te.setExpiryDate(gz.getEndTime());
         te.setInHospitalCode(gz.getInHospitalCode());
         te.setMasterBarcode(gz.getMasterBarcode());
@@ -1220,7 +1223,10 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         te.setChargePrice(chargePrice);
         te.setBatchNo(gz.getBatchNo());
-        te.setExpiryDate(gz.getEndTime());
+        te.setBatchNumber(StringUtils.defaultIfBlank(pe.getBatchNumer(), gz.getMaterialNo()));
+        te.setBeginTime(pe.getBeginTime() != null ? pe.getBeginTime() : gz.getMaterialDate());
+        te.setMaterialDate(gz.getMaterialDate());
+        te.setExpiryDate(pe.getEndTime() != null ? pe.getEndTime() : gz.getEndTime());
         te.setInHospitalCode(gz.getInHospitalCode());
         te.setMasterBarcode(gz.getMasterBarcode());
         te.setSecondaryBarcode(gz.getSecondaryBarcode());

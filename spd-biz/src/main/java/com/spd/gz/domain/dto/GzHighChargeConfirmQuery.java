@@ -26,4 +26,15 @@ public class GzHighChargeConfirmQuery
     /** HIS 收费/费用明细主键（模糊） */
     private String hisChargeId;
     private String materialName;
+
+    /** 表头排序字段（白名单校验） */
+    private String sortField;
+    /** asc / desc */
+    private String sortOrder;
+
+    /** 分页偏移（服务端计算，非前端传入） */
+    private Integer offset;
+
+    /** 每页条数（服务端计算，非前端传入） */
+    private Integer limitSize;
 }

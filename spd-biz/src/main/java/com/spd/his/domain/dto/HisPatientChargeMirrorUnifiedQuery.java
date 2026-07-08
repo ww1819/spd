@@ -62,4 +62,7 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     /** highValueStockQty / lowValueStockQty：仅用于分页后内存排序 */
     private String orderByColumn;
     private String isAsc;
+    /** 服务端排序字段（避免 PageHelper 将 orderByColumn 转成无效列名） */
+    private String sortField;
+    private String sortOrder;
 }

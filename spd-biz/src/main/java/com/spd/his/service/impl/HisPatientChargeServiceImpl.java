@@ -58,8 +58,12 @@ import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.foundation.domain.FdDepartment;
+import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.gz.domain.GzDepInventory;
+import com.spd.gz.mapper.GzDepInventoryMapper;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.constant.HisMirrorProcessConstants;
@@ -139,6 +143,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
+
+    @Autowired
+    private GzDepInventoryMapper gzDepInventoryMapper;
 
     @Autowired
     private ISbTenantSettingService sbTenantSettingService;
@@ -805,7 +812,116 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             String bid = b != null ? b.getConsumeBillNo() : "";
             return StringUtils.compare(bid, aid);
         });
+        for (HisMirrorConsumeRecordVo row : merged)
+        {
+            enrichConsumeRecordFromDepInventory(row);
+        }
         return merged;
+    }
+
+    /** 消耗记录展示字段：与科室库存明细同源补全（规格/单位/批号/生产日期/有效期） */
+    private void enrichConsumeRecordFromDepInventory(HisMirrorConsumeRecordVo row)
+    {
+        if (row == null || consumeRecordDisplayComplete(row))
+        {
+            return;
+        }
+        String inHospitalCode = StringUtils.trimToEmpty(row.getInHospitalCode());
+        if (StringUtils.isEmpty(inHospitalCode))
+        {
+            return;
+        }
+        GzDepInventory query = new GzDepInventory();
+        query.setInHospitalCode(inHospitalCode);
+        query.setShowZeroStock(true);
+        List<GzDepInventory> inventoryRows = gzDepInventoryMapper.selectGzDepInventoryList(query);
+        if (inventoryRows == null || inventoryRows.isEmpty())
+        {
+            return;
+        }
+        GzDepInventory inventory = pickDepInventoryForConsumeRecord(inventoryRows, row.getWriteOffDeptId());
+        if (inventory == null)
+        {
+            return;
+        }
+        FdMaterial material = inventory.getMaterial();
+        if (StringUtils.isBlank(row.getMaterialSpeci()))
+        {
+            row.setMaterialSpeci(firstNonBlank(
+                material != null ? material.getSpeci() : null,
+                material != null ? material.getHisChargeItemSpeci() : null));
+        }
+        if (StringUtils.isBlank(row.getMaterialModel()) && material != null)
+        {
+            row.setMaterialModel(material.getModel());
+        }
+        if (StringUtils.isBlank(row.getUnit()))
+        {
+            FdUnit unit = material != null ? material.getFdUnit() : null;
+            row.setUnit(firstNonBlank(
+                unit != null ? unit.getUnitName() : null,
+                material != null ? material.getHisChargeItemUnit() : null));
+        }
+        if (StringUtils.isBlank(row.getBatchNumber()))
+        {
+            row.setBatchNumber(inventory.getMaterialNo());
+        }
+        if (StringUtils.isBlank(row.getBatchNo()))
+        {
+            row.setBatchNo(firstNonBlank(inventory.getBatchNo(), inventory.getMaterialNo()));
+        }
+        if (row.getBeginTime() == null)
+        {
+            row.setBeginTime(inventory.getMaterialDate());
+        }
+        if (row.getEndTime() == null)
+        {
+            row.setEndTime(inventory.getEndTime());
+        }
+    }
+
+    private static GzDepInventory pickDepInventoryForConsumeRecord(List<GzDepInventory> rows, Long writeOffDeptId)
+    {
+        if (rows == null || rows.isEmpty())
+        {
+            return null;
+        }
+        if (writeOffDeptId != null)
+        {
+            for (GzDepInventory row : rows)
+            {
+                if (writeOffDeptId.equals(row.getDepartmentId()))
+                {
+                    return row;
+                }
+            }
+        }
+        return rows.get(0);
+    }
+
+    private static boolean consumeRecordDisplayComplete(HisMirrorConsumeRecordVo row)
+    {
+        return StringUtils.isNotBlank(row.getMaterialSpeci())
+            && StringUtils.isNotBlank(row.getUnit())
+            && StringUtils.isNotBlank(row.getBatchNumber())
+            && row.getBeginTime() != null
+            && row.getEndTime() != null;
+    }
+
+    private static String firstNonBlank(String... values)
+    {
+        if (values == null)
+        {
+            return null;
+        }
+        for (String value : values)
+        {
+            if (StringUtils.isNotBlank(value))
+            {
+                return StringUtils.trim(value);
+            }
+        }
+        return null;
     }
 
     @Override

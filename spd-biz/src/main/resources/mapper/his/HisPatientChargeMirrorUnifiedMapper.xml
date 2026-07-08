@@ -86,14 +86,17 @@
                 or ifnull(m.patient_name_referred, '') like concat('%', #{patientName}, '%')
             )
         </if>
-        <if test='"INPATIENT".equals(visitKind) and inpatientNo != null'>
-            and m.inpatient_no like concat('%', #{inpatientNo}, '%')
+        <if test='"INPATIENT".equals(visitKind) and inpatientNo != null and inpatientNo != ""'>
+            and lower(ifnull(m.inpatient_no, '')) like concat('%', lower(#{inpatientNo}), '%')
         </if>
-        <if test='"OUTPATIENT".equals(visitKind) and outpatientNo != null'>
-            and m.outpatient_no like concat('%', #{outpatientNo}, '%')
+        <if test='"OUTPATIENT".equals(visitKind) and outpatientNo != null and outpatientNo != ""'>
+            and lower(ifnull(m.outpatient_no, '')) like concat('%', lower(#{outpatientNo}), '%')
         </if>
         <if test="(visitKind == null or visitKind == '') and visitNo != null and visitNo != ''">
-            and (m.inpatient_no like concat('%', #{visitNo}, '%') or m.outpatient_no like concat('%', #{visitNo}, '%'))
+            and (
+                lower(ifnull(m.inpatient_no, '')) like concat('%', lower(#{visitNo}), '%')
+                or lower(ifnull(m.outpatient_no, '')) like concat('%', lower(#{visitNo}), '%')
+            )
         </if>
         <if test="chargeItemId != null and chargeItemId != ''">
             <choose>
@@ -468,8 +471,41 @@
             <include refid="resolvedValueLevelExpr"/> as value_level
         <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
-        order by m.charge_at desc, m.id desc
+        <include refid="unifiedListOrderBy"/>
     </select>
+
+    <sql id="unifiedListOrderBy">
+        <choose>
+            <when test="sortField == 'visitNo'">
+                order by coalesce(nullif(trim(m.inpatient_no), ''), nullif(trim(m.outpatient_no), ''))
+                ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'inpatientNo'">
+                order by m.inpatient_no ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'outpatientNo'">
+                order by m.outpatient_no ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'patientName'">
+                order by m.patient_name ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'chargeItemId'">
+                order by m.charge_item_id ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'itemName'">
+                order by m.item_name ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'specModel'">
+                order by m.spec_model ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <when test="sortField == 'totalAmount'">
+                order by m.total_amount ${sortOrder == 'asc' ? 'asc' : 'desc'}, m.id desc
+            </when>
+            <otherwise>
+                order by m.charge_at desc, m.id desc
+            </otherwise>
+        </choose>
+    </sql>
 
     <update id="refreshValueLevelByChargeItemId">
         update his_patient_charge_mirror_unified

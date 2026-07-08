@@ -50,6 +50,9 @@ public class HisPatientChargeAllQuery extends BaseEntity
     private Date endProcessTime;
     private String orderByColumn;
     private String isAsc;
+    /** 列表排序字段（白名单，不走 PageHelper orderByColumn） */
+    private String sortField;
+    private String sortOrder;
     private Integer pageNum;
     private Integer pageSize;
 }

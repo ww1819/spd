@@ -6,14 +6,21 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.github.pagehelper.Page;
+import com.spd.common.core.page.PageDomain;
+import com.spd.common.core.page.TableSupport;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
+import com.spd.common.utils.PageUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.uuid.UUID7;
@@ -36,6 +43,10 @@ import com.spd.warehouse.service.IStkIoBillService;
 @Service
 public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmService
 {
+    private static final java.util.Set<String> CONFIRM_SORT_COLUMNS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "confirmStatus", "patientName", "visitNo", "chargeItemId", "itemName", "itemSpec",
+        "materialName", "materialSpeci", "inHospitalCode", "unitPrice", "amt", "batchNumber")));
+
     private static final String PREFIX_CONFIRM = "GZQR";
     private static final String PREFIX_IN = "G-RK";
     private static final String PREFIX_OUT = "G-CK";
@@ -61,7 +72,49 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             query = new GzHighChargeConfirmQuery();
         }
         query.setTenantId(requireTenant());
-        return gzHighConsumeConfirmMapper.selectConfirmList(query);
+        normalizeSortParams(query);
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        int pageNum = pageDomain.getPageNum() != null && pageDomain.getPageNum() > 0 ? pageDomain.getPageNum() : 1;
+        int pageSize = pageDomain.getPageSize() != null && pageDomain.getPageSize() > 0 ? pageDomain.getPageSize() : 10;
+        query.setOffset((pageNum - 1) * pageSize);
+        query.setLimitSize(pageSize);
+        PageUtils.clearPage();
+        long total;
+        List<GzHighChargeConfirmRowVo> rows;
+        try
+        {
+            total = gzHighConsumeConfirmMapper.selectConfirmListCount(query);
+            rows = gzHighConsumeConfirmMapper.selectConfirmList(query);
+        }
+        finally
+        {
+            PageUtils.clearPage();
+        }
+        if (rows == null)
+        {
+            rows = Collections.emptyList();
+        }
+        Page<GzHighChargeConfirmRowVo> page = new Page<>(pageNum, pageSize);
+        page.setTotal(total);
+        page.addAll(rows);
+        return page;
+    }
+
+    private static void normalizeSortParams(GzHighChargeConfirmQuery query)
+    {
+        if (query == null)
+        {
+            return;
+        }
+        String col = StringUtils.trimToNull(query.getSortField());
+        if (col == null || !CONFIRM_SORT_COLUMNS.contains(col))
+        {
+            query.setSortField(null);
+            query.setSortOrder(null);
+            return;
+        }
+        query.setSortField(col);
+        query.setSortOrder("asc".equalsIgnoreCase(StringUtils.trimToEmpty(query.getSortOrder())) ? "asc" : "desc");
     }
 
     @Override

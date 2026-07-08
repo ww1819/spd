@@ -157,7 +157,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setTenantId(q.getTenantId());
         u.setVisitKind("INPATIENT");
         u.setPatientName(q.getPatientName());
-        u.setInpatientNo(q.getInpatientNo());
+        u.setInpatientNo(StringUtils.trimToNull(q.getInpatientNo()));
         u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
         u.setHisChargeId(StringUtils.trimToNull(q.getHisInpatientChargeId()));
         u.setChargeIdTf(q.getHisInpatientChargeIdTf());
@@ -174,6 +174,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
+        u.setSortField(q.getSortField());
+        u.setSortOrder(q.getSortOrder());
         u.setParams(q.getParams());
         return u;
     }
@@ -188,7 +190,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setTenantId(q.getTenantId());
         u.setVisitKind("OUTPATIENT");
         u.setPatientName(q.getPatientName());
-        u.setOutpatientNo(q.getOutpatientNo());
+        u.setOutpatientNo(StringUtils.trimToNull(q.getOutpatientNo()));
         u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
         u.setHisChargeId(StringUtils.trimToNull(q.getHisOutpatientChargeId()));
         u.setChargeIdTf(q.getHisOutpatientChargeIdTf());
@@ -205,6 +207,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
+        u.setSortField(q.getSortField());
+        u.setSortOrder(q.getSortOrder());
         u.setParams(q.getParams());
         return u;
     }
@@ -219,7 +223,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setTenantId(q.getTenantId());
         u.setVisitKind(null);
         u.setPatientName(q.getPatientName());
-        u.setVisitNo(q.getVisitNo());
+        u.setVisitNo(StringUtils.trimToNull(q.getVisitNo()));
         u.setChargeItemId(normalizeChargeItemId(q.getChargeItemId()));
         u.setHisChargeId(StringUtils.trimToNull(q.getHisChargeId()));
         u.setChargeIdTf(q.getChargeIdTf());
@@ -237,6 +241,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
+        u.setSortField(q.getSortField());
+        u.setSortOrder(q.getSortOrder());
         u.setParams(q.getParams());
         return u;
     }
@@ -533,6 +539,30 @@ public final class HisPatientChargeMirrorUnifiedSupport
         {
             u.setItemNameLike(StringUtils.trim(u.getItemNameLike()));
         }
+        normalizeSortParams(u);
+    }
+
+    private static final java.util.Set<String> UNIFIED_SORT_COLUMNS = new java.util.HashSet<>(
+        java.util.Arrays.asList(
+            "visitNo", "inpatientNo", "outpatientNo", "patientName",
+            "chargeItemId", "itemName", "specModel", "totalAmount"));
+
+    /** 排序字段白名单，防止 SQL 注入 */
+    public static void normalizeSortParams(HisPatientChargeMirrorUnifiedQuery u)
+    {
+        if (u == null)
+        {
+            return;
+        }
+        String col = StringUtils.trimToNull(u.getSortField());
+        if (col == null || !UNIFIED_SORT_COLUMNS.contains(col))
+        {
+            u.setSortField(null);
+            u.setSortOrder(null);
+            return;
+        }
+        u.setSortField(col);
+        u.setSortOrder("asc".equalsIgnoreCase(StringUtils.trimToEmpty(u.getSortOrder())) ? "asc" : "desc");
     }
 
     private static String normalizeSearchKeyword(String raw)

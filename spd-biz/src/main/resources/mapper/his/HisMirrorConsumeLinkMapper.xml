@@ -98,17 +98,17 @@
             t.order_status as consumeBillStatus,
             te.id as consumeEntryId,
             te.material_name as materialName,
-            coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
-            coalesce(nullif(trim(te.model), ''), m.model) as materialModel,
-            coalesce(nullif(trim(te.unit), ''), u.unit_name) as unit,
-            te.batch_no as batchNo,
-            coalesce(nullif(trim(te.batch_number), ''), nullif(trim(gdi.material_no), ''), nullif(trim(te.batch_no), '')) as batchNumber,
+            coalesce(nullif(trim(te.specification), ''), nullif(trim(gm.speci), ''), nullif(trim(gdo.material_speci), ''), nullif(trim(m.speci), '')) as materialSpeci,
+            coalesce(nullif(trim(te.model), ''), nullif(trim(gm.model), ''), nullif(trim(gdo.material_model), ''), nullif(trim(m.model), '')) as materialModel,
+            coalesce(nullif(trim(te.unit), ''), nullif(trim(gu.unit_name), ''), nullif(trim(u.unit_name), '')) as unit,
+            coalesce(nullif(trim(gdi.batch_no), ''), nullif(trim(gdi_c.batch_no), ''), nullif(trim(gse.batch_no), ''), nullif(trim(gdo.batch_no), ''), nullif(trim(te.batch_no), '')) as batchNo,
+            coalesce(nullif(trim(gdi.material_no), ''), nullif(trim(gdi_c.material_no), ''), nullif(trim(gse.batch_number), ''), nullif(trim(goe.batch_number), ''), nullif(trim(gdo.material_no), ''), nullif(trim(te.batch_no), '')) as batchNumber,
             te.charge_price as unitPrice,
             coalesce(l.alloc_qty, te.quantity) as entryQty,
             case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
                 then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
-            coalesce(te.begin_time, te.material_date, gdi.material_date) as beginTime,
-            coalesce(te.expiry_date, gdi.end_time) as endTime,
+            coalesce(gdi.material_date, gdi_c.material_date, gse.begin_time, goe.begin_time, gdo.material_date) as beginTime,
+            coalesce(goe.end_time, gse.end_time, te.expiry_date) as endTime,
             trim(ifnull(te.in_hospital_code, l.in_hospital_code)) as inHospitalCode,
             coalesce(l.write_off_dept_id, t.write_off_dept_id) as writeOffDeptId,
             wod.name as writeOffDeptName
@@ -120,10 +120,27 @@
         inner join gz_traceability_entry te on te.id = l.traceability_entry_id
             and ifnull(te.del_flag, 0) = 0
             and te.tenant_id = l.tenant_id
-        left join gz_depot_inventory gdi on gdi.id = coalesce(l.gz_dep_inventory_id, te.inventory_id)
+        left join gz_dep_inventory gdi on gdi.id = coalesce(l.gz_dep_inventory_id, te.inventory_id)
             and gdi.tenant_id = l.tenant_id
             and ifnull(gdi.del_flag, 0) != 1
-        left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
+        left join gz_dep_inventory gdi_c on gdi_c.tenant_id = l.tenant_id
+            and ifnull(gdi_c.del_flag, 0) != 1
+            and trim(ifnull(gdi_c.in_hospital_code, '')) = trim(coalesce(te.in_hospital_code, l.in_hospital_code, ''))
+            and trim(coalesce(te.in_hospital_code, l.in_hospital_code, '')) != ''
+        left join gz_shipment_entry gse on ifnull(gse.del_flag, 0) != 1
+            and gse.tenant_id = l.tenant_id
+            and trim(ifnull(gse.in_hospital_code, '')) = trim(coalesce(te.in_hospital_code, l.in_hospital_code, ''))
+            and trim(coalesce(te.in_hospital_code, l.in_hospital_code, '')) != ''
+        left join gz_order_entry goe on ifnull(goe.del_flag, 0) != 1
+            and goe.tenant_id = l.tenant_id
+            and goe.batch_no = coalesce(nullif(trim(gdi.batch_no), ''), nullif(trim(gdi_c.batch_no), ''), nullif(trim(gse.batch_no), ''))
+        left join gz_depot_inventory gdo on gdo.tenant_id = l.tenant_id
+            and ifnull(gdo.del_flag, 0) != 1
+            and trim(ifnull(gdo.in_hospital_code, '')) = trim(coalesce(te.in_hospital_code, l.in_hospital_code, ''))
+            and trim(coalesce(te.in_hospital_code, l.in_hospital_code, '')) != ''
+        left join fd_material gm on gm.id = coalesce(gdi.material_id, gdi_c.material_id, gse.material_id, gdo.material_id, te.material_id)
+        left join fd_unit gu on gu.unit_id = gm.unit_id
+        left join fd_material m on m.id = te.material_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, t.write_off_dept_id)
         where l.tenant_id = #{tenantId}
@@ -149,16 +166,16 @@
             h.consume_bill_status as consumeBillStatus,
             e.id as consumeEntryId,
             e.material_name as materialName,
-            coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
-            coalesce(nullif(trim(e.material_model), ''), m.model) as materialModel,
-            u.unit_name as unit,
-            e.batch_no as batchNo,
-            e.batch_number as batchNumber,
+            coalesce(nullif(trim(e.material_speci), ''), nullif(trim(gm.speci), ''), nullif(trim(m.speci), '')) as materialSpeci,
+            coalesce(nullif(trim(e.material_model), ''), nullif(trim(gm.model), ''), nullif(trim(m.model), '')) as materialModel,
+            coalesce(nullif(trim(gu.unit_name), ''), nullif(trim(u.unit_name), '')) as unit,
+            coalesce(nullif(trim(e.batch_no), ''), nullif(trim(gzi.batch_no), ''), nullif(trim(gzi_c.batch_no), ''), nullif(trim(gse.batch_no), '')) as batchNo,
+            coalesce(nullif(trim(e.batch_number), ''), nullif(trim(gzi.material_no), ''), nullif(trim(gzi_c.material_no), ''), nullif(trim(gse.batch_number), '')) as batchNumber,
             e.unit_price as unitPrice,
             e.qty as entryQty,
             e.amt as amt,
-            e.begin_time as beginTime,
-            e.end_time as endTime,
+            coalesce(e.begin_time, gzi.material_date, gzi_c.material_date, gse.begin_time, goe.begin_time) as beginTime,
+            coalesce(e.end_time, goe.end_time, gse.end_time) as endTime,
             case
                 when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
                 else trim(ifnull(e.sub_barcode, ''))
@@ -172,7 +189,35 @@
             and ifnull(h.reverse_flag, 0) = 0
             and h.bill_source in ('HIS_MIRROR_ROW_HIGH', 'HIS_MIRROR_ROW_LOW')
         left join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id and ifnull(e.del_flag, 0) = 0
-        left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
+        left join gz_dep_inventory gzi on gzi.id = coalesce(e.gz_dep_inventory_id, l.gz_dep_inventory_id)
+            and gzi.tenant_id = l.tenant_id
+            and ifnull(gzi.del_flag, 0) != 1
+        left join gz_dep_inventory gzi_c on gzi_c.tenant_id = l.tenant_id
+            and ifnull(gzi_c.del_flag, 0) != 1
+            and trim(ifnull(gzi_c.in_hospital_code, '')) = trim(case
+                when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
+                else trim(ifnull(e.sub_barcode, ''))
+            end)
+            and trim(case
+                when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
+                else trim(ifnull(e.sub_barcode, ''))
+            end) != ''
+        left join gz_shipment_entry gse on ifnull(gse.del_flag, 0) != 1
+            and gse.tenant_id = l.tenant_id
+            and trim(ifnull(gse.in_hospital_code, '')) = trim(case
+                when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
+                else trim(ifnull(e.sub_barcode, ''))
+            end)
+            and trim(case
+                when trim(ifnull(e.main_barcode, '')) != '' then trim(ifnull(e.main_barcode, ''))
+                else trim(ifnull(e.sub_barcode, ''))
+            end) != ''
+        left join gz_order_entry goe on ifnull(goe.del_flag, 0) != 1
+            and goe.tenant_id = l.tenant_id
+            and goe.batch_no = coalesce(nullif(trim(gzi.batch_no), ''), nullif(trim(gzi_c.batch_no), ''), nullif(trim(gse.batch_no), ''))
+        left join fd_material gm on gm.id = coalesce(gzi.material_id, gzi_c.material_id, gse.material_id, e.material_id)
+        left join fd_unit gu on gu.unit_id = gm.unit_id
+        left join fd_material m on m.id = e.material_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
@@ -198,16 +243,16 @@
             h.consume_bill_status as consumeBillStatus,
             re.id as consumeEntryId,
             re.material_name as materialName,
-            coalesce(nullif(trim(re.material_speci), ''), m.speci) as materialSpeci,
-            coalesce(nullif(trim(re.material_model), ''), m.model) as materialModel,
-            u.unit_name as unit,
-            re.batch_no as batchNo,
-            re.batch_number as batchNumber,
+            coalesce(nullif(trim(re.material_speci), ''), nullif(trim(gm.speci), ''), nullif(trim(m.speci), '')) as materialSpeci,
+            coalesce(nullif(trim(re.material_model), ''), nullif(trim(gm.model), ''), nullif(trim(m.model), '')) as materialModel,
+            coalesce(nullif(trim(gu.unit_name), ''), nullif(trim(u.unit_name), '')) as unit,
+            coalesce(nullif(trim(re.batch_no), ''), nullif(trim(gzi.batch_no), ''), nullif(trim(gzi_c.batch_no), ''), nullif(trim(gse.batch_no), '')) as batchNo,
+            coalesce(nullif(trim(re.batch_number), ''), nullif(trim(gzi.material_no), ''), nullif(trim(gzi_c.material_no), ''), nullif(trim(gse.batch_number), '')) as batchNumber,
             re.unit_price as unitPrice,
             re.qty as entryQty,
             re.amt as amt,
-            re.begin_time as beginTime,
-            re.end_time as endTime,
+            coalesce(re.begin_time, gzi.material_date, gzi_c.material_date, gse.begin_time, goe.begin_time) as beginTime,
+            coalesce(re.end_time, goe.end_time, gse.end_time) as endTime,
             case
                 when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
                 else trim(ifnull(re.sub_barcode, ''))
@@ -226,7 +271,35 @@
             and ifnull(h.del_flag, 0) = 0
             and h.tenant_id = l.tenant_id
             and ifnull(h.reverse_flag, 0) = 1
-        left join fd_material m on m.id = re.material_id and m.tenant_id = l.tenant_id
+        left join gz_dep_inventory gzi on gzi.id = coalesce(re.gz_dep_inventory_id, l.gz_dep_inventory_id)
+            and gzi.tenant_id = l.tenant_id
+            and ifnull(gzi.del_flag, 0) != 1
+        left join gz_dep_inventory gzi_c on gzi_c.tenant_id = l.tenant_id
+            and ifnull(gzi_c.del_flag, 0) != 1
+            and trim(ifnull(gzi_c.in_hospital_code, '')) = trim(case
+                when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
+                else trim(ifnull(re.sub_barcode, ''))
+            end)
+            and trim(case
+                when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
+                else trim(ifnull(re.sub_barcode, ''))
+            end) != ''
+        left join gz_shipment_entry gse on ifnull(gse.del_flag, 0) != 1
+            and gse.tenant_id = l.tenant_id
+            and trim(ifnull(gse.in_hospital_code, '')) = trim(case
+                when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
+                else trim(ifnull(re.sub_barcode, ''))
+            end)
+            and trim(case
+                when trim(ifnull(re.main_barcode, '')) != '' then trim(ifnull(re.main_barcode, ''))
+                else trim(ifnull(re.sub_barcode, ''))
+            end) != ''
+        left join gz_order_entry goe on ifnull(goe.del_flag, 0) != 1
+            and goe.tenant_id = l.tenant_id
+            and goe.batch_no = coalesce(nullif(trim(gzi.batch_no), ''), nullif(trim(gzi_c.batch_no), ''), nullif(trim(gse.batch_no), ''))
+        left join fd_material gm on gm.id = coalesce(gzi.material_id, gzi_c.material_id, gse.material_id, re.material_id)
+        left join fd_unit gu on gu.unit_id = gm.unit_id
+        left join fd_material m on m.id = re.material_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
