@@ -192,7 +192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and m.his_charge_item_id like concat('%', #{hisChargeItemId}, '%')
         </if>
         <if test="orderNo != null and orderNo != ''"> and go.order_no like concat('%', #{orderNo}, '%')</if>
-        <if test="inHospitalCode != null and inHospitalCode != ''"> and gz.in_hospital_code like concat('%', #{inHospitalCode}, '%')</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''"> and gz.in_hospital_code = #{inHospitalCode}</if>
         <if test="masterBarcode != null and masterBarcode != ''"> and gz.master_barcode like concat('%', #{masterBarcode}, '%')</if>
         <if test="secondaryBarcode != null and secondaryBarcode != ''"> and gz.secondary_barcode like concat('%', #{secondaryBarcode}, '%')</if>
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.warehouse_date >= #{beginDate}]]></if>

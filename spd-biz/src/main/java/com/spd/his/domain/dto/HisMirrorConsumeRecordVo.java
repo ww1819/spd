@@ -30,6 +30,12 @@ public class HisMirrorConsumeRecordVo
     private Integer consumeBillStatus;
     private Long consumeEntryId;
     private String materialName;
+    /** 规格 */
+    private String materialSpeci;
+    /** 型号 */
+    private String materialModel;
+    /** 单位 */
+    private String unit;
     /** 批次号 */
     private String batchNo;
     /** 批号 */

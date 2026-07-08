@@ -37,6 +37,9 @@
         left join fd_department ad on ad.id = t.apply_dept_id
         left join fd_department ed on ed.id = t.exec_dept_id
         left join fd_supplier sup on sup.id = te.supplier_id and sup.tenant_id = l.tenant_id
+        left join gz_dep_inventory gdi on gdi.id = l.gz_dep_inventory_id and gdi.tenant_id = l.tenant_id
+        left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
+        left join fd_factory ff on ff.factory_id = m.factory_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
         left join gz_high_consume_confirm_bill in_bill on in_bill.confirm_id = l.confirm_id
             and in_bill.tenant_id = l.tenant_id
@@ -105,7 +108,14 @@
                 where cm.tenant_id = l.tenant_id
                   and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
                   and (cm.del_flag = 0 or cm.del_flag is null)
-                order by cm.id limit 1) as itemModel
+                order by cm.id limit 1) as itemModel,
+            coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(te.model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(gdi.material_no), ''), te.batch_no) as batchNumber,
+            gdi.material_date as productionDate,
+            coalesce(gdi.end_time, te.expiry_date) as endTime,
+            coalesce(nullif(trim(te.manufacturer), ''), ff.factory_name) as factoryName,
+            coalesce(nullif(trim(te.certificate_no), ''), m.register_no) as registerNo
         <include refid="confirmListFrom"/>
         <if test="departmentId != null">
             and <include refid="writeOffDeptIdExpr"/> = #{departmentId}
@@ -219,7 +229,14 @@
                       and (cm.del_flag = 0 or cm.del_flag is null)
                     order by cm.id limit 1),
                 e.material_model
-            ) as itemModel
+            ) as itemModel,
+            coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(e.material_model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(e.material_no), ''), e.batch_number) as batchNumber,
+            coalesce(e.begin_time, gzi.material_date) as productionDate,
+            coalesce(e.end_time, gzi.end_time) as endTime,
+            coalesce(nullif(trim(ff.factory_name), ''), null) as factoryName,
+            m.register_no as registerNo
         from his_mirror_consume_link l
         inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
             and h.tenant_id = l.tenant_id
@@ -230,6 +247,8 @@
         inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
             and ifnull(e.del_flag, 0) = 0
         left join gz_dep_inventory gzi on gzi.id = l.gz_dep_inventory_id and gzi.tenant_id = l.tenant_id
+        left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
+        left join fd_factory ff on ff.factory_id = coalesce(e.material_factory_id, e.factory_id, m.factory_id)
         left join fd_department d on d.id = <include refid="legacyWriteOffDeptIdExpr"/>
         left join fd_supplier sup on sup.id = e.supplier_id and sup.tenant_id = l.tenant_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id

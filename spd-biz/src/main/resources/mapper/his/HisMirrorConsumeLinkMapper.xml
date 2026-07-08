@@ -98,14 +98,17 @@
             t.order_status as consumeBillStatus,
             te.id as consumeEntryId,
             te.material_name as materialName,
+            coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(te.model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(te.unit), ''), u.unit_name) as unit,
             te.batch_no as batchNo,
-            null as batchNumber,
+            coalesce(nullif(trim(te.batch_number), ''), nullif(trim(gdi.material_no), ''), nullif(trim(te.batch_no), '')) as batchNumber,
             te.charge_price as unitPrice,
             coalesce(l.alloc_qty, te.quantity) as entryQty,
             case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
                 then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
-            null as beginTime,
-            null as endTime,
+            coalesce(te.begin_time, te.material_date, gdi.material_date) as beginTime,
+            coalesce(te.expiry_date, gdi.end_time) as endTime,
             trim(ifnull(te.in_hospital_code, l.in_hospital_code)) as inHospitalCode,
             coalesce(l.write_off_dept_id, t.write_off_dept_id) as writeOffDeptId,
             wod.name as writeOffDeptName
@@ -117,6 +120,11 @@
         inner join gz_traceability_entry te on te.id = l.traceability_entry_id
             and ifnull(te.del_flag, 0) = 0
             and te.tenant_id = l.tenant_id
+        left join gz_depot_inventory gdi on gdi.id = coalesce(l.gz_dep_inventory_id, te.inventory_id)
+            and gdi.tenant_id = l.tenant_id
+            and ifnull(gdi.del_flag, 0) != 1
+        left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
+        left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, t.write_off_dept_id)
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
@@ -141,6 +149,9 @@
             h.consume_bill_status as consumeBillStatus,
             e.id as consumeEntryId,
             e.material_name as materialName,
+            coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(e.material_model), ''), m.model) as materialModel,
+            u.unit_name as unit,
             e.batch_no as batchNo,
             e.batch_number as batchNumber,
             e.unit_price as unitPrice,
@@ -161,6 +172,8 @@
             and ifnull(h.reverse_flag, 0) = 0
             and h.bill_source in ('HIS_MIRROR_ROW_HIGH', 'HIS_MIRROR_ROW_LOW')
         left join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id and ifnull(e.del_flag, 0) = 0
+        left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
+        left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
@@ -185,6 +198,9 @@
             h.consume_bill_status as consumeBillStatus,
             re.id as consumeEntryId,
             re.material_name as materialName,
+            coalesce(nullif(trim(re.material_speci), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(re.material_model), ''), m.model) as materialModel,
+            u.unit_name as unit,
             re.batch_no as batchNo,
             re.batch_number as batchNumber,
             re.unit_price as unitPrice,
@@ -210,6 +226,8 @@
             and ifnull(h.del_flag, 0) = 0
             and h.tenant_id = l.tenant_id
             and ifnull(h.reverse_flag, 0) = 1
+        left join fd_material m on m.id = re.material_id and m.tenant_id = l.tenant_id
+        left join fd_unit u on u.unit_id = m.unit_id
         left join fd_department wod on wod.id = coalesce(l.write_off_dept_id, h.department_id)
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
