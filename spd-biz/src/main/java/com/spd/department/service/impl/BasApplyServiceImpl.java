@@ -26,6 +26,7 @@ import com.spd.department.domain.BasApplyEntry;
 import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.BasApplyMapper;
+import com.spd.department.mapper.WhWarehouseApplyMapper;
 import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.warehouse.domain.HcCkFlow;
@@ -69,6 +70,9 @@ public class BasApplyServiceImpl implements IBasApplyService
 
     @Autowired
     private IWhWarehouseApplyService whWarehouseApplyService;
+
+    @Autowired
+    private WhWarehouseApplyMapper whWarehouseApplyMapper;
 
     /** 非机构管理员：仅能访问已授权科室的申领/转科等 bas_apply 单据 */
     private void assertDepartmentInUserScope(Long departmentId) {
@@ -317,6 +321,39 @@ public class BasApplyServiceImpl implements IBasApplyService
     }
 
     /**
+     * 已生成库房申请单（CKSQ）的科室申领：禁止改回未审核或修改明细，避免出库引用与主单状态不一致。
+     */
+    private void assertDeptApplyNotDowngradeWhenWarehouseApplyExists(BasApply incoming, BasApply persisted)
+    {
+        if (incoming == null || persisted == null || persisted.getId() == null)
+        {
+            return;
+        }
+        int billType = incoming.getBillType() != null ? incoming.getBillType()
+            : (persisted.getBillType() != null ? persisted.getBillType() : 1);
+        if (billType != 1)
+        {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(persisted.getTenantId())
+            ? persisted.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
+        int ckCount = whWarehouseApplyMapper.countActiveByBasApplyId(String.valueOf(persisted.getId()), tenantId);
+        if (ckCount <= 0)
+        {
+            return;
+        }
+        Integer incomingStatus = incoming.getApplyBillStatus();
+        if (incomingStatus != null && incomingStatus != 2)
+        {
+            throw new ServiceException("该科室申领已生成仓库申请单，不能改回未审核状态");
+        }
+        if (persisted.getApplyBillStatus() != null && persisted.getApplyBillStatus() == 2)
+        {
+            throw new ServiceException("已审核并生成仓库申请单的科室申领不允许修改");
+        }
+    }
+
+    /**
      * 新增科室申领
      *
      * @param basApply 科室申领
@@ -416,6 +453,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (existing != null)
         {
             assertTransferDepartmentsImmutableWhenDetailsExist(basApply, existing);
+            assertDeptApplyNotDowngradeWhenWarehouseApplyExists(basApply, existing);
         }
         MasterDetailValidateUtil.assertHasMaterialLine(
             basApply.getBasApplyEntryList(), BasApplyEntry::getMaterialId, basApplyDocLabel(basApply));

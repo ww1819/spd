@@ -288,6 +288,27 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
     }
 
+    /** 出库引用库房申请：源科室申领必须已审核 */
+    private void assertBasApplyApprovedForOutbound(String basApplyId) {
+        if (StringUtils.isEmpty(basApplyId)) {
+            throw new ServiceException("仓库申请单未关联科室申领，不能生成出库单");
+        }
+        BasApply basApply;
+        try {
+            basApply = basApplyMapper.selectBasApplyById(Long.valueOf(basApplyId.trim()));
+        } catch (NumberFormatException e) {
+            throw new ServiceException("仓库申请单关联的科室申领无效");
+        }
+        if (basApply == null) {
+            throw new ServiceException("关联的科室申领不存在或已删除，不能生成出库单");
+        }
+        if (basApply.getApplyBillStatus() == null || basApply.getApplyBillStatus() != 2) {
+            throw new ServiceException(String.format(
+                "科室申领单 %s 未审核，不能引用出库",
+                StringUtils.isNotEmpty(basApply.getApplyBillNo()) ? basApply.getApplyBillNo() : basApplyId));
+        }
+    }
+
     /**
      * 查询出入库列表
      *
@@ -3251,6 +3272,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (Integer.valueOf(1).equals(wh.getVoidWholeFlag())) {
             throw new ServiceException("库房申请单已整单作废，不能生成出库单");
         }
+        assertBasApplyApprovedForOutbound(wh.getBasApplyId());
         List<WhWarehouseApplyEntry> list = wh.getEntryList();
         if (list == null || list.isEmpty()) {
             throw new ServiceException(String.format("仓库申请单ID：%s 无明细", whWarehouseApplyId));
