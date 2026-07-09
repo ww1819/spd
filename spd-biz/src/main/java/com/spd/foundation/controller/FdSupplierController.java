@@ -25,6 +25,7 @@ import com.spd.common.enums.TenantEnum;
 import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.ZqTcmMasterDataGuard;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdSupplierChangeLog;
 import com.spd.foundation.dto.SupplierImportUpdateDto;
@@ -174,6 +175,7 @@ public class FdSupplierController extends BaseController
     @PostMapping("/importAddValidate")
     public AjaxResult importAddValidate(MultipartFile file) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importValidate(file, false);
     }
 
@@ -183,6 +185,7 @@ public class FdSupplierController extends BaseController
     public AjaxResult importAddData(MultipartFile file,
         @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importData(file, false, confirm);
     }
 
@@ -358,6 +361,7 @@ public class FdSupplierController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FdSupplier fdSupplier)
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.getCustomerId()))
         {
             fdSupplier.setHisId(null);
