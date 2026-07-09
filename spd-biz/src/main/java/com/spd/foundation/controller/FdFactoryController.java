@@ -25,6 +25,7 @@ import com.spd.common.enums.TenantEnum;
 import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.ZqTcmMasterDataGuard;
 import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFactoryChangeLog;
 import com.spd.foundation.dto.FactoryImportUpdateDto;
@@ -127,6 +128,7 @@ public class FdFactoryController extends BaseController
     @PostMapping("/importAddValidate")
     public AjaxResult importAddValidate(MultipartFile file) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importValidate(file, false);
     }
 
@@ -136,6 +138,7 @@ public class FdFactoryController extends BaseController
     public AjaxResult importAddData(MultipartFile file,
         @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importData(file, false, confirm);
     }
 
@@ -305,6 +308,7 @@ public class FdFactoryController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FdFactory fdFactory)
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.getCustomerId()))
         {
             fdFactory.setHisId(null);

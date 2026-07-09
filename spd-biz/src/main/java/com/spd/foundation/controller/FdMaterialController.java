@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.ZqTcmMasterDataGuard;
 import com.spd.common.utils.PinyinUtils;
 import com.spd.his.config.HisTenantDbHandle;
 import com.spd.his.config.HisTenantJdbcAccess;
@@ -761,6 +762,7 @@ public class FdMaterialController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FdMaterial fdMaterial)
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return toAjax(fdMaterialService.insertFdMaterial(fdMaterial));
     }
 
@@ -832,6 +834,7 @@ public class FdMaterialController extends BaseController
     @PostMapping("/importAddValidate")
     public AjaxResult importAddValidate(MultipartFile file) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
         List<MaterialImportAddDto> list = util.importExcel(file.getInputStream());
         Map<String, Object> data = fdMaterialService.validateMaterialImportAdd(list);
@@ -863,6 +866,7 @@ public class FdMaterialController extends BaseController
     public AjaxResult importAddData(MultipartFile file,
         @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         ExcelUtil<MaterialImportAddDto> util = new ExcelUtil<>(MaterialImportAddDto.class);
         List<MaterialImportAddDto> list = util.importExcel(file.getInputStream());
         String operName = getUserIdStr();

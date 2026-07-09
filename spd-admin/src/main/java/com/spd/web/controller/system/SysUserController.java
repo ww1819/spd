@@ -33,6 +33,7 @@ import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.ZqTcmMasterDataGuard;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.system.domain.SysPost;
@@ -264,6 +265,7 @@ public class SysUserController extends BaseController
     @PostMapping("/importAddValidate")
     public AjaxResult importAddValidate(MultipartFile file) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return AjaxResult.success("用户新增导入无需单独校验接口，请直接确认导入");
     }
 
@@ -272,6 +274,7 @@ public class SysUserController extends BaseController
     @PostMapping("/importAddData")
     public AjaxResult importAddData(MultipartFile file) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importData(file, false);
     }
 
@@ -480,6 +483,7 @@ public class SysUserController extends BaseController
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SysUser user)
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         // 租户用户创建的用户继承当前租户ID（前端通常不传 customerId）；须在唯一性校验前写入，与 uk_sys_user_name_customer 一致
         if (StringUtils.isEmpty(user.getCustomerId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             user.setCustomerId(SecurityUtils.getCustomerId());

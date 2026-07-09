@@ -30,6 +30,7 @@ import com.spd.foundation.dto.DepartmentImportUpdateDto;
 import com.spd.foundation.service.IFdDepartmentService;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.ZqTcmMasterDataGuard;
 import com.spd.common.utils.PinyinUtils;
 import com.spd.foundation.support.TenantScopeHelper;
 import com.spd.system.service.ITenantScopeService;
@@ -148,6 +149,7 @@ public class FdDepartmentController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FdDepartment fdDepartment)
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         // 非衡水租户：手工新增不接收第三方科室 ID（仅导入等场景由服务层写入）；衡水市第三人民医院手工新增须填 HIS/第三方科室 ID
         if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.requiredScopedTenantIdForSql())) {
             fdDepartment.setHisId(null);
@@ -306,6 +308,7 @@ public class FdDepartmentController extends BaseController
     @PostMapping("/importAddValidate")
     public AjaxResult importAddValidate(MultipartFile file) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importValidate(file, false);
     }
 
@@ -315,6 +318,7 @@ public class FdDepartmentController extends BaseController
     public AjaxResult importAddData(MultipartFile file,
         @RequestParam(value = "confirm", defaultValue = "false") boolean confirm) throws Exception
     {
+        ZqTcmMasterDataGuard.assertManualCreateAllowed();
         return importData(file, false, confirm);
     }
 
