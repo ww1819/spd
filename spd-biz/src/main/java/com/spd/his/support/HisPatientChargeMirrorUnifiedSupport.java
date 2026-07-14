@@ -369,7 +369,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
         if ("OUTPATIENT".equals(u.getVisitKind()))
         {
             r.setVisitNo(u.getOutpatientNo());
+            r.setDeptCode(null);
             r.setDeptName(null);
+            r.setClinicCode(u.getClinicCode());
             r.setClinicName(u.getClinicName());
             r.setDeptDisplayName(u.getClinicName());
             r.setHisChargeId(u.getHisOutpatientChargeId());
@@ -378,7 +380,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
         else
         {
             r.setVisitNo(u.getInpatientNo());
+            r.setDeptCode(u.getDeptCode());
             r.setDeptName(u.getDeptName());
+            r.setClinicCode(null);
             r.setClinicName(null);
             r.setDeptDisplayName(u.getDeptName());
             r.setHisChargeId(u.getHisInpatientChargeId());

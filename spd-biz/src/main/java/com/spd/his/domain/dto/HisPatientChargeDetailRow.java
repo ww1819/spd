@@ -21,7 +21,11 @@ public class HisPatientChargeDetailRow
     private String outpatientNo;
     /** 展示统一号 */
     private String visitNo;
+    /** 住院开单科室编码（HIS） */
+    private String deptCode;
     private String deptName;
+    /** 门诊开单科室编码（HIS） */
+    private String clinicCode;
     private String clinicName;
     /** 展示统一科室/就诊 */
     private String deptDisplayName;
