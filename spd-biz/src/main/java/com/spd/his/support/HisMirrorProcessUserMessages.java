@@ -68,7 +68,17 @@ public final class HisMirrorProcessUserMessages
 
     public static String lowPendingOnly(String processStatusCode)
     {
+        if ("CONSUMING".equals(processStatusCode))
+        {
+            return concurrentOrAlreadyProcessed();
+        }
         return "当前状态为「" + processStatusText(processStatusCode) + "」，无法低值核销";
+    }
+
+    /** 多人并发抢同一待核销行 */
+    public static String concurrentOrAlreadyProcessed()
+    {
+        return "该记录正在核销或已被他人处理，请刷新后重试";
     }
 
     public static String highScanNotAllowed(String processStatusCode)
@@ -176,6 +186,8 @@ public final class HisMirrorProcessUserMessages
         {
             case "PENDING_CONSUME":
                 return "待处理";
+            case "CONSUMING":
+                return "核销中";
             case "PARTIALLY_CONSUMED":
                 return "部分消耗";
             case "CONSUMED":

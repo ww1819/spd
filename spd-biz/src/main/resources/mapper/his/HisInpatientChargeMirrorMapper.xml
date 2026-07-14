@@ -126,6 +126,18 @@
         <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
     </update>
 
+    <update id="claimMirrorProcessPending">
+        update his_inpatient_charge_mirror set
+            process_status = 'CONSUMING',
+            process_time = #{processTime},
+            process_by = #{processBy},
+            <if test="processParty != null">process_party = #{processParty},</if>
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and id = #{id}
+          and process_status = 'PENDING_CONSUME'
+    </update>
+
     <update id="updateMirrorProcessOutcome">
         update his_inpatient_charge_mirror set
             process_situation = #{processSituation},

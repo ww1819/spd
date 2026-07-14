@@ -36,6 +36,17 @@ public interface HisInpatientChargeMirrorMapper
             @Param("processSituation") String processSituation,
             @Param("processParty") String processParty);
 
+    /**
+     * 乐观认领：仅当仍为 PENDING_CONSUME 时改为 CONSUMING，返回影响行数。
+     * 用于并发下避免同一镜像行被多次核销。
+     */
+    int claimMirrorProcessPending(
+            @Param("tenantId") String tenantId,
+            @Param("id") String id,
+            @Param("processTime") Date processTime,
+            @Param("processBy") String processBy,
+            @Param("processParty") String processParty);
+
     int updateMirrorProcessOutcome(
             @Param("tenantId") String tenantId,
             @Param("ids") List<String> ids,

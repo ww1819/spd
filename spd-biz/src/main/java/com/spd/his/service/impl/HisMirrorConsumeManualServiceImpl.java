@@ -143,6 +143,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         {
             throw new ServiceException(HisMirrorProcessUserMessages.lowPendingOnly(line.processStatus));
         }
+        claimMirrorRowForConsume(tenantId, visitKind, mirrorRowId, processParty);
         assertSourcesForLow(listDistinctSources(tenantId, visitKind, mirrorRowId));
         BigDecimal qty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
         if (qty.compareTo(BigDecimal.ZERO) <= 0)
@@ -1434,6 +1435,30 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,
             procBy, situation, party);
+    }
+
+    /**
+     * 并发认领：仅 PENDING_CONSUME 可改为 CONSUMING；失败则本事务回滚。
+     */
+    private void claimMirrorRowForConsume(String tenantId, String visitKind, String mirrorRowId, String processParty)
+    {
+        Date procTime = DateUtils.getNowDate();
+        String procBy = HisAutoWriteOffOperatorSupport.resolveProcessBy(tenantId, processParty, sbTenantSettingService);
+        String party = HisMirrorProcessConstants.resolveParty(processParty);
+        int claimed;
+        if (KIND_IN.equals(visitKind))
+        {
+            claimed = hisInpatientChargeMirrorMapper.claimMirrorProcessPending(tenantId, mirrorRowId, procTime, procBy, party);
+        }
+        else
+        {
+            claimed = hisOutpatientChargeMirrorMapper.claimMirrorProcessPending(tenantId, mirrorRowId, procTime, procBy, party);
+        }
+        hisPatientChargeMirrorUnifiedMapper.claimMirrorProcessPending(tenantId, mirrorRowId, procTime, procBy, party);
+        if (claimed != 1)
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.concurrentOrAlreadyProcessed());
+        }
     }
 
     private static class AllocPiece

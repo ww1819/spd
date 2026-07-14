@@ -35,6 +35,14 @@ public interface HisOutpatientChargeMirrorMapper
             @Param("processSituation") String processSituation,
             @Param("processParty") String processParty);
 
+    /** 乐观认领：PENDING_CONSUME → CONSUMING */
+    int claimMirrorProcessPending(
+            @Param("tenantId") String tenantId,
+            @Param("id") String id,
+            @Param("processTime") Date processTime,
+            @Param("processBy") String processBy,
+            @Param("processParty") String processParty);
+
     int updateMirrorProcessOutcome(
             @Param("tenantId") String tenantId,
             @Param("ids") List<String> ids,
