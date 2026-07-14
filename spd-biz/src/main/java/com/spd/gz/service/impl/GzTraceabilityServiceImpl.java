@@ -384,26 +384,24 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     }
     
     /**
-     * 扣减科室库存
-     * 
-     * @param gzTraceability 追溯单对象
+     * 扣减科室库存。
+     * HIS 高值扫码核销可能只有 writeOffDeptId、execDeptId 为空；已绑定 inventoryId 时应照常扣减。
      */
     private void deductDepartmentInventory(GzTraceability gzTraceability) {
         if (gzTraceability.getTraceabilityEntryList() == null || gzTraceability.getTraceabilityEntryList().isEmpty()) {
             return;
         }
-        
-        Long execDeptId = gzTraceability.getExecDeptId();
-        if (execDeptId == null) {
-            return;
-        }
-        
+
+        Long deptForCodeLookup = gzTraceability.getWriteOffDeptId() != null
+            ? gzTraceability.getWriteOffDeptId()
+            : gzTraceability.getExecDeptId();
+
         for (GzTraceabilityEntry entry : gzTraceability.getTraceabilityEntryList()) {
             if (entry == null) {
                 continue;
             }
             if (entry.getInventoryId() != null) {
-                // 根据inventoryId扣减库存
+                // 根据inventoryId扣减库存（不依赖 execDeptId）
                 GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
                 if (inventory != null && inventory.getQty() != null) {
                     assertTraceEntryMatchesDepInventory(entry, inventory);
@@ -416,9 +414,11 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                     syncDepInventoryAmt(inventory);
                     gzDepInventoryMapper.updateGzDepInventory(inventory);
                 }
-            } else if (entry.getInHospitalCode() != null && !entry.getInHospitalCode().trim().isEmpty()) {
-                // 如果没有inventoryId，根据院内码和执行科室查找库存（不过滤数量为0的记录）
-                GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(entry.getInHospitalCode(), execDeptId);
+            } else if (deptForCodeLookup != null
+                && entry.getInHospitalCode() != null && !entry.getInHospitalCode().trim().isEmpty()) {
+                // 无 inventoryId：按院内码+核销/执行科室查找
+                GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(
+                    entry.getInHospitalCode(), deptForCodeLookup);
                 if (inventory != null && inventory.getQty() != null) {
                     BigDecimal deductQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE;
                     BigDecimal newQty = inventory.getQty().subtract(deductQty);
@@ -484,11 +484,10 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
             return;
         }
         
-        Long execDeptId = oldTraceability.getExecDeptId();
-        if (execDeptId == null) {
-            return;
-        }
-        
+        Long deptForCodeLookup = oldTraceability.getWriteOffDeptId() != null
+            ? oldTraceability.getWriteOffDeptId()
+            : oldTraceability.getExecDeptId();
+
         for (GzTraceabilityEntry entry : oldTraceability.getTraceabilityEntryList()) {
             if (entry == null) {
                 continue;
@@ -502,9 +501,11 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                     syncDepInventoryAmt(inventory);
                     gzDepInventoryMapper.updateGzDepInventory(inventory);
                 }
-            } else if (entry.getInHospitalCode() != null && !entry.getInHospitalCode().trim().isEmpty()) {
-                // 如果没有inventoryId，根据院内码和执行科室查找库存（不过滤数量为0的记录）
-                GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(entry.getInHospitalCode(), execDeptId);
+            } else if (deptForCodeLookup != null
+                && entry.getInHospitalCode() != null && !entry.getInHospitalCode().trim().isEmpty()) {
+                // 如果没有inventoryId，根据院内码和核销/执行科室查找库存（不过滤数量为0的记录）
+                GzDepInventory inventory = gzDepInventoryMapper.selectGzDepInventoryByCodeAndDept(
+                    entry.getInHospitalCode(), deptForCodeLookup);
                 if (inventory != null && inventory.getQty() != null) {
                     BigDecimal addQty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ONE;
                     inventory.setQty(inventory.getQty().add(addQty));
