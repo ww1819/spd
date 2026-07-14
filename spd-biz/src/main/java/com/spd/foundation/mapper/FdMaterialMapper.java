@@ -40,9 +40,15 @@ public interface FdMaterialMapper
      */
     FdMaterial selectFdMaterialByTenantAndHisId(@Param("tenantId") String tenantId, @Param("hisId") String hisId);
     /**
-     * 按租户 + HIS 收费项目ID（his_charge_item_id）查一条（未删除）
+     * 按租户 + HIS 收费项目ID（his_charge_item_id）查一条（未删除）。
+     * 一对多时优先 is_use=1，再按 update_time/id 取最新。
      */
     FdMaterial selectFdMaterialByTenantAndHisChargeItemId(@Param("tenantId") String tenantId, @Param("hisChargeItemId") String hisChargeItemId);
+
+    /**
+     * 按租户 + HIS 收费项目ID 查全部对照耗材（未删除，已按启用不启用排序）
+     */
+    List<FdMaterial> selectFdMaterialsByTenantAndHisChargeItemId(@Param("tenantId") String tenantId, @Param("hisChargeItemId") String hisChargeItemId);
 
     /**
      * 该收费项目下是否存在 is_gz=1 的耗材（多条对照时任一条为高值即视为高值）

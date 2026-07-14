@@ -52,6 +52,8 @@ public class HisMirrorConsumeRecordVo
     private String inHospitalCode;
     /** 核销科室（SPD fd_department.id） */
     private Long writeOffDeptId;
+    /** 核销科室编码 */
+    private String writeOffDeptCode;
     /** 核销科室名称 */
     private String writeOffDeptName;
 }

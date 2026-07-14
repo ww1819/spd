@@ -218,7 +218,28 @@
             and (m.dept_name like concat('%', #{deptNameLike}, '%') or m.clinic_name like concat('%', #{deptNameLike}, '%'))
         </if>
         <if test="execDeptNameLike != null and execDeptNameLike != ''">
-            and m.exec_dept_name like concat('%', #{execDeptNameLike}, '%')
+            and (
+                m.exec_dept_name like concat('%', #{execDeptNameLike}, '%')
+                or ifnull(m.exec_dept_id, '') like concat('%', #{execDeptNameLike}, '%')
+                or exists (
+                    select 1 from fd_department edkw
+                    where (edkw.del_flag = 0 or edkw.del_flag is null)
+                      and edkw.tenant_id = #{tenantId}
+                      and m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+                      and (
+                          (edkw.his_id is not null and trim(edkw.his_id) != ''
+                              and trim(edkw.his_id) = trim(m.exec_dept_id))
+                          or (edkw.code is not null and trim(edkw.code) != ''
+                              and trim(edkw.code) = trim(m.exec_dept_id))
+                      )
+                      and (
+                          ifnull(edkw.referred_name, '') like concat('%', #{execDeptNameLike}, '%')
+                          or ifnull(edkw.code, '') like concat('%', #{execDeptNameLike}, '%')
+                          or ifnull(edkw.name, '') like concat('%', #{execDeptNameLike}, '%')
+                          or ifnull(edkw.his_id, '') like concat('%', #{execDeptNameLike}, '%')
+                      )
+                )
+            )
         </if>
         <if test="itemNameLike != null and itemNameLike != ''">
             and m.item_name like concat('%', #{itemNameLike}, '%')

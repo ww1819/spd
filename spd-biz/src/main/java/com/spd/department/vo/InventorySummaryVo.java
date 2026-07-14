@@ -28,6 +28,9 @@ public class InventorySummaryVo {
     /** 单位 */
     private String unit;
     
+    /** 科室编码 */
+    private String departmentCode;
+
     /** 科室名称 */
     private String departmentName;
     
@@ -113,6 +116,14 @@ public class InventorySummaryVo {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public String getDepartmentCode() {
+        return departmentCode;
+    }
+
+    public void setDepartmentCode(String departmentCode) {
+        this.departmentCode = departmentCode;
     }
 
     public String getDepartmentName() {

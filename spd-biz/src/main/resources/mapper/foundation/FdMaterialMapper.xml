@@ -310,7 +310,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where trim(m.his_charge_item_id) = trim(#{hisChargeItemId})
           and (m.del_flag = 0 or m.del_flag is null)
           and m.tenant_id = #{tenantId}
+        order by case when trim(ifnull(m.is_use, '')) = '1' then 0 else 1 end,
+                 m.update_time desc,
+                 m.id desc
         limit 1
+    </select>
+    <!-- 一对多对照：优先启用；调用方再按科室库存挑选 -->
+    <select id="selectFdMaterialsByTenantAndHisChargeItemId" resultMap="FdMaterialResult">
+        <include refid="selectFdMaterialVo"/>
+        where trim(m.his_charge_item_id) = trim(#{hisChargeItemId})
+          and (m.del_flag = 0 or m.del_flag is null)
+          and m.tenant_id = #{tenantId}
+        order by case when trim(ifnull(m.is_use, '')) = '1' then 0 else 1 end,
+                 m.update_time desc,
+                 m.id desc
     </select>
     <select id="countHighValueMaterialByChargeItemId" resultType="int">
         select count(1) from fd_material m

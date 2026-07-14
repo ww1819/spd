@@ -550,6 +550,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.speci as specification,
             m.model,
             MAX(u.unit_name) as unit,
+            d.code as departmentCode,
             d.name as departmentName,
             '' as warehouseName,
             SUM(stk.qty) as totalQty,
@@ -577,7 +578,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_factory ff on ff.factory_id = m.factory_id
         left join fd_supplier msup on msup.id = m.supplier_id
         where <include refid="inventorySummaryWhere"/>
-        group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.name
+        group by stk.material_id, stk.department_id, m.code, m.name, m.speci, m.model, d.code, d.name
         order by IFNULL(m.name, '') asc, d.name asc, IFNULL(m.code, '') asc
     </select>
 

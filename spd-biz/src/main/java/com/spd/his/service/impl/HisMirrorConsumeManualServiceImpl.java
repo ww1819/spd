@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,14 +156,25 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException(HisMirrorProcessUserMessages.fullyConsumed());
         }
         requireMirrorUnitPrice(line);
+        if (body != null && Boolean.TRUE.equals(body.getRequireConsumeDepartment())
+            && body.getConsumeDepartmentId() == null)
+        {
+            throw new ServiceException(
+                "自选科室核销须选择核销科室；若页面已选择仍提示本信息，请重启 SPD 后端使 consumeDepartmentId 字段生效");
+        }
+        log.info("HIS低值核销 mirrorRowId={} consumeDepartmentId={} requireConsumeDepartment={}",
+            mirrorRowId,
+            body == null ? null : body.getConsumeDepartmentId(),
+            body == null ? null : body.getRequireConsumeDepartment());
+        FdDepartment consumeDept = resolveConsumeDepartment(tenantId,
+            body == null ? null : body.getConsumeDepartmentId(), line);
         List<AllocPiece> pieces = new ArrayList<>();
-        int skipped = appendPiecesForLine(tenantId, line.fetchBatchId, visitKind, line.id, line.deptHisCode, line.chargeItemId,
-            line.itemName, remaining, line.unitPrice, pieces);
+        int skipped = appendPiecesForLine(tenantId, line.fetchBatchId, visitKind, line.id, consumeDept,
+            line.chargeItemId, line.itemName, remaining, line.unitPrice, pieces);
         if (skipped > 0 || pieces.isEmpty())
         {
-            FdDepartment dept = resolveDepartment(tenantId, line.deptHisCode);
             FdMaterial mat = resolveMaterial(tenantId, line.chargeItemId, line.itemName);
-            throwInsufficientStock(mat);
+            throwInsufficientStock(mat, consumeDept);
         }
         Map<String, List<AllocPiece>> groups = new LinkedHashMap<>();
         for (AllocPiece p : pieces)
@@ -195,7 +207,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             bill.setWarehouseId(warehouseId);
             bill.setUserId(operatorUserId);
             bill.setConsumeBillDate(DateUtils.getNowDate());
-            bill.setRemark("HIS计费镜像低值手动处理 mirrorRowId=" + mirrorRowId);
+            bill.setRemark((body != null && body.getConsumeDepartmentId() != null
+                ? "HIS计费镜像低值自选科室核销"
+                : "HIS计费镜像低值手动处理") + " mirrorRowId=" + mirrorRowId);
             bill.setBillSource(BILL_LOW);
             bill.setDisallowReverse(1);
             bill.setHisFetchBatchId(line.fetchBatchId);
@@ -230,6 +244,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 lk.setAllocQty(p.take);
                 lk.setDepInventoryId(p.inv.getId());
                 lk.setStkDepEndDate(p.inv.getEndDate());
+                lk.setWriteOffDeptId(deptId);
                 lk.setReturnedQty(BigDecimal.ZERO);
                 lk.setRefundableRemainingQty(p.take);
                 lk.setDelFlag(0);
@@ -243,7 +258,9 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         vo.setConsumeEntryCount(pieces.size());
         vo.setLinkRowCount(linkBuffer.size());
         vo.setMirrorLineConsumedCount(1);
-        vo.getMessages().add("低值处理完成：已生成并审核科室批量消耗");
+        vo.getMessages().add(body != null && body.getConsumeDepartmentId() != null
+            ? "自选科室核销完成：已生成并审核科室批量消耗（库存扣减核销科室）"
+            : "低值处理完成：已生成并审核科室批量消耗");
         return vo;
     }
 
@@ -709,23 +726,71 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
 
     private FdMaterial resolveMaterial(String tenantId, String chargeItemId, String itemName)
     {
+        return resolveMaterial(tenantId, chargeItemId, itemName, null);
+    }
+
+    /**
+     * 收费项 → 耗材对照。一对多时：优先启用；若指定核销科室则优先该科室有已确认库存的耗材。
+     */
+    private FdMaterial resolveMaterial(String tenantId, String chargeItemId, String itemName, Long preferDepartmentId)
+    {
         if (StringUtils.isBlank(chargeItemId))
         {
             throw new ServiceException(HisMirrorProcessUserMessages.missingChargeItem());
         }
         String normalizedChargeItemId = HisMatchTextUtils.normalizeMatchKey(chargeItemId);
-        FdMaterial mat = fdMaterialMapper.selectFdMaterialByTenantAndHisChargeItemId(
+        List<FdMaterial> candidates = fdMaterialMapper.selectFdMaterialsByTenantAndHisChargeItemId(
             tenantId, normalizedChargeItemId);
+        if (candidates == null || candidates.isEmpty())
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.notMapped(chargeItemId, itemName));
+        }
+        FdMaterial mat = candidates.get(0);
+        if (preferDepartmentId != null && candidates.size() > 1)
+        {
+            for (FdMaterial cand : candidates)
+            {
+                if (cand == null || cand.getId() == null)
+                {
+                    continue;
+                }
+                if (hasConfirmedPositiveStock(tenantId, preferDepartmentId, cand.getId()))
+                {
+                    mat = cand;
+                    break;
+                }
+            }
+        }
         if (log.isInfoEnabled())
         {
-            log.info("HIS计费耗材对照 tenantId={}, chargeItemIdRaw={}, chargeItemIdNorm={}, materialId={}",
-                tenantId, chargeItemId, normalizedChargeItemId, mat == null ? null : mat.getId());
+            log.info("HIS计费耗材对照 tenantId={}, chargeItemIdRaw={}, chargeItemIdNorm={}, materialId={}, preferDepartmentId={}, candidateCount={}",
+                tenantId, chargeItemId, normalizedChargeItemId, mat == null ? null : mat.getId(),
+                preferDepartmentId, candidates.size());
         }
         if (mat == null || mat.getId() == null)
         {
             throw new ServiceException(HisMirrorProcessUserMessages.notMapped(chargeItemId, itemName));
         }
         return mat;
+    }
+
+    private boolean hasConfirmedPositiveStock(String tenantId, Long departmentId, Long materialId)
+    {
+        if (departmentId == null || materialId == null)
+        {
+            return false;
+        }
+        StkDepInventory probe = new StkDepInventory();
+        probe.setTenantId(tenantId);
+        probe.setDepartmentId(departmentId);
+        probe.setMaterialId(materialId);
+        probe.setReceiptConfirmStatus(1);
+        List<StkDepInventory> rows = stkDepInventoryMapper.selectStkDepInventoryList(probe);
+        if (rows == null || rows.isEmpty())
+        {
+            return false;
+        }
+        return rows.stream().anyMatch(r -> r != null && r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
     }
 
     private GzDepInventory findGzByNormalizedCode(String tenantId, FdDepartment dept, FdMaterial mat, String scanCode,
@@ -840,67 +905,132 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     }
 
     private int appendPiecesForLine(String tenantId, String fetchBatchId, String visitKind, String mirrorRowId,
-        String deptHisCode, String chargeItemId, String itemName, BigDecimal qty, BigDecimal mirrorUnitPrice,
+        FdDepartment dept, String chargeItemId, String itemName, BigDecimal qty, BigDecimal mirrorUnitPrice,
         List<AllocPiece> out)
     {
         if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0)
         {
             return 1;
         }
-        FdDepartment dept = resolveDepartment(tenantId, deptHisCode);
-        FdMaterial mat = resolveMaterial(tenantId, chargeItemId, itemName);
-        assertChargeItemValueLevelForLow(tenantId, chargeItemId, itemName, mat);
-        out.addAll(allocateLine(tenantId, dept, mat, qty, mirrorUnitPrice, mirrorRowId, visitKind, fetchBatchId));
+        if (dept == null || dept.getId() == null)
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.deptNotMapped());
+        }
+        List<FdMaterial> materials = listMaterialsForChargeItem(tenantId, chargeItemId, itemName);
+        assertChargeItemValueLevelForLow(tenantId, chargeItemId, itemName, materials.get(0));
+        out.addAll(allocateLineByChargeItem(tenantId, dept, materials, chargeItemId, itemName, qty,
+            mirrorUnitPrice, mirrorRowId, visitKind, fetchBatchId));
         return 0;
     }
 
-    private List<AllocPiece> allocateLine(String tenantId, FdDepartment dept, FdMaterial mat, BigDecimal need,
-        BigDecimal mirrorUnitPrice, String mirrorRowId, String visitKind, String fetchBatchId)
+    /** 收费项下全部对照耗材（已按启用优先排序） */
+    private List<FdMaterial> listMaterialsForChargeItem(String tenantId, String chargeItemId, String itemName)
+    {
+        if (StringUtils.isBlank(chargeItemId))
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.missingChargeItem());
+        }
+        String normalized = HisMatchTextUtils.normalizeMatchKey(chargeItemId);
+        List<FdMaterial> list = fdMaterialMapper.selectFdMaterialsByTenantAndHisChargeItemId(tenantId, normalized);
+        if (list == null || list.isEmpty())
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.notMapped(chargeItemId, itemName));
+        }
+        List<FdMaterial> materials = list.stream().filter(m -> m != null && m.getId() != null).collect(Collectors.toList());
+        if (materials.isEmpty())
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.notMapped(chargeItemId, itemName));
+        }
+        return materials;
+    }
+
+    /**
+     * 按收费项汇总核销科室各对照档案的已确认同价库存：总量不足先报错；足量再 FIFO 分配（可跨档案/仓库）。
+     */
+    private List<AllocPiece> allocateLineByChargeItem(String tenantId, FdDepartment dept, List<FdMaterial> materials,
+        String chargeItemId, String itemName, BigDecimal need, BigDecimal mirrorUnitPrice,
+        String mirrorRowId, String visitKind, String fetchBatchId)
     {
         Long departmentId = dept.getId();
-        Long materialId = mat.getId();
-        StkDepInventory probe = new StkDepInventory();
-        probe.setTenantId(tenantId);
-        probe.setDepartmentId(departmentId);
-        probe.setMaterialId(materialId);
-        probe.setReceiptConfirmStatus(1);
-        List<StkDepInventory> rows = stkDepInventoryMapper.selectStkDepInventoryList(probe);
-        if (rows == null)
+        String deptLabel = formatDeptLabel(dept);
+        String displayName = StringUtils.isNotBlank(itemName) ? itemName.trim() : productDisplayName(materials.get(0));
+
+        List<StkDepInventory> confirmed = new ArrayList<>();
+        boolean hasUnconfirmed = false;
+        for (FdMaterial mat : materials)
         {
-            rows = new ArrayList<>();
+            StkDepInventory probe = new StkDepInventory();
+            probe.setTenantId(tenantId);
+            probe.setDepartmentId(departmentId);
+            probe.setMaterialId(mat.getId());
+            probe.setReceiptConfirmStatus(1);
+            List<StkDepInventory> rows = stkDepInventoryMapper.selectStkDepInventoryList(probe);
+            if (rows != null && !rows.isEmpty())
+            {
+                confirmed.addAll(rows);
+            }
+            if (!hasUnconfirmed)
+            {
+                StkDepInventory unconfirmedProbe = new StkDepInventory();
+                unconfirmedProbe.setTenantId(tenantId);
+                unconfirmedProbe.setDepartmentId(departmentId);
+                unconfirmedProbe.setMaterialId(mat.getId());
+                unconfirmedProbe.setReceiptConfirmStatus(0);
+                List<StkDepInventory> unconfirmed = stkDepInventoryMapper.selectStkDepInventoryList(unconfirmedProbe);
+                hasUnconfirmed = unconfirmed != null && unconfirmed.stream()
+                    .anyMatch(r -> r != null && r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
+            }
         }
-        List<StkDepInventory> atMirrorPrice = rows.stream()
+
+        if (confirmed.isEmpty())
+        {
+            if (hasUnconfirmed)
+            {
+                throw new ServiceException(String.format(
+                    "【%s】在核销科室「%s」仅有未收货确认库存，请先完成收货确认后再核销",
+                    displayName, deptLabel));
+            }
+            throw new ServiceException(String.format(
+                "【%s】在核销科室「%s」无可用已确认库存（收费项对照档案均无货；请核对科室编码）",
+                displayName, deptLabel));
+        }
+
+        List<StkDepInventory> atMirrorPrice = confirmed.stream()
             .filter(r -> r != null && unitPriceMatches(mirrorUnitPrice, r.getUnitPrice()))
             .collect(Collectors.toList());
         if (atMirrorPrice.isEmpty())
         {
-            throwInsufficientStock(mat);
+            throw new ServiceException(String.format(
+                "【%s】在核销科室「%s」有库存，但单价与计费单价不一致（计费单价=%s），无法核销",
+                displayName, deptLabel,
+                mirrorUnitPrice == null ? "-" : mirrorUnitPrice.toPlainString()));
+        }
+
+        BigDecimal available = atMirrorPrice.stream()
+            .map(StkDepInventory::getQty)
+            .filter(Objects::nonNull)
+            .filter(q -> q.compareTo(BigDecimal.ZERO) > 0)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (available.compareTo(need) < 0)
+        {
+            throw new ServiceException(String.format(
+                "【%s】在核销科室「%s」收费项对照档案已确认同价库存不足（需要 %s，可用 %s）",
+                displayName, deptLabel, need.toPlainString(), available.toPlainString()));
+        }
+
+        Map<Long, Integer> useRank = new HashMap<>();
+        for (int i = 0; i < materials.size(); i++)
+        {
+            useRank.put(materials.get(i).getId(), i);
         }
         atMirrorPrice.sort(Comparator
-            .comparing(StkDepInventory::getWarehouseDate, Comparator.nullsLast(Date::compareTo))
+            .comparing((StkDepInventory r) -> useRank.getOrDefault(r.getMaterialId(), Integer.MAX_VALUE))
+            .thenComparing(StkDepInventory::getWarehouseDate, Comparator.nullsLast(Date::compareTo))
             .thenComparing(r -> r.getId() == null ? 0L : r.getId()));
-        Long chosenWarehouseId = null;
-        for (StkDepInventory r : atMirrorPrice)
-        {
-            if (r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0)
-            {
-                chosenWarehouseId = r.getWarehouseId();
-                break;
-            }
-        }
-        boolean hasPositive = atMirrorPrice.stream()
-            .anyMatch(r -> r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
-        if (!hasPositive)
-        {
-            throwInsufficientStock(mat);
-        }
-        final Long whKey = chosenWarehouseId;
-        List<StkDepInventory> filtered = atMirrorPrice.stream()
-            .filter(r -> Objects.equals(r.getWarehouseId(), whKey))
-            .collect(Collectors.toList());
+
         BigDecimal remain = need;
         List<AllocPiece> pieces = new ArrayList<>();
-        for (StkDepInventory r : filtered)
+        for (StkDepInventory r : atMirrorPrice)
         {
             if (remain.compareTo(BigDecimal.ZERO) <= 0)
             {
@@ -927,9 +1057,31 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         if (remain.compareTo(BigDecimal.ZERO) > 0)
         {
-            throwInsufficientStock(mat);
+            throw new ServiceException(String.format(
+                "【%s】在核销科室「%s」收费项对照档案已确认同价库存不足（需要 %s，可用 %s）",
+                displayName, deptLabel, need.toPlainString(), available.toPlainString()));
+        }
+        if (log.isInfoEnabled())
+        {
+            log.info("HIS低值按收费项分配 chargeItemId={} deptId={} materialCount={} need={} available={} pieces={}",
+                chargeItemId, departmentId, materials.size(), need, available, pieces.size());
         }
         return pieces;
+    }
+
+    private static String formatDeptLabel(FdDepartment dept)
+    {
+        if (dept == null)
+        {
+            return "-";
+        }
+        String code = StringUtils.trimToEmpty(dept.getCode());
+        String name = StringUtils.trimToEmpty(dept.getName());
+        if (StringUtils.isNotBlank(code) && StringUtils.isNotBlank(name))
+        {
+            return code + " " + name;
+        }
+        return StringUtils.isNotBlank(name) ? name : (StringUtils.isNotBlank(code) ? code : String.valueOf(dept.getId()));
     }
 
     private static void requireMirrorUnitPrice(MirrorLine line)
@@ -965,6 +1117,12 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
     private static void throwInsufficientStock(FdMaterial mat)
     {
         throw new ServiceException(HisMirrorProcessUserMessages.stockInsufficient(productDisplayName(mat)));
+    }
+
+    private static void throwInsufficientStock(FdMaterial mat, FdDepartment dept)
+    {
+        throw new ServiceException(String.format("【%s】在核销科室「%s」库存不足",
+            productDisplayName(mat), formatDeptLabel(dept)));
     }
 
     private DeptBatchConsumeEntry buildLowConsumeEntry(AllocPiece p, Long departmentId, String createBy)
