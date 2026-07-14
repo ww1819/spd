@@ -183,6 +183,12 @@ public class GzTraceability extends BaseEntity
     /** 查询：UDI码（模糊） */
     private String udiKeyword;
 
+    /** 查询：主条码（模糊） */
+    private String masterBarcode;
+
+    /** 查询：辅条码（模糊） */
+    private String secondaryBarcode;
+
     /** 查询：阳光平台编码（模糊） */
     private String sunshineCodeKeyword;
 
@@ -604,6 +610,22 @@ public class GzTraceability extends BaseEntity
 
     public void setUdiKeyword(String udiKeyword) {
         this.udiKeyword = udiKeyword;
+    }
+
+    public String getMasterBarcode() {
+        return masterBarcode;
+    }
+
+    public void setMasterBarcode(String masterBarcode) {
+        this.masterBarcode = masterBarcode;
+    }
+
+    public String getSecondaryBarcode() {
+        return secondaryBarcode;
+    }
+
+    public void setSecondaryBarcode(String secondaryBarcode) {
+        this.secondaryBarcode = secondaryBarcode;
     }
 
     public String getSunshineCodeKeyword() {

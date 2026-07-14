@@ -526,6 +526,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="udiKeyword != null and udiKeyword != ''">
             and m.udi_no like concat('%', #{udiKeyword}, '%')
         </if>
+        <if test="masterBarcode != null and masterBarcode != ''">
+            and te.master_barcode like concat('%', #{masterBarcode}, '%')
+        </if>
+        <if test="secondaryBarcode != null and secondaryBarcode != ''">
+            and te.secondary_barcode like concat('%', #{secondaryBarcode}, '%')
+        </if>
         <if test="sunshineCodeKeyword != null and sunshineCodeKeyword != ''">
             and m.sunshine_code like concat('%', #{sunshineCodeKeyword}, '%')
         </if>
@@ -707,6 +713,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="udiKeyword != null and udiKeyword != ''">
             and m.udi_no like concat('%', #{udiKeyword}, '%')
         </if>
+        <if test="masterBarcode != null and masterBarcode != ''">
+            and te.master_barcode like concat('%', #{masterBarcode}, '%')
+        </if>
+        <if test="secondaryBarcode != null and secondaryBarcode != ''">
+            and te.secondary_barcode like concat('%', #{secondaryBarcode}, '%')
+        </if>
         <if test="sunshineCodeKeyword != null and sunshineCodeKeyword != ''">
             and m.sunshine_code like concat('%', #{sunshineCodeKeyword}, '%')
         </if>
@@ -809,6 +821,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="hospitalNumber != null and hospitalNumber != ''"> and t.hospital_number like concat('%', #{hospitalNumber}, '%')</if>
         <if test="udiKeyword != null and udiKeyword != ''">
             and m.udi_no like concat('%', #{udiKeyword}, '%')
+        </if>
+        <if test="masterBarcode != null and masterBarcode != ''">
+            and te.master_barcode like concat('%', #{masterBarcode}, '%')
+        </if>
+        <if test="secondaryBarcode != null and secondaryBarcode != ''">
+            and te.secondary_barcode like concat('%', #{secondaryBarcode}, '%')
         </if>
         <if test="sunshineCodeKeyword != null and sunshineCodeKeyword != ''">
             and m.sunshine_code like concat('%', #{sunshineCodeKeyword}, '%')
@@ -918,6 +936,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="hospitalNumber != null and hospitalNumber != ''"> and t.hospital_number like concat('%', #{hospitalNumber}, '%')</if>
         <if test="udiKeyword != null and udiKeyword != ''">
             and m.udi_no like concat('%', #{udiKeyword}, '%')
+        </if>
+        <if test="masterBarcode != null and masterBarcode != ''">
+            and te.master_barcode like concat('%', #{masterBarcode}, '%')
+        </if>
+        <if test="secondaryBarcode != null and secondaryBarcode != ''">
+            and te.secondary_barcode like concat('%', #{secondaryBarcode}, '%')
         </if>
         <if test="sunshineCodeKeyword != null and sunshineCodeKeyword != ''">
             and m.sunshine_code like concat('%', #{sunshineCodeKeyword}, '%')
