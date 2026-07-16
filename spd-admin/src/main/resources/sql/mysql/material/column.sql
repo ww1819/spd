@@ -3144,3 +3144,33 @@ EXECUTE stmt_gz_rstk_entry_code;
 /
 DEALLOCATE PREPARE stmt_gz_rstk_entry_code;
 /
+
+-- ========== HV-B-002 高值即入即出审核状态（确认与建单解耦）==========
+CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_status', 'tinyint NOT NULL', '即入即出审核 0待审核 1已审核 2已冲销', '0');
+/
+CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_by', 'varchar(64)', '即入即出审核人', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_time', 'datetime', '即入即出审核时间', NULL);
+/
+-- 临床确认不再必选仓库；库房审核时回写
+ALTER TABLE `gz_high_consume_confirm`
+  MODIFY COLUMN `warehouse_id` bigint DEFAULT NULL COMMENT '结算仓库ID（库房即入即出审核时写入）';
+/
+-- 老数据回填：历史上已确认且已有结算单据 → 视为已审核；审核人/时间取确认批次
+UPDATE his_mirror_consume_link l
+INNER JOIN gz_high_consume_confirm c
+  ON c.id = l.confirm_id AND c.tenant_id = l.tenant_id AND ifnull(c.del_flag, 0) = 0
+SET l.instant_io_audit_status = 1,
+    l.instant_io_audit_by = c.confirm_by,
+    l.instant_io_audit_time = c.confirm_time
+WHERE ifnull(l.del_flag, 0) = 0
+  AND ifnull(l.confirm_status, 0) = 1
+  AND ifnull(l.instant_io_audit_status, 0) = 0
+  AND EXISTS (
+    SELECT 1 FROM gz_high_consume_confirm_bill b
+    WHERE b.confirm_id = l.confirm_id
+      AND b.tenant_id = l.tenant_id
+      AND ifnull(b.del_flag, 0) = 0
+      AND b.bill_type IN (101, 201)
+  );
+/

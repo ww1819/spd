@@ -58,4 +58,16 @@ public interface HisMirrorConsumeLinkMapper
     /** 低值冲销完成后：关联行视为已全部返还，释放待核销数量 */
     int markLinksFullyReturnedForWriteOff(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId, @Param("updateBy") String updateBy);
+
+    /** 高值冲销：单行全部返还 */
+    int markLinkFullyReturnedById(@Param("tenantId") String tenantId, @Param("id") String id,
+        @Param("updateBy") String updateBy);
+
+    /** 高值冲销：软删关联行（释放后可重新扫码核销） */
+    int softDeleteLinkById(@Param("tenantId") String tenantId, @Param("id") String id,
+        @Param("deleteBy") String deleteBy);
+
+    /** 确认批次下仍有效且尚有净核销量的关联行（反向后同批一并冲销回补） */
+    List<String> selectActiveLinkIdsByConfirmIds(@Param("tenantId") String tenantId,
+        @Param("confirmIds") List<String> confirmIds);
 }

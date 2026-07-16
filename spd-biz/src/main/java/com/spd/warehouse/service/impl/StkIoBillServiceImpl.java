@@ -5600,9 +5600,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             bill.setTenantId(SecurityUtils.getCustomerId());
         }
         Integer billType = bill.getBillType();
-        if (billType == null || (billType != 101 && billType != 201))
+        if (billType == null || (billType != 101 && billType != 201 && billType != 301 && billType != 401))
         {
-            throw new ServiceException("高值核销确认结算单类型须为入库(101)或出库(201)");
+            throw new ServiceException("高值结算单类型须为入库(101)/出库(201)/退货(301)/退库(401)");
         }
         if (bill.getWarehouseId() == null)
         {
@@ -5620,7 +5620,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         bill.setDelFlag(0);
         bill.setBillNo(getSettlementBillNumber(billNoPrefix, billType));
         bill.setCreateTime(DateUtils.getNowDate());
-        if (billType == 101)
+        if (billType == 101 || billType == 301)
         {
             normalizeInboundSupplierFields(bill);
         }
@@ -5698,7 +5698,24 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             return;
         }
         Integer billType = bill.getBillType();
-        String lx = billType != null && billType == 201 ? "CK" : "RK";
+        String lx = "RK";
+        if (billType != null)
+        {
+            if (billType == 201)
+            {
+                lx = "CK";
+            }
+            else if (billType == 301)
+            {
+                lx = "TH";
+            }
+            else if (billType == 401)
+            {
+                lx = "TK";
+            }
+        }
+        String originBiz = (billType != null && (billType == 301 || billType == 401))
+            ? "高值即入即出反向" : "高值即入即出";
         Date flowTime = bill.getAuditDate() != null ? bill.getAuditDate() : DateUtils.getNowDate();
         String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
         for (StkIoBillEntry entry : bill.getStkIoBillEntryList())
@@ -5739,7 +5756,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             flow.setSupplierId(lineSupplerId);
             flow.setFactoryId(entry.getMaterialFactoryId());
             flow.setLx(lx);
-            flow.setOriginBusinessType("高值核销确认");
+            flow.setOriginBusinessType(originBiz);
             flow.setKcNo(null);
             flow.setFlowTime(flowTime);
             flow.setDelFlag(0);

@@ -37,6 +37,10 @@ public class HisMirrorConsumeLink
     private Integer confirmStatus;
     /** 确认批次 gz_high_consume_confirm.id */
     private String confirmId;
+    /** 即入即出审核：0待审核 1已审核 2已冲销 */
+    private Integer instantIoAuditStatus;
+    private String instantIoAuditBy;
+    private Date instantIoAuditTime;
     /** 核销科室（SPD fd_department.id，高值扫码实际扣减科室） */
     private Long writeOffDeptId;
 }

@@ -369,8 +369,13 @@
             fetch_batch_id as fetchBatchId, dept_batch_consume_id as deptBatchConsumeId,
             dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             traceability_id as traceabilityId, traceability_entry_id as traceabilityEntryId,
+            write_off_dept_id as writeOffDeptId,
             alloc_qty as allocQty, dep_inventory_id as depInventoryId, gz_dep_inventory_id as gzDepInventoryId,
-            returned_qty as returnedQty, refundable_remaining_qty as refundableRemainingQty
+            in_hospital_code as inHospitalCode,
+            returned_qty as returnedQty, refundable_remaining_qty as refundableRemainingQty,
+            ifnull(confirm_status, 0) as confirmStatus, confirm_id as confirmId,
+            ifnull(instant_io_audit_status, 0) as instantIoAuditStatus,
+            instant_io_audit_by as instantIoAuditBy, instant_io_audit_time as instantIoAuditTime
         from his_mirror_consume_link
         where tenant_id = #{tenantId} and id = #{id} and ifnull(del_flag, 0) = 0
         limit 1
@@ -415,4 +420,40 @@
           and mirror_row_id = #{mirrorRowId}
           and ifnull(del_flag, 0) = 0
     </update>
+
+    <update id="markLinkFullyReturnedById">
+        update his_mirror_consume_link
+        set returned_qty = ifnull(alloc_qty, 0),
+            refundable_remaining_qty = 0,
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and id = #{id}
+          and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="softDeleteLinkById">
+        update his_mirror_consume_link
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and id = #{id}
+          and ifnull(del_flag, 0) = 0
+    </update>
+
+    <select id="selectActiveLinkIdsByConfirmIds" resultType="java.lang.String">
+        select l.id
+        from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.gz_dep_inventory_id is not null
+          and (<include refid="linkNetAllocQtyExpr"/>) &gt; 0
+          and l.confirm_id in
+        <foreach collection="confirmIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

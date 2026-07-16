@@ -1,6 +1,5 @@
 package com.spd.gz.service.impl;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -24,8 +23,6 @@ import com.spd.common.utils.PageUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.uuid.UUID7;
-import com.spd.foundation.domain.FdWarehouse;
-import com.spd.foundation.mapper.FdWarehouseMapper;
 import com.spd.gz.domain.GzHighConsumeConfirm;
 import com.spd.gz.domain.GzHighConsumeConfirmBill;
 import com.spd.gz.domain.GzHighConsumeConfirmLine;
@@ -36,10 +33,10 @@ import com.spd.gz.domain.dto.GzHighChargeConfirmRowVo;
 import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
 import com.spd.gz.service.IGzHighChargeConfirmService;
 import com.spd.system.service.ITenantScopeService;
-import com.spd.warehouse.domain.StkIoBill;
-import com.spd.warehouse.domain.StkIoBillEntry;
-import com.spd.warehouse.service.IStkIoBillService;
 
+/**
+ * 高值核销确认：仅业务确认，不生成结算入出库单（HV-F-002）。
+ */
 @Service
 public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmService
 {
@@ -48,19 +45,15 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         "materialName", "materialSpeci", "inHospitalCode", "unitPrice", "amt", "batchNumber")));
 
     private static final String PREFIX_CONFIRM = "GZQR";
-    private static final String PREFIX_IN = "G-RK";
-    private static final String PREFIX_OUT = "G-CK";
     private static final int BILL_TYPE_IN = 101;
     private static final int BILL_TYPE_OUT = 201;
+    private static final int BILL_TYPE_RETURN_GOODS = 301;
+    private static final int BILL_TYPE_RETURN_DEPOT = 401;
     private static final String MSG_NO_WRITE_OFF_DEPT_PERM =
         "没有核销科室权限，不允许确认。如需确认请添加核销科室权限之后再做确认操作";
 
     @Autowired
     private GzHighConsumeConfirmMapper gzHighConsumeConfirmMapper;
-    @Autowired
-    private FdWarehouseMapper fdWarehouseMapper;
-    @Autowired
-    private IStkIoBillService stkIoBillService;
     @Autowired
     private ITenantScopeService tenantScopeService;
 
@@ -125,20 +118,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         {
             throw new ServiceException("请选择要确认的消耗明细");
         }
-        if (body.getWarehouseId() == null)
-        {
-            throw new ServiceException("请选择仓库");
-        }
         String tenantId = requireTenant();
-        FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(body.getWarehouseId()));
-        if (wh == null || wh.getId() == null)
-        {
-            throw new ServiceException("仓库不存在");
-        }
-        if (!Integer.valueOf(1).equals(wh.getIsSettlementWarehouse()))
-        {
-            throw new ServiceException("请选择已标识为结算仓库的仓库");
-        }
         List<String> linkIds = body.getLinkIds().stream()
             .filter(StringUtils::isNotBlank)
             .map(String::trim)
@@ -192,12 +172,12 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         confirm.setTenantId(tenantId);
         confirm.setConfirmNo(confirmNo);
         confirm.setDepartmentId(departmentId);
-        confirm.setWarehouseId(body.getWarehouseId());
+        confirm.setWarehouseId(null);
         confirm.setConfirmTime(confirmTime);
         confirm.setConfirmBy(userId);
         confirm.setPeriodBegin(periodBegin);
         confirm.setPeriodEnd(periodEnd);
-        confirm.setRemark("高值核销确认");
+        confirm.setRemark("高值核销确认（待库房即入即出审核）");
         confirm.setDelFlag(0);
         confirm.setCreateBy(userId);
         confirm.setCreateTime(confirmTime);
@@ -223,54 +203,16 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         }
         gzHighConsumeConfirmMapper.insertConfirmLineBatch(confirmLines);
 
-        Map<String, List<GzHighChargeConfirmRowVo>> bySupplier = lines.stream()
-            .collect(Collectors.groupingBy(r -> r.getSupplierId().trim(), LinkedHashMap::new, Collectors.toList()));
-
-        List<GzHighConsumeConfirmBill> billRefs = new ArrayList<>();
-        GzHighChargeConfirmResultVo result = new GzHighChargeConfirmResultVo();
-        result.setConfirmId(confirmId);
-        result.setConfirmNo(confirmNo);
-        result.setLineCount(lines.size());
-
-        for (Map.Entry<String, List<GzHighChargeConfirmRowVo>> en : bySupplier.entrySet())
-        {
-            String supplierId = en.getKey();
-            List<GzHighChargeConfirmRowVo> group = en.getValue();
-            String supplierName = group.stream()
-                .map(GzHighChargeConfirmRowVo::getSupplierName)
-                .filter(StringUtils::isNotBlank)
-                .findFirst()
-                .orElse(supplierId);
-
-            StkIoBill inBill = buildSettlementBill(tenantId, BILL_TYPE_IN, body.getWarehouseId(), null,
-                supplierId, confirmTime, userId, group);
-            Long inId = stkIoBillService.insertHighValueSettlementBill(inBill, PREFIX_IN);
-
-            StkIoBill outBill = buildSettlementBill(tenantId, BILL_TYPE_OUT, body.getWarehouseId(), departmentId,
-                supplierId, confirmTime, userId, group);
-            Long outId = stkIoBillService.insertHighValueSettlementBill(outBill, PREFIX_OUT);
-
-            GzHighConsumeConfirmBill inRef = newBillRef(tenantId, confirmId, supplierId, BILL_TYPE_IN, inId, inBill.getBillNo(), confirmTime);
-            GzHighConsumeConfirmBill outRef = newBillRef(tenantId, confirmId, supplierId, BILL_TYPE_OUT, outId, outBill.getBillNo(), confirmTime);
-            billRefs.add(inRef);
-            billRefs.add(outRef);
-
-            GzHighChargeConfirmResultVo.GzHighChargeConfirmBillVo bv = new GzHighChargeConfirmResultVo.GzHighChargeConfirmBillVo();
-            bv.setSupplierId(supplierId);
-            bv.setSupplierName(supplierName);
-            bv.setInboundBillNo(inBill.getBillNo());
-            bv.setInboundBillId(inId);
-            bv.setOutboundBillNo(outBill.getBillNo());
-            bv.setOutboundBillId(outId);
-            result.getBills().add(bv);
-        }
-        gzHighConsumeConfirmMapper.insertConfirmBillBatch(billRefs);
-
         int updated = gzHighConsumeConfirmMapper.updateLinkConfirmStatus(tenantId, linkIds, confirmId, userId);
         if (updated != linkIds.size())
         {
             throw new ServiceException("部分明细已被他人确认，请刷新后重试");
         }
+
+        GzHighChargeConfirmResultVo result = new GzHighChargeConfirmResultVo();
+        result.setConfirmId(confirmId);
+        result.setConfirmNo(confirmNo);
+        result.setLineCount(lines.size());
         return result;
     }
 
@@ -308,97 +250,19 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
                 item.setOutboundBillNo(b.getBillNo());
                 item.setOutboundBillId(b.getStkIoBillId());
             }
+            else if (b.getBillType() != null && b.getBillType() == BILL_TYPE_RETURN_GOODS)
+            {
+                item.setReturnGoodsBillNo(b.getBillNo());
+                item.setReturnGoodsBillId(b.getStkIoBillId());
+            }
+            else if (b.getBillType() != null && b.getBillType() == BILL_TYPE_RETURN_DEPOT)
+            {
+                item.setReturnDepotBillNo(b.getBillNo());
+                item.setReturnDepotBillId(b.getStkIoBillId());
+            }
         }
         vo.getBills().addAll(map.values());
         return vo;
-    }
-
-    private StkIoBill buildSettlementBill(String tenantId, int billType, Long warehouseId, Long departmentId,
-        String supplierId, Date confirmTime, String userId, List<GzHighChargeConfirmRowVo> group)
-    {
-        StkIoBill bill = new StkIoBill();
-        bill.setTenantId(tenantId);
-        bill.setBillType(billType);
-        bill.setBillStatus(2);
-        bill.setWarehouseId(warehouseId);
-        bill.setDepartmentId(departmentId);
-        bill.setBillDate(confirmTime);
-        bill.setAuditDate(confirmTime);
-        bill.setAuditBy(userId);
-        bill.setUserId(SecurityUtils.getUserId());
-        bill.setCreateBy(userId);
-        bill.setRemark("高值核销确认");
-        if (StringUtils.isNotBlank(supplierId))
-        {
-            try
-            {
-                bill.setSupplerId(Long.parseLong(supplierId.trim()));
-            }
-            catch (NumberFormatException ignored)
-            {
-                // 表头供应商可为空，明细仍有 suppler_id
-            }
-        }
-        List<StkIoBillEntry> entries = new ArrayList<>();
-        for (GzHighChargeConfirmRowVo row : group)
-        {
-            entries.add(toStkEntry(row, billType));
-        }
-        bill.setStkIoBillEntryList(entries);
-        return bill;
-    }
-
-    private StkIoBillEntry toStkEntry(GzHighChargeConfirmRowVo row, int billType)
-    {
-        StkIoBillEntry e = new StkIoBillEntry();
-        e.setMaterialId(row.getMaterialId());
-        e.setMaterialName(row.getMaterialName());
-        e.setMaterialSpeci(row.getMaterialSpeci());
-        e.setMaterialModel(row.getMaterialModel());
-        e.setUnitPrice(row.getUnitPrice());
-        BigDecimal qty = row.getEntryQty() != null ? row.getEntryQty() : row.getAllocQty();
-        e.setQty(qty);
-        e.setPrice(row.getUnitPrice());
-        if (row.getAmt() != null)
-        {
-            e.setAmt(row.getAmt());
-        }
-        else if (qty != null && row.getUnitPrice() != null)
-        {
-            e.setAmt(row.getUnitPrice().multiply(qty));
-        }
-        e.setBatchNo(row.getBatchNo());
-        e.setBatchNumber(row.getBatchNumber());
-        e.setBeginTime(row.getBeginTime());
-        e.setEndTime(row.getEndTime());
-        e.setMainBarcode(row.getMainBarcode());
-        e.setSubBarcode(row.getSubBarcode());
-        if (row.getFactoryId() != null)
-        {
-            e.setMaterialFactoryId(row.getFactoryId());
-        }
-        if (StringUtils.isNotBlank(row.getSupplierId()))
-        {
-            e.setSupplerId(row.getSupplierId().trim());
-        }
-        e.setRemark("高值核销确认 link=" + row.getLinkId());
-        return e;
-    }
-
-    private GzHighConsumeConfirmBill newBillRef(String tenantId, String confirmId, String supplierId,
-        int billType, Long stkIoBillId, String billNo, Date createTime)
-    {
-        GzHighConsumeConfirmBill ref = new GzHighConsumeConfirmBill();
-        ref.setId(UUID7.generateUUID7());
-        ref.setTenantId(tenantId);
-        ref.setConfirmId(confirmId);
-        ref.setSupplierId(supplierId);
-        ref.setBillType(billType);
-        ref.setStkIoBillId(stkIoBillId);
-        ref.setBillNo(billNo);
-        ref.setDelFlag(0);
-        ref.setCreateTime(createTime);
-        return ref;
     }
 
     private Long resolveSingleWriteOffDepartment(List<GzHighChargeConfirmRowVo> lines)

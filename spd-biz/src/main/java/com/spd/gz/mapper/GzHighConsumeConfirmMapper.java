@@ -26,8 +26,26 @@ public interface GzHighConsumeConfirmMapper
     int updateLinkConfirmStatus(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
         @Param("confirmId") String confirmId, @Param("updateBy") String updateBy);
 
+    int updateLinkInstantIoAudited(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
+        @Param("auditBy") String auditBy);
+
+    int updateLinkInstantIoReversed(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
+        @Param("auditBy") String auditBy);
+
+    int updateLinkInstantIoReversedByConfirmIds(@Param("tenantId") String tenantId,
+        @Param("confirmIds") List<String> confirmIds, @Param("auditBy") String auditBy);
+
+    int clearLinkConfirmForWriteOff(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
+        @Param("updateBy") String updateBy);
+
+    int updateConfirmWarehouse(@Param("tenantId") String tenantId, @Param("confirmId") String confirmId,
+        @Param("warehouseId") Long warehouseId, @Param("updateBy") String updateBy);
+
     String selectMaxConfirmNo(@Param("tenantId") String tenantId, @Param("datePrefix") String datePrefix);
 
     List<GzHighConsumeConfirmBill> selectBillsByConfirmId(@Param("tenantId") String tenantId,
         @Param("confirmId") String confirmId);
+
+    List<GzHighConsumeConfirmBill> selectBillsByConfirmIds(@Param("tenantId") String tenantId,
+        @Param("confirmIds") List<String> confirmIds);
 }

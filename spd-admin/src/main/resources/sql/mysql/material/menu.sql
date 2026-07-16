@@ -7547,6 +7547,56 @@ FROM DUAL WHERE @hc_barcode_flow_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sy
 ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
 /
 
+-- ---------- HV-F-003 高值即入即出（挂仓库管理；临床确认后库房审核建 G-RK/G-CK，人工反向 301/401）----------
+SET @warehouse_m := (SELECT m.menu_id FROM sys_menu m WHERE m.path='warehouse' AND m.menu_type='M' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3720,'高值即入即出',COALESCE(@warehouse_m,1),(SELECT IFNULL(MAX(order_num),0)+1 FROM sys_menu WHERE parent_id=COALESCE(@warehouse_m,1)),'gzInstantIo','gz/instantIo/index',NULL,1,0,'C','0','0','gz:instantIo:list','shopping','admin',NOW(),'1',NOW(),'库房审核生成G-RK/G-CK；人工生成退货301+退库401','0','1'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='C' AND perms='gz:instantIo:list') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3720)
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),path=VALUES(path),component=VALUES(component),perms=VALUES(perms),remark=VALUES(remark),update_time=VALUES(update_time);
+/
+SET @gz_instant_io_c := (SELECT m.menu_id FROM sys_menu m WHERE m.perms='gz:instantIo:list' AND m.menu_type='C' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3721,'即入即出查询',@gz_instant_io_c,1,'#','',NULL,1,0,'F','0','0','gz:instantIo:query','#','admin',NOW(),'1',NOW(),'列表查询','0','1'
+FROM DUAL WHERE @gz_instant_io_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@gz_instant_io_c AND perms='gz:instantIo:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3721))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3722,'即入即出审核',@gz_instant_io_c,2,'#','',NULL,1,0,'F','0','0','gz:instantIo:audit','#','admin',NOW(),'1',NOW(),'审核建G-RK/G-CK','0','1'
+FROM DUAL WHERE @gz_instant_io_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@gz_instant_io_c AND perms='gz:instantIo:audit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3722))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3723,'即入即出反向',@gz_instant_io_c,3,'#','',NULL,1,0,'F','0','0','gz:instantIo:reverse','#','admin',NOW(),'1',NOW(),'人工生成退货301+退库401','0','1'
+FROM DUAL WHERE @gz_instant_io_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@gz_instant_io_c AND perms='gz:instantIo:reverse') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3723))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3724,'即入即出冲销',@gz_instant_io_c,4,'#','',NULL,1,0,'F','0','0','gz:instantIo:writeOff','#','admin',NOW(),'1',NOW(),'高值冲销回补库存；已审核时含反向单据','0','1'
+FROM DUAL WHERE @gz_instant_io_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@gz_instant_io_c AND perms='gz:instantIo:writeOff') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3724))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+-- 高值核销确认页：未确认冲销按钮
+SET @gz_high_confirm_c := (SELECT m.menu_id FROM sys_menu m WHERE m.perms='gz:highChargeConfirm:list' AND m.menu_type='C' ORDER BY m.menu_id LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id,menu_name,parent_id,order_num,path,component,`query`,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time,update_by,update_time,remark,is_platform,default_open_to_customer)
+SELECT 3725,'高值确认冲销',@gz_high_confirm_c,3,'#','',NULL,1,0,'F','0','0','gz:highChargeConfirm:writeOff','#','admin',NOW(),'1',NOW(),'未确认明细冲销回补库存','0','1'
+FROM DUAL WHERE @gz_high_confirm_c IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@gz_high_confirm_c AND perms='gz:highChargeConfirm:writeOff') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3725))
+ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),order_num=VALUES(order_num),perms=VALUES(perms),update_time=VALUES(update_time);
+/
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM hc_customer c
+CROSS JOIN sys_menu m
+WHERE c.hc_status = '0'
+  AND m.perms IN ('gz:instantIo:list','gz:instantIo:query','gz:instantIo:audit','gz:instantIo:reverse','gz:instantIo:writeOff','gz:highChargeConfirm:writeOff')
+  AND NOT EXISTS (
+    SELECT 1 FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
+  );
+/
+
 -- ========== 科室盈亏处理 DeptStkIoProfitLossController GET/POST /department/deptProfitLoss ==========
 SET @department_root := (SELECT m.menu_id FROM sys_menu m WHERE m.path = 'department' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1);
 /

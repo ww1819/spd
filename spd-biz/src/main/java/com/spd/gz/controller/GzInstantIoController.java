@@ -4,40 +4,40 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.spd.common.utils.StringUtils;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
-import com.spd.gz.domain.dto.GzHighChargeConfirmBody;
+import com.spd.common.utils.StringUtils;
 import com.spd.gz.domain.dto.GzHighChargeConfirmQuery;
 import com.spd.gz.domain.dto.GzHighChargeConfirmResultVo;
 import com.spd.gz.domain.dto.GzHighChargeConfirmRowVo;
 import com.spd.gz.domain.dto.GzHighValueWriteOffBody;
 import com.spd.gz.domain.dto.GzHighValueWriteOffResultVo;
-import com.spd.gz.service.IGzHighChargeConfirmService;
+import com.spd.gz.domain.dto.GzInstantIoAuditBody;
+import com.spd.gz.domain.dto.GzInstantIoReverseBody;
 import com.spd.gz.service.IGzHighValueWriteOffService;
+import com.spd.gz.service.IGzInstantIoService;
 
 /**
- * 高值核销确认：已扫码核销明细列表、临床消耗确认（不建结算单，待库房即入即出审核）。
+ * 库房高值即入即出：审核生成 G-RK/G-CK；人工反向生成退货301+退库401。
  */
 @RestController
-@RequestMapping("/gz/highChargeConfirm")
-public class GzHighChargeConfirmController extends BaseController
+@RequestMapping("/gz/instantIo")
+public class GzInstantIoController extends BaseController
 {
     @Autowired
-    private IGzHighChargeConfirmService gzHighChargeConfirmService;
+    private IGzInstantIoService gzInstantIoService;
     @Autowired
     private IGzHighValueWriteOffService gzHighValueWriteOffService;
 
-    @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:list')")
+    @PreAuthorize("@ss.hasPermi('gz:instantIo:list')")
     @GetMapping("/list")
     public TableDataInfo list(GzHighChargeConfirmQuery query,
         @RequestParam(value = "sortField", required = false) String sortField,
@@ -51,7 +51,7 @@ public class GzHighChargeConfirmController extends BaseController
         clearPage();
         try
         {
-            List<GzHighChargeConfirmRowVo> list = gzHighChargeConfirmService.selectConfirmList(query);
+            List<GzHighChargeConfirmRowVo> list = gzInstantIoService.selectList(query);
             return getDataTable(list);
         }
         finally
@@ -60,25 +60,26 @@ public class GzHighChargeConfirmController extends BaseController
         }
     }
 
-    @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:confirm')")
-    @Log(title = "高值核销确认", businessType = BusinessType.OTHER)
-    @PostMapping("/confirm")
-    public AjaxResult confirm(@RequestBody GzHighChargeConfirmBody body)
+    @PreAuthorize("@ss.hasPermi('gz:instantIo:audit')")
+    @Log(title = "高值即入即出审核", businessType = BusinessType.OTHER)
+    @PostMapping("/audit")
+    public AjaxResult audit(@RequestBody GzInstantIoAuditBody body)
     {
-        GzHighChargeConfirmResultVo vo = gzHighChargeConfirmService.confirm(body);
+        GzHighChargeConfirmResultVo vo = gzInstantIoService.audit(body);
         return success(vo);
     }
 
-    @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:list')")
-    @GetMapping("/confirmDetail/{confirmId}")
-    public AjaxResult confirmDetail(@PathVariable("confirmId") String confirmId)
+    @PreAuthorize("@ss.hasPermi('gz:instantIo:reverse')")
+    @Log(title = "高值即入即出反向单据", businessType = BusinessType.OTHER)
+    @PostMapping("/reverse")
+    public AjaxResult reverse(@RequestBody GzInstantIoReverseBody body)
     {
-        return success(gzHighChargeConfirmService.getConfirmDetail(confirmId));
+        GzHighChargeConfirmResultVo vo = gzInstantIoService.reverse(body);
+        return success(vo);
     }
 
-    /** 临床段档 A/B 冲销（回补科室库存）；库房已即入即出审核的禁止在此操作 */
-    @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:writeOff')")
-    @Log(title = "高值核销冲销", businessType = BusinessType.OTHER)
+    @PreAuthorize("@ss.hasPermi('gz:instantIo:writeOff')")
+    @Log(title = "高值冲销", businessType = BusinessType.OTHER)
     @PostMapping("/writeOff")
     public AjaxResult writeOff(@RequestBody GzHighValueWriteOffBody body)
     {
@@ -86,7 +87,7 @@ public class GzHighChargeConfirmController extends BaseController
         {
             body = new GzHighValueWriteOffBody();
         }
-        body.setSource("CONFIRM");
+        body.setSource("INSTANT_IO");
         GzHighValueWriteOffResultVo vo = gzHighValueWriteOffService.writeOff(body);
         return success(vo);
     }

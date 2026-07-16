@@ -58,6 +58,16 @@
             and out_bill.bill_type = 201
             and ifnull(out_bill.del_flag, 0) = 0
             and out_bill.supplier_id = cast(te.supplier_id as char)
+        left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
+            and th_bill.tenant_id = l.tenant_id
+            and th_bill.bill_type = 301
+            and ifnull(th_bill.del_flag, 0) = 0
+            and th_bill.supplier_id = cast(te.supplier_id as char)
+        left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
+            and tk_bill.tenant_id = l.tenant_id
+            and tk_bill.bill_type = 401
+            and ifnull(tk_bill.del_flag, 0) = 0
+            and tk_bill.supplier_id = cast(te.supplier_id as char)
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
@@ -72,6 +82,7 @@
             l.visit_kind as visitKind,
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
+            ifnull(l.returned_qty, 0) as returnedQty,
             l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             l.in_hospital_code as inHospitalCode,
             ifnull(l.confirm_status, 0) as confirmStatus,
@@ -79,6 +90,13 @@
             c.confirm_no as confirmNo,
             in_bill.bill_no as inboundBillNo,
             out_bill.bill_no as outboundBillNo,
+            th_bill.bill_no as returnGoodsBillNo,
+            tk_bill.bill_no as returnDepotBillNo,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
+            l.instant_io_audit_by as instantIoAuditBy,
+            l.instant_io_audit_time as instantIoAuditTime,
+            c.confirm_by as confirmBy,
+            c.confirm_time as confirmTime,
             t.create_time as consumeCreateTime,
             cast(t.audit_date as datetime) as consumeAuditDate,
             (<include refid="traceConsumeAuditTimeExpr"/>) as consumeAuditTime,
@@ -155,6 +173,18 @@
         <if test="confirmStatus != null and confirmStatus != ''">
             and ifnull(l.confirm_status, 0) = #{confirmStatus}
         </if>
+        <choose>
+            <when test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+                and ifnull(l.confirm_status, 0) = 1
+                and ifnull(l.instant_io_audit_status, 0) = 1
+                and ifnull(l.returned_qty, 0) &gt; 0
+                and th_bill.id is null
+                and tk_bill.id is null
+            </when>
+            <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
+                and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
+            </when>
+        </choose>
         <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
             and (<include refid="traceConsumeAuditTimeExpr"/>) &gt;= #{beginConsumeAuditTime}
         </if>
@@ -187,6 +217,7 @@
             l.visit_kind as visitKind,
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
+            ifnull(l.returned_qty, 0) as returnedQty,
             l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             coalesce(nullif(trim(l.in_hospital_code), ''),
                 nullif(trim(e.main_barcode), ''),
@@ -196,6 +227,13 @@
             c.confirm_no as confirmNo,
             in_bill.bill_no as inboundBillNo,
             out_bill.bill_no as outboundBillNo,
+            th_bill.bill_no as returnGoodsBillNo,
+            tk_bill.bill_no as returnDepotBillNo,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
+            l.instant_io_audit_by as instantIoAuditBy,
+            l.instant_io_audit_time as instantIoAuditTime,
+            c.confirm_by as confirmBy,
+            c.confirm_time as confirmTime,
             h.create_time as consumeCreateTime,
             cast(h.audit_date as datetime) as consumeAuditDate,
             (<include refid="legacyConsumeAuditTimeExpr"/>) as consumeAuditTime,
@@ -276,6 +314,16 @@
             and out_bill.bill_type = 201
             and ifnull(out_bill.del_flag, 0) = 0
             and out_bill.supplier_id = cast(e.supplier_id as char)
+        left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
+            and th_bill.tenant_id = l.tenant_id
+            and th_bill.bill_type = 301
+            and ifnull(th_bill.del_flag, 0) = 0
+            and th_bill.supplier_id = cast(e.supplier_id as char)
+        left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
+            and tk_bill.tenant_id = l.tenant_id
+            and tk_bill.bill_type = 401
+            and ifnull(tk_bill.del_flag, 0) = 0
+            and tk_bill.supplier_id = cast(e.supplier_id as char)
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
@@ -308,6 +356,18 @@
         <if test="confirmStatus != null and confirmStatus != ''">
             and ifnull(l.confirm_status, 0) = #{confirmStatus}
         </if>
+        <choose>
+            <when test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+                and ifnull(l.confirm_status, 0) = 1
+                and ifnull(l.instant_io_audit_status, 0) = 1
+                and ifnull(l.returned_qty, 0) &gt; 0
+                and th_bill.id is null
+                and tk_bill.id is null
+            </when>
+            <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
+                and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
+            </when>
+        </choose>
         <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
             and (<include refid="legacyConsumeAuditTimeExpr"/>) &gt;= #{beginConsumeAuditTime}
         </if>
@@ -401,6 +461,8 @@
             l.alloc_qty as allocQty,
             l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             ifnull(l.confirm_status, 0) as confirmStatus,
+            l.confirm_id as confirmId,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
             t.create_time as consumeCreateTime,
             cast(t.audit_date as datetime) as consumeAuditDate,
             (<include refid="traceConsumeAuditTimeExpr"/>) as consumeAuditTime,
@@ -451,6 +513,8 @@
             l.alloc_qty as allocQty,
             l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
             ifnull(l.confirm_status, 0) as confirmStatus,
+            l.confirm_id as confirmId,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
             h.create_time as consumeCreateTime,
             cast(h.audit_date as datetime) as consumeAuditDate,
             (<include refid="legacyConsumeAuditTimeExpr"/>) as consumeAuditTime,
@@ -530,6 +594,9 @@
         update his_mirror_consume_link
         set confirm_status = 1,
             confirm_id = #{confirmId},
+            instant_io_audit_status = 0,
+            instant_io_audit_by = null,
+            instant_io_audit_time = null,
             update_by = #{updateBy},
             update_time = now()
         where tenant_id = #{tenantId}
@@ -539,6 +606,80 @@
         <foreach collection="linkIds" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+    </update>
+
+    <update id="updateLinkInstantIoAudited">
+        update his_mirror_consume_link
+        set instant_io_audit_status = 1,
+            instant_io_audit_by = #{auditBy},
+            instant_io_audit_time = now(),
+            update_by = #{auditBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and ifnull(del_flag, 0) = 0
+          and ifnull(confirm_status, 0) = 1
+          and ifnull(instant_io_audit_status, 0) = 0
+          and id in
+        <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateLinkInstantIoReversed">
+        update his_mirror_consume_link
+        set instant_io_audit_status = 2,
+            update_by = #{auditBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and ifnull(del_flag, 0) = 0
+          and ifnull(confirm_status, 0) = 1
+          and ifnull(instant_io_audit_status, 0) = 1
+          and id in
+        <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateLinkInstantIoReversedByConfirmIds">
+        update his_mirror_consume_link
+        set instant_io_audit_status = 2,
+            update_by = #{auditBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and ifnull(del_flag, 0) = 0
+          and ifnull(confirm_status, 0) = 1
+          and ifnull(instant_io_audit_status, 0) = 1
+          and confirm_id in
+        <foreach collection="confirmIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="clearLinkConfirmForWriteOff">
+        update his_mirror_consume_link
+        set confirm_status = 0,
+            confirm_id = null,
+            instant_io_audit_status = 0,
+            instant_io_audit_by = null,
+            instant_io_audit_time = null,
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and ifnull(del_flag, 0) = 0
+          and id in
+        <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateConfirmWarehouse">
+        update gz_high_consume_confirm
+        set warehouse_id = #{warehouseId},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and id = #{confirmId}
+          and ifnull(del_flag, 0) = 0
     </update>
 
     <select id="selectMaxConfirmNo" resultType="String">
@@ -558,4 +699,19 @@
           and ifnull(del_flag, 0) = 0
         order by supplier_id, bill_type
     </select>
+    <select id="selectBillsByConfirmIds" resultType="com.spd.gz.domain.GzHighConsumeConfirmBill">
+        select
+            id, tenant_id as tenantId, confirm_id as confirmId, supplier_id as supplierId,
+            bill_type as billType, stk_io_bill_id as stkIoBillId, bill_no as billNo
+        from gz_high_consume_confirm_bill
+        where tenant_id = #{tenantId}
+          and ifnull(del_flag, 0) = 0
+          and confirm_id in
+        <foreach collection="confirmIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by confirm_id, supplier_id, bill_type
+    </select>
+
 </mapper>
+

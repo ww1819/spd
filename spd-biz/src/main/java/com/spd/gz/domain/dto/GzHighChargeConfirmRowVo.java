@@ -15,16 +15,30 @@ public class GzHighChargeConfirmRowVo
     private String visitKind;
     private String mirrorRowId;
     private BigDecimal allocQty;
+    /** 已退费返还数量 */
+    private BigDecimal returnedQty;
     /** 科室批量消耗明细 ID（低值/历史高值；HIS 镜像高值路径可为空） */
     private Long deptBatchConsumeEntryId;
     private String inHospitalCode;
     private Integer confirmStatus;
     private String confirmId;
     private String confirmNo;
-    /** 消耗确认生成的入库单号 G-RK */
+    /** 即入即出：0待审核 1已审核 2已冲销 */
+    private Integer instantIoAuditStatus;
+    private String instantIoAuditBy;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date instantIoAuditTime;
+    private String confirmBy;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date confirmTime;
+    /** 入库单号 G-RK */
     private String inboundBillNo;
-    /** 消耗确认生成的出库单号 G-CK */
+    /** 出库单号 G-CK */
     private String outboundBillNo;
+    /** 退货单号 G-TH */
+    private String returnGoodsBillNo;
+    /** 退库单号 G-TK */
+    private String returnDepotBillNo;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date consumeAuditTime;

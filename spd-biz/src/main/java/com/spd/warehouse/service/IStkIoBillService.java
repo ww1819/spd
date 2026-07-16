@@ -340,7 +340,7 @@ public interface IStkIoBillService
     List<Map<String, Object>> selectHomeDepartmentReceiveYearMonthAgg(Date beginDate, Date endDate);
 
     /**
-     * 高值核销确认：写入 G-RK/G-CK 已审核单据 + 仓库流水（hc_ck_flow），不写 stk_inventory / 科室库存。
+     * 高值即入即出结算流水：写入已审核 101/201/301/401 + hc_ck_flow，不写 stk_inventory / 科室库存。
      */
     Long insertHighValueSettlementBill(StkIoBill bill, String billNoPrefix);
 

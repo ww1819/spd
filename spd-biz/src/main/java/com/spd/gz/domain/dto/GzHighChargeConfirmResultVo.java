@@ -24,5 +24,9 @@ public class GzHighChargeConfirmResultVo
         private Long inboundBillId;
         private String outboundBillNo;
         private Long outboundBillId;
+        private String returnGoodsBillNo;
+        private Long returnGoodsBillId;
+        private String returnDepotBillNo;
+        private Long returnDepotBillId;
     }
 }
