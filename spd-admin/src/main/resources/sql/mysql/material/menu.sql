@@ -7587,10 +7587,17 @@ ON DUPLICATE KEY UPDATE menu_name=VALUES(menu_name),parent_id=VALUES(parent_id),
 /
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
-FROM hc_customer c
-CROSS JOIN sys_menu m
+FROM sb_customer c
+JOIN sys_menu m
+  ON m.perms IN (
+    'gz:instantIo:list',
+    'gz:instantIo:query',
+    'gz:instantIo:audit',
+    'gz:instantIo:reverse',
+    'gz:instantIo:writeOff',
+    'gz:highChargeConfirm:writeOff'
+  )
 WHERE c.hc_status = '0'
-  AND m.perms IN ('gz:instantIo:list','gz:instantIo:query','gz:instantIo:audit','gz:instantIo:reverse','gz:instantIo:writeOff','gz:highChargeConfirm:writeOff')
   AND NOT EXISTS (
     SELECT 1 FROM hc_customer_menu h
     WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
