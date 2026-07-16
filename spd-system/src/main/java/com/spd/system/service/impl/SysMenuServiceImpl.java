@@ -556,22 +556,32 @@ public class SysMenuServiceImpl implements ISysMenuService
         {
             return false;
         }
-        Long cur = menuId;
-        int guard = 0;
-        while (cur != null && cur > 0 && guard++ < 200)
+        List<Long> grantedList = hcCustomerMenuMapper.selectMenuIdsByTenantId(tenantId);
+        Set<Long> customerGranted = grantedList != null ? new HashSet<>(grantedList) : new HashSet<>();
+        return isMenuIdUnderCustomerGrantedScope(menuId, customerGranted, loadActiveMenuMap());
+    }
+
+    @Override
+    public void validateMenusUnderCustomerHcScope(String tenantId, List<Long> menuIds)
+    {
+        if (StringUtils.isEmpty(tenantId) || menuIds == null || menuIds.isEmpty())
         {
-            if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, cur) > 0)
-            {
-                return true;
-            }
-            SysMenu m = menuMapper.selectMenuById(cur);
-            if (m == null || m.getParentId() == null)
-            {
-                break;
-            }
-            cur = m.getParentId();
+            return;
         }
-        return false;
+        List<Long> grantedList = hcCustomerMenuMapper.selectMenuIdsByTenantId(tenantId);
+        Set<Long> customerGranted = grantedList != null ? new HashSet<>(grantedList) : new HashSet<>();
+        Map<Long, SysMenu> menuMap = loadActiveMenuMap();
+        for (Long menuId : menuIds)
+        {
+            if (menuId == null || menuId <= 0)
+            {
+                continue;
+            }
+            if (!isMenuIdUnderCustomerGrantedScope(menuId, customerGranted, menuMap))
+            {
+                throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+            }
+        }
     }
 
     @Override
@@ -1240,6 +1250,8 @@ public class SysMenuServiceImpl implements ISysMenuService
 
     private void mergeHcCustomerMenus(String tenantId, List<Long> menuIds, String operator)
     {
+        List<Long> existingIds = hcCustomerMenuMapper.selectMenuIdsByTenantId(tenantId);
+        Set<Long> existing = existingIds != null ? new HashSet<>(existingIds) : new HashSet<>();
         List<HcCustomerMenu> toInsert = new ArrayList<>();
         for (Long menuId : menuIds)
         {
@@ -1247,7 +1259,7 @@ public class SysMenuServiceImpl implements ISysMenuService
             {
                 continue;
             }
-            if (hcCustomerMenuMapper.countByTenantIdAndMenuId(tenantId, menuId) > 0)
+            if (!existing.add(menuId))
             {
                 continue;
             }

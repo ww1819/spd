@@ -171,6 +171,11 @@ public interface ISysMenuService
   boolean isMenuUnderCustomerHcScope(String tenantId, Long menuId);
 
   /**
+   * 批量校验菜单均在租户耗材权限范围内（一次加载，避免逐条 count）
+   */
+  void validateMenusUnderCustomerHcScope(String tenantId, List<Long> menuIds);
+
+  /**
    * 过滤出租户可分配的菜单 ID（用于用户/工作组保存，防止越权写入）
    */
   List<Long> filterMenuIdsUnderCustomerHcScope(String tenantId, List<Long> menuIds);

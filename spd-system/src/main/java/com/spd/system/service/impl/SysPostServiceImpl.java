@@ -277,14 +277,15 @@ public class SysPostServiceImpl implements ISysPostService
         }
         if (StringUtils.isNotNull(menuIds) && menuIds.length > 0 && StringUtils.isNotEmpty(tenantId))
         {
+            List<Long> toCheck = new ArrayList<>(menuIds.length);
             for (Long menuId : menuIds)
             {
-                if (menuId == null || menuId <= 0) continue;
-                if (!menuService.isMenuUnderCustomerHcScope(tenantId, menuId))
+                if (menuId != null && menuId > 0)
                 {
-                    throw new ServiceException("菜单权限必须在客户菜单权限范围内，请从客户已分配菜单中选择");
+                    toCheck.add(menuId);
                 }
             }
+            menuService.validateMenusUnderCustomerHcScope(tenantId, toCheck);
         }
         if (StringUtils.isNotNull(menuIds))
         {
