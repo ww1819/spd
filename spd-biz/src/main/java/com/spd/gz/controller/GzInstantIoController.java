@@ -1,6 +1,10 @@
 package com.spd.gz.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,12 +19,14 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.gz.domain.dto.GzHighChargeConfirmQuery;
 import com.spd.gz.domain.dto.GzHighChargeConfirmResultVo;
 import com.spd.gz.domain.dto.GzHighChargeConfirmRowVo;
 import com.spd.gz.domain.dto.GzHighValueWriteOffBody;
 import com.spd.gz.domain.dto.GzHighValueWriteOffResultVo;
 import com.spd.gz.domain.dto.GzInstantIoAuditBody;
+import com.spd.gz.domain.dto.GzInstantIoExportRow;
 import com.spd.gz.domain.dto.GzInstantIoReverseBody;
 import com.spd.gz.service.IGzHighValueWriteOffService;
 import com.spd.gz.service.IGzInstantIoService;
@@ -58,6 +64,34 @@ public class GzInstantIoController extends BaseController
         {
             clearPage();
         }
+    }
+
+    @PreAuthorize("@ss.hasPermi('gz:instantIo:list')")
+    @Log(title = "高值即入即出", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, GzHighChargeConfirmQuery query,
+        @RequestParam(value = "linkIds", required = false) String linkIds)
+    {
+        List<String> ids = null;
+        if (StringUtils.isNotBlank(linkIds))
+        {
+            ids = Arrays.stream(linkIds.split(","))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+        }
+        List<GzHighChargeConfirmRowVo> list = gzInstantIoService.selectListForExport(query, ids);
+        List<GzInstantIoExportRow> rows = new ArrayList<>();
+        if (list != null)
+        {
+            for (GzHighChargeConfirmRowVo r : list)
+            {
+                rows.add(GzInstantIoExportRow.from(r));
+            }
+        }
+        ExcelUtil<GzInstantIoExportRow> util = new ExcelUtil<>(GzInstantIoExportRow.class);
+        util.exportExcel(response, rows, "高值即入即出");
     }
 
     @PreAuthorize("@ss.hasPermi('gz:instantIo:audit')")

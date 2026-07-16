@@ -73,6 +73,41 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
     }
 
     @Override
+    public List<GzHighChargeConfirmRowVo> selectListForExport(GzHighChargeConfirmQuery query, List<String> linkIds)
+    {
+        String tenantId = requireTenant();
+        if (linkIds != null && !linkIds.isEmpty())
+        {
+            List<String> ids = linkIds.stream()
+                .filter(StringUtils::isNotBlank)
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+            if (ids.isEmpty())
+            {
+                return new ArrayList<>();
+            }
+            List<GzHighChargeConfirmRowVo> selected =
+                gzHighConsumeConfirmMapper.selectConfirmLineDetailsByLinkIds(tenantId, ids);
+            return selected != null ? selected : new ArrayList<>();
+        }
+        if (query == null)
+        {
+            query = new GzHighChargeConfirmQuery();
+        }
+        if (StringUtils.isBlank(query.getConfirmStatus()))
+        {
+            query.setConfirmStatus("1");
+        }
+        query.setTenantId(tenantId);
+        query.setOffset(0);
+        // 导出上限，防止一次拉全表拖垮
+        query.setLimitSize(50000);
+        List<GzHighChargeConfirmRowVo> rows = gzHighConsumeConfirmMapper.selectConfirmList(query);
+        return rows != null ? rows : new ArrayList<>();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public GzHighChargeConfirmResultVo audit(GzInstantIoAuditBody body)
     {
