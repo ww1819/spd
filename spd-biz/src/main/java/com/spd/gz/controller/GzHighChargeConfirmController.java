@@ -76,7 +76,7 @@ public class GzHighChargeConfirmController extends BaseController
         return success(gzHighChargeConfirmService.getConfirmDetail(confirmId));
     }
 
-    /** 临床段档 A/B 冲销（回补科室库存）；库房已即入即出审核的禁止在此操作 */
+    /** 临床段档 A 冲销（未确认）；已确认须到即入即出页由库房冲销（HV-Q-006） */
     @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:writeOff')")
     @Log(title = "高值核销冲销", businessType = BusinessType.OTHER)
     @PostMapping("/writeOff")

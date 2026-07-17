@@ -104,7 +104,13 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
             }
             if (fromConfirmPage)
             {
-                // 临床段可冲销档 A/B（未做/待库房即入即出审核）；库房已审禁止临床私自冲销
+                // HV-Q-006：确认页仅档 A（未临床确认）；已确认须到即入即出页由库房冲销
+                Integer confirmStatus = lk.getConfirmStatus() == null ? 0 : lk.getConfirmStatus();
+                if (confirmStatus == 1)
+                {
+                    throw new ServiceException(
+                        "已临床确认的明细不能在「高值核销确认」冲销，请到「高值即入即出」由库房处理");
+                }
                 Integer ioStatus = lk.getInstantIoAuditStatus() == null ? 0 : lk.getInstantIoAuditStatus();
                 if (ioStatus == 1 || ioStatus == 2)
                 {
