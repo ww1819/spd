@@ -85,6 +85,17 @@ public interface StkInventoryMapper
     int decreaseStkInventoryQty(@Param("id") Long id, @Param("delta") BigDecimal delta, @Param("updateBy") String updateBy);
 
     /**
+     * 原子增加仓库库存数量（qty/amt 同语句计算）。
+     * 用于退库(401)/调拨转入等，避免并发读改写导致丢失更新。
+     *
+     * @param id       库存明细主键
+     * @param delta    增加数量（正数）
+     * @param updateBy 更新人
+     * @return 影响行数，0 表示记录不存在或无权访问
+     */
+    int increaseStkInventoryQty(@Param("id") Long id, @Param("delta") BigDecimal delta, @Param("updateBy") String updateBy);
+
+    /**
      * 删除库存明细（逻辑删除）
      *
      * @param id 库存明细主键

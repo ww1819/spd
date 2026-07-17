@@ -70,4 +70,17 @@ public interface IConsumeDetailService
      * @return 库存报表列表
      */
     public List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill);
+
+    /**
+     * 进销存汇总报表（按产品档案）
+     *
+     * @param stkIoBill 查询条件
+     * @return 按耗材聚合的进销存列表
+     */
+    public List<Map<String, Object>> selectWarehousePsiReportByMaterial(StkIoBill stkIoBill);
+
+    /**
+     * 进销存产品汇总：全量筛选合计
+     */
+    public Map<String, Object> selectWarehousePsiReportByMaterialTotal(StkIoBill stkIoBill);
 }

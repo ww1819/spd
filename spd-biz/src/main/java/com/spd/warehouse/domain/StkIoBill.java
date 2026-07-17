@@ -2,6 +2,7 @@ package com.spd.warehouse.domain;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -250,10 +251,19 @@ public class StkIoBill extends BaseEntity
     /** 查询参数：库房分类多选 */
     private Long[] warehouseCategoryIds;
 
-    /** 查询参数：批号 */
+    /** 查询参数：批次（batch_no，进销存产品汇总等模糊） */
     private String batchNo;
-    /** 查询参数：明细批次号（batch_number）模糊 */
+    /** 查询参数：批号（batch_number）模糊 */
     private String batchNumberKeyword;
+
+    /** 进销存产品汇总：是否展示/按单价拆分（1=是） */
+    private String showUnitPrice;
+    /** 进销存产品汇总：是否展示/按批次(batch_no)拆分（1=是） */
+    private String showBatchNo;
+    /** 进销存产品汇总：是否展示/按批号(batch_number)拆分（1=是） */
+    private String showBatchNumber;
+    /** 进销存产品汇总：是否展示/按效期(end_time)拆分（1=是） */
+    private String showExpiry;
 
     /** 列表排序场景：apply=申请页，audit=审核页 */
     private String sortScene;
@@ -711,6 +721,70 @@ public class StkIoBill extends BaseEntity
 
     public void setBatchNumberKeyword(String batchNumberKeyword) {
         this.batchNumberKeyword = batchNumberKeyword;
+    }
+
+    public String getShowUnitPrice() {
+        return showUnitPrice;
+    }
+
+    public void setShowUnitPrice(String showUnitPrice) {
+        this.showUnitPrice = showUnitPrice;
+    }
+
+    public String getShowBatchNo() {
+        return showBatchNo;
+    }
+
+    public void setShowBatchNo(String showBatchNo) {
+        this.showBatchNo = showBatchNo;
+    }
+
+    public String getShowBatchNumber() {
+        return showBatchNumber;
+    }
+
+    public void setShowBatchNumber(String showBatchNumber) {
+        this.showBatchNumber = showBatchNumber;
+    }
+
+    public String getShowExpiry() {
+        return showExpiry;
+    }
+
+    public void setShowExpiry(String showExpiry) {
+        this.showExpiry = showExpiry;
+    }
+
+    /** MyBatis：是否按单价拆分（进销存产品汇总） */
+    public boolean isPsiShowUnitPrice() {
+        return isPsiShowFlag(showUnitPrice, "showUnitPrice");
+    }
+
+    /** MyBatis：是否按批号拆分 */
+    public boolean isPsiShowBatchNumber() {
+        return isPsiShowFlag(showBatchNumber, "showBatchNumber");
+    }
+
+    /** MyBatis：是否按效期拆分 */
+    public boolean isPsiShowExpiry() {
+        return isPsiShowFlag(showExpiry, "showExpiry");
+    }
+
+    /** MyBatis：是否按批次拆分 */
+    public boolean isPsiShowBatchNo() {
+        return isPsiShowFlag(showBatchNo, "showBatchNo");
+    }
+
+    private boolean isPsiShowFlag(String fieldVal, String paramsKey) {
+        if ("1".equals(fieldVal) || "true".equalsIgnoreCase(fieldVal)) {
+            return true;
+        }
+        Map<String, Object> p = getParams();
+        if (p != null && p.get(paramsKey) != null) {
+            String pv = String.valueOf(p.get(paramsKey));
+            return "1".equals(pv) || "true".equalsIgnoreCase(pv);
+        }
+        return false;
     }
 
     public String getSortScene() {

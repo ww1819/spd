@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.core.controller.BaseController;
 import com.spd.warehouse.domain.StkIoBill;
@@ -129,6 +130,90 @@ public class ConsumeDetailController extends BaseController
         applyDepartmentScopeOrDeny(stkIoBill);
         List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReport(stkIoBill);
         return getDataTable(list);
+    }
+
+    /**
+     * 进销存汇总报表（按产品档案）；totalInfo.params.psiSums 为全量合计
+     */
+    @PreAuthorize("@ss.hasPermi('department:consumeDetail:list')")
+    @GetMapping("/selectWarehousePsiReportByMaterial")
+    public TableDataInfo selectWarehousePsiReportByMaterial(
+            StkIoBill stkIoBill,
+            @RequestParam(value = "showUnitPrice", required = false) String showUnitPrice,
+            @RequestParam(value = "showBatchNumber", required = false) String showBatchNumber,
+            @RequestParam(value = "showExpiry", required = false) String showExpiry,
+            @RequestParam(value = "showBatchNo", required = false) String showBatchNo)
+    {
+        applyPsiShowColumnFlags(stkIoBill, showUnitPrice, showBatchNumber, showExpiry, showBatchNo);
+        startPage();
+        applyDepartmentScopeOrDeny(stkIoBill);
+        List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReportByMaterial(stkIoBill);
+        Long total = new PageInfo<>(list).getTotal();
+        clearPage();
+        Map<String, Object> psiSums = consumeDetailService.selectWarehousePsiReportByMaterialTotal(stkIoBill);
+        TotalInfo totalInfo = new TotalInfo();
+        totalInfo.getParams().put("psiSums", psiSums != null ? psiSums : java.util.Collections.emptyMap());
+        return getDataTable(list, totalInfo, total);
+    }
+
+    /** 显式写入勾选列标志，避免仅依赖对象绑定导致 MyBatis 读不到 */
+    private static void applyPsiShowColumnFlags(StkIoBill bill, String showUnitPrice, String showBatchNumber,
+            String showExpiry, String showBatchNo)
+    {
+        if (bill == null)
+        {
+            return;
+        }
+        String up = firstNonEmpty(showUnitPrice, bill.getShowUnitPrice(), mapFlag(bill, "showUnitPrice"));
+        String bn = firstNonEmpty(showBatchNumber, bill.getShowBatchNumber(), mapFlag(bill, "showBatchNumber"));
+        String ex = firstNonEmpty(showExpiry, bill.getShowExpiry(), mapFlag(bill, "showExpiry"));
+        String bo = firstNonEmpty(showBatchNo, bill.getShowBatchNo(), mapFlag(bill, "showBatchNo"));
+        bill.setShowUnitPrice(normalizePsiFlag(up));
+        bill.setShowBatchNumber(normalizePsiFlag(bn));
+        bill.setShowExpiry(normalizePsiFlag(ex));
+        bill.setShowBatchNo(normalizePsiFlag(bo));
+        bill.getParams().put("showUnitPrice", bill.getShowUnitPrice());
+        bill.getParams().put("showBatchNumber", bill.getShowBatchNumber());
+        bill.getParams().put("showExpiry", bill.getShowExpiry());
+        bill.getParams().put("showBatchNo", bill.getShowBatchNo());
+    }
+
+    private static String mapFlag(StkIoBill bill, String key)
+    {
+        if (bill.getParams() == null || bill.getParams().get(key) == null)
+        {
+            return null;
+        }
+        return String.valueOf(bill.getParams().get(key));
+    }
+
+    private static String firstNonEmpty(String... vals)
+    {
+        if (vals == null)
+        {
+            return null;
+        }
+        for (String v : vals)
+        {
+            if (v != null && !v.trim().isEmpty())
+            {
+                return v.trim();
+            }
+        }
+        return null;
+    }
+
+    private static String normalizePsiFlag(String v)
+    {
+        if (v == null)
+        {
+            return "0";
+        }
+        if ("1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v) || "on".equalsIgnoreCase(v))
+        {
+            return "1";
+        }
+        return "0";
     }
 
     // 注意：导出功能暂时未实现，因为查询返回的是Map类型，ExcelUtil需要实体类

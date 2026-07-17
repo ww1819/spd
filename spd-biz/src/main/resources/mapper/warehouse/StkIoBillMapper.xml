@@ -2281,6 +2281,194 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ,vsadj.warehouse_category_name
     </select>
 
+    <!-- 进销存汇总（按产品档案）：仓库+耗材+供应商维度；支持耗材/供应商编码·名称·简码模糊 -->
+    <!-- 进销存产品汇总：公共 WHERE -->
+    <sql id="warehousePsiReportByMaterialWhere">
+        and vsadj.tenant_id = #{scopedTenantId}
+        and vsadj.audit_date &lt;= #{endDate}
+        and vsadj.material_id is not null
+        <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
+        <if test="materialNameLike != null and materialNameLike != ''">
+            AND (
+                COALESCE(vsadj.material_code, '') LIKE CONCAT('%', #{materialNameLike}, '%')
+                OR COALESCE(vsadj.material_name, '') LIKE CONCAT('%', #{materialNameLike}, '%')
+                OR COALESCE(fm.referred_name, '') LIKE CONCAT('%', #{materialNameLike}, '%')
+            )
+        </if>
+        <if test="materialName != null and materialName != ''">
+            AND (
+                COALESCE(vsadj.material_code, '') LIKE CONCAT('%', #{materialName}, '%')
+                OR COALESCE(vsadj.material_name, '') LIKE CONCAT('%', #{materialName}, '%')
+                OR COALESCE(fm.referred_name, '') LIKE CONCAT('%', #{materialName}, '%')
+            )
+        </if>
+        <if test="materialSpeciLike != null and materialSpeciLike != ''">
+            AND COALESCE(vsadj.speci, '') LIKE CONCAT('%', #{materialSpeciLike}, '%')
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            AND (
+                COALESCE(vsadj.suppler_name, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                OR COALESCE(fs.name, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                OR COALESCE(fs.code, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                OR COALESCE(fs.referred_code, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+            )
+        </if>
+        <if test="batchNumberKeyword != null and batchNumberKeyword != ''">
+            AND COALESCE(vsadj.batch_number, '') LIKE CONCAT('%', #{batchNumberKeyword}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            AND COALESCE(vsadj.batch_no, '') LIKE CONCAT('%', #{batchNo}, '%')
+        </if>
+    </sql>
+
+    <!-- 进销存产品汇总：可选维度（走 StkIoBill.isPsiShow*，由 Controller 显式写入标志） -->
+    <sql id="warehousePsiReportByMaterialOptionalSelect">
+        <if test="psiShowUnitPrice">
+            ,vsadj.unit_price AS unit_price
+        </if>
+        <if test="psiShowBatchNumber">
+            ,vsadj.batch_number AS batch_number
+        </if>
+        <if test="psiShowExpiry">
+            ,DATE_FORMAT(vsadj.end_time, '%Y-%m-%d') AS expiry_date
+        </if>
+        <if test="psiShowBatchNo">
+            ,vsadj.batch_no AS batch_no
+        </if>
+    </sql>
+    <sql id="warehousePsiReportByMaterialOptionalGroup">
+        <if test="psiShowUnitPrice">
+            ,vsadj.unit_price
+        </if>
+        <if test="psiShowBatchNumber">
+            ,vsadj.batch_number
+        </if>
+        <if test="psiShowExpiry">
+            ,DATE_FORMAT(vsadj.end_time, '%Y-%m-%d')
+        </if>
+        <if test="psiShowBatchNo">
+            ,vsadj.batch_no
+        </if>
+    </sql>
+
+    <select id="selectWarehousePsiReportByMaterial" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT
+        vsadj.warehouse_id
+        ,vsadj.warehouse_code
+        ,vsadj.warehouse_name
+        ,vsadj.material_id
+        ,vsadj.material_code
+        ,vsadj.material_name
+        ,vsadj.speci
+        ,vsadj.model
+        ,vsadj.unit_name
+        <include refid="warehousePsiReportByMaterialOptionalSelect"/>
+        ,vsadj.suppler_id
+        ,COALESCE(fs.code, '') AS supplier_code
+        ,COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), NULLIF(TRIM(fs.name), ''), '未维护供应商') AS supplier_name
+        ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_qty else 0 end) as qc_qty
+        ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_amt else 0 end) as qc_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('QC') then vsadj.io_qty else 0 end) as qc_import_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('QC') then vsadj.io_amt else 0 end) as qc_import_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_qty else 0 end) as rk_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_amt else 0 end) as rk_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_qty else 0 end) as ck_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_amt else 0 end) as ck_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBR') then vsadj.io_qty else 0 end) as dbr_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBR') then vsadj.io_amt else 0 end) as dbr_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_qty else 0 end) as dbc_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_amt else 0 end) as dbc_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_qty else 0 end) as pd_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_amt else 0 end) as pd_amt
+        ,sum(vsadj.jc_qty) as jc_qty
+        ,sum(vsadj.jc_amt) as jc_amt
+        FROM
+        view_stock_all_detail_jxc vsadj
+        LEFT JOIN fd_material fm ON fm.id = vsadj.material_id
+        LEFT JOIN fd_supplier fs ON fs.id = vsadj.suppler_id
+        WHERE
+        1 = 1
+        <include refid="warehousePsiReportByMaterialWhere"/>
+        GROUP BY
+        vsadj.warehouse_id
+        ,vsadj.warehouse_code
+        ,vsadj.warehouse_name
+        ,vsadj.material_id
+        ,vsadj.material_code
+        ,vsadj.material_name
+        ,vsadj.speci
+        ,vsadj.model
+        ,vsadj.unit_name
+        <include refid="warehousePsiReportByMaterialOptionalGroup"/>
+        ,vsadj.suppler_id
+        ,COALESCE(fs.code, '')
+        ,COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), NULLIF(TRIM(fs.name), ''), '未维护供应商')
+        ORDER BY vsadj.warehouse_code ASC, vsadj.material_code ASC, COALESCE(fs.code, '') ASC
+    </select>
+
+    <!-- 进销存产品汇总：全量筛选条件下的指标合计（不分页） -->
+    <select id="selectWarehousePsiReportByMaterialTotal" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT
+        IFNULL(SUM(t.qc_qty), 0) AS qc_qty
+        ,IFNULL(SUM(t.qc_amt), 0) AS qc_amt
+        ,IFNULL(SUM(t.qc_import_qty), 0) AS qc_import_qty
+        ,IFNULL(SUM(t.qc_import_amt), 0) AS qc_import_amt
+        ,IFNULL(SUM(t.rk_qty), 0) AS rk_qty
+        ,IFNULL(SUM(t.rk_amt), 0) AS rk_amt
+        ,IFNULL(SUM(t.ck_qty), 0) AS ck_qty
+        ,IFNULL(SUM(t.ck_amt), 0) AS ck_amt
+        ,IFNULL(SUM(t.dbr_qty), 0) AS dbr_qty
+        ,IFNULL(SUM(t.dbr_amt), 0) AS dbr_amt
+        ,IFNULL(SUM(t.dbc_qty), 0) AS dbc_qty
+        ,IFNULL(SUM(t.dbc_amt), 0) AS dbc_amt
+        ,IFNULL(SUM(t.pd_qty), 0) AS pd_qty
+        ,IFNULL(SUM(t.pd_amt), 0) AS pd_amt
+        ,IFNULL(SUM(t.jc_qty), 0) AS jc_qty
+        ,IFNULL(SUM(t.jc_amt), 0) AS jc_amt
+        FROM (
+            SELECT
+            sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_qty else 0 end) as qc_qty
+            ,sum(case when vsadj.audit_date &lt; #{beginDate} then vsadj.jc_amt else 0 end) as qc_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('QC') then vsadj.io_qty else 0 end) as qc_import_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('QC') then vsadj.io_amt else 0 end) as qc_import_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_qty else 0 end) as rk_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('RK') then vsadj.io_amt else 0 end) as rk_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_qty else 0 end) as ck_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('CK') then vsadj.io_amt else 0 end) as ck_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBR') then vsadj.io_qty else 0 end) as dbr_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBR') then vsadj.io_amt else 0 end) as dbr_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_qty else 0 end) as dbc_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_amt else 0 end) as dbc_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_qty else 0 end) as pd_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_amt else 0 end) as pd_amt
+            ,sum(vsadj.jc_qty) as jc_qty
+            ,sum(vsadj.jc_amt) as jc_amt
+            FROM
+            view_stock_all_detail_jxc vsadj
+            LEFT JOIN fd_material fm ON fm.id = vsadj.material_id
+            LEFT JOIN fd_supplier fs ON fs.id = vsadj.suppler_id
+            WHERE
+            1 = 1
+            <include refid="warehousePsiReportByMaterialWhere"/>
+            GROUP BY
+            vsadj.warehouse_id
+            ,vsadj.warehouse_code
+            ,vsadj.warehouse_name
+            ,vsadj.material_id
+            ,vsadj.material_code
+            ,vsadj.material_name
+            ,vsadj.speci
+            ,vsadj.model
+            ,vsadj.unit_name
+            <include refid="warehousePsiReportByMaterialOptionalGroup"/>
+            ,vsadj.suppler_id
+            ,COALESCE(fs.code, '')
+            ,COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), NULLIF(TRIM(fs.name), ''), '未维护供应商')
+        ) t
+    </select>
+
     <!-- 采购汇总报表（按供应商）：供应商全集取截止 endDate 的结存数据，再汇总上期/本期入出库 -->
     <select id="selectPurchaseSummaryBySupplier" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

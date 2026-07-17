@@ -118,4 +118,20 @@ public class ConsumeDetailServiceImpl implements IConsumeDetailService
         stkIoBill.setBillStatus(2);
         return stkIoBillMapper.selectWarehousePsiReport(stkIoBill);
     }
+
+    @Override
+    public List<Map<String, Object>> selectWarehousePsiReportByMaterial(StkIoBill stkIoBill)
+    {
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(2);
+        return stkIoBillMapper.selectWarehousePsiReportByMaterial(stkIoBill);
+    }
+
+    @Override
+    public Map<String, Object> selectWarehousePsiReportByMaterialTotal(StkIoBill stkIoBill)
+    {
+        stkIoBill.setBillType(201);
+        stkIoBill.setBillStatus(2);
+        return stkIoBillMapper.selectWarehousePsiReportByMaterialTotal(stkIoBill);
+    }
 }

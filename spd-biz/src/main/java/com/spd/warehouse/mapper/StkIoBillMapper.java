@@ -342,6 +342,16 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectWarehousePsiReport(StkIoBill stkIoBill);
 
     /**
+     * 进销存汇总（按产品档案）
+     */
+    List<Map<String, Object>> selectWarehousePsiReportByMaterial(StkIoBill stkIoBill);
+
+    /**
+     * 进销存产品汇总：全量筛选合计
+     */
+    Map<String, Object> selectWarehousePsiReportByMaterialTotal(StkIoBill stkIoBill);
+
+    /**
      * 采购汇总报表（按供应商）
      */
     List<Map<String, Object>> selectPurchaseSummaryBySupplier(StkIoBill stkIoBill);
