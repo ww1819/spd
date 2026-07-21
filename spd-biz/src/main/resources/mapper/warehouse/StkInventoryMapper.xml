@@ -1079,7 +1079,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.warehouse_date asc, stk.id asc
     </select>
 
-    <!-- 出库引用库房申请：近效期先出（有有效期的优先且按有效期升序，无有效期排后），同科室申领库存行筛选 -->
+    <!-- 出库引用库房申请/科室申购：近效期先出；与科室申领一致——有库存即可分配，不因档案停用排除 -->
     <select id="selectStkInventoryFefoForOutboundAlloc" resultMap="StkInventoryResult">
         <include refid="selectStkInventoryVo"/>
         where stk.qty &gt; 0
@@ -1088,7 +1088,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.material_id = #{materialId}
           and stk.warehouse_id = #{warehouseId}
           and (w.warehouse_type is null or w.warehouse_type not in ('高值', '设备'))
-        <include refid="stkInventoryMaterialActive"/>
+        <include refid="stkInventoryMaterialForDeptApply"/>
         order by (stk.end_time is null) asc, stk.end_time asc, stk.warehouse_date asc, stk.id asc
     </select>
 
