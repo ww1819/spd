@@ -3312,6 +3312,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         String tenantId = StringUtils.isNotEmpty(wh.getTenantId())
             ? wh.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
         List<StkIoBillEntry> entryList = new ArrayList<>();
+        boolean anyPending = false;
         for (WhWarehouseApplyEntry we : list) {
             if (we == null) {
                 continue;
@@ -3320,6 +3321,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (pend == null || pend.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            anyPending = true;
             Long lineWhId = we.getWarehouseId() != null ? we.getWarehouseId() : wh.getWarehouseId();
             if (we.getMaterialId() == null || lineWhId == null) {
                 throw new ServiceException("库房申请明细缺少耗材或仓库，无法按近效期分配批次");
@@ -3371,7 +3373,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             /* 申请大于库存时：已按近效期带出全部可用批次，剩余不足部分不再生成明细、不抛错（部分引用） */
         }
         if (entryList.isEmpty()) {
-            throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
+            if (!anyPending) {
+                throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
+            }
+            throw new ServiceException("待出库明细在目标仓库无可用库存（请核对仓库库存数量）");
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
@@ -3423,6 +3428,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         String tenantId = StringUtils.isNotEmpty(dep.getTenantId())
             ? dep.getTenantId() : SecurityUtils.requiredScopedTenantIdForSql();
         List<StkIoBillEntry> entryList = new ArrayList<>();
+        boolean anyPending = false;
         for (DepPurchaseApplyEntry pe : list) {
             if (pe == null) {
                 continue;
@@ -3431,6 +3437,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (pend == null || pend.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            anyPending = true;
             Long lineWhId = dep.getWarehouseId();
             if (pe.getMaterialId() == null || lineWhId == null) {
                 throw new ServiceException("科室申购明细缺少耗材或仓库，无法按近效期分配批次");
@@ -3479,7 +3486,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
         }
         if (entryList.isEmpty()) {
-            throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
+            if (!anyPending) {
+                throw new ServiceException("无可出库数量（可能已全部作废或已下推出库单）");
+            }
+            throw new ServiceException("待出库明细在目标仓库无可用库存（请核对仓库库存数量）");
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
