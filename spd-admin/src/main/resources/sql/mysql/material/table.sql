@@ -197,6 +197,14 @@ CREATE TABLE IF NOT EXISTS `fd_location` (
   `location_code` varchar(64) DEFAULT NULL COMMENT '货位编码',
   `location_name` varchar(255) DEFAULT NULL COMMENT '货位名称',
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID（fd_warehouse.id）',
+  `zone_type` varchar(32) DEFAULT 'QUALIFIED' COMMENT '五区：PENDING_CHECK待验/QUALIFIED合格/UNQUALIFIED不合格/RETURN退货/PENDING_SHIP待发',
+  `shelf_code` varchar(64) DEFAULT NULL COMMENT '货架编码（如A01）',
+  `layer_no` int DEFAULT NULL COMMENT '层号',
+  `slot_no` int DEFAULT NULL COMMENT '格口号',
+  `pos_x` decimal(12,2) DEFAULT NULL COMMENT '平面X坐标（米）',
+  `pos_y` decimal(12,2) DEFAULT NULL COMMENT '平面Y坐标（米）',
+  `pos_z` decimal(12,2) DEFAULT NULL COMMENT '高度Z坐标（米）',
+  `capacity` decimal(18,4) DEFAULT NULL COMMENT '容量（可选）',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
@@ -209,7 +217,8 @@ CREATE TABLE IF NOT EXISTS `fd_location` (
   PRIMARY KEY (`location_id`),
   KEY `idx_fd_location_tenant` (`tenant_id`),
   KEY `idx_fd_location_wh` (`warehouse_id`),
-  KEY `idx_fd_location_parent` (`parent_id`)
+  KEY `idx_fd_location_parent` (`parent_id`),
+  KEY `idx_fd_location_zone` (`zone_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='货位';
 /
 

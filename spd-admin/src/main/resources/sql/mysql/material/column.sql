@@ -968,6 +968,39 @@ CALL add_table_column('fd_location', 'delete_by', 'varchar(64)', '删除者', NU
 /
 CALL add_table_column('fd_location', 'delete_time', 'datetime', '删除时间', NULL);
 /
+-- 数字孪生：五区与货架坐标
+CALL add_table_column('fd_location', 'zone_type', 'varchar(32)', '五区类型PENDING_CHECK/QUALIFIED/UNQUALIFIED/RETURN/PENDING_SHIP', 'QUALIFIED');
+/
+CALL add_table_column('fd_location', 'shelf_code', 'varchar(64)', '货架编码', NULL);
+/
+CALL add_table_column('fd_location', 'layer_no', 'int', '层号', NULL);
+/
+CALL add_table_column('fd_location', 'slot_no', 'int', '格口号', NULL);
+/
+CALL add_table_column('fd_location', 'pos_x', 'decimal(12,2)', '平面X坐标米', NULL);
+/
+CALL add_table_column('fd_location', 'pos_y', 'decimal(12,2)', '平面Y坐标米', NULL);
+/
+CALL add_table_column('fd_location', 'pos_z', 'decimal(12,2)', '高度Z坐标米', NULL);
+/
+CALL add_table_column('fd_location', 'capacity', 'decimal(18,4)', '容量', NULL);
+/
+-- 按货位名称关键字初始化五区（仅空值）
+UPDATE fd_location SET zone_type = 'PENDING_CHECK'
+WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%待验%' OR location_name LIKE '%验收%');
+/
+UPDATE fd_location SET zone_type = 'UNQUALIFIED'
+WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%不合格%' OR location_name LIKE '%隔离%');
+/
+UPDATE fd_location SET zone_type = 'RETURN'
+WHERE (zone_type IS NULL OR zone_type = '') AND location_name LIKE '%退货%';
+/
+UPDATE fd_location SET zone_type = 'PENDING_SHIP'
+WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%待发%' OR location_name LIKE '%发货%');
+/
+UPDATE fd_location SET zone_type = 'QUALIFIED'
+WHERE zone_type IS NULL OR zone_type = '';
+/
 
 -- fd_warehouse_category
 CALL add_table_column('fd_warehouse_category', 'remark', 'varchar(512)', '备注', NULL);

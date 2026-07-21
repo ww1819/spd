@@ -39,6 +39,36 @@ public class FdLocation extends BaseEntity
     /** 仓库名称 */
     private String warehouseName;
 
+    /**
+     * 五区类型：PENDING_CHECK待验 / QUALIFIED合格 / UNQUALIFIED不合格 / RETURN退货 / PENDING_SHIP待发
+     */
+    @Excel(name = "五区类型")
+    private String zoneType;
+
+    /** 货架编码（如 A01） */
+    @Excel(name = "货架编码")
+    private String shelfCode;
+
+    /** 层号 */
+    @Excel(name = "层号")
+    private Integer layerNo;
+
+    /** 格口号 */
+    @Excel(name = "格口号")
+    private Integer slotNo;
+
+    /** 平面 X 坐标（米） */
+    private java.math.BigDecimal posX;
+
+    /** 平面 Y 坐标（米） */
+    private java.math.BigDecimal posY;
+
+    /** 高度 Z 坐标（米） */
+    private java.math.BigDecimal posZ;
+
+    /** 容量（可选，用于占用率） */
+    private java.math.BigDecimal capacity;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -114,6 +144,86 @@ public class FdLocation extends BaseEntity
     {
         return warehouseName;
     }
+
+    public String getZoneType()
+    {
+        return zoneType;
+    }
+
+    public void setZoneType(String zoneType)
+    {
+        this.zoneType = zoneType;
+    }
+
+    public String getShelfCode()
+    {
+        return shelfCode;
+    }
+
+    public void setShelfCode(String shelfCode)
+    {
+        this.shelfCode = shelfCode;
+    }
+
+    public Integer getLayerNo()
+    {
+        return layerNo;
+    }
+
+    public void setLayerNo(Integer layerNo)
+    {
+        this.layerNo = layerNo;
+    }
+
+    public Integer getSlotNo()
+    {
+        return slotNo;
+    }
+
+    public void setSlotNo(Integer slotNo)
+    {
+        this.slotNo = slotNo;
+    }
+
+    public java.math.BigDecimal getPosX()
+    {
+        return posX;
+    }
+
+    public void setPosX(java.math.BigDecimal posX)
+    {
+        this.posX = posX;
+    }
+
+    public java.math.BigDecimal getPosY()
+    {
+        return posY;
+    }
+
+    public void setPosY(java.math.BigDecimal posY)
+    {
+        this.posY = posY;
+    }
+
+    public java.math.BigDecimal getPosZ()
+    {
+        return posZ;
+    }
+
+    public void setPosZ(java.math.BigDecimal posZ)
+    {
+        this.posZ = posZ;
+    }
+
+    public java.math.BigDecimal getCapacity()
+    {
+        return capacity;
+    }
+
+    public void setCapacity(java.math.BigDecimal capacity)
+    {
+        this.capacity = capacity;
+    }
     
     public void setDelFlag(Integer delFlag) 
     {
@@ -144,6 +254,14 @@ public class FdLocation extends BaseEntity
             .append("locationName", getLocationName())
             .append("warehouseId", getWarehouseId())
             .append("warehouseName", getWarehouseName())
+            .append("zoneType", getZoneType())
+            .append("shelfCode", getShelfCode())
+            .append("layerNo", getLayerNo())
+            .append("slotNo", getSlotNo())
+            .append("posX", getPosX())
+            .append("posY", getPosY())
+            .append("posZ", getPosZ())
+            .append("capacity", getCapacity())
             .append("delFlag", getDelFlag())
             .append("tenantId", getTenantId())
             .append("createBy", getCreateBy())

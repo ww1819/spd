@@ -11,6 +11,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="locationName"    column="location_name"    />
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="warehouseName"    column="warehouse_name"    />
+        <result property="zoneType"    column="zone_type"    />
+        <result property="shelfCode"    column="shelf_code"    />
+        <result property="layerNo"    column="layer_no"    />
+        <result property="slotNo"    column="slot_no"    />
+        <result property="posX"    column="pos_x"    />
+        <result property="posY"    column="pos_y"    />
+        <result property="posZ"    column="pos_z"    />
+        <result property="capacity"    column="capacity"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="deleteBy"    column="delete_by"    />
@@ -24,7 +32,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdLocationVo">
         select l.location_id, l.parent_id, l.location_code, l.location_name, l.warehouse_id,
-               w.name as warehouse_name, l.del_flag, l.tenant_id, l.delete_by, l.delete_time,
+               w.name as warehouse_name,
+               l.zone_type, l.shelf_code, l.layer_no, l.slot_no,
+               l.pos_x, l.pos_y, l.pos_z, l.capacity,
+               l.del_flag, l.tenant_id, l.delete_by, l.delete_time,
                l.create_by, l.create_time, l.update_by, l.update_time, l.remark
         from fd_location l
         left join fd_warehouse w on l.warehouse_id = w.id
@@ -43,6 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="locationName != null  and locationName != ''"> and l.location_name like concat('%', #{locationName}, '%')</if>
         <if test="parentId != null"> and l.parent_id = #{parentId}</if>
         <if test="warehouseId != null"> and l.warehouse_id = #{warehouseId}</if>
+        <if test="zoneType != null and zoneType != ''"> and l.zone_type = #{zoneType}</if>
         order by l.parent_id, l.location_id
     </select>
 
@@ -68,6 +80,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationCode != null">location_code,</if>
             <if test="locationName != null">location_name,</if>
             <if test="warehouseId != null">warehouse_id,</if>
+            <if test="zoneType != null">zone_type,</if>
+            <if test="shelfCode != null">shelf_code,</if>
+            <if test="layerNo != null">layer_no,</if>
+            <if test="slotNo != null">slot_no,</if>
+            <if test="posX != null">pos_x,</if>
+            <if test="posY != null">pos_y,</if>
+            <if test="posZ != null">pos_z,</if>
+            <if test="capacity != null">capacity,</if>
             <if test="delFlag != null">del_flag,</if>
             tenant_id,
             <if test="createBy != null">create_by,</if>
@@ -81,6 +101,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationCode != null">#{locationCode},</if>
             <if test="locationName != null">#{locationName},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="zoneType != null">#{zoneType},</if>
+            <if test="shelfCode != null">#{shelfCode},</if>
+            <if test="layerNo != null">#{layerNo},</if>
+            <if test="slotNo != null">#{slotNo},</if>
+            <if test="posX != null">#{posX},</if>
+            <if test="posY != null">#{posY},</if>
+            <if test="posZ != null">#{posZ},</if>
+            <if test="capacity != null">#{capacity},</if>
             <if test="delFlag != null">#{delFlag},</if>
             #{scopedTenantId},
             <if test="createBy != null">#{createBy},</if>
@@ -99,6 +127,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="locationCode != null">location_code = #{locationCode},</if>
             <if test="locationName != null">location_name = #{locationName},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="zoneType != null">zone_type = #{zoneType},</if>
+            <if test="shelfCode != null">shelf_code = #{shelfCode},</if>
+            <if test="layerNo != null">layer_no = #{layerNo},</if>
+            <if test="slotNo != null">slot_no = #{slotNo},</if>
+            <if test="posX != null">pos_x = #{posX},</if>
+            <if test="posY != null">pos_y = #{posY},</if>
+            <if test="posZ != null">pos_z = #{posZ},</if>
+            <if test="capacity != null">capacity = #{capacity},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>

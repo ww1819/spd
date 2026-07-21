@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.datacenter.mapper.DigitalTwinMapper">
+
+    <select id="selectInventoryTotals" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            coalesce(sum(ifnull(stk.qty, 0)), 0) as totalQty,
+            coalesce(sum(ifnull(stk.amt, ifnull(stk.qty, 0) * ifnull(stk.unit_price, 0))), 0) as totalAmt,
+            count(distinct stk.material_id) as materialSkuCount
+        from stk_inventory stk
+        left join fd_material m on m.id = stk.material_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and ifnull(stk.qty, 0) &gt; 0
+          and (m.id is null or ((m.del_flag is null or m.del_flag != 1) and (m.is_use is null or m.is_use = '' or m.is_use != '2')))
+        <if test="warehouseId != null">
+          and stk.warehouse_id = #{warehouseId}
+        </if>
+    </select>
+
+    <select id="selectLocations" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            l.location_id as locationId,
+            l.parent_id as parentId,
+            l.location_code as locationCode,
+            l.location_name as locationName,
+            l.warehouse_id as warehouseId,
+            ifnull(w.name, '') as warehouseName,
+            ifnull(nullif(l.zone_type, ''), 'QUALIFIED') as zoneType,
+            l.shelf_code as shelfCode,
+            l.layer_no as layerNo,
+            l.slot_no as slotNo,
+            l.pos_x as posX,
+            l.pos_y as posY,
+            l.pos_z as posZ,
+            l.capacity as capacity
+        from fd_location l
+        left join fd_warehouse w on w.id = l.warehouse_id
+        where (l.del_flag = 0 or l.del_flag is null)
+          and l.tenant_id = #{scopedTenantId}
+        <if test="warehouseId != null">
+          and l.warehouse_id = #{warehouseId}
+        </if>
+        order by l.warehouse_id, ifnull(l.zone_type, 'QUALIFIED'), ifnull(l.shelf_code, ''), ifnull(l.layer_no, 0), ifnull(l.slot_no, 0), l.location_id
+    </select>
+
+    <!-- 按货位聚合库存：location 来自定数优先，否则耗材默认货位 -->
+    <select id="selectLocationStockAgg" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            loc.location_id as locationId,
+            coalesce(sum(ifnull(stk.qty, 0)), 0) as qty,
+            coalesce(sum(ifnull(stk.amt, ifnull(stk.qty, 0) * ifnull(stk.unit_price, 0))), 0) as amt,
+            count(distinct stk.material_id) as skuCount,
+            min(case when stk.end_time is not null and stk.qty &gt; 0 then datediff(stk.end_time, curdate()) else null end) as minDaysToExpiry,
+            max(case
+                when fn.lower_limit is not null and coalesce(mw.qty_sum, 0) &lt; fn.lower_limit then 2
+                when fn.upper_limit is not null and fn.upper_limit &gt; 0 and coalesce(mw.qty_sum, 0) &gt; fn.upper_limit then 1
+                else 0 end) as stockAlertLevel,
+            max(case
+                when stk.end_time is not null and stk.qty &gt; 0 and datediff(stk.end_time, curdate()) &lt; 0 then 2
+                when stk.end_time is not null and stk.qty &gt; 0 and datediff(stk.end_time, curdate()) &lt;= 90 then 1
+                else 0 end) as expiryAlertLevel
+        from (
+            select distinct coalesce(fn.location_id, m.location_id) as location_id,
+                   stk.material_id, stk.warehouse_id, stk.id as stock_id
+            from stk_inventory stk
+            inner join fd_material m on m.id = stk.material_id
+            left join wh_fixed_number fn on fn.material_id = stk.material_id
+                and fn.warehouse_id = stk.warehouse_id
+                and (fn.del_flag = 0 or fn.del_flag is null)
+            where (stk.del_flag = 0 or stk.del_flag is null)
+              and stk.tenant_id = #{scopedTenantId}
+              and ifnull(stk.qty, 0) &gt; 0
+              and (m.del_flag is null or m.del_flag != 1)
+              and (m.is_use is null or m.is_use = '' or m.is_use != '2')
+              and coalesce(fn.location_id, m.location_id) is not null
+            <if test="warehouseId != null">
+              and stk.warehouse_id = #{warehouseId}
+            </if>
+        ) map
+        inner join fd_location loc on loc.location_id = map.location_id
+            and (loc.del_flag = 0 or loc.del_flag is null)
+            and loc.tenant_id = #{scopedTenantId}
+        inner join stk_inventory stk on stk.id = map.stock_id
+        left join wh_fixed_number fn on fn.material_id = map.material_id
+            and fn.warehouse_id = map.warehouse_id
+            and (fn.del_flag = 0 or fn.del_flag is null)
+        left join (
+            select material_id, warehouse_id, sum(ifnull(qty, 0)) as qty_sum
+            from stk_inventory
+            where (del_flag = 0 or del_flag is null) and tenant_id = #{scopedTenantId}
+            group by material_id, warehouse_id
+        ) mw on mw.material_id = map.material_id and mw.warehouse_id = map.warehouse_id
+        group by loc.location_id
+    </select>
+
+    <select id="selectLocationStockDetail" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            stk.id as inventoryId,
+            ifnull(m.code, '') as materialCode,
+            ifnull(m.name, '') as materialName,
+            ifnull(m.speci, '') as materialSpeci,
+            ifnull(m.model, '') as materialModel,
+            ifnull(u.unit_name, '') as unitName,
+            ifnull(stk.qty, 0) as qty,
+            ifnull(stk.unit_price, 0) as unitPrice,
+            ifnull(stk.amt, ifnull(stk.qty, 0) * ifnull(stk.unit_price, 0)) as amt,
+            ifnull(stk.batch_no, '') as batchNo,
+            stk.begin_time as produceDate,
+            stk.end_time as expiryDate,
+            datediff(stk.end_time, curdate()) as daysRemaining,
+            ifnull(w.name, '') as warehouseName,
+            ifnull(f.factory_name, '') as factoryName,
+            ifnull(s.name, '') as supplierName
+        from stk_inventory stk
+        inner join fd_material m on m.id = stk.material_id
+        left join wh_fixed_number fn on fn.material_id = stk.material_id
+            and fn.warehouse_id = stk.warehouse_id
+            and (fn.del_flag = 0 or fn.del_flag is null)
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory f on f.factory_id = m.factory_id
+        left join fd_supplier s on s.id = stk.supplier_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and ifnull(stk.qty, 0) &gt; 0
+          and (m.del_flag is null or m.del_flag != 1)
+          and coalesce(fn.location_id, m.location_id) = #{locationId}
+        <if test="warehouseId != null">
+          and stk.warehouse_id = #{warehouseId}
+        </if>
+        order by stk.end_time asc, stk.id asc
+    </select>
+
+    <select id="selectIoRealtime" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            stk.id as billId,
+            stk.bill_no as billNo,
+            stk.bill_type as billType,
+            case stk.bill_type
+                when 101 then '入库'
+                when 201 then '出库'
+                when 301 then '退货'
+                when 401 then '退库'
+                else concat('类型', stk.bill_type)
+            end as billTypeName,
+            stk.bill_status as billStatus,
+            date_format(stk.bill_date, '%Y-%m-%d %H:%i') as billDate,
+            ifnull(w.name, '') as warehouseName,
+            stk.warehouse_id as warehouseId,
+            ifnull(stk.create_by, '') as createBy,
+            (select coalesce(sum(ifnull(e.qty, 0)), 0) from stk_io_bill_entry e
+             where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)) as totalQty,
+            (select coalesce(sum(ifnull(e.qty, 0) * ifnull(ifnull(e.unit_price, e.price), 0)), 0) from stk_io_bill_entry e
+             where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)) as totalAmt
+        from stk_io_bill stk
+        left join fd_warehouse w on w.id = stk.warehouse_id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_type in (101, 201, 301, 401)
+          and stk.bill_status = 2
+          and stk.bill_date is not null
+          and date(stk.bill_date) = curdate()
+        <if test="warehouseId != null">
+          and stk.warehouse_id = #{warehouseId}
+        </if>
+        order by stk.bill_date desc, stk.id desc
+        limit #{limit}
+    </select>
+
+    <select id="selectTodayIoBillCount" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            (select count(distinct stk.id)
+             from stk_io_bill stk
+             where (stk.del_flag = 0 or stk.del_flag is null)
+               and stk.tenant_id = #{scopedTenantId}
+               and stk.bill_type = 201
+               and stk.bill_status = 2
+               and stk.bill_date is not null
+               and date(stk.bill_date) = curdate()
+               <if test="warehouseId != null">and stk.warehouse_id = #{warehouseId}</if>
+            ) as todayOutboundBillCount,
+            (select count(distinct stk.id)
+             from stk_io_bill stk
+             where (stk.del_flag = 0 or stk.del_flag is null)
+               and stk.tenant_id = #{scopedTenantId}
+               and stk.bill_type = 101
+               and stk.bill_status = 2
+               and stk.bill_date is not null
+               and date(stk.bill_date) = curdate()
+               <if test="warehouseId != null">and stk.warehouse_id = #{warehouseId}</if>
+            ) as todayInboundBillCount
+    </select>
+
+    <select id="selectMaterialLocationHints" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            ifnull(m.code, '') as materialCode,
+            coalesce(fn.location_id, m.location_id) as locationId
+        from fd_material m
+        left join wh_fixed_number fn on fn.material_id = m.id
+            and (fn.del_flag = 0 or fn.del_flag is null)
+            <if test="warehouseId != null">and fn.warehouse_id = #{warehouseId}</if>
+        where (m.del_flag is null or m.del_flag != 1)
+          and m.tenant_id = #{scopedTenantId}
+          and coalesce(fn.location_id, m.location_id) is not null
+          and ifnull(m.code, '') != ''
+        group by m.code, coalesce(fn.location_id, m.location_id)
+    </select>
+</mapper>
