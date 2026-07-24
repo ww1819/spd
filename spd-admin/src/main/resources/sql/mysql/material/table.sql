@@ -3464,4 +3464,67 @@ CREATE TABLE IF NOT EXISTS `gz_dep_flow` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='高值科室流水';
 /
 
+/* 采购预测补货：计算任务主表 */
+CREATE TABLE IF NOT EXISTS `purchase_forecast_task` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_no` varchar(64) NOT NULL COMMENT '任务单号',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
+  `is_gz` char(1) DEFAULT NULL COMMENT '高低值 1高值 2低值 空全部',
+  `calc_days` int NOT NULL DEFAULT 30 COMMENT '回顾天数',
+  `lead_time_days` int NOT NULL DEFAULT 7 COMMENT '提前期天数',
+  `safety_days` int NOT NULL DEFAULT 3 COMMENT '无下限时安全天数',
+  `status` char(1) NOT NULL DEFAULT '0' COMMENT '0草稿 1已生成计划',
+  `generated_plan_ids` varchar(512) DEFAULT NULL COMMENT '生成的采购计划ID，逗号分隔',
+  `generated_plan_nos` varchar(512) DEFAULT NULL COMMENT '生成的采购计划单号，逗号分隔',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_purchase_forecast_task_no` (`task_no`),
+  KEY `idx_pft_warehouse` (`warehouse_id`),
+  KEY `idx_pft_tenant` (`tenant_id`),
+  KEY `idx_pft_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购预测补货任务';
+/
+
+/* 采购预测补货：建议明细 */
+CREATE TABLE IF NOT EXISTS `purchase_forecast_entry` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `task_id` bigint(20) NOT NULL COMMENT '任务ID',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
+  `material_id` bigint(20) NOT NULL COMMENT '耗材ID',
+  `supplier_id` bigint(20) DEFAULT NULL COMMENT '供应商ID（产品档案）',
+  `stock_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '现存量',
+  `in_transit_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '在途量（未完成采购计划）',
+  `avg_daily_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '日均净出库',
+  `lower_limit` decimal(18,6) DEFAULT NULL COMMENT '定数下限',
+  `upper_limit` decimal(18,6) DEFAULT NULL COMMENT '定数上限',
+  `rop_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '补货点ROP',
+  `suggest_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '建议补货量',
+  `confirm_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '确认补货量',
+  `selected` char(1) NOT NULL DEFAULT '1' COMMENT '是否勾选 0否 1是',
+  `price` decimal(18,6) DEFAULT NULL COMMENT '单价快照',
+  `formula_remark` varchar(500) DEFAULT NULL COMMENT '计算公式说明',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_pfe_task` (`task_id`),
+  KEY `idx_pfe_wh_mat` (`warehouse_id`,`material_id`),
+  KEY `idx_pfe_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购预测补货建议明细';
+/
+
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */

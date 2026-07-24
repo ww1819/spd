@@ -7757,3 +7757,54 @@ WHERE c.hc_status = '0'
     WHERE h.tenant_id = c.customer_id AND h.menu_id = 3890
   );
 /
+
+-- ---------- 采购管理 · 预测补货 caigou/forecast ----------
+-- 注意：现网可见的「采购管理」是 path=purchase (menu_id=1063)；path=caigou(3195) 多为隐藏停用壳，勿挂其子菜单
+SET @purchase_parent := COALESCE(
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'purchase' ORDER BY m.menu_id LIMIT 1),
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_id = 1063 LIMIT 1),
+  (SELECT m.menu_id FROM sys_menu m WHERE m.menu_type = 'M' AND m.path = 'caigou' ORDER BY m.menu_id LIMIT 1)
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3730, '预测补货', @purchase_parent, (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = @purchase_parent), 'forecast', 'caigou/forecast/index', NULL, 1, 0, 'C', '0', '0', 'caigou:forecast:list', 'chart', 'admin', NOW(), '1', NOW(), '仓库定数+日均净出库预测补货，生成草稿采购计划', '0', '1'
+FROM DUAL WHERE @purchase_parent IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/forecast/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3730))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), path = VALUES(path), component = VALUES(component), menu_type = VALUES(menu_type), visible = '0', status = '0', perms = VALUES(perms), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+-- 纠正历史误挂到 path=caigou(3195) 隐藏目录的情况
+UPDATE sys_menu sm
+JOIN sys_menu root ON root.menu_type = 'M' AND root.path = 'purchase'
+SET sm.parent_id = root.menu_id, sm.update_time = NOW()
+WHERE sm.menu_id = 3730 OR sm.component = 'caigou/forecast/index';
+/
+SET @forecast_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'caigou/forecast/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3731, '预测补货查询', @forecast_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:forecast:query', '#', 'admin', NOW(), '1', NOW(), 'GET /caigou/forecast/task/{id}', '0', '1'
+FROM DUAL WHERE @forecast_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @forecast_menu AND perms = 'caigou:forecast:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3731))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3732, '预测补货计算', @forecast_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:forecast:calc', '#', 'admin', NOW(), '1', NOW(), 'POST /calc、PUT /entry', '0', '1'
+FROM DUAL WHERE @forecast_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @forecast_menu AND perms = 'caigou:forecast:calc') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3732))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3733, '生成采购计划', @forecast_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'caigou:forecast:generate', '#', 'admin', NOW(), '1', NOW(), 'POST /generatePlan', '0', '1'
+FROM DUAL WHERE @forecast_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @forecast_menu AND perms = 'caigou:forecast:generate') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3733))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3730), (1, 3731), (1, 3732), (1, 3733);
+/
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM sb_customer c
+CROSS JOIN (
+  SELECT 3730 AS menu_id UNION ALL SELECT 3731 UNION ALL SELECT 3732 UNION ALL SELECT 3733
+) m
+WHERE c.hc_status = '0'
+  AND NOT EXISTS (
+    SELECT 1 FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
+  );
+/
