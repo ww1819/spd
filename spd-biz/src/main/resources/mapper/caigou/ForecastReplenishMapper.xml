@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.forecast.mapper.ForecastReplenishMapper">
+
+  <resultMap id="TaskResult" type="com.spd.caigou.forecast.domain.PurchaseForecastTask">
+    <id property="id" column="id"/>
+    <result property="taskNo" column="task_no"/>
+    <result property="warehouseId" column="warehouse_id"/>
+    <result property="isGz" column="is_gz"/>
+    <result property="calcDays" column="calc_days"/>
+    <result property="leadTimeDays" column="lead_time_days"/>
+    <result property="safetyDays" column="safety_days"/>
+    <result property="status" column="status"/>
+    <result property="generatedPlanIds" column="generated_plan_ids"/>
+    <result property="generatedPlanNos" column="generated_plan_nos"/>
+    <result property="tenantId" column="tenant_id"/>
+    <result property="delFlag" column="del_flag"/>
+    <result property="remark" column="remark"/>
+    <result property="createBy" column="create_by"/>
+    <result property="createTime" column="create_time"/>
+    <result property="updateBy" column="update_by"/>
+    <result property="updateTime" column="update_time"/>
+    <association property="warehouse" javaType="com.spd.foundation.domain.FdWarehouse">
+      <id property="id" column="w_id"/>
+      <result property="code" column="warehouse_code"/>
+      <result property="name" column="warehouse_name"/>
+    </association>
+  </resultMap>
+
+  <resultMap id="EntryResult" type="com.spd.caigou.forecast.domain.PurchaseForecastEntry">
+    <id property="id" column="id"/>
+    <result property="taskId" column="task_id"/>
+    <result property="warehouseId" column="warehouse_id"/>
+    <result property="materialId" column="material_id"/>
+    <result property="supplierId" column="supplier_id"/>
+    <result property="stockQty" column="stock_qty"/>
+    <result property="inTransitQty" column="in_transit_qty"/>
+    <result property="avgDailyQty" column="avg_daily_qty"/>
+    <result property="lowerLimit" column="lower_limit"/>
+    <result property="upperLimit" column="upper_limit"/>
+    <result property="ropQty" column="rop_qty"/>
+    <result property="suggestQty" column="suggest_qty"/>
+    <result property="confirmQty" column="confirm_qty"/>
+    <result property="selected" column="selected"/>
+    <result property="price" column="price"/>
+    <result property="formulaRemark" column="formula_remark"/>
+    <result property="tenantId" column="tenant_id"/>
+    <result property="remark" column="remark"/>
+    <result property="materialCode" column="material_code"/>
+    <result property="materialName" column="material_name"/>
+    <result property="speci" column="speci"/>
+    <result property="model" column="model"/>
+    <result property="unitName" column="unit_name"/>
+    <result property="supplierName" column="supplier_name"/>
+    <result property="minPackageQty" column="min_package_qty"/>
+    <result property="isGz" column="is_gz"/>
+  </resultMap>
+
+  <select id="selectTaskList" resultMap="TaskResult">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select t.*,
+           w.id as w_id, w.code as warehouse_code, w.name as warehouse_name
+    from purchase_forecast_task t
+    left join fd_warehouse w on w.id = t.warehouse_id
+    where (t.del_flag is null or t.del_flag = '0')
+      and t.tenant_id = #{scopedTenantId}
+    <if test="warehouseId != null">and t.warehouse_id = #{warehouseId}</if>
+    <if test="taskNo != null and taskNo != ''">and t.task_no like concat('%', #{taskNo}, '%')</if>
+    <if test="status != null and status != ''">and t.status = #{status}</if>
+    <if test="isGz != null and isGz != ''">and t.is_gz = #{isGz}</if>
+    <if test="beginDate != null and beginDate != ''">and date(t.create_time) &gt;= #{beginDate}</if>
+    <if test="endDate != null and endDate != ''">and date(t.create_time) &lt;= #{endDate}</if>
+    order by t.id desc
+  </select>
+
+  <select id="selectTaskById" resultMap="TaskResult">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select t.*,
+           w.id as w_id, w.code as warehouse_code, w.name as warehouse_name
+    from purchase_forecast_task t
+    left join fd_warehouse w on w.id = t.warehouse_id
+    where t.id = #{id}
+      and (t.del_flag is null or t.del_flag = '0')
+      and t.tenant_id = #{scopedTenantId}
+  </select>
+
+  <select id="selectEntryListByTaskId" resultMap="EntryResult">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select e.*,
+           m.code as material_code,
+           m.name as material_name,
+           m.speci,
+           m.model,
+           m.min_package_qty,
+           m.is_gz,
+           u.unit_name,
+           s.name as supplier_name
+    from purchase_forecast_entry e
+    left join fd_material m on m.id = e.material_id
+    left join fd_unit u on u.unit_id = m.unit_id
+    left join fd_supplier s on s.id = e.supplier_id
+    where e.task_id = #{taskId}
+      and (e.del_flag is null or e.del_flag = '0')
+      and e.tenant_id = #{scopedTenantId}
+    order by e.id
+  </select>
+
+  <select id="selectEntryById" resultMap="EntryResult">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select e.*,
+           m.code as material_code,
+           m.name as material_name,
+           m.speci,
+           m.model,
+           m.min_package_qty,
+           m.is_gz,
+           u.unit_name,
+           s.name as supplier_name
+    from purchase_forecast_entry e
+    left join fd_material m on m.id = e.material_id
+    left join fd_unit u on u.unit_id = m.unit_id
+    left join fd_supplier s on s.id = e.supplier_id
+    where e.id = #{id}
+      and (e.del_flag is null or e.del_flag = '0')
+      and e.tenant_id = #{scopedTenantId}
+  </select>
+
+  <insert id="insertTask" useGeneratedKeys="true" keyProperty="id">
+    insert into purchase_forecast_task (
+      task_no, warehouse_id, is_gz, calc_days, lead_time_days, safety_days,
+      status, generated_plan_ids, generated_plan_nos, tenant_id, del_flag,
+      create_by, create_time, remark
+    ) values (
+      #{taskNo}, #{warehouseId}, #{isGz}, #{calcDays}, #{leadTimeDays}, #{safetyDays},
+      #{status}, #{generatedPlanIds}, #{generatedPlanNos}, #{tenantId}, '0',
+      #{createBy}, #{createTime}, #{remark}
+    )
+  </insert>
+
+  <update id="updateTask">
+    update purchase_forecast_task
+    <set>
+      <if test="status != null">status = #{status},</if>
+      <if test="generatedPlanIds != null">generated_plan_ids = #{generatedPlanIds},</if>
+      <if test="generatedPlanNos != null">generated_plan_nos = #{generatedPlanNos},</if>
+      <if test="remark != null">remark = #{remark},</if>
+      update_by = #{updateBy},
+      update_time = #{updateTime}
+    </set>
+    where id = #{id}
+  </update>
+
+  <insert id="batchInsertEntry">
+    insert into purchase_forecast_entry (
+      task_id, warehouse_id, material_id, supplier_id,
+      stock_qty, in_transit_qty, avg_daily_qty, lower_limit, upper_limit,
+      rop_qty, suggest_qty, confirm_qty, selected, price, formula_remark,
+      tenant_id, del_flag, create_by, create_time, remark
+    ) values
+    <foreach collection="list" item="e" separator=",">
+      (
+        #{e.taskId}, #{e.warehouseId}, #{e.materialId}, #{e.supplierId},
+        #{e.stockQty}, #{e.inTransitQty}, #{e.avgDailyQty}, #{e.lowerLimit}, #{e.upperLimit},
+        #{e.ropQty}, #{e.suggestQty}, #{e.confirmQty}, #{e.selected}, #{e.price}, #{e.formulaRemark},
+        #{e.tenantId}, '0', #{e.createBy}, #{e.createTime}, #{e.remark}
+      )
+    </foreach>
+  </insert>
+
+  <update id="updateEntryConfirm">
+    update purchase_forecast_entry
+    <set>
+      <if test="confirmQty != null">confirm_qty = #{confirmQty},</if>
+      <if test="selected != null">selected = #{selected},</if>
+      update_by = #{updateBy},
+      update_time = #{updateTime}
+    </set>
+    where id = #{id}
+  </update>
+
+  <select id="selectMaxTaskNo" resultType="java.lang.String">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select max(task_no) from purchase_forecast_task
+    where tenant_id = #{scopedTenantId}
+      and task_no like concat('YCB', #{dateNum}, '%')
+  </select>
+
+  <select id="selectEnabledFixedMaterials" resultType="com.spd.caigou.forecast.domain.ForecastFixedMaterialRow">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select
+      fn.material_id as materialId,
+      fn.warehouse_id as warehouseId,
+      fn.lower_limit as lowerLimit,
+      fn.upper_limit as upperLimit,
+      m.supplier_id as supplierId,
+      m.price as price,
+      m.min_package_qty as minPackageQty,
+      m.code as materialCode,
+      m.name as materialName,
+      m.speci as speci,
+      m.model as model,
+      m.is_gz as isGz,
+      u.unit_name as unitName,
+      s.name as supplierName
+    from wh_fixed_number fn
+    inner join fd_material m on m.id = fn.material_id
+      and (m.del_flag is null or m.del_flag = 0 or m.del_flag = '0')
+      and (m.is_use is null or m.is_use = '1' or m.is_use = 1)
+    left join fd_unit u on u.unit_id = m.unit_id
+    left join fd_supplier s on s.id = m.supplier_id
+    where (fn.del_flag is null or fn.del_flag = 0)
+      and fn.enable_status = '0'
+      and fn.monitoring = '1'
+      and fn.warehouse_id = #{warehouseId}
+      and (fn.tenant_id = #{scopedTenantId} or fn.tenant_id is null)
+    <if test="isGz != null and isGz != ''">
+      and m.is_gz = #{isGz}
+    </if>
+    order by m.code
+  </select>
+
+  <select id="selectNetOutboundQty" resultType="com.spd.caigou.forecast.domain.ForecastMaterialQtyRow">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select
+      b.material_id as materialId,
+      coalesce(sum(
+        case when stk.bill_type = 201 then ifnull(b.qty, 0)
+             when stk.bill_type = 401 then -ifnull(b.qty, 0)
+             else 0 end
+      ), 0) as qty
+    from stk_io_bill stk
+    inner join stk_io_bill_entry b on b.paren_id = stk.id
+      and (b.del_flag is null or b.del_flag != 1)
+    where (stk.del_flag is null or stk.del_flag != 1)
+      and stk.tenant_id = #{scopedTenantId}
+      and stk.bill_status = 2
+      and stk.bill_type in (201, 401)
+      and stk.warehouse_id = #{warehouseId}
+      and stk.bill_date &gt;= #{beginDate}
+      and stk.bill_date &lt; date_add(#{endDate}, interval 1 day)
+      and b.material_id is not null
+    <if test="materialIds != null and materialIds.size() &gt; 0">
+      and b.material_id in
+      <foreach collection="materialIds" item="mid" open="(" separator="," close=")">#{mid}</foreach>
+    </if>
+    group by b.material_id
+  </select>
+
+  <select id="selectInTransitPlanQty" resultType="com.spd.caigou.forecast.domain.ForecastMaterialQtyRow">
+    <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+    select
+      e.material_id as materialId,
+      coalesce(sum(ifnull(e.qty, 0)), 0) as qty
+    from purchase_plan p
+    inner join purchase_plan_entry e on e.parent_id = p.id
+      and (e.del_flag is null or e.del_flag = '0')
+    where (p.del_flag is null or p.del_flag = '0')
+      and p.tenant_id = #{scopedTenantId}
+      and p.plan_status in ('0', '1')
+      and p.warehouse_id = #{warehouseId}
+      and e.material_id is not null
+    <if test="materialIds != null and materialIds.size() &gt; 0">
+      and e.material_id in
+      <foreach collection="materialIds" item="mid" open="(" separator="," close=")">#{mid}</foreach>
+    </if>
+    group by e.material_id
+  </select>
+</mapper>
