@@ -296,8 +296,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and stk.tenant_id = #{scopedTenantId}
         <include refid="stkIoBillDepartmentScopeFilter"/>
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
-        <if test="refBillNo != null and refBillNo != ''"> and stk.ref_bill_no = #{refBillNo}</if>
-        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="refBillNo != null and refBillNo != ''"> and stk.ref_bill_no like concat('%', #{refBillNo}, '%')</if>
+        <!-- 主表供应商 或 明细供应商（出库/退库主表常为空） -->
+        <if test="supplerId != null ">
+            and (
+                stk.suppler_id = #{supplerId}
+                or exists (
+                    select 1 from stk_io_bill_entry e
+                    where e.paren_id = stk.id
+                      and (e.del_flag is null or e.del_flag != 1)
+                      and e.suppler_id is not null and trim(e.suppler_id) != ''
+                      and cast(trim(e.suppler_id) as unsigned) = #{supplerId}
+                )
+            )
+        </if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="billStatus != null "> and stk.bill_status = #{billStatus}</if>
@@ -321,6 +333,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="auditBeginDate != null "> and stk.audit_date &gt;= #{auditBeginDate}</if>
         <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
         <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
+        <if test="materialId != null and materialId != ''"> and exists (select 1 from stk_io_bill_entry e where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and e.material_id = #{materialId})</if>
         <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_bill_entry e inner join fd_material m on e.material_id = m.id where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%')))</if>
         <if test="params != null and params.docRefStatus != null and params.docRefStatus != ''">
             and <include refid="docRefStatusScalarExpr"/> = #{params.docRefStatus}
