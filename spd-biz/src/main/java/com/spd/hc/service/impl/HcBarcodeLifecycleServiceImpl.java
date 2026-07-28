@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -860,20 +861,19 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
     }
 
     @Override
-    public void onGzRefundStockLine(GzRefundGoods bill, GzRefundGoodsEntry entry) {
+    public void onGzRefundStockLine(GzRefundGoods bill, GzRefundGoodsEntry entry, GzDepInventory depInventory) {
         if (bill == null || entry == null || StringUtils.isEmpty(entry.getInHospitalCode())) {
             return;
         }
         try {
             String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId();
             HcBarcodeMaster master = hcBarcodeTraceMapper.selectHcBarcodeMasterByTenantAndBarcode(tenantId, entry.getInHospitalCode().trim());
-            if (master == null) {
-                return;
+            if (master != null) {
+                appendFlowEvent(master, "GZ_REFUND_TK", "高值备货退库", "GZ_REFUND_STOCK",
+                    bill.getId() != null ? String.valueOf(bill.getId()) : null, bill.getGoodsNo(),
+                    entry.getId() != null ? String.valueOf(entry.getId()) : null,
+                    str(bill.getWarehouseId()), str(bill.getWarehouseId()), str(bill.getDepartmentId()), null, entry.getQty());
             }
-            appendFlowEvent(master, "GZ_REFUND_TK", "高值备货退库", "GZ_REFUND_STOCK",
-                bill.getId() != null ? String.valueOf(bill.getId()) : null, bill.getGoodsNo(),
-                entry.getId() != null ? String.valueOf(entry.getId()) : null,
-                str(bill.getWarehouseId()), str(bill.getWarehouseId()), str(bill.getDepartmentId()), null, entry.getQty());
             GzWhFlow wf = new GzWhFlow();
             wf.setId(UUID7.generateUUID7());
             wf.setTenantId(tenantId);
@@ -887,6 +887,8 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setBatchNo(entry.getBatchNo());
             wf.setQty(entry.getQty());
             wf.setInHospitalCode(entry.getInHospitalCode());
+            wf.setMasterBarcode(entry.getMasterBarcode());
+            wf.setSecondaryBarcode(entry.getSecondaryBarcode());
             wf.setLx("TK");
             wf.setFlowTime(new Date());
             wf.setOriginBusinessType("高值备货退库");
@@ -894,8 +896,40 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setCreateBy(uid());
             wf.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzWhFlow(wf);
+
+            // 科室侧退库流水：与扣减 gz_dep_inventory 对齐，避免只有仓库流水、科室无追溯
+            GzDepFlow df = new GzDepFlow();
+            df.setId(UUID7.generateUUID7());
+            df.setTenantId(tenantId);
+            df.setBillId(bill.getId() != null ? String.valueOf(bill.getId()) : null);
+            df.setBillNo(bill.getGoodsNo());
+            df.setEntryId(entry.getId() != null ? String.valueOf(entry.getId()) : null);
+            df.setDepartmentId(bill.getDepartmentId() != null ? String.valueOf(bill.getDepartmentId()) : null);
+            df.setDepartmentName(resolveDepartmentName(bill.getDepartmentId()));
+            df.setWarehouseId(bill.getWarehouseId() != null ? String.valueOf(bill.getWarehouseId()) : null);
+            df.setMaterialId(entry.getMaterialId() != null ? String.valueOf(entry.getMaterialId()) : null);
+            df.setBatchNo(entry.getBatchNo());
+            df.setBatchNumber(entry.getBatchNumber());
+            df.setQty(entry.getQty());
+            df.setUnitPrice(entry.getPrice());
+            if (entry.getPrice() != null && entry.getQty() != null) {
+                df.setAmt(entry.getPrice().multiply(entry.getQty()));
+            }
+            df.setInHospitalCode(entry.getInHospitalCode());
+            df.setMasterBarcode(entry.getMasterBarcode());
+            df.setSecondaryBarcode(entry.getSecondaryBarcode());
+            df.setGzDepInventoryId(depInventory != null && depInventory.getId() != null
+                ? String.valueOf(depInventory.getId()) : null);
+            df.setLx("TK");
+            df.setFlowTime(new Date());
+            df.setOriginBusinessType("高值备货退库出科室");
+            df.setDelFlag(0);
+            df.setCreateBy(uid());
+            df.setCreateTime(new Date());
+            hcBarcodeTraceMapper.insertGzDepFlow(df);
         } catch (Exception e) {
             log.warn("onGzRefundStockLine failed billId={}", bill.getId(), e);
+            throw new ServiceException("高值备货退库写流水失败：" + e.getMessage());
         }
     }
 

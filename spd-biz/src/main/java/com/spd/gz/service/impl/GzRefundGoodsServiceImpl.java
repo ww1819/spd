@@ -447,6 +447,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 throw new ServiceException(String.format("科室库存不足，院内码 %s，需退 %s 现存 %s", code, qty, dep.getQty()));
             }
             reduceDepInventoryQty(dep, qty);
+            hcBarcodeLifecycleService.onGzRefundStockLine(bill, entry, dep);
 
             GzDepotInventory latest = gzDepotInventoryMapper.selectLatestDepotByInHospitalCodeAndWarehouse(code, bill.getWarehouseId());
             if (latest != null) {
@@ -478,7 +479,6 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 row.setTenantId(StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId());
                 gzDepotInventoryMapper.insertGzDepotInventory(row);
             }
-            hcBarcodeLifecycleService.onGzRefundStockLine(bill, entry);
         }
     }
 
@@ -495,7 +495,11 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         }
         row.setUpdateBy(SecurityUtils.getUserIdStr());
         row.setUpdateTime(DateUtils.getNowDate());
-        gzDepInventoryMapper.updateGzDepInventory(row);
+        int rows = gzDepInventoryMapper.updateGzDepInventory(row);
+        if (rows <= 0) {
+            throw new ServiceException(String.format(
+                "科室库存扣减失败：院内码 %s 库存行未更新，请重试或联系管理员", row.getInHospitalCode()));
+        }
     }
 
     /**
