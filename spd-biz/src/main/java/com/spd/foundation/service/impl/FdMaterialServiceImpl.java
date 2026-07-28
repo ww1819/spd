@@ -149,6 +149,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             throw new ServiceException("新增产品档案必须选择财务分类");
         }
+        normalizeIsWay(m);
     }
 
     /** 修改：仅耗材名称必填 */
@@ -162,6 +163,33 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             throw new ServiceException("耗材名称不能为空");
         }
+        normalizeIsWay(m);
+    }
+
+    /**
+     * 储存方式 is_way 库字段为 char(4)，字典 way_status 存码值（1/2）。
+     * 兼容误传中文标签；超长时给出明确提示，避免 MySQL Data truncation。
+     */
+    private void normalizeIsWay(FdMaterial m)
+    {
+        if (m == null || StringUtils.isEmpty(m.getIsWay()))
+        {
+            return;
+        }
+        String v = m.getIsWay().trim();
+        if ("常温存储".equals(v) || "常温".equals(v))
+        {
+            v = "1";
+        }
+        else if ("冷链存储".equals(v) || "冷链".equals(v))
+        {
+            v = "2";
+        }
+        if (v.length() > 4)
+        {
+            throw new ServiceException("储存方式过长，请从下拉选择（常温存储/冷链存储）");
+        }
+        m.setIsWay(v);
     }
 
     /** UDI 维护：去除中英文括号，便于与扫码/库存检索一致 */
