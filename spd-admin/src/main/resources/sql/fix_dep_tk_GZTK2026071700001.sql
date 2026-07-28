@@ -1,40 +1,40 @@
 -- ============================================================
 -- 修复高值备货退库 GZTK-2026071700001 科室侧脏数据
 -- 租户：hengsui-third-001
--- 院内码：G2607161526000208 / G2607161526000206 / G2607031053000137
 --
--- 背景：
---   1) 退库审核时已写 gz_wh_flow(lx=TK)，且科室库存数量已扣减
---      （0206/0137 现为 0；0208 后因 GZCK2026072700001 再次出库恢复为 1）
---   2) 未写 gz_dep_flow(lx=TK)，科室流水追溯断层
---   3) gz_wh_flow.bill_id/entry_id 误指向无关退货单 GZTH（单据本体已不存在）
---
--- 本脚本：
---   A) 补插缺失的科室退库流水（幂等：同 bill_no + 院内码 + lx=TK 已存在则跳过）
---   B) 清空错误的仓库流水 bill_id/entry_id（保留 bill_no）
---   C) 不改动 gz_dep_inventory.qty（0208=1 与二次出库一致，属正确现状）
+-- DBeaver 正式环境执行说明（重要）：
+--   1. 不要一次选中整文件用 Ctrl+Enter（会截断语句，出现 1064 near ''）
+--   2. 下面每条 SQL 单独选中，再 Ctrl+Enter；或整段用 Alt+X（执行 SQL 脚本）
+--   3. 先跑「一、核查」；若科室 TK 流水已有 3 行，说明已修复，无需再跑 INSERT/UPDATE
+--   4. INSERT 带 NOT EXISTS，重复执行安全（已有则插入 0 行）
 -- ============================================================
 
-START TRANSACTION;
 
--- ---------- 核查 ----------
+-- ==================== 一、核查（每条单独 Ctrl+Enter） ====================
+
+-- 1) 科室库存（0208 应为 qty=1；0206/0137 应为 0）
 SELECT in_hospital_code, id, qty, department_id, update_time
 FROM gz_dep_inventory
 WHERE tenant_id = 'hengsui-third-001'
   AND in_hospital_code IN ('G2607161526000208', 'G2607161526000206', 'G2607031053000137')
   AND IFNULL(del_flag, 0) != 1;
 
+-- 2) 仓库 TK 流水（应有 3 行）
 SELECT bill_no, in_hospital_code, lx, qty, bill_id, entry_id, flow_time
 FROM gz_wh_flow
 WHERE bill_no = 'GZTK-2026071700001'
   AND IFNULL(del_flag, 0) != 1;
 
+-- 3) 科室 TK 流水（已修复应有 3 行；若已有 3 行则停止，不必再执行二、三）
 SELECT bill_no, in_hospital_code, lx, qty, flow_time
 FROM gz_dep_flow
 WHERE bill_no = 'GZTK-2026071700001'
   AND IFNULL(del_flag, 0) != 1;
 
--- ---------- A) 补科室退库流水 ----------
+
+-- ==================== 二、补科室退库流水（整段选中后 Ctrl+Enter） ====================
+-- 必须从 INSERT 选到最后一个分号；不要只选到 SELECT 中间
+
 INSERT INTO gz_dep_flow (
     id, tenant_id, bill_id, bill_no, entry_id,
     department_id, department_name, warehouse_id, warehouse_name,
@@ -89,7 +89,9 @@ WHERE wf.bill_no = 'GZTK-2026071700001'
         AND IFNULL(df.del_flag, 0) != 1
   );
 
--- ---------- B) 纠正仓库流水错误单据引用 ----------
+
+-- ==================== 三、纠正仓库流水错误单据引用 ====================
+
 UPDATE gz_wh_flow
 SET bill_id = NULL,
     entry_id = NULL,
@@ -101,7 +103,9 @@ WHERE bill_no = 'GZTK-2026071700001'
   AND IFNULL(del_flag, 0) != 1
   AND (bill_id IS NOT NULL OR entry_id IS NOT NULL);
 
--- ---------- 验证 ----------
+
+-- ==================== 四、验证 ====================
+
 SELECT bill_no, in_hospital_code, lx, qty, flow_time, origin_business_type, gz_dep_inventory_id
 FROM gz_dep_flow
 WHERE bill_no = 'GZTK-2026071700001'
@@ -112,5 +116,3 @@ SELECT bill_no, in_hospital_code, lx, bill_id, entry_id
 FROM gz_wh_flow
 WHERE bill_no = 'GZTK-2026071700001'
   AND IFNULL(del_flag, 0) != 1;
-
-COMMIT;
