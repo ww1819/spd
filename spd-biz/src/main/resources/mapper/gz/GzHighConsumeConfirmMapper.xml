@@ -46,6 +46,7 @@
             and goe.tenant_id = l.tenant_id
             and goe.batch_no = coalesce(nullif(trim(gdi.batch_no), ''), nullif(trim(gse.batch_no), ''))
         left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
+        left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory ff on ff.factory_id = m.factory_id
         left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
         left join gz_high_consume_confirm_bill in_bill on in_bill.confirm_id = l.confirm_id
@@ -103,7 +104,9 @@
             t.trace_no as consumeBillNo,
             te.id as consumeEntryId,
             te.material_id as materialId,
+            m.code as materialCode,
             te.material_name as materialName,
+            coalesce(nullif(trim(te.unit), ''), u.unit_name) as unitName,
             te.charge_price as unitPrice,
             coalesce(l.alloc_qty, te.quantity) as entryQty,
             case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
@@ -136,6 +139,8 @@
                 order by cm.id limit 1) as itemModel,
             coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
             coalesce(nullif(trim(te.model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(te.master_barcode), ''), nullif(trim(gdi.master_barcode), ''), nullif(trim(gse.master_barcode), '')) as mainBarcode,
+            coalesce(nullif(trim(te.secondary_barcode), ''), nullif(trim(gdi.secondary_barcode), ''), nullif(trim(gse.secondary_barcode), '')) as subBarcode,
             coalesce(nullif(trim(gdi.material_no), ''), nullif(trim(gse.batch_number), ''), nullif(trim(goe.batch_number), ''), te.batch_no) as batchNumber,
             coalesce(gdi.material_date, gse.begin_time, goe.begin_time) as productionDate,
             coalesce(goe.end_time, gse.end_time, te.expiry_date) as endTime,
@@ -209,6 +214,19 @@
         <if test="materialName != null and materialName != ''">
             and te.material_name like concat('%', #{materialName}, '%')
         </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and coalesce(nullif(trim(te.specification), ''), m.speci) like concat('%', #{materialSpeci}, '%')
+        </if>
+        <if test="materialModel != null and materialModel != ''">
+            and coalesce(nullif(trim(te.model), ''), m.model) like concat('%', #{materialModel}, '%')
+        </if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(te.in_hospital_code), ''), nullif(trim(gdi.in_hospital_code), ''))
+                like concat('%', #{inHospitalCode}, '%')
+        </if>
+        <if test="supplierId != null">
+            and te.supplier_id = #{supplierId}
+        </if>
 
         union all
 
@@ -240,7 +258,9 @@
             h.consume_bill_no as consumeBillNo,
             null as consumeEntryId,
             e.material_id as materialId,
+            m.code as materialCode,
             e.material_name as materialName,
+            u.unit_name as unitName,
             e.unit_price as unitPrice,
             coalesce(l.alloc_qty, e.qty) as entryQty,
             case when e.unit_price is not null and coalesce(l.alloc_qty, e.qty) is not null
@@ -277,6 +297,8 @@
             ) as itemModel,
             coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
             coalesce(nullif(trim(e.material_model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(e.main_barcode), ''), nullif(trim(gzi.master_barcode), ''), nullif(trim(gse2.master_barcode), '')) as mainBarcode,
+            coalesce(nullif(trim(e.sub_barcode), ''), nullif(trim(gzi.secondary_barcode), ''), nullif(trim(gse2.secondary_barcode), '')) as subBarcode,
             coalesce(nullif(trim(e.material_no), ''), e.batch_number, nullif(trim(gzi.material_no), ''), nullif(trim(gse2.batch_number), '')) as batchNumber,
             coalesce(e.begin_time, gzi.material_date, gse2.begin_time, goe2.begin_time) as productionDate,
             coalesce(e.end_time, goe2.end_time, gse2.end_time) as endTime,
@@ -300,6 +322,7 @@
             and goe2.tenant_id = l.tenant_id
             and goe2.batch_no = coalesce(nullif(trim(gzi.batch_no), ''), nullif(trim(gse2.batch_no), ''), nullif(trim(e.batch_no), ''))
         left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
+        left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory ff on ff.factory_id = coalesce(e.material_factory_id, e.factory_id, m.factory_id)
         left join fd_department d on d.id = <include refid="legacyWriteOffDeptIdExpr"/>
         left join fd_supplier sup on sup.id = e.supplier_id and sup.tenant_id = l.tenant_id
@@ -391,6 +414,19 @@
         </if>
         <if test="materialName != null and materialName != ''">
             and e.material_name like concat('%', #{materialName}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and coalesce(nullif(trim(e.material_speci), ''), m.speci) like concat('%', #{materialSpeci}, '%')
+        </if>
+        <if test="materialModel != null and materialModel != ''">
+            and coalesce(nullif(trim(e.material_model), ''), m.model) like concat('%', #{materialModel}, '%')
+        </if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(e.main_barcode), ''), nullif(trim(gzi.in_hospital_code), ''))
+                like concat('%', #{inHospitalCode}, '%')
+        </if>
+        <if test="supplierId != null">
+            and e.supplier_id = #{supplierId}
         </if>
     </sql>
 

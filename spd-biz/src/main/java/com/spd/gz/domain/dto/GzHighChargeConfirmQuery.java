@@ -33,6 +33,14 @@ public class GzHighChargeConfirmQuery
     /** HIS 收费/费用明细主键（模糊） */
     private String hisChargeId;
     private String materialName;
+    /** 产品规格（模糊） */
+    private String materialSpeci;
+    /** 产品型号（模糊） */
+    private String materialModel;
+    /** 院内码（模糊） */
+    private String inHospitalCode;
+    /** 供应商 ID */
+    private Long supplierId;
 
     /** 表头排序字段（白名单校验） */
     private String sortField;

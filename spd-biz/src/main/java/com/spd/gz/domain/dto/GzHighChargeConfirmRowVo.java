@@ -51,7 +51,11 @@ public class GzHighChargeConfirmRowVo
     private String consumeBillNo;
     private Long consumeEntryId;
     private Long materialId;
+    /** 产品档案编码 */
+    private String materialCode;
     private String materialName;
+    /** 单位 */
+    private String unitName;
     private BigDecimal unitPrice;
     private BigDecimal entryQty;
     private BigDecimal amt;

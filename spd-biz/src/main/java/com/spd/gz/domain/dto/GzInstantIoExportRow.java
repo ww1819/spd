@@ -31,8 +31,35 @@ public class GzInstantIoExportRow
     @Excel(name = "产品名称")
     private String materialName;
 
+    @Excel(name = "产品档案编码")
+    private String materialCode;
+
+    @Excel(name = "规格")
+    private String materialSpeci;
+
+    @Excel(name = "型号")
+    private String materialModel;
+
+    @Excel(name = "单位")
+    private String unitName;
+
     @Excel(name = "院内码")
     private String inHospitalCode;
+
+    @Excel(name = "生产厂家")
+    private String factoryName;
+
+    @Excel(name = "主条码")
+    private String mainBarcode;
+
+    @Excel(name = "辅条码")
+    private String subBarcode;
+
+    @Excel(name = "费用明细主键")
+    private String hisChargeId;
+
+    @Excel(name = "收费项目编码")
+    private String chargeItemId;
 
     @Excel(name = "数量")
     private BigDecimal entryQty;
@@ -103,7 +130,16 @@ public class GzInstantIoExportRow
         e.setPatientName(r.getPatientName());
         e.setVisitNo(r.getVisitNo());
         e.setMaterialName(r.getMaterialName());
+        e.setMaterialCode(r.getMaterialCode());
+        e.setMaterialSpeci(r.getMaterialSpeci());
+        e.setMaterialModel(r.getMaterialModel());
+        e.setUnitName(r.getUnitName());
         e.setInHospitalCode(r.getInHospitalCode());
+        e.setFactoryName(r.getFactoryName());
+        e.setMainBarcode(r.getMainBarcode());
+        e.setSubBarcode(r.getSubBarcode());
+        e.setHisChargeId(r.getHisChargeId());
+        e.setChargeItemId(r.getChargeItemId());
         e.setEntryQty(r.getEntryQty());
         e.setReturnedQty(r.getReturnedQty());
         e.setUnitPrice(r.getUnitPrice());
