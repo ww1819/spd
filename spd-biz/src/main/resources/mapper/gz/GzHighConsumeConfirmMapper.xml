@@ -23,6 +23,21 @@
         coalesce(h.audit_date, h.create_time, h.consume_bill_date)
     </sql>
 
+    <!-- 展示/筛选用院内码：避免仅取 link 空值导致查不到 -->
+    <sql id="traceInHospitalCodeExpr">
+        coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(te.in_hospital_code), ''), nullif(trim(gdi.in_hospital_code), ''))
+    </sql>
+
+    <sql id="legacyInHospitalCodeExpr">
+        coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(e.main_barcode), ''), nullif(trim(e.sub_barcode), ''), nullif(trim(gzi.in_hospital_code), ''))
+    </sql>
+
+    <!--
+      列表禁止 left join gz_shipment_entry/gz_order_entry（院内码可多行，会笛卡尔积），
+      也禁止对上述表做嵌套标量子查询（count+list 会极慢）。
+      列表展示优先取明细/库存快照字段；发货补全留给详情/建单链路。
+    -->
+
     <sql id="confirmListFrom">
         from his_mirror_consume_link l
         inner join gz_traceability t on t.id = l.traceability_id
@@ -38,13 +53,6 @@
         left join fd_department ed on ed.id = t.exec_dept_id
         left join fd_supplier sup on sup.id = te.supplier_id and sup.tenant_id = l.tenant_id
         left join gz_dep_inventory gdi on gdi.id = l.gz_dep_inventory_id and gdi.tenant_id = l.tenant_id
-        left join gz_shipment_entry gse on ifnull(gse.del_flag, 0) != 1
-            and gse.tenant_id = l.tenant_id
-            and trim(ifnull(gse.in_hospital_code, '')) = trim(coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(te.in_hospital_code), ''), nullif(trim(gdi.in_hospital_code), '')))
-            and trim(coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(te.in_hospital_code), ''), nullif(trim(gdi.in_hospital_code), ''))) != ''
-        left join gz_order_entry goe on ifnull(goe.del_flag, 0) != 1
-            and goe.tenant_id = l.tenant_id
-            and goe.batch_no = coalesce(nullif(trim(gdi.batch_no), ''), nullif(trim(gse.batch_no), ''))
         left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory ff on ff.factory_id = m.factory_id
@@ -77,76 +85,7 @@
           and l.traceability_id is not null
     </sql>
 
-    <sql id="confirmListUnionQuery">
-        select
-            l.id as linkId,
-            l.visit_kind as visitKind,
-            l.mirror_row_id as mirrorRowId,
-            l.alloc_qty as allocQty,
-            ifnull(l.returned_qty, 0) as returnedQty,
-            l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
-            l.in_hospital_code as inHospitalCode,
-            ifnull(l.confirm_status, 0) as confirmStatus,
-            l.confirm_id as confirmId,
-            c.confirm_no as confirmNo,
-            in_bill.bill_no as inboundBillNo,
-            out_bill.bill_no as outboundBillNo,
-            th_bill.bill_no as returnGoodsBillNo,
-            tk_bill.bill_no as returnDepotBillNo,
-            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
-            l.instant_io_audit_by as instantIoAuditBy,
-            l.instant_io_audit_time as instantIoAuditTime,
-            c.confirm_by as confirmBy,
-            c.confirm_time as confirmTime,
-            t.create_time as consumeCreateTime,
-            cast(t.audit_date as datetime) as consumeAuditDate,
-            (<include refid="traceConsumeAuditTimeExpr"/>) as consumeAuditTime,
-            t.trace_no as consumeBillNo,
-            te.id as consumeEntryId,
-            te.material_id as materialId,
-            m.code as materialCode,
-            te.material_name as materialName,
-            coalesce(nullif(trim(te.unit), ''), u.unit_name) as unitName,
-            te.charge_price as unitPrice,
-            coalesce(l.alloc_qty, te.quantity) as entryQty,
-            case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
-                then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
-            cast(te.supplier_id as char) as supplierId,
-            sup.name as supplierName,
-            te.batch_no as batchNo,
-            <include refid="writeOffDeptIdExpr"/> as departmentId,
-            d.name as departmentName,
-            coalesce(nullif(trim(coalesce(inp.dept_name, outp.clinic_name)), ''), ad.name) as orderingDeptName,
-            coalesce(nullif(trim(coalesce(inp.exec_dept_name, outp.exec_dept_name)), ''), ed.name) as execDeptName,
-            coalesce(inp.patient_name, outp.patient_name) as patientName,
-            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
-            coalesce(inp.his_inpatient_charge_id, outp.his_outpatient_charge_id) as hisChargeId,
-            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
-            coalesce(inp.item_name, outp.item_name) as itemName,
-            coalesce(
-                nullif(trim(inp.spec_model), ''),
-                nullif(trim(outp.spec_model), ''),
-                (select cm.speci from fd_material cm
-                    where cm.tenant_id = l.tenant_id
-                      and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
-                      and (cm.del_flag = 0 or cm.del_flag is null)
-                    order by cm.id limit 1)
-            ) as itemSpec,
-            (select cm.model from fd_material cm
-                where cm.tenant_id = l.tenant_id
-                  and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
-                  and (cm.del_flag = 0 or cm.del_flag is null)
-                order by cm.id limit 1) as itemModel,
-            coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
-            coalesce(nullif(trim(te.model), ''), m.model) as materialModel,
-            coalesce(nullif(trim(te.master_barcode), ''), nullif(trim(gdi.master_barcode), ''), nullif(trim(gse.master_barcode), '')) as mainBarcode,
-            coalesce(nullif(trim(te.secondary_barcode), ''), nullif(trim(gdi.secondary_barcode), ''), nullif(trim(gse.secondary_barcode), '')) as subBarcode,
-            coalesce(nullif(trim(gdi.material_no), ''), nullif(trim(gse.batch_number), ''), nullif(trim(goe.batch_number), ''), te.batch_no) as batchNumber,
-            coalesce(gdi.material_date, gse.begin_time, goe.begin_time) as productionDate,
-            coalesce(goe.end_time, gse.end_time, te.expiry_date) as endTime,
-            coalesce(nullif(trim(te.manufacturer), ''), ff.factory_name) as factoryName,
-            coalesce(nullif(trim(te.certificate_no), ''), m.register_no) as registerNo
-        <include refid="confirmListFrom"/>
+    <sql id="confirmListTraceFilters">
         <if test="departmentId != null">
             and <include refid="writeOffDeptIdExpr"/> = #{departmentId}
         </if>
@@ -221,89 +160,14 @@
             and coalesce(nullif(trim(te.model), ''), m.model) like concat('%', #{materialModel}, '%')
         </if>
         <if test="inHospitalCode != null and inHospitalCode != ''">
-            and coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(te.in_hospital_code), ''), nullif(trim(gdi.in_hospital_code), ''))
-                like concat('%', #{inHospitalCode}, '%')
+            and <include refid="traceInHospitalCodeExpr"/> like concat('%', #{inHospitalCode}, '%')
         </if>
         <if test="supplierId != null">
             and te.supplier_id = #{supplierId}
         </if>
+    </sql>
 
-        union all
-
-        select
-            l.id as linkId,
-            l.visit_kind as visitKind,
-            l.mirror_row_id as mirrorRowId,
-            l.alloc_qty as allocQty,
-            ifnull(l.returned_qty, 0) as returnedQty,
-            l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
-            coalesce(nullif(trim(l.in_hospital_code), ''),
-                nullif(trim(e.main_barcode), ''),
-                nullif(trim(gzi.in_hospital_code), '')) as inHospitalCode,
-            ifnull(l.confirm_status, 0) as confirmStatus,
-            l.confirm_id as confirmId,
-            c.confirm_no as confirmNo,
-            in_bill.bill_no as inboundBillNo,
-            out_bill.bill_no as outboundBillNo,
-            th_bill.bill_no as returnGoodsBillNo,
-            tk_bill.bill_no as returnDepotBillNo,
-            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
-            l.instant_io_audit_by as instantIoAuditBy,
-            l.instant_io_audit_time as instantIoAuditTime,
-            c.confirm_by as confirmBy,
-            c.confirm_time as confirmTime,
-            h.create_time as consumeCreateTime,
-            cast(h.audit_date as datetime) as consumeAuditDate,
-            (<include refid="legacyConsumeAuditTimeExpr"/>) as consumeAuditTime,
-            h.consume_bill_no as consumeBillNo,
-            null as consumeEntryId,
-            e.material_id as materialId,
-            m.code as materialCode,
-            e.material_name as materialName,
-            u.unit_name as unitName,
-            e.unit_price as unitPrice,
-            coalesce(l.alloc_qty, e.qty) as entryQty,
-            case when e.unit_price is not null and coalesce(l.alloc_qty, e.qty) is not null
-                then e.unit_price * coalesce(l.alloc_qty, e.qty) else e.amt end as amt,
-            cast(e.supplier_id as char) as supplierId,
-            sup.name as supplierName,
-            e.batch_no as batchNo,
-            <include refid="legacyWriteOffDeptIdExpr"/> as departmentId,
-            d.name as departmentName,
-            coalesce(nullif(trim(coalesce(inp.dept_name, outp.clinic_name)), ''), null) as orderingDeptName,
-            coalesce(nullif(trim(coalesce(inp.exec_dept_name, outp.exec_dept_name)), ''), null) as execDeptName,
-            coalesce(inp.patient_name, outp.patient_name) as patientName,
-            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
-            coalesce(inp.his_inpatient_charge_id, outp.his_outpatient_charge_id) as hisChargeId,
-            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
-            coalesce(inp.item_name, outp.item_name) as itemName,
-            coalesce(
-                nullif(trim(inp.spec_model), ''),
-                nullif(trim(outp.spec_model), ''),
-                nullif(trim(e.material_speci), ''),
-                (select cm.speci from fd_material cm
-                    where cm.tenant_id = l.tenant_id
-                      and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
-                      and (cm.del_flag = 0 or cm.del_flag is null)
-                    order by cm.id limit 1)
-            ) as itemSpec,
-            coalesce(
-                (select cm.model from fd_material cm
-                    where cm.tenant_id = l.tenant_id
-                      and trim(cm.his_charge_item_id) = trim(coalesce(inp.charge_item_id, outp.charge_item_id))
-                      and (cm.del_flag = 0 or cm.del_flag is null)
-                    order by cm.id limit 1),
-                e.material_model
-            ) as itemModel,
-            coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
-            coalesce(nullif(trim(e.material_model), ''), m.model) as materialModel,
-            coalesce(nullif(trim(e.main_barcode), ''), nullif(trim(gzi.master_barcode), ''), nullif(trim(gse2.master_barcode), '')) as mainBarcode,
-            coalesce(nullif(trim(e.sub_barcode), ''), nullif(trim(gzi.secondary_barcode), ''), nullif(trim(gse2.secondary_barcode), '')) as subBarcode,
-            coalesce(nullif(trim(e.material_no), ''), e.batch_number, nullif(trim(gzi.material_no), ''), nullif(trim(gse2.batch_number), '')) as batchNumber,
-            coalesce(e.begin_time, gzi.material_date, gse2.begin_time, goe2.begin_time) as productionDate,
-            coalesce(e.end_time, goe2.end_time, gse2.end_time) as endTime,
-            coalesce(nullif(trim(ff.factory_name), ''), null) as factoryName,
-            m.register_no as registerNo
+    <sql id="confirmListLegacyFrom">
         from his_mirror_consume_link l
         inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
             and h.tenant_id = l.tenant_id
@@ -314,13 +178,6 @@
         inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
             and ifnull(e.del_flag, 0) = 0
         left join gz_dep_inventory gzi on gzi.id = l.gz_dep_inventory_id and gzi.tenant_id = l.tenant_id
-        left join gz_shipment_entry gse2 on ifnull(gse2.del_flag, 0) != 1
-            and gse2.tenant_id = l.tenant_id
-            and trim(ifnull(gse2.in_hospital_code, '')) = trim(coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(e.main_barcode), ''), nullif(trim(e.sub_barcode), ''), nullif(trim(gzi.in_hospital_code), '')))
-            and trim(coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(e.main_barcode), ''), nullif(trim(e.sub_barcode), ''), nullif(trim(gzi.in_hospital_code), ''))) != ''
-        left join gz_order_entry goe2 on ifnull(goe2.del_flag, 0) != 1
-            and goe2.tenant_id = l.tenant_id
-            and goe2.batch_no = coalesce(nullif(trim(gzi.batch_no), ''), nullif(trim(gse2.batch_no), ''), nullif(trim(e.batch_no), ''))
         left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory ff on ff.factory_id = coalesce(e.material_factory_id, e.factory_id, m.factory_id)
@@ -354,6 +211,9 @@
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is null
           and l.dept_batch_consume_id is not null
+    </sql>
+
+    <sql id="confirmListLegacyFilters">
         <if test="departmentId != null">
             and <include refid="legacyWriteOffDeptIdExpr"/> = #{departmentId}
         </if>
@@ -422,12 +282,133 @@
             and coalesce(nullif(trim(e.material_model), ''), m.model) like concat('%', #{materialModel}, '%')
         </if>
         <if test="inHospitalCode != null and inHospitalCode != ''">
-            and coalesce(nullif(trim(l.in_hospital_code), ''), nullif(trim(e.main_barcode), ''), nullif(trim(gzi.in_hospital_code), ''))
-                like concat('%', #{inHospitalCode}, '%')
+            and <include refid="legacyInHospitalCodeExpr"/> like concat('%', #{inHospitalCode}, '%')
         </if>
         <if test="supplierId != null">
             and e.supplier_id = #{supplierId}
         </if>
+    </sql>
+
+    <sql id="confirmListUnionQuery">
+        select
+            l.id as linkId,
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            l.alloc_qty as allocQty,
+            ifnull(l.returned_qty, 0) as returnedQty,
+            l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
+            <include refid="traceInHospitalCodeExpr"/> as inHospitalCode,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            l.confirm_id as confirmId,
+            c.confirm_no as confirmNo,
+            in_bill.bill_no as inboundBillNo,
+            out_bill.bill_no as outboundBillNo,
+            th_bill.bill_no as returnGoodsBillNo,
+            tk_bill.bill_no as returnDepotBillNo,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
+            l.instant_io_audit_by as instantIoAuditBy,
+            l.instant_io_audit_time as instantIoAuditTime,
+            c.confirm_by as confirmBy,
+            c.confirm_time as confirmTime,
+            t.create_time as consumeCreateTime,
+            cast(t.audit_date as datetime) as consumeAuditDate,
+            (<include refid="traceConsumeAuditTimeExpr"/>) as consumeAuditTime,
+            t.trace_no as consumeBillNo,
+            te.id as consumeEntryId,
+            te.material_id as materialId,
+            m.code as materialCode,
+            te.material_name as materialName,
+            coalesce(nullif(trim(te.unit), ''), u.unit_name) as unitName,
+            te.charge_price as unitPrice,
+            coalesce(l.alloc_qty, te.quantity) as entryQty,
+            case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
+                then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
+            cast(te.supplier_id as char) as supplierId,
+            sup.name as supplierName,
+            te.batch_no as batchNo,
+            <include refid="writeOffDeptIdExpr"/> as departmentId,
+            d.name as departmentName,
+            coalesce(nullif(trim(coalesce(inp.dept_name, outp.clinic_name)), ''), ad.name) as orderingDeptName,
+            coalesce(nullif(trim(coalesce(inp.exec_dept_name, outp.exec_dept_name)), ''), ed.name) as execDeptName,
+            coalesce(inp.patient_name, outp.patient_name) as patientName,
+            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
+            coalesce(inp.his_inpatient_charge_id, outp.his_outpatient_charge_id) as hisChargeId,
+            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(nullif(trim(inp.spec_model), ''), nullif(trim(outp.spec_model), ''), m.speci) as itemSpec,
+            m.model as itemModel,
+            coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(te.model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(te.master_barcode), ''), nullif(trim(gdi.master_barcode), '')) as mainBarcode,
+            coalesce(nullif(trim(te.secondary_barcode), ''), nullif(trim(gdi.secondary_barcode), '')) as subBarcode,
+            coalesce(nullif(trim(gdi.material_no), ''), te.batch_no) as batchNumber,
+            gdi.material_date as productionDate,
+            te.expiry_date as endTime,
+            coalesce(nullif(trim(te.manufacturer), ''), ff.factory_name) as factoryName,
+            coalesce(nullif(trim(te.certificate_no), ''), m.register_no) as registerNo
+        <include refid="confirmListFrom"/>
+        <include refid="confirmListTraceFilters"/>
+
+        union all
+
+        select
+            l.id as linkId,
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            l.alloc_qty as allocQty,
+            ifnull(l.returned_qty, 0) as returnedQty,
+            l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
+            <include refid="legacyInHospitalCodeExpr"/> as inHospitalCode,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            l.confirm_id as confirmId,
+            c.confirm_no as confirmNo,
+            in_bill.bill_no as inboundBillNo,
+            out_bill.bill_no as outboundBillNo,
+            th_bill.bill_no as returnGoodsBillNo,
+            tk_bill.bill_no as returnDepotBillNo,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
+            l.instant_io_audit_by as instantIoAuditBy,
+            l.instant_io_audit_time as instantIoAuditTime,
+            c.confirm_by as confirmBy,
+            c.confirm_time as confirmTime,
+            h.create_time as consumeCreateTime,
+            cast(h.audit_date as datetime) as consumeAuditDate,
+            (<include refid="legacyConsumeAuditTimeExpr"/>) as consumeAuditTime,
+            h.consume_bill_no as consumeBillNo,
+            null as consumeEntryId,
+            e.material_id as materialId,
+            m.code as materialCode,
+            e.material_name as materialName,
+            u.unit_name as unitName,
+            e.unit_price as unitPrice,
+            coalesce(l.alloc_qty, e.qty) as entryQty,
+            case when e.unit_price is not null and coalesce(l.alloc_qty, e.qty) is not null
+                then e.unit_price * coalesce(l.alloc_qty, e.qty) else e.amt end as amt,
+            cast(e.supplier_id as char) as supplierId,
+            sup.name as supplierName,
+            e.batch_no as batchNo,
+            <include refid="legacyWriteOffDeptIdExpr"/> as departmentId,
+            d.name as departmentName,
+            coalesce(nullif(trim(coalesce(inp.dept_name, outp.clinic_name)), ''), null) as orderingDeptName,
+            coalesce(nullif(trim(coalesce(inp.exec_dept_name, outp.exec_dept_name)), ''), null) as execDeptName,
+            coalesce(inp.patient_name, outp.patient_name) as patientName,
+            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
+            coalesce(inp.his_inpatient_charge_id, outp.his_outpatient_charge_id) as hisChargeId,
+            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(nullif(trim(inp.spec_model), ''), nullif(trim(outp.spec_model), ''), nullif(trim(e.material_speci), ''), m.speci) as itemSpec,
+            coalesce(e.material_model, m.model) as itemModel,
+            coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
+            coalesce(nullif(trim(e.material_model), ''), m.model) as materialModel,
+            coalesce(nullif(trim(e.main_barcode), ''), nullif(trim(gzi.master_barcode), '')) as mainBarcode,
+            coalesce(nullif(trim(e.sub_barcode), ''), nullif(trim(gzi.secondary_barcode), '')) as subBarcode,
+            coalesce(nullif(trim(e.material_no), ''), e.batch_number, nullif(trim(gzi.material_no), '')) as batchNumber,
+            coalesce(e.begin_time, gzi.material_date) as productionDate,
+            e.end_time as endTime,
+            coalesce(nullif(trim(ff.factory_name), ''), null) as factoryName,
+            m.register_no as registerNo
+        <include refid="confirmListLegacyFrom"/>
+        <include refid="confirmListLegacyFilters"/>
     </sql>
 
     <sql id="confirmListOrderBy">
@@ -483,9 +464,16 @@
         limit #{offset}, #{limitSize}
     </select>
 
+    <!-- count 只取 linkId，避免对完整宽表 SELECT 再包一层 count（此前会把重表达式算两遍） -->
     <select id="selectConfirmListCount" resultType="long">
         select count(0) from (
-            <include refid="confirmListUnionQuery"/>
+            select l.id as linkId
+            <include refid="confirmListFrom"/>
+            <include refid="confirmListTraceFilters"/>
+            union all
+            select l.id as linkId
+            <include refid="confirmListLegacyFrom"/>
+            <include refid="confirmListLegacyFilters"/>
         ) confirm_union
     </select>
 
