@@ -468,7 +468,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.bill_date desc
     </select>
 
-    <!-- 数据可视化大屏：按科室汇总当月出退库（201 出库 / 401 退库，金额与数量与 CTK 合计口径一致），按金额降序 -->
+    <!-- 数据可视化大屏：单据日期落在 yearMonth（yyyy-MM）自然月内；未传时等同当月 -->
+    <sql id="biScreenBillDateInYearMonth">
+        and stk.bill_date &gt;= concat(#{yearMonth}, '-01')
+        and stk.bill_date &lt; date_add(concat(#{yearMonth}, '-01'), interval 1 month)
+    </sql>
+
+    <!-- 数据可视化大屏：按科室汇总指定月出退库（201 出库 / 401 退库，金额与数量与 CTK 合计口径一致），按金额降序 -->
     <select id="selectOutboundSummaryByDepartment" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.department_id as departmentId,
@@ -485,8 +491,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_status = 2
           and stk.department_id is not null
           and stk.bill_date is not null
-          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
-          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+          <include refid="biScreenBillDateInYearMonth"/>
         group by stk.department_id
         order by outboundAmount desc
     </select>
@@ -508,8 +513,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (101, 301)
           and stk.bill_status = 2
           and stk.bill_date is not null
-          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
-          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+          <include refid="biScreenBillDateInYearMonth"/>
         group by (
             case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end
         )
@@ -519,7 +523,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 10
     </select>
 
-    <!-- 数据可视化大屏：近 20 个自然日已审核入退货（101/301）按日汇总金额；高值=耗材 is_gz=1，低值=其余 -->
+    <!-- 数据可视化大屏：指定月已审核入退货（101/301）按日汇总金额；高值=耗材 is_gz=1，低值=其余 -->
     <select id="selectBiScreenInboundDailyHighLowValue" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
@@ -540,8 +544,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (101, 301)
           and stk.bill_status = 2
           and stk.bill_date is not null
-          and stk.bill_date &gt;= date_sub(curdate(), interval 19 day)
-          and stk.bill_date &lt;= curdate()
+          <include refid="biScreenBillDateInYearMonth"/>
         group by date_format(stk.bill_date, '%Y-%m-%d')
         order by date_format(stk.bill_date, '%Y-%m-%d') asc
     </select>
@@ -561,8 +564,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (201, 401)
           and stk.bill_status = 2
           and stk.bill_date is not null
-          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
-          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+          <include refid="biScreenBillDateInYearMonth"/>
           and b.material_id is not null
         group by b.material_id
         having coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
@@ -571,7 +573,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 20
     </select>
 
-    <!-- 数据可视化大屏：当月已审核入退货（101/301）按耗材财务分类汇总入库金额，退库冲减，按金额降序 -->
+    <!-- 数据可视化大屏：指定月已审核入退货（101/301）按耗材财务分类汇总入库金额，退库冲减，按金额降序 -->
     <select id="selectBiScreenInboundFinanceCategoryMonth" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
@@ -591,15 +593,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (101, 301)
           and stk.bill_status = 2
           and stk.bill_date is not null
-          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
-          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+          <include refid="biScreenBillDateInYearMonth"/>
         group by m.finance_category_id
         having coalesce(sum(case when stk.bill_type = 301 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
                               else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) &gt; 0
         order by totalAmt desc
     </select>
 
-    <!-- 首页/大屏：当月已审核出退库（201/401）按耗材财务分类汇总金额，退库冲减，按金额降序 -->
+    <!-- 首页/大屏：指定月已审核出退库（201/401）按耗材财务分类汇总金额，退库冲减，按金额降序 -->
     <select id="selectBiScreenOutboundFinanceCategoryMonth" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
@@ -619,15 +620,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (201, 401)
           and stk.bill_status = 2
           and stk.bill_date is not null
-          and stk.bill_date &gt;= concat(date_format(curdate(), '%Y-%m'), '-01')
-          and stk.bill_date &lt; date_add(concat(date_format(curdate(), '%Y-%m'), '-01'), interval 1 month)
+          <include refid="biScreenBillDateInYearMonth"/>
         group by m.finance_category_id
         having coalesce(sum(case when stk.bill_type = 401 then -(ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))
                               else (ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) end), 0) &gt; 0
         order by totalAmt desc
     </select>
 
-    <!-- 数据可视化大屏：今日已审核出库单(201)笔数、今日已审核入库单(101)笔数（按单据 id 去重） -->
+    <!-- 数据可视化大屏：单据笔数；statDay 有值按日，否则按 yearMonth 整月（出库 201 / 入库 101） -->
     <select id="selectBiScreenTodayInboundOutboundBillCount" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
@@ -638,7 +638,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                and stk.bill_type = 201
                and stk.bill_status = 2
                and stk.bill_date is not null
-               and date(stk.bill_date) = curdate()) as todayOutboundBillCount,
+               <choose>
+                   <when test="statDay != null and statDay != ''">
+                       and date(stk.bill_date) = #{statDay}
+                   </when>
+                   <otherwise>
+                       <include refid="biScreenBillDateInYearMonth"/>
+                   </otherwise>
+               </choose>
+            ) as todayOutboundBillCount,
             (select count(distinct stk.id)
              from stk_io_bill stk
              where (stk.del_flag = 0 or stk.del_flag is null)
@@ -646,10 +654,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                and stk.bill_type = 101
                and stk.bill_status = 2
                and stk.bill_date is not null
-               and date(stk.bill_date) = curdate()) as todayInboundBillCount
+               <choose>
+                   <when test="statDay != null and statDay != ''">
+                       and date(stk.bill_date) = #{statDay}
+                   </when>
+                   <otherwise>
+                       <include refid="biScreenBillDateInYearMonth"/>
+                   </otherwise>
+               </choose>
+            ) as todayInboundBillCount
     </select>
 
-    <!-- 数据可视化大屏：当年已审核入退货按自然月汇总金额（入库 101 / 退货入库 301，退货按绝对值展示） -->
+    <!-- 数据可视化大屏：指定年已审核入退货按自然月汇总金额（入库 101 / 退货入库 301，退货按绝对值展示） -->
     <select id="selectBiScreenYearInboundReturnByMonth" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select
@@ -663,7 +679,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.bill_type in (101, 301)
           and stk.bill_status = 2
           and stk.bill_date is not null
-          and year(stk.bill_date) = year(curdate())
+          and year(stk.bill_date) = #{statYear}
         group by month(stk.bill_date)
         order by month(stk.bill_date) asc
     </select>

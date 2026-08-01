@@ -58,7 +58,7 @@ public interface StkIoBillMapper
      *
      * @return 列表项：departmentId, departmentName, outboundAmount, outboundQuantity
      */
-    List<Map<String, Object>> selectOutboundSummaryByDepartment();
+    List<Map<String, Object>> selectOutboundSummaryByDepartment(@Param("yearMonth") String yearMonth);
 
     /**
      * 新增出入库
@@ -452,27 +452,31 @@ public interface StkIoBillMapper
     /**
      * 数据可视化大屏：按供应商汇总已审核入退货（送货入库）数量与金额，取前 10
      */
-    List<Map<String, Object>> selectBiScreenInboundSupplierTop10();
+    List<Map<String, Object>> selectBiScreenInboundSupplierTop10(@Param("yearMonth") String yearMonth);
 
     /**
-     * 数据可视化大屏：近 20 天入退货按日汇总金额（高值/低值耗材）
+     * 数据可视化大屏：指定月入退货按日汇总金额（高值/低值耗材）
      */
-    List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue();
+    List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue(@Param("yearMonth") String yearMonth);
 
-    /** 数据可视化大屏：当月出退库按耗材汇总金额 TOP20 */
-    List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop();
+    /** 数据可视化大屏：指定月出退库按耗材汇总金额 TOP20 */
+    List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop(@Param("yearMonth") String yearMonth);
 
-    /** 数据可视化大屏：当月入退货按财务分类汇总入库金额（降序） */
-    List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth();
+    /** 数据可视化大屏：指定月入退货按财务分类汇总入库金额（降序） */
+    List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth(@Param("yearMonth") String yearMonth);
 
-    /** 首页/大屏：当月出退库按财务分类汇总出库金额（降序） */
-    List<Map<String, Object>> selectBiScreenOutboundFinanceCategoryMonth();
+    /** 首页/大屏：指定月出退库按财务分类汇总出库金额（降序） */
+    List<Map<String, Object>> selectBiScreenOutboundFinanceCategoryMonth(@Param("yearMonth") String yearMonth);
 
-    /** 数据可视化大屏：今日已审核出库单笔数、今日已审核入库单(101)笔数 */
-    Map<String, Object> selectBiScreenTodayInboundOutboundBillCount();
+    /**
+     * 数据可视化大屏：出库/入库单据笔数。
+     * statDay 有值时按该日统计；否则按 yearMonth 整月统计。
+     */
+    Map<String, Object> selectBiScreenTodayInboundOutboundBillCount(@Param("yearMonth") String yearMonth,
+                                                                   @Param("statDay") String statDay);
 
-    /** 数据可视化大屏：当年已审核入退货按自然月汇总（入库 101 / 退货 301） */
-    List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth();
+    /** 数据可视化大屏：指定年已审核入退货按自然月汇总（入库 101 / 退货 301） */
+    List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth(@Param("statYear") Integer statYear);
 
     int clearWhApplyEntryIdOnDraftOutbillsByWhApplyId(@Param("whApplyId") String whApplyId,
         @Param("updateBy") String updateBy);

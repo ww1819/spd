@@ -2528,43 +2528,59 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return stkIoBillMapper.selectCTKStkIoBillList(stkIoBill);
     }
     @Override
-    public List<Map<String, Object>> selectOutboundSummaryByDepartment() {
-        return stkIoBillMapper.selectOutboundSummaryByDepartment();
+    public List<Map<String, Object>> selectOutboundSummaryByDepartment(String yearMonth) {
+        return stkIoBillMapper.selectOutboundSummaryByDepartment(resolveBiScreenYearMonth(yearMonth));
     }
 
     @Override
-    public List<Map<String, Object>> selectBiScreenInboundSupplierTop10() {
-        return stkIoBillMapper.selectBiScreenInboundSupplierTop10();
+    public List<Map<String, Object>> selectBiScreenInboundSupplierTop10(String yearMonth) {
+        return stkIoBillMapper.selectBiScreenInboundSupplierTop10(resolveBiScreenYearMonth(yearMonth));
     }
 
     @Override
-    public List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue() {
-        return stkIoBillMapper.selectBiScreenInboundDailyHighLowValue();
+    public List<Map<String, Object>> selectBiScreenInboundDailyHighLowValue(String yearMonth) {
+        return stkIoBillMapper.selectBiScreenInboundDailyHighLowValue(resolveBiScreenYearMonth(yearMonth));
     }
 
     @Override
-    public List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop() {
-        return stkIoBillMapper.selectBiScreenOutboundMaterialMonthTop();
+    public List<Map<String, Object>> selectBiScreenOutboundMaterialMonthTop(String yearMonth) {
+        return stkIoBillMapper.selectBiScreenOutboundMaterialMonthTop(resolveBiScreenYearMonth(yearMonth));
     }
 
     @Override
-    public List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth() {
-        return stkIoBillMapper.selectBiScreenInboundFinanceCategoryMonth();
+    public List<Map<String, Object>> selectBiScreenInboundFinanceCategoryMonth(String yearMonth) {
+        return stkIoBillMapper.selectBiScreenInboundFinanceCategoryMonth(resolveBiScreenYearMonth(yearMonth));
     }
 
     @Override
-    public List<Map<String, Object>> selectBiScreenOutboundFinanceCategoryMonth() {
-        return stkIoBillMapper.selectBiScreenOutboundFinanceCategoryMonth();
+    public List<Map<String, Object>> selectBiScreenOutboundFinanceCategoryMonth(String yearMonth) {
+        return stkIoBillMapper.selectBiScreenOutboundFinanceCategoryMonth(resolveBiScreenYearMonth(yearMonth));
     }
 
     @Override
-    public Map<String, Object> selectBiScreenTodayInboundOutboundBillCount() {
-        return stkIoBillMapper.selectBiScreenTodayInboundOutboundBillCount();
+    public Map<String, Object> selectBiScreenTodayInboundOutboundBillCount(String yearMonth) {
+        String ym = resolveBiScreenYearMonth(yearMonth);
+        String currentYm = new java.text.SimpleDateFormat("yyyy-MM").format(new java.util.Date());
+        String statDay = ym.equals(currentYm)
+            ? new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date())
+            : null;
+        return stkIoBillMapper.selectBiScreenTodayInboundOutboundBillCount(ym, statDay);
     }
 
     @Override
-    public List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth() {
-        return stkIoBillMapper.selectBiScreenYearInboundReturnByMonth();
+    public List<Map<String, Object>> selectBiScreenYearInboundReturnByMonth(Integer statYear) {
+        int year = (statYear != null && statYear >= 2000 && statYear <= 2100)
+            ? statYear
+            : java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        return stkIoBillMapper.selectBiScreenYearInboundReturnByMonth(year);
+    }
+
+    /** 大屏月份参数：合法 yyyy-MM，否则取当前月 */
+    private String resolveBiScreenYearMonth(String yearMonth) {
+        if (StringUtils.isNotEmpty(yearMonth) && yearMonth.matches("^\\d{4}-\\d{2}$")) {
+            return yearMonth;
+        }
+        return new java.text.SimpleDateFormat("yyyy-MM").format(new java.util.Date());
     }
 
     public List<Map<String, Object>> selectRTHStkIoBillSummaryList(StkIoBill stkIoBill) {

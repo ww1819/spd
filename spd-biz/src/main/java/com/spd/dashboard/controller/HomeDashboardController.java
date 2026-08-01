@@ -347,7 +347,7 @@ public class HomeDashboardController extends BaseController
     @GetMapping("/outboundFinanceCategoryProportion")
     public AjaxResult outboundFinanceCategoryProportion()
     {
-        List<Map<String, Object>> list = stkIoBillService.selectBiScreenOutboundFinanceCategoryMonth();
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenOutboundFinanceCategoryMonth(null);
         return success(list);
     }
 
@@ -358,7 +358,7 @@ public class HomeDashboardController extends BaseController
     @GetMapping("/inboundFinanceCategoryProportion")
     public AjaxResult inboundFinanceCategoryProportion()
     {
-        List<Map<String, Object>> list = stkIoBillService.selectBiScreenInboundFinanceCategoryMonth();
+        List<Map<String, Object>> list = stkIoBillService.selectBiScreenInboundFinanceCategoryMonth(null);
         return success(list);
     }
 
