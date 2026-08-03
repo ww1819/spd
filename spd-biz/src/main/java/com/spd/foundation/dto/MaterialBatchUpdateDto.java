@@ -22,6 +22,8 @@ public class MaterialBatchUpdateDto {
 
     private String materialCategoryId;
 
+    private Long jcTypeId;
+
     /** 1启用 2停用 */
     private String isUse;
 
@@ -84,6 +86,14 @@ public class MaterialBatchUpdateDto {
         this.materialCategoryId = materialCategoryId;
     }
 
+    public Long getJcTypeId() {
+        return jcTypeId;
+    }
+
+    public void setJcTypeId(Long jcTypeId) {
+        this.jcTypeId = jcTypeId;
+    }
+
     public String getIsUse() {
         return isUse;
     }
@@ -136,6 +146,7 @@ public class MaterialBatchUpdateDto {
         return storeroomId != null
             || financeCategoryId != null
             || (materialCategoryId != null && !materialCategoryId.isEmpty())
+            || jcTypeId != null
             || (isUse != null && !isUse.isEmpty())
             || (isBilling != null && !isBilling.isEmpty())
             || (isGz != null && !isGz.isEmpty())

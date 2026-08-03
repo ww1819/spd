@@ -3528,3 +3528,70 @@ CREATE TABLE IF NOT EXISTS `purchase_forecast_entry` (
 /
 
 /* 以下为重复建表定义（与上文 supp_settlement_invoice 一致），仅保留作参考；实际以首次定义为准，已含 delete_by、delete_time */
+
+-- ========== 集采：类型 / 周期 / 报量 ==========
+CREATE TABLE IF NOT EXISTS `fd_jc_type` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `code` varchar(64) DEFAULT NULL COMMENT '集采类型编码',
+  `name` varchar(128) NOT NULL COMMENT '集采类型名称',
+  `sort_order` int DEFAULT 0 COMMENT '排序',
+  `is_use` char(1) DEFAULT '1' COMMENT '使用状态 1在用 2停用',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_jc_type_tenant` (`tenant_id`),
+  KEY `idx_fd_jc_type_code` (`tenant_id`, `code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='集采类型（医院自维）';
+/
+
+CREATE TABLE IF NOT EXISTS `fd_jc_period` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(128) NOT NULL COMMENT '周期名称',
+  `start_ym` varchar(7) NOT NULL COMMENT '开始年月 YYYY-MM',
+  `end_ym` varchar(7) NOT NULL COMMENT '结束年月 YYYY-MM',
+  `is_use` char(1) DEFAULT '1' COMMENT '使用状态 1在用 2停用',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_jc_period_tenant` (`tenant_id`),
+  KEY `idx_fd_jc_period_ym` (`tenant_id`, `start_ym`, `end_ym`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='集采周期（带年月）';
+/
+
+CREATE TABLE IF NOT EXISTS `fd_jc_report` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `period_id` bigint NOT NULL COMMENT '集采周期ID',
+  `report_mode` varchar(16) NOT NULL COMMENT '报量模式 PRODUCT/TYPE（切换模式时旧数据保留）',
+  `material_id` bigint DEFAULT NULL COMMENT '产品ID（PRODUCT模式必填）',
+  `jc_type_id` bigint DEFAULT NULL COMMENT '集采类型ID（TYPE模式必填）',
+  `report_qty` decimal(18,6) NOT NULL DEFAULT 0 COMMENT '报量数',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_jc_report_tenant` (`tenant_id`),
+  KEY `idx_fd_jc_report_period` (`tenant_id`, `period_id`, `report_mode`),
+  KEY `idx_fd_jc_report_material` (`tenant_id`, `material_id`),
+  KEY `idx_fd_jc_report_type` (`tenant_id`, `jc_type_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='集采报量（按周期+产品或周期+类型；模式切换不删）';
+/

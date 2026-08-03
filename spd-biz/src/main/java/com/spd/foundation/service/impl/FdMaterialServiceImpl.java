@@ -251,6 +251,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         MATERIAL_FIELD_LABELS.put("description", "商品说明");
         MATERIAL_FIELD_LABELS.put("isUse", "使用状态");
         MATERIAL_FIELD_LABELS.put("isProcure", "带量采购");
+        MATERIAL_FIELD_LABELS.put("jcTypeId", "集采类型");
         MATERIAL_FIELD_LABELS.put("isMonitor", "重点监测");
         MATERIAL_FIELD_LABELS.put("isGz", "是否高值");
         MATERIAL_FIELD_LABELS.put("isFollow", "是否跟台");
@@ -815,6 +816,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             case "description": return m.getDescription();
             case "isUse": return m.getIsUse();
             case "isProcure": return m.getIsProcure();
+            case "jcTypeId": return m.getJcTypeId() == null ? null : String.valueOf(m.getJcTypeId());
             case "isMonitor": return m.getIsMonitor();
             case "isGz": return m.getIsGz();
             case "isFollow": return m.getIsFollow();

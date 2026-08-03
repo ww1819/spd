@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdJcTypeMapper">
+
+    <resultMap type="com.spd.foundation.domain.FdJcType" id="FdJcTypeResult">
+        <id     property="id"         column="id" />
+        <result property="code"       column="code" />
+        <result property="name"       column="name" />
+        <result property="sortOrder"  column="sort_order" />
+        <result property="isUse"      column="is_use" />
+        <result property="remark"     column="remark" />
+        <result property="delFlag"    column="del_flag" />
+        <result property="createBy"   column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy"   column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="deleteBy"   column="delete_by" />
+        <result property="deleteTime" column="delete_time" />
+        <result property="tenantId"   column="tenant_id" />
+    </resultMap>
+
+    <sql id="selectVo">
+        select id, code, name, sort_order, is_use, remark, del_flag,
+               create_by, create_time, update_by, update_time, delete_by, delete_time, tenant_id
+        from fd_jc_type
+    </sql>
+
+    <select id="selectFdJcTypeById" resultMap="FdJcTypeResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectVo"/>
+        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+    </select>
+
+    <select id="selectFdJcTypeList" parameterType="com.spd.foundation.domain.FdJcType" resultMap="FdJcTypeResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectVo"/>
+        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+        <if test="code != null and code != ''"> and code like concat('%', #{code}, '%')</if>
+        <if test="name != null and name != ''"> and name like concat('%', #{name}, '%')</if>
+        <if test="isUse != null and isUse != ''"> and is_use = #{isUse}</if>
+        order by sort_order asc, id asc
+    </select>
+
+    <insert id="insertFdJcType" parameterType="com.spd.foundation.domain.FdJcType" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        insert into fd_jc_type
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="code != null">code,</if>
+            <if test="name != null">name,</if>
+            <if test="sortOrder != null">sort_order,</if>
+            <if test="isUse != null">is_use,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            tenant_id,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="code != null">#{code},</if>
+            <if test="name != null">#{name},</if>
+            <if test="sortOrder != null">#{sortOrder},</if>
+            <if test="isUse != null">#{isUse},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            #{scopedTenantId},
+        </trim>
+    </insert>
+
+    <update id="updateFdJcType" parameterType="com.spd.foundation.domain.FdJcType">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_jc_type
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="code != null">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="isUse != null">is_use = #{isUse},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="deleteFdJcTypeById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_jc_type
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+    </update>
+
+    <select id="countByTenantAndCode" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from fd_jc_type
+        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0 and code = #{code}
+        <if test="excludeId != null"> and id != #{excludeId}</if>
+    </select>
+
+    <select id="countByTenantAndName" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from fd_jc_type
+        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0 and name = #{name}
+        <if test="excludeId != null"> and id != #{excludeId}</if>
+    </select>
+
+    <select id="countMaterialRef" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from fd_material
+        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0 and jc_type_id = #{jcTypeId}
+    </select>
+
+    <select id="countReportRef" resultType="int">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1) from fd_jc_report
+        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0 and jc_type_id = #{jcTypeId}
+    </select>
+</mapper>

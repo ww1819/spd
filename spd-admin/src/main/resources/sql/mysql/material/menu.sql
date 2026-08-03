@@ -7808,3 +7808,141 @@ WHERE c.hc_status = '0'
     WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
   );
 /
+
+-- ---------- 集采：类型 / 周期 / 报量 / 模式配置 ----------
+SET @foundation_root := (SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '基础资料' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3901, '集采类型', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'jcType', 'foundation/jcType/index', NULL, 1, 0, 'C', '0', '0', 'foundation:jcType:list', 'tree-table', 'admin', NOW(), '1', NOW(), '医院自维集采类型', '0', '1'
+FROM DUAL WHERE (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/jcType/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3901))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @jc_type_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND (menu_id = 3901 OR component = 'foundation/jcType/index') ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3902, '集采类型查询', @jc_type_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcType:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_type_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_type_menu AND perms='foundation:jcType:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3902))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3903, '集采类型新增', @jc_type_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcType:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_type_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_type_menu AND perms='foundation:jcType:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3903))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3904, '集采类型修改', @jc_type_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcType:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_type_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_type_menu AND perms='foundation:jcType:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3904))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3905, '集采类型删除', @jc_type_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcType:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_type_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_type_menu AND perms='foundation:jcType:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3905))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3906, '集采类型导出', @jc_type_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcType:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_type_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_type_menu AND perms='foundation:jcType:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3906))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3911, '集采周期', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'jcPeriod', 'foundation/jcPeriod/index', NULL, 1, 0, 'C', '0', '0', 'foundation:jcPeriod:list', 'date', 'admin', NOW(), '1', NOW(), '集采周期（带年月）', '0', '1'
+FROM DUAL WHERE (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/jcPeriod/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3911))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @jc_period_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND (menu_id = 3911 OR component = 'foundation/jcPeriod/index') ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3912, '集采周期查询', @jc_period_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcPeriod:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_period_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_period_menu AND perms='foundation:jcPeriod:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3912))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3913, '集采周期新增', @jc_period_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcPeriod:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_period_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_period_menu AND perms='foundation:jcPeriod:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3913))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3914, '集采周期修改', @jc_period_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcPeriod:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_period_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_period_menu AND perms='foundation:jcPeriod:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3914))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3915, '集采周期删除', @jc_period_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcPeriod:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_period_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_period_menu AND perms='foundation:jcPeriod:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3915))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3916, '集采周期导出', @jc_period_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcPeriod:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_period_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_period_menu AND perms='foundation:jcPeriod:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3916))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3921, '集采报量', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'jcReport', 'foundation/jcReport/index', NULL, 1, 0, 'C', '0', '0', 'foundation:jcReport:list', 'edit', 'admin', NOW(), '1', NOW(), '按周期维护产品或类型报量', '0', '1'
+FROM DUAL WHERE (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/jcReport/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3921))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @jc_report_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND (menu_id = 3921 OR component = 'foundation/jcReport/index') ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3922, '集采报量查询', @jc_report_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcReport:query', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_report_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_report_menu AND perms='foundation:jcReport:query') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3922))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3923, '集采报量新增', @jc_report_menu, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcReport:add', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_report_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_report_menu AND perms='foundation:jcReport:add') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3923))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3924, '集采报量修改', @jc_report_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcReport:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_report_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_report_menu AND perms='foundation:jcReport:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3924))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3925, '集采报量删除', @jc_report_menu, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcReport:remove', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_report_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_report_menu AND perms='foundation:jcReport:remove') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3925))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3926, '集采报量导出', @jc_report_menu, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcReport:export', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_report_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_report_menu AND perms='foundation:jcReport:export') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3926))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3931, '集采模式配置', COALESCE(@foundation_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)), 'jcSetting', 'foundation/jcSetting/index', NULL, 1, 0, 'C', '0', '0', 'foundation:jcSetting:query', 'tool', 'admin', NOW(), '1', NOW(), '报量模式 PRODUCT/TYPE 二选一，切换保留旧数据', '0', '1'
+FROM DUAL WHERE (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/jcSetting/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3931))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+SET @jc_setting_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND (menu_id = 3931 OR component = 'foundation/jcSetting/index') ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3932, '集采模式修改', @jc_setting_menu, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:jcSetting:edit', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @jc_setting_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=@jc_setting_menu AND perms='foundation:jcSetting:edit') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=3932))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES
+ (1, 3901), (1, 3902), (1, 3903), (1, 3904), (1, 3905), (1, 3906),
+ (1, 3911), (1, 3912), (1, 3913), (1, 3914), (1, 3915), (1, 3916),
+ (1, 3921), (1, 3922), (1, 3923), (1, 3924), (1, 3925), (1, 3926),
+ (1, 3931), (1, 3932);
+/
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM sb_customer c
+CROSS JOIN (
+  SELECT 3901 AS menu_id UNION ALL SELECT 3902 UNION ALL SELECT 3903 UNION ALL SELECT 3904 UNION ALL SELECT 3905 UNION ALL SELECT 3906
+  UNION ALL SELECT 3911 UNION ALL SELECT 3912 UNION ALL SELECT 3913 UNION ALL SELECT 3914 UNION ALL SELECT 3915 UNION ALL SELECT 3916
+  UNION ALL SELECT 3921 UNION ALL SELECT 3922 UNION ALL SELECT 3923 UNION ALL SELECT 3924 UNION ALL SELECT 3925 UNION ALL SELECT 3926
+  UNION ALL SELECT 3931 UNION ALL SELECT 3932
+) m
+WHERE c.hc_status = '0'
+  AND NOT EXISTS (
+    SELECT 1 FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
+  );
+/

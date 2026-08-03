@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS `fd_material` (
   `description` varchar(150) DEFAULT NULL COMMENT '商品说明',
   `is_use` char(4) DEFAULT NULL COMMENT '使用状态（停用/在用）',
   `is_procure` char(4) DEFAULT NULL COMMENT '带量采购（是/否）',
+  `jc_type_id` bigint DEFAULT NULL COMMENT '集采类型ID（关联 fd_jc_type.id）',
   `is_monitor` char(4) DEFAULT NULL COMMENT '重点监测（是/否）',
   `create_by` varchar(36) DEFAULT NULL COMMENT '创建人',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',

@@ -3207,3 +3207,7 @@ WHERE ifnull(l.del_flag, 0) = 0
       AND b.bill_type IN (101, 201)
   );
 /
+
+-- ========== 集采：产品档案挂集采类型 ==========
+CALL add_table_column('fd_material', 'jc_type_id', 'bigint', '集采类型ID（关联 fd_jc_type.id）', NULL);
+/

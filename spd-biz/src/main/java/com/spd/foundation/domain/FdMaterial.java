@@ -212,6 +212,9 @@ public class FdMaterial extends BaseEntity
     @Excel(name = "带量采购", readConverterExp = "是=/否")
     private String isProcure;
 
+    /** 集采类型ID（关联 fd_jc_type.id，一个产品只能挂一个类型） */
+    private Long jcTypeId;
+
     /** 重点监测（是/否） */
     @Excel(name = "重点监测", readConverterExp = "是=/否")
     private String isMonitor;
@@ -228,6 +231,9 @@ public class FdMaterial extends BaseEntity
     private FdFinanceCategory fdFinanceCategory;
     /** 材料类别对象 */
     private FdMaterialCategory fdMaterialCategory;
+
+    /** 集采类型对象 */
+    private FdJcType fdJcType;
 
     /** 单位分类对象 */
     private FdUnit fdUnit;

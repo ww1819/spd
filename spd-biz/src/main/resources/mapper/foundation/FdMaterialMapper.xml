@@ -57,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="description"    column="description"    />
         <result property="isUse"    column="is_use"    />
         <result property="isProcure"    column="is_procure"    />
+        <result property="jcTypeId"    column="jc_type_id"    />
         <result property="isMonitor"    column="is_monitor"    />
         <result property="isGz"    column="is_gz"    />
         <result property="isFollow"    column="is_follow"    />
@@ -81,6 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <association property="fdUnit"    column="id" javaType="FdUnit" resultMap="fdUnitResult" />
         <association property="fdFinanceCategory"    column="finance_category_id" javaType="FdFinanceCategory" resultMap="fdFinanceCategoryResult" />
         <association property="fdMaterialCategory"    column="material_category_id" javaType="FdMaterialCategory" resultMap="fdMaterialCategoryResult" />
+        <association property="fdJcType"    column="jc_type_id" javaType="com.spd.foundation.domain.FdJcType" resultMap="fdJcTypeResult" />
         <association property="fdLocation"    column="location_id" javaType="FdLocation" resultMap="fdLocationResult" />
     </resultMap>
 
@@ -114,6 +116,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="materialCategoryName"  column="mc_name"   />
     </resultMap>
 
+    <resultMap id="fdJcTypeResult" type="com.spd.foundation.domain.FdJcType">
+        <id     property="id"    column="jcid"     />
+        <result property="code"  column="jc_code"   />
+        <result property="name"  column="jc_name"   />
+    </resultMap>
+
     <resultMap id="fdUnitResult" type="FdUnit">
         <id     property="unitId"    column="uid"     />
         <result property="unitCode"  column="u_code"   />
@@ -140,7 +148,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.min_package_qty, m.producer, m.material_level,
             m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
             m.function, m.is_way, m.udi_no, m.permit_no, m.country_no, m.country_name, m.description,
-            m.is_use, m.is_procure, m.is_monitor, m.is_gz,
+            m.is_use, m.is_procure, m.jc_type_id, m.is_monitor, m.is_gz,
 			<!-- 如果报错 Unknown column 'm.is_follow'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_follow varchar(1) NULL COMMENT '是否跟台（1=是，2=否）' AFTER is_gz; -->
             m.is_follow,
             <!-- 如果报错 Unknown column 'm.is_billing'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN is_billing char(4) NULL COMMENT '是否计费：1=计费,2=不计费' AFTER is_follow; -->
@@ -157,6 +165,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
             u.unit_id uid,u.unit_code u_code,u.unit_name u_name,cwfl.finance_category_code cwfl_code,cwfl.finance_category_name cwfl_name,
             mc.material_category_id mcid, mc.material_category_code mc_code, mc.material_category_name mc_name,
+            jt.id jcid, jt.code jc_code, jt.name jc_name,
             l.location_id lid, l.location_name l_name
         from fd_material m
         left join fd_supplier s on m.supplier_id = s.id
@@ -167,6 +176,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material_category mc on m.material_category_id = mc.material_category_id
             and mc.tenant_id = m.tenant_id
             and (mc.del_flag is null or mc.del_flag != 1)
+        left join fd_jc_type jt on m.jc_type_id = jt.id
+            and jt.tenant_id = m.tenant_id
+            and ifnull(jt.del_flag, 0) = 0
         left join fd_location l on m.location_id = l.location_id
         left join his_charge_item_mirror hci on hci.tenant_id = m.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
@@ -213,6 +225,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
         <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
+        <if test="jcTypeId != null"> and m.jc_type_id = #{jcTypeId}</if>
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
@@ -363,6 +376,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="factoryId != null">factory_id,</if>
             <if test="storeroomId != null">storeroom_id,</if>
             <if test="materialCategoryId != null and materialCategoryId != ''">material_category_id,</if>
+            <if test="jcTypeId != null">jc_type_id,</if>
             <if test="financeCategoryId != null">finance_category_id,</if>
             <if test="unitId != null">unit_id,</if>
             <if test="registerName != null">register_name,</if>
@@ -428,6 +442,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="factoryId != null">#{factoryId},</if>
             <if test="storeroomId != null">#{storeroomId},</if>
             <if test="materialCategoryId != null and materialCategoryId != ''">#{materialCategoryId},</if>
+            <if test="jcTypeId != null">#{jcTypeId},</if>
             <if test="financeCategoryId != null">#{financeCategoryId},</if>
             <if test="unitId != null">#{unitId},</if>
             <if test="registerName != null">#{registerName},</if>
@@ -500,6 +515,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="factoryId != null">factory_id = #{factoryId},</if>
             <if test="storeroomId != null">storeroom_id = #{storeroomId},</if>
             <if test="materialCategoryId != null">material_category_id = #{materialCategoryId},</if>
+            <if test="jcTypeId != null">jc_type_id = #{jcTypeId},</if>
             <if test="financeCategoryId != null">finance_category_id = #{financeCategoryId},</if>
             <if test="unitId != null">unit_id = #{unitId},</if>
             <if test="registerName != null">register_name = #{registerName},</if>
@@ -617,6 +633,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="isFollow != null and isFollow != ''"> and m.is_follow = #{isFollow}</if>
         <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
+        <if test="jcTypeId != null"> and m.jc_type_id = #{jcTypeId}</if>
         <if test="registerNo != null and registerNo != ''"> and m.register_no like concat('%', #{registerNo}, '%')</if>
         <if test="sunshineCode != null and sunshineCode != ''"> and m.sunshine_code like concat('%', #{sunshineCode}, '%')</if>
         <if test="factoryId != null "> and m.factory_id = #{factoryId}</if>
@@ -693,6 +710,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="patch.storeroomId != null">storeroom_id = #{patch.storeroomId},</if>
             <if test="patch.financeCategoryId != null">finance_category_id = #{patch.financeCategoryId},</if>
             <if test="patch.materialCategoryId != null and patch.materialCategoryId != ''">material_category_id = #{patch.materialCategoryId},</if>
+            <if test="patch.jcTypeId != null">jc_type_id = #{patch.jcTypeId},</if>
             <if test="patch.isUse != null and patch.isUse != ''">is_use = #{patch.isUse},</if>
             <if test="patch.isBilling != null and patch.isBilling != ''">is_billing = #{patch.isBilling},</if>
             <if test="patch.isGz != null and patch.isGz != ''">is_gz = #{patch.isGz},</if>
