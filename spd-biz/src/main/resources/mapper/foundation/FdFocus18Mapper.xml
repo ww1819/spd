@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdFocus18Mapper">
+
+    <resultMap type="com.spd.foundation.domain.FdFocus18" id="FdFocus18Result">
+        <id     property="id"                   column="id" />
+        <result property="category"             column="category" />
+        <result property="classCode"            column="class_code" />
+        <result property="level1"               column="level1" />
+        <result property="level2"               column="level2" />
+        <result property="level3"               column="level3" />
+        <result property="genericCode"          column="generic_code" />
+        <result property="medicalGenericName"   column="medical_generic_name" />
+        <result property="materialCode"         column="material_code" />
+        <result property="material"             column="material" />
+        <result property="featureCode"          column="feature_code" />
+        <result property="featureParam"         column="feature_param" />
+        <result property="remark"               column="remark" />
+        <result property="delFlag"              column="del_flag" />
+        <result property="createBy"             column="create_by" />
+        <result property="createTime"           column="create_time" />
+        <result property="updateBy"             column="update_by" />
+        <result property="updateTime"           column="update_time" />
+        <result property="tenantId"             column="tenant_id" />
+    </resultMap>
+
+    <sql id="selectVo">
+        select id, category, class_code, level1, level2, level3,
+               generic_code, medical_generic_name, material_code, material,
+               feature_code, feature_param, remark, del_flag,
+               create_by, create_time, update_by, update_time, tenant_id
+        from fd_focus18
+    </sql>
+
+    <select id="selectFdFocus18ById" resultMap="FdFocus18Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectVo"/>
+        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+    </select>
+
+    <select id="selectFdFocus18List" parameterType="com.spd.foundation.domain.FdFocus18" resultMap="FdFocus18Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectVo"/>
+        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+        <choose>
+            <when test="emptyCategory != null and emptyCategory == true">
+                and (category is null or category = '')
+            </when>
+            <when test="category != null and category != ''">
+                and category like concat('%', #{category}, '%')
+            </when>
+        </choose>
+        <if test="classCode != null and classCode != ''"> and class_code like concat('%', #{classCode}, '%')</if>
+        <if test="level1 != null and level1 != ''"> and level1 like concat('%', #{level1}, '%')</if>
+        <if test="level2 != null and level2 != ''"> and level2 like concat('%', #{level2}, '%')</if>
+        <if test="level3 != null and level3 != ''"> and level3 like concat('%', #{level3}, '%')</if>
+        <if test="genericCode != null and genericCode != ''"> and generic_code like concat('%', #{genericCode}, '%')</if>
+        <if test="medicalGenericName != null and medicalGenericName != ''"> and medical_generic_name like concat('%', #{medicalGenericName}, '%')</if>
+        <if test="material != null and material != ''"> and material like concat('%', #{material}, '%')</if>
+        <if test="featureCode != null and featureCode != ''"> and feature_code like concat('%', #{featureCode}, '%')</if>
+        order by id desc
+    </select>
+
+    <insert id="insertFdFocus18" parameterType="com.spd.foundation.domain.FdFocus18" useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        insert into fd_focus18
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="category != null">category,</if>
+            <if test="classCode != null">class_code,</if>
+            <if test="level1 != null">level1,</if>
+            <if test="level2 != null">level2,</if>
+            <if test="level3 != null">level3,</if>
+            <if test="genericCode != null">generic_code,</if>
+            <if test="medicalGenericName != null">medical_generic_name,</if>
+            <if test="materialCode != null">material_code,</if>
+            <if test="material != null">material,</if>
+            <if test="featureCode != null">feature_code,</if>
+            <if test="featureParam != null">feature_param,</if>
+            <if test="remark != null">remark,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            tenant_id,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="category != null">#{category},</if>
+            <if test="classCode != null">#{classCode},</if>
+            <if test="level1 != null">#{level1},</if>
+            <if test="level2 != null">#{level2},</if>
+            <if test="level3 != null">#{level3},</if>
+            <if test="genericCode != null">#{genericCode},</if>
+            <if test="medicalGenericName != null">#{medicalGenericName},</if>
+            <if test="materialCode != null">#{materialCode},</if>
+            <if test="material != null">#{material},</if>
+            <if test="featureCode != null">#{featureCode},</if>
+            <if test="featureParam != null">#{featureParam},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            #{scopedTenantId},
+        </trim>
+    </insert>
+
+    <update id="updateFdFocus18" parameterType="com.spd.foundation.domain.FdFocus18">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_focus18
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="category != null">category = #{category},</if>
+            <if test="classCode != null">class_code = #{classCode},</if>
+            <if test="level1 != null">level1 = #{level1},</if>
+            <if test="level2 != null">level2 = #{level2},</if>
+            <if test="level3 != null">level3 = #{level3},</if>
+            <if test="genericCode != null">generic_code = #{genericCode},</if>
+            <if test="medicalGenericName != null">medical_generic_name = #{medicalGenericName},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="material != null">material = #{material},</if>
+            <if test="featureCode != null">feature_code = #{featureCode},</if>
+            <if test="featureParam != null">feature_param = #{featureParam},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="deleteFdFocus18ById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update fd_focus18
+        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+    </update>
+</mapper>

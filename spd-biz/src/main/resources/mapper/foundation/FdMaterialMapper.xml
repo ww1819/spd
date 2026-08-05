@@ -76,6 +76,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hisChargeItemUnit"    column="his_charge_item_unit"    />
         <result property="hisChargeItemPrice"    column="his_charge_item_price"    />
         <result property="selectionReason"    column="selection_reason"    />
+        <result property="focus18Category"    column="focus18_category"    />
+        <result property="focus18ClassCode"    column="focus18_class_code"    />
+        <result property="focus18Level1"    column="focus18_level1"    />
+        <result property="focus18Level2"    column="focus18_level2"    />
+        <result property="focus18Level3"    column="focus18_level3"    />
+        <result property="focus18GenericCode"    column="focus18_generic_code"    />
+        <result property="focus18MedicalGenericName"    column="focus18_medical_generic_name"    />
+        <result property="focus18MaterialCode"    column="focus18_material_code"    />
+        <result property="focus18Material"    column="focus18_material"    />
+        <result property="focus18FeatureCode"    column="focus18_feature_code"    />
+        <result property="focus18FeatureParam"    column="focus18_feature_param"    />
         <association property="supplier"    column="id" javaType="FdSupplier" resultMap="supplierResult" />
         <association property="fdFactory"    column="factory_id" javaType="FdFactory" resultMap="fdFactoryResult" />
         <association property="fdWarehouseCategory"    column="storeroom_id" javaType="FdWarehouseCategory" resultMap="fdWarehouseCategoryResult" />
@@ -160,6 +171,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<!-- 如果报错 Unknown column 'm.location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
 			m.location_id,
             m.selection_reason,
+            m.focus18_category, m.focus18_class_code, m.focus18_level1, m.focus18_level2, m.focus18_level3,
+            m.focus18_generic_code, m.focus18_medical_generic_name, m.focus18_material_code, m.focus18_material,
+            m.focus18_feature_code, m.focus18_feature_param,
             s.id sid, s.code supplier_code,s.name supplier_name,
             w.warehouse_category_id wid, w.warehouse_category_code w_code,w.warehouse_category_name w_name,
             f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
@@ -489,6 +503,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
             <if test="locationId != null">location_id,</if>
             <if test="selectionReason != null">selection_reason,</if>
+            <if test="focus18Category != null">focus18_category,</if>
+            <if test="focus18ClassCode != null">focus18_class_code,</if>
+            <if test="focus18Level1 != null">focus18_level1,</if>
+            <if test="focus18Level2 != null">focus18_level2,</if>
+            <if test="focus18Level3 != null">focus18_level3,</if>
+            <if test="focus18GenericCode != null">focus18_generic_code,</if>
+            <if test="focus18MedicalGenericName != null">focus18_medical_generic_name,</if>
+            <if test="focus18MaterialCode != null">focus18_material_code,</if>
+            <if test="focus18Material != null">focus18_material,</if>
+            <if test="focus18FeatureCode != null">focus18_feature_code,</if>
+            <if test="focus18FeatureParam != null">focus18_feature_param,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">#{code},</if>
@@ -555,6 +580,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
             <if test="locationId != null">#{locationId},</if>
             <if test="selectionReason != null">#{selectionReason},</if>
+            <if test="focus18Category != null">#{focus18Category},</if>
+            <if test="focus18ClassCode != null">#{focus18ClassCode},</if>
+            <if test="focus18Level1 != null">#{focus18Level1},</if>
+            <if test="focus18Level2 != null">#{focus18Level2},</if>
+            <if test="focus18Level3 != null">#{focus18Level3},</if>
+            <if test="focus18GenericCode != null">#{focus18GenericCode},</if>
+            <if test="focus18MedicalGenericName != null">#{focus18MedicalGenericName},</if>
+            <if test="focus18MaterialCode != null">#{focus18MaterialCode},</if>
+            <if test="focus18Material != null">#{focus18Material},</if>
+            <if test="focus18FeatureCode != null">#{focus18FeatureCode},</if>
+            <if test="focus18FeatureParam != null">#{focus18FeatureParam},</if>
          </trim>
     </insert>
 
@@ -630,6 +666,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <!-- 如果报错 Unknown column 'location_id'，请先执行 SQL: ALTER TABLE fd_material ADD COLUMN location_id bigint(20) NULL COMMENT '货位ID' AFTER is_follow; -->
             <if test="locationId != null">location_id = #{locationId},</if>
             <if test="selectionReason != null">selection_reason = #{selectionReason},</if>
+            <if test="focus18Category != null">focus18_category = #{focus18Category},</if>
+            <if test="focus18ClassCode != null">focus18_class_code = #{focus18ClassCode},</if>
+            <if test="focus18Level1 != null">focus18_level1 = #{focus18Level1},</if>
+            <if test="focus18Level2 != null">focus18_level2 = #{focus18Level2},</if>
+            <if test="focus18Level3 != null">focus18_level3 = #{focus18Level3},</if>
+            <if test="focus18GenericCode != null">focus18_generic_code = #{focus18GenericCode},</if>
+            <if test="focus18MedicalGenericName != null">focus18_medical_generic_name = #{focus18MedicalGenericName},</if>
+            <if test="focus18MaterialCode != null">focus18_material_code = #{focus18MaterialCode},</if>
+            <if test="focus18Material != null">focus18_material = #{focus18Material},</if>
+            <if test="focus18FeatureCode != null">focus18_feature_code = #{focus18FeatureCode},</if>
+            <if test="focus18FeatureParam != null">focus18_feature_param = #{focus18FeatureParam},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
@@ -658,8 +705,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
-    <!-- 列表筛选条件（仅 fd_material 主表，供批量修改查 ID） -->
-    <sql id="fdMaterialListWhere">
+    <!-- 列表筛选条件（仅 and 片段，供批量修改查 ID；调用方需自带 where m.del_flag != 1） -->
+    <sql id="fdMaterialListWhereAnd">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         and m.tenant_id = #{scopedTenantId}
         <choose>
@@ -753,7 +800,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectFdMaterialIdList" parameterType="FdMaterial" resultType="java.lang.Long">
         select m.id from fd_material m
         where m.del_flag != 1
-        <include refid="fdMaterialListWhere"/>
+        <include refid="fdMaterialListWhereAnd"/>
     </select>
 
     <select id="selectIdsForIsUseChangeByIds" resultType="java.lang.Long">

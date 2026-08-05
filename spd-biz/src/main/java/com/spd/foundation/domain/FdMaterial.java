@@ -331,6 +331,29 @@ public class FdMaterial extends BaseEntity
     @Excel(name = "入选原因", prompt = "选填")
     private String selectionReason;
 
+    /** 18类重点-耗材类别 */
+    private String focus18Category;
+    /** 18类重点-耗材分类代码 */
+    private String focus18ClassCode;
+    /** 18类重点-一级分类（学科、品类） */
+    private String focus18Level1;
+    /** 18类重点-二级分类（用途、品目） */
+    private String focus18Level2;
+    /** 18类重点-三级分类（部位、功能、品种） */
+    private String focus18Level3;
+    /** 18类重点-通用名代码 */
+    private String focus18GenericCode;
+    /** 18类重点-医保通用名 */
+    private String focus18MedicalGenericName;
+    /** 18类重点-材质代码 */
+    private String focus18MaterialCode;
+    /** 18类重点-材质 */
+    private String focus18Material;
+    /** 18类重点-特征代码 */
+    private String focus18FeatureCode;
+    /** 18类重点-特征参数 */
+    private String focus18FeatureParam;
+
     /** 状态变更原因（仅用于启用/停用时传参，不持久化） */
     private transient String statusChangeReason;
 

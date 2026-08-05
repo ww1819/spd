@@ -262,6 +262,17 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         MATERIAL_FIELD_LABELS.put("locationId", "货位");
         MATERIAL_FIELD_LABELS.put("hisId", "第三方系统产品档案ID");
         MATERIAL_FIELD_LABELS.put("selectionReason", "入选原因");
+        MATERIAL_FIELD_LABELS.put("focus18Category", "18类-耗材类别");
+        MATERIAL_FIELD_LABELS.put("focus18ClassCode", "18类-耗材分类代码");
+        MATERIAL_FIELD_LABELS.put("focus18Level1", "18类-一级分类");
+        MATERIAL_FIELD_LABELS.put("focus18Level2", "18类-二级分类");
+        MATERIAL_FIELD_LABELS.put("focus18Level3", "18类-三级分类");
+        MATERIAL_FIELD_LABELS.put("focus18GenericCode", "18类-通用名代码");
+        MATERIAL_FIELD_LABELS.put("focus18MedicalGenericName", "18类-医保通用名");
+        MATERIAL_FIELD_LABELS.put("focus18MaterialCode", "18类-材质代码");
+        MATERIAL_FIELD_LABELS.put("focus18Material", "18类-材质");
+        MATERIAL_FIELD_LABELS.put("focus18FeatureCode", "18类-特征代码");
+        MATERIAL_FIELD_LABELS.put("focus18FeatureParam", "18类-特征参数");
     }
 
     /**
@@ -836,6 +847,17 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             case "locationId": return m.getLocationId() != null ? String.valueOf(m.getLocationId()) : null;
             case "hisId": return m.getHisId();
             case "selectionReason": return m.getSelectionReason();
+            case "focus18Category": return m.getFocus18Category();
+            case "focus18ClassCode": return m.getFocus18ClassCode();
+            case "focus18Level1": return m.getFocus18Level1();
+            case "focus18Level2": return m.getFocus18Level2();
+            case "focus18Level3": return m.getFocus18Level3();
+            case "focus18GenericCode": return m.getFocus18GenericCode();
+            case "focus18MedicalGenericName": return m.getFocus18MedicalGenericName();
+            case "focus18MaterialCode": return m.getFocus18MaterialCode();
+            case "focus18Material": return m.getFocus18Material();
+            case "focus18FeatureCode": return m.getFocus18FeatureCode();
+            case "focus18FeatureParam": return m.getFocus18FeatureParam();
             default: return null;
         }
     }
