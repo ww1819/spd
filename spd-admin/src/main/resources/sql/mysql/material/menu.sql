@@ -9,7 +9,7 @@
 --
 -- 【命名与去重】基础资料下「厂家维护」仅此一处（menu_id=2250，component=foundation/factory/index），
 -- 与设备端 sb_menu 同页但分表，勿在 sys_menu 再手工插入同 path/component。
--- 「财务分类」仅此一处（menu_id=2290）；若界面出现两条，多为历史重复数据，见 spd/sql/maintenance/dedupe_hc_foundation_menus.sql。
+-- 「18类重点耗材维护」占用原重复菜单位 menu_id=2290；财务分类请用「财务分类维护」(1104)。
 /
 
 -- ---------- 1) 期初库存导入（挂在「盘点管理」下；现网 menu_id 1594–1597）----------
@@ -2873,7 +2873,7 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
--- ---------- 10) 财务分类（foundation/financeCategory；与「财务管理」模块区分，勿重复建同页菜单）----------
+-- ---------- 10) 18类重点耗材维护（原重复「财务分类」菜单位 2290；财务分类请用 1104「财务分类维护」）----------
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -2882,28 +2882,28 @@ INSERT INTO sys_menu (
 )
 SELECT
   2290,
-  '财务分类',
+  '18类重点耗材维护',
   COALESCE(
     (SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '基础资料' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1),
     (SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '系统管理' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1),
     1
   ),
   57,
-  'financeCategory',
-  'foundation/financeCategory/index',
+  'focus18',
+  'foundation/focus18/index',
   NULL,
   1,
   0,
   'C',
   '0',
   '0',
-  'foundation:financeCategory:list',
-  'money',
+  'foundation:focus18:list',
+  'list',
   'admin',
   NOW(),
   '1',
   NOW(),
-  '耗材财务分类（租户、备注、逻辑删除审计）',
+  '18类重点耗材字典维护',
   '0',
   '1'
 FROM DUAL
@@ -2936,13 +2936,13 @@ INSERT INTO sys_menu (
   create_by, create_time, update_by, update_time, remark,
   is_platform, default_open_to_customer
 ) SELECT
-  2291, '财务分类查询', 2290, 1, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:query', '#',
+  2291, '18类重点查询', 2290, 1, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:focus18:query', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:query')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:focus18:query')
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2291)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
@@ -2962,13 +2962,13 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2292, '财务分类新增', 2290, 2, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:add', '#',
+  2292, '18类重点新增', 2290, 2, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:focus18:add', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:add')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:focus18:add')
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2292)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
@@ -2988,13 +2988,13 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2293, '财务分类修改', 2290, 3, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:edit', '#',
+  2293, '18类重点修改', 2290, 3, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:focus18:edit', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:edit')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:focus18:edit')
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2293)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
@@ -3014,13 +3014,13 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2294, '财务分类删除', 2290, 4, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:remove', '#',
+  2294, '18类重点删除', 2290, 4, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:focus18:remove', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:remove')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:focus18:remove')
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2294)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
@@ -3040,13 +3040,13 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2295, '财务分类导出', 2290, 5, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:export', '#',
+  2295, '18类重点导出', 2290, 5, '#', '', NULL,
+  1, 0, 'F', '0', '0', 'foundation:focus18:export', '#',
   'admin', NOW(), '1', NOW(), '',
   '0', '1'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:export')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:focus18:export')
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2295)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
@@ -3059,6 +3059,7 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
+-- 原财务分类专属按钮：停用（本页不再使用）
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -3066,18 +3067,20 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2296, '财务分类更新简码', 2290, 6, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:updateReferred', '#',
-  'admin', NOW(), '1', NOW(), '',
-  '0', '1'
+  2296, '财务分类更新简码(停用)', 2290, 6, '#', '', NULL,
+  1, 0, 'F', '1', '1', 'foundation:financeCategory:updateReferred', '#',
+  'admin', NOW(), '1', NOW(), '已迁至财务分类维护，本菜单下停用',
+  '0', '0'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:updateReferred')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2296)
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2296)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
+  visible = VALUES(visible),
+  status = VALUES(status),
   perms = VALUES(perms),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),
@@ -3092,18 +3095,20 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2297, '财务分类导入', 2290, 7, '#', '', NULL,
-  1, 0, 'F', '0', '0', 'foundation:financeCategory:import', '#',
-  'admin', NOW(), '1', NOW(), '新增导入与更新导入共用本权限；default_open_to_customer=1 默认对客户开放',
-  '0', '1'
+  2297, '财务分类导入(停用)', 2290, 7, '#', '', NULL,
+  1, 0, 'F', '1', '1', 'foundation:financeCategory:import', '#',
+  'admin', NOW(), '1', NOW(), '已迁至财务分类维护，本菜单下停用',
+  '0', '0'
 FROM DUAL
 WHERE
-  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type='F' AND parent_id=2290 AND perms='foundation:financeCategory:import')
+  NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2297)
   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=2297)
 ON DUPLICATE KEY UPDATE
   menu_name = VALUES(menu_name),
   parent_id = VALUES(parent_id),
   order_num = VALUES(order_num),
+  visible = VALUES(visible),
+  status = VALUES(status),
   perms = VALUES(perms),
   update_by = VALUES(update_by),
   update_time = VALUES(update_time),

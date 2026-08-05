@@ -13,6 +13,9 @@ public interface FdFocus18Mapper
 
     List<FdFocus18> selectFdFocus18List(FdFocus18 query);
 
+    /** 左侧树：当前租户下耗材类别（去重） */
+    List<String> selectFdFocus18Categories();
+
     int insertFdFocus18(FdFocus18 row);
 
     int updateFdFocus18(FdFocus18 row);

@@ -46,6 +46,13 @@ public class FdFocus18Controller extends BaseController
         return fdFocus18Service.selectFdFocus18List(query);
     }
 
+    /** 左侧分类树：仅返回耗材类别名称，避免全量明细导致超时 */
+    @GetMapping("/categories")
+    public List<String> categories()
+    {
+        return fdFocus18Service.selectFdFocus18Categories();
+    }
+
     @PreAuthorize("@ss.hasPermi('foundation:focus18:export')")
     @Log(title = "18类重点耗材", businessType = BusinessType.EXPORT)
     @PostMapping("/export")

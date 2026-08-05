@@ -4,6 +4,8 @@
 
     <resultMap type="com.spd.foundation.domain.FdFocus18" id="FdFocus18Result">
         <id     property="id"                   column="id" />
+        <result property="parentId"             column="parent_id" />
+        <result property="parentName"           column="parent_name" />
         <result property="category"             column="category" />
         <result property="classCode"            column="class_code" />
         <result property="level1"               column="level1" />
@@ -24,47 +26,70 @@
         <result property="tenantId"             column="tenant_id" />
     </resultMap>
 
+    <sql id="parentDisplayName">
+        coalesce(nullif(p.medical_generic_name, ''), nullif(p.category, ''), nullif(p.class_code, ''), concat('#', p.id))
+    </sql>
+
     <sql id="selectVo">
-        select id, category, class_code, level1, level2, level3,
-               generic_code, medical_generic_name, material_code, material,
-               feature_code, feature_param, remark, del_flag,
-               create_by, create_time, update_by, update_time, tenant_id
-        from fd_focus18
+        select f.id, ifnull(f.parent_id, 0) as parent_id,
+               <include refid="parentDisplayName"/> as parent_name,
+               f.category, f.class_code, f.level1, f.level2, f.level3,
+               f.generic_code, f.medical_generic_name, f.material_code, f.material,
+               f.feature_code, f.feature_param, f.remark, f.del_flag,
+               f.create_by, f.create_time, f.update_by, f.update_time, f.tenant_id
+        from fd_focus18 f
+        left join fd_focus18 p on p.id = f.parent_id and p.tenant_id = f.tenant_id and ifnull(p.del_flag, 0) = 0
     </sql>
 
     <select id="selectFdFocus18ById" resultMap="FdFocus18Result">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+        where f.id = #{id} and f.tenant_id = #{scopedTenantId} and ifnull(f.del_flag, 0) = 0
     </select>
 
     <select id="selectFdFocus18List" parameterType="com.spd.foundation.domain.FdFocus18" resultMap="FdFocus18Result">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectVo"/>
-        where tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
+        where f.tenant_id = #{scopedTenantId} and ifnull(f.del_flag, 0) = 0
+        <if test="parentId != null"> and ifnull(f.parent_id, 0) = #{parentId}</if>
         <choose>
             <when test="emptyCategory != null and emptyCategory == true">
-                and (category is null or category = '')
+                and (f.category is null or f.category = '')
+            </when>
+            <when test="categoryExact != null and categoryExact != ''">
+                and f.category = #{categoryExact}
             </when>
             <when test="category != null and category != ''">
-                and category like concat('%', #{category}, '%')
+                and f.category like concat('%', #{category}, '%')
             </when>
         </choose>
-        <if test="classCode != null and classCode != ''"> and class_code like concat('%', #{classCode}, '%')</if>
-        <if test="level1 != null and level1 != ''"> and level1 like concat('%', #{level1}, '%')</if>
-        <if test="level2 != null and level2 != ''"> and level2 like concat('%', #{level2}, '%')</if>
-        <if test="level3 != null and level3 != ''"> and level3 like concat('%', #{level3}, '%')</if>
-        <if test="genericCode != null and genericCode != ''"> and generic_code like concat('%', #{genericCode}, '%')</if>
-        <if test="medicalGenericName != null and medicalGenericName != ''"> and medical_generic_name like concat('%', #{medicalGenericName}, '%')</if>
-        <if test="material != null and material != ''"> and material like concat('%', #{material}, '%')</if>
-        <if test="featureCode != null and featureCode != ''"> and feature_code like concat('%', #{featureCode}, '%')</if>
-        order by id desc
+        <if test="classCode != null and classCode != ''"> and f.class_code like concat('%', #{classCode}, '%')</if>
+        <if test="level1 != null and level1 != ''"> and f.level1 like concat('%', #{level1}, '%')</if>
+        <if test="level2 != null and level2 != ''"> and f.level2 like concat('%', #{level2}, '%')</if>
+        <if test="level3 != null and level3 != ''"> and f.level3 like concat('%', #{level3}, '%')</if>
+        <if test="genericCode != null and genericCode != ''"> and f.generic_code like concat('%', #{genericCode}, '%')</if>
+        <if test="medicalGenericName != null and medicalGenericName != ''"> and f.medical_generic_name like concat('%', #{medicalGenericName}, '%')</if>
+        <if test="material != null and material != ''"> and f.material like concat('%', #{material}, '%')</if>
+        <if test="featureCode != null and featureCode != ''"> and f.feature_code like concat('%', #{featureCode}, '%')</if>
+        order by f.id desc
+    </select>
+
+    <select id="selectFdFocus18Categories" resultType="java.lang.String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select distinct f.category
+        from fd_focus18 f
+        where f.tenant_id = #{scopedTenantId}
+          and ifnull(f.del_flag, 0) = 0
+          and f.category is not null
+          and f.category != ''
+        order by f.category
     </select>
 
     <insert id="insertFdFocus18" parameterType="com.spd.foundation.domain.FdFocus18" useGeneratedKeys="true" keyProperty="id">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_focus18
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">parent_id,</if>
             <if test="category != null">category,</if>
             <if test="classCode != null">class_code,</if>
             <if test="level1 != null">level1,</if>
@@ -85,6 +110,7 @@
             tenant_id,
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">#{parentId},</if>
             <if test="category != null">#{category},</if>
             <if test="classCode != null">#{classCode},</if>
             <if test="level1 != null">#{level1},</if>
@@ -110,6 +136,7 @@
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_focus18
         <trim prefix="SET" suffixOverrides=",">
+            <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="category != null">category = #{category},</if>
             <if test="classCode != null">class_code = #{classCode},</if>
             <if test="level1 != null">level1 = #{level1},</if>

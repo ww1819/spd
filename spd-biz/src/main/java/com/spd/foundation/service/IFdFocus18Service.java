@@ -9,6 +9,8 @@ public interface IFdFocus18Service
 
     List<FdFocus18> selectFdFocus18List(FdFocus18 query);
 
+    List<String> selectFdFocus18Categories();
+
     int insertFdFocus18(FdFocus18 row);
 
     int updateFdFocus18(FdFocus18 row);

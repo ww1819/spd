@@ -16,6 +16,13 @@ public class FdFocus18 extends BaseEntity
 
     private Long id;
 
+    /** 上级ID，0表示根目录 */
+    private Long parentId;
+
+    /** 上级菜单名称（列表展示，非持久化） */
+    @Excel(name = "上级菜单")
+    private String parentName;
+
     @Excel(name = "耗材类别")
     private String category;
 
@@ -51,6 +58,9 @@ public class FdFocus18 extends BaseEntity
 
     /** 查询：仅查耗材类别为空（左侧树「未分类」） */
     private Boolean emptyCategory;
+
+    /** 查询：按耗材类别精确匹配（左侧树点击） */
+    private String categoryExact;
 
     private Integer delFlag;
 

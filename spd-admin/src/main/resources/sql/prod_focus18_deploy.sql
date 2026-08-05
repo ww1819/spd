@@ -13,6 +13,7 @@
 -- ---------- 1. 业务表 ----------
 CREATE TABLE IF NOT EXISTS fd_focus18 (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  parent_id bigint(20) DEFAULT 0 COMMENT '上级ID(0为根)',
   category varchar(100) DEFAULT NULL COMMENT '耗材类别',
   class_code varchar(100) DEFAULT NULL COMMENT '耗材分类代码',
   level1 varchar(200) DEFAULT NULL COMMENT '一级分类(学科/品类)',
@@ -35,10 +36,10 @@ CREATE TABLE IF NOT EXISTS fd_focus18 (
   tenant_id varchar(64) DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (id),
   KEY idx_fd_focus18_tenant (tenant_id),
+  KEY idx_fd_focus18_parent (tenant_id, parent_id),
   KEY idx_fd_focus18_class_code (tenant_id, class_code),
   KEY idx_fd_focus18_generic (tenant_id, generic_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='18类重点耗材维护';
-
 -- ---------- 2. 定位基础资料父菜单 / 财务分类维护菜单 ----------
 SET @foundation_root := (
   SELECT menu_id FROM sys_menu
@@ -212,3 +213,10 @@ WHERE @focus18_menu IS NOT NULL
 -- ORDER BY parent_id, order_num, menu_id;
 --
 -- SHOW CREATE TABLE fd_focus18;
+
+-- ========== 附：上级菜单字段（若表已建可单独执行）==========
+-- SET @db := DATABASE();
+-- SET @exists := (SELECT COUNT(1) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='fd_focus18' AND COLUMN_NAME='parent_id');
+-- SET @sql := IF(@exists=0, 'ALTER TABLE fd_focus18 ADD COLUMN parent_id bigint(20) DEFAULT 0 COMMENT ''上级ID(0为根)'' AFTER id, ADD KEY idx_fd_focus18_parent (tenant_id, parent_id)', 'SELECT 1');
+-- PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+

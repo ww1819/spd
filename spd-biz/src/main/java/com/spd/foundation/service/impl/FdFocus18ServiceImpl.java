@@ -35,6 +35,12 @@ public class FdFocus18ServiceImpl implements IFdFocus18Service
     }
 
     @Override
+    public List<String> selectFdFocus18Categories()
+    {
+        return fdFocus18Mapper.selectFdFocus18Categories();
+    }
+
+    @Override
     public int insertFdFocus18(FdFocus18 row)
     {
         normalize(row);
@@ -96,6 +102,14 @@ public class FdFocus18ServiceImpl implements IFdFocus18Service
         row.setMaterial(trimToNull(row.getMaterial()));
         row.setFeatureCode(trimToNull(row.getFeatureCode()));
         row.setFeatureParam(trimToNull(row.getFeatureParam()));
+        if (row.getParentId() == null || row.getParentId() < 0)
+        {
+            row.setParentId(0L);
+        }
+        if (row.getId() != null && row.getParentId() != null && row.getParentId().equals(row.getId()))
+        {
+            throw new ServiceException("上级菜单不能选择自己");
+        }
         if (StringUtils.isEmpty(row.getCategory())
             && StringUtils.isEmpty(row.getClassCode())
             && StringUtils.isEmpty(row.getGenericCode())
