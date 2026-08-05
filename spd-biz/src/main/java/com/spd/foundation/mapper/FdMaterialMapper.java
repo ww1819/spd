@@ -95,6 +95,11 @@ public interface FdMaterialMapper
     public List<FdMaterial> selectFdMaterialList(FdMaterial fdMaterial);
 
     /**
+     * 耗材产品列表总数（无多表 JOIN，供分页列表专用，避免 PageHelper count 过慢）
+     */
+    long countFdMaterialList(FdMaterial fdMaterial);
+
+    /**
      * 新增耗材产品
      *
      * @param fdMaterial 耗材产品

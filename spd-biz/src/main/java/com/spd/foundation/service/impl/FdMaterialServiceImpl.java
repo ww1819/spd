@@ -307,6 +307,19 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return fdMaterialMapper.selectFdMaterialList(fdMaterial);
     }
 
+    @Override
+    @DataSource(DataSourceType.MASTER)
+    public long countFdMaterialList(FdMaterial fdMaterial)
+    {
+        if (fdMaterial != null && StringUtils.isEmpty(fdMaterial.getTenantId())) {
+            String tid = SecurityUtils.requiredScopedTenantIdForSql();
+            if (StringUtils.isNotEmpty(tid)) {
+                fdMaterial.setTenantId(tid);
+            }
+        }
+        return fdMaterialMapper.countFdMaterialList(fdMaterial != null ? fdMaterial : new FdMaterial());
+    }
+
     /**
      * 新增耗材产品
      *

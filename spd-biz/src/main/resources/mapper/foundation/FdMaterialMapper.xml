@@ -185,12 +185,59 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (hci.deleted_flag is null or hci.deleted_flag != 1)
     </sql>
 
-    <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        <include refid="selectFdMaterialVo"/>
+    <!-- 分页列表专用：不查 description/selection_reason 等大字段，减轻序列化与传输 -->
+    <sql id="selectFdMaterialListVo">
+        select m.id, m.code m_code, m.name m_name, m.supplier_id , m.speci, m.model,
+            m.price, m.default_warehouse_id as default_warehouse_id, m.create_by, m.create_time, m.update_by, m.update_time, m.delete_by, m.delete_time, m.tenant_id, m.del_flag,
+            m.referred_name, m.use_name, m.factory_id, m.storeroom_id, m.material_category_id, m.finance_category_id, m.unit_id,
+            m.his_id, m.his_spec_packing_id,
+            m.his_charge_item_id,
+            hci.item_code as his_charge_item_code,
+            hci.item_name as his_charge_item_name,
+            hci.spec_model as his_charge_item_speci,
+            hci.unit as his_charge_item_unit,
+            hci.price as his_charge_item_price,
+            m.register_name, m.register_no, m.medical_name, m.medical_no, m.period_date, m.successful_type,
+            m.successful_no, m.successful_price, m.sale_price, m.package_speci, m.min_package_qty, m.producer, m.material_level,
+            m.register_level, m.risk_level, m.firstaid_level, m.doctor_level, m.brand, m.useto, m.quality,
+            m.function, m.is_way, m.udi_no, m.permit_no, m.country_no, m.country_name,
+            m.is_use, m.is_procure, m.jc_type_id, m.is_monitor, m.is_gz,
+            m.is_follow,
+            m.is_billing,
+            m.is_temporary_purchase,
+            m.is_service_fee,
+            m.is_sunshine_procurement,
+            m.sunshine_code,
+			m.location_id,
+            s.id sid, s.code supplier_code,s.name supplier_name,
+            w.warehouse_category_id wid, w.warehouse_category_code w_code,w.warehouse_category_name w_name,
+            f.factory_id fid,f.factory_code f_code,f.factory_name f_name,
+            u.unit_id uid,u.unit_code u_code,u.unit_name u_name,cwfl.finance_category_code cwfl_code,cwfl.finance_category_name cwfl_name,
+            mc.material_category_id mcid, mc.material_category_code mc_code, mc.material_category_name mc_name,
+            jt.id jcid, jt.code jc_code, jt.name jc_name,
+            l.location_id lid, l.location_name l_name
+        from fd_material m
+        left join fd_supplier s on m.supplier_id = s.id
+        left join fd_warehouse_category w on m.storeroom_id = w.warehouse_category_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_finance_category cwfl on m.finance_category_id = cwfl.finance_category_id
+        left join fd_material_category mc on m.material_category_id = mc.material_category_id
+            and mc.tenant_id = m.tenant_id
+            and (mc.del_flag is null or mc.del_flag != 1)
+        left join fd_jc_type jt on m.jc_type_id = jt.id
+            and jt.tenant_id = m.tenant_id
+            and ifnull(jt.del_flag, 0) = 0
+        left join fd_location l on m.location_id = l.location_id
+        left join his_charge_item_mirror hci on hci.tenant_id = m.tenant_id
+            and hci.charge_item_id = m.his_charge_item_id
+            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+    </sql>
+
+    <!-- 列表筛选条件（count / list 共用，避免 PageHelper 对多表 JOIN 做 count） -->
+    <sql id="fdMaterialListWhere">
         where m.del_flag != 1
         and m.tenant_id = #{scopedTenantId}
-        <!-- 未指定使用状态时默认不展示已停用（is_use='2'）；档案页可按 isUse 筛选；includeDisabledInList 为内部全量查询 -->
         <choose>
             <when test="isUse != null and isUse != ''">
                 and m.is_use = #{isUse}
@@ -277,6 +324,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endDate != null "> and m.create_time &lt;= #{endDate}</if>
         <if test="excludeMaterialIdList != null and excludeMaterialIdList.size() > 0"> and m.id not in <foreach collection="excludeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
         <if test="includeMaterialIdList != null and includeMaterialIdList.size() > 0"> and m.id in <foreach collection="includeMaterialIdList" item="id" open="(" separator="," close=")">#{id}</foreach></if>
+    </sql>
+
+    <select id="countFdMaterialList" parameterType="FdMaterial" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from fd_material m
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+        <include refid="fdMaterialListWhere"/>
+    </select>
+
+    <select id="selectFdMaterialList" parameterType="FdMaterial" resultMap="FdMaterialResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectFdMaterialListVo"/>
+        <include refid="fdMaterialListWhere"/>
     </select>
 
     <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">

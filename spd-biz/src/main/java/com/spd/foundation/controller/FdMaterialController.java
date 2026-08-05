@@ -75,14 +75,26 @@ public class FdMaterialController extends BaseController
 
     /**
      * 查询耗材产品列表（GET）
+     * 大分页时单独 count（无 JOIN），避免 PageHelper 对多表关联做 count 拖慢接口
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:list')")
     @GetMapping("/list")
     public TableDataInfo list(FdMaterial fdMaterial)
     {
-        startPage();
+        long total = fdMaterialService.countFdMaterialList(fdMaterial);
+        com.spd.common.core.page.PageDomain pageDomain = com.spd.common.core.page.TableSupport.buildPageRequest();
+        int pageNum = pageDomain.getPageNum() == null || pageDomain.getPageNum() < 1 ? 1 : pageDomain.getPageNum();
+        int pageSize = clampMaterialListPageSize(pageDomain.getPageSize());
+        PageHelper.startPage(pageNum, pageSize, false).setReasonable(pageDomain.getReasonable());
+        String orderBy = com.spd.common.utils.sql.SqlUtil.escapeOrderBySql(pageDomain.getOrderBy());
+        if (com.spd.common.utils.StringUtils.isNotEmpty(orderBy))
+        {
+            PageHelper.orderBy(orderBy);
+        }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
-        return getDataTable(list);
+        TableDataInfo data = getDataTable(list);
+        data.setTotal(total);
+        return data;
     }
 
     /**
@@ -93,11 +105,23 @@ public class FdMaterialController extends BaseController
     public TableDataInfo listPost(@RequestBody FdMaterialListRequest request)
     {
         Integer pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
-        Integer pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
+        Integer pageSize = clampMaterialListPageSize(request.getPageSize());
         FdMaterial query = request.getQuery() != null ? request.getQuery() : new FdMaterial();
-        PageHelper.startPage(pageNum, pageSize);
+        long total = fdMaterialService.countFdMaterialList(query);
+        PageHelper.startPage(pageNum, pageSize, false);
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
-        return getDataTable(list);
+        TableDataInfo data = getDataTable(list);
+        data.setTotal(total);
+        return data;
+    }
+
+    /** 耗材维护列表最大每页条数：过大时前端表格渲染会远超 10s */
+    private static final int MATERIAL_LIST_MAX_PAGE_SIZE = 200;
+
+    private static int clampMaterialListPageSize(Integer pageSize)
+    {
+        int ps = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        return Math.min(ps, MATERIAL_LIST_MAX_PAGE_SIZE);
     }
 
     /**
