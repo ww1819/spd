@@ -53,6 +53,15 @@ public class FdFocus18Controller extends BaseController
         return fdFocus18Service.selectFdFocus18Categories();
     }
 
+    /**
+     * 产品维护：医保编码前 15 位匹配耗材分类代码，回填 18 类字段
+     */
+    @GetMapping("/matchByMedicalNo")
+    public AjaxResult matchByMedicalNo(String medicalNo)
+    {
+        return success(fdFocus18Service.matchByMedicalNo(medicalNo));
+    }
+
     @PreAuthorize("@ss.hasPermi('foundation:focus18:export')")
     @Log(title = "18类重点耗材", businessType = BusinessType.EXPORT)
     @PostMapping("/export")

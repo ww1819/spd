@@ -19,6 +19,7 @@ import com.spd.common.utils.PinyinUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.bean.BeanValidators;
 import com.spd.common.utils.uuid.UUID7;
+import com.spd.foundation.domain.FdFocus18;
 import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.domain.FdMaterialChangeLog;
@@ -50,6 +51,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.dto.MaterialBatchUpdateDto;
 import com.spd.foundation.dto.MaterialImportAddDto;
 import com.spd.foundation.dto.MaterialImportUpdateDto;
+import com.spd.foundation.service.IFdFocus18Service;
 import com.spd.foundation.service.IFdMaterialService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
@@ -127,6 +129,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     @Autowired
     private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+
+    @Autowired
+    private IFdFocus18Service fdFocus18Service;
 
     private static final Logger log = LoggerFactory.getLogger(FdMaterialServiceImpl.class);
 
@@ -350,6 +355,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         validateHsThirdHighValueRule(fdMaterial.getTenantId(), fdMaterial.getFinanceCategoryId(), fdMaterial.getIsGz());
         applyHsThirdMaterialRulesOnInsert(fdMaterial);
+        applyFocus18FromMedicalNo(fdMaterial);
         if (StringUtils.isNotEmpty(fdMaterial.getCode()))
         {
             FdMaterial exist = fdMaterialMapper.selectFdMaterialByTenantAndCode(fdMaterial.getTenantId(), fdMaterial.getCode());
@@ -368,6 +374,33 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             syncHisChargeItemValueLevelFromMaterial(null, fdMaterial);
         }
         return rows;
+    }
+
+    /**
+     * 医保编码前 15 位匹配 18 类重点耗材「耗材分类代码」，命中则回填产品上的 18 类字段。
+     */
+    private void applyFocus18FromMedicalNo(FdMaterial m)
+    {
+        if (m == null || StringUtils.isEmpty(m.getMedicalNo()))
+        {
+            return;
+        }
+        FdFocus18 hit = fdFocus18Service.matchByMedicalNo(m.getMedicalNo());
+        if (hit == null)
+        {
+            return;
+        }
+        m.setFocus18Category(hit.getCategory());
+        m.setFocus18ClassCode(hit.getClassCode());
+        m.setFocus18Level1(hit.getLevel1());
+        m.setFocus18Level2(hit.getLevel2());
+        m.setFocus18Level3(hit.getLevel3());
+        m.setFocus18GenericCode(hit.getGenericCode());
+        m.setFocus18MedicalGenericName(hit.getMedicalGenericName());
+        m.setFocus18MaterialCode(hit.getMaterialCode());
+        m.setFocus18Material(hit.getMaterial());
+        m.setFocus18FeatureCode(hit.getFeatureCode());
+        m.setFocus18FeatureParam(hit.getFeatureParam());
     }
 
     /**
@@ -490,6 +523,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         sanitizeUdiNo(fdMaterial);
         validateMaterialForUpdate(fdMaterial);
+        applyFocus18FromMedicalNo(fdMaterial);
         Date now = DateUtils.getNowDate();
         fdMaterial.setUpdateTime(now);
         String operator = SecurityUtils.getUserIdStr();

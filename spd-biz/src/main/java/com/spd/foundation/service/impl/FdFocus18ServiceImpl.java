@@ -41,6 +41,22 @@ public class FdFocus18ServiceImpl implements IFdFocus18Service
     }
 
     @Override
+    public FdFocus18 matchByMedicalNo(String medicalNo)
+    {
+        if (StringUtils.isEmpty(medicalNo))
+        {
+            return null;
+        }
+        String code = medicalNo.trim();
+        if (code.length() < 15)
+        {
+            return null;
+        }
+        String classCode = code.substring(0, 15);
+        return fdFocus18Mapper.selectFdFocus18ByClassCode(classCode);
+    }
+
+    @Override
     public int insertFdFocus18(FdFocus18 row)
     {
         normalize(row);

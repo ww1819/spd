@@ -85,6 +85,16 @@
         order by f.category
     </select>
 
+    <select id="selectFdFocus18ByClassCode" resultMap="FdFocus18Result">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="selectVo"/>
+        where f.tenant_id = #{scopedTenantId}
+          and ifnull(f.del_flag, 0) = 0
+          and f.class_code = #{classCode}
+        order by f.id asc
+        limit 1
+    </select>
+
     <insert id="insertFdFocus18" parameterType="com.spd.foundation.domain.FdFocus18" useGeneratedKeys="true" keyProperty="id">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into fd_focus18

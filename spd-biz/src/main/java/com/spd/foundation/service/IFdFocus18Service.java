@@ -11,6 +11,11 @@ public interface IFdFocus18Service
 
     List<String> selectFdFocus18Categories();
 
+    /**
+     * 用医保编码前 15 位匹配耗材分类代码，命中返回明细，否则 null
+     */
+    FdFocus18 matchByMedicalNo(String medicalNo);
+
     int insertFdFocus18(FdFocus18 row);
 
     int updateFdFocus18(FdFocus18 row);

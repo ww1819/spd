@@ -16,6 +16,9 @@ public interface FdFocus18Mapper
     /** 左侧树：当前租户下耗材类别（去重） */
     List<String> selectFdFocus18Categories();
 
+    /** 按耗材分类代码精确匹配（医保编码前15位） */
+    FdFocus18 selectFdFocus18ByClassCode(@Param("classCode") String classCode);
+
     int insertFdFocus18(FdFocus18 row);
 
     int updateFdFocus18(FdFocus18 row);
