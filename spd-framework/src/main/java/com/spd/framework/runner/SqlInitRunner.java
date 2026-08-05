@@ -44,6 +44,8 @@ public class SqlInitRunner implements ApplicationRunner
         "procedure.sql",
         "function.sql",
         "menu.sql",
+        "insert.sql",
+        "focus18_data.sql",
         "data_integrity.sql"
     };
 

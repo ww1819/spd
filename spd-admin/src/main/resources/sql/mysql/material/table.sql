@@ -3595,3 +3595,35 @@ CREATE TABLE IF NOT EXISTS `fd_jc_report` (
   KEY `idx_fd_jc_report_type` (`tenant_id`, `jc_type_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='集采报量（按周期+产品或周期+类型；模式切换不删）';
 /
+
+-- 18类重点耗材维护（明细字典；初始化数据见 focus18_data.sql）
+CREATE TABLE IF NOT EXISTS `fd_focus18` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `parent_id` bigint(20) DEFAULT 0 COMMENT '上级ID(0为根)',
+  `category` varchar(100) DEFAULT NULL COMMENT '耗材类别',
+  `class_code` varchar(100) DEFAULT NULL COMMENT '耗材分类代码',
+  `level1` varchar(200) DEFAULT NULL COMMENT '一级分类(学科/品类)',
+  `level2` varchar(200) DEFAULT NULL COMMENT '二级分类(用途/品目)',
+  `level3` varchar(200) DEFAULT NULL COMMENT '三级分类(部位/功能/品种)',
+  `generic_code` varchar(100) DEFAULT NULL COMMENT '通用名代码',
+  `medical_generic_name` varchar(200) DEFAULT NULL COMMENT '医保通用名',
+  `material_code` varchar(100) DEFAULT NULL COMMENT '材质代码',
+  `material` varchar(200) DEFAULT NULL COMMENT '材质',
+  `feature_code` varchar(100) DEFAULT NULL COMMENT '特征代码',
+  `feature_param` varchar(500) DEFAULT NULL COMMENT '特征参数',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` int(1) DEFAULT 0 COMMENT '删除标识(0正常 1删除)',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(64) DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_fd_focus18_tenant` (`tenant_id`),
+  KEY `idx_fd_focus18_parent` (`tenant_id`, `parent_id`),
+  KEY `idx_fd_focus18_class_code` (`tenant_id`, `class_code`),
+  KEY `idx_fd_focus18_generic` (`tenant_id`, `generic_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='18类重点耗材维护';
+/
