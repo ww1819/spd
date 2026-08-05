@@ -167,8 +167,8 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     }
 
     /**
-     * 储存方式 is_way 库字段为 char(4)，字典 way_status 存码值（1/2）。
-     * 兼容误传中文标签；超长时给出明确提示，避免 MySQL Data truncation。
+     * 储存方式：支持自由文本（库字段 varchar(100)）。
+     * 短别名「常温」「冷链」仍归一为历史码值 1/2，便于列表字典翻译。
      */
     private void normalizeIsWay(FdMaterial m)
     {
@@ -177,17 +177,17 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             return;
         }
         String v = m.getIsWay().trim();
-        if ("常温存储".equals(v) || "常温".equals(v))
+        if ("常温".equals(v))
         {
             v = "1";
         }
-        else if ("冷链存储".equals(v) || "冷链".equals(v))
+        else if ("冷链".equals(v))
         {
             v = "2";
         }
-        if (v.length() > 4)
+        if (v.length() > 100)
         {
-            throw new ServiceException("储存方式过长，请从下拉选择（常温存储/冷链存储）");
+            throw new ServiceException("储存方式过长（最多100个字符）");
         }
         m.setIsWay(v);
     }

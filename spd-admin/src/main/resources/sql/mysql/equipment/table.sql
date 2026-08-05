@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS `fd_material` (
   `useto` varchar(150) DEFAULT NULL COMMENT '用途',
   `quality` varchar(100) DEFAULT NULL COMMENT '材质',
   `function` varchar(100) DEFAULT NULL COMMENT '功能',
-  `is_way` char(4) DEFAULT NULL COMMENT '储存方式',
+  `is_way` varchar(100) DEFAULT NULL COMMENT '储存方式',
   `udi_no` varchar(100) DEFAULT NULL COMMENT 'UDI码',
   `permit_no` varchar(100) DEFAULT NULL COMMENT '许可证编号',
   `country_no` varchar(100) DEFAULT NULL COMMENT '国家编码',
