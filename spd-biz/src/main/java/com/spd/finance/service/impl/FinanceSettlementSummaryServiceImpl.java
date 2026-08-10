@@ -129,6 +129,7 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
                     dr.setDepartmentId(((Number) did).longValue());
                 }
                 dr.setDepartmentName(row.get("departmentName") != null ? row.get("departmentName").toString() : "");
+                dr.setCampus(row.get("campus") != null ? row.get("campus").toString() : "");
                 dr.setPlainConsumablesAmt(toBigDecimal(row.get("plainConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
                 dr.setHighValueConsumablesAmt(toBigDecimal(row.get("highValueConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
                 dr.setReagentAmt(toBigDecimal(row.get("reagentAmt")).setScale(2, RoundingMode.HALF_UP));

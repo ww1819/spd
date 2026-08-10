@@ -2772,6 +2772,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select
             stk.department_id as departmentId,
             COALESCE(MAX(TRIM(d.name)), '未指定科室') as departmentName,
+            MAX(NULLIF(TRIM(d.campus), '')) as campus,
             ROUND(SUM(
                 case when m.storeroom_id = 12 then
                     (case when stk.bill_type = 401 then -1 else 1 end)

@@ -11,6 +11,9 @@ public class FinanceDeptConsumablePickupRowVo
 
     private String departmentName;
 
+    /** 院区（来自科室档案 fd_department.campus） */
+    private String campus;
+
     /** 普通耗材（storeroom_id = 12） */
     private BigDecimal plainConsumablesAmt;
 
@@ -38,6 +41,16 @@ public class FinanceDeptConsumablePickupRowVo
     public void setDepartmentName(String departmentName)
     {
         this.departmentName = departmentName;
+    }
+
+    public String getCampus()
+    {
+        return campus;
+    }
+
+    public void setCampus(String campus)
+    {
+        this.campus = campus;
     }
 
     public BigDecimal getPlainConsumablesAmt()
