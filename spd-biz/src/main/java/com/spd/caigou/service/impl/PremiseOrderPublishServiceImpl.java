@@ -1,5 +1,7 @@
 package com.spd.caigou.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -315,7 +317,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
                 dto.put("applyDepartmentName", po.getDepartment().getName());
             }
             dto.put("orderDate", po.getOrderDate());
-            dto.put("totalAmount", po.getTotalAmount());
+            dto.put("totalAmount", moneyScale(po.getTotalAmount()));
             dto.put("orderStatus", po.getOrderStatus());
             dto.put("remark", po.getRemark());
             dto.put("spdTenantId", po.getTenantId());
@@ -339,8 +341,9 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
                 item.put("specification", e.getMaterialSpec());
                 item.put("unit", e.getMaterialUnit());
                 item.put("quantity", e.getOrderQty());
-                item.put("unitPrice", e.getUnitPrice());
-                item.put("amount", e.getTotalAmount());
+                // 单价/金额保留完整小数（与产品档案一致，避免 0.025 被两位小数截成 0.03）
+                item.put("unitPrice", moneyScale(e.getUnitPrice()));
+                item.put("amount", moneyScale(e.getTotalAmount()));
                 item.put("remark", e.getRemark());
                 FdMaterial mat = e.getMaterial();
                 if (mat != null)
@@ -358,6 +361,16 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             list.add(dto);
         }
         return list;
+    }
+
+    /** 推送金额精度：固定 6 位小数，避免被两位小数截断（如 0.025 → 0.03） */
+    private static BigDecimal moneyScale(BigDecimal value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+        return value.setScale(6, RoundingMode.HALF_UP);
     }
 
     private String buildInterfaceBaseUrl()

@@ -322,6 +322,8 @@ CALL add_table_column('fd_department', 'del_by', 'varchar(64)', '删除者', NUL
 /
 CALL add_table_column('fd_department', 'del_time', 'datetime', '删除时间', NULL);
 /
+CALL add_table_column('fd_department', 'campus', 'varchar(128)', '院区', NULL);
+/
 /* 耗材业务表与租户关联：仓库、出入库单、库存、科室库存、申领单 */
 CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
@@ -1929,6 +1931,24 @@ CALL add_table_column('t_hc_ks_xh_entry', 'tenant_id', 'varchar(36)', '租户ID(
 -- 科室档案变更记录表 fd_department_change_log：全量建表见 material/table.sql
 
 ALTER TABLE purchase_plan MODIFY COLUMN plan_status char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '1' NOT NULL COMMENT '计划状态（0未提交1待审核 2已审核 3已执行 4已取消）';
+/
+
+-- 采购计划金额精度与产品档案单价一致（避免 0.025 被 decimal(15,2) 存成 0.03）
+ALTER TABLE `purchase_plan`
+  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '总金额';
+/
+ALTER TABLE `purchase_plan_entry`
+  MODIFY COLUMN `price` decimal(18,6) DEFAULT 0.000000 COMMENT '单价',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT 0.000000 COMMENT '金额';
+/
+
+-- 采购订单金额精度与计划/产品单价一致
+ALTER TABLE `purchase_order`
+  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '总金额';
+/
+ALTER TABLE `purchase_order_entry`
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT 0.000000 COMMENT '单价',
+  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '金额';
 /
 
 -- 盘盈新增明细/待入账表 stk_profit_loss_pending：全量建表见 material/table.sql

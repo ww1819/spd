@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `referred_name` varchar(64) DEFAULT NULL COMMENT '名称简码（拼音简码）',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统科室ID',
+  `campus` varchar(128) DEFAULT NULL COMMENT '院区',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
   `del_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `del_time` datetime DEFAULT NULL COMMENT '删除时间',

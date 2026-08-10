@@ -205,6 +205,10 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         } else if (isExternalIdBlank(fdDepartment.getHisId())) {
             fdDepartment.setHisId(null);
         }
+        if (fdDepartment.getCampus() != null) {
+            String campus = fdDepartment.getCampus().trim();
+            fdDepartment.setCampus(campus.isEmpty() ? null : campus);
+        }
         int n = fdDepartmentMapper.insertFdDepartment(fdDepartment);
         if (n > 0 && StringUtils.isNotEmpty(fdDepartment.getTenantId())) {
             Long deptId = fdDepartment.getId();
@@ -256,6 +260,10 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             fdDepartment.setReferredName(PinyinUtils.getPinyinInitials(fdDepartment.getName()));
         }
         validateParentAssignment(fdDepartment.getId(), fdDepartment.getParentId(), before.getTenantId());
+        if (fdDepartment.getCampus() != null) {
+            String campus = fdDepartment.getCampus().trim();
+            fdDepartment.setCampus(campus);
+        }
         fdDepartment.setUpdateTime(DateUtils.getNowDate());
         int n = fdDepartmentMapper.updateFdDepartment(fdDepartment);
         if (n > 0 && before != null) {
@@ -408,6 +416,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         pushDeptChange(deptId, op, now, "name", "科室名称", nz(before.getName()), nz(after.getName()));
         pushDeptChange(deptId, op, now, "referred_name", "简码", nz(before.getReferredName()), nz(after.getReferredName()));
         pushDeptChange(deptId, op, now, "remark", "备注", nz(before.getDeptRemark()), nz(after.getDeptRemark()));
+        pushDeptChange(deptId, op, now, "campus", "院区", nz(before.getCampus()), nz(after.getCampus()));
         pushDeptChange(deptId, op, now, "parent_id", "上级科室ID",
             before.getParentId() == null ? "" : String.valueOf(before.getParentId()),
             after.getParentId() == null ? "" : String.valueOf(after.getParentId()));

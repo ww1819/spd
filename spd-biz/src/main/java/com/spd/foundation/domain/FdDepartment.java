@@ -35,6 +35,10 @@ public class FdDepartment extends BaseEntity
     @Excel(name = "HIS系统ID", nameAliases = {"HIS科室ID", "其他第三方系统科室ID"}, width = 22, prompt = "对接 HIS 等系统时填写科室标识；部分租户导入时必填")
     private String hisId;
 
+    /** 院区（手工维护，非必填） */
+    @Excel(name = "院区", width = 16)
+    private String campus;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -137,6 +141,14 @@ public class FdDepartment extends BaseEntity
         this.hisId = hisId;
     }
 
+    public String getCampus() {
+        return campus;
+    }
+
+    public void setCampus(String campus) {
+        this.campus = campus;
+    }
+
     public String getValidationResult() {
         return validationResult;
     }
@@ -161,6 +173,7 @@ public class FdDepartment extends BaseEntity
             .append("parentId", getParentId())
             .append("deptRemark", getDeptRemark())
             .append("hisId", getHisId())
+            .append("campus", getCampus())
             .append("validationResult", getValidationResult())
             .toString();
     }
