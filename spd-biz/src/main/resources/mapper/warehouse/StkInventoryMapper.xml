@@ -1063,7 +1063,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY stk.material_id, stk.warehouse_id, w.code, w.name,
                  m.code, m.name, m.speci, m.model, u.unit_name, m.package_speci, m.register_no, m.is_way,
                  wc.warehouse_category_name, fc.finance_category_name
-        order by w.code, m.code
+        <choose>
+            <when test="params != null and params.deptApplyOrderCol == 'w.name'">
+                order by w.name ${params.deptApplyOrderDir}, m.code asc
+            </when>
+            <when test="params != null and params.deptApplyOrderCol == 'm.code'">
+                order by m.code ${params.deptApplyOrderDir}, w.code asc
+            </when>
+            <when test="params != null and params.deptApplyOrderCol == 'm.name'">
+                order by m.name ${params.deptApplyOrderDir}, w.code asc, m.code asc
+            </when>
+            <when test="params != null and params.deptApplyOrderCol == 'm.model'">
+                order by m.model ${params.deptApplyOrderDir}, w.code asc, m.code asc
+            </when>
+            <when test="params != null and params.deptApplyOrderCol == 'u.unit_name'">
+                order by u.unit_name ${params.deptApplyOrderDir}, w.code asc, m.code asc
+            </when>
+            <when test="params != null and params.deptApplyOrderCol == 'unitPrice'">
+                order by unitPrice ${params.deptApplyOrderDir}, w.code asc, m.code asc
+            </when>
+            <when test="params != null and params.deptApplyOrderCol == 'factoryName'">
+                order by factoryName ${params.deptApplyOrderDir}, w.code asc, m.code asc
+            </when>
+            <otherwise>
+                order by w.code, m.code
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 科室申领审核拆分：指定仓库内按耗材 FIFO（入库日期、id）取可分配库存行（停用产品档案有库存仍可拆分） -->

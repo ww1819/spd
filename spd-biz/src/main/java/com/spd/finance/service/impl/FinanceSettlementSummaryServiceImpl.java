@@ -112,8 +112,15 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         unrecognized.sort(bySupplierName);
 
         List<FinanceDeptConsumablePickupRowVo> deptRows = new ArrayList<>();
-        Comparator<FinanceDeptConsumablePickupRowVo> byDeptName = (a, b) ->
-            zh.compare(StringUtils.nvl(a.getDepartmentName(), ""), StringUtils.nvl(b.getDepartmentName(), ""));
+        Comparator<FinanceDeptConsumablePickupRowVo> byCampusThenDept = (a, b) -> {
+            int campusRank = Integer.compare(northCampusDisplayOrderRank(a.getCampus()),
+                northCampusDisplayOrderRank(b.getCampus()));
+            if (campusRank != 0)
+            {
+                return campusRank;
+            }
+            return zh.compare(StringUtils.nvl(a.getDepartmentName(), ""), StringUtils.nvl(b.getDepartmentName(), ""));
+        };
         if (rawDept != null)
         {
             for (Map<String, Object> row : rawDept)
@@ -136,7 +143,7 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
                 deptRows.add(dr);
             }
         }
-        deptRows.sort(byDeptName);
+        deptRows.sort(byCampusThenDept);
 
         List<FinanceDeptMonthlyConsumptionRowVo> deptMonthlyRows =
             buildDeptMonthlyConsumptionRows(query, rawDeptMonthly, zh);
@@ -151,6 +158,18 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
         bundle.setDeptConsumablePickupRows(deptRows);
         bundle.setDeptMonthlyConsumptionRows(deptMonthlyRows);
         return bundle;
+    }
+
+    /**
+     * 表二院区展示顺序：非北院区在前，院区含「北院区」的在后。
+     */
+    private static int northCampusDisplayOrderRank(String campus)
+    {
+        if (StringUtils.isNotEmpty(campus) && campus.contains("北院区"))
+        {
+            return 1;
+        }
+        return 0;
     }
 
     /**

@@ -219,6 +219,30 @@ CALL add_table_column('stk_io_profit_loss_entry', 'suppler_id', 'varchar(128)', 
 CALL add_table_column('fd_material', 'selection_reason', 'varchar(512)', '入选原因', NULL);
 /
 
+/* 产品档案：18类重点耗材回填字段（与字典表 fd_focus18 对应，按医保编码匹配写入） */
+CALL add_table_column('fd_material', 'focus18_category', 'varchar(100)', '18类重点-耗材类别', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_class_code', 'varchar(100)', '18类重点-耗材分类代码', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_level1', 'varchar(200)', '18类重点-一级分类（学科、品类）', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_level2', 'varchar(200)', '18类重点-二级分类（用途、品目）', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_level3', 'varchar(200)', '18类重点-三级分类（部位、功能、品种）', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_generic_code', 'varchar(100)', '18类重点-通用名代码', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_medical_generic_name', 'varchar(200)', '18类重点-医保通用名', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_material_code', 'varchar(100)', '18类重点-材质代码', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_material', 'varchar(200)', '18类重点-材质', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_feature_code', 'varchar(100)', '18类重点-特征代码', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_feature_param', 'varchar(500)', '18类重点-特征参数', NULL);
+/
+
 /* 产品档案 fd_material 增加 是否计费 */
 CALL add_table_column('fd_material', 'is_billing', 'char(4)', '是否计费：1=计费,2=不计费', '2');
 /

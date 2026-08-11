@@ -3,11 +3,15 @@ package com.spd.warehouse.controller;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.spd.common.core.page.PageDomain;
+import com.spd.common.core.page.TableSupport;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.warehouse.vo.StkInventorySummaryVo;
 import com.spd.warehouse.vo.StkInventoryVo;
@@ -298,7 +302,13 @@ public class StkInventoryController extends BaseController
             stkInventory = new StkInventory();
         }
         normalizeDeptApplyStockMaterialQuery(stkInventory);
-        startPage();
+        applyDeptApplyAvailableStockSort(stkInventory);
+        // 排序由 SQL 白名单控制，避免 PageHelper 把 camelCase 别名转成下划线后失效
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        Integer pageNum = pageDomain.getPageNum();
+        Integer pageSize = pageDomain.getPageSize();
+        Boolean reasonable = pageDomain.getReasonable();
+        PageHelper.startPage(pageNum, pageSize).setReasonable(reasonable);
         List<Map<String, Object>> list = departmentApplyAvailableStockStrategy.listAggregated(stkInventory);
         return getDataTable(list);
     }
@@ -439,5 +449,34 @@ public class StkInventoryController extends BaseController
         if (StringUtils.isNotEmpty(query.getWarehouseName())) {
             query.setWarehouseName(MaterialSearchKeywordUtils.normalizeAndEscapeLike(query.getWarehouseName()));
         }
+    }
+
+    /**
+     * 科室申领可用库存表头排序白名单（写入 params，供 Mapper 动态 ORDER BY）。
+     */
+    private void applyDeptApplyAvailableStockSort(StkInventory query) {
+        if (query == null) {
+            return;
+        }
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        String col = pageDomain.getOrderByColumn();
+        if (StringUtils.isEmpty(col)) {
+            return;
+        }
+        Map<String, String> allow = new HashMap<>();
+        allow.put("warehouseName", "w.name");
+        allow.put("materialCode", "m.code");
+        allow.put("materialName", "m.name");
+        allow.put("materialModel", "m.model");
+        allow.put("unitName", "u.unit_name");
+        allow.put("unitPrice", "unitPrice");
+        allow.put("factoryName", "factoryName");
+        String orderCol = allow.get(col);
+        if (orderCol == null) {
+            return;
+        }
+        String dir = "desc".equalsIgnoreCase(pageDomain.getIsAsc()) ? "desc" : "asc";
+        query.getParams().put("deptApplyOrderCol", orderCol);
+        query.getParams().put("deptApplyOrderDir", dir);
     }
 }
