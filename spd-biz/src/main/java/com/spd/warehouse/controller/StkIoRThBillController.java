@@ -1,7 +1,9 @@
 package com.spd.warehouse.controller;
 
 import com.spd.common.core.controller.BaseController;
+import com.spd.common.core.page.PageDomain;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TableSupport;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.poi.ExcelUtil;
@@ -55,6 +57,23 @@ public class StkIoRThBillController extends BaseController
             return value.abs().negate();
         }
         return value;
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+        if (value instanceof Number) {
+            return BigDecimal.valueOf(((Number) value).doubleValue());
+        }
+        try {
+            return new BigDecimal(value.toString());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private Integer parseBillType(Object billTypeObj) {
@@ -334,39 +353,68 @@ public class StkIoRThBillController extends BaseController
 
     /**
      * 查询出退库汇总列表
+     * 先查全部分组结果再内存分页，避免 PageHelper 套嵌套 GROUP BY 丢行；
+     * 行单价与明细一致：unit_price → amt/qty → price。
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:outWarehouseQuery:list')")
     @GetMapping("/CTKListSummary")
     public TableDataInfo CTKListSummary(StkIoBill stkIoBill){
         stkIoBillService.applyCtkDepartmentScopeToQuery(stkIoBill);
-        // 启动分页
-        startPage();
+        // 不分页查询全部分组行（按仓库+编码+单价），再内存切片
+        clearPage();
+        List<Map<String, Object>> allMapList = stkIoBillService.selectCTKStkIoBillListSummary(stkIoBill);
+        if (allMapList == null) {
+            allMapList = new ArrayList<>();
+        }
+        long total = allMapList.size();
+
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        int pageNum = pageDomain.getPageNum() == null || pageDomain.getPageNum() < 1 ? 1 : pageDomain.getPageNum();
+        int pageSize = pageDomain.getPageSize() == null || pageDomain.getPageSize() < 1 ? 10 : pageDomain.getPageSize();
+        int fromIndex = Math.min((pageNum - 1) * pageSize, allMapList.size());
+        int toIndex = Math.min(fromIndex + pageSize, allMapList.size());
+        List<Map<String, Object>> mapList = allMapList.subList(fromIndex, toIndex);
+
         List<StkCTKVo> stkRTHVoList = new ArrayList<StkCTKVo>();
-        List<Map<String, Object>> mapList = stkIoBillService.selectCTKStkIoBillListSummary(stkIoBill);
-        long total = new PageInfo<>(mapList).getTotal();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        
         BigDecimal subTotalQty = BigDecimal.ZERO;
         BigDecimal subTotalAmt = BigDecimal.ZERO;
-        
+        BigDecimal totalQty = BigDecimal.ZERO;
+        BigDecimal totalAmt = BigDecimal.ZERO;
+
+        for (Map<String, Object> map : allMapList) {
+            BigDecimal q = toBigDecimal(map.get("materialQty"));
+            BigDecimal a = toBigDecimal(map.get("materialAmt"));
+            if (q != null) totalQty = totalQty.add(q);
+            if (a != null) totalAmt = totalAmt.add(a);
+        }
+
         for(Map<String, Object> map : mapList){
             try {
                 StkCTKVo stkCTKVo = new StkCTKVo();
                 stkCTKVo.setMaterial(buildMaterialFromMap(map));
-                stkCTKVo.setId((Long) map.get("id"));
+                Object materialIdObj = map.get("materialId");
+                if (materialIdObj instanceof Number) {
+                    stkCTKVo.setId(((Number) materialIdObj).longValue());
+                }
                 stkCTKVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"), "").toString());
                 stkCTKVo.setMaterialName(StringUtils.nvl(map.get("materialName"), "").toString());
                 stkCTKVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"), "").toString());
-                Integer billType = parseBillType(map.get("billType"));
-                BigDecimal materialQty = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialQty"));
+                // SQL 已按 201 正 / 401 负汇总净数量、净金额，此处不再按 billType 二次取反
+                BigDecimal materialQty = toBigDecimal(map.get("materialQty"));
                 stkCTKVo.setMaterialQty(materialQty);
                 stkCTKVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"), "").toString());
-                BigDecimal materialAmt = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialAmt"));
+                BigDecimal materialAmt = toBigDecimal(map.get("materialAmt"));
                 stkCTKVo.setMaterialAmt(materialAmt);
                 stkCTKVo.setUnitName(StringUtils.nvl(map.get("unitName"), "").toString());
-                stkCTKVo.setUnitPrice((BigDecimal) map.get("unitPrice"));
+                stkCTKVo.setUnitPrice(toBigDecimal(map.get("unitPrice")));
                 stkCTKVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"), "").toString());
-                stkCTKVo.setDepartmentName(StringUtils.nvl(map.get("departmentName"), "").toString());
+                Object warehouseIdObj = map.get("warehouseId");
+                if (warehouseIdObj instanceof Number) {
+                    long wid = ((Number) warehouseIdObj).longValue();
+                    if (wid > 0) {
+                        stkCTKVo.setWarehouseId(wid);
+                    }
+                }
                 stkCTKVo.setFactoryName(StringUtils.nvl(map.get("factoryName"), "").toString());
                 stkCTKVo.setFinanceCategoryName(StringUtils.nvl(map.get("financeCategoryName"), "").toString());
                 if(map.get("supplierName") != null){
@@ -382,31 +430,6 @@ public class StkIoRThBillController extends BaseController
                         } catch (NumberFormatException ignored) { }
                     }
                 }
-                stkCTKVo.setBillType(billType);
-                if(map.get("createTime") != null){
-                    try {
-                        Date createTime = formatter.parse(map.get("createTime").toString());
-                        stkCTKVo.setCreateTime(createTime);
-                    } catch (Exception e) { /* ignore parse error */ }
-                }
-                if(map.get("createrNickName") != null){
-                    stkCTKVo.setCreaterNickName(map.get("createrNickName").toString());
-                }
-                if(map.get("createrUserName") != null){
-                    stkCTKVo.setCreaterUserName(map.get("createrUserName").toString());
-                }
-                if(map.get("auditDate") != null){
-                    try {
-                        Date auditDate = formatter.parse(map.get("auditDate").toString());
-                        stkCTKVo.setAuditDate(auditDate);
-                    } catch (Exception e) { /* ignore parse error */ }
-                }
-                if(map.get("auditNickName") != null){
-                    stkCTKVo.setAuditNickName(map.get("auditNickName").toString());
-                }
-                if(map.get("auditUserName") != null){
-                    stkCTKVo.setAuditUserName(map.get("auditUserName").toString());
-                }
                 stkRTHVoList.add(stkCTKVo);
                 if(materialQty != null) subTotalQty = subTotalQty.add(materialQty);
                 if(materialAmt != null) subTotalAmt = subTotalAmt.add(materialAmt);
@@ -414,12 +437,11 @@ public class StkIoRThBillController extends BaseController
                 logger.warn("CTKListSummary 单条数据转换失败，跳过，map: {}", map, e);
             }
         }
-        
-        // 计算总合计（需要查询所有数据）
-        TotalInfo totalInfo = stkIoBillService.selectCTKStkIoBillListSummaryTotal(stkIoBill);
-        if (totalInfo == null) {
-            totalInfo = new TotalInfo();
-        }
+
+        // 底栏合计 = 全部分组行之和（与列表口径一致）
+        TotalInfo totalInfo = new TotalInfo();
+        totalInfo.setTotalQty(totalQty);
+        totalInfo.setTotalAmt(totalAmt);
         totalInfo.setSubTotalQty(subTotalQty);
         totalInfo.setSubTotalAmt(subTotalAmt);
 

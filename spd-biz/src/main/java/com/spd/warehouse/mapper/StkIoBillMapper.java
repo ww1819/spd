@@ -233,6 +233,11 @@ public interface StkIoBillMapper
     List<Map<String, Object>> selectCTKStkIoBillListSummary(StkIoBill stkIoBill);
 
     /**
+     * 出退库汇总原始明细行（未按仓库+编码+单价分组）
+     */
+    List<Map<String, Object>> selectCTKStkIoBillListSummaryRaw(StkIoBill stkIoBill);
+
+    /**
      * 查询出退库列表合计
      * @param stkIoBill
      * @return

@@ -882,40 +882,55 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billType != null "> and stk.bill_type = #{billType}</if>
     </select>
 
-    <!-- 出退库汇总：仅报表所需字段，无嵌套子查询；供应商优先明细 stk_io_bill_entry.suppler_id，否则主表 stk.suppler_id -->
-    <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select stk.id, m.code materialCode, m.name materialName, stk.bill_type billType,
-               sum(IFNULL(b.qty, 0)) materialQty,
-               IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END) unitPrice,
-               ROUND(sum(IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)), 2) materialAmt,
-               m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
-               f.factory_name factoryName, s.name supplierName,
+    <!-- 出退库汇总明细行（未分组）：行单价与明细表 selectCTKStkIoBillList 完全一致：unit_price → amt/qty；price 仅作最后兜底 -->
+    <sql id="ctkSummaryLineUnitPriceExpr">
+        ROUND(COALESCE(
+            b.unit_price,
+            CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &gt; 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
+            NULLIF(b.price, 0)
+        ), 2)
+    </sql>
+
+    <sql id="ctkSummaryRawLineSelect">
+        select b.material_id materialId,
+               m.code materialCode,
+               m.name materialName,
+               m.speci materialSpeci,
+               m.model materialModel,
+               u.unit_name unitName,
+               f.factory_name factoryName,
+               s.name supplierName,
                (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) supplierId,
                fc.finance_category_name financeCategoryName,
-               d.name departmentName, w.name warehouseName, b.material_id materialId,
-               m.register_no materialRegisterNo, m.package_speci materialPackageSpeci, m.is_way materialIsWay,
+               IFNULL(stk.warehouse_id, -1) warehouseId,
+               w.name warehouseName,
+               m.register_no materialRegisterNo,
+               m.package_speci materialPackageSpeci,
+               m.is_way materialIsWay,
                m.is_gz materialIsGz,
                wc.warehouse_category_name materialWarehouseCategoryName,
-               stk.create_time createTime, cu.nick_name createrNickName, cu.user_name createrUserName,
-               stk.audit_date auditDate, au.nick_name auditNickName, au.user_name auditUserName
+               <include refid="ctkSummaryLineUnitPriceExpr"/> as lineUnitPrice,
+               (case when stk.bill_type = 401 then -IFNULL(b.qty, 0) else IFNULL(b.qty, 0) end) signedQty,
+               (case when stk.bill_type = 401 then -1 else 1 end)
+                 * IFNULL(b.qty, 0)
+                 * IFNULL((<include refid="ctkSummaryLineUnitPriceExpr"/>), 0) signedAmt
         from stk_io_bill stk
-        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
-        <!-- 出/退库：供应商以明细行 suppler_id 为准，无则回退主表 stk.suppler_id（与 view_stock_all_detail_jxc 一致） -->
+        inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
-        left join fd_department d on stk.department_id = d.id
         left join fd_warehouse w on stk.warehouse_id = w.id
         left join fd_material m on b.material_id = m.id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+            and (wc.tenant_id = stk.tenant_id or wc.tenant_id is null)
         left join fd_factory f on f.factory_id = m.factory_id
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-        left join sys_user cu on stk.create_by = cu.user_id
-        left join sys_user au on stk.audit_by = au.user_id
+            and (fc.tenant_id = stk.tenant_id or fc.tenant_id is null)
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
           and stk.bill_type in (201,401)
           and stk.bill_status = 2
+          and b.material_id is not null
+          and m.code is not null and m.code &lt;&gt; ''
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
@@ -949,14 +964,44 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
         <include refid="stkIoBillDepartmentScopeFilter"/>
-        GROUP BY stk.id, m.code, m.name, stk.bill_type,
-                 IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END),
-                 m.speci, m.model, u.unit_name,
-                 f.factory_name, s.name,
-                 (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end),
-                 fc.finance_category_name, d.name, w.name, b.material_id,
-                 m.register_no, m.package_speci, m.is_way, m.is_gz, wc.warehouse_category_name,
-                 stk.create_time, cu.nick_name, cu.user_name, stk.audit_date, au.nick_name, au.user_name
+    </sql>
+
+    <!-- 出退库汇总原始明细行：供 Java 按「仓库 + 耗材编码 + 行单价」合并；避免 PageHelper 套嵌套分组 -->
+    <select id="selectCTKStkIoBillListSummaryRaw" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <include refid="ctkSummaryRawLineSelect"/>
+    </select>
+
+    <!-- 出退库汇总：按「仓库 + 耗材编码 + 行单价」合并；净数量为0不展示；出库201正、退库401负 -->
+    <select id="selectCTKStkIoBillListSummary" parameterType="StkIoBill" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select MAX(t.materialId) materialId,
+               t.materialCode,
+               MAX(t.materialName) materialName,
+               ROUND(SUM(t.signedQty), 4) materialQty,
+               t.lineUnitPrice unitPrice,
+               ROUND(SUM(t.signedAmt), 2) materialAmt,
+               MAX(t.materialSpeci) materialSpeci,
+               MAX(t.materialModel) materialModel,
+               MAX(t.unitName) unitName,
+               MAX(t.factoryName) factoryName,
+               MAX(t.supplierName) supplierName,
+               MAX(t.supplierId) supplierId,
+               MAX(t.financeCategoryName) financeCategoryName,
+               t.warehouseId,
+               MAX(t.warehouseName) warehouseName,
+               MAX(t.materialRegisterNo) materialRegisterNo,
+               MAX(t.materialPackageSpeci) materialPackageSpeci,
+               MAX(t.materialIsWay) materialIsWay,
+               MAX(t.materialIsGz) materialIsGz,
+               MAX(t.materialWarehouseCategoryName) materialWarehouseCategoryName
+        from (
+            <include refid="ctkSummaryRawLineSelect"/>
+        ) t
+        where t.lineUnitPrice is not null
+        GROUP BY t.warehouseId, t.materialCode, t.lineUnitPrice
+        HAVING ROUND(SUM(t.signedQty), 4) &lt;&gt; 0
+        ORDER BY t.materialCode, MAX(t.materialName), MAX(t.warehouseName), t.lineUnitPrice
     </select>
 
     <!-- 出退库明细：仅报表所需字段，无嵌套子查询。单价优先明细行再按金额/数量计算，供应商以明细行 suppler_id 为准 -->
@@ -964,8 +1009,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.id, m.code materialCode, m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                stk.bill_type billType, b.qty materialQty,
-               IFNULL(b.unit_price, CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END) unitPrice,
-               (IFNULL(b.qty, 0) * IFNULL(b.unit_price, 0)) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
+               ROUND(COALESCE(
+                   b.unit_price,
+                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
+                   NULLIF(b.price, 0)
+               ), 2) unitPrice,
+               (IFNULL(b.qty, 0) * IFNULL(ROUND(COALESCE(
+                   b.unit_price,
+                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
+                   NULLIF(b.price, 0)
+               ), 2), 0)) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
                f.factory_name factoryName, fc.finance_category_name financeCategoryName,
                s.name supplierName,
@@ -1043,7 +1096,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
-               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) else (IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
+               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(ROUND(COALESCE(
+                   b.unit_price,
+                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
+                   NULLIF(b.price, 0)
+               ), 2), 0)) else (IFNULL(b.qty,0) * IFNULL(ROUND(COALESCE(
+                   b.unit_price,
+                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
+                   NULLIF(b.price, 0)
+               ), 2), 0)) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
@@ -1104,57 +1165,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="stkIoBillDepartmentScopeFilter"/>
     </select>
 
+    <!-- 出退库汇总合计：与列表同一口径（单价公式、仅净数量≠0 的分组） -->
     <select id="selectCTKStkIoBillListSummaryTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
-               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(b.unit_price,0))
-                        else (IFNULL(b.qty,0) * IFNULL(b.unit_price,0)) end) totalAmt
-        from stk_io_bill stk
-        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
-        left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
-        left join fd_department d on stk.department_id = d.id
-        left join fd_warehouse w on stk.warehouse_id = w.id
-        left join fd_material m on b.material_id = m.id
-        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
-        left join fd_factory f on f.factory_id = m.factory_id
-        left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
-        where (stk.del_flag = 0 or stk.del_flag is null)
-        and stk.tenant_id = #{scopedTenantId}
-        and stk.bill_type in (201,401)
-        and stk.bill_status = 2
-        <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
-        <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
-        <if test="beginDate != null "> and stk.audit_date &gt;= #{beginDate}</if>
-        <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
-        <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
-        <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
-        <if test="materialModelLike != null and materialModelLike != ''"> and m.model like concat('%', #{materialModelLike}, '%')</if>
-        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
-        <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
-        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''"> and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%') or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%') or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))</if>
-        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
-        <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
-        <if test="isBilling != null and isBilling != ''">
-            <choose>
-                <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
-                <when test="isBilling == 0 or isBilling == '0'"> and (m.is_billing in ('0','2') or m.is_billing is null or m.is_billing = '') </when>
-            </choose>
-        </if>
-        <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
-            and m.finance_category_id in
-            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
-                #{fcId}
-            </foreach>
-        </if>
-        <if test="warehouseCategoryIds != null and warehouseCategoryIds.length > 0">
-            and m.storeroom_id in
-            <foreach collection="warehouseCategoryIds" item="wcId" open="(" separator="," close=")">
-                #{wcId}
-            </foreach>
-        </if>
-        <if test="supplerId != null"> and (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end) = #{supplerId}</if>
-        <include refid="stkIoBillDepartmentScopeFilter"/>
+        select ROUND(SUM(g.materialQty), 4) totalQty,
+               ROUND(SUM(g.materialAmt), 2) totalAmt
+        from (
+            select ROUND(SUM(t.signedQty), 4) materialQty,
+                   ROUND(SUM(t.signedAmt), 2) materialAmt
+            from (
+                <include refid="ctkSummaryRawLineSelect"/>
+            ) t
+            where t.lineUnitPrice is not null
+            GROUP BY t.warehouseId, t.materialCode, t.lineUnitPrice
+            HAVING ROUND(SUM(t.signedQty), 4) &lt;&gt; 0
+        ) g
     </select>
 
     <select id="selectStkIoBillById" parameterType="Long" resultMap="StkIoBillStkIoBillEntryResult">

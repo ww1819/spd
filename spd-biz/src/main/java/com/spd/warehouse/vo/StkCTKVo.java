@@ -43,6 +43,9 @@ public class StkCTKVo {
     /** 仓库 */
     private String warehouseName;
 
+    /** 仓库ID */
+    private Long warehouseId;
+
     /** 厂家 */
     private String factoryName;
 
@@ -184,6 +187,14 @@ public class StkCTKVo {
 
     public void setWarehouseName(String warehouseName) {
         this.warehouseName = warehouseName;
+    }
+
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public String getFactoryName() {
