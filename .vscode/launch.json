@@ -25,6 +25,24 @@
             "request": "launch",
             "mainClass": "com.spd.common.utils.html.EscapeUtil",
             "projectName": "spd-common"
+        },
+        {
+            "name": "编译spd-ui",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "build:prod"
+            ],
+            "cwd": "${workspaceFolder}/spd-ui",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "autoAttachChildProcesses": false,
+            "env": {
+                "NODE_OPTIONS": "--max-old-space-size=4096 --openssl-legacy-provider",
+                "VSCODE_INSPECTOR_OPTIONS": ""
+            }
         }
     ]
 }
