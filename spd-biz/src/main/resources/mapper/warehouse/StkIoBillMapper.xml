@@ -907,6 +907,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.register_no materialRegisterNo,
                m.package_speci materialPackageSpeci,
                m.is_way materialIsWay,
+               m.is_billing materialIsBilling,
                m.is_gz materialIsGz,
                wc.warehouse_category_name materialWarehouseCategoryName,
                <include refid="ctkSummaryLineUnitPriceExpr"/> as lineUnitPrice,
@@ -993,6 +994,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                MAX(t.materialRegisterNo) materialRegisterNo,
                MAX(t.materialPackageSpeci) materialPackageSpeci,
                MAX(t.materialIsWay) materialIsWay,
+               MAX(t.materialIsBilling) materialIsBilling,
                MAX(t.materialIsGz) materialIsGz,
                MAX(t.materialWarehouseCategoryName) materialWarehouseCategoryName
         from (
