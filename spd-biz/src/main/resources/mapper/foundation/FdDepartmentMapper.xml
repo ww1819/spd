@@ -28,10 +28,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deptRemark"    column="remark"    />
         <result property="hisId"    column="his_id"    />
         <result property="campus"    column="campus"    />
+        <result property="status"    column="status"    />
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, referred_name, remark, his_id, campus, del_flag, del_by, del_time, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
+        select id, code, name, referred_name, remark, his_id, campus, status, del_flag, del_by, del_time, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
     </sql>
 
     <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id） -->
@@ -167,6 +168,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="parentId != null">parent_id,</if>
             <if test="hisId != null and hisId != ''">his_id,</if>
             <if test="campus != null">campus,</if>
+            <if test="status != null and status != ''">status,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -183,6 +185,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="parentId != null">#{parentId},</if>
             <if test="hisId != null and hisId != ''">#{hisId},</if>
             <if test="campus != null">#{campus},</if>
+            <if test="status != null and status != ''">#{status},</if>
          </trim>
     </insert>
 
@@ -209,6 +212,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 </otherwise>
             </choose>
             <if test="campus != null">campus = #{campus},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
         </trim>
         where id = #{id} and <include refid="fdDepartmentTenantMatch"/>
     </update>

@@ -31,13 +31,16 @@ public class FdDepartment extends BaseEntity
     @Excel(name = "简码")
     private String referredName;
 
-    /** HIS 系统科室 ID（库字段 his_id；与 HIS 等对接） */
-    @Excel(name = "HIS系统ID", nameAliases = {"HIS科室ID", "其他第三方系统科室ID"}, width = 22, prompt = "对接 HIS 等系统时填写科室标识；部分租户导入时必填")
+    /** HIS 系统科室编码（库字段 his_id；与 HIS 等对接） */
+    @Excel(name = "HIS科室编码", nameAliases = {"HIS科室ID", "HIS系统ID", "其他第三方系统科室ID"}, width = 22, prompt = "对接 HIS 等系统时填写科室编码；部分租户导入时必填")
     private String hisId;
 
     /** 院区（手工维护，非必填） */
     @Excel(name = "院区", width = 16)
     private String campus;
+
+    /** 启用状态（字典 is_use_status：1=启用，2=停用） */
+    private String status;
 
     /** 删除标识 */
     private Integer delFlag;
@@ -149,6 +152,14 @@ public class FdDepartment extends BaseEntity
         this.campus = campus;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getValidationResult() {
         return validationResult;
     }
@@ -174,6 +185,7 @@ public class FdDepartment extends BaseEntity
             .append("deptRemark", getDeptRemark())
             .append("hisId", getHisId())
             .append("campus", getCampus())
+            .append("status", getStatus())
             .append("validationResult", getValidationResult())
             .toString();
     }

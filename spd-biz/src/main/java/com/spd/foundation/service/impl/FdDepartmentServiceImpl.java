@@ -184,6 +184,9 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         if (fdDepartment.getDelFlag() == null) {
             fdDepartment.setDelFlag(0);
         }
+        if (StringUtils.isEmpty(fdDepartment.getStatus())) {
+            fdDepartment.setStatus("1");
+        }
         if (StringUtils.isEmpty(fdDepartment.getTenantId())) {
             String tid = SecurityUtils.requiredScopedTenantIdForSql();
             if (StringUtils.isNotEmpty(tid)) {
@@ -200,7 +203,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         fdDepartment.setHisId(normalizeExternalId(fdDepartment.getHisId()));
         if (importRequiresMandatoryHisDeptId()) {
             if (isExternalIdBlank(fdDepartment.getHisId())) {
-                throw new ServiceException("衡水市第三人民医院新增科室时必须填写HIS科室ID（第三方系统科室ID）");
+                throw new ServiceException("衡水市第三人民医院新增科室时必须填写HIS科室编码（第三方系统科室编码）");
             }
         } else if (isExternalIdBlank(fdDepartment.getHisId())) {
             fdDepartment.setHisId(null);
@@ -420,6 +423,18 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         pushDeptChange(deptId, op, now, "parent_id", "上级科室ID",
             before.getParentId() == null ? "" : String.valueOf(before.getParentId()),
             after.getParentId() == null ? "" : String.valueOf(after.getParentId()));
+        pushDeptChange(deptId, op, now, "status", "启用",
+            statusLabel(before.getStatus()), statusLabel(after.getStatus()));
+    }
+
+    private static String statusLabel(String status) {
+        if ("2".equals(status)) {
+            return "停用";
+        }
+        if ("1".equals(status) || status == null || status.isEmpty()) {
+            return "启用";
+        }
+        return status;
     }
 
     private void validateParentAssignment(Long deptId, Long parentId, String tenantId)
@@ -653,7 +668,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             FdDepartment existing = fdDepartmentMapper.selectFdDepartmentByCodeAndTenantId(code, tenantId);
             if (existing == null) {
                 if (importRequiresMandatoryHisDeptId() && isExternalIdBlank(row.getHisId())) {
-                    c.addRow(excelRow, "HIS科室ID（第三方系统科室ID）不能为空（衡水市第三人民医院新增科室时必填）");
+                    c.addRow(excelRow, "HIS科室编码（第三方系统科室编码）不能为空（衡水市第三人民医院新增科室时必填）");
                 }
             } else {
                 if (!Boolean.TRUE.equals(isUpdateSupport)) {

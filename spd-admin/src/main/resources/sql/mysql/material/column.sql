@@ -348,6 +348,8 @@ CALL add_table_column('fd_department', 'del_time', 'datetime', '删除时间', N
 /
 CALL add_table_column('fd_department', 'campus', 'varchar(128)', '院区', NULL);
 /
+CALL add_table_column('fd_department', 'status', 'char(1)', '启用状态（字典 is_use_status：1启用 2停用）', '1');
+/
 /* 耗材业务表与租户关联：仓库、出入库单、库存、科室库存、申领单 */
 CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
 /
