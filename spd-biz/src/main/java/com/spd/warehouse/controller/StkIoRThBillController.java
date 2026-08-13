@@ -380,10 +380,21 @@ public class StkIoRThBillController extends BaseController
         BigDecimal subTotalAmt = BigDecimal.ZERO;
         BigDecimal totalQty = BigDecimal.ZERO;
         BigDecimal totalAmt = BigDecimal.ZERO;
+        // 仅筛退库时强制展示为负数（与明细表 normalizeAmountByBillType 一致，避免 qty 已为负时二次取反变正）
+        Integer queryBillType = stkIoBill.getBillType();
+        boolean forceReturnSign = queryBillType != null && (queryBillType == 401 || queryBillType == 301);
 
         for (Map<String, Object> map : allMapList) {
             BigDecimal q = toBigDecimal(map.get("materialQty"));
             BigDecimal a = toBigDecimal(map.get("materialAmt"));
+            if (forceReturnSign) {
+                if (q != null) {
+                    q = q.abs().negate();
+                }
+                if (a != null) {
+                    a = a.abs().negate();
+                }
+            }
             if (q != null) totalQty = totalQty.add(q);
             if (a != null) totalAmt = totalAmt.add(a);
         }
@@ -399,11 +410,18 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setMaterialCode(StringUtils.nvl(map.get("materialCode"), "").toString());
                 stkCTKVo.setMaterialName(StringUtils.nvl(map.get("materialName"), "").toString());
                 stkCTKVo.setMaterialModel(StringUtils.nvl(map.get("materialModel"), "").toString());
-                // SQL 已按 201 正 / 401 负汇总净数量、净金额，此处不再按 billType 二次取反
                 BigDecimal materialQty = toBigDecimal(map.get("materialQty"));
+                BigDecimal materialAmt = toBigDecimal(map.get("materialAmt"));
+                if (forceReturnSign) {
+                    if (materialQty != null) {
+                        materialQty = materialQty.abs().negate();
+                    }
+                    if (materialAmt != null) {
+                        materialAmt = materialAmt.abs().negate();
+                    }
+                }
                 stkCTKVo.setMaterialQty(materialQty);
                 stkCTKVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"), "").toString());
-                BigDecimal materialAmt = toBigDecimal(map.get("materialAmt"));
                 stkCTKVo.setMaterialAmt(materialAmt);
                 stkCTKVo.setUnitName(StringUtils.nvl(map.get("unitName"), "").toString());
                 stkCTKVo.setUnitPrice(toBigDecimal(map.get("unitPrice")));
