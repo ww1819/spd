@@ -172,6 +172,51 @@ public class StkInventoryController extends BaseController
     }
 
     /**
+     * 历史库存明细：用户输入时间点（含时分秒），按进销存结存口径查询截止该时刻的库存明细
+     */
+    @PreAuthorize("@ss.hasPermi('warehouse:inventory:list')")
+    @GetMapping("/listHistory")
+    public TableDataInfo listHistory(StkInventory stkInventory)
+    {
+        if (stkInventory == null) {
+            stkInventory = new StkInventory();
+        }
+        if (StringUtils.isEmpty(stkInventory.getEndDate())) {
+            TableDataInfo rsp = new TableDataInfo();
+            rsp.setCode(HttpStatus.ERROR);
+            rsp.setMsg("请选择历史库存时间点");
+            return rsp;
+        }
+        String endDate = stkInventory.getEndDate().trim();
+        if (endDate.length() == 10) {
+            stkInventory.setEndDate(endDate + " 23:59:59");
+        } else {
+            stkInventory.setEndDate(endDate);
+        }
+        startPage();
+        List<Map<String, Object>> list = stkInventoryService.selectHistoryInventoryList(stkInventory);
+        BigDecimal subTotalQty = BigDecimal.ZERO;
+        BigDecimal subTotalAmt = BigDecimal.ZERO;
+        if (list != null) {
+            for (Map<String, Object> row : list) {
+                if (row == null) {
+                    continue;
+                }
+                subTotalQty = subTotalQty.add(Convert.toBigDecimal(row.get("qty"), BigDecimal.ZERO));
+                subTotalAmt = subTotalAmt.add(Convert.toBigDecimal(row.get("amt"), BigDecimal.ZERO));
+            }
+        }
+        TotalInfo totalInfo = stkInventoryService.selectHistoryInventoryTotal(stkInventory);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        totalInfo.setSubTotalQty(subTotalQty);
+        totalInfo.setSubTotalAmt(subTotalAmt);
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
+    }
+
+    /**
      * 查询库存明细汇总列表
      */
     @GetMapping("/listInventorySummary")
@@ -391,10 +436,10 @@ public class StkInventoryController extends BaseController
     }
 
     /**
-     * 获取库存明细详细信息
+     * 获取库存明细详细信息（id 仅数字，避免 listHistory 等路径被当成 id）
      */
     @PreAuthorize("@ss.hasPermi('warehouse:inventory:query')")
-    @GetMapping(value = "/{id}")
+    @GetMapping("/{id:\\d+}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
         return success(stkInventoryService.selectStkInventoryById(id));

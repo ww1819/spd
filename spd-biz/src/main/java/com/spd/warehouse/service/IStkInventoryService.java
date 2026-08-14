@@ -132,4 +132,14 @@ public interface IStkInventoryService
      */
     List<Map<String, Object>> selectStkInventoryDistribution(StkInventory stkInventory);
 
+    /**
+     * 历史库存明细：截止时间点的结存（与进销存 jc 口径一致）
+     */
+    List<Map<String, Object>> selectHistoryInventoryList(StkInventory stkInventory);
+
+    /**
+     * 历史库存明细合计
+     */
+    TotalInfo selectHistoryInventoryTotal(StkInventory stkInventory);
+
 }

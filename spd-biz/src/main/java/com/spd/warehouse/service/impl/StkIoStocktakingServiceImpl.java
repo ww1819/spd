@@ -1379,6 +1379,12 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         if (stockQty.compareTo(bookQty) == 0) {
             return;
         }
+        BigDecimal lossQty = bookQty.subtract(stockQty);
+        int decRows = stkInventoryMapper.decreaseStkInventoryQtyExpect(
+                inv.getId(), lossQty, liveQty, flowUser);
+        if (decRows == 0) {
+            throw new ServiceException(String.format("库存已变动，请重做盘点。批次：%s（并发扣减失败）", entry.getBatchNo()));
+        }
         inv.setQty(stockQty);
         BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : entry.getPrice();
         if (unitPrice == null) {
@@ -1389,10 +1395,6 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         } else {
             inv.setAmt(BigDecimal.ZERO);
         }
-        inv.setUpdateTime(flowNow);
-        inv.setUpdateBy(flowUser);
-        stkInventoryMapper.updateStkInventory(inv);
-        BigDecimal lossQty = bookQty.subtract(stockQty);
         insertWhStocktakingHcCkFlow(bill, entry, inv, lossQty, "PK", "仓库盘点盘亏", flowNow, flowUser, material);
         applyWhStocktakingEntryAuditFields(entry, false);
         computeWhEntryAmountFields(entry);

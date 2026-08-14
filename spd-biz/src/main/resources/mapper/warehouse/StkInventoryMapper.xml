@@ -687,6 +687,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and IFNULL(qty, 0) &gt;= #{delta}
     </update>
 
+    <!-- 原子扣减且要求当前 qty 等于期望值（盘点/盈亏审核防并发） -->
+    <update id="decreaseStkInventoryQtyExpect">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        update stk_inventory
+        set qty = IFNULL(qty, 0) - #{delta},
+            amt = IFNULL(unit_price, 0) * qty,
+            update_time = now(),
+            update_by = #{updateBy}
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = 0 or del_flag is null)
+          and IFNULL(qty, 0) = #{expectedQty}
+          and IFNULL(qty, 0) &gt;= #{delta}
+    </update>
+
     <update id="increaseStkInventoryQty">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_inventory
@@ -1159,5 +1174,116 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and stk.end_time is not null
         <include refid="stkInventoryMaterialActive"/>
         <![CDATA[ and DATEDIFF(stk.end_time, CURDATE()) >= 0 and DATEDIFF(stk.end_time, CURDATE()) <= 30 ]]>
+    </select>
+
+    <!-- 历史库存明细：截止 endDate 的进销存结存（与 view_stock_all_detail_jxc.jc_* 口径一致） -->
+    <sql id="historyInventoryWhere">
+        and vsadj.tenant_id = #{tenantId}
+        and vsadj.audit_date &lt;= #{endDate}
+        and vsadj.material_id is not null
+        and (fm.id is null or (fm.del_flag is null or fm.del_flag != 1))
+        <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
+        <if test="materialName != null and materialName != ''">
+            AND (
+                COALESCE(vsadj.material_code, '') LIKE CONCAT('%', #{materialName}, '%')
+                OR COALESCE(vsadj.material_name, '') LIKE CONCAT('%', #{materialName}, '%')
+                OR COALESCE(fm.referred_name, '') LIKE CONCAT('%', #{materialName}, '%')
+            )
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            AND COALESCE(vsadj.speci, '') LIKE CONCAT('%', #{materialSpeci}, '%')
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            AND (
+                COALESCE(vsadj.suppler_name, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                OR COALESCE(fs.name, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                OR COALESCE(fs.code, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+                OR COALESCE(fs.referred_code, '') LIKE CONCAT('%', #{supplierKeyword}, '%')
+            )
+        </if>
+        <if test="batchNumber != null and batchNumber != ''">
+            AND COALESCE(vsadj.batch_number, '') LIKE CONCAT('%', #{batchNumber}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            AND COALESCE(vsadj.batch_no, '') LIKE CONCAT('%', #{batchNo}, '%')
+        </if>
+        <if test="materialIsUse != null and materialIsUse != ''">
+            AND (fm.id is null or fm.is_use = #{materialIsUse})
+        </if>
+        <if test="isBilling != null">
+            <choose>
+                <when test="isBilling == 1 or isBilling == '1'"> AND fm.is_billing = '1' </when>
+                <when test="isBilling == 0 or isBilling == '0'"> AND (fm.is_billing in ('0','2') or fm.is_billing is null or fm.is_billing = '') </when>
+            </choose>
+        </if>
+    </sql>
+
+    <sql id="historyInventoryGroupBy">
+        vsadj.warehouse_id
+        ,vsadj.warehouse_code
+        ,vsadj.warehouse_name
+        ,vsadj.material_id
+        ,vsadj.material_code
+        ,vsadj.material_name
+        ,vsadj.speci
+        ,vsadj.model
+        ,vsadj.unit_name
+        ,vsadj.unit_price
+        ,vsadj.batch_number
+        ,DATE_FORMAT(vsadj.end_time, '%Y-%m-%d')
+        ,vsadj.batch_no
+        ,vsadj.suppler_id
+        ,COALESCE(fs.code, '')
+        ,COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), NULLIF(TRIM(fs.name), ''), '未维护供应商')
+    </sql>
+
+    <select id="selectHistoryInventoryList" parameterType="StkInventory" resultType="java.util.HashMap">
+        SELECT
+            vsadj.warehouse_id AS warehouseId
+            ,vsadj.warehouse_code AS warehouseCode
+            ,vsadj.warehouse_name AS warehouseName
+            ,vsadj.material_id AS materialId
+            ,vsadj.material_code AS materialCode
+            ,vsadj.material_name AS materialName
+            ,vsadj.speci AS materialSpeci
+            ,vsadj.model AS materialModel
+            ,vsadj.unit_name AS unitName
+            ,vsadj.unit_price AS unitPrice
+            ,vsadj.batch_number AS batchNumber
+            ,DATE_FORMAT(vsadj.end_time, '%Y-%m-%d') AS expiryDate
+            ,vsadj.batch_no AS batchNo
+            ,vsadj.suppler_id AS supplierId
+            ,COALESCE(fs.code, '') AS supplierCode
+            ,COALESCE(NULLIF(TRIM(vsadj.suppler_name), ''), NULLIF(TRIM(fs.name), ''), '未维护供应商') AS supplierName
+            ,SUM(vsadj.jc_qty) AS qty
+            ,SUM(vsadj.jc_amt) AS amt
+        FROM view_stock_all_detail_jxc vsadj
+        LEFT JOIN fd_material fm ON fm.id = vsadj.material_id
+        LEFT JOIN fd_supplier fs ON fs.id = vsadj.suppler_id
+        WHERE 1 = 1
+        <include refid="historyInventoryWhere"/>
+        GROUP BY
+        <include refid="historyInventoryGroupBy"/>
+        HAVING SUM(vsadj.jc_qty) &gt; 0
+        ORDER BY vsadj.warehouse_code ASC, vsadj.material_code ASC, COALESCE(fs.code, '') ASC
+    </select>
+
+    <select id="selectHistoryInventoryTotal" parameterType="StkInventory" resultType="com.spd.common.core.page.TotalInfo">
+        SELECT
+            IFNULL(SUM(t.qty), 0) AS totalQty
+            ,IFNULL(SUM(t.amt), 0) AS totalAmt
+        FROM (
+            SELECT
+                SUM(vsadj.jc_qty) AS qty
+                ,SUM(vsadj.jc_amt) AS amt
+            FROM view_stock_all_detail_jxc vsadj
+            LEFT JOIN fd_material fm ON fm.id = vsadj.material_id
+            LEFT JOIN fd_supplier fs ON fs.id = vsadj.suppler_id
+            WHERE 1 = 1
+            <include refid="historyInventoryWhere"/>
+            GROUP BY
+            <include refid="historyInventoryGroupBy"/>
+            HAVING SUM(vsadj.jc_qty) &gt; 0
+        ) t
     </select>
 </mapper>
