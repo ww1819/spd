@@ -3835,6 +3835,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         try {
             String url = buildInterfaceBaseUrl() + "/api/spd/delivery/download";
             String param = "deliveryNo=" + URLEncoder.encode(deliveryNo, "UTF-8");
+            String tenantId = StringUtils.isNotEmpty(SecurityUtils.getCustomerId())
+                ? SecurityUtils.getCustomerId() : SecurityUtils.requiredScopedTenantIdForSql();
+            if (StringUtils.isNotEmpty(tenantId)) {
+                param += "&spdTenantId=" + URLEncoder.encode(tenantId.trim(), "UTF-8");
+            }
             String xml = HttpUtils.sendGet(url, param, "UTF-8");
             if (StringUtils.isEmpty(xml) || !xml.contains("<LIST>")) {
                 throw new ServiceException("未获取到有效配送单明细数据：" + deliveryNo);
@@ -3965,7 +3970,19 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 String batchNumber = xmlTagValue(row, "PH");
                 String endTime = xmlTagValue(row, "YXQ");
                 String beginTime = xmlTagValue(row, "SCRQ");
-                String key = code + "|" + unitPrice.toPlainString() + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                String orderDetailId = xmlTagValue(row, "SCM_ORDER_DETAIL_ID");
+                String spdEntryId = xmlTagValue(row, "SPD_ENTRY_ID");
+                String scmDetailId = xmlTagValue(row, "SCM_DETAIL_ID");
+                String key;
+                if (StringUtils.isNotEmpty(orderDetailId)) {
+                    key = "od:" + orderDetailId + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                } else if (StringUtils.isNotEmpty(spdEntryId)) {
+                    key = "se:" + spdEntryId + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                } else if (StringUtils.isNotEmpty(scmDetailId)) {
+                    key = "dd:" + scmDetailId + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                } else {
+                    key = code + "|" + unitPrice.toPlainString() + "|" + batchNumber + "|" + endTime + "|" + beginTime;
+                }
                 Map<String, Object> agg = grouped.get(key);
                 if (agg == null) {
                     agg = new HashMap<>();
