@@ -33,7 +33,7 @@
         limit #{limit}
     </select>
 
-    <select id="selectByTenantKindAndCreateTimeBetween" resultType="com.spd.his.domain.HisChargeFetchBatch">
+    <select id="selectForMirrorTrace" resultType="com.spd.his.domain.HisChargeFetchBatch">
         select id, tenant_id as tenantId, charge_kind as chargeKind,
                window_start as windowStart, window_end as windowEnd,
                inserted_count as insertedCount, skipped_count as skippedCount, drift_count as driftCount,
@@ -41,8 +41,16 @@
         from his_charge_fetch_batch
         where tenant_id = #{tenantId}
           and charge_kind = #{chargeKind}
-          and create_time &gt;= #{beginTime}
-          and create_time &lt;= #{endTime}
+          and (
+            (create_time &gt;= #{beginTime} and create_time &lt;= #{endTime})
+            or (
+              #{chargeAt} is not null
+              and window_start &lt;= #{chargeAt}
+              and window_end &gt; #{chargeAt}
+              and create_time &gt;= #{lookbackBegin}
+              and create_time &lt;= #{endTime}
+            )
+          )
         order by create_time asc, id asc
         limit #{limit}
     </select>
