@@ -24,6 +24,7 @@ import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
+import com.spd.his.domain.dto.HisChargeFetchBatchTraceVo;
 import com.spd.his.service.IHisPatientChargeService;
 
 /**
@@ -69,6 +70,18 @@ public class GzHighChargeMirrorController extends BaseController
         @RequestParam("mirrorRowId") String mirrorRowId)
     {
         List<HisMirrorConsumeRecordVo> list = hisPatientChargeService.listHighChargeMirrorConsumeRecords(visitKind, mirrorRowId);
+        return success(list);
+    }
+
+    /**
+     * 某条计费明细：计费时间～下载时间之间的抓取记录（按需查询）。
+     */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
+    @GetMapping("/mirror/fetchBatches")
+    public AjaxResult mirrorFetchBatches(@RequestParam("visitKind") String visitKind,
+        @RequestParam("mirrorRowId") String mirrorRowId)
+    {
+        List<HisChargeFetchBatchTraceVo> list = hisPatientChargeService.listFetchBatchesForMirror(visitKind, mirrorRowId);
         return success(list);
     }
 

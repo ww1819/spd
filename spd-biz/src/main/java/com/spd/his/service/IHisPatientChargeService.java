@@ -21,6 +21,7 @@ import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
+import com.spd.his.domain.dto.HisChargeFetchBatchTraceVo;
 
 /**
  * HIS 患者计费镜像：抓取、查询与按明细手动生成科室消耗。
@@ -66,6 +67,12 @@ public interface IHisPatientChargeService
     List<HisPatientChargeSummaryRow> selectChargeSummary(String beginChargeDate, String endChargeDate);
 
     List<HisChargeFetchBatch> listRecentFetchBatches(int limit);
+
+    /**
+     * 某条计费明细：计费时间～下载落库时间之间的抓取批次（含查询窗口、是否本条下载成功）。
+     * 仅在用户主动点击时调用，列表页不预加载。
+     */
+    List<HisChargeFetchBatchTraceVo> listFetchBatchesForMirror(String visitKind, String mirrorRowId);
 
     HisGenerateConsumeResultVo processMirrorLowValue(HisMirrorManualRowBody body);
 

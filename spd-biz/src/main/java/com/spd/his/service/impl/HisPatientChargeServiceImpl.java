@@ -11,6 +11,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,7 @@ import com.spd.his.domain.HisPatientChargeMirrorUnified;
 import com.spd.his.domain.dto.HisExecDeptBackfillResultVo;
 import com.spd.his.domain.dto.HisFetchResultVo;
 import com.spd.his.domain.dto.HisIdFingerprint;
+import com.spd.his.domain.dto.HisChargeFetchBatchTraceVo;
 import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.github.pagehelper.Page;
@@ -945,6 +947,125 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         int lim = limit > 0 && limit <= 100 ? limit : 30;
         return hisChargeFetchBatchMapper.selectRecentByTenant(SecurityUtils.getCustomerId(), lim);
+    }
+
+    @Override
+    public List<HisChargeFetchBatchTraceVo> listFetchBatchesForMirror(String visitKind, String mirrorRowId)
+    {
+        assertTenantAllowed();
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isAnyBlank(tenantId, visitKind, mirrorRowId))
+        {
+            return new ArrayList<>();
+        }
+        String vk = normalizeVisitKindForAuth(visitKind);
+        if (!"INPATIENT".equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        String rowId = StringUtils.trimToEmpty(mirrorRowId);
+        Date chargeAt;
+        Date downloadAt;
+        String successBatchId;
+        if ("OUTPATIENT".equals(vk))
+        {
+            HisOutpatientChargeMirror row = hisOutpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, rowId);
+            if (row == null)
+            {
+                throw new ServiceException("未找到门诊计费明细");
+            }
+            chargeAt = DateUtils.parseDate(row.getChargeDate());
+            downloadAt = row.getCreateTime();
+            successBatchId = row.getFetchBatchId();
+        }
+        else
+        {
+            HisInpatientChargeMirror row = hisInpatientChargeMirrorMapper.selectByIdAndTenant(tenantId, rowId);
+            if (row == null)
+            {
+                throw new ServiceException("未找到住院计费明细");
+            }
+            chargeAt = row.getChargeDate();
+            downloadAt = row.getCreateTime();
+            successBatchId = row.getFetchBatchId();
+        }
+
+        List<HisChargeFetchBatch> batches = new ArrayList<>();
+        if (chargeAt != null && downloadAt != null)
+        {
+            Date begin = chargeAt;
+            Date end = downloadAt;
+            if (begin.after(end))
+            {
+                Date tmp = begin;
+                begin = end;
+                end = tmp;
+            }
+            List<HisChargeFetchBatch> ranged = hisChargeFetchBatchMapper.selectByTenantKindAndCreateTimeBetween(
+                tenantId, vk, begin, end, 200);
+            if (ranged != null && !ranged.isEmpty())
+            {
+                batches.addAll(ranged);
+            }
+        }
+        if (StringUtils.isNotBlank(successBatchId))
+        {
+            boolean found = false;
+            for (HisChargeFetchBatch b : batches)
+            {
+                if (successBatchId.equals(b.getId()))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                HisChargeFetchBatch success = hisChargeFetchBatchMapper.selectByIdAndTenant(successBatchId, tenantId);
+                if (success != null)
+                {
+                    batches.add(success);
+                }
+            }
+        }
+        batches.sort(Comparator
+            .comparing(HisChargeFetchBatch::getCreateTime, Comparator.nullsLast(Date::compareTo))
+            .thenComparing(HisChargeFetchBatch::getId, Comparator.nullsLast(String::compareTo)));
+
+        List<HisChargeFetchBatchTraceVo> out = new ArrayList<>(batches.size());
+        for (HisChargeFetchBatch b : batches)
+        {
+            out.add(toFetchBatchTraceVo(b, successBatchId));
+        }
+        return out;
+    }
+
+    private static HisChargeFetchBatchTraceVo toFetchBatchTraceVo(HisChargeFetchBatch b, String successBatchId)
+    {
+        HisChargeFetchBatchTraceVo vo = new HisChargeFetchBatchTraceVo();
+        if (b == null)
+        {
+            return vo;
+        }
+        vo.setId(b.getId());
+        vo.setTenantId(b.getTenantId());
+        vo.setChargeKind(b.getChargeKind());
+        vo.setWindowStart(b.getWindowStart());
+        vo.setWindowEnd(b.getWindowEnd());
+        vo.setInsertedCount(b.getInsertedCount());
+        vo.setSkippedCount(b.getSkippedCount());
+        vo.setDriftCount(b.getDriftCount());
+        vo.setRemark(b.getRemark());
+        vo.setCreateBy(b.getCreateBy());
+        vo.setCreateTime(b.getCreateTime());
+        vo.setDownloadSuccess(StringUtils.isNotBlank(successBatchId) && successBatchId.equals(b.getId()));
+        String kindLabel = "OUTPATIENT".equals(b.getChargeKind()) ? "门诊" : "住院";
+        String winStart = b.getWindowStart() == null ? "--"
+            : DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, b.getWindowStart());
+        String winEnd = b.getWindowEnd() == null ? "--"
+            : DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, b.getWindowEnd());
+        vo.setQueryCondition(kindLabel + " · 计费窗口 " + winStart + " ~ " + winEnd);
+        return vo;
     }
 
     @Override
