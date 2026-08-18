@@ -52,6 +52,7 @@ import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.domain.FdUnit;
 import com.spd.foundation.domain.FdWarehouse;
+import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdWarehouseCategory;
 import com.spd.foundation.util.WarehouseStatusUtil;
 import com.spd.foundation.mapper.FdFactoryMapper;
@@ -60,6 +61,7 @@ import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.mapper.FdUnitMapper;
 import com.spd.foundation.mapper.FdWarehouseMapper;
+import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdWarehouseCategoryMapper;
 import com.spd.foundation.service.IMsunHisBillPushService;
 import com.spd.warehouse.domain.HcCkFlow;
@@ -162,6 +164,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     @Autowired
     private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FdDepartmentMapper fdDepartmentMapper;
 
     @Autowired
     private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
@@ -832,6 +837,17 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(warehouseId));
         WarehouseStatusUtil.assertEnabledForInbound(wh, "该仓库已经停用，不能在进行入库");
+    }
+
+    /** 出库(201)：停用科室不允许出库 */
+    private void assertDepartmentEnabledForOutbound(Long departmentId) {
+        if (departmentId == null) {
+            return;
+        }
+        FdDepartment dept = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(departmentId));
+        if (dept != null && WarehouseStatusUtil.isDisabledStatus(dept.getStatus())) {
+            throw new ServiceException("该科室已经停用请核对！");
+        }
     }
 
     /** 低值入库（101）：停用供应商不允许入库 */
@@ -2329,6 +2345,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillType() == null) {
             stkIoBill.setBillType(201);
         }
+        assertDepartmentEnabledForOutbound(stkIoBill.getDepartmentId());
         stkIoBill.setBillNo(getBillNumber("CK"));
         // 如果制单日期为空，自动设置为当前日期
         if (stkIoBill.getBillDate() == null) {
@@ -2380,6 +2397,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         Integer bt = stkIoBill.getBillType();
         if (bt != null && (bt == 201 || bt == 301)) {
             assertWarehouseStockEntriesMatchBillHeader(stkIoBill, bt == 301);
+        }
+        if (bt == null || bt == 201) {
+            assertDepartmentEnabledForOutbound(stkIoBill.getDepartmentId());
         }
         syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, stkIoBill.getId());
