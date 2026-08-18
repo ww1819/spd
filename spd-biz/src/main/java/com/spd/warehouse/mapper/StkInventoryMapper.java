@@ -85,6 +85,15 @@ public interface StkInventoryMapper
     int decreaseStkInventoryQty(@Param("id") Long id, @Param("delta") BigDecimal delta, @Param("updateBy") String updateBy);
 
     /**
+     * 原子扣减且要求当前 qty 等于 expectedQty（盘点/盈亏审核防并发）
+     * @return 影响行数；0 表示数量已变或不足
+     */
+    int decreaseStkInventoryQtyExpect(@Param("id") Long id,
+                                      @Param("delta") BigDecimal delta,
+                                      @Param("expectedQty") BigDecimal expectedQty,
+                                      @Param("updateBy") String updateBy);
+
+    /**
      * 原子增加仓库库存数量（qty/amt 同语句计算）。
      * 用于退库(401)/调拨转入等，避免并发读改写导致丢失更新。
      *
@@ -235,4 +244,14 @@ public interface StkInventoryMapper
      * 库存分布分析：按维度 SQL 聚合数量与金额
      */
     List<Map<String, Object>> selectStkInventoryDistribution(StkInventory stkInventory);
+
+    /**
+     * 历史库存明细：截止 endDate（含时分秒）的进销存结存汇总
+     */
+    List<Map<String, Object>> selectHistoryInventoryList(StkInventory stkInventory);
+
+    /**
+     * 历史库存明细合计（数量/金额）
+     */
+    TotalInfo selectHistoryInventoryTotal(StkInventory stkInventory);
 }

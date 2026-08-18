@@ -369,7 +369,12 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                     throw new ServiceException("库存已变动，请重做盘点和盈亏处理。原批次库存与账面不一致。");
                 }
                 BigDecimal absQty = profitQty.abs();
-                BigDecimal newQty = inventory.getQty().subtract(absQty);
+                int decRows = stkInventoryMapper.decreaseStkInventoryQtyExpect(
+                        inventory.getId(), absQty, currentQtyLoss, username);
+                if (decRows == 0) {
+                    throw new ServiceException("库存已变动，请重做盘点和盈亏处理。原批次库存扣减失败（可能并发）。");
+                }
+                BigDecimal newQty = currentQtyLoss.subtract(absQty);
                 inventory.setQty(newQty);
                 if (inventory.getUnitPrice() != null) {
                     inventory.setAmt(newQty.multiply(inventory.getUnitPrice()));
@@ -377,9 +382,6 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 else {
                     inventory.setAmt(BigDecimal.ZERO);
                 }
-                inventory.setUpdateTime(now);
-                inventory.setUpdateBy(username);
-                stkInventoryMapper.updateStkInventory(inventory);
 
                 HcCkFlow flow = new HcCkFlow();
                 flow.setBillId(bill.getId());

@@ -225,6 +225,30 @@ public class StkInventoryServiceImpl implements IStkInventoryService
     }
 
     @Override
+    public List<Map<String, Object>> selectHistoryInventoryList(StkInventory stkInventory) {
+        if (stkInventory == null) {
+            stkInventory = new StkInventory();
+        }
+        if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+            stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
+        }
+        List<Map<String, Object>> list = stkInventoryMapper.selectHistoryInventoryList(stkInventory);
+        return list != null ? list : new ArrayList<>();
+    }
+
+    @Override
+    public TotalInfo selectHistoryInventoryTotal(StkInventory stkInventory) {
+        if (stkInventory == null) {
+            stkInventory = new StkInventory();
+        }
+        if (StringUtils.isEmpty(stkInventory.getTenantId())) {
+            stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
+        }
+        TotalInfo total = stkInventoryMapper.selectHistoryInventoryTotal(stkInventory);
+        return total != null ? total : new TotalInfo();
+    }
+
+    @Override
     public List<Map<String, Object>> selectInventoryAlertList(StkInventory stkInventory) {
         if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
             stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());

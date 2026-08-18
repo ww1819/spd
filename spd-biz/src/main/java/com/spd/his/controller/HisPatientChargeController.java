@@ -35,6 +35,7 @@ import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
+import com.spd.his.domain.dto.HisChargeFetchBatchTraceVo;
 import com.spd.his.service.IHisPatientChargeService;
 
 /**
@@ -152,6 +153,19 @@ public class HisPatientChargeController extends BaseController
     {
         List<HisChargeFetchBatch> list = hisPatientChargeService.listRecentFetchBatches(limit);
         return getDataTable(list);
+    }
+
+    /**
+     * 某条计费明细：计费时间～下载时间之间的抓取记录（按需查询，不随列表加载）。
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list') or @ss.hasPermi('gz:highChargeScan:list') "
+        + "or @ss.hasPermi('department:patientCharge:fetchBatchList')")
+    @GetMapping("/fetchBatch/forMirror")
+    public AjaxResult fetchBatchForMirror(@RequestParam("visitKind") String visitKind,
+        @RequestParam("mirrorRowId") String mirrorRowId)
+    {
+        List<HisChargeFetchBatchTraceVo> list = hisPatientChargeService.listFetchBatchesForMirror(visitKind, mirrorRowId);
+        return success(list);
     }
 
     @PreAuthorize("@ss.hasPermi('department:patientCharge:generateConsume') or @ss.hasPermi('department:patientCharge:processMirrorLow')")
