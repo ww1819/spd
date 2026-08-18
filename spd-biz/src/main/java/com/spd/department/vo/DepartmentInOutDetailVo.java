@@ -19,6 +19,9 @@ public class DepartmentInOutDetailVo {
     
     /** 单据类型 */
     private Integer billType;
+
+    /** 单据类型名称（出库/退库/消耗/盘点等） */
+    private String billTypeName;
     
     /** 单据状态 */
     private Integer billStatus;
@@ -84,6 +87,14 @@ public class DepartmentInOutDetailVo {
 
     public void setBillType(Integer billType) {
         this.billType = billType;
+    }
+
+    public String getBillTypeName() {
+        return billTypeName;
+    }
+
+    public void setBillTypeName(String billTypeName) {
+        this.billTypeName = billTypeName;
     }
 
     public Integer getBillStatus() {
