@@ -299,6 +299,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             dto.put("hospitalName", hospitalName);
             dto.put("warehouseId", po.getWarehouseId());
             dto.put("warehouseName", po.getWarehouse() != null ? po.getWarehouse().getName() : null);
+            dto.put("warehouseCode", po.getWarehouse() != null ? po.getWarehouse().getCode() : null);
             dto.put("departmentId", po.getDepartmentId());
             if (po.getDepartmentId() != null)
             {
@@ -315,6 +316,10 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             if (po.getDepartment() != null && StringUtils.isNotEmpty(po.getDepartment().getName()))
             {
                 dto.put("applyDepartmentName", po.getDepartment().getName());
+            }
+            if (po.getDepartment() != null && StringUtils.isNotEmpty(po.getDepartment().getCode()))
+            {
+                dto.put("departmentCode", po.getDepartment().getCode());
             }
             dto.put("orderDate", po.getOrderDate());
             dto.put("totalAmount", moneyScale(po.getTotalAmount()));
