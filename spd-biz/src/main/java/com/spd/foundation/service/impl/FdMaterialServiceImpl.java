@@ -3,9 +3,12 @@ package com.spd.foundation.service.impl;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson2.JSON;
@@ -53,6 +56,7 @@ import com.spd.foundation.dto.MaterialImportAddDto;
 import com.spd.foundation.dto.MaterialImportUpdateDto;
 import com.spd.foundation.service.IFdFocus18Service;
 import com.spd.foundation.service.IFdMaterialService;
+import com.spd.foundation.service.IFdFactoryService;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.utils.poi.ImportRowErrorCollector;
 import com.spd.foundation.service.IFdUnitService;
@@ -102,6 +106,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     @Autowired
     private FdFactoryMapper fdFactoryMapper;
+
+    @Autowired
+    private IFdFactoryService fdFactoryService;
 
     @Autowired
     private FdWarehouseCategoryMapper fdWarehouseCategoryMapper;
@@ -1621,23 +1628,31 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return buildMaterialAddImportResult(list, c, valid);
     }
 
+    private static final String MSG_TEMPLATE_DAMAGED_NO_ID = "未识别到档案ID，模板文件损坏，请重新下载后再导入";
+    private static final String MSG_TEMPLATE_DAMAGED_BAD_ID = "档案ID不存在于系统内，模板文件损坏，请重新下载后再导入";
+    private static final String MSG_CODE_NOT_UPDATED = "更新导入不会变更产品档案编码";
+
     @Override
     public Map<String, Object> validateMaterialImportUpdate(List<MaterialImportUpdateDto> list)
     {
         assertZqTcmMaterialBulkUpdateAllowed();
         clearMaterialUpdateImportValidation(list);
         ImportRowErrorCollector c = new ImportRowErrorCollector();
+        List<String> warnings = new ArrayList<>();
+        Set<String> missingFactories = new LinkedHashSet<>();
         String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isEmpty(tenantId))
         {
             c.addGlobal("无法解析当前租户，请重新登录后重试");
-            return buildMaterialUpdateImportResult(list, c, false);
+            return buildMaterialUpdateImportResult(list, c, false, missingFactories, warnings);
         }
         if (list == null || list.isEmpty())
         {
             c.addGlobal("导入数据不能为空");
-            return buildMaterialUpdateImportResult(list, c, false);
+            return buildMaterialUpdateImportResult(list, c, false, missingFactories, warnings);
         }
+        Map<String, FdFactory> factoryByName = new HashMap<>();
+        boolean hasIdError = false;
         for (int i = 0; i < list.size(); i++)
         {
             MaterialImportUpdateDto row = list.get(i);
@@ -1651,22 +1666,35 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             {
                 continue;
             }
-            if (row.getId() == null)
+            Long archiveId = row.resolveArchiveId();
+            if (archiveId == null)
             {
-                c.addRow(excelRow, "SPD系统主键不能为空");
+                hasIdError = true;
+                c.addRow(excelRow, MSG_TEMPLATE_DAMAGED_NO_ID);
                 continue;
             }
-            FdMaterial exist = fdMaterialMapper.selectFdMaterialById(row.getId());
+            FdMaterial exist = fdMaterialMapper.selectFdMaterialById(archiveId);
             if (exist == null || !tenantId.equals(exist.getTenantId()))
             {
-                c.addRow(excelRow, "SPD系统主键「" + row.getId() + "」不存在或不属于本租户");
+                hasIdError = true;
+                c.addRow(excelRow, MSG_TEMPLATE_DAMAGED_BAD_ID);
                 continue;
             }
-            if (StringUtils.isEmpty(StringUtils.trim(row.getName())))
+            if (StringUtils.isEmpty(row.getName()))
             {
-                c.addRow(excelRow, "名称不能为空");
+                c.addRow(excelRow, "耗材名称不能为空");
             }
-            if (row.getUnitId() != null)
+            String excelCode = row.getCode();
+            String dbCode = exist.getCode() == null ? null : exist.getCode().trim();
+            if (StringUtils.isNotEmpty(excelCode) && StringUtils.isNotEmpty(dbCode) && !excelCode.equals(dbCode))
+            {
+                warnings.add("第" + excelRow + "行：" + MSG_CODE_NOT_UPDATED + "（系统编码 " + dbCode + "）");
+            }
+            if (StringUtils.isNotEmpty(row.getUnitName()))
+            {
+                /* 导入时自动新建，校验不拦截 */
+            }
+            else if (row.getUnitId() != null)
             {
                 FdUnit u = fdUnitService.selectFdUnitByUnitId(row.getUnitId());
                 if (u == null || !tenantId.equals(u.getTenantId()))
@@ -1674,10 +1702,159 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                     c.addRow(excelRow, "单位ID「" + row.getUnitId() + "」不存在或不属于本租户");
                 }
             }
+            if (StringUtils.isNotEmpty(row.getFactoryName()) && !hasIdError)
+            {
+                FdFactory fac = factoryByName.get(row.getFactoryName());
+                if (fac == null && !factoryByName.containsKey(row.getFactoryName()))
+                {
+                    fac = fdFactoryMapper.selectFdFactoryByTenantAndName(tenantId, row.getFactoryName());
+                    factoryByName.put(row.getFactoryName(), fac);
+                }
+                if (fac == null)
+                {
+                    missingFactories.add(row.getFactoryName());
+                }
+            }
         }
-        boolean valid = c.getAllErrors().isEmpty();
-        fillMaterialUpdateImportValidation(list, c, valid);
-        return buildMaterialUpdateImportResult(list, c, valid);
+        if (hasIdError)
+        {
+            missingFactories.clear();
+        }
+        boolean valid = c.getAllErrors().isEmpty() && missingFactories.isEmpty();
+        fillMaterialUpdateImportValidation(list, c, valid, tenantId, missingFactories);
+        return buildMaterialUpdateImportResult(list, c, valid, missingFactories, warnings);
+    }
+
+    @Override
+    public List<MaterialImportUpdateDto> buildMaterialImportUpdateTemplate(FdMaterial query)
+    {
+        com.github.pagehelper.PageHelper.clearPage();
+        if (query == null)
+        {
+            query = new FdMaterial();
+        }
+        query.setIncludeDisabledInList(true);
+        List<FdMaterial> list = selectFdMaterialList(query);
+        List<MaterialImportUpdateDto> rows = new ArrayList<>();
+        if (list == null)
+        {
+            return rows;
+        }
+        for (FdMaterial m : list)
+        {
+            if (m == null || m.getId() == null)
+            {
+                continue;
+            }
+            MaterialImportUpdateDto row = new MaterialImportUpdateDto();
+            row.setArchiveId(String.valueOf(m.getId()));
+            row.setCode(m.getCode());
+            row.setName(m.getName());
+            row.setSpeci(m.getSpeci());
+            row.setModel(m.getModel());
+            if (m.getFdUnit() != null)
+            {
+                row.setUnitName(m.getFdUnit().getUnitName());
+            }
+            row.setPrice(m.getPrice());
+            if (m.getFdFactory() != null)
+            {
+                row.setFactoryName(m.getFdFactory().getFactoryName());
+            }
+            row.setRegisterNo(m.getRegisterNo());
+            row.setMedicalNo(m.getMedicalNo());
+            row.setBrand(m.getBrand());
+            row.setUdiNo(m.getUdiNo());
+            row.setRegisterName(m.getRegisterName());
+            row.setPeriodDate(m.getPeriodDate());
+            row.setPackageSpeci(m.getPackageSpeci());
+            row.setMinPackageQty(m.getMinPackageQty());
+            row.setProducer(m.getProducer());
+            row.setUseName(m.getUseName());
+            row.setQuality(m.getQuality());
+            row.setPermitNo(m.getPermitNo());
+            row.setSunshineCode(m.getSunshineCode());
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> createFactoriesForMaterialImport(List<String> names)
+    {
+        assertZqTcmMaterialBulkUpdateAllowed();
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
+        if (StringUtils.isEmpty(tenantId))
+        {
+            throw new ServiceException("无法解析当前租户，请重新登录后重试");
+        }
+        if (names == null || names.isEmpty())
+        {
+            throw new ServiceException("请勾选要创建的生产厂家");
+        }
+        int created = 0;
+        int skipped = 0;
+        List<String> createdNames = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String raw : names)
+        {
+            String name = StringUtils.sanitizeImportCell(raw);
+            if (name == null || !seen.add(name))
+            {
+                continue;
+            }
+            FdFactory exist = fdFactoryMapper.selectFdFactoryByTenantAndName(tenantId, name);
+            if (exist != null)
+            {
+                skipped++;
+                continue;
+            }
+            try
+            {
+                FdFactory neu = new FdFactory();
+                neu.setTenantId(tenantId);
+                neu.setFactoryName(name);
+                neu.setDelFlag(0);
+                if (TenantEnum.HS_003 != TenantEnum.fromCustomerId(SecurityUtils.getCustomerId()))
+                {
+                    neu.setHisId(null);
+                }
+                fdFactoryService.insertFdFactory(neu);
+                created++;
+                createdNames.add(name);
+            }
+            catch (Exception e)
+            {
+                errors.add("「" + name + "」：" + e.getMessage());
+            }
+        }
+        if (created == 0 && skipped == 0)
+        {
+            throw new ServiceException(errors.isEmpty() ? "没有可创建的生产厂家" : String.join("；", errors));
+        }
+        if (!errors.isEmpty() && created == 0)
+        {
+            throw new ServiceException(String.join("；", errors));
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("created", created);
+        result.put("skipped", skipped);
+        result.put("createdNames", createdNames);
+        result.put("errors", errors);
+        StringBuilder msg = new StringBuilder();
+        msg.append("已创建 ").append(created).append(" 个生产厂家");
+        if (skipped > 0)
+        {
+            msg.append("，").append(skipped).append(" 个已存在已跳过");
+        }
+        if (!errors.isEmpty())
+        {
+            msg.append("。未成功：").append(String.join("；", errors));
+        }
+        result.put("msg", msg.toString());
+        return result;
     }
 
     @Override
@@ -1750,6 +1927,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String importMaterialImportUpdate(List<MaterialImportUpdateDto> list, String operName, boolean confirm)
     {
         assertZqTcmMaterialBulkUpdateAllowed();
@@ -1770,6 +1948,8 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         int ok = 0;
         StringBuilder msg = new StringBuilder();
         String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
+        Map<String, Long> unitNameToIdCache = new LinkedHashMap<>();
+        Map<String, Long> factoryNameToIdCache = new LinkedHashMap<>();
         for (MaterialImportUpdateDto row : list)
         {
             if (row == null || isMaterialImportUpdateRowBlank(row))
@@ -1777,35 +1957,13 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                 continue;
             }
             normalizeMaterialImportUpdateRow(row);
-            FdMaterial full = fdMaterialMapper.selectFdMaterialById(row.getId());
+            Long archiveId = row.resolveArchiveId();
+            FdMaterial full = archiveId == null ? null : fdMaterialMapper.selectFdMaterialById(archiveId);
             if (full == null || StringUtils.isEmpty(tenantId) || !tenantId.equals(full.getTenantId()))
             {
                 continue;
             }
-            full.setName(StringUtils.trim(row.getName()));
-            String speciU = trimToNull(row.getSpeci());
-            if (speciU != null)
-            {
-                full.setSpeci(speciU);
-            }
-            String modelU = trimToNull(row.getModel());
-            if (modelU != null)
-            {
-                full.setModel(modelU);
-            }
-            if (row.getUnitId() != null)
-            {
-                full.setUnitId(row.getUnitId());
-            }
-            if (row.getPrice() != null)
-            {
-                full.setPrice(row.getPrice());
-            }
-            String medU = trimToNull(row.getMedicalNo());
-            if (medU != null)
-            {
-                full.setMedicalNo(medU);
-            }
+            applyMaterialImportUpdateFields(full, row, tenantId, unitNameToIdCache, factoryNameToIdCache);
             full.setUpdateBy(operName);
             updateFdMaterial(full);
             ok++;
@@ -1845,7 +2003,8 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             return true;
         }
-        return row.getId() == null && StringUtils.isEmpty(StringUtils.trim(row.getName()));
+        return StringUtils.isEmpty(StringUtils.sanitizeImportCell(row.getArchiveId()))
+            && StringUtils.isEmpty(row.getName());
     }
 
     private static void normalizeMaterialImportAddRow(MaterialImportAddDto row)
@@ -1876,21 +2035,125 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             return;
         }
-        if (row.getName() != null)
+        row.setArchiveId(StringUtils.sanitizeImportCell(row.getArchiveId()));
+        row.setCode(StringUtils.sanitizeImportCell(row.getCode()));
+        row.setName(StringUtils.sanitizeImportCell(row.getName()));
+        row.setSpeci(StringUtils.sanitizeImportCell(row.getSpeci()));
+        row.setModel(StringUtils.sanitizeImportCell(row.getModel()));
+        row.setUnitName(StringUtils.sanitizeImportCell(row.getUnitName()));
+        row.setFactoryName(StringUtils.sanitizeImportCell(row.getFactoryName()));
+        row.setRegisterNo(StringUtils.sanitizeImportCell(row.getRegisterNo()));
+        row.setMedicalNo(StringUtils.sanitizeImportCell(row.getMedicalNo()));
+        row.setBrand(StringUtils.sanitizeImportCell(row.getBrand()));
+        row.setUdiNo(StringUtils.sanitizeImportCell(row.getUdiNo()));
+        row.setRegisterName(StringUtils.sanitizeImportCell(row.getRegisterName()));
+        row.setPackageSpeci(StringUtils.sanitizeImportCell(row.getPackageSpeci()));
+        row.setProducer(StringUtils.sanitizeImportCell(row.getProducer()));
+        row.setUseName(StringUtils.sanitizeImportCell(row.getUseName()));
+        row.setQuality(StringUtils.sanitizeImportCell(row.getQuality()));
+        row.setPermitNo(StringUtils.sanitizeImportCell(row.getPermitNo()));
+        row.setSunshineCode(StringUtils.sanitizeImportCell(row.getSunshineCode()));
+    }
+
+    private void applyMaterialImportUpdateFields(FdMaterial full, MaterialImportUpdateDto row, String tenantId,
+        Map<String, Long> unitNameToIdCache, Map<String, Long> factoryNameToIdCache)
+    {
+        String newName = row.getName();
+        if (StringUtils.isNotEmpty(newName) && !newName.equals(full.getName()))
         {
-            row.setName(row.getName().trim());
+            full.setName(newName);
+            full.setReferredName(PinyinUtils.getPinyinInitials(newName));
+        }
+        else if (StringUtils.isNotEmpty(newName))
+        {
+            full.setName(newName);
         }
         if (row.getSpeci() != null)
         {
-            row.setSpeci(row.getSpeci().trim());
+            full.setSpeci(row.getSpeci());
         }
         if (row.getModel() != null)
         {
-            row.setModel(row.getModel().trim());
+            full.setModel(row.getModel());
+        }
+        if (StringUtils.isNotEmpty(row.getUnitName()))
+        {
+            full.setUnitId(resolveOrCreateUnitForMaterialImport(tenantId, row.getUnitName(), unitNameToIdCache));
+        }
+        else if (row.getUnitId() != null)
+        {
+            full.setUnitId(row.getUnitId());
+        }
+        if (row.getPrice() != null)
+        {
+            full.setPrice(row.getPrice());
+        }
+        if (StringUtils.isNotEmpty(row.getFactoryName()))
+        {
+            Long fid = factoryNameToIdCache.get(row.getFactoryName());
+            if (fid == null)
+            {
+                FdFactory fac = fdFactoryMapper.selectFdFactoryByTenantAndName(tenantId, row.getFactoryName());
+                if (fac == null || fac.getFactoryId() == null)
+                {
+                    throw new ServiceException("生产厂家「" + row.getFactoryName() + "」不存在，请先勾选创建后再导入");
+                }
+                fid = fac.getFactoryId();
+                factoryNameToIdCache.put(row.getFactoryName(), fid);
+            }
+            full.setFactoryId(fid);
+        }
+        if (row.getRegisterNo() != null)
+        {
+            full.setRegisterNo(row.getRegisterNo());
         }
         if (row.getMedicalNo() != null)
         {
-            row.setMedicalNo(row.getMedicalNo().trim());
+            full.setMedicalNo(row.getMedicalNo());
+        }
+        if (row.getBrand() != null)
+        {
+            full.setBrand(row.getBrand());
+        }
+        if (row.getUdiNo() != null)
+        {
+            full.setUdiNo(row.getUdiNo());
+        }
+        if (row.getRegisterName() != null)
+        {
+            full.setRegisterName(row.getRegisterName());
+        }
+        if (row.getPeriodDate() != null)
+        {
+            full.setPeriodDate(row.getPeriodDate());
+        }
+        if (row.getPackageSpeci() != null)
+        {
+            full.setPackageSpeci(row.getPackageSpeci());
+        }
+        if (row.getMinPackageQty() != null)
+        {
+            full.setMinPackageQty(row.getMinPackageQty());
+        }
+        if (row.getProducer() != null)
+        {
+            full.setProducer(row.getProducer());
+        }
+        if (row.getUseName() != null)
+        {
+            full.setUseName(row.getUseName());
+        }
+        if (row.getQuality() != null)
+        {
+            full.setQuality(row.getQuality());
+        }
+        if (row.getPermitNo() != null)
+        {
+            full.setPermitNo(row.getPermitNo());
+        }
+        if (row.getSunshineCode() != null)
+        {
+            full.setSunshineCode(row.getSunshineCode());
         }
     }
 
@@ -1986,12 +2249,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
     }
 
-    private void fillMaterialUpdateImportValidation(List<MaterialImportUpdateDto> list, ImportRowErrorCollector c, boolean fileValid)
+    private void fillMaterialUpdateImportValidation(List<MaterialImportUpdateDto> list, ImportRowErrorCollector c, boolean fileValid,
+        String tenantId, Set<String> missingFactories)
     {
         if (list == null)
         {
             return;
         }
+        Set<String> missing = missingFactories != null ? missingFactories : new LinkedHashSet<>();
         for (int i = 0; i < list.size(); i++)
         {
             int excelRow = i + 2;
@@ -2006,7 +2271,30 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                 row.setValidationResult("空行（已跳过）");
                 continue;
             }
-            List<String> msgs = c.getRowMessages(excelRow);
+            List<String> msgs = new ArrayList<>(c.getRowMessages(excelRow));
+            if (StringUtils.isNotEmpty(row.getFactoryName()) && missing.contains(row.getFactoryName()))
+            {
+                msgs.add("生产厂家「" + row.getFactoryName() + "」系统中不存在，请勾选创建后再导入");
+            }
+            if (StringUtils.isNotEmpty(row.getUnitName()))
+            {
+                FdUnit existingUnit = StringUtils.isEmpty(tenantId) ? null
+                    : fdUnitMapper.selectFdUnitByTenantAndUnitName(tenantId, row.getUnitName());
+                if (existingUnit == null)
+                {
+                    msgs.add("单位「" + row.getUnitName() + "」将在导入时自动新建");
+                }
+            }
+            Long archiveId = row.resolveArchiveId();
+            if (archiveId != null && StringUtils.isNotEmpty(row.getCode()))
+            {
+                FdMaterial exist = fdMaterialMapper.selectFdMaterialById(archiveId);
+                String dbCode = exist == null || exist.getCode() == null ? null : exist.getCode().trim();
+                if (StringUtils.isNotEmpty(dbCode) && !row.getCode().equals(dbCode))
+                {
+                    msgs.add(MSG_CODE_NOT_UPDATED + "（系统编码 " + dbCode + "）");
+                }
+            }
             if (!msgs.isEmpty())
             {
                 row.setValidationResult(String.join("；", msgs));
@@ -2132,11 +2420,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return id;
     }
 
-    private Map<String, Object> buildMaterialUpdateImportResult(List<MaterialImportUpdateDto> list, ImportRowErrorCollector c, boolean valid)
+    private Map<String, Object> buildMaterialUpdateImportResult(List<MaterialImportUpdateDto> list, ImportRowErrorCollector c, boolean valid,
+        Set<String> missingFactories, List<String> warnings)
     {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("valid", valid);
         result.put("errors", c.getAllErrors());
+        result.put("warnings", warnings != null ? warnings : new ArrayList<>());
+        result.put("missingFactories", missingFactories != null ? new ArrayList<>(missingFactories) : new ArrayList<>());
         if (list != null)
         {
             result.put("totalRows", list.size());

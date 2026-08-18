@@ -101,6 +101,42 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     }
 
     /**
+     * 导入单元格清洗：去掉首尾空白、换行/制表/不间断空格等，去掉其它非打印字符；中间空白压成单空格。
+     *
+     * @return 清洗后文本；全空则 {@code null}
+     */
+    public static String sanitizeImportCell(String str)
+    {
+        if (str == null)
+        {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder(str.length());
+        boolean prevSpace = false;
+        for (int i = 0; i < str.length(); i++)
+        {
+            char c = str.charAt(i);
+            if (c == '\n' || c == '\r' || c == '\t' || c == '\u00A0' || c == '\u3000' || Character.isWhitespace(c))
+            {
+                if (sb.length() > 0 && !prevSpace)
+                {
+                    sb.append(' ');
+                    prevSpace = true;
+                }
+                continue;
+            }
+            if (Character.isISOControl(c) || Character.getType(c) == Character.FORMAT)
+            {
+                continue;
+            }
+            sb.append(c);
+            prevSpace = false;
+        }
+        String t = sb.toString().trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    /**
      * * 判断一个字符串是否为空串
      * 
      * @param str String

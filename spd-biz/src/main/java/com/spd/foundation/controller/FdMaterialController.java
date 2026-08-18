@@ -843,14 +843,27 @@ public class FdMaterialController extends BaseController
         util.importTemplateExcel(response, "耗材档案新增导入");
     }
 
-    /** 耗材档案更新导入模板 */
+    /** 耗材档案更新导入模板（带当前查询或勾选档案数据；档案ID列隐藏） */
     @PreAuthorize("@ss.hasPermi('foundation:material:import')")
     @PostMapping("/importUpdateTemplate")
-    public void importUpdateTemplate(HttpServletResponse response) throws Exception
+    public void importUpdateTemplate(HttpServletResponse response, FdMaterial fdMaterial) throws Exception
     {
+        List<MaterialImportUpdateDto> rows = fdMaterialService.buildMaterialImportUpdateTemplate(fdMaterial);
         ExcelUtil<MaterialImportUpdateDto> util = new ExcelUtil<>(MaterialImportUpdateDto.class);
         FileUtils.setAttachmentResponseHeader(response, "耗材档案更新导入模板.xlsx");
-        util.importTemplateExcel(response, "耗材档案更新导入");
+        util.exportExcel(response, rows, "耗材档案更新导入");
+    }
+
+    /** 更新导入：勾选创建系统中不存在的生产厂家 */
+    @PreAuthorize("@ss.hasPermi('foundation:material:import')")
+    @Log(title = "耗材档案更新导入-创建厂家", businessType = BusinessType.INSERT)
+    @PostMapping("/importUpdateCreateFactories")
+    public AjaxResult importUpdateCreateFactories(@RequestBody Map<String, List<String>> body)
+    {
+        List<String> names = body == null ? null : body.get("names");
+        Map<String, Object> data = fdMaterialService.createFactoriesForMaterialImport(names);
+        Object msg = data.get("msg");
+        return AjaxResult.success(msg != null ? String.valueOf(msg) : "创建完成", data);
     }
 
     /** 耗材档案新增导入：仅校验 */

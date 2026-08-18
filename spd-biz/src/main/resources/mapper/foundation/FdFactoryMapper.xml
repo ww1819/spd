@@ -79,6 +79,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
+    <select id="selectFdFactoryByTenantAndName" resultMap="FdFactoryResult">
+        <include refid="selectFdFactoryVo"/>
+        where del_flag != 1 and tenant_id = #{tenantId} and factory_name = #{factoryName}
+        limit 1
+    </select>
+
     <select id="selectFdFactoryByTenantAndHisId" resultMap="FdFactoryResult">
         <include refid="selectFdFactoryVo"/>
         where del_flag != 1 and tenant_id = #{tenantId} and his_id = #{hisId}

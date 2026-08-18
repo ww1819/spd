@@ -466,13 +466,19 @@ public class ExcelUtil<T>
             Map<String, Integer> cellMap = new HashMap<String, Integer>();
             // 获取表头
             Row heard = sheet.getRow(titleNum);
-            for (int i = 0; i < heard.getPhysicalNumberOfCells(); i++)
+            int lastCell = heard == null ? 0 : heard.getLastCellNum();
+            for (int i = 0; i < lastCell; i++)
             {
                 Cell cell = heard.getCell(i);
                 if (StringUtils.isNotNull(cell))
                 {
                     String value = this.getCellValue(heard, i).toString();
+                    String cleaned = StringUtils.sanitizeImportCell(value);
                     cellMap.put(value, i);
+                    if (cleaned != null && !cleaned.equals(value))
+                    {
+                        cellMap.put(cleaned, i);
+                    }
                 }
                 else
                 {
@@ -1078,6 +1084,10 @@ public class ExcelUtil<T>
         
         setDataValidation(attr, row, column);
         cell.setCellStyle(styles.get(StringUtils.format("header_{}_{}", attr.headerColor(), attr.headerBackgroundColor())));
+        if (attr.hidden())
+        {
+            sheet.setColumnHidden(column, true);
+        }
         if (isSubList())
         {
             // 填充默认样式，防止合并单元格样式失效

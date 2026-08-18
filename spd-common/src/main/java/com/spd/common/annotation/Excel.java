@@ -154,6 +154,11 @@ public @interface Excel
     public String[] args() default {};
 
     /**
+     * 导出时隐藏该列（导入仍按表头识别，用于系统主键等勿改列）
+     */
+    public boolean hidden() default false;
+
+    /**
      * 字段类型（0：导出导入；1：仅导出；2：仅导入）
      */
     Type type() default Type.ALL;

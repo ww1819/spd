@@ -34,6 +34,11 @@ public interface FdFactoryMapper
     int countFactoryByTenantAndName(@Param("tenantId") String tenantId, @Param("factoryName") String factoryName, @Param("excludeFactoryId") Long excludeFactoryId);
 
     /**
+     * 按租户 + 厂家名称查一条（未删除，精确匹配）
+     */
+    FdFactory selectFdFactoryByTenantAndName(@Param("tenantId") String tenantId, @Param("factoryName") String factoryName);
+
+    /**
      * 新增厂家维护
      *
      * @param fdFactory 厂家维护

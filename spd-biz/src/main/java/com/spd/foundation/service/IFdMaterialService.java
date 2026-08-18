@@ -160,6 +160,16 @@ public interface IFdMaterialService
     Map<String, Object> validateMaterialImportUpdate(List<MaterialImportUpdateDto> list);
 
     /**
+     * 更新导入模板：勾选 ID（includeMaterialIds）或当前查询条件下的档案
+     */
+    java.util.List<MaterialImportUpdateDto> buildMaterialImportUpdateTemplate(FdMaterial query);
+
+    /**
+     * 更新导入：勾选创建系统中尚不存在的生产厂家
+     */
+    Map<String, Object> createFactoriesForMaterialImport(java.util.List<String> names);
+
+    /**
      * 耗材档案新增导入落库（须先校验通过且 confirm=true）
      */
     String importMaterialImportAdd(List<MaterialImportAddDto> list, String operName, boolean confirm);
