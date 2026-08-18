@@ -326,6 +326,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                     continue;
                 }
                 entry.setParentId(id);
+                entry.setTraceNo(gzTraceability.getTraceNo());
                 entry.setTenantId(tenantId);
                 entry.setDelFlag("0");
                 entry.setCreateTime(now);

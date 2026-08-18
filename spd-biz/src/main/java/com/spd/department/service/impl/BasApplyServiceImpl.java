@@ -868,6 +868,7 @@ public class BasApplyServiceImpl implements IBasApplyService
                     continue;
                 }
                 basApplyEntry.setParenId(id);
+                basApplyEntry.setApplyBillNo(basApply.getApplyBillNo());
                 basApplyEntry.setTenantId(tenantId);
                 list.add(basApplyEntry);
             }

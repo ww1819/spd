@@ -485,6 +485,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             ? stkIoProfitLoss.getTenantId() : SecurityUtils.getCustomerId();
         for (StkIoProfitLossEntry e : list) {
             e.setParenId(stkIoProfitLoss.getId());
+            e.setBillNo(stkIoProfitLoss.getBillNo());
             if (StringUtils.isEmpty(e.getEntryUuid())) {
                 e.setEntryUuid(UUID7.generateUUID7());
             }

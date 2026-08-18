@@ -195,6 +195,16 @@ public class GzTraceabilityEntry extends BaseEntity
         return parentId;
     }
 
+    public String getTraceNo()
+    {
+        return traceNo;
+    }
+
+    public void setTraceNo(String traceNo)
+    {
+        this.traceNo = traceNo;
+    }
+
     public void setMaterialId(Long materialId)
     {
         this.materialId = materialId;

@@ -489,7 +489,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             : SecurityUtils.requiredScopedTenantIdForSql();
         if (StringUtils.isNotNull(purchasePlanEntryList) && !purchasePlanEntryList.isEmpty())
         {
-            List<PurchasePlanEntry> list = preparePlanEntriesForInsert(purchasePlanEntryList, id, tenantId);
+            List<PurchasePlanEntry> list = preparePlanEntriesForInsert(purchasePlanEntryList, id, tenantId, purchasePlan.getPlanNo());
             if (list.isEmpty()) {
                 return;
             }
@@ -505,7 +505,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         }
     }
 
-    private List<PurchasePlanEntry> preparePlanEntriesForInsert(List<PurchasePlanEntry> source, Long parentId, String tenantId)
+    private List<PurchasePlanEntry> preparePlanEntriesForInsert(List<PurchasePlanEntry> source, Long parentId, String tenantId, String planNo)
     {
         List<PurchasePlanEntry> list = new ArrayList<>();
         String createBy = SecurityUtils.getUserIdStr();
@@ -516,6 +516,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
                 continue;
             }
             e.setParentId(parentId);
+            e.setPlanNo(planNo);
             e.setTenantId(tenantId);
             e.setDelFlag("0");
             e.setCreateBy(createBy);

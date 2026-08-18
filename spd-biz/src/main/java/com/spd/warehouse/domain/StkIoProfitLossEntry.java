@@ -20,6 +20,8 @@ public class StkIoProfitLossEntry extends BaseEntity {
     private Long id;
     /** 盈亏单ID */
     private Long parenId;
+    /** 盈亏单号（冗余主表 bill_no） */
+    private String billNo;
     /** 来源盘点明细ID */
     private Long stocktakingEntryId;
     /** 库存明细id（来自盘点明细，审核时按此查库存） */
@@ -83,6 +85,8 @@ public class StkIoProfitLossEntry extends BaseEntity {
     public void setId(Long id) { this.id = id; }
     public Long getParenId() { return parenId; }
     public void setParenId(Long parenId) { this.parenId = parenId; }
+    public String getBillNo() { return billNo; }
+    public void setBillNo(String billNo) { this.billNo = billNo; }
     public Long getStocktakingEntryId() { return stocktakingEntryId; }
     public void setStocktakingEntryId(Long stocktakingEntryId) { this.stocktakingEntryId = stocktakingEntryId; }
     public Long getKcNo() { return kcNo; }

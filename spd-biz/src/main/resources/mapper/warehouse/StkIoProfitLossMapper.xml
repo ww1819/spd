@@ -254,7 +254,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchStkIoProfitLossEntry">
         insert into stk_io_profit_loss_entry (
-            entry_uuid, paren_id, stocktaking_entry_id, stocktaking_line_uuid, kc_no, dep_inventory_id, material_id,
+            entry_uuid, paren_id, bill_no, stocktaking_entry_id, stocktaking_line_uuid, kc_no, dep_inventory_id, material_id,
             batch_no, orig_batch_no, orig_batch_id, batch_number, pl_kind,
             book_qty, stock_qty, profit_qty, unit_price, profit_amount,
             begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id,
@@ -264,7 +264,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         )
         values
         <foreach item="item" collection="list" separator=",">
-            ( #{item.entryUuid}, #{item.parenId}, #{item.stocktakingEntryId}, #{item.stocktakingLineUuid}, #{item.kcNo}, #{item.depInventoryId}, #{item.materialId},
+            ( #{item.entryUuid}, #{item.parenId}, #{item.billNo}, #{item.stocktakingEntryId}, #{item.stocktakingLineUuid}, #{item.kcNo}, #{item.depInventoryId}, #{item.materialId},
               #{item.batchNo}, #{item.origBatchNo}, #{item.origBatchId}, #{item.batchNumber}, #{item.plKind},
               #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount},
               #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId},

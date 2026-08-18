@@ -335,6 +335,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 }
                 
                 purchaseOrderEntry.setParentId(id);
+                purchaseOrderEntry.setOrderNo(purchaseOrder.getOrderNo());
                 purchaseOrderEntry.setTenantId(tenantId);
                 list.add(purchaseOrderEntry);
             }
@@ -462,6 +463,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderEntry.setPlanId(planId);
                 orderEntry.setPlanNo(purchasePlan.getPlanNo());
                 orderEntry.setPlanEntryId(planEntry.getId());
+                orderEntry.setOrderNo(purchaseOrder.getOrderNo());
                 orderEntry.setTenantId(purchaseOrder.getTenantId());
                 orderEntry.setCreateBy(SecurityUtils.getUserIdStr());
                 orderEntry.setCreateTime(new Date());

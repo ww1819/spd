@@ -63,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="com.spd.caigou.domain.PurchaseOrderEntry" id="PurchaseOrderEntryResult">
         <result property="id"    column="id"    />
         <result property="parentId"    column="parent_id"    />
+        <result property="orderNo"    column="order_no"    />
         <result property="materialId"    column="material_id"    />
         <result property="materialCode"    column="material_code"    />
         <result property="materialName"    column="material_name"    />
@@ -211,7 +212,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select poe.id, poe.parent_id, poe.material_id, poe.material_code, poe.material_name, 
                poe.material_spec, poe.material_unit, poe.order_qty, poe.received_qty, poe.unit_price, 
                poe.total_amount, poe.expected_delivery_date, poe.actual_delivery_date, poe.quality_status, 
-               poe.remark, poe.del_flag, poe.delete_by, poe.delete_time, poe.plan_id, poe.plan_no, poe.plan_entry_id,
+               poe.remark, poe.del_flag, poe.delete_by, poe.delete_time, poe.plan_id, poe.plan_no, poe.plan_entry_id, poe.order_no,
                poe.tenant_id, poe.create_by, poe.create_time, poe.update_by, poe.update_time,
                m.name as material_name, m.code as material_code, m.speci as material_spec, m.model as material_unit
         from purchase_order_entry poe
@@ -294,6 +295,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into purchase_order_entry
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
+            <if test="orderNo != null">order_no,</if>
             <if test="materialId != null">material_id,</if>
             <if test="materialCode != null">material_code,</if>
             <if test="materialName != null">material_name,</if>
@@ -319,6 +321,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="parentId != null">#{parentId},</if>
+            <if test="orderNo != null">#{orderNo},</if>
             <if test="materialId != null">#{materialId},</if>
             <if test="materialCode != null">#{materialCode},</if>
             <if test="materialName != null">#{materialName},</if>
@@ -345,12 +348,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="batchPurchaseOrderEntry" parameterType="java.util.List">
-        insert into purchase_order_entry(parent_id, material_id, material_code, material_name, material_spec, material_unit, 
+        insert into purchase_order_entry(parent_id, order_no, material_id, material_code, material_name, material_spec, material_unit, 
                                        order_qty, received_qty, unit_price, total_amount, expected_delivery_date, 
                                        actual_delivery_date, quality_status, remark, del_flag, plan_id, plan_no, plan_entry_id, tenant_id, create_by, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
+            (#{item.parentId}, #{item.orderNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
              #{item.materialUnit}, 
              <![CDATA[#{item.orderQty}]]>, 
              <![CDATA[#{item.receivedQty}]]>, 
