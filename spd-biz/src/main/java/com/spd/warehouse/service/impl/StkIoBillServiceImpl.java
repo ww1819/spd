@@ -3191,7 +3191,14 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (sumQty.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
-        StkInventory inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(oldBatchNo, oldWarehouseId);
+        StkInventory inventory = null;
+        Long whKey = currentEntry.resolveStkInventoryKeyForWarehouseOps();
+        if (whKey != null) {
+            inventory = stkInventoryMapper.selectStkInventoryRowById(whKey);
+        }
+        if (inventory == null) {
+            inventory = stkInventoryMapper.selectStkInventoryByBatchNoAndWarehouse(oldBatchNo, oldWarehouseId);
+        }
         if (inventory == null) {
             inventory = stkInventoryMapper.selectStkInventoryOne(oldBatchNo);
         }
@@ -3558,6 +3565,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         List<StkIoBillEntry> entryList = new ArrayList<>();
         List<HcDocBillRef> docRefList = new ArrayList<>();
         int rkLine = 0;
+        boolean anyRefable = false;
+        boolean skippedNoStock = false;
         for (StkIoBillEntry rkEntry : list) {
             rkLine++;
             if (rkEntry == null || (rkEntry.getDelFlag() != null && rkEntry.getDelFlag() == 1)) {
@@ -3572,6 +3581,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (refable.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            anyRefable = true;
             StkIoBillEntry ckEntry = new StkIoBillEntry();
             ckEntry.setMaterialId(rkEntry.getMaterialId());
             ckEntry.setQty(refable);
@@ -3597,10 +3607,17 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 ckEntry.setMaterial(material);
             }
             copyInboundRefDisplayFromRkLine(rkEntry, ckEntry);
+            if (!finalizeRefWarehouseOutboundLine(ckBill, rkEntry, ckEntry)) {
+                skippedNoStock = true;
+                continue;
+            }
             entryList.add(ckEntry);
             docRefList.add(newSrcDocRef(HcDocBillRefType.RK_TO_CK, "101", rkBill, rkEntry, rkLine));
         }
         if (entryList.isEmpty()) {
+            if (skippedNoStock && anyRefable) {
+                throw new ServiceException("该入库单对应仓库库存已为0，无法再引用出库（可能已出完或已由其它单据出库）");
+            }
             throw new ServiceException("该入库单已全部被引用或无可再引用的数量");
         }
         ckBill.setStkIoBillEntryList(entryList);
@@ -3631,8 +3648,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setRefBillNo(purchaseOrder.getOrderNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
         for (PurchaseOrderEntry purchaseOrderEntry : list) {
+            if (purchaseOrderEntry == null || "1".equals(purchaseOrderEntry.getDelFlag())) {
+                continue;
+            }
             StkIoBillEntry stkIoBillEntry = new StkIoBillEntry();
             stkIoBillEntry.setMaterialId(purchaseOrderEntry.getMaterialId());
+            stkIoBillEntry.setWarehouseId(purchaseOrder.getWarehouseId());
+            if (purchaseOrder.getSupplierId() != null) {
+                stkIoBillEntry.setSupplerId(String.valueOf(purchaseOrder.getSupplierId()));
+            }
             stkIoBillEntry.setQty(purchaseOrderEntry.getOrderQty());
             stkIoBillEntry.setUnitPrice(purchaseOrderEntry.getUnitPrice());
             // 计算金额，添加null检查避免空指针异常
@@ -3647,6 +3671,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 stkIoBillEntry.setMaterial(material);
             }
             entryList.add(stkIoBillEntry);
+        }
+        if (entryList.isEmpty()) {
+            throw new ServiceException(String.format("采购订单ID：%s，无可用明细!", dingdanId));
         }
         stkIoBill.setStkIoBillEntryList(entryList);
         return stkIoBill;
@@ -4076,6 +4103,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         List<StkIoBillEntry> entryList = new ArrayList<>();
         List<HcDocBillRef> docRefList = new ArrayList<>();
         int rkLine = 0;
+        boolean anyRefable = false;
+        boolean skippedNoStock = false;
         for (StkIoBillEntry srcEntry : list) {
             rkLine++;
             if (srcEntry == null || (srcEntry.getDelFlag() != null && srcEntry.getDelFlag() == 1)) {
@@ -4090,6 +4119,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (refable.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            anyRefable = true;
             StkIoBillEntry thEntry = new StkIoBillEntry();
             thEntry.setMaterialId(srcEntry.getMaterialId());
             thEntry.setQty(refable);
@@ -4111,10 +4141,17 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 thEntry.setMaterial(material);
             }
             copyInboundRefDisplayFromRkLine(srcEntry, thEntry);
+            if (!finalizeRefWarehouseOutboundLine(thBill, srcEntry, thEntry)) {
+                skippedNoStock = true;
+                continue;
+            }
             entryList.add(thEntry);
             docRefList.add(newSrcDocRef(HcDocBillRefType.RK_TO_TH, "101", rkBill, srcEntry, rkLine));
         }
         if (entryList.isEmpty()) {
+            if (skippedNoStock && anyRefable) {
+                throw new ServiceException("该入库单对应仓库库存已为0，无法再引用退货（可能已出完或已由其它单据出库）");
+            }
             throw new ServiceException("该入库单已全部被引用或无可再引用的数量");
         }
         thBill.setStkIoBillEntryList(entryList);
@@ -4179,10 +4216,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             tkEntry.setBatchNumber(srcEntry.getBatchNumber());
             tkEntry.setBeginTime(srcEntry.getBeginTime());
             tkEntry.setEndTime(srcEntry.getEndTime());
+            tkEntry.setWarehouseId(srcEntry.getWarehouseId() != null ? srcEntry.getWarehouseId() : ckBill.getWarehouseId());
             tkEntry.setStkInventoryId(srcEntry.getStkInventoryId());
             tkEntry.setDepInventoryId(srcEntry.getDepInventoryId());
             tkEntry.setKcNo(srcEntry.getDepInventoryId() != null ? srcEntry.getDepInventoryId() : srcEntry.getKcNo());
             tkEntry.setSupplerId(srcEntry.getSupplerId());
+            tkEntry.setMainBarcode(srcEntry.getMainBarcode());
+            tkEntry.setSubBarcode(srcEntry.getSubBarcode());
             if (srcEntry.getMaterialId() != null) {
                 FdMaterial material = fdMaterialMapper.selectFdMaterialById(srcEntry.getMaterialId());
                 tkEntry.setMaterial(material);
@@ -4244,6 +4284,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         List<StkIoBillEntry> entryList = new ArrayList<>();
         List<HcDocBillRef> docRefList = new ArrayList<>();
         int tkLine = 0;
+        boolean anyRefable = false;
+        boolean skippedNoStock = false;
         for (StkIoBillEntry srcEntry : list) {
             tkLine++;
             if (srcEntry == null || (srcEntry.getDelFlag() != null && srcEntry.getDelFlag() == 1)) {
@@ -4258,6 +4300,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (refable.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            anyRefable = true;
             StkIoBillEntry thEntry = new StkIoBillEntry();
             thEntry.setMaterialId(srcEntry.getMaterialId());
             thEntry.setQty(refable);
@@ -4279,10 +4322,17 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 thEntry.setMaterial(material);
             }
             copyTkReturnRefDisplayFromTkLine(srcEntry, thEntry);
+            if (!finalizeRefWarehouseOutboundLine(thBill, srcEntry, thEntry)) {
+                skippedNoStock = true;
+                continue;
+            }
             entryList.add(thEntry);
             docRefList.add(newSrcDocRef(HcDocBillRefType.TK_TO_TH, "401", tkBill, srcEntry, tkLine));
         }
         if (entryList.isEmpty()) {
+            if (skippedNoStock && anyRefable) {
+                throw new ServiceException("该退库单对应仓库库存已为0，无法再引用退货");
+            }
             throw new ServiceException("该科室退库单已全部被引用或无可再引用的数量");
         }
         thBill.setStkIoBillEntryList(entryList);
@@ -5320,6 +5370,116 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         target.setSrcReturnPendingRefQty(rk.getSrcReturnPendingRefQty());
         target.setSrcReturnRefableQty(rk.getSrcReturnRefableQty());
         target.setLinkedStkQty(rk.getLinkedStkQty());
+    }
+
+    /**
+     * 引用入库/退库生成出库或退货明细：绑定仓库库存行，并按当前可用数量截取。
+     * @return false 表示该行无可用仓库库存，应跳过
+     */
+    private boolean finalizeRefWarehouseOutboundLine(StkIoBill header, StkIoBillEntry srcEntry, StkIoBillEntry target) {
+        bindWarehouseInventoryToRefOutboundLine(header, srcEntry, target);
+        return capRefOutboundLineToAvailableStkQty(target);
+    }
+
+    /**
+     * 引用入库/退库生成出库或退货明细：补仓库库存行标识。
+     * 入库/退库审核会回写 {@code stk_inventory_id}；历史单可能没有，再按仓库+耗材+批次解析当前仍有数量的库存。
+     * 前端保存校验 {@code kcNo}，须与引用库房申请/科室申购一样同时写入。
+     */
+    private void bindWarehouseInventoryToRefOutboundLine(StkIoBill header, StkIoBillEntry srcEntry, StkIoBillEntry target) {
+        if (target == null) {
+            return;
+        }
+        if (target.getWarehouseId() == null && header != null) {
+            target.setWarehouseId(header.getWarehouseId());
+        }
+        if (target.getStkInventoryId() == null && srcEntry != null && srcEntry.getStkInventoryId() != null) {
+            target.setStkInventoryId(srcEntry.getStkInventoryId());
+        }
+        StkInventory inv = null;
+        boolean srcRowBound = false;
+        if (target.getStkInventoryId() != null) {
+            inv = stkInventoryMapper.selectStkInventoryRowById(target.getStkInventoryId());
+            srcRowBound = inv != null;
+        }
+        BigDecimal srcQty = inv != null && inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+        if (!srcRowBound || srcQty.compareTo(BigDecimal.ZERO) <= 0) {
+            if (!srcRowBound) {
+                StkInventory alt = findPositiveStkInventoryByBatch(header, target);
+                if (alt != null) {
+                    inv = alt;
+                }
+            }
+        }
+        if (inv != null && inv.getId() != null) {
+            target.setStkInventoryId(inv.getId());
+            target.setKcNo(inv.getId());
+            if (target.getWarehouseId() == null) {
+                target.setWarehouseId(inv.getWarehouseId());
+            }
+        }
+    }
+
+    /** 无来源库存行时：按耗材+批次+仓库找当前 qty&gt;0 的库存，避免 order by id desc 命中空行。 */
+    private StkInventory findPositiveStkInventoryByBatch(StkIoBill header, StkIoBillEntry target) {
+        if (target == null) {
+            return null;
+        }
+        Long wh = target.getWarehouseId() != null ? target.getWarehouseId()
+            : (header != null ? header.getWarehouseId() : null);
+        if (target.getMaterialId() != null && wh != null && StringUtils.isNotEmpty(target.getBatchNo())) {
+            String tenantId = header != null && StringUtils.isNotEmpty(header.getTenantId())
+                ? header.getTenantId() : SecurityUtils.getCustomerId();
+            List<StkInventory> lines = stkInventoryMapper.selectStkInventoryFefoForOutboundAlloc(
+                tenantId, target.getMaterialId(), wh);
+            String batch = target.getBatchNo().trim();
+            if (lines != null) {
+                for (StkInventory row : lines) {
+                    if (row == null || row.getId() == null) {
+                        continue;
+                    }
+                    if (!batch.equals(StringUtils.trim(row.getBatchNo()))) {
+                        continue;
+                    }
+                    BigDecimal q = row.getQty() != null ? row.getQty() : BigDecimal.ZERO;
+                    if (q.compareTo(BigDecimal.ZERO) > 0) {
+                        return row;
+                    }
+                }
+            }
+        }
+        StkInventory fallback = resolveStkInventoryForOutboundLine(header, target);
+        if (fallback != null && fallback.getQty() != null && fallback.getQty().compareTo(BigDecimal.ZERO) > 0) {
+            return fallback;
+        }
+        return null;
+    }
+
+    /** 按绑定库存行截取出库/退货数量；库存为 0 则该行不可引用。 */
+    private boolean capRefOutboundLineToAvailableStkQty(StkIoBillEntry target) {
+        if (target == null || target.getStkInventoryId() == null) {
+            return false;
+        }
+        StkInventory inv = stkInventoryMapper.selectStkInventoryRowById(target.getStkInventoryId());
+        if (inv == null) {
+            return false;
+        }
+        BigDecimal invQty = inv.getQty() != null ? inv.getQty() : BigDecimal.ZERO;
+        if (invQty.compareTo(BigDecimal.ZERO) <= 0) {
+            return false;
+        }
+        BigDecimal need = target.getQty() != null ? target.getQty() : BigDecimal.ZERO;
+        if (need.compareTo(invQty) > 0) {
+            target.setQty(invQty);
+            if (target.getUnitPrice() != null) {
+                target.setAmt(target.getUnitPrice().multiply(invQty).setScale(2, RoundingMode.HALF_UP));
+            } else if (target.getAmt() != null && need.compareTo(BigDecimal.ZERO) > 0) {
+                target.setAmt(target.getAmt().multiply(invQty).divide(need, 2, RoundingMode.HALF_UP));
+            }
+        }
+        target.setStkInventoryId(inv.getId());
+        target.setKcNo(inv.getId());
+        return true;
     }
 
     private static void copyTkReturnRefDisplayFromTkLine(StkIoBillEntry tk, StkIoBillEntry target) {
