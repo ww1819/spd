@@ -25,6 +25,9 @@ public class PurchaseOrderEntry extends BaseEntity
     /** 主表ID */
     private Long parentId;
 
+    /** 订单单号（冗余主表，便于按单号查明细） */
+    private String orderNo;
+
     /** 耗材ID */
     private Long materialId;
 
@@ -111,6 +114,16 @@ public class PurchaseOrderEntry extends BaseEntity
     public Long getParentId() 
     {
         return parentId;
+    }
+
+    public void setOrderNo(String orderNo)
+    {
+        this.orderNo = orderNo;
+    }
+
+    public String getOrderNo()
+    {
+        return orderNo;
     }
 
     public void setMaterialId(Long materialId) 

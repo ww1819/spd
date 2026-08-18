@@ -28,6 +28,9 @@ public class BasApplyEntry extends BaseEntity
     @Excel(name = "父类ID")
     private Long parenId;
 
+    /** 申领单号（冗余主表 apply_bill_no） */
+    private String applyBillNo;
+
     /** 耗材ID */
     @Excel(name = "耗材ID")
     private Long materialId;
@@ -118,6 +121,17 @@ public class BasApplyEntry extends BaseEntity
     {
         return parenId;
     }
+
+    public String getApplyBillNo()
+    {
+        return applyBillNo;
+    }
+
+    public void setApplyBillNo(String applyBillNo)
+    {
+        this.applyBillNo = applyBillNo;
+    }
+
     public void setMaterialId(Long materialId) 
     {
         this.materialId = materialId;

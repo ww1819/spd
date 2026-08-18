@@ -16,6 +16,8 @@ public class PurchaseForecastEntry extends BaseEntity {
 
     private Long id;
     private Long taskId;
+    /** 预测任务号（冗余 purchase_forecast_task.task_no） */
+    private String taskNo;
     private Long warehouseId;
     private Long materialId;
     private Long supplierId;

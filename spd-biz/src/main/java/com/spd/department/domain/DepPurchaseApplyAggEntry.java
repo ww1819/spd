@@ -17,6 +17,9 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     private String parentId;
 
+    /** 汇总申购单号（冗余主表 purchase_bill_no） */
+    private String purchaseBillNo;
+
     private String tenantId;
 
     private Long materialId;
@@ -77,6 +80,14 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     public void setParentId(String parentId) {
         this.parentId = parentId;
+    }
+
+    public String getPurchaseBillNo() {
+        return purchaseBillNo;
+    }
+
+    public void setPurchaseBillNo(String purchaseBillNo) {
+        this.purchaseBillNo = purchaseBillNo;
     }
 
     public String getTenantId() {

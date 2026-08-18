@@ -27,6 +27,9 @@ public class PurchasePlanEntry extends BaseEntity
     /** 主表ID */
     private Long parentId;
 
+    /** 计划单号（冗余主表 plan_no） */
+    private String planNo;
+
     /** 耗材ID */
     private Long materialId;
 
@@ -115,6 +118,16 @@ public class PurchasePlanEntry extends BaseEntity
     public Long getParentId() 
     {
         return parentId;
+    }
+
+    public String getPlanNo()
+    {
+        return planNo;
+    }
+
+    public void setPlanNo(String planNo)
+    {
+        this.planNo = planNo;
     }
 
     public void setMaterialId(Long materialId) 

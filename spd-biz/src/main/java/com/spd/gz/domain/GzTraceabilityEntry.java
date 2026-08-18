@@ -24,6 +24,9 @@ public class GzTraceabilityEntry extends BaseEntity
     /** 追溯单ID */
     private Long parentId;
 
+    /** 追溯单号（冗余主表 trace_no） */
+    private String traceNo;
+
     /** 耗材ID */
     private Long materialId;
 

@@ -3257,3 +3257,94 @@ WHERE ifnull(l.del_flag, 0) = 0
 -- ========== 集采：产品档案挂集采类型 ==========
 CALL add_table_column('fd_material', 'jc_type_id', 'bigint', '集采类型ID（关联 fd_jc_type.id）', NULL);
 /
+
+-- ========== SPD-F-001：明细/下级明细补全主表单号冗余 ==========
+CALL add_table_column('purchase_order_entry', 'order_no', 'varchar(64)', '订单单号（冗余主表 order_no）', NULL);
+/
+CALL add_table_column('purchase_plan_entry', 'plan_no', 'varchar(64)', '计划单号（冗余主表 plan_no）', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'apply_bill_no', 'varchar(64)', '申领单号（冗余主表 apply_bill_no）', NULL);
+/
+CALL add_table_column('dep_purchase_apply_agg_entry', 'purchase_bill_no', 'varchar(64)', '汇总申购单号（冗余）', NULL);
+/
+CALL add_table_column('gz_dep_apply_entry', 'apply_bill_no', 'varchar(64)', '申领单号（冗余主表 apply_bill_no）', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'trace_no', 'varchar(64)', '追溯单号（冗余主表 trace_no）', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'apply_no', 'varchar(64)', '申购单号（冗余主表 apply_no）', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'apply_no', 'varchar(64)', '申购单号（冗余主表 apply_no）', NULL);
+/
+CALL add_table_column('purchase_forecast_entry', 'task_no', 'varchar(64)', '预测任务号（冗余）', NULL);
+/
+CALL add_table_column('purchase_plan_entry_apply', 'purchase_plan_id', 'bigint(20)', '采购计划主表ID', NULL);
+/
+CALL add_table_column('purchase_plan_entry_apply', 'plan_no', 'varchar(64)', '采购计划单号', NULL);
+/
+CALL add_table_column('purchase_plan_entry_apply', 'apply_bill_no', 'varchar(64)', '科室申领单号', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'bill_no', 'varchar(64)', '期初单号（冗余主表 bill_no）', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'bill_no', 'varchar(64)', '盈亏单号（冗余主表 bill_no）', NULL);
+/
+-- 存量回填（幂等：仅填空值）
+UPDATE purchase_order_entry e INNER JOIN purchase_order p ON e.parent_id = p.id
+SET e.order_no = p.order_no
+WHERE (e.order_no IS NULL OR TRIM(e.order_no) = '') AND p.order_no IS NOT NULL AND TRIM(p.order_no) != '';
+/
+UPDATE purchase_plan_entry e INNER JOIN purchase_plan p ON e.parent_id = p.id
+SET e.plan_no = p.plan_no
+WHERE (e.plan_no IS NULL OR TRIM(e.plan_no) = '') AND p.plan_no IS NOT NULL AND TRIM(p.plan_no) != '';
+/
+UPDATE bas_apply_entry e INNER JOIN bas_apply p ON e.paren_id = p.id
+SET e.apply_bill_no = p.apply_bill_no
+WHERE (e.apply_bill_no IS NULL OR TRIM(e.apply_bill_no) = '') AND p.apply_bill_no IS NOT NULL AND TRIM(p.apply_bill_no) != '';
+/
+UPDATE dep_purchase_apply_agg_entry e INNER JOIN dep_purchase_apply_agg p ON e.parent_id = p.id
+SET e.purchase_bill_no = p.purchase_bill_no
+WHERE (e.purchase_bill_no IS NULL OR TRIM(e.purchase_bill_no) = '') AND p.purchase_bill_no IS NOT NULL AND TRIM(p.purchase_bill_no) != '';
+/
+UPDATE gz_dep_apply_entry e INNER JOIN gz_dep_apply p ON e.paren_id = p.id
+SET e.apply_bill_no = p.apply_bill_no
+WHERE (e.apply_bill_no IS NULL OR TRIM(e.apply_bill_no) = '') AND p.apply_bill_no IS NOT NULL AND TRIM(p.apply_bill_no) != '';
+/
+UPDATE gz_traceability_entry e INNER JOIN gz_traceability p ON e.parent_id = p.id
+SET e.trace_no = p.trace_no
+WHERE (e.trace_no IS NULL OR TRIM(e.trace_no) = '') AND p.trace_no IS NOT NULL AND TRIM(p.trace_no) != '';
+/
+UPDATE new_product_apply_entry e INNER JOIN new_product_apply p ON e.parent_id = p.id
+SET e.apply_no = p.apply_no
+WHERE (e.apply_no IS NULL OR TRIM(e.apply_no) = '') AND p.apply_no IS NOT NULL AND TRIM(p.apply_no) != '';
+/
+UPDATE new_product_apply_detail d INNER JOIN new_product_apply p ON d.parent_id = p.id
+SET d.apply_no = p.apply_no
+WHERE (d.apply_no IS NULL OR TRIM(d.apply_no) = '') AND p.apply_no IS NOT NULL AND TRIM(p.apply_no) != '';
+/
+UPDATE purchase_forecast_entry e INNER JOIN purchase_forecast_task t ON e.task_id = t.id
+SET e.task_no = t.task_no
+WHERE (e.task_no IS NULL OR TRIM(e.task_no) = '') AND t.task_no IS NOT NULL AND TRIM(t.task_no) != '';
+/
+UPDATE purchase_plan_entry_apply r
+INNER JOIN purchase_plan_entry pe ON r.purchase_plan_entry_id = pe.id
+INNER JOIN purchase_plan pp ON pe.parent_id = pp.id
+INNER JOIN bas_apply_entry ae ON r.bas_apply_entry_id = ae.id
+INNER JOIN bas_apply ba ON ae.paren_id = ba.id
+SET r.purchase_plan_id = pp.id, r.plan_no = pp.plan_no, r.apply_bill_no = ba.apply_bill_no
+WHERE (r.plan_no IS NULL OR TRIM(r.plan_no) = '') OR (r.apply_bill_no IS NULL OR TRIM(r.apply_bill_no) = '');
+/
+UPDATE stk_initial_import_entry e INNER JOIN stk_initial_import p ON e.paren_id = p.id
+SET e.bill_no = p.bill_no
+WHERE (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND p.bill_no IS NOT NULL AND TRIM(p.bill_no) != '';
+/
+UPDATE stk_io_profit_loss_entry e INNER JOIN stk_io_profit_loss p ON e.paren_id = p.id
+SET e.bill_no = p.bill_no
+WHERE (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND p.bill_no IS NOT NULL AND TRIM(p.bill_no) != '';
+/
+UPDATE gz_order_entry e INNER JOIN gz_order p ON e.paren_id = p.id
+SET e.bill_no = p.order_no
+WHERE (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND p.order_no IS NOT NULL AND TRIM(p.order_no) != '';
+/
+UPDATE stk_io_bill_entry e INNER JOIN stk_io_bill p ON e.paren_id = p.id
+SET e.bill_no = p.bill_no
+WHERE (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND p.bill_no IS NOT NULL AND TRIM(p.bill_no) != '';
+/
