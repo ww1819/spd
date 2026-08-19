@@ -24,6 +24,7 @@
 | 财务分类 | 新增须填 HIS ID | `FdFinanceCategory*` |
 | 库房分类 | 新增须填 HIS ID | `FdWarehouseCategory*` |
 | 耗材档案 | 编码由系统按分类前缀生成：**GZ / DZ / SJ + 5 位**，前端禁用手改；产品档案 is_gz 变更可同步 HIS 收费镜像 | `FdMaterialServiceImpl`；`material/index.vue` |
+| 耗材对照 / HIS对照 | 绑定只写 `fd_material.his_charge_item_id`（与解绑同路径，请求内不刷计费镜像大表） | `FdMaterialController.bindHisChargeItem`；`bindMaterialHisChargeItem` |
 
 ### 2. 仓储业务
 

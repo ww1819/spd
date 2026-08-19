@@ -2909,6 +2909,22 @@ CALL add_table_column('purchase_order', 'push_by', 'varchar(64)', '发布人（�
 -- HIS 计费镜像高低值展示/核销：以 fd_material.his_charge_item_id 对照 + is_gz 为准（1高值 2低值；未维护为未识别 0）
 -- his_charge_item_mirror.value_level / unified.value_level 冗余字段不再作为列表与核销判定依据
 /
+-- 耗材对照绑定后按收费项目刷新 unified.value_level：存量库补 (tenant_id, charge_item_id) 索引，避免全表扫描超时
+SET @idx_exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'his_patient_charge_mirror_unified' AND index_name = 'idx_hpcm_unified_tenant_item'
+);
+/
+SET @sql_idx := IF(@idx_exists = 0,
+  'CREATE INDEX idx_hpcm_unified_tenant_item ON his_patient_charge_mirror_unified (tenant_id, charge_item_id)',
+  'SELECT 1');
+/
+PREPARE stmt_hpcm_item_idx FROM @sql_idx;
+/
+EXECUTE stmt_hpcm_item_idx;
+/
+DEALLOCATE PREPARE stmt_hpcm_item_idx;
+/
 
 -- ========== 众阳 HIS 镜像 → SPD 主数据同步（组合唯一键与对照列） ==========
 CALL add_table_column('fd_material', 'his_spec_packing_id', 'varchar(64)', '众阳HIS产品档案唯一键（drug_spec_packing_id）', NULL);

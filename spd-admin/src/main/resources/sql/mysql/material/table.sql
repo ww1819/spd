@@ -2881,7 +2881,8 @@ CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
   PRIMARY KEY (`id`),
   KEY `idx_hpcm_unified_list` (`tenant_id`,`visit_kind`,`charge_at`),
   KEY `idx_hpcm_unified_tenant_at` (`tenant_id`,`charge_at`),
-  KEY `idx_hpcm_unified_q` (`tenant_id`,`visit_kind`,`process_status`,`charge_at`)
+  KEY `idx_hpcm_unified_q` (`tenant_id`,`visit_kind`,`process_status`,`charge_at`),
+  KEY `idx_hpcm_unified_tenant_item` (`tenant_id`,`charge_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS患者计费镜像统一表';
 /
 

@@ -46,7 +46,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.foundation.mapper.FoundationArchiveDeleteGuardMapper;
 import com.spd.foundation.mapper.FdUnitMapper;
@@ -136,6 +140,10 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     @Autowired
     private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
+
+    @Autowired
+    @Qualifier("threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     @Autowired
     private IFdFocus18Service fdFocus18Service;
@@ -595,13 +603,68 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         try
         {
             hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, isGz);
-            hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(tenantId, chargeItemId, isGz);
+            // 统一计费镜像表生产数据量大；TRIM 列无法走索引，同步刷新会拖垮绑定请求
+            scheduleRefreshUnifiedValueLevel(tenantId, chargeItemId, isGz);
         }
         catch (Exception e)
         {
             log.warn("同步收费项目高低值失败 materialId={} chargeItemId={} err={}",
                 after.getId(), chargeItemId, e.toString());
         }
+    }
+
+    private void scheduleRefreshUnifiedValueLevel(String tenantId, String chargeItemId, String valueLevel)
+    {
+        Runnable task = () -> {
+            try
+            {
+                hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(tenantId, chargeItemId, valueLevel);
+            }
+            catch (Exception e)
+            {
+                log.warn("异步刷新计费镜像高低值失败 tenantId={} chargeItemId={} err={}",
+                    tenantId, chargeItemId, e.toString());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive())
+        {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization()
+            {
+                @Override
+                public void afterCommit()
+                {
+                    threadPoolTaskExecutor.execute(task);
+                }
+            });
+            return;
+        }
+        threadPoolTaskExecutor.execute(task);
+    }
+
+    @Override
+    public int bindMaterialHisChargeItem(Long materialId, String chargeItemId)
+    {
+        if (materialId == null)
+        {
+            throw new ServiceException("耗材产品ID不能为空");
+        }
+        String cid = StringUtils.trimToNull(chargeItemId);
+        if (cid == null)
+        {
+            throw new ServiceException("chargeItemId 不能为空");
+        }
+        FdMaterial material = fdMaterialMapper.selectFdMaterialById(materialId);
+        if (material == null)
+        {
+            throw new ServiceException("耗材产品不存在");
+        }
+        SecurityUtils.ensureTenantAccess(material.getTenantId());
+        if (!HS_THIRD_CUSTOMER_ID.equals(material.getTenantId()))
+        {
+            throw new ServiceException("当前租户未启用 HIS 收费项目对照");
+        }
+        // 只写对照字段，与解绑同路径。高低值以耗材档案 is_gz 为准，不在请求内刷新大表
+        return fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, SecurityUtils.getUserIdStr());
     }
 
     @Override

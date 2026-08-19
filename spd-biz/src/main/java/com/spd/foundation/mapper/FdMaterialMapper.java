@@ -115,6 +115,11 @@ public interface FdMaterialMapper
      */
     public int updateFdMaterial(FdMaterial fdMaterial);
 
+    /** 绑定 HIS 收费项目：仅更新 his_charge_item_id */
+    int bindHisChargeItemIdByMaterialId(@Param("id") Long id,
+                                        @Param("chargeItemId") String chargeItemId,
+                                        @Param("updateBy") String updateBy);
+
     /** 解绑 HIS 收费项目：仅清空 his_charge_item_id */
     int clearHisChargeItemIdByMaterialId(@Param("id") Long id, @Param("updateBy") String updateBy);
 

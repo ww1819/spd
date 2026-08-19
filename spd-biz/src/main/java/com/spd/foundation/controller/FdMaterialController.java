@@ -561,7 +561,7 @@ public class FdMaterialController extends BaseController
     }
 
     /**
-     * 绑定耗材与 HIS 收费项目（fd_material.his_charge_item_id = v_charge_item.charge_item_id）
+     * 绑定耗材与 HIS 收费项目（仅更新 fd_material.his_charge_item_id，避免整包档案更新拖垮请求）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit')")
     @PostMapping("/bindHisChargeItem")
@@ -584,14 +584,7 @@ public class FdMaterialController extends BaseController
             return error("chargeItemId 不能为空");
         }
 
-        FdMaterial db = fdMaterialService.selectFdMaterialById(materialId);
-        if (db == null)
-        {
-            return error("耗材不存在");
-        }
-        db.setHisChargeItemId(chargeItemId);
-        db.setUpdateBy(getUserIdStr());
-        return toAjax(fdMaterialService.updateFdMaterial(db));
+        return toAjax(fdMaterialService.bindMaterialHisChargeItem(materialId, chargeItemId));
     }
 
     /**

@@ -545,7 +545,7 @@
         set value_level = #{valueLevel},
             update_time = now()
         where tenant_id = #{tenantId}
-          and trim(charge_item_id) = trim(#{chargeItemId})
+          and charge_item_id = #{chargeItemId}
     </update>
 
     <update id="refreshAllValueLevelsForTenant">
