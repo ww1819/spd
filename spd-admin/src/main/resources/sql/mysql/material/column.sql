@@ -3442,3 +3442,33 @@ WHERE IFNULL(p.status, '0') = '0'
   );
 /
 
+-- ========== SYS-F-002：客户金额显示小数位（已生效）+ 审核表 ==========
+-- 说明：SqlInitRunner 仅执行 material/*；equipment/table.sql 的 CREATE IF NOT EXISTS 不会给已有 sb_customer 加列。
+CALL add_table_column('sb_customer', 'price_decimal_places', 'tinyint', '单价显示小数位(0-6，已生效)', '3');
+/
+CALL add_table_column('sb_customer', 'amount_decimal_places', 'tinyint', '金额显示小数位(0-6，已生效)', '3');
+/
+CALL add_table_column('sb_customer', 'money_round_mode', 'varchar(16)', '金额舍入：HALF_UP/HALF_EVEN/DOWN', 'HALF_UP');
+/
+CREATE TABLE IF NOT EXISTS `sb_customer_money_scale_audit` (
+  `audit_id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '客户ID',
+  `price_decimal_places` tinyint NOT NULL COMMENT '申请：单价小数位',
+  `amount_decimal_places` tinyint NOT NULL COMMENT '申请：金额小数位',
+  `money_round_mode` varchar(16) NOT NULL DEFAULT 'HALF_UP' COMMENT '申请：舍入模式',
+  `audit_status` char(1) NOT NULL DEFAULT '0' COMMENT '0待审 1通过 2驳回',
+  `apply_by` varchar(64) DEFAULT '' COMMENT '申请人',
+  `apply_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+  `apply_remark` varchar(500) DEFAULT NULL COMMENT '申请说明',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `audit_remark` varchar(500) DEFAULT NULL COMMENT '审核说明/驳回原因',
+  `old_price_decimal_places` tinyint DEFAULT NULL COMMENT '申请时已生效单价位',
+  `old_amount_decimal_places` tinyint DEFAULT NULL COMMENT '申请时已生效金额位',
+  `old_money_round_mode` varchar(16) DEFAULT NULL COMMENT '申请时已生效舍入',
+  PRIMARY KEY (`audit_id`),
+  KEY `idx_money_scale_audit_customer` (`customer_id`),
+  KEY `idx_money_scale_audit_status` (`audit_status`, `apply_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户金额小数位变更审核';
+/
+
