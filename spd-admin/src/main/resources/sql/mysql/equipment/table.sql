@@ -21,9 +21,35 @@ CREATE TABLE IF NOT EXISTS `sb_customer` (
   `hc_status` char(1) NOT NULL DEFAULT '0' COMMENT '耗材侧状态（0正常 1停用），与设备侧 status 分开',
   `hc_planned_disable_time` datetime DEFAULT NULL COMMENT '计划停用时间（耗材侧），到达后租户无法使用耗材系统',
   `tenant_key` varchar(64) DEFAULT NULL COMMENT '租户枚举键（TenantEnum.name），与代码内租户列表一致',
+  `price_decimal_places` tinyint NOT NULL DEFAULT 3 COMMENT '单价显示小数位(0-6，已生效)',
+  `amount_decimal_places` tinyint NOT NULL DEFAULT 3 COMMENT '金额显示小数位(0-6，已生效)',
+  `money_round_mode` varchar(16) NOT NULL DEFAULT 'HALF_UP' COMMENT '金额舍入：HALF_UP/HALF_EVEN/DOWN',
   PRIMARY KEY (`customer_id`),
   UNIQUE KEY `uk_sb_customer_code` (`customer_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备/耗材共用客户表(SaaS租户)；设备用 status/planned_disable_time，耗材用 hc_status/hc_planned_disable_time';
+/
+
+-- 客户金额小数位变更审核（平台管理员申请；允许自审；通过后写回 sb_customer 生效字段）
+CREATE TABLE IF NOT EXISTS `sb_customer_money_scale_audit` (
+  `audit_id` char(36) NOT NULL COMMENT '主键UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '客户ID',
+  `price_decimal_places` tinyint NOT NULL COMMENT '申请：单价小数位',
+  `amount_decimal_places` tinyint NOT NULL COMMENT '申请：金额小数位',
+  `money_round_mode` varchar(16) NOT NULL DEFAULT 'HALF_UP' COMMENT '申请：舍入模式',
+  `audit_status` char(1) NOT NULL DEFAULT '0' COMMENT '0待审 1通过 2驳回',
+  `apply_by` varchar(64) DEFAULT '' COMMENT '申请人',
+  `apply_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+  `apply_remark` varchar(500) DEFAULT NULL COMMENT '申请说明',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
+  `audit_remark` varchar(500) DEFAULT NULL COMMENT '审核说明/驳回原因',
+  `old_price_decimal_places` tinyint DEFAULT NULL COMMENT '申请时已生效单价位',
+  `old_amount_decimal_places` tinyint DEFAULT NULL COMMENT '申请时已生效金额位',
+  `old_money_round_mode` varchar(16) DEFAULT NULL COMMENT '申请时已生效舍入',
+  PRIMARY KEY (`audit_id`),
+  KEY `idx_money_scale_audit_customer` (`customer_id`),
+  KEY `idx_money_scale_audit_status` (`audit_status`, `apply_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户金额小数位变更审核';
 /
 
 -- 科室主数据（设备/耗材业务共用；tenant_id 同 sb_customer.customer_id）
@@ -447,7 +473,7 @@ CREATE TABLE IF NOT EXISTS `sb_asset_print_task_item` (
   `asset_name` varchar(200) DEFAULT NULL COMMENT '资产名称',
   `spec` varchar(200) DEFAULT NULL COMMENT '规格',
   `model` varchar(200) DEFAULT NULL COMMENT '型号',
-  `unit_price` decimal(18,2) DEFAULT NULL COMMENT '单价',
+  `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
   `manufacturer` varchar(200) DEFAULT NULL COMMENT '生产厂家名称',
   `serial_number` varchar(100) DEFAULT NULL COMMENT '机身序列号',
   `rfid_epc` varchar(200) DEFAULT NULL COMMENT 'RFID EPC区域值',
@@ -958,7 +984,7 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply` (
   `department_id` bigint DEFAULT NULL COMMENT '科室ID',
   `user_id` bigint DEFAULT NULL COMMENT '操作人ID',
   `purchase_bill_status` int DEFAULT 1 COMMENT '申购状态(1-待审核,2-已审核,3-已拒绝)',
-  `total_amount` decimal(10,2) DEFAULT 0.00 COMMENT '总金额',
+  `total_amount` decimal(18,6) DEFAULT 0.00 COMMENT '总金额',
   `urgency_level` int DEFAULT 1 COMMENT '紧急程度(1-普通,2-紧急,3-特急)',
   `expected_delivery_date` date DEFAULT NULL COMMENT '期望到货日期',
   `del_flag` int DEFAULT 0 COMMENT '删除标志',
@@ -994,9 +1020,9 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
   `material_name` varchar(200) DEFAULT NULL COMMENT '耗材名称',
   `material_spec` varchar(200) DEFAULT NULL COMMENT '规格型号',
   `unit` varchar(50) DEFAULT NULL COMMENT '单位',
-  `unit_price` decimal(10,2) DEFAULT 0.00 COMMENT '单价',
+  `unit_price` decimal(18,6) DEFAULT 0.00 COMMENT '单价',
   `qty` decimal(10,2) DEFAULT 0.00 COMMENT '申购数量',
-  `amt` decimal(10,2) DEFAULT 0.00 COMMENT '金额',
+  `amt` decimal(18,6) DEFAULT 0.00 COMMENT '金额',
   `reason` varchar(500) DEFAULT NULL COMMENT '申购理由',
   `supplier_name` varchar(200) DEFAULT NULL COMMENT '建议供应商',
   `brand` varchar(100) DEFAULT NULL COMMENT '品牌',
@@ -1031,4 +1057,6 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
 
 -- ========== 覆盖说明（扫描结论）==========
 -- 设备侧业务表已全部包含于上文；新增整表请追加本文件；新增字段请追加 equipment/column.sql（add_table_column）；菜单与权限请追加 equipment/menu.sql。
+-- SYS-F-002：sb_customer 小数位列 + sb_customer_money_scale_audit 已纳入本文件；现网补列见 column.sql / docs/sql/SYS-F-002-customer-money-decimal.sql；
+-- 出入库等业务表金额升 decimal(18,6) 见 docs/sql/SYS-F-002-money-precision-18-6.sql（与功能 DDL 分文件，便于择机执行）。
 /

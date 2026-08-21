@@ -12,13 +12,16 @@ import com.spd.common.constant.UserConstants;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.enums.TenantEnum;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.system.domain.SbCustomer;
+import com.spd.system.domain.SbCustomerMoneyScaleAudit;
 import com.spd.system.domain.SbCustomerPeriodLog;
 import com.spd.system.domain.SbCustomerStatusLog;
 import com.spd.system.mapper.SbCustomerMapper;
+import com.spd.system.mapper.SbCustomerMoneyScaleAuditMapper;
 import com.spd.system.mapper.SbCustomerPeriodLogMapper;
 import com.spd.system.mapper.SbCustomerStatusLogMapper;
 import com.spd.system.mapper.SysMenuMapper;
@@ -51,6 +54,9 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
 
   @Autowired
   private SbCustomerMapper sbCustomerMapper;
+
+  @Autowired
+  private SbCustomerMoneyScaleAuditMapper sbCustomerMoneyScaleAuditMapper;
 
   @Autowired
   private SbCustomerStatusLogMapper sbCustomerStatusLogMapper;
@@ -139,6 +145,15 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       if (StringUtils.isEmpty(customer.getCustomerId())) {
         customer.setCustomerId(UUID7.generateUUID7());
       }
+    }
+    if (customer.getPriceDecimalPlaces() == null) {
+      customer.setPriceDecimalPlaces(MoneyScaleUtils.DEFAULT_SCALE);
+    }
+    if (customer.getAmountDecimalPlaces() == null) {
+      customer.setAmountDecimalPlaces(MoneyScaleUtils.DEFAULT_SCALE);
+    }
+    if (StringUtils.isEmpty(customer.getMoneyRoundMode())) {
+      customer.setMoneyRoundMode(MoneyScaleUtils.DEFAULT_ROUND_MODE);
     }
     customer.setCreateBy(SecurityUtils.getUserIdStr());
     int rows = sbCustomerMapper.insertSbCustomer(customer);
@@ -703,5 +718,104 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       userPostList.add(userPost);
       sysUserPostMapper.batchUserPost(userPostList);
     }
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public String submitMoneyScaleAudit(String customerId, Integer priceDecimalPlaces, Integer amountDecimalPlaces,
+      String moneyRoundMode, String applyRemark) {
+    if (StringUtils.isEmpty(customerId)) {
+      throw new ServiceException("客户ID不能为空");
+    }
+    SbCustomer customer = sbCustomerMapper.selectSbCustomerById(customerId);
+    if (customer == null) {
+      throw new ServiceException("客户不存在");
+    }
+    int priceScale = MoneyScaleUtils.normalizeScale(priceDecimalPlaces);
+    int amountScale = MoneyScaleUtils.normalizeScale(amountDecimalPlaces);
+    String roundMode = MoneyScaleUtils.resolveRoundingMode(moneyRoundMode).name();
+    if ("HALF_EVEN".equals(roundMode)) {
+      roundMode = "HALF_EVEN";
+    } else if ("DOWN".equals(roundMode)) {
+      roundMode = "DOWN";
+    } else {
+      roundMode = "HALF_UP";
+    }
+    SbCustomerMoneyScaleAudit pending = sbCustomerMoneyScaleAuditMapper.selectPendingByCustomerId(customerId);
+    if (pending != null) {
+      throw new ServiceException("该客户已有待审核的金额小数位申请，请先审核或驳回后再提交");
+    }
+    SbCustomerMoneyScaleAudit row = new SbCustomerMoneyScaleAudit();
+    row.setAuditId(UUID7.generateUUID7());
+    row.setCustomerId(customerId);
+    row.setPriceDecimalPlaces(priceScale);
+    row.setAmountDecimalPlaces(amountScale);
+    row.setMoneyRoundMode(roundMode);
+    row.setAuditStatus(SbCustomerMoneyScaleAudit.STATUS_PENDING);
+    row.setApplyBy(SecurityUtils.getUsername());
+    row.setApplyTime(new Date());
+    row.setApplyRemark(applyRemark);
+    row.setOldPriceDecimalPlaces(MoneyScaleUtils.normalizeScale(customer.getPriceDecimalPlaces()));
+    row.setOldAmountDecimalPlaces(MoneyScaleUtils.normalizeScale(customer.getAmountDecimalPlaces()));
+    row.setOldMoneyRoundMode(StringUtils.isNotEmpty(customer.getMoneyRoundMode())
+        ? customer.getMoneyRoundMode() : MoneyScaleUtils.DEFAULT_ROUND_MODE);
+    sbCustomerMoneyScaleAuditMapper.insert(row);
+    return row.getAuditId();
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public int approveMoneyScaleAudit(String auditId, String auditRemark) {
+    SbCustomerMoneyScaleAudit row = requirePendingAudit(auditId);
+    row.setAuditStatus(SbCustomerMoneyScaleAudit.STATUS_APPROVED);
+    row.setAuditBy(SecurityUtils.getUsername());
+    row.setAuditTime(new Date());
+    row.setAuditRemark(auditRemark);
+    int n = sbCustomerMoneyScaleAuditMapper.updateAuditResult(row);
+    if (n <= 0) {
+      throw new ServiceException("审核失败，记录可能已处理");
+    }
+    return sbCustomerMapper.updateEffectiveMoneyScale(row.getCustomerId(), row.getPriceDecimalPlaces(),
+        row.getAmountDecimalPlaces(), row.getMoneyRoundMode(), SecurityUtils.getUsername());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public int rejectMoneyScaleAudit(String auditId, String auditRemark) {
+    if (StringUtils.isEmpty(auditRemark)) {
+      throw new ServiceException("驳回原因不能为空");
+    }
+    SbCustomerMoneyScaleAudit row = requirePendingAudit(auditId);
+    row.setAuditStatus(SbCustomerMoneyScaleAudit.STATUS_REJECTED);
+    row.setAuditBy(SecurityUtils.getUsername());
+    row.setAuditTime(new Date());
+    row.setAuditRemark(auditRemark);
+    int n = sbCustomerMoneyScaleAuditMapper.updateAuditResult(row);
+    if (n <= 0) {
+      throw new ServiceException("驳回失败，记录可能已处理");
+    }
+    return n;
+  }
+
+  @Override
+  public List<SbCustomerMoneyScaleAudit> selectMoneyScaleAuditList(String customerId) {
+    if (StringUtils.isEmpty(customerId)) {
+      return new ArrayList<>();
+    }
+    return sbCustomerMoneyScaleAuditMapper.selectByCustomerId(customerId);
+  }
+
+  private SbCustomerMoneyScaleAudit requirePendingAudit(String auditId) {
+    if (StringUtils.isEmpty(auditId)) {
+      throw new ServiceException("审核单ID不能为空");
+    }
+    SbCustomerMoneyScaleAudit row = sbCustomerMoneyScaleAuditMapper.selectById(auditId);
+    if (row == null) {
+      throw new ServiceException("审核单不存在");
+    }
+    if (!SbCustomerMoneyScaleAudit.STATUS_PENDING.equals(row.getAuditStatus())) {
+      throw new ServiceException("仅待审核记录可操作");
+    }
+    return row;
   }
 }

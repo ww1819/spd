@@ -543,6 +543,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="beginDate != null"> and a.consume_bill_date &gt;= #{beginDate}</if>
         <if test="endDate != null"> and a.consume_bill_date &lt;= #{endDate}</if>
+        <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''">
+            and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%')
+                 or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%')
+                 or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))
+        </if>
+        <if test="financeCategoryKeyword != null and financeCategoryKeyword != ''">
+            and (fc.finance_category_code like concat('%', #{financeCategoryKeyword}, '%')
+                 or fc.finance_category_name like concat('%', #{financeCategoryKeyword}, '%')
+                 or fc.referred_name like concat('%', #{financeCategoryKeyword}, '%'))
+        </if>
     </sql>
 
     <sql id="auditedDetailOrderBy">
@@ -583,6 +593,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join his_charge_item_mirror hci on hci.tenant_id = #{scopedTenantId}
             and hci.charge_item_id = m.his_charge_item_id
             and (hci.deleted_flag is null or hci.deleted_flag != 1)
+        left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where <include refid="auditedConsumeReportWhere"/>
     </select>
 
@@ -637,7 +649,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             SUM(e.qty) as totalQuantity,
             SUM(e.amt) as totalAmount,
             AVG(e.unit_price) as averagePrice,
-            wc.warehouse_category_name as category
+            wc.warehouse_category_name as category,
+            fc.finance_category_name as financialCategory
         from t_hc_ks_xh a
         left join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and e.del_flag != 1
         left join fd_department d on a.department_id = d.id
@@ -647,8 +660,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (hci.deleted_flag is null or hci.deleted_flag != 1)
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
+        left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where <include refid="auditedConsumeReportWhere"/>
-        group by d.id, d.name, m.id, m.code, m.name, m.speci, m.model, u.unit_id, u.unit_name, wc.warehouse_category_id, wc.warehouse_category_name
+        group by d.id, d.name, m.id, m.code, m.name, m.speci, m.model, u.unit_id, u.unit_name,
+                 wc.warehouse_category_id, wc.warehouse_category_name,
+                 fc.finance_category_id, fc.finance_category_name
         <include refid="auditedSummaryOrderBy"/>
     </select>
 

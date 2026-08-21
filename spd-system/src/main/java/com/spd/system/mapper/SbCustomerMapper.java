@@ -29,6 +29,13 @@ public interface SbCustomerMapper {
 
   int updateSbCustomer(SbCustomer customer);
 
+  /** 审核通过后写回已生效的单价/金额小数位 */
+  int updateEffectiveMoneyScale(@Param("customerId") String customerId,
+      @Param("priceDecimalPlaces") Integer priceDecimalPlaces,
+      @Param("amountDecimalPlaces") Integer amountDecimalPlaces,
+      @Param("moneyRoundMode") String moneyRoundMode,
+      @Param("updateBy") String updateBy);
+
   /**
    * 逻辑删除（置删除者、删除时间）
    */

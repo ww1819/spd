@@ -59,4 +59,18 @@ public interface ISbCustomerService {
    * 耗材功能重置：若 super 组（岗位）和 super_01 不存在则创建；重置耗材客户菜单权限、super 岗位菜单权限、super_01 菜单权限为系统设置下非平台管理功能。
    */
   void resetMaterialFunctions(String customerId);
+
+  /**
+   * 提交金额小数位变更申请（待审；同一客户仅允许一条待审）。
+   */
+  String submitMoneyScaleAudit(String customerId, Integer priceDecimalPlaces, Integer amountDecimalPlaces,
+      String moneyRoundMode, String applyRemark);
+
+  /** 审核通过（允许自审）；写回客户已生效字段。 */
+  int approveMoneyScaleAudit(String auditId, String auditRemark);
+
+  /** 审核驳回（允许自审）。 */
+  int rejectMoneyScaleAudit(String auditId, String auditRemark);
+
+  List<com.spd.system.domain.SbCustomerMoneyScaleAudit> selectMoneyScaleAuditList(String customerId);
 }

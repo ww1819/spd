@@ -1,0 +1,69 @@
+package com.spd.common.utils;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+/**
+ * 租户金额显示格式化（不改变入库精度；仅展示/打印/导出）。
+ */
+public final class MoneyScaleUtils {
+
+  public static final int DEFAULT_SCALE = 3;
+  public static final int MIN_SCALE = 0;
+  public static final int MAX_SCALE = 6;
+  public static final String DEFAULT_ROUND_MODE = "HALF_UP";
+
+  private MoneyScaleUtils() {
+  }
+
+  public static int normalizeScale(Integer scale) {
+    if (scale == null) {
+      return DEFAULT_SCALE;
+    }
+    if (scale < MIN_SCALE) {
+      return MIN_SCALE;
+    }
+    if (scale > MAX_SCALE) {
+      return MAX_SCALE;
+    }
+    return scale;
+  }
+
+  public static RoundingMode resolveRoundingMode(String mode) {
+    if (mode == null || mode.trim().isEmpty()) {
+      return RoundingMode.HALF_UP;
+    }
+    String m = mode.trim().toUpperCase();
+    if ("HALF_EVEN".equals(m) || "HALF_EVEN_BANKERS".equals(m)) {
+      return RoundingMode.HALF_EVEN;
+    }
+    if ("DOWN".equals(m) || "FLOOR".equals(m)) {
+      return RoundingMode.DOWN;
+    }
+    return RoundingMode.HALF_UP;
+  }
+
+  public static BigDecimal format(BigDecimal value, Integer scale, String roundMode) {
+    if (value == null) {
+      return null;
+    }
+    return value.setScale(normalizeScale(scale), resolveRoundingMode(roundMode));
+  }
+
+  public static BigDecimal sumThenFormat(Iterable<? extends Number> values, Integer scale, String roundMode) {
+    BigDecimal sum = BigDecimal.ZERO;
+    if (values != null) {
+      for (Number n : values) {
+        if (n == null) {
+          continue;
+        }
+        if (n instanceof BigDecimal) {
+          sum = sum.add((BigDecimal) n);
+        } else {
+          sum = sum.add(BigDecimal.valueOf(n.doubleValue()));
+        }
+      }
+    }
+    return format(sum, scale, roundMode);
+  }
+}

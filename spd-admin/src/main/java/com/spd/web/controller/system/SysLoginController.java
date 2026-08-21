@@ -189,6 +189,9 @@ public class SysLoginController
         tenant.put("customerId", customer.getCustomerId());
         tenant.put("customerCode", customer.getCustomerCode());
         tenant.put("tenantKey", StringUtils.isNotEmpty(customer.getTenantKey()) ? customer.getTenantKey() : null);
+        tenant.put("priceDecimalPlaces", customer.getPriceDecimalPlaces() != null ? customer.getPriceDecimalPlaces() : 3);
+        tenant.put("amountDecimalPlaces", customer.getAmountDecimalPlaces() != null ? customer.getAmountDecimalPlaces() : 3);
+        tenant.put("moneyRoundMode", StringUtils.isNotEmpty(customer.getMoneyRoundMode()) ? customer.getMoneyRoundMode() : "HALF_UP");
         ajax.put("tenant", tenant);
     }
 

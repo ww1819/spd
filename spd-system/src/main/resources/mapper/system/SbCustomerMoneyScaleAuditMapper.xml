@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.system.mapper.SbCustomerMoneyScaleAuditMapper">
+
+  <resultMap id="SbCustomerMoneyScaleAuditResult" type="com.spd.system.domain.SbCustomerMoneyScaleAudit">
+    <id     property="auditId" column="audit_id"/>
+    <result property="customerId" column="customer_id"/>
+    <result property="priceDecimalPlaces" column="price_decimal_places"/>
+    <result property="amountDecimalPlaces" column="amount_decimal_places"/>
+    <result property="moneyRoundMode" column="money_round_mode"/>
+    <result property="auditStatus" column="audit_status"/>
+    <result property="applyBy" column="apply_by"/>
+    <result property="applyTime" column="apply_time"/>
+    <result property="applyRemark" column="apply_remark"/>
+    <result property="auditBy" column="audit_by"/>
+    <result property="auditTime" column="audit_time"/>
+    <result property="auditRemark" column="audit_remark"/>
+    <result property="oldPriceDecimalPlaces" column="old_price_decimal_places"/>
+    <result property="oldAmountDecimalPlaces" column="old_amount_decimal_places"/>
+    <result property="oldMoneyRoundMode" column="old_money_round_mode"/>
+    <result property="customerName" column="customer_name"/>
+  </resultMap>
+
+  <sql id="selectVo">
+    select a.audit_id, a.customer_id, a.price_decimal_places, a.amount_decimal_places, a.money_round_mode,
+           a.audit_status, a.apply_by, a.apply_time, a.apply_remark,
+           a.audit_by, a.audit_time, a.audit_remark,
+           a.old_price_decimal_places, a.old_amount_decimal_places, a.old_money_round_mode,
+           c.customer_name
+    from sb_customer_money_scale_audit a
+    left join sb_customer c on c.customer_id = a.customer_id
+  </sql>
+
+  <select id="selectById" parameterType="String" resultMap="SbCustomerMoneyScaleAuditResult">
+    <include refid="selectVo"/>
+    where a.audit_id = #{auditId}
+  </select>
+
+  <select id="selectByCustomerId" resultMap="SbCustomerMoneyScaleAuditResult">
+    <include refid="selectVo"/>
+    where a.customer_id = #{customerId}
+    order by a.apply_time desc
+  </select>
+
+  <select id="selectPendingByCustomerId" resultMap="SbCustomerMoneyScaleAuditResult">
+    <include refid="selectVo"/>
+    where a.customer_id = #{customerId} and a.audit_status = '0'
+    order by a.apply_time desc
+    limit 1
+  </select>
+
+  <insert id="insert" parameterType="com.spd.system.domain.SbCustomerMoneyScaleAudit">
+    insert into sb_customer_money_scale_audit (
+      audit_id, customer_id, price_decimal_places, amount_decimal_places, money_round_mode,
+      audit_status, apply_by, apply_time, apply_remark,
+      old_price_decimal_places, old_amount_decimal_places, old_money_round_mode
+    ) values (
+      #{auditId}, #{customerId}, #{priceDecimalPlaces}, #{amountDecimalPlaces}, #{moneyRoundMode},
+      #{auditStatus}, #{applyBy}, #{applyTime}, #{applyRemark},
+      #{oldPriceDecimalPlaces}, #{oldAmountDecimalPlaces}, #{oldMoneyRoundMode}
+    )
+  </insert>
+
+  <update id="updateAuditResult" parameterType="com.spd.system.domain.SbCustomerMoneyScaleAudit">
+    update sb_customer_money_scale_audit
+    set audit_status = #{auditStatus},
+        audit_by = #{auditBy},
+        audit_time = #{auditTime},
+        audit_remark = #{auditRemark}
+    where audit_id = #{auditId}
+      and audit_status = '0'
+  </update>
+</mapper>

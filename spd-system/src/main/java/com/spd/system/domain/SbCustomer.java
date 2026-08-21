@@ -53,6 +53,15 @@ public class SbCustomer extends BaseEntity {
   /** 租户枚举键（关联 TenantEnum.name），用于与代码内租户列表一致并区分条件分支 */
   private String tenantKey;
 
+  /** 单价显示小数位（0-6，已生效；默认 3） */
+  private Integer priceDecimalPlaces;
+
+  /** 金额显示小数位（0-6，已生效；默认 3） */
+  private Integer amountDecimalPlaces;
+
+  /** 金额舍入模式：HALF_UP / HALF_EVEN / DOWN（已生效） */
+  private String moneyRoundMode;
+
   /** 删除者 */
   private String deleteBy;
 
@@ -133,6 +142,30 @@ public class SbCustomer extends BaseEntity {
 
   public void setTenantKey(String tenantKey) {
     this.tenantKey = tenantKey;
+  }
+
+  public Integer getPriceDecimalPlaces() {
+    return priceDecimalPlaces;
+  }
+
+  public void setPriceDecimalPlaces(Integer priceDecimalPlaces) {
+    this.priceDecimalPlaces = priceDecimalPlaces;
+  }
+
+  public Integer getAmountDecimalPlaces() {
+    return amountDecimalPlaces;
+  }
+
+  public void setAmountDecimalPlaces(Integer amountDecimalPlaces) {
+    this.amountDecimalPlaces = amountDecimalPlaces;
+  }
+
+  public String getMoneyRoundMode() {
+    return moneyRoundMode;
+  }
+
+  public void setMoneyRoundMode(String moneyRoundMode) {
+    this.moneyRoundMode = moneyRoundMode;
   }
 
   public String getDeleteBy() {

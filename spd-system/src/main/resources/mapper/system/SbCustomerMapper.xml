@@ -7,6 +7,9 @@
     <result property="customerName"     column="customer_name"/>
     <result property="customerCode"     column="customer_code"/>
     <result property="tenantKey"        column="tenant_key"/>
+    <result property="priceDecimalPlaces" column="price_decimal_places"/>
+    <result property="amountDecimalPlaces" column="amount_decimal_places"/>
+    <result property="moneyRoundMode"   column="money_round_mode"/>
     <result property="status"           column="status"/>
     <result property="plannedDisableTime" column="planned_disable_time"/>
     <result property="hcStatus"         column="hc_status"/>
@@ -21,7 +24,11 @@
   </resultMap>
 
   <sql id="selectSbCustomerVo">
-    select customer_id, customer_name, customer_code, tenant_key, status, planned_disable_time,
+    select customer_id, customer_name, customer_code, tenant_key,
+           ifnull(price_decimal_places, 3) as price_decimal_places,
+           ifnull(amount_decimal_places, 3) as amount_decimal_places,
+           ifnull(nullif(trim(money_round_mode), ''), 'HALF_UP') as money_round_mode,
+           status, planned_disable_time,
            hc_status, hc_planned_disable_time,
            create_by, create_time, update_by, update_time, remark, delete_by, delete_time
     from sb_customer
@@ -75,8 +82,19 @@
   </select>
 
   <insert id="insertSbCustomer" parameterType="com.spd.system.domain.SbCustomer">
-    insert into sb_customer (customer_id, customer_name, customer_code, tenant_key, status, planned_disable_time, hc_status, hc_planned_disable_time, remark, create_by, create_time)
-    values (#{customerId}, #{customerName}, #{customerCode}, #{tenantKey}, #{status}, #{plannedDisableTime}, ifnull(#{hcStatus}, '0'), #{hcPlannedDisableTime}, #{remark}, #{createBy}, sysdate())
+    insert into sb_customer (
+      customer_id, customer_name, customer_code, tenant_key,
+      price_decimal_places, amount_decimal_places, money_round_mode,
+      status, planned_disable_time, hc_status, hc_planned_disable_time,
+      remark, create_by, create_time
+    )
+    values (
+      #{customerId}, #{customerName}, #{customerCode}, #{tenantKey},
+      ifnull(#{priceDecimalPlaces}, 3), ifnull(#{amountDecimalPlaces}, 3),
+      ifnull(nullif(#{moneyRoundMode}, ''), 'HALF_UP'),
+      #{status}, #{plannedDisableTime}, ifnull(#{hcStatus}, '0'), #{hcPlannedDisableTime},
+      #{remark}, #{createBy}, sysdate()
+    )
   </insert>
 
   <update id="updateSbCustomer" parameterType="com.spd.system.domain.SbCustomer">
@@ -89,11 +107,25 @@
       <if test="plannedDisableTime != null">planned_disable_time = #{plannedDisableTime},</if>
       <if test="hcStatus != null">hc_status = #{hcStatus},</if>
       <if test="hcPlannedDisableTime != null">hc_planned_disable_time = #{hcPlannedDisableTime},</if>
+      <if test="priceDecimalPlaces != null">price_decimal_places = #{priceDecimalPlaces},</if>
+      <if test="amountDecimalPlaces != null">amount_decimal_places = #{amountDecimalPlaces},</if>
+      <if test="moneyRoundMode != null and moneyRoundMode != ''">money_round_mode = #{moneyRoundMode},</if>
       <if test="remark != null">remark = #{remark},</if>
       <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
       update_time = sysdate()
     </set>
     where customer_id = #{customerId}
+  </update>
+
+  <update id="updateEffectiveMoneyScale">
+    update sb_customer
+    set price_decimal_places = #{priceDecimalPlaces},
+        amount_decimal_places = #{amountDecimalPlaces},
+        money_round_mode = #{moneyRoundMode},
+        update_by = #{updateBy},
+        update_time = sysdate()
+    where customer_id = #{customerId}
+      and delete_time is null
   </update>
 
   <update id="deleteSbCustomerById">

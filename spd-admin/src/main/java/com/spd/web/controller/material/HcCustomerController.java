@@ -297,6 +297,66 @@ public class HcCustomerController extends BaseController {
     return success("已清理耗材数据，影响行数约 " + n);
   }
 
+  /** 提交金额小数位变更（待审；允许后续自审） */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
+  @Log(title = "客户金额小数位", businessType = BusinessType.UPDATE)
+  @PostMapping("/{customerId}/moneyScale/submit")
+  public AjaxResult submitMoneyScale(@PathVariable String customerId, @RequestBody MoneyScaleBody body) {
+    if (body == null) {
+      return error("参数不能为空");
+    }
+    String auditId = sbCustomerService.submitMoneyScaleAudit(customerId, body.getPriceDecimalPlaces(),
+        body.getAmountDecimalPlaces(), body.getMoneyRoundMode(), body.getApplyRemark());
+    return success(auditId);
+  }
+
+  /** 金额小数位审核通过（允许自审） */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
+  @Log(title = "客户金额小数位审核", businessType = BusinessType.UPDATE)
+  @PutMapping("/moneyScale/approve/{auditId}")
+  public AjaxResult approveMoneyScale(@PathVariable String auditId, @RequestBody(required = false) MoneyScaleAuditBody body) {
+    return toAjax(sbCustomerService.approveMoneyScaleAudit(auditId, body != null ? body.getAuditRemark() : null));
+  }
+
+  /** 金额小数位审核驳回（允许自审） */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
+  @Log(title = "客户金额小数位驳回", businessType = BusinessType.UPDATE)
+  @PutMapping("/moneyScale/reject/{auditId}")
+  public AjaxResult rejectMoneyScale(@PathVariable String auditId, @RequestBody MoneyScaleAuditBody body) {
+    if (body == null || StringUtils.isEmpty(body.getAuditRemark())) {
+      return error("驳回原因不能为空");
+    }
+    return toAjax(sbCustomerService.rejectMoneyScaleAudit(auditId, body.getAuditRemark()));
+  }
+
+  /** 金额小数位变更记录 */
+  @PreAuthorize("@ss.hasPermi('hc:system:customer:query')")
+  @GetMapping("/{customerId}/moneyScale/audits")
+  public AjaxResult moneyScaleAudits(@PathVariable String customerId) {
+    return success(sbCustomerService.selectMoneyScaleAuditList(customerId));
+  }
+
+  public static class MoneyScaleBody {
+    private Integer priceDecimalPlaces;
+    private Integer amountDecimalPlaces;
+    private String moneyRoundMode;
+    private String applyRemark;
+    public Integer getPriceDecimalPlaces() { return priceDecimalPlaces; }
+    public void setPriceDecimalPlaces(Integer priceDecimalPlaces) { this.priceDecimalPlaces = priceDecimalPlaces; }
+    public Integer getAmountDecimalPlaces() { return amountDecimalPlaces; }
+    public void setAmountDecimalPlaces(Integer amountDecimalPlaces) { this.amountDecimalPlaces = amountDecimalPlaces; }
+    public String getMoneyRoundMode() { return moneyRoundMode; }
+    public void setMoneyRoundMode(String moneyRoundMode) { this.moneyRoundMode = moneyRoundMode; }
+    public String getApplyRemark() { return applyRemark; }
+    public void setApplyRemark(String applyRemark) { this.applyRemark = applyRemark; }
+  }
+
+  public static class MoneyScaleAuditBody {
+    private String auditRemark;
+    public String getAuditRemark() { return auditRemark; }
+    public void setAuditRemark(String auditRemark) { this.auditRemark = auditRemark; }
+  }
+
   public static class FullDbInitBody {
     private String confirmToken;
     public String getConfirmToken() { return confirmToken; }

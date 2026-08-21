@@ -154,6 +154,12 @@ public class DeptBatchConsume extends BaseEntity
     /** 查询参数：患者住院号/门诊号 */
     private String patientId;
 
+    /** 查询参数：耗材分类（库房分类）关键词，编码/名称/简码模糊 */
+    private String warehouseCategoryKeyword;
+
+    /** 查询参数：财务分类关键词，编码/名称/简码模糊 */
+    private String financeCategoryKeyword;
+
     /** 报表排序字段（不落库） */
     private transient String sortField;
 
@@ -416,6 +422,22 @@ public class DeptBatchConsume extends BaseEntity
 
     public void setPatientId(String patientId) {
         this.patientId = patientId;
+    }
+
+    public String getWarehouseCategoryKeyword() {
+        return warehouseCategoryKeyword;
+    }
+
+    public void setWarehouseCategoryKeyword(String warehouseCategoryKeyword) {
+        this.warehouseCategoryKeyword = warehouseCategoryKeyword;
+    }
+
+    public String getFinanceCategoryKeyword() {
+        return financeCategoryKeyword;
+    }
+
+    public void setFinanceCategoryKeyword(String financeCategoryKeyword) {
+        this.financeCategoryKeyword = financeCategoryKeyword;
     }
 
     public String getSortField() {
