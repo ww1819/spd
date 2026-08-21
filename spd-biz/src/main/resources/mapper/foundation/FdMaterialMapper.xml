@@ -263,16 +263,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         <if test="code != null  and code != ''"> and m.code like concat('%', #{code}, '%') escape '\\'</if>
-        <if test="name != null  and name != ''"> and (
-            m.code like concat('%', #{name}, '%') escape '\\'
-            OR m.name like concat('%', #{name}, '%') escape '\\'
-            OR m.referred_name like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
-        )</if>
-        <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
+        <!-- 耗材名称：中文与拼音简码为 OR（旧逻辑 AND 会导致「发光法」比「fgf」更少） -->
+        <choose>
+            <when test="name != null and name != '' and nameSearch != null and nameSearch != ''">
+                and (
+                    m.code like concat('%', #{name}, '%') escape '\\'
+                    OR m.name like concat('%', #{name}, '%') escape '\\'
+                    OR m.referred_name like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
+                    OR m.referred_name like concat('%', #{nameSearch}, '%')
+                )
+            </when>
+            <when test="name != null and name != ''">
+                and (
+                    m.code like concat('%', #{name}, '%') escape '\\'
+                    OR m.name like concat('%', #{name}, '%') escape '\\'
+                    OR m.referred_name like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
+                )
+            </when>
+            <when test="nameSearch != null and nameSearch != ''">
+                and m.referred_name like concat('%', #{nameSearch}, '%')
+            </when>
+        </choose>
         <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%') escape '\\'</if>
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
@@ -729,16 +748,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         <if test="code != null  and code != ''"> and m.code like concat('%', #{code}, '%') escape '\\'</if>
-        <if test="name != null  and name != ''"> and (
-            m.code like concat('%', #{name}, '%') escape '\\'
-            OR m.name like concat('%', #{name}, '%') escape '\\'
-            OR m.referred_name like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
-            OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
-        )</if>
-        <if test="nameSearch != null and nameSearch != ''"> and m.referred_name like concat('%', #{nameSearch}, '%')</if>
+        <!-- 耗材名称：中文与拼音简码为 OR（旧逻辑 AND 会导致「发光法」比「fgf」更少） -->
+        <choose>
+            <when test="name != null and name != '' and nameSearch != null and nameSearch != ''">
+                and (
+                    m.code like concat('%', #{name}, '%') escape '\\'
+                    OR m.name like concat('%', #{name}, '%') escape '\\'
+                    OR m.referred_name like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
+                    OR m.referred_name like concat('%', #{nameSearch}, '%')
+                )
+            </when>
+            <when test="name != null and name != ''">
+                and (
+                    m.code like concat('%', #{name}, '%') escape '\\'
+                    OR m.name like concat('%', #{name}, '%') escape '\\'
+                    OR m.referred_name like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
+                    OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
+                )
+            </when>
+            <when test="nameSearch != null and nameSearch != ''">
+                and m.referred_name like concat('%', #{nameSearch}, '%')
+            </when>
+        </choose>
         <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%') escape '\\'</if>
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
