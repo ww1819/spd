@@ -34,6 +34,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     private String itemName;
     /** Y=已处理 N=未处理 */
     private String processed;
+    /** Y=执行科室为空 N=执行科室非空；空=全部 */
+    private String execDeptEmpty;
     /** 收费项目高低值筛选：1高值 2低值，空=全部 */
     private String valueLevel;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
