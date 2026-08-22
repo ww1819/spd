@@ -34,6 +34,7 @@ import com.spd.his.domain.dto.HisPatientChargeFetchBody;
 import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
+import com.spd.his.domain.dto.HisMirrorProcessLogVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.domain.dto.HisChargeFetchBatchTraceVo;
 import com.spd.his.service.IHisPatientChargeService;
@@ -102,6 +103,18 @@ public class HisPatientChargeController extends BaseController
         @RequestParam("mirrorRowId") String mirrorRowId)
     {
         List<HisMirrorConsumeRecordVo> list = hisPatientChargeService.listMirrorConsumeRecords(visitKind, mirrorRowId);
+        return success(list);
+    }
+
+    /**
+     * 某条计费明细的核销/冲销操作日志（含成功与失败原因）
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @GetMapping("/mirror/processLogs")
+    public AjaxResult mirrorProcessLogs(@RequestParam("visitKind") String visitKind,
+        @RequestParam("mirrorRowId") String mirrorRowId)
+    {
+        List<HisMirrorProcessLogVo> list = hisPatientChargeService.listMirrorProcessLogs(visitKind, mirrorRowId);
         return success(list);
     }
 

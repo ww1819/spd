@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.his.mapper.HisMirrorProcessLogMapper">
+
+    <insert id="insert">
+        insert into his_mirror_process_log (
+            id, tenant_id, visit_kind, mirror_row_id,
+            operation, outcome, process_type, situation,
+            process_party, process_by, process_time, create_time
+        ) values (
+            #{id}, #{tenantId}, #{visitKind}, #{mirrorRowId},
+            #{operation}, #{outcome}, #{processType}, #{situation},
+            #{processParty}, #{processBy}, #{processTime}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorProcessLogVo">
+        select id, visit_kind as visitKind, mirror_row_id as mirrorRowId,
+               operation, outcome, process_type as processType, situation,
+               process_party as processParty, process_by as processBy, process_time as processTime
+        from his_mirror_process_log
+        where tenant_id = #{tenantId}
+          and visit_kind = #{visitKind}
+          and mirror_row_id = #{mirrorRowId}
+        order by process_time desc, id desc
+    </select>
+
+</mapper>

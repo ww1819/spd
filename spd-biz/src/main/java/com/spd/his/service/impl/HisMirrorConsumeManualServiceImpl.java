@@ -119,14 +119,16 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (ServiceException e)
         {
-            scheduleRecordFailure(visitKind, mirrorRowId, processParty, e.getMessage());
+            scheduleRecordFailure(visitKind, mirrorRowId, HisMirrorProcessConstants.OP_LOW_CONSUME,
+                HisMirrorProcessConstants.PROC_TYPE_LOW, processParty, e.getMessage());
             throw e;
         }
         catch (Exception e)
         {
             log.error("HIS镜像低值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
             String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.lowApplyFailed());
-            scheduleRecordFailure(visitKind, mirrorRowId, processParty, msg);
+            scheduleRecordFailure(visitKind, mirrorRowId, HisMirrorProcessConstants.OP_LOW_CONSUME,
+                HisMirrorProcessConstants.PROC_TYPE_LOW, processParty, msg);
             throw new ServiceException(msg);
         }
     }
@@ -324,14 +326,16 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (ServiceException e)
         {
-            scheduleRecordFailure(visitKind, mirrorRowId, processParty, e.getMessage());
+            scheduleRecordFailure(visitKind, mirrorRowId, HisMirrorProcessConstants.OP_HIGH_CONSUME,
+                HisMirrorProcessConstants.PROC_TYPE_HIGH, processParty, e.getMessage());
             throw e;
         }
         catch (Exception e)
         {
             log.error("HIS镜像高值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
             String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.highApplyFailed());
-            scheduleRecordFailure(visitKind, mirrorRowId, processParty, msg);
+            scheduleRecordFailure(visitKind, mirrorRowId, HisMirrorProcessConstants.OP_HIGH_CONSUME,
+                HisMirrorProcessConstants.PROC_TYPE_HIGH, processParty, msg);
             throw new ServiceException(msg);
         }
     }
@@ -528,7 +532,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
      * 失败原因须在主事务结束后再写入：认领行后主事务仍持有行锁，
      * 若在 catch 里立刻 REQUIRES_NEW 更新同一行会锁等待超时，处理情况落库失败。
      */
-    private void scheduleRecordFailure(String visitKind, String mirrorRowId, String processParty, String failMessage)
+    private void scheduleRecordFailure(String visitKind, String mirrorRowId, String operation, String processType,
+        String processParty, String failMessage)
     {
         final String tenantId;
         try
@@ -546,6 +551,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         final String party = processParty;
         final String message = failMessage;
+        final String op = operation;
+        final String procType = processType;
         if (TransactionSynchronizationManager.isSynchronizationActive())
         {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization()
@@ -555,7 +562,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
                 {
                     try
                     {
-                        hisMirrorProcessOutcomeRecorder.recordFailure(tenantId, visitKind, mirrorRowId, party, message);
+                        hisMirrorProcessOutcomeRecorder.recordFailure(tenantId, visitKind, mirrorRowId, op, procType,
+                            party, message);
                     }
                     catch (Exception ex)
                     {
@@ -567,7 +575,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         try
         {
-            hisMirrorProcessOutcomeRecorder.recordFailure(tenantId, visitKind, mirrorRowId, party, message);
+            hisMirrorProcessOutcomeRecorder.recordFailure(tenantId, visitKind, mirrorRowId, op, procType, party,
+                message);
         }
         catch (Exception ex)
         {
@@ -1488,6 +1497,10 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,
             procBy, situation, party);
+        String operation = PROC_TYPE_HIGH.equals(processType) ? HisMirrorProcessConstants.OP_HIGH_CONSUME
+            : HisMirrorProcessConstants.OP_LOW_CONSUME;
+        hisMirrorProcessOutcomeRecorder.recordSuccessLog(tenantId, visitKind, mirrorRowId, operation, processType,
+            processParty, situation);
     }
 
     /**

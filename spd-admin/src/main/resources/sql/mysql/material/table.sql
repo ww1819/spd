@@ -2975,6 +2975,25 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（含退费返还累计与库存行快照）';
 /
 
+-- HIS 计费镜像核销/冲销操作日志（每次成功或失败一条，PC-F-003）
+CREATE TABLE IF NOT EXISTS `his_mirror_process_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `mirror_row_id` varchar(36) NOT NULL COMMENT '计费镜像行 his_*_charge_mirror.id',
+  `operation` varchar(32) NOT NULL COMMENT 'LOW_CONSUME/LOW_WRITE_OFF/HIGH_CONSUME',
+  `outcome` varchar(16) NOT NULL COMMENT 'SUCCESS/FAIL',
+  `process_type` varchar(16) DEFAULT NULL COMMENT 'LOW_VALUE/HIGH_VALUE',
+  `situation` varchar(500) DEFAULT NULL COMMENT '处理情况/失败原因',
+  `process_party` varchar(32) DEFAULT NULL COMMENT '手动处理/自动处理',
+  `process_by` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `process_time` datetime NOT NULL COMMENT '操作时间',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '落库时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hmpl_mirror_time` (`tenant_id`, `visit_kind`, `mirror_row_id`, `process_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像核销操作日志';
+/
+
 -- 高值扫码核销消耗确认批次（月底科室确认，生成结算用 G-RK/G-CK 单据）
 CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm` (
   `id` varchar(36) NOT NULL COMMENT '主键UUID7',

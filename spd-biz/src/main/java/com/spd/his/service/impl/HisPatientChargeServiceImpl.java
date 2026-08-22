@@ -54,6 +54,7 @@ import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
+import com.spd.his.mapper.HisMirrorProcessLogMapper;
 import com.spd.his.domain.dto.HisGenerateConsumeResultVo;
 import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
@@ -76,6 +77,7 @@ import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
+import com.spd.his.domain.dto.HisMirrorProcessLogVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.constants.HisBillingTenantConstants;
 import com.spd.his.service.IHisBillingRefundService;
@@ -146,6 +148,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     @Autowired
     private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
+
+    @Autowired
+    private HisMirrorProcessLogMapper hisMirrorProcessLogMapper;
 
     @Autowired
     private GzDepInventoryMapper gzDepInventoryMapper;
@@ -755,6 +760,26 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         String rowId = StringUtils.trimToEmpty(mirrorRowId);
         assertMirrorRowDepartmentAllowed(tenantId, vk, rowId);
         return loadMirrorConsumeRecordsMerged(tenantId, vk, rowId);
+    }
+
+    @Override
+    public List<HisMirrorProcessLogVo> listMirrorProcessLogs(String visitKind, String mirrorRowId)
+    {
+        assertTenantAllowed();
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isAnyBlank(tenantId, visitKind, mirrorRowId))
+        {
+            return new ArrayList<>();
+        }
+        String vk = normalizeVisitKindForAuth(visitKind);
+        if (!"INPATIENT".equals(vk) && !"OUTPATIENT".equals(vk))
+        {
+            throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
+        }
+        String rowId = StringUtils.trimToEmpty(mirrorRowId);
+        assertMirrorRowDepartmentAllowed(tenantId, vk, rowId);
+        List<HisMirrorProcessLogVo> list = hisMirrorProcessLogMapper.selectByMirrorRow(tenantId, vk, rowId);
+        return list != null ? list : new ArrayList<>();
     }
 
     @Override

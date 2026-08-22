@@ -20,6 +20,7 @@ import com.spd.his.domain.dto.HisPatientChargeDetailRow;
 import com.spd.his.domain.dto.HisPatientChargeMirrorExportVo;
 import com.spd.his.domain.dto.HisPatientChargeSummaryRow;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
+import com.spd.his.domain.dto.HisMirrorProcessLogVo;
 import com.spd.his.domain.dto.HisTenantBillingSettingBody;
 import com.spd.his.domain.dto.HisChargeFetchBatchTraceVo;
 
@@ -60,6 +61,9 @@ public interface IHisPatientChargeService
      * 查询某条计费镜像行关联的科室消耗记录（含消耗单号、明细、分摊数量等）
      */
     List<HisMirrorConsumeRecordVo> listMirrorConsumeRecords(String visitKind, String mirrorRowId);
+
+    /** 某条计费镜像行的核销/冲销操作日志（含成功与失败） */
+    List<HisMirrorProcessLogVo> listMirrorProcessLogs(String visitKind, String mirrorRowId);
 
     /** 高值扫码核销：消耗记录（不按用户科室权限过滤） */
     List<HisMirrorConsumeRecordVo> listHighChargeMirrorConsumeRecords(String visitKind, String mirrorRowId);

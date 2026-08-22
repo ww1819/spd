@@ -22,6 +22,7 @@ import com.spd.department.mapper.DeptBatchConsumeMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.his.constants.HisBillingTenantConstants;
+import com.spd.his.constant.HisMirrorProcessConstants;
 import com.spd.his.domain.HisBillingRefundOrder;
 import com.spd.his.domain.HisBillingRefundOrderLine;
 import com.spd.his.domain.HisInpatientChargeMirror;
@@ -70,6 +71,8 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
     private StkDepInventoryMapper stkDepInventoryMapper;
     @Autowired
     private LvRefundConsumeLinkOrderStrategy lvRefundConsumeLinkOrderStrategy;
+    @Autowired
+    private HisMirrorProcessOutcomeRecorder hisMirrorProcessOutcomeRecorder;
 
     private void assertHengsuiTenant()
     {
@@ -105,24 +108,42 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
         String tenantId = SecurityUtils.getCustomerId();
         String visitKind = resolveVisitKind(body.getVisitKind());
         String mirrorRowId = body.getMirrorRowId().trim();
-        MirrorSnapshot snap = loadMirrorSnapshot(tenantId, visitKind, mirrorRowId);
-        assertLowValueMirror(snap);
-
-        HisMirrorWriteOffResultVo vo = new HisMirrorWriteOffResultVo();
-        vo.setMirrorRowId(mirrorRowId);
-        String operator = SecurityUtils.getUserIdStr();
-        String remark = StringUtils.defaultIfBlank(body.getRemark(), "HIS计费低值冲销");
-
-        if (snap.isRefundRow())
+        try
         {
-            writeOffSingleRefundMirror(tenantId, visitKind, snap, remark, operator, vo);
+            MirrorSnapshot snap = loadMirrorSnapshot(tenantId, visitKind, mirrorRowId);
+            assertLowValueMirror(snap);
+
+            HisMirrorWriteOffResultVo vo = new HisMirrorWriteOffResultVo();
+            vo.setMirrorRowId(mirrorRowId);
+            String operator = SecurityUtils.getUserIdStr();
+            String remark = StringUtils.defaultIfBlank(body.getRemark(), "HIS计费低值冲销");
+
+            if (snap.isRefundRow())
+            {
+                writeOffSingleRefundMirror(tenantId, visitKind, snap, remark, operator, vo);
+            }
+            else
+            {
+                writeOffChargeMirrorWithLinkedRefunds(tenantId, visitKind, snap, remark, operator, vo);
+            }
+            vo.getMessages().add("冲销完成，镜像行已恢复为待处理");
+            return vo;
         }
-        else
+        catch (ServiceException e)
         {
-            writeOffChargeMirrorWithLinkedRefunds(tenantId, visitKind, snap, remark, operator, vo);
+            hisMirrorProcessOutcomeRecorder.recordFailureLogOnly(tenantId, visitKind, mirrorRowId,
+                HisMirrorProcessConstants.OP_LOW_WRITE_OFF, HisMirrorProcessConstants.PROC_TYPE_LOW,
+                HisMirrorProcessConstants.PARTY_MANUAL, e.getMessage());
+            throw e;
         }
-        vo.getMessages().add("冲销完成，镜像行已恢复为待处理");
-        return vo;
+        catch (Exception e)
+        {
+            String msg = StringUtils.defaultIfBlank(e.getMessage(), "低值冲销失败");
+            hisMirrorProcessOutcomeRecorder.recordFailureLogOnly(tenantId, visitKind, mirrorRowId,
+                HisMirrorProcessConstants.OP_LOW_WRITE_OFF, HisMirrorProcessConstants.PROC_TYPE_LOW,
+                HisMirrorProcessConstants.PARTY_MANUAL, msg);
+            throw new ServiceException(msg);
+        }
     }
 
     private void writeOffChargeMirrorWithLinkedRefunds(String tenantId, String visitKind, MirrorSnapshot charge,
@@ -380,6 +401,9 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
         }
         hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
             STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
+        hisMirrorProcessOutcomeRecorder.recordSuccessLog(tenantId, visitKind, mirrorRowId,
+            HisMirrorProcessConstants.OP_LOW_WRITE_OFF, HisMirrorProcessConstants.PROC_TYPE_LOW,
+            HisMirrorProcessConstants.PARTY_MANUAL, HisMirrorProcessConstants.RESULT_WRITE_OFF_SUCCESS);
     }
 
     private List<MirrorSnapshot> listLinkedRefundMirrors(String tenantId, String visitKind, String hisChargeId)

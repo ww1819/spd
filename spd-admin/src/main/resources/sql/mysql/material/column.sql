@@ -3472,3 +3472,21 @@ CREATE TABLE IF NOT EXISTS `sb_customer_money_scale_audit` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户金额小数位变更审核';
 /
 
+-- ========== PC-F-003：HIS 计费镜像核销操作日志 ==========
+CREATE TABLE IF NOT EXISTS `his_mirror_process_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
+  `mirror_row_id` varchar(36) NOT NULL COMMENT '计费镜像行 his_*_charge_mirror.id',
+  `operation` varchar(32) NOT NULL COMMENT 'LOW_CONSUME/LOW_WRITE_OFF/HIGH_CONSUME',
+  `outcome` varchar(16) NOT NULL COMMENT 'SUCCESS/FAIL',
+  `process_type` varchar(16) DEFAULT NULL COMMENT 'LOW_VALUE/HIGH_VALUE',
+  `situation` varchar(500) DEFAULT NULL COMMENT '处理情况/失败原因',
+  `process_party` varchar(32) DEFAULT NULL COMMENT '手动处理/自动处理',
+  `process_by` varchar(64) DEFAULT NULL COMMENT '操作人',
+  `process_time` datetime NOT NULL COMMENT '操作时间',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '落库时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_hmpl_mirror_time` (`tenant_id`, `visit_kind`, `mirror_row_id`, `process_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像核销操作日志';
+/
