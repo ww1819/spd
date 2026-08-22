@@ -66,6 +66,7 @@ import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
+import com.spd.his.domain.dto.HisMirrorFailReasonStatVo;
 import com.spd.his.domain.dto.HisMirrorLowBatchResultVo;
 import com.spd.his.domain.dto.HisMirrorManualBatchBody;
 import com.spd.his.constant.HisMirrorProcessConstants;
@@ -1140,6 +1141,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         int ok = 0;
         int fail = 0;
         HisMirrorLowBatchResultVo vo = new HisMirrorLowBatchResultVo();
+        Map<String, Integer> reasonCount = new HashMap<>();
         for (String rid : body.getMirrorRowIds())
         {
             String id = StringUtils.trimToEmpty(rid);
@@ -1164,11 +1166,22 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     msg = ex.getCause().getMessage();
                 }
-                vo.getFailMessages().add(id + (StringUtils.isBlank(msg) ? "" : (": " + msg)));
+                String detail = id + (StringUtils.isBlank(msg) ? "" : (": " + msg));
+                vo.getFailMessages().add(detail);
+                String reason = StringUtils.isBlank(msg) ? "(无具体原因)" : StringUtils.trim(msg);
+                reasonCount.merge(reason, 1, Integer::sum);
             }
         }
         vo.setSuccessCount(ok);
         vo.setFailCount(fail);
+        List<HisMirrorFailReasonStatVo> stats = new ArrayList<>();
+        reasonCount.entrySet().stream()
+            .sorted((a, b) -> {
+                int cmp = Integer.compare(b.getValue(), a.getValue());
+                return cmp != 0 ? cmp : a.getKey().compareTo(b.getKey());
+            })
+            .forEach(e -> stats.add(new HisMirrorFailReasonStatVo(e.getKey(), e.getValue())));
+        vo.setFailReasonStats(stats);
         return vo;
     }
 

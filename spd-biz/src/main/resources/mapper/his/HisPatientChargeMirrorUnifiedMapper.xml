@@ -241,6 +241,12 @@
                 )
             )
         </if>
+        <if test='execDeptEmpty != null and execDeptEmpty == "Y"'>
+            and (m.exec_dept_id is null or trim(m.exec_dept_id) = '')
+        </if>
+        <if test='execDeptEmpty != null and execDeptEmpty == "N"'>
+            and m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+        </if>
         <if test="itemNameLike != null and itemNameLike != ''">
             and m.item_name like concat('%', #{itemNameLike}, '%')
         </if>

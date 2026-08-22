@@ -164,6 +164,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setDepartmentId(q.getDepartmentId());
         u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
+        u.setExecDeptEmpty(q.getExecDeptEmpty());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
         u.setEndChargeDate(q.getEndChargeDate());
@@ -197,6 +198,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setDepartmentId(q.getDepartmentId());
         u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
+        u.setExecDeptEmpty(q.getExecDeptEmpty());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
         u.setEndChargeDate(q.getEndChargeDate());
@@ -230,6 +232,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setDepartmentId(q.getDepartmentId());
         u.setOrderingDepartmentId(q.getOrderingDepartmentId());
         u.setProcessed(q.getProcessed());
+        u.setExecDeptEmpty(q.getExecDeptEmpty());
         u.setValueLevel(q.getValueLevel());
         u.setBeginChargeDate(q.getBeginChargeDate());
         u.setEndChargeDate(q.getEndChargeDate());

@@ -77,6 +77,8 @@ public class HisInpatientChargeMirror extends BaseEntity
     private Long orderingDepartmentId;
     /** 查询：是否已处理 Y=已处理(含部分/完成) N=仅待处理 */
     private String processed;
+    /** 查询：执行科室是否为空 Y=是 N=否；空=全部 */
+    private String execDeptEmpty;
     /** 查询：处理时间起 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
