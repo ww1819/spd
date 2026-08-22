@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.HisMatchTextUtils;
@@ -117,14 +119,14 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (ServiceException e)
         {
-            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
+            scheduleRecordFailure(visitKind, mirrorRowId, processParty, e.getMessage());
             throw e;
         }
         catch (Exception e)
         {
             log.error("HIS镜像低值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
             String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.lowApplyFailed());
-            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, msg);
+            scheduleRecordFailure(visitKind, mirrorRowId, processParty, msg);
             throw new ServiceException(msg);
         }
     }
@@ -322,14 +324,14 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         catch (ServiceException e)
         {
-            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, e.getMessage());
+            scheduleRecordFailure(visitKind, mirrorRowId, processParty, e.getMessage());
             throw e;
         }
         catch (Exception e)
         {
             log.error("HIS镜像高值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
             String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.highApplyFailed());
-            hisMirrorProcessOutcomeRecorder.recordFailure(requireTenant(), visitKind, mirrorRowId, processParty, msg);
+            scheduleRecordFailure(visitKind, mirrorRowId, processParty, msg);
             throw new ServiceException(msg);
         }
     }
@@ -520,6 +522,57 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
             throw new ServiceException("无法解析当前租户");
         }
         return tenantId;
+    }
+
+    /**
+     * 失败原因须在主事务结束后再写入：认领行后主事务仍持有行锁，
+     * 若在 catch 里立刻 REQUIRES_NEW 更新同一行会锁等待超时，处理情况落库失败。
+     */
+    private void scheduleRecordFailure(String visitKind, String mirrorRowId, String processParty, String failMessage)
+    {
+        final String tenantId;
+        try
+        {
+            tenantId = requireTenant();
+        }
+        catch (Exception ex)
+        {
+            log.warn("核销失败但无法解析租户，跳过写入处理情况 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId);
+            return;
+        }
+        if (StringUtils.isAnyEmpty(tenantId, visitKind, mirrorRowId))
+        {
+            return;
+        }
+        final String party = processParty;
+        final String message = failMessage;
+        if (TransactionSynchronizationManager.isSynchronizationActive())
+        {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization()
+            {
+                @Override
+                public void afterCompletion(int status)
+                {
+                    try
+                    {
+                        hisMirrorProcessOutcomeRecorder.recordFailure(tenantId, visitKind, mirrorRowId, party, message);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.error("写入核销失败处理情况异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, ex);
+                    }
+                }
+            });
+            return;
+        }
+        try
+        {
+            hisMirrorProcessOutcomeRecorder.recordFailure(tenantId, visitKind, mirrorRowId, party, message);
+        }
+        catch (Exception ex)
+        {
+            log.error("写入核销失败处理情况异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, ex);
+        }
     }
 
     private String resolveVisitKind(String raw)
