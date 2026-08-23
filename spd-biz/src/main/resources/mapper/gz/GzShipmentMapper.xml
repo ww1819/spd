@@ -101,7 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from gz_shipment gs
         left join fd_warehouse w on gs.warehouse_id = w.id
         left join fd_department d on gs.department_id = d.id
-        left join sys_user cu on (cu.user_id = gs.create_by or cu.user_name = gs.create_by)
+        left join sys_user cu on cu.user_id = gs.create_by
         left join (
             select gse.paren_id, SUM(gse.amt) as amt_sum
             from gz_shipment_entry gse
