@@ -1,0 +1,152 @@
+﻿<style>
+/* 涓庣瀹ょ敵棰嗗垪琛ㄩ〉甯冨眬涓€鑷达紙闈?scoped锛?*/
+.app-container.stocktaking-apply-page {
+  position: relative;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+/* 鎼滅储鍖猴細闈?scoped锛岀‘淇?el-form 鏍硅妭鐐硅兘濂椾笂鍒拌揣楠屾敹鍚屾鐧藉簳/杈规/闃村奖 */
+.app-container.stocktaking-apply-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  margin-top: -12px !important;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-second {
+  position: relative;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container.stocktaking-apply-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.app-container.stocktaking-apply-page .query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.app-container.stocktaking-apply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  overflow: hidden;
+}
+
+.list-query-panel {
+  margin-top: -20px;
+}
+
+.app-container.stocktaking-apply-page > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 涓昏〃鏍艰〃澶存牱寮忥細涓庡埌璐ч獙鏀朵竴鑷?*/
+.app-container.stocktaking-apply-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.stocktaking-apply-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* 鍗曟嵁鐘舵€佸垪锛氳〃澶翠笌鍐呭涓嶆崲琛岋紙椤婚厤鍚?label-class-name / class-name锛屽嬁鐢?nth-child锛氬惈鍕鹃€夊垪浼氶敊浣嶏級 */
+.app-container.stocktaking-apply-page > .el-table th.stocktaking-col-stock-status .cell,
+.app-container.stocktaking-apply-page > .el-table td.stocktaking-col-stock-status .cell {
+  white-space: nowrap !important;
+}
+
+/*
+ * Element UI 2.x锛歴how-summary 鏃惰〃灏惧甫 v-show="data && data.length > 0"锛?
+ * 鏃犳暟鎹椂鍚堣琛岃闅愯棌銆傚己鍒舵樉绀鸿〃灏撅紝涓庡埌璐ч獙鏀?绉戝鎵归噺娑堣€楃瓑椤典竴鑷淬€?
+ */
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper {
+  position: relative;
+  z-index: 30 !important;
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
+  z-index: 31 !important;
+}
+</style>
+<style>
+/* 鏂板鐩樼泩鏄庣粏寮圭獥锛坅ppend-to-body锛岄』闈?scoped锛?*/
