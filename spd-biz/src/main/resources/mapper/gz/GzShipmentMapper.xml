@@ -97,12 +97,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				d.id dId,d.code departmentCode,d.name departmentName,
 				cu.user_id createrUserId, cu.nick_name createrNickName, cu.user_name createrUserName,
-				COALESCE(SUM(gse.amt), 0) as totalAmt
+				COALESCE(ta.amt_sum, 0) as totalAmt
         from gz_shipment gs
         left join fd_warehouse w on gs.warehouse_id = w.id
         left join fd_department d on gs.department_id = d.id
-        left join sys_user cu on gs.create_by = cu.user_id
-        left join gz_shipment_entry gse on gse.paren_id = gs.id and gse.del_flag != 1
+        left join sys_user cu on (cu.user_id = gs.create_by or cu.user_name = gs.create_by)
+        left join (
+            select gse.paren_id, SUM(gse.amt) as amt_sum
+            from gz_shipment_entry gse
+            where gse.del_flag != 1 and gse.tenant_id = #{scopedTenantId}
+            group by gse.paren_id
+        ) ta on ta.paren_id = gs.id
         where gs.del_flag != 1
         and gs.tenant_id = #{scopedTenantId}
         <if test="shipmentNo != null  and shipmentNo != ''"> and gs.shipment_no like concat('%', #{shipmentNo}, '%')</if>
@@ -122,11 +127,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="endDate != null and endDate != ''"><![CDATA[ and gs.create_time <= STR_TO_DATE(#{endDate}, '%Y-%m-%d %H:%i:%s') ]]></if>
             </otherwise>
         </choose>
-        group by gs.id, gs.shipment_no, gs.department_id, gs.shipment_date, gs.warehouse_id,
-				gs.shipment_status, gs.shipment_type, gs.del_flag, gs.audit_date, gs.audit_by, gs.create_by,
-				gs.create_time, gs.update_by, gs.update_time, gs.remark, gs.ref_acceptance_id,
-				w.id, w.code, w.name, d.id, d.code, d.name,
-				cu.user_id, cu.nick_name, cu.user_name
         order by
             case when gs.shipment_status = 2 then 1 else 0 end asc,
             case when gs.shipment_status = 2 then gs.audit_date else null end desc,
