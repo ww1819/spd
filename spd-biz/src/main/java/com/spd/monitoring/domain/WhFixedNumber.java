@@ -107,6 +107,9 @@ public class WhFixedNumber extends BaseEntity {
     /** 查询参数：库房分类多选（用于列表筛选） */
     private Long[] storeroomIds;
 
+    /** 查询参数：财务分类ID（用于列表筛选） */
+    private Long financeCategoryId;
+
     /** 查询参数：是否高值（1=高值 2=非高值；申购选耗材默认不过滤，由调用方按需传入） */
     private String isGz;
     /** 查询参数：是否集采（1=是 2=否） */
@@ -360,6 +363,14 @@ public class WhFixedNumber extends BaseEntity {
 
     public void setStoreroomIds(Long[] storeroomIds) {
         this.storeroomIds = storeroomIds;
+    }
+
+    public Long getFinanceCategoryId() {
+        return financeCategoryId;
+    }
+
+    public void setFinanceCategoryId(Long financeCategoryId) {
+        this.financeCategoryId = financeCategoryId;
     }
 
     public String getIsGz() {

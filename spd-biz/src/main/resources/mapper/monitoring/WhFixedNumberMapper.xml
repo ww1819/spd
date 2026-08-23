@@ -158,6 +158,9 @@
         <if test="(storeroomIds == null or storeroomIds.length == 0) and storeroomId != null">
             and m.storeroom_id = #{storeroomId}
         </if>
+        <if test="financeCategoryId != null">
+            and m.finance_category_id = #{financeCategoryId}
+        </if>
         <if test="isGz != null and isGz != ''">
             and m.is_gz = #{isGz}
         </if>
