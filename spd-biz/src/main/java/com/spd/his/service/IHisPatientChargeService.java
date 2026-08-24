@@ -99,4 +99,9 @@ public interface IHisPatientChargeService
      * 镜像批次同步后自动处理（低值消耗 + 退费），供 scminterface 内部接口调用。
      */
     void processFetchBatchAuto(String tenantId, String fetchBatchId, String visitKind, Long operatorUserId);
+
+    /** 消息提醒：科室销提醒明细（待处理低值计费，最多 500 条） */
+    List<com.spd.department.vo.DepartmentConsumeReminderRowVo> selectDepartmentConsumeReminderMonitorList();
+
+    long countDepartmentConsumeReminderMonitor();
 }

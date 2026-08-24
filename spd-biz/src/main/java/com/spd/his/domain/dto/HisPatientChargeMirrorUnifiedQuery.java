@@ -66,4 +66,9 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     /** 服务端排序字段（避免 PageHelper 将 orderByColumn 转成无效列名） */
     private String sortField;
     private String sortOrder;
+
+    /** 科室数据权限：授权科室 code 列表（与镜像 dept_code/exec_dept_id 对照，仅服务端写入） */
+    private java.util.List<String> scopeDeptCodes;
+    /** 科室数据权限：true 表示无授权科室，列表为空 */
+    private Boolean scopeDeptDenyAll;
 }

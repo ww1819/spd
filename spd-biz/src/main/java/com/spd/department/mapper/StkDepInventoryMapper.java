@@ -7,6 +7,7 @@ import com.spd.common.core.page.TotalInfo;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
 import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
+import com.spd.department.vo.DepartmentInventoryAlertReminderRowVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -132,4 +133,11 @@ public interface StkDepInventoryMapper
     List<DepartmentNearExpiryReminderRowVo> selectDepartmentNearExpiryReminderList(StkDepInventory stkDepInventory);
 
     Long countDepartmentNearExpiryReminder(StkDepInventory stkDepInventory);
+
+    /**
+     * 消息提醒：科室库存预警行（按科室+耗材汇总，最多 500 条）
+     */
+    List<DepartmentInventoryAlertReminderRowVo> selectDepartmentInventoryAlertReminderList(StkDepInventory stkDepInventory);
+
+    Long countDepartmentInventoryAlertReminder(StkDepInventory stkDepInventory);
 }

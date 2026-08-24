@@ -287,6 +287,71 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="stkDepInventoryListWhere"/>
     </select>
 
+    <!-- 消息提醒：科室库存预警（科室+耗材汇总数量与 dep_inventory_warning 上下限比较） -->
+    <sql id="departmentInventoryAlertReminderFrom">
+        from dep_inventory_warning w
+        inner join fd_department d on d.id = w.department_id
+        inner join fd_material m on m.id = w.material_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_factory ff on ff.factory_id = m.factory_id
+        inner join (
+            select
+                s.tenant_id,
+                s.department_id,
+                s.material_id,
+                sum(ifnull(s.qty, 0)) as total_qty,
+                avg(s.unit_price) as avg_unit_price
+            from stk_dep_inventory s
+            left join fd_material mm on mm.id = s.material_id
+            where (s.del_flag = 0 or s.del_flag is null)
+              and ifnull(s.qty, 0) &gt; 0
+              and (mm.id is null or ((mm.del_flag is null or mm.del_flag != 1) and (mm.is_use is null or mm.is_use = '' or mm.is_use != '2')))
+            <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+                <property name="deptColumn" value="s.department_id"/>
+            </include>
+            <include refid="com.spd.common.mybatis.TenantScopeFragments.warehouseScopeFilter">
+                <property name="warehouseColumn" value="s.warehouse_id"/>
+            </include>
+            <if test="tenantId != null and tenantId != ''"> and (s.tenant_id = #{tenantId})</if>
+            group by s.tenant_id, s.department_id, s.material_id
+        ) agg on agg.tenant_id = w.tenant_id
+            and agg.department_id = w.department_id
+            and agg.material_id = w.material_id
+        where (w.del_flag = 0 or w.del_flag is null)
+          and (d.del_flag = 0 or d.del_flag is null)
+          and (m.del_flag is null or m.del_flag != 1)
+          and (
+            (w.min_qty_warning is not null and ifnull(agg.total_qty, 0) &lt; w.min_qty_warning)
+            or (w.max_qty_warning is not null and w.max_qty_warning &gt; 0 and ifnull(agg.total_qty, 0) &gt; w.max_qty_warning)
+          )
+        <include refid="com.spd.common.mybatis.TenantScopeFragments.departmentScopeFilter">
+            <property name="deptColumn" value="w.department_id"/>
+        </include>
+        <if test="tenantId != null and tenantId != ''"> and (w.tenant_id = #{tenantId})</if>
+    </sql>
+
+    <select id="selectDepartmentInventoryAlertReminderList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentInventoryAlertReminderRowVo">
+        select
+            ifnull(d.name, '') as departmentName,
+            ifnull(m.code, '') as materialCode,
+            ifnull(m.name, '') as materialName,
+            ifnull(m.speci, '') as materialSpeci,
+            ifnull(u.unit_name, '') as unitName,
+            ifnull(agg.avg_unit_price, 0) as unitPrice,
+            ifnull(agg.total_qty, 0) as qty,
+            w.min_qty_warning as minQtyWarning,
+            w.max_qty_warning as maxQtyWarning,
+            ifnull(ff.factory_name, '') as factoryName
+        <include refid="departmentInventoryAlertReminderFrom"/>
+        order by ifnull(d.name, ''), ifnull(m.name, ''), ifnull(m.code, '')
+        limit 500
+    </select>
+
+    <select id="countDepartmentInventoryAlertReminder" parameterType="StkDepInventory" resultType="java.lang.Long">
+        select count(1)
+        <include refid="departmentInventoryAlertReminderFrom"/>
+    </select>
+
     <select id="selectStkDepInventoryListTotal" parameterType="StkDepInventory" resultType="com.spd.common.core.page.TotalInfo">
         select SUM(IFNULL(stk.qty, 0)) totalQty, SUM(IFNULL(stk.amt, 0)) totalAmt
         from stk_dep_inventory stk

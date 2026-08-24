@@ -37,6 +37,9 @@ import com.spd.department.service.IBasApplyService;
 import com.spd.department.service.IDepPurchaseApplyService;
 import com.spd.department.service.IStkDepInventoryService;
 import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
+import com.spd.department.vo.DepartmentInventoryAlertReminderRowVo;
+import com.spd.department.vo.DepartmentConsumeReminderRowVo;
+import com.spd.his.service.IHisPatientChargeService;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.support.TenantScopeHelper;
@@ -74,6 +77,9 @@ public class HomeDashboardController extends BaseController
 
     @Autowired
     private IStkDepInventoryService stkDepInventoryService;
+
+    @Autowired
+    private IHisPatientChargeService hisPatientChargeService;
 
     /**
      * 仓库采购情况图：按仓库、按月的入退货金额合计 + 出退库金额合计（与首页原逻辑一致：纯日期区间）。
@@ -449,6 +455,36 @@ public class HomeDashboardController extends BaseController
     {
         long lineCount = stkDepInventoryService.countDepartmentNearExpiryReminderMonitor();
         List<DepartmentNearExpiryReminderRowVo> lines = stkDepInventoryService.selectDepartmentNearExpiryReminderMonitorList();
+        Map<String, Object> body = new HashMap<>(4);
+        body.put("lineCount", lineCount);
+        body.put("lines", lines);
+        return success(body);
+    }
+
+    /**
+     * 消息提醒：科室库存预警明细（与科室库存查询「科室库存预警」Tab 口径一致；lineCount 全量，lines 最多 500 条）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/departmentReminderInventoryAlertList")
+    public AjaxResult departmentReminderInventoryAlertList()
+    {
+        long lineCount = stkDepInventoryService.countDepartmentInventoryAlertReminderMonitor();
+        List<DepartmentInventoryAlertReminderRowVo> lines = stkDepInventoryService.selectDepartmentInventoryAlertReminderMonitorList();
+        Map<String, Object> body = new HashMap<>(4);
+        body.put("lineCount", lineCount);
+        body.put("lines", lines);
+        return success(body);
+    }
+
+    /**
+     * 消息提醒：科室销提醒（HIS 计费镜像待处理低值行；lineCount 全量，lines 最多 500 条）
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/departmentReminderConsumeList")
+    public AjaxResult departmentReminderConsumeList()
+    {
+        long lineCount = hisPatientChargeService.countDepartmentConsumeReminderMonitor();
+        List<DepartmentConsumeReminderRowVo> lines = hisPatientChargeService.selectDepartmentConsumeReminderMonitorList();
         Map<String, Object> body = new HashMap<>(4);
         body.put("lineCount", lineCount);
         body.put("lines", lines);
