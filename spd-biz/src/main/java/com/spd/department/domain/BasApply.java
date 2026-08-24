@@ -75,6 +75,9 @@ public class BasApply extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
 
+    /** 查询：日期类型 bill=制单日期(create_time) / audit=审核日期(audit_date) */
+    private String dateQueryType;
+
     /** 删除标识 */
     private Integer delFlag;
 
@@ -355,5 +358,13 @@ public class BasApply extends BaseEntity
 
     public void setEndDate(Date endDate) {
         this.endDate = endDate;
+    }
+
+    public String getDateQueryType() {
+        return dateQueryType;
+    }
+
+    public void setDateQueryType(String dateQueryType) {
+        this.dateQueryType = dateQueryType;
     }
 }
