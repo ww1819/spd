@@ -831,6 +831,88 @@ public class SysUserServiceImpl implements ISysUserService
         log.debug("仅更新用户仓库权限 - userId: {}", userId);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserMessageReminderKeysOnly(Long userId, String[] messageReminderKeys, String[] messageReminderPopupKeys) {
+        checkUserDataScope(userId);
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+        checkUserAllowed(user);
+        String keys = joinMessageReminderKeys(messageReminderKeys);
+        java.util.LinkedHashSet<String> authSet = new java.util.LinkedHashSet<>();
+        if (messageReminderKeys != null) {
+            for (String k : messageReminderKeys) {
+                if (k == null) {
+                    continue;
+                }
+                String t = k.trim().toLowerCase();
+                if ("warehouse".equals(t) || "department".equals(t) || "data".equals(t)) {
+                    authSet.add(t);
+                }
+            }
+        }
+        java.util.LinkedHashSet<String> popupSet = new java.util.LinkedHashSet<>();
+        if (messageReminderPopupKeys != null) {
+            for (String k : messageReminderPopupKeys) {
+                if (k == null) {
+                    continue;
+                }
+                String t = k.trim().toLowerCase();
+                if (authSet.contains(t)) {
+                    popupSet.add(t);
+                }
+            }
+        }
+        String popupKeys = popupSet.isEmpty() ? "" : String.join(",", popupSet);
+        userMapper.updateUserMessageReminderKeys(userId, keys, popupKeys);
+        log.debug("仅更新用户消息提醒权限 - userId: {}, keys: {}, popupKeys: {}", userId, keys, popupKeys);
+    }
+
+    /** 规范化并拼接消息提醒 keys；空数组存空串表示明确未授权任何项 */
+    public static String joinMessageReminderKeys(String[] keys) {
+        if (keys == null || keys.length == 0) {
+            return "";
+        }
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (String k : keys) {
+            if (k == null) {
+                continue;
+            }
+            String t = k.trim().toLowerCase();
+            if ("warehouse".equals(t) || "department".equals(t) || "data".equals(t)) {
+                set.add(t);
+            }
+        }
+        if (set.isEmpty()) {
+            return "";
+        }
+        return String.join(",", set);
+    }
+
+    public static String[] splitMessageReminderKeys(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String t = raw.trim();
+        if (t.isEmpty()) {
+            return new String[0];
+        }
+        String[] parts = t.split(",");
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (String p : parts) {
+            if (p == null) {
+                continue;
+            }
+            String k = p.trim().toLowerCase();
+            if ("warehouse".equals(k) || "department".equals(k) || "data".equals(k)) {
+                set.add(k);
+            }
+        }
+        return set.toArray(new String[0]);
+    }
+
     private static String[] toMenuIdStrings(Long[] menuIds) {
         if (menuIds == null || menuIds.length == 0) {
             return new String[0];

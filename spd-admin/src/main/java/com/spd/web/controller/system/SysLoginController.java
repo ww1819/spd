@@ -27,6 +27,7 @@ import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISysConfigService;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysPostService;
+import com.spd.system.service.ISysUserService;
 import com.spd.system.service.ITenantScopeService;
 
 /**
@@ -60,6 +61,9 @@ public class SysLoginController
 
     @Autowired
     private ISysPostService postService;
+
+    @Autowired
+    private ISysUserService userService;
 
     @Autowired
     private ITenantScopeService tenantScopeService;
@@ -128,6 +132,16 @@ public class SysLoginController
         LoginUser loginUser = SecurityUtils.getLoginUser();
         SysUser user = loginUser.getUser();
         refreshHcConsumablePostIds(user);
+        // 消息提醒权限以库为准（授权后无需重新登录即可 getInfo 刷新）
+        if (user != null && user.getUserId() != null)
+        {
+            SysUser dbUser = userService.selectUserById(user.getUserId());
+            if (dbUser != null)
+            {
+                user.setMessageReminderKeys(dbUser.getMessageReminderKeys());
+                user.setMessageReminderPopupKeys(dbUser.getMessageReminderPopupKeys());
+            }
+        }
         Set<String> roles = permissionService.getRolePermission(user);
         Set<String> permissions = permissionService.getMenuPermission(user);
         loginUser.setPermissions(permissions);
@@ -136,6 +150,12 @@ public class SysLoginController
         ajax.put("user", user);
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
+        String[] reminderKeys = com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
+            user != null ? user.getMessageReminderKeys() : null);
+        ajax.put("messageReminderKeys", reminderKeys);
+        String[] popupKeys = com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
+            user != null ? user.getMessageReminderPopupKeys() : null);
+        ajax.put("messageReminderPopupKeys", popupKeys);
         putTenantIfPresent(ajax, user.getCustomerId());
         putTenantSuperFlag(ajax, user);
         return ajax;

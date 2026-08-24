@@ -42,6 +42,7 @@ import com.spd.system.dto.BatchWorkgroupRequest;
 import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.web.dto.UserDeptGrantBody;
 import com.spd.web.dto.UserMenuGrantBody;
+import com.spd.web.dto.UserMessageReminderGrantBody;
 import com.spd.web.dto.UserWarehouseGrantBody;
 import com.spd.foundation.support.TenantScopeHelper;
 import com.spd.system.service.ITenantScopeService;
@@ -461,6 +462,11 @@ public class SysUserController extends BaseController
             ajax.put("roleIds", sysUser.getRoles().stream().map(SysRole::getRoleId).collect(Collectors.toList()));
             ajax.put("warehouseIds", fdWarehouseService.selectWarehouseListByUserId(userId));
             ajax.put("departmentIds", fdDepartmentService.selectDepartmenListByUserId(userId));
+            String[] reminderKeys = com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(sysUser.getMessageReminderKeys());
+            // null：从未配置，授权页默认全选；空数组：明确未授权
+            ajax.put("messageReminderKeys", reminderKeys);
+            String[] popupKeys = com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(sysUser.getMessageReminderPopupKeys());
+            ajax.put("messageReminderPopupKeys", popupKeys);
             List<Long> midLongs = userService.selectMenuListByUserId(userId);
             List<String> menuStr = new ArrayList<>();
             if (midLongs != null) {
@@ -627,6 +633,26 @@ public class SysUserController extends BaseController
         Long[] warehouseIds = body != null ? body.getWarehouseIds() : new Long[0];
         userService.updateUserWarehousesOnly(userId, warehouseIds);
         return success();
+    }
+
+    /**
+     * 仅更新用户消息提醒权限
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.GRANT)
+    @PutMapping("/{userId}/messageReminders")
+    public AjaxResult grantUserMessageReminders(@PathVariable("userId") Long userId, @RequestBody UserMessageReminderGrantBody body)
+    {
+        String[] keys = body != null ? body.getMessageReminderKeys() : new String[0];
+        String[] popupKeys = body != null ? body.getMessageReminderPopupKeys() : new String[0];
+        userService.updateUserMessageReminderKeysOnly(userId, keys, popupKeys);
+        SysUser saved = userService.selectUserById(userId);
+        AjaxResult ajax = success();
+        ajax.put("messageReminderKeys", com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
+                saved != null ? saved.getMessageReminderKeys() : null));
+        ajax.put("messageReminderPopupKeys", com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
+                saved != null ? saved.getMessageReminderPopupKeys() : null));
+        return ajax;
     }
 
     /**

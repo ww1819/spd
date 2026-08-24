@@ -50,6 +50,14 @@ public class SysPost extends BaseEntity
     /** 仓库权限ID数组 */
     private Long[] warehouseIds;
 
+    /**
+     * 消息提醒权限 keys（逗号分隔）：warehouse / department / data
+     */
+    private String messageReminderKeys;
+
+    /** 登录后自动弹窗的消息提醒 keys */
+    private String messageReminderPopupKeys;
+
     /** 租户ID(同sb_customer.customer_id)，耗材工作组按租户隔离 */
     private String tenantId;
 
@@ -146,6 +154,26 @@ public class SysPost extends BaseEntity
     public void setWarehouseIds(Long[] warehouseIds)
     {
         this.warehouseIds = warehouseIds;
+    }
+
+    public String getMessageReminderKeys()
+    {
+        return messageReminderKeys;
+    }
+
+    public void setMessageReminderKeys(String messageReminderKeys)
+    {
+        this.messageReminderKeys = messageReminderKeys;
+    }
+
+    public String getMessageReminderPopupKeys()
+    {
+        return messageReminderPopupKeys;
+    }
+
+    public void setMessageReminderPopupKeys(String messageReminderPopupKeys)
+    {
+        this.messageReminderPopupKeys = messageReminderPopupKeys;
     }
 
     public String getTenantId() {

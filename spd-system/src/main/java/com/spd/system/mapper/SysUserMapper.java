@@ -109,6 +109,11 @@ public interface SysUserMapper
     public int updateUser(SysUser user);
 
     /**
+     * 仅更新消息提醒权限 keys
+     */
+    int updateUserMessageReminderKeys(@Param("userId") Long userId, @Param("messageReminderKeys") String messageReminderKeys, @Param("messageReminderPopupKeys") String messageReminderPopupKeys);
+
+    /**
      * 修改用户头像
      * 
      * @param userName 用户名

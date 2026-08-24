@@ -271,6 +271,11 @@ public interface ISysUserService
     void updateUserWarehousesOnly(Long userId, Long[] warehouseIds);
 
     /**
+     * 仅更新用户消息提醒权限（warehouse / department / data）
+     */
+    void updateUserMessageReminderKeysOnly(Long userId, String[] messageReminderKeys, String[] messageReminderPopupKeys);
+
+    /**
      * 机构管理员批量修改本租户用户密码（排除平台 admin 与机构 super 账号）
      *
      * @param password 新密码明文

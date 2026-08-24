@@ -109,6 +109,16 @@ public class SysUser extends BaseEntity
     /** 科室组 */
     private Long[] departmentIds;
 
+    /**
+     * 消息提醒权限 keys（逗号分隔）：warehouse=仓库预警, department=科室预警, data=数据异常预警
+     */
+    private String messageReminderKeys;
+
+    /**
+     * 登录后自动弹窗的消息提醒 keys（须为 messageReminderKeys 子集）
+     */
+    private String messageReminderPopupKeys;
+
     /** 菜单组（平台为数字字符串，设备系统为 UUID 字符串） */
     private String[] menuIds;
 
@@ -392,6 +402,22 @@ public class SysUser extends BaseEntity
 
     public void setDepartmentIds(Long[] departmentIds) {
         this.departmentIds = departmentIds;
+    }
+
+    public String getMessageReminderKeys() {
+        return messageReminderKeys;
+    }
+
+    public void setMessageReminderKeys(String messageReminderKeys) {
+        this.messageReminderKeys = messageReminderKeys;
+    }
+
+    public String getMessageReminderPopupKeys() {
+        return messageReminderPopupKeys;
+    }
+
+    public void setMessageReminderPopupKeys(String messageReminderPopupKeys) {
+        this.messageReminderPopupKeys = messageReminderPopupKeys;
     }
 
     public String[] getMenuIds() {

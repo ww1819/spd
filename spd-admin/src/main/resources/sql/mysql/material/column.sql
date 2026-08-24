@@ -1,294 +1,304 @@
--- ========== 耗材模块 增量字段（含 add_table_column 存储过程） ==========
--- 建议在 table.sql 之后执行；按「/」分段执行。除本文件内 add_table_column 存储过程外，所有 CREATE TABLE 均在 material/table.sql；本脚本为 CALL add_table_column、动态 ALTER 等增量；新环境先执行 table.sql。
+-- ========== ??????? ??????????? add_table_column ??????????? ==========
+-- ????? table.sql ?????????????????/???????????????????????????? add_table_column ??????????????????? CREATE TABLE ????? material/table.sql???????????? CALL add_table_column????????? ALTER ????????????????????????? table.sql???
 /*
- * 存储过程：add_table_column
- * 功能：安全地为指定数据表添加新字段，避免重复添加
- * 特点：1. 参数合法性校验 2. 字段存在性检查 3. 支持默认值设置 4. 友好的执行结果提示
- * 注意：标准 MySQL 不支持 CREATE PROCEDURE IF NOT EXISTS；启动脚本按「/」分段执行，须先 DROP 再 CREATE。
+ * ???????????add_table_column
+ * ???????????????????????????????????????????????????
+ * ????????1. ??????????????? 2. ???????????????? 3. ?????????????? 4. ??????????????????
+ * ??????????? MySQL ??????? CREATE PROCEDURE IF NOT EXISTS??????????????????/?????????????????? DROP ??? CREATE???
  */
 DROP PROCEDURE IF EXISTS `add_table_column`;
 /
 CREATE PROCEDURE `add_table_column`(
-    IN p_table_name VARCHAR(64),      -- 输入参数：目标表名（必填）
-    IN p_column_name VARCHAR(64),     -- 输入参数：要添加的字段名（必填）
-    IN p_column_type VARCHAR(64),     -- 输入参数：字段类型（如int, varchar(255)等，必填）
-    IN p_column_comment VARCHAR(256), -- 输入参数：字段注释（必填）
-    IN p_default_value VARCHAR(256)   -- 输入参数：字段默认值（可选，不传则为NULL）
+    IN p_table_name VARCHAR(64),      -- ??????????????????????????
+    IN p_column_name VARCHAR(64),     -- ???????????????????????????????
+    IN p_column_type VARCHAR(64),     -- ???????????????????????int, varchar(255)?????????
+    IN p_column_comment VARCHAR(256), -- ??????????????????????????
+    IN p_default_value VARCHAR(256)   -- ???????????????????????????????????NULL??
 )
-add_column_block:  -- 定义代码块标签，用于提前退出
+add_column_block:  -- ????????????????????????????
 BEGIN
-    -- 声明局部变量：用于存储字段是否存在的标识（0=不存在，1=存在）
+    -- ???????????????????????????????????????????????0=????????1=???????
     DECLARE v_column_exists INT DEFAULT 0;
 
-    -- 处理默认值参数：如果传入NULL则显式设置为NULL
+    -- ??????????????????????????NULL??????????NULL
     SET p_default_value = IFNULL(p_default_value, NULL);
 
-    -- 初始化动态SQL变量
+    -- ??????????????SQL?????
     SET @dynamic_sql = '';
 
-    -- 第一步：参数合法性校验 - 检查必填参数是否为空
+    -- ????????????????????? - ???????????????????
     IF p_table_name IS NULL OR p_table_name = ''
         OR p_column_name IS NULL OR p_column_name = ''
         OR p_column_type IS NULL OR p_column_type = ''
         OR p_column_comment IS NULL OR p_column_comment = '' THEN
-        -- 抛出自定义异常，提示必填参数不能为空
+        -- ??????????????????????????????????
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = '错误：表名、字段名、字段类型、字段注释为必填参数，不能为空！';
+            SET MESSAGE_TEXT = '?????????????????????????????????????????????????????';
 END IF;
 
-    -- 第二步：检查字段是否已存在
+    -- ????????????????????????
 SELECT COUNT(*) INTO v_column_exists
-FROM information_schema.COLUMNS  -- 系统表：存储所有表的字段信息
-WHERE TABLE_SCHEMA = DATABASE()  -- 当前数据库
-  AND TABLE_NAME = p_table_name  -- 目标表名
-  AND COLUMN_NAME = p_column_name; -- 要检查的字段名
+FROM information_schema.COLUMNS  -- ??????????????????????????
+WHERE TABLE_SCHEMA = DATABASE()  -- ???????????
+  AND TABLE_NAME = p_table_name  -- ???????
+  AND COLUMN_NAME = p_column_name; -- ?????????????
 
--- 如果字段已存在，提示并退出存储过程
+-- ??????????????????????????????????
 IF v_column_exists > 0 THEN
-SELECT CONCAT('提示：字段【', p_column_name, '】已存在于表【', p_table_name, '】，无需重复添加') AS 执行结果;
-LEAVE add_column_block;  -- 退出代码块，结束存储过程执行
+SELECT CONCAT('??????????', p_column_name, '???????????????', p_table_name, '???????????????????') AS ??????????;
+LEAVE add_column_block;  -- ??????????????????????????????
 END IF;
 
-    -- 第三步：拼接动态SQL语句（ALTER TABLE ADD COLUMN）
+    -- ??????????????????SQL????ALTER TABLE ADD COLUMN??
     SET @dynamic_sql = CONCAT(
             'ALTER TABLE `', p_table_name, '` ADD COLUMN `', p_column_name, '` ', p_column_type, ' '
                        );
 
-    -- 如果传入了默认值，拼接DEFAULT子句（使用QUOTE函数防止SQL注入）
+    -- ?????????????????????????DEFAULT????????QUOTE??????????SQL??????
     IF p_default_value IS NOT NULL AND p_default_value != '' THEN
         SET @dynamic_sql = CONCAT(@dynamic_sql, 'DEFAULT ', QUOTE(p_default_value), ' ');
 END IF;
 
-    -- 拼接字段注释（使用QUOTE函数处理特殊字符）
+    -- ???????????????????QUOTE????????????????????
     SET @dynamic_sql = CONCAT(@dynamic_sql, 'COMMENT ', QUOTE(p_column_comment));
 
-    -- 第四步：执行动态SQL
-PREPARE stmt FROM @dynamic_sql;  -- 预处理动态SQL
-EXECUTE stmt;                    -- 执行预处理语句
-DEALLOCATE PREPARE stmt;         -- 释放预处理资源
+    -- ??????????????????SQL
+PREPARE stmt FROM @dynamic_sql;  -- ????????????SQL
+EXECUTE stmt;                    -- ?????????????
+DEALLOCATE PREPARE stmt;         -- ???????????????
 
--- 提示字段添加成功
-SELECT CONCAT('成功：字段【', p_column_name, '】已成功添加到表【', p_table_name, '】') AS 执行结果;
+-- ???????????????
+SELECT CONCAT('??????????????', p_column_name, '?????????????????????', p_table_name, '???') AS ??????????;
 
--- 清空动态SQL变量，避免残留
+-- ?????????SQL????????????????
 SET @dynamic_sql = '';
 END;
 /
 
--- 调用示例：为bas_apply表添加del_flag字段（int类型，注释为删除标志，默认值0）
-CALL add_table_column('bas_apply', 'del_flag', 'int', '删除标志', 0);
+-- ???????????/????/??????????? keys???????? column.sql ????????
+CALL add_table_column('sys_user', 'message_reminder_keys', 'varchar(128)', 'message reminder keys warehouse department data', NULL);
+/
+CALL add_table_column('sys_post', 'message_reminder_keys', 'varchar(128)', 'message reminder keys warehouse department data', NULL);
+/
+CALL add_table_column('sys_user', 'message_reminder_popup_keys', 'varchar(128)', 'message reminder login popup keys warehouse department data', NULL);
+/
+CALL add_table_column('sys_post', 'message_reminder_popup_keys', 'varchar(128)', 'message reminder login popup keys warehouse department data', NULL);
 /
 
-CALL add_table_column('stk_inventory', 'batch_number', 'varchar(100)', '批号', null);
+-- ???????????bas_apply?????del_flag?????int?????????????????????????????0??
+CALL add_table_column('bas_apply', 'del_flag', 'int', '??????????', 0);
 /
 
-CALL add_table_column('stk_dep_inventory', 'batch_number', 'varchar(100)', '批号', null);
+CALL add_table_column('stk_inventory', 'batch_number', 'varchar(100)', '????', null);
 /
 
-/* 科室库存表增加 批次对象表ID（stk_batch.id）用于追溯 */
-CALL add_table_column('stk_dep_inventory', 'batch_id', 'bigint', '批次对象表ID（stk_batch.id）', NULL);
+CALL add_table_column('stk_dep_inventory', 'batch_number', 'varchar(100)', '????', null);
 /
 
--- 科室库存：归属仓库、效期、厂家（与仓库库存/流水对齐）
-CALL add_table_column('stk_dep_inventory', 'warehouse_id', 'bigint', '库存归属仓库ID（与出库来源仓库一致）', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'begin_time', 'date', '生产日期', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'end_time', 'date', '有效期', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'factory_id', 'bigint', '生产厂家ID（fd_factory.factory_id）', NULL);
+/* ????????????? ???????ID??stk_batch.id????????? */
+CALL add_table_column('stk_dep_inventory', 'batch_id', 'bigint', '???????ID??stk_batch.id??', NULL);
 /
 
--- 仓库库存：生产厂家冗余
-CALL add_table_column('stk_inventory', 'factory_id', 'bigint', '生产厂家ID（冗余，与批次/档案一致）', NULL);
+-- ?????????????????????????????????????????????/??????
+CALL add_table_column('stk_dep_inventory', 'warehouse_id', 'bigint', '????????????ID??????????????????????', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'begin_time', 'date', '??????????', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'end_time', 'date', '?????????', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'factory_id', 'bigint', '????????ID??fd_factory.factory_id??', NULL);
 /
 
--- 仓库流水：生产厂家
-CALL add_table_column('t_hc_ck_flow', 'factory_id', 'bigint', '生产厂家ID（fd_factory.factory_id）', NULL);
+-- ???????????????????????
+CALL add_table_column('stk_inventory', 'factory_id', 'bigint', '????????ID???????????????/??????????', NULL);
 /
 
--- 数据备份：mysqldump 可执行文件路径（为空则从 PATH 查找）
-CALL add_table_column('sys_data_backup_config', 'mysqldump_path', 'varchar(500)', 'mysqldump可执行文件路径（可选；为空则从PATH查找）', '');
+-- ????????????????
+CALL add_table_column('t_hc_ck_flow', 'factory_id', 'bigint', '????????ID??fd_factory.factory_id??', NULL);
 /
 
--- 科室流水：归属仓库、生产厂家
-CALL add_table_column('t_hc_ks_flow', 'warehouse_id', 'bigint', '库存归属仓库ID（出库来源仓库）', NULL);
-/
-CALL add_table_column('t_hc_ks_flow', 'factory_id', 'bigint', '生产厂家ID（fd_factory.factory_id）', NULL);
+-- ?????????mysqldump ?????????????????????? PATH ????????
+CALL add_table_column('sys_data_backup_config', 'mysqldump_path', 'varchar(500)', 'mysqldump????????????????????????????PATH????????', '');
 /
 
--- 科室 fd_department 增加 名称简码
+-- ??????????????????????????
+CALL add_table_column('t_hc_ks_flow', 'warehouse_id', 'bigint', '????????????ID???????????????', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'factory_id', 'bigint', '????????ID??fd_factory.factory_id??', NULL);
+/
+
+-- ??? fd_department ????? ?????
 CALL add_table_column(
   'fd_department',
   'referred_name',
   'varchar(64)',
-  '名称简码',
+  '?????',
   NULL
 );
-/* 分隔符 */
+/* ??????? */
 /
-/* 工作人员 sys_user 增加 名称简码（拼音简码，用于用户名称） */
+/* ??????? sys_user ????? ????????????????????????????????? */
 CALL add_table_column(
   'sys_user',
   'referred_name',
   'varchar(64)',
-  '名称简码',
+  '?????',
   NULL
 );
 /
-/* 库房分类 fd_warehouse_category 增加 名称简码 */
+/* ????????? fd_warehouse_category ????? ????? */
 CALL add_table_column(
   'fd_warehouse_category',
   'referred_name',
   'varchar(64)',
-  '名称简码',
+  '?????',
   NULL
 );
 /
-/* 财务分类 fd_finance_category 增加 名称简码 */
+/* ???????? fd_finance_category ????? ????? */
 CALL add_table_column(
   'fd_finance_category',
   'referred_name',
   'varchar(64)',
-  '名称简码',
+  '?????',
   NULL
 );
 /
-CALL add_table_column('fd_finance_category', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('fd_finance_category', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('fd_finance_category', 'remark', 'varchar(512)', '备注', NULL);
+CALL add_table_column('fd_finance_category', 'remark', 'varchar(512)', '???', NULL);
 /
-CALL add_table_column('fd_finance_category', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_finance_category', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_finance_category', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_finance_category', 'delete_time', 'datetime', '????????????', NULL);
 /
-/* 仓库流水表 t_hc_ck_flow 增加 期初单主表/明细表ID（UUID7 引用） */
-CALL add_table_column('t_hc_ck_flow', 'ref_bill_id', 'varchar(36)', '期初单主表ID（UUID7）', NULL);
+/* ??????? t_hc_ck_flow ????? ??????????/??????ID??UUID7 ??????? */
+CALL add_table_column('t_hc_ck_flow', 'ref_bill_id', 'varchar(36)', '??????????ID??UUID7??', NULL);
 /
-CALL add_table_column('t_hc_ck_flow', 'ref_entry_id', 'varchar(36)', '期初单明细ID（UUID7）', NULL);
-/
-
-/* 仓库流水表 t_hc_ck_flow 增加：批次对象表ID与来源业务类型（追溯展示） */
-CALL add_table_column('t_hc_ck_flow', 'batch_id', 'BIGINT', '批次对象表ID（stk_batch.id）', NULL);
-/
-CALL add_table_column('t_hc_ck_flow', 'origin_business_type', 'varchar(64)', '来源业务类型中文（便于追溯展示）', NULL);
-/
-/* 批次表 stk_batch 增加 期初单主表/明细表ID（UUID7 引用） */
-CALL add_table_column('stk_batch', 'ref_bill_id', 'varchar(36)', '期初单主表ID（UUID7）', NULL);
-/
-CALL add_table_column('stk_batch', 'ref_entry_id', 'varchar(36)', '期初单明细ID（UUID7）', NULL);
-/
-/* 产品档案 fd_material 增加 第三方系统产品档案ID（用于期初导入匹配） */
-CALL add_table_column('fd_material', 'his_id', 'varchar(64)', '第三方系统产品档案ID（HIS等）', NULL);
-/
-/* 产品档案 fd_material 增加 HIS收费项目ID（用于HIS收费项目对照） */
-CALL add_table_column('fd_material', 'his_charge_item_id', 'varchar(64)', 'HIS收费项目ID（v_charge_item.charge_item_id）', NULL);
-/
-/* 期初库存导入明细表：第三方/HIS 库存明细 ID 统一为 his_id（旧列 third_party_detail_id 迁移见 sql/maintenance/upgrade_stk_initial_import_entry_hisid_decimal.sql） */
-CALL add_table_column('stk_initial_import_entry', 'his_id', 'varchar(128)', '第三方/HIS系统库存明细ID（对应导入列 his_id）', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'third_party_material_id', 'varchar(64)', '第三方系统产品档案ID', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'material_code', 'varchar(64)', '耗材编码', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'speci', 'varchar(255)', '规格', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'model', 'varchar(255)', '型号', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'register_no', 'varchar(128)', '注册证号', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'medical_no', 'varchar(64)', '医保编码', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'medical_name', 'varchar(255)', '医保名称', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'main_barcode', 'varchar(128)', '主条码', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('t_hc_ck_flow', 'ref_entry_id', 'varchar(36)', '?????????????ID??UUID7??', NULL);
 /
 
-CALL add_table_column('stk_io_bill_entry', 'suppler_id', 'varchar(128)', '供应商ID，出退库单明细内的供应商id', NULL);
+/* ??????? t_hc_ck_flow ??????????????ID?????????????????????? */
+CALL add_table_column('t_hc_ck_flow', 'batch_id', 'BIGINT', '???????ID??stk_batch.id??', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'bill_no', 'varchar(64)', '出入库单号（冗余主表 bill_no，便于按单号查明细）', NULL);
+CALL add_table_column('t_hc_ck_flow', 'origin_business_type', 'varchar(64)', '???????????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'warehouse_id', 'bigint', '明细仓库ID（冗余，与主表或业务一致）', NULL);
+/* ????? stk_batch ????? ??????????/??????ID??UUID7 ??????? */
+CALL add_table_column('stk_batch', 'ref_bill_id', 'varchar(36)', '??????????ID??UUID7??', NULL);
 /
-
-CALL add_table_column('stk_io_profit_loss_entry', 'suppler_id', 'varchar(128)', '供应商ID，出退库单明细内的供应商id', NULL);
+CALL add_table_column('stk_batch', 'ref_entry_id', 'varchar(36)', '?????????????ID??UUID7??', NULL);
 /
-/* 产品档案 fd_material 增加 入选原因 */
-CALL add_table_column('fd_material', 'selection_reason', 'varchar(512)', '入选原因', NULL);
+/* ??????? fd_material ????? ????????????????ID????????????????????????? */
+CALL add_table_column('fd_material', 'his_id', 'varchar(64)', '????????????????ID??HIS????', NULL);
 /
-
-/* 产品档案：18类重点耗材回填字段（与字典表 fd_focus18 对应，按医保编码匹配写入） */
-CALL add_table_column('fd_material', 'focus18_category', 'varchar(100)', '18类重点-耗材类别', NULL);
+/* ??????? fd_material ????? HIS????????ID???????HIS?????????????? */
+CALL add_table_column('fd_material', 'his_charge_item_id', 'varchar(64)', 'HIS????????ID??v_charge_item.charge_item_id??', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_class_code', 'varchar(100)', '18类重点-耗材分类代码', NULL);
+/* ????????????????????????????/HIS ????????? ID ????? his_id???????? third_party_detail_id ??? sql/maintenance/upgrade_stk_initial_import_entry_hisid_decimal.sql?? */
+CALL add_table_column('stk_initial_import_entry', 'his_id', 'varchar(128)', '??????/HIS????????????ID???????????? his_id??', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_level1', 'varchar(200)', '18类重点-一级分类（学科、品类）', NULL);
+CALL add_table_column('stk_initial_import_entry', 'third_party_material_id', 'varchar(64)', '????????????????ID', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_level2', 'varchar(200)', '18类重点-二级分类（用途、品目）', NULL);
+CALL add_table_column('stk_initial_import_entry', 'material_code', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_level3', 'varchar(200)', '18类重点-三级分类（部位、功能、品种）', NULL);
+CALL add_table_column('stk_initial_import_entry', 'speci', 'varchar(255)', '???', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_generic_code', 'varchar(100)', '18类重点-通用名代码', NULL);
+CALL add_table_column('stk_initial_import_entry', 'model', 'varchar(255)', '????', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_medical_generic_name', 'varchar(200)', '18类重点-医保通用名', NULL);
+CALL add_table_column('stk_initial_import_entry', 'register_no', 'varchar(128)', '??????', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_material_code', 'varchar(100)', '18类重点-材质代码', NULL);
+CALL add_table_column('stk_initial_import_entry', 'medical_no', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_material', 'varchar(200)', '18类重点-材质', NULL);
+CALL add_table_column('stk_initial_import_entry', 'medical_name', 'varchar(255)', '??????', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_feature_code', 'varchar(100)', '18类重点-特征代码', NULL);
+CALL add_table_column('stk_initial_import_entry', 'main_barcode', 'varchar(128)', '???', NULL);
 /
-CALL add_table_column('fd_material', 'focus18_feature_param', 'varchar(500)', '18类重点-特征参数', NULL);
-/
-
-/* 产品档案 fd_material 增加 是否计费 */
-CALL add_table_column('fd_material', 'is_billing', 'char(4)', '是否计费：1=计费,2=不计费', '2');
-/
-CALL add_table_column('fd_material', 'is_temporary_purchase', 'char(4)', '是否临购：1=是,2=否', '2');
-/
-CALL add_table_column('fd_material', 'is_service_fee', 'char(4)', '是否服务费：1=是,2=否', '2');
-/
-CALL add_table_column('fd_material', 'is_sunshine_procurement', 'char(4)', '是否阳采：1=是,2=否', '2');
-/
-CALL add_table_column('fd_material', 'sunshine_code', 'varchar(100)', '阳光平台编码', NULL);
+CALL add_table_column('stk_initial_import_entry', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
 
-/* 产品档案 fd_material 增加 最小包装数（与包装规格 package_speci 配套；Mapper 已引用） */
-CALL add_table_column('fd_material', 'min_package_qty', 'decimal(18,6)', '最小包装数（每最小包装所含数量，如 10 支/盒）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'suppler_id', 'varchar(128)', '???????ID??????????????????????????????id', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'bill_no', 'varchar(64)', '???????????????????? bill_no?????????????????????', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'warehouse_id', 'bigint', '?????????ID????????????????????????????', NULL);
 /
 
-/* 产品档案 fd_material 增加 默认所属仓库ID（用于科室盘盈可退库仓库） */
-CALL add_table_column('fd_material', 'default_warehouse_id', 'bigint', '产品档案默认所属仓库ID（科室盘盈可退库仓库）', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'suppler_id', 'varchar(128)', '???????ID??????????????????????????????id', NULL);
+/
+/* ??????? fd_material ????? ???????????? */
+CALL add_table_column('fd_material', 'selection_reason', 'varchar(512)', '????????????', NULL);
 /
 
-/* 科室库存表增加收货确认状态：0=未确认 1=已确认；出库单审核即插入科室库存(未确认)，收货确认后更新为已确认 */
-CALL add_table_column('stk_dep_inventory', 'receipt_confirm_status', 'TINYINT', '收货确认状态 0未确认 1已确认', '0');
+/* ?????????18???????????????????????????? fd_focus18 ????????????????????????????? */
+CALL add_table_column('fd_material', 'focus18_category', 'varchar(100)', '18???????-????????', NULL);
 /
-/* 科室库存表增加单据关联字段，便于收货确认时精确定位对应出库单及出库明细 */
-CALL add_table_column('stk_dep_inventory', 'bill_id', 'BIGINT', '单据主表id(出库单id)', NULL);
+CALL add_table_column('fd_material', 'focus18_class_code', 'varchar(100)', '18???????-??????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'bill_entry_id', 'BIGINT', '单据明细id(出库单明细id)', NULL);
+CALL add_table_column('fd_material', 'focus18_level1', 'varchar(200)', '18???????-?????????????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'bill_no', 'varchar(100)', '单据号', NULL);
+CALL add_table_column('fd_material', 'focus18_level2', 'varchar(200)', '18???????-??????????????????????????', NULL);
 /
-/* 出库单号：与 table.sql 一致；旧库若仅有 bill_no 无本列，Mapper 列表用 bill_no+子查询回退，不依赖本列 */
-CALL add_table_column('stk_dep_inventory', 'out_order_no', 'varchar(100)', '出库单号', NULL);
+CALL add_table_column('fd_material', 'focus18_level3', 'varchar(200)', '18???????-???????????????????????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'bill_type', 'INT', '单据类型 201出库', NULL);
+CALL add_table_column('fd_material', 'focus18_generic_code', 'varchar(100)', '18???????-?????????', NULL);
 /
-/* 科室库存表增加备注（出库单生成的可填写“本库存科室出库业务生成”） */
-CALL add_table_column('stk_dep_inventory', 'remark', 'varchar(500)', '备注', NULL);
+CALL add_table_column('fd_material', 'focus18_medical_generic_name', 'varchar(200)', '18???????-???????????', NULL);
 /
-/* 耗材科室列表与租户关联 */
-CALL add_table_column('fd_department', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('fd_material', 'focus18_material_code', 'varchar(100)', '18???????-????', NULL);
 /
-/* 科室表备注（维护/导入） */
-CALL add_table_column('fd_department', 'remark', 'varchar(500)', '备注', NULL);
+CALL add_table_column('fd_material', 'focus18_material', 'varchar(200)', '18???????-??', NULL);
 /
-/* 科室与第三方系统对照（导入与维护）；已废弃 his_dept_id，若库中仍存在该列则删除 */
-/* SqlInitRunner 每条片段单独 execute，不可在同一段内写多条分号语句（需 allowMultiQueries） */
+CALL add_table_column('fd_material', 'focus18_feature_code', 'varchar(100)', '18???????-??????', NULL);
+/
+CALL add_table_column('fd_material', 'focus18_feature_param', 'varchar(500)', '18???????-?????????', NULL);
+/
+
+/* ??????? fd_material ????? ?????? */
+CALL add_table_column('fd_material', 'is_billing', 'char(4)', '????????1=??,2=???', '2');
+/
+CALL add_table_column('fd_material', 'is_temporary_purchase', 'char(4)', '????????1=???,2=?', '2');
+/
+CALL add_table_column('fd_material', 'is_service_fee', 'char(4)', '?????????????1=???,2=?', '2');
+/
+CALL add_table_column('fd_material', 'is_sunshine_procurement', 'char(4)', '????????????1=???,2=?', '2');
+/
+CALL add_table_column('fd_material', 'sunshine_code', 'varchar(100)', '???????????', NULL);
+/
+
+/* ??????? fd_material ????? ???????????????????????? package_speci ???????Mapper ???????? */
+CALL add_table_column('fd_material', 'min_package_qty', 'decimal(18,6)', '?????????????????????????????????????? 10 ???/?????', NULL);
+/
+
+/* ??????? fd_material ????? ????????????ID???????????????????????????? */
+CALL add_table_column('fd_material', 'default_warehouse_id', 'bigint', '???????????????????ID???????????????????????', NULL);
+/
+
+/* ???????????????????????????0=????? 1=???????????????????????????(?????)???????????????????? */
+CALL add_table_column('stk_dep_inventory', 'receipt_confirm_status', 'TINYINT', '???????????? 0????? 1???', '0');
+/
+/* ????????????????????????????????????????????????????????????????? */
+CALL add_table_column('stk_dep_inventory', 'bill_id', 'BIGINT', '?????id(???????id)', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'bill_entry_id', 'BIGINT', '????????id(????????????id)', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'bill_no', 'varchar(100)', '????', NULL);
+/
+/* ???????????? table.sql ???????????????????? bill_no ???????????Mapper ??????? bill_no+??????????????????????? */
+CALL add_table_column('stk_dep_inventory', 'out_order_no', 'varchar(100)', '????????', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'bill_type', 'INT', '??????? 201?????', NULL);
+/
+/* ????????????????????????????????????????????????????????????????????????? */
+CALL add_table_column('stk_dep_inventory', 'remark', 'varchar(500)', '???', NULL);
+/
+/* ??????????????????????? */
+CALL add_table_column('fd_department', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
+/
+/* ?????????????/?????? */
+CALL add_table_column('fd_department', 'remark', 'varchar(500)', '???', NULL);
+/
+/* ??????????????????????????????????????? his_dept_id??????????????????????????? */
+/* SqlInitRunner ??????????? execute???????????????????????????????? allowMultiQueries?? */
 SET @__db := DATABASE();
 /
 SET @__exist_his_dept := (
@@ -307,7 +317,7 @@ EXECUTE __stmt_his;
 /
 DEALLOCATE PREPARE __stmt_his;
 /
-/* fd_department：third_party_dept_id 重命名为 his_id（HIS系统科室ID）；若仅有新库已含 his_id 则跳过 */
+/* fd_department??third_party_dept_id ???????? his_id??HIS??????ID??????????????????? his_id ?????? */
 SET @__exist_tp := (
   SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = @__db AND TABLE_NAME = 'fd_department' AND COLUMN_NAME = 'third_party_dept_id'
@@ -319,9 +329,9 @@ SET @__exist_his := (
 );
 /
 SET @__mig_sql := IF(@__exist_tp > 0 AND @__exist_his = 0,
-  'ALTER TABLE fd_department CHANGE COLUMN `third_party_dept_id` `his_id` varchar(128) DEFAULT NULL COMMENT ''HIS系统科室ID''',
+  'ALTER TABLE fd_department CHANGE COLUMN `third_party_dept_id` `his_id` varchar(128) DEFAULT NULL COMMENT ''HIS??????ID''',
   IF(@__exist_his = 0,
-    'ALTER TABLE fd_department ADD COLUMN `his_id` varchar(128) DEFAULT NULL COMMENT ''HIS系统科室ID''',
+    'ALTER TABLE fd_department ADD COLUMN `his_id` varchar(128) DEFAULT NULL COMMENT ''HIS??????ID''',
     'SELECT ''skip_fd_department_his_id'' AS msg'
   )
 );
@@ -332,170 +342,170 @@ EXECUTE __stmt_mig;
 /
 DEALLOCATE PREPARE __stmt_mig;
 /
-CALL add_table_column('sys_user', 'his_id', 'varchar(128)', 'HIS系统用户ID', NULL);
+CALL add_table_column('sys_user', 'his_id', 'varchar(128)', 'HIS?????????ID', NULL);
 /
-CALL add_table_column('fd_warehouse_category', 'his_id', 'varchar(128)', 'HIS系统库房分类ID', NULL);
+CALL add_table_column('fd_warehouse_category', 'his_id', 'varchar(128)', 'HIS????????????ID', NULL);
 /
-CALL add_table_column('fd_finance_category', 'his_id', 'varchar(128)', 'HIS系统财务分类ID', NULL);
+CALL add_table_column('fd_finance_category', 'his_id', 'varchar(128)', 'HIS???????????ID', NULL);
 /
-CALL add_table_column('fd_finance_category', 'parent_id', 'bigint(20)', '上级财务分类ID', NULL);
+CALL add_table_column('fd_finance_category', 'parent_id', 'bigint(20)', '???????????ID', NULL);
 /
-CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '上级科室ID', NULL);
+CALL add_table_column('fd_department', 'parent_id', 'bigint(20)', '??????ID', NULL);
 /
-CALL add_table_column('fd_department', 'del_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_department', 'del_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_department', 'del_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_department', 'del_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_department', 'campus', 'varchar(128)', '院区', NULL);
+CALL add_table_column('fd_department', 'campus', 'varchar(128)', '??????', NULL);
 /
-CALL add_table_column('fd_department', 'status', 'char(1)', '启用状态（字典 is_use_status：1启用 2停用）', '1');
+CALL add_table_column('fd_department', 'status', 'char(1)', '????????????????? is_use_status??1???? 2???????', '1');
 /
-/* 耗材业务表与租户关联：仓库、出入库单、库存、科室库存、申领单 */
-CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/* ???????????????????????????????????????????????????????????????????? */
+CALL add_table_column('fd_warehouse', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('fd_warehouse', 'del_by', 'varchar(100)', '删除者', NULL);
+CALL add_table_column('fd_warehouse', 'del_by', 'varchar(100)', '?????????', NULL);
 /
-CALL add_table_column('fd_warehouse', 'del_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_warehouse', 'del_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('stk_io_bill', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('stk_io_bill', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_io_bill', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('stk_inventory', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('stk_dep_inventory', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('bas_apply', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('bas_apply', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* 耗材工作组使用 sys_post；岗位表及关联表按租户隔离 */
-CALL add_table_column('sys_post', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/* ????????????? sys_post?????????????????????????? */
+CALL add_table_column('sys_post', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('sys_post_department', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('sys_post_department', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('sys_post_menu', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('sys_post_menu', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('sys_post_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('sys_post_warehouse', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* 耗材与设备停用状态、计划停用时间分离：sb_customer 增加耗材侧字段 */
-CALL add_table_column('sb_customer', 'hc_status', 'char(1)', '耗材侧状态（0正常 1停用）', '0');
+/* ????????????????????????????????????????????sb_customer ????????????? */
+CALL add_table_column('sb_customer', 'hc_status', 'char(1)', '?????????????0?? 1???????', '0');
 /
-CALL add_table_column('sb_customer', 'hc_planned_disable_time', 'datetime', '计划停用时间（耗材侧）', NULL);
+CALL add_table_column('sb_customer', 'hc_planned_disable_time', 'datetime', '????????????????????????', NULL);
 /
-/* ========== 高值耗材主条码、辅条码（便于追溯与数据核对） ========== */
-CALL add_table_column('stk_io_bill_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/* ========== ???????????????????????????????????? ========== */
+CALL add_table_column('stk_io_bill_entry', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('stk_io_bill_entry', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('stk_io_bill_entry', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('stk_io_bill_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('stk_io_bill_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('stk_io_bill_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('stk_io_bill_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('stk_io_bill_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_io_bill_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+CALL add_table_column('stk_inventory', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('stk_inventory', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+CALL add_table_column('stk_dep_inventory', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('stk_dep_inventory', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-CALL add_table_column('t_hc_ck_flow', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+CALL add_table_column('t_hc_ck_flow', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('t_hc_ck_flow', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('t_hc_ck_flow', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+CALL add_table_column('t_hc_ks_flow', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('t_hc_ks_flow', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-/* 科室批量消耗明细：高值耗材主条码、辅条码 */
-CALL add_table_column('t_hc_ks_xh_entry', 'main_barcode', 'varchar(128)', '高值耗材主条码', NULL);
+/* ???????????????????????????????????????? */
+CALL add_table_column('t_hc_ks_xh_entry', 'main_barcode', 'varchar(128)', '????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'sub_barcode', 'varchar(128)', '高值耗材辅条码', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'sub_barcode', 'varchar(128)', '?????????????', NULL);
 /
-/* 科室批量消耗主表/明细：删除审计字段 */
-CALL add_table_column('t_hc_ks_xh', 'delete_by', 'varchar(64)', '删除者', NULL);
+/* ????????????????/?????????????????? */
+CALL add_table_column('t_hc_ks_xh', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('t_hc_ks_xh', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh', 'reverse_flag', 'int', '是否反消耗单(0否1是)', '0');
+CALL add_table_column('t_hc_ks_xh', 'reverse_flag', 'int', '????????????(0?1???)', '0');
 /
-CALL add_table_column('t_hc_ks_xh', 'reverse_of_consume_id', 'bigint', '反消耗来源主单ID', NULL);
+CALL add_table_column('t_hc_ks_xh', 'reverse_of_consume_id', 'bigint', '???????????ID', NULL);
 /
-CALL add_table_column('t_hc_ks_xh', 'reverse_of_bill_no', 'varchar(64)', '反消耗来源主单号', NULL);
+CALL add_table_column('t_hc_ks_xh', 'reverse_of_bill_no', 'varchar(64)', '????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh', 'bill_source', 'varchar(32)', '单据来源(MANUAL/HIS_MIRROR_BATCH等)', NULL);
+CALL add_table_column('t_hc_ks_xh', 'bill_source', 'varchar(32)', '?????(MANUAL/HIS_MIRROR_BATCH??)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh', 'disallow_reverse', 'tinyint', '禁止手工退消耗(1禁止)', '0');
+CALL add_table_column('t_hc_ks_xh', 'disallow_reverse', 'tinyint', '??????????????(1??)', '0');
 /
-CALL add_table_column('t_hc_ks_xh', 'his_fetch_batch_id', 'varchar(36)', 'HIS计费抓取批次ID(与镜像fetch_batch_id一致)', NULL);
+CALL add_table_column('t_hc_ks_xh', 'his_fetch_batch_id', 'varchar(36)', 'HIS???????????ID(????????fetch_batch_id?????)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-/* 科室批量消耗明细：科室库存冗余快照字段，保证后续追溯不依赖库存实时数据 */
-CALL add_table_column('t_hc_ks_xh_entry', 'dep_inventory_id', 'bigint', '来源科室库存ID(stk_dep_inventory.id)', NULL);
+/* ?????????????????????????????????????????????????????????????????? */
+CALL add_table_column('t_hc_ks_xh_entry', 'dep_inventory_id', 'bigint', '?????????ID(stk_dep_inventory.id)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'gz_dep_inventory_id', 'bigint', '高值科室虚拟库存 gz_dep_inventory.id', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'gz_dep_inventory_id', 'bigint', '?????????????????? gz_dep_inventory.id', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'kc_no', 'bigint', '来源仓库库存ID(stk_inventory.id)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'kc_no', 'bigint', '??????????ID(stk_inventory.id)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'batch_id', 'bigint', '批次对象ID(stk_batch.id)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'batch_id', 'bigint', '??????ID(stk_batch.id)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'warehouse_id', 'bigint', '库存归属仓库ID', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'warehouse_id', 'bigint', '????????????ID', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'supplier_id', 'varchar(128)', '供应商ID', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'supplier_id', 'varchar(128)', '???????ID', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'factory_id', 'bigint', '生产厂家ID(fd_factory.factory_id)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'factory_id', 'bigint', '????????ID(fd_factory.factory_id)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'material_no', 'varchar(128)', '耗材批号', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'material_no', 'varchar(128)', '????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'material_date', 'datetime', '耗材日期', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'material_date', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'warehouse_date', 'datetime', '入库日期', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'warehouse_date', 'datetime', '???????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'settlement_type', 'varchar(16)', '结算方式', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'settlement_type', 'varchar(16)', '????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'material_name', 'varchar(256)', '耗材名称快照', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'material_name', 'varchar(256)', '??????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'material_speci', 'varchar(256)', '规格快照', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'material_speci', 'varchar(256)', '???????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'material_model', 'varchar(256)', '型号快照', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'material_model', 'varchar(256)', '????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'material_factory_id', 'bigint', '生产厂家ID快照(fd_factory.factory_id)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'material_factory_id', 'bigint', '????????ID????(fd_factory.factory_id)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_id', 'bigint', '反消耗来源主单ID(正向消耗主单)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_id', 'bigint', '???????????ID(???????????)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_bill_no', 'varchar(64)', '反消耗来源主单号(正向消耗单号)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_bill_no', 'varchar(64)', '????????????(???????????)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_entry_id', 'bigint', '反消耗来源明细ID(正向消耗明细ID)', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_entry_id', 'bigint', '?????????????ID(?????????????ID)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_qty', 'decimal(18,2)', '正向消耗数量快照', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_qty', 'decimal(18,2)', '??????????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_can_reverse_qty', 'decimal(18,2)', '反消耗生成时可退数量快照', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_can_reverse_qty', 'decimal(18,2)', '?????????????????????????????', NULL);
 /
-/* 兼容历史库：t_hc_ks_xh_entry 早期字段为 batch_numer，统一迁移/补齐为 batch_number */
+/* ????????????t_hc_ks_xh_entry ?????????? batch_numer????????/??? batch_number */
 SET @__db := DATABASE();
 /
 SET @__ksxh_exist_old := (
@@ -509,9 +519,9 @@ SET @__ksxh_exist_new := (
 );
 /
 SET @__ksxh_batch_sql := IF(@__ksxh_exist_old > 0 AND @__ksxh_exist_new = 0,
-  'ALTER TABLE t_hc_ks_xh_entry CHANGE COLUMN `batch_numer` `batch_number` varchar(100) DEFAULT NULL COMMENT ''批号''',
+  'ALTER TABLE t_hc_ks_xh_entry CHANGE COLUMN `batch_numer` `batch_number` varchar(100) DEFAULT NULL COMMENT ''????''',
   IF(@__ksxh_exist_new = 0,
-    'ALTER TABLE t_hc_ks_xh_entry ADD COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT ''批号''',
+    'ALTER TABLE t_hc_ks_xh_entry ADD COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT ''????''',
     'SELECT ''skip_t_hc_ks_xh_entry_batch_number'' AS msg'
   )
 );
@@ -522,400 +532,400 @@ EXECUTE __stmt_ksxh_batch;
 /
 DEALLOCATE PREPARE __stmt_ksxh_batch;
 /
-/* t_hc_ks_xh_entry_ref 全量建表见 material/table.sql */
+/* t_hc_ks_xh_entry_ref ????????? material/table.sql */
 /
-/* 批次表：租户隔离与历史追溯 */
-CALL add_table_column('stk_batch', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/* ???????????????????????? */
+CALL add_table_column('stk_batch', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
 
-/* ========== 批次追溯来源补充字段：用于从批次卡片直接判断来源动作 ==========
-   说明：batch_source用于展示 RK/ZR 等来源lx；origin_* 为可审计的扩展信息。*/
-CALL add_table_column('stk_batch', 'origin_bill_type', 'int', '来源单据类型（stk_io_bill.bill_type）', NULL);
+/* ========== ??????????????????????????????????????????????????? ==========
+   ??????batch_source???????? RK/ZR ????lx??origin_* ?????????????????*/
+CALL add_table_column('stk_batch', 'origin_bill_type', 'int', '???????????stk_io_bill.bill_type??', NULL);
 /
-CALL add_table_column('stk_batch', 'origin_flow_lx', 'varchar(16)', '来源流水lx（如RK/ZR/PY/QC等）', NULL);
+CALL add_table_column('stk_batch', 'origin_flow_lx', 'varchar(16)', '????lx????RK/ZR/PY/QC????', NULL);
 /
-CALL add_table_column('stk_batch', 'origin_business_type', 'varchar(64)', '来源业务类型中文（便于追溯展示）', NULL);
+CALL add_table_column('stk_batch', 'origin_business_type', 'varchar(64)', '???????????????????????????', NULL);
 /
-CALL add_table_column('stk_batch', 'origin_from_warehouse_id', 'bigint', '来源仓库ID（调拨等场景用）', NULL);
+CALL add_table_column('stk_batch', 'origin_from_warehouse_id', 'bigint', '??????ID????????????????????', NULL);
 /
-CALL add_table_column('stk_batch', 'origin_to_warehouse_id', 'bigint', '目标仓库ID/科室仓库ID（调拨等场景用）', NULL);
+CALL add_table_column('stk_batch', 'origin_to_warehouse_id', 'bigint', '?????????ID/???????ID????????????????????', NULL);
 /
-/* ========== 耗材业务表与客户(租户)关联（便于多租户隔离与列表过滤） ========== */
-CALL add_table_column('stk_initial_import', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/* ========== ????????????????(?????)???????????????????????????????? ========== */
+CALL add_table_column('stk_initial_import', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('bas_apply_template', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('bas_apply_template', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('t_hc_ks_xh', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('stk_io_stocktaking', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* stk_io_stocktaking 主表：与 material/table.sql 对齐（旧库若仅有部分列时补齐） */
-CALL add_table_column('stk_io_stocktaking', 'stock_no', 'varchar(64)', '盘点单号', NULL);
+/* stk_io_stocktaking ?????? material/table.sql ????????????????????????????????? */
+CALL add_table_column('stk_io_stocktaking', 'stock_no', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'suppler_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('stk_io_stocktaking', 'suppler_id', 'bigint', '???????ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'stock_date', 'date', '盘点日期', NULL);
+CALL add_table_column('stk_io_stocktaking', 'stock_date', 'date', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('stk_io_stocktaking', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('stk_io_stocktaking', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'stock_status', 'int', '盘点状态', NULL);
+CALL add_table_column('stk_io_stocktaking', 'stock_status', 'int', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'user_id', 'bigint', '操作人', NULL);
+CALL add_table_column('stk_io_stocktaking', 'user_id', 'bigint', '??????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'stock_type', 'int', '盘点类型', NULL);
+CALL add_table_column('stk_io_stocktaking', 'stock_type', 'int', '??????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('stk_io_stocktaking', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('stk_io_stocktaking', 'audit_date', 'datetime', '审核时间', NULL);
+CALL add_table_column('stk_io_stocktaking', 'audit_date', 'datetime', '????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('stk_io_stocktaking', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('stk_io_stocktaking', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('stk_io_stocktaking', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('stk_io_stocktaking', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'remark', 'varchar(500)', '备注', NULL);
+CALL add_table_column('stk_io_stocktaking', 'remark', 'varchar(500)', '???', NULL);
 /
-CALL add_table_column('stk_io_stocktaking', 'is_month_init', 'int', '是否月结', NULL);
+CALL add_table_column('stk_io_stocktaking', 'is_month_init', 'int', '?????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('stk_io_profit_loss', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* stk_io_profit_loss 主表：与 material/table.sql 对齐 */
-CALL add_table_column('stk_io_profit_loss', 'bill_no', 'varchar(64)', '盈亏单号', NULL);
+/* stk_io_profit_loss ?????? material/table.sql ?? */
+CALL add_table_column('stk_io_profit_loss', 'bill_no', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'stocktaking_id', 'bigint', '关联盘点单ID', NULL);
+CALL add_table_column('stk_io_profit_loss', 'stocktaking_id', 'bigint', '?????????????ID', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'stocktaking_no', 'varchar(64)', '盘点单号', NULL);
+CALL add_table_column('stk_io_profit_loss', 'stocktaking_no', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('stk_io_profit_loss', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'bill_status', 'int', '单据状态 1待审核 2已审核', 1);
+CALL add_table_column('stk_io_profit_loss', 'bill_status', 'int', '????????? 1???? 2???', 1);
 /
-CALL add_table_column('stk_io_profit_loss', 'audit_by', 'varchar(64)', '审核人', NULL);
+CALL add_table_column('stk_io_profit_loss', 'audit_by', 'varchar(64)', '???', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'audit_date', 'datetime', '审核时间', NULL);
+CALL add_table_column('stk_io_profit_loss', 'audit_date', 'datetime', '????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('stk_io_profit_loss', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'create_by', 'varchar(64)', '创建人', NULL);
+CALL add_table_column('stk_io_profit_loss', 'create_by', 'varchar(64)', '?????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('stk_io_profit_loss', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'update_by', 'varchar(64)', '更新人', NULL);
+CALL add_table_column('stk_io_profit_loss', 'update_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('stk_io_profit_loss', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('wh_fixed_number', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('wh_fixed_number', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('dept_fixed_number', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('dept_fixed_number', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* 定数表：备注与逻辑删除审计（存量库若仅有 del_flag 时补齐） */
-CALL add_table_column('wh_fixed_number', 'remark', 'varchar(512)', '备注', NULL);
+/* ??????????????????????????????????????????? del_flag ??????? */
+CALL add_table_column('wh_fixed_number', 'remark', 'varchar(512)', '???', NULL);
 /
-CALL add_table_column('wh_fixed_number', 'delete_by', 'varchar(64)', '删除人', NULL);
+CALL add_table_column('wh_fixed_number', 'delete_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('wh_fixed_number', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('wh_fixed_number', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('wh_fixed_number', 'enable_status', 'char(1) NOT NULL', '启用状态（0启用 1停用）', '0');
+CALL add_table_column('wh_fixed_number', 'enable_status', 'char(1) NOT NULL', '????????????0???? 1???????', '0');
 /
-CALL add_table_column('wh_fixed_number', 'disable_by', 'varchar(64)', '停用人', NULL);
+CALL add_table_column('wh_fixed_number', 'disable_by', 'varchar(64)', '??????', NULL);
 /
-CALL add_table_column('wh_fixed_number', 'disable_time', 'datetime', '停用时间', NULL);
+CALL add_table_column('wh_fixed_number', 'disable_time', 'datetime', '???????????', NULL);
 /
-CALL add_table_column('dept_fixed_number', 'remark', 'varchar(512)', '备注', NULL);
+CALL add_table_column('dept_fixed_number', 'remark', 'varchar(512)', '???', NULL);
 /
-CALL add_table_column('dept_fixed_number', 'delete_by', 'varchar(64)', '删除人', NULL);
+CALL add_table_column('dept_fixed_number', 'delete_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('dept_fixed_number', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('dept_fixed_number', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_material_import', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('fd_material_import', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* 流水与档案日志表：冗余租户ID 便于按客户查流水/日志 */
-CALL add_table_column('t_hc_ck_flow', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/* ?????????????????????????ID ???????????????/????? */
+CALL add_table_column('t_hc_ck_flow', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('t_hc_ks_flow', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'batch_id', 'BIGINT', '批次对象表ID（stk_batch.id）', NULL);
+CALL add_table_column('t_hc_ks_flow', 'batch_id', 'BIGINT', '???????ID??stk_batch.id??', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'origin_business_type', 'varchar(64)', '来源业务类型中文（便于追溯展示）', NULL);
+CALL add_table_column('t_hc_ks_flow', 'origin_business_type', 'varchar(64)', '???????????????????????????', NULL);
 /
-/* 仓库/科室流水：逻辑删除审计 */
-CALL add_table_column('t_hc_ck_flow', 'delete_by', 'varchar(64)', '删除者', NULL);
+/* ????/???????????????????? */
+CALL add_table_column('t_hc_ck_flow', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('t_hc_ck_flow', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('t_hc_ck_flow', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('t_hc_ks_flow', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('t_hc_ks_flow', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('t_hc_ks_flow', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_material_status_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('fd_material_status_log', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('fd_material_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('fd_material_change_log', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* ========== 高值耗材相关表：租户关联 + 主条码/辅条码 ========== */
-CALL add_table_column('gz_order', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+/* ========== ???????????????????????????? + ???/???? ========== */
+CALL add_table_column('gz_order', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('gz_order', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('gz_order', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('gz_order', 'is_follow_flag', 'varchar(16)', '跟台标识', NULL);
+CALL add_table_column('gz_order', 'is_follow_flag', 'varchar(16)', '???????', NULL);
 /
-CALL add_table_column('gz_order', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_order', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_order', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_order', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_order', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_order', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_order', 'audit_date', 'datetime', '审核时间', NULL);
+CALL add_table_column('gz_order', 'audit_date', 'datetime', '????????', NULL);
 /
-CALL add_table_column('gz_order', 'audit_by', 'varchar(64)', '审核人', NULL);
+CALL add_table_column('gz_order', 'audit_by', 'varchar(64)', '???', NULL);
 /
-CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '主条码', NULL);
+CALL add_table_column('gz_order_entry', 'master_barcode', 'varchar(128)', '???', NULL);
 /
-CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '辅条码', NULL);
+CALL add_table_column('gz_order_entry', 'secondary_barcode', 'varchar(128)', '????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('gz_order_entry', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('gz_order_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+CALL add_table_column('gz_order_entry', 'bill_no', 'varchar(64)', '????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'bill_no', 'varchar(64)', '????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('gz_shipment_entry', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+CALL add_table_column('gz_shipment_entry', 'bill_no', 'varchar(64)', '????????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'bill_no', 'varchar(64)', '单号冗余', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'bill_no', 'varchar(64)', '????????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('gz_shipment_entry', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-/* ========== 耗材仓库结算方式：入库/出库/消耗；入库单、明细、仓库库存、科室库存写入结算方式 ========== */
-CALL add_table_column('stk_io_bill', 'settlement_type', 'varchar(16)', '结算方式 1入库结算 2出库结算 3消耗结算（来自仓库）', NULL);
+/* ========== ???????????????????????/?????/????????????????????????????????????????????????????????? ========== */
+CALL add_table_column('stk_io_bill', 'settlement_type', 'varchar(16)', '???????? 1????????? 2????????? 3?????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'settlement_type', 'varchar(16)', '结算方式（与主表一致）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'settlement_type', 'varchar(16)', '?????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'material_name', 'varchar(256)', '产品名称（快照）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'material_name', 'varchar(256)', '??????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'material_speci', 'varchar(256)', '规格（快照）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'material_speci', 'varchar(256)', '???????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'material_model', 'varchar(256)', '型号（快照）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'material_model', 'varchar(256)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'material_factory_id', 'bigint', '????????ID????????fd_factory.factory_id??', NULL);
 /
--- 出库单与科室申领 / 库房申请单追溯（引用库房申请出库、关联 wh_wh_apply_ck_entry_ref）
-CALL add_table_column('stk_io_bill', 'd_apply_id', 'varchar(32)', '科室申领主表ID（bas_apply.id）', NULL);
+-- ????????????????? / ?????????????????????????????????????????? wh_wh_apply_ck_entry_ref??
+CALL add_table_column('stk_io_bill', 'd_apply_id', 'varchar(32)', '??????????ID??bas_apply.id??', NULL);
 /
-CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_id', 'varchar(36)', '库房申请单主键（wh_warehouse_apply.id）', NULL);
+CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_id', 'varchar(36)', '?????????????????wh_warehouse_apply.id??', NULL);
 /
-CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_bill_no', 'varchar(64)', '库房申请单号（冗余）', NULL);
+CALL add_table_column('stk_io_bill', 'wh_warehouse_apply_bill_no', 'varchar(64)', '?????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delivery_ref_warehouse_id', 'varchar(128)', '引用配送单入库：仓库ID快照', NULL);
+CALL add_table_column('stk_io_bill', 'delivery_ref_warehouse_id', 'varchar(128)', '????????????????????????ID????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delivery_ref_warehouse_name', 'varchar(256)', '引用配送单入库：仓库名称快照', NULL);
+CALL add_table_column('stk_io_bill', 'delivery_ref_warehouse_name', 'varchar(256)', '??????????????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delivery_ref_supplier_id', 'varchar(128)', '引用配送单入库：供应商ID快照', NULL);
+CALL add_table_column('stk_io_bill', 'delivery_ref_supplier_id', 'varchar(128)', '???????????????????????????ID????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delivery_ref_supplier_name', 'varchar(256)', '引用配送单入库：供应商名称快照', NULL);
+CALL add_table_column('stk_io_bill', 'delivery_ref_supplier_name', 'varchar(256)', '?????????????????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delivery_ref_dept_id', 'varchar(128)', '引用配送单入库：申请科室ID快照', NULL);
+CALL add_table_column('stk_io_bill', 'delivery_ref_dept_id', 'varchar(128)', '???????????????????????????ID????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delivery_ref_dept_name', 'varchar(256)', '引用配送单入库：申请科室名称快照', NULL);
+CALL add_table_column('stk_io_bill', 'delivery_ref_dept_name', 'varchar(256)', '?????????????????????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'wh_apply_entry_id', 'varchar(36)', '库房申请单明细ID（引用出库时回填）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'wh_apply_entry_id', 'varchar(36)', '????????????????ID?????????????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自入库单）', NULL);
+CALL add_table_column('stk_inventory', 'settlement_type', 'varchar(16)', '???????????????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'settlement_type', 'varchar(16)', '结算方式（来自出库单）', NULL);
+CALL add_table_column('stk_dep_inventory', 'settlement_type', 'varchar(16)', '???????????????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'material_name', 'varchar(256)', '产品名称（快照）', NULL);
+CALL add_table_column('stk_inventory', 'material_name', 'varchar(256)', '??????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'material_speci', 'varchar(256)', '规格（快照）', NULL);
+CALL add_table_column('stk_inventory', 'material_speci', 'varchar(256)', '???????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'material_model', 'varchar(256)', '型号（快照）', NULL);
+CALL add_table_column('stk_inventory', 'material_model', 'varchar(256)', '????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
+CALL add_table_column('stk_inventory', 'material_factory_id', 'bigint', '????????ID????????fd_factory.factory_id??', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'material_name', 'varchar(256)', '产品名称（快照）', NULL);
+CALL add_table_column('stk_dep_inventory', 'material_name', 'varchar(256)', '??????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'material_speci', 'varchar(256)', '规格（快照）', NULL);
+CALL add_table_column('stk_dep_inventory', 'material_speci', 'varchar(256)', '???????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'material_model', 'varchar(256)', '型号（快照）', NULL);
+CALL add_table_column('stk_dep_inventory', 'material_model', 'varchar(256)', '????????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'material_factory_id', 'bigint', '生产厂家ID（快照，fd_factory.factory_id）', NULL);
+CALL add_table_column('stk_dep_inventory', 'material_factory_id', 'bigint', '????????ID????????fd_factory.factory_id??', NULL);
 /
-/* 发票表增加供应商ID */
-CALL add_table_column('fin_invoice', 'supplier_id', 'bigint(20)', '供应商ID', NULL);
+/* ????????????????ID */
+CALL add_table_column('fin_invoice', 'supplier_id', 'bigint(20)', '???????ID', NULL);
 /
-/* ========== 供应商结算单：主表去掉 invoice_id；明细增加仓库结算单主表id/单号；新增发票关联表 ========== */
-CALL add_table_column('supp_settlement_bill_entry', 'wh_settlement_id', 'varchar(36)', '仓库结算单主表ID（UUID7）', NULL);
+/* ========== ??????????????????????? invoice_id????????????????????????id/??????????????????? ========== */
+CALL add_table_column('supp_settlement_bill_entry', 'wh_settlement_id', 'varchar(36)', '????????????ID??UUID7??', NULL);
 /
-CALL add_table_column('supp_settlement_bill_entry', 'wh_settlement_bill_no', 'varchar(64)', '仓库结算单单号', NULL);
+CALL add_table_column('supp_settlement_bill_entry', 'wh_settlement_bill_no', 'varchar(64)', '?????????????', NULL);
 /
-/* 供应商结算单与发票关联表：删除者、删除时间（逻辑删除）；结算单审核后不得删除、修改关联 */
-CALL add_table_column('supp_settlement_invoice', 'delete_by', 'varchar(64)', '删除者', NULL);
+/* ?????????????????????????????????????????????????????????????????????????????????????????????????? */
+CALL add_table_column('supp_settlement_invoice', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('supp_settlement_invoice', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('supp_settlement_invoice', 'delete_time', 'datetime', '????????????', NULL);
 /
-/* ========== 耗材相关表：补充删除者、删除时间（与 del_flag 逻辑删除配套） ========== */
-CALL add_table_column('stk_initial_import', 'delete_by', 'varchar(64)', '删除者', NULL);
+/* ========== ????????????????????????????????????????????? del_flag ?????????????????? ========== */
+CALL add_table_column('stk_initial_import', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_initial_import', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_initial_import', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_initial_import_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('stk_initial_import_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_initial_import_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_initial_import_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('bas_apply_template', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('bas_apply_template', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('bas_apply_template', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('bas_apply_template', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('wh_settlement_bill_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('wh_settlement_bill_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('wh_settlement_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('wh_settlement_bill_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('supp_settlement_bill_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('supp_settlement_bill_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('supp_settlement_bill_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('supp_settlement_bill_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
 
 -- ============================================================
--- 为指定表补充：创建时间、创建者、更新时间、更新者、删除时间、删除者、租户ID/客户ID
--- 使用 add_table_column 存储过程，已存在的字段会跳过
--- 执行前请确保已执行过 material/column.sql 中的 add_table_column 定义
--- 按「/」分段执行
+-- ???????????????????????????????????????????????????????????????????????????????????????????????ID/????ID
+-- ???? add_table_column ????????????????????????????
+-- ??????????????????? material/column.sql ???? add_table_column ????
+-- ??????/????????????
 -- ============================================================
 
--- ========== 通用字段类型 ==========
+-- ========== ????????????? ==========
 -- create_by varchar(64), create_time datetime, update_by varchar(64), update_time datetime
 -- delete_by varchar(64), delete_time datetime
--- tenant_id varchar(36) 或 customer_id char(36)（仅 sys_user 等用 customer_id）
+-- tenant_id varchar(36) ??? customer_id char(36)???? sys_user ????? customer_id??
 
 -- bas_apply_entry
-CALL add_table_column('bas_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('bas_apply_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('bas_apply_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('bas_apply_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('bas_apply_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('bas_apply_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('bas_apply_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('bas_apply_entry', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'stock_warehouse_id', 'bigint', '科室申领明细可用库存所属仓库(fd_warehouse.id)，审核按该仓拆分避免串库', NULL);
+CALL add_table_column('bas_apply_entry', 'stock_warehouse_id', 'bigint', '??????????????????????????????(fd_warehouse.id)???????????????????????', NULL);
 /
 
--- bas_apply_template（表已有 create_by 等；补 delete/tenant 若缺）
-CALL add_table_column('bas_apply_template', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- bas_apply_template??????? create_by ????? delete/tenant ??????
+CALL add_table_column('bas_apply_template', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('bas_apply_template', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('bas_apply_template', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('bas_apply_template', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('bas_apply_template', 'delete_time', 'datetime', '????????????', NULL);
 /
 
 -- bas_apply_template_entry
-CALL add_table_column('bas_apply_template_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('bas_apply_template_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('bas_apply_template_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('bas_apply_template_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('bas_apply_template_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('bas_apply_template_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('bas_apply_template_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('bas_apply_template_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('bas_apply_template_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('bas_apply_template_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('bas_apply_template_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('bas_apply_template_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('bas_apply_template_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('bas_apply_template_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- dep_inventory_warning
-CALL add_table_column('dep_inventory_warning', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('dep_inventory_warning', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('dep_inventory_warning', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('dep_inventory_warning', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('dep_inventory_warning', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('dep_inventory_warning', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('dep_inventory_warning', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('dep_inventory_warning', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- dep_purchase_apply
-CALL add_table_column('dep_purchase_apply', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('dep_purchase_apply', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('dep_purchase_apply', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('dep_purchase_apply', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('dep_purchase_apply', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('dep_purchase_apply', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('dep_purchase_apply', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('dep_purchase_apply', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'audit_by', 'varchar(36)', '审核人', NULL);
+CALL add_table_column('dep_purchase_apply', 'audit_by', 'varchar(36)', '???', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'audit_date', 'datetime', '审核日期', NULL);
+CALL add_table_column('dep_purchase_apply', 'audit_date', 'datetime', '????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
+CALL add_table_column('dep_purchase_apply', 'src_agg_apply_id', 'varchar(36)', '????????????????ID(UUID7)', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+CALL add_table_column('dep_purchase_apply', 'src_agg_bill_no', 'varchar(64)', '?????????????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply', 'purchase_plan_ref_status', 'tinyint', '采购计划引用：0未引用 1部分引用 2全部引用 3计划引用驳回', '0');
+CALL add_table_column('dep_purchase_apply', 'purchase_plan_ref_status', 'tinyint', '???????????????0???????? 1??????????? 2??????????? 3?????????????', '0');
 /
-CALL add_table_column('dep_purchase_apply', 'outbound_ref_status', 'tinyint', '出库引用：0未引用 1部分引用 2全部引用', '0');
+CALL add_table_column('dep_purchase_apply', 'outbound_ref_status', 'tinyint', '????????????0???????? 1??????????? 2???????????', '0');
 /
-CALL add_table_column('dep_purchase_apply', 'receipt_status', 'tinyint', '收货确认：0未确认 1已确认 2驳回收货', '0');
+CALL add_table_column('dep_purchase_apply', 'receipt_status', 'tinyint', '????????0????? 1??? 2????????', '0');
 /
 
 -- dep_purchase_apply_entry
-CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'del_time', 'datetime', '删除时间(历史字段)', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'del_time', 'datetime', '????????????(???????)', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'del_by', 'varchar(100)', '删除者(历史字段)', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'del_by', 'varchar(100)', '?????????(???????)', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(36)', '来源科室汇总申购明细ID(UUID7)', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_entry_id', 'varchar(36)', '???????????????????ID(UUID7)', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(36)', '来源科室汇总申购主表ID(UUID7)', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_apply_id', 'varchar(36)', '????????????????ID(UUID7)', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '来源科室汇总申购单号', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'src_agg_bill_no', 'varchar(64)', '?????????????????', NULL);
 /
-CALL add_table_column('dep_purchase_apply_entry', 'purchase_bill_no', 'varchar(64)', '申购单号(冗余)', NULL);
+CALL add_table_column('dep_purchase_apply_entry', 'purchase_bill_no', 'varchar(64)', '???????(?????)', NULL);
 /
 UPDATE dep_purchase_apply_entry e
 INNER JOIN dep_purchase_apply p ON e.parent_id = p.id
@@ -924,341 +934,341 @@ WHERE (e.purchase_bill_no IS NULL OR TRIM(e.purchase_bill_no) = '')
   AND p.purchase_bill_no IS NOT NULL AND TRIM(p.purchase_bill_no) != '';
 /
 
--- dep_purchase_apply_agg 审核人/审核时间（汇总申购单审核页展示）
-CALL add_table_column('dep_purchase_apply_agg', 'audit_by', 'varchar(64)', '审核人', NULL);
+-- dep_purchase_apply_agg ???/?????????????????????????????
+CALL add_table_column('dep_purchase_apply_agg', 'audit_by', 'varchar(64)', '???', NULL);
 /
-CALL add_table_column('dep_purchase_apply_agg', 'audit_date', 'datetime', '审核时间', NULL);
+CALL add_table_column('dep_purchase_apply_agg', 'audit_date', 'datetime', '????????', NULL);
 /
 -- dep_purchase_apply_agg_entry
-CALL add_table_column('dep_purchase_apply_agg_entry', 'warehouse_id', 'varchar(36)', '所属仓库ID(来自仓库定数)', NULL);
+CALL add_table_column('dep_purchase_apply_agg_entry', 'warehouse_id', 'varchar(36)', '?????????ID(?????????????)', NULL);
 /
 
 -- fd_material
-CALL add_table_column('fd_material', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_material', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_material', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_material', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_material', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('fd_material', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('fd_material', 'material_category_id', 'varchar(36)', '材料类别ID', NULL);
+CALL add_table_column('fd_material', 'material_category_id', 'varchar(36)', '????????ID', NULL);
 /
 
 -- fd_material_category
-CALL add_table_column('fd_material_category', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_material_category', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_material_category', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_material_category', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_material_category', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('fd_material_category', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('fd_material_category', 'parent_id', 'varchar(36)', '上级分类ID', NULL);
+CALL add_table_column('fd_material_category', 'parent_id', 'varchar(36)', '???????ID', NULL);
 /
-CALL add_table_column('fd_material_category', 'pinyin_code', 'varchar(64)', '拼音简码', NULL);
+CALL add_table_column('fd_material_category', 'pinyin_code', 'varchar(64)', '?????????', NULL);
 /
 
 -- fd_supplier
-CALL add_table_column('fd_supplier', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_supplier', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_supplier', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_supplier', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_supplier', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('fd_supplier', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('fd_supplier', 'his_id', 'varchar(128)', 'HIS供应商ID', NULL);
-/
-
--- 供应商档案变更记录表 fd_supplier_change_log：全量建表见 material/table.sql
-
--- fd_factory 生产厂家
-CALL add_table_column('fd_factory', 'tenant_id', 'varchar(36)', '租户ID', NULL);
-/
-CALL add_table_column('fd_factory', 'delete_by', 'varchar(64)', '删除者', NULL);
-/
-CALL add_table_column('fd_factory', 'delete_time', 'datetime', '删除时间', NULL);
-/
-CALL add_table_column('fd_factory', 'his_id', 'varchar(128)', 'HIS生产厂家ID', NULL);
+CALL add_table_column('fd_supplier', 'his_id', 'varchar(128)', 'HIS???????ID', NULL);
 /
 
--- 生产厂家档案变更记录表 fd_factory_change_log：全量建表见 material/table.sql
+-- ??????????????????? fd_supplier_change_log??????????? material/table.sql
 
--- fd_unit 计量单位
-CALL add_table_column('fd_unit', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- fd_factory ????????
+CALL add_table_column('fd_factory', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('fd_unit', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_factory', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_unit', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_factory', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_unit', 'remark', 'varchar(500)', '备注', NULL);
+CALL add_table_column('fd_factory', 'his_id', 'varchar(128)', 'HIS????????ID', NULL);
 /
 
--- fd_location 货位
-CALL add_table_column('fd_location', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- ???????????????????? fd_factory_change_log??????????? material/table.sql
+
+-- fd_unit ???????
+CALL add_table_column('fd_unit', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('fd_location', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_unit', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_location', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_unit', 'delete_time', 'datetime', '????????????', NULL);
 /
--- 数字孪生：五区与货架坐标
-CALL add_table_column('fd_location', 'zone_type', 'varchar(32)', '五区类型PENDING_CHECK/QUALIFIED/UNQUALIFIED/RETURN/PENDING_SHIP', 'QUALIFIED');
+CALL add_table_column('fd_unit', 'remark', 'varchar(500)', '???', NULL);
 /
-CALL add_table_column('fd_location', 'shelf_code', 'varchar(64)', '货架编码', NULL);
+
+-- fd_location ??
+CALL add_table_column('fd_location', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('fd_location', 'layer_no', 'int', '层号', NULL);
+CALL add_table_column('fd_location', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_location', 'slot_no', 'int', '格口号', NULL);
+CALL add_table_column('fd_location', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_location', 'pos_x', 'decimal(12,2)', '平面X坐标米', NULL);
+-- ?????????????????????????
+CALL add_table_column('fd_location', 'zone_type', 'varchar(32)', '?????????PENDING_CHECK/QUALIFIED/UNQUALIFIED/RETURN/PENDING_SHIP', 'QUALIFIED');
 /
-CALL add_table_column('fd_location', 'pos_y', 'decimal(12,2)', '平面Y坐标米', NULL);
+CALL add_table_column('fd_location', 'shelf_code', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('fd_location', 'pos_z', 'decimal(12,2)', '高度Z坐标米', NULL);
+CALL add_table_column('fd_location', 'layer_no', 'int', '???', NULL);
 /
-CALL add_table_column('fd_location', 'capacity', 'decimal(18,4)', '容量', NULL);
+CALL add_table_column('fd_location', 'slot_no', 'int', '???', NULL);
 /
--- 按货位名称关键字初始化五区（仅空值）
+CALL add_table_column('fd_location', 'pos_x', 'decimal(12,2)', '??X????', NULL);
+/
+CALL add_table_column('fd_location', 'pos_y', 'decimal(12,2)', '??Y????', NULL);
+/
+CALL add_table_column('fd_location', 'pos_z', 'decimal(12,2)', '???Z????', NULL);
+/
+CALL add_table_column('fd_location', 'capacity', 'decimal(18,4)', '????', NULL);
+/
+-- ??????????????????????????????????????
 UPDATE fd_location SET zone_type = 'PENDING_CHECK'
-WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%待验%' OR location_name LIKE '%验收%');
+WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%????%' OR location_name LIKE '%?????%');
 /
 UPDATE fd_location SET zone_type = 'UNQUALIFIED'
-WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%不合格%' OR location_name LIKE '%隔离%');
+WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%????%' OR location_name LIKE '%????%');
 /
 UPDATE fd_location SET zone_type = 'RETURN'
-WHERE (zone_type IS NULL OR zone_type = '') AND location_name LIKE '%退货%';
+WHERE (zone_type IS NULL OR zone_type = '') AND location_name LIKE '%????%';
 /
 UPDATE fd_location SET zone_type = 'PENDING_SHIP'
-WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%待发%' OR location_name LIKE '%发货%');
+WHERE (zone_type IS NULL OR zone_type = '') AND (location_name LIKE '%????%' OR location_name LIKE '%???%');
 /
 UPDATE fd_location SET zone_type = 'QUALIFIED'
 WHERE zone_type IS NULL OR zone_type = '';
 /
 
 -- fd_warehouse_category
-CALL add_table_column('fd_warehouse_category', 'remark', 'varchar(512)', '备注', NULL);
+CALL add_table_column('fd_warehouse_category', 'remark', 'varchar(512)', '???', NULL);
 /
-CALL add_table_column('fd_warehouse_category', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('fd_warehouse_category', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('fd_warehouse_category', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('fd_warehouse_category', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('fd_warehouse_category', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('fd_warehouse_category', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- gz_dep_apply
-CALL add_table_column('gz_dep_apply', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_dep_apply', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_dep_apply', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_dep_apply', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_dep_apply', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_dep_apply', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_dep_apply', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_dep_apply', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_dep_apply', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_dep_apply', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_dep_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_dep_apply', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_dep_apply', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_dep_apply', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_dep_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_dep_apply', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- gz_dep_apply_entry
-CALL add_table_column('gz_dep_apply_entry', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_dep_apply_entry', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_dep_apply_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'supplier_id', 'bigint', '???????ID', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'master_barcode', 'varchar(200)', '主条码', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'master_barcode', 'varchar(200)', '???', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'secondary_barcode', 'varchar(200)', '????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
--- gz_depot_inventory（已有 tenant_id 时跳过）
-CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- gz_depot_inventory?????? tenant_id ????????
+CALL add_table_column('gz_depot_inventory', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_depot_inventory', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_depot_inventory', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_depot_inventory', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_depot_inventory', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_depot_inventory', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_depot_inventory', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_depot_inventory', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_depot_inventory', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_depot_inventory', 'supplier_id', 'bigint', '???????ID', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'order_id', 'bigint', '备货单ID', NULL);
+CALL add_table_column('gz_depot_inventory', 'order_id', 'bigint', '?????ID', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'order_no', 'varchar(64)', '备货单单号', NULL);
+CALL add_table_column('gz_depot_inventory', 'order_no', 'varchar(64)', '????????', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'order_entry_id', 'bigint', '备货单明细ID', NULL);
+CALL add_table_column('gz_depot_inventory', 'order_entry_id', 'bigint', '??????????ID', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'inhospitalcode_list_id', 'bigint', '院内码列表ID', NULL);
+CALL add_table_column('gz_depot_inventory', 'inhospitalcode_list_id', 'bigint', '???????????ID', NULL);
 /
 
 -- gz_order_entry
-CALL add_table_column('gz_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_order_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_order_entry', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_order_entry', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_order_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+CALL add_table_column('gz_order_entry', 'in_hospital_code', 'varchar(200)', '???????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_order_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_order_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_order_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_order_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_order_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_order_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_order_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_order_entry', 'supplier_id', 'bigint', '???????ID', NULL);
 /
 
 -- gz_order_entry_inhospitalcode_list
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'batch_number', 'varchar(100)', '批号', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'batch_number', 'varchar(100)', '????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'master_barcode', 'varchar(200)', '主条码', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'master_barcode', 'varchar(200)', '???', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'secondary_barcode', 'varchar(200)', '????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'in_hospital_code', 'varchar(200)', '???????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'warehouse_id', 'bigint', '仓库ID', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'supplier_id', 'bigint', '???????ID', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- gz_patient_info
-CALL add_table_column('gz_patient_info', 'del_flag', 'char(1)', '删除标志', '0');
+CALL add_table_column('gz_patient_info', 'del_flag', 'char(1)', '??????????', '0');
 /
-CALL add_table_column('gz_patient_info', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_patient_info', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_patient_info', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_patient_info', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_patient_info', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_patient_info', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_patient_info', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_patient_info', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_patient_info', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_patient_info', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_patient_info', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_patient_info', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_patient_info', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_patient_info', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- gz_refund_goods
-CALL add_table_column('gz_refund_goods', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_refund_goods', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_refund_goods', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_refund_goods', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_refund_goods', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_refund_goods', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_refund_goods', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_refund_goods', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_goods', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_refund_goods', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_goods', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_refund_goods', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_goods', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_refund_goods', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_goods', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_refund_goods', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- gz_refund_goods_entry
-CALL add_table_column('gz_refund_goods_entry', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_refund_goods_entry', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_refund_goods_entry', 'master_barcode', 'varchar(200)', '主条码', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'master_barcode', 'varchar(200)', '???', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'secondary_barcode', 'varchar(200)', '????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'in_hospital_code', 'varchar(200)', '???????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_refund_goods_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_refund_goods_entry', 'supplier_id', 'bigint', '???????ID', NULL);
 /
 
 -- gz_refund_stock
-CALL add_table_column('gz_refund_stock', 'stock_no', 'varchar(64)', '退库单号(旧版字段)', NULL);
+CALL add_table_column('gz_refund_stock', 'stock_no', 'varchar(64)', '????????(?????????)', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'stock_date', 'datetime', '退库日期(旧版字段)', NULL);
+CALL add_table_column('gz_refund_stock', 'stock_date', 'datetime', '???????????(?????????)', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'stock_status', 'int', '状态(旧版字段)', NULL);
+CALL add_table_column('gz_refund_stock', 'stock_status', 'int', '??????(?????????)', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'stock_type', 'int', '类型(旧版字段)', NULL);
+CALL add_table_column('gz_refund_stock', 'stock_type', 'int', '????(?????????)', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'master_barcode', 'varchar(200)', '主条码', NULL);
+CALL add_table_column('gz_refund_stock', 'master_barcode', 'varchar(200)', '???', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+CALL add_table_column('gz_refund_stock', 'secondary_barcode', 'varchar(200)', '????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_refund_stock', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_refund_stock', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_refund_stock', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_refund_stock', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_refund_stock', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_refund_stock', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_refund_stock', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
--- 与 GzRefundGoodsMapper / table.sql 字段名对齐：旧库仅有 stock_* 时需补 refund_* 并回填
-CALL add_table_column('gz_refund_stock', 'refund_no', 'varchar(64)', '退库单号', NULL);
+-- ?? GzRefundGoodsMapper / table.sql ?????????????????? stock_* ??????? refund_* ?????
+CALL add_table_column('gz_refund_stock', 'refund_no', 'varchar(64)', '????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'refund_date', 'date', '退库日期', NULL);
+CALL add_table_column('gz_refund_stock', 'refund_date', 'date', '???????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'refund_status', 'int', '状态', NULL);
+CALL add_table_column('gz_refund_stock', 'refund_status', 'int', '??????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'refund_type', 'int', '类型', NULL);
+CALL add_table_column('gz_refund_stock', 'refund_type', 'int', '????', NULL);
 /
 UPDATE gz_refund_stock SET refund_no = stock_no WHERE (refund_no IS NULL OR refund_no = '') AND stock_no IS NOT NULL;
 /
@@ -1268,446 +1278,446 @@ UPDATE gz_refund_stock SET refund_status = stock_status WHERE refund_status IS N
 /
 UPDATE gz_refund_stock SET refund_type = stock_type WHERE refund_type IS NULL AND stock_type IS NOT NULL;
 /
--- gz_refund_stock 主表：旧 incremental 未建的列（与 table.sql / GzRefundGoodsMapper 一致）
-CALL add_table_column('gz_refund_stock', 'warehouse_id', 'bigint', '仓库ID', NULL);
+-- gz_refund_stock ??????? incremental ?????????????? table.sql / GzRefundGoodsMapper ???????
+CALL add_table_column('gz_refund_stock', 'warehouse_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'department_id', 'bigint', '科室ID', NULL);
+CALL add_table_column('gz_refund_stock', 'department_id', 'bigint', '???ID', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'audit_date', 'datetime', '审核时间', NULL);
+CALL add_table_column('gz_refund_stock', 'audit_date', 'datetime', '????????', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'audit_by', 'varchar(64)', '审核人', NULL);
+CALL add_table_column('gz_refund_stock', 'audit_by', 'varchar(64)', '???', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'remark', 'varchar(500)', '备注', NULL);
+CALL add_table_column('gz_refund_stock', 'remark', 'varchar(500)', '???', NULL);
 /
-CALL add_table_column('gz_refund_stock', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_refund_stock', 'del_flag', 'int', '??????????', 0);
 /
 UPDATE gz_refund_stock SET del_flag = 0 WHERE del_flag IS NULL;
 /
 
 -- gz_refund_stock_entry
-CALL add_table_column('gz_refund_stock_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'in_hospital_code', 'varchar(200)', '???????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_refund_stock_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_refund_stock_entry', 'supplier_id', 'bigint', '???????ID', NULL);
 /
 
--- 表注释修正：gz_refund_stock_entry 为「退库」明细，勿与 gz_refund_goods_entry「退货」明细混用；CREATE IF NOT EXISTS 不会更新已存在表的注释
-ALTER TABLE `gz_refund_stock_entry` COMMENT = '高值退库明细表';
+-- ?????????gz_refund_stock_entry ???????????????????????? gz_refund_goods_entry?????????????????????CREATE IF NOT EXISTS ???????????????????????
+ALTER TABLE `gz_refund_stock_entry` COMMENT = '????????????????';
 /
 
 -- gz_shipment
-CALL add_table_column('gz_shipment', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_shipment', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_shipment', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_shipment', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_shipment', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_shipment', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_shipment', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_shipment', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_shipment', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_shipment', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_shipment', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_shipment', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_shipment', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_shipment', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_shipment', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_shipment', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_shipment', 'audit_by', 'varchar(64)', '审核人', NULL);
+CALL add_table_column('gz_shipment', 'audit_by', 'varchar(64)', '???', NULL);
 /
 
 -- gz_shipment_entry
-CALL add_table_column('gz_shipment_entry', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_shipment_entry', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_shipment_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+CALL add_table_column('gz_shipment_entry', 'in_hospital_code', 'varchar(200)', '???????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_shipment_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_shipment_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_shipment_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_shipment_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_shipment_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_shipment_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_shipment_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_shipment_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_shipment_entry', 'supplier_id', 'bigint', '???????ID', NULL);
 /
 
 -- gz_traceability
-CALL add_table_column('gz_traceability', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_traceability', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_traceability', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_traceability', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_traceability', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_traceability', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_traceability', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_traceability', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_traceability', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_traceability', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_traceability', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_traceability', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_traceability', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_traceability', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_traceability', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_traceability', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- gz_traceability_entry
-CALL add_table_column('gz_traceability_entry', 'del_flag', 'int', '删除标志', 0);
+CALL add_table_column('gz_traceability_entry', 'del_flag', 'int', '??????????', 0);
 /
-CALL add_table_column('gz_traceability_entry', 'master_barcode', 'varchar(200)', '主条码', NULL);
+CALL add_table_column('gz_traceability_entry', 'master_barcode', 'varchar(200)', '???', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
+CALL add_table_column('gz_traceability_entry', 'secondary_barcode', 'varchar(200)', '????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'in_hospital_code', 'varchar(200)', '院内码', NULL);
+CALL add_table_column('gz_traceability_entry', 'in_hospital_code', 'varchar(200)', '???????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('gz_traceability_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('gz_traceability_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('gz_traceability_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('gz_traceability_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('gz_traceability_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('gz_traceability_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('gz_traceability_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'supplier_id', 'bigint', '供应商ID', NULL);
+CALL add_table_column('gz_traceability_entry', 'supplier_id', 'bigint', '???????ID', NULL);
 /
 
 -- his_hc_info
-CALL add_table_column('his_hc_info', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('his_hc_info', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('his_hc_info', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('his_hc_info', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('his_hc_info', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('his_hc_info', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('his_hc_info', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('his_hc_info', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('his_hc_info', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('his_hc_info', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('his_hc_info', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('his_hc_info', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('his_hc_info', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('his_hc_info', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- new_product_apply
-CALL add_table_column('new_product_apply', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('new_product_apply', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('new_product_apply', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('new_product_apply', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('new_product_apply', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('new_product_apply', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('new_product_apply', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('new_product_apply', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('new_product_apply', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('new_product_apply', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- new_product_apply_detail
-CALL add_table_column('new_product_apply_detail', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('new_product_apply_detail', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('new_product_apply_detail', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('new_product_apply_detail', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('new_product_apply_detail', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('new_product_apply_detail', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('new_product_apply_detail', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('new_product_apply_detail', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- new_product_apply_entry
-CALL add_table_column('new_product_apply_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('new_product_apply_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('new_product_apply_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('new_product_apply_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('new_product_apply_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('new_product_apply_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('new_product_apply_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('new_product_apply_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('new_product_apply_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('new_product_apply_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- purchase_order
-CALL add_table_column('purchase_order', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('purchase_order', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('purchase_order', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('purchase_order', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('purchase_order', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('purchase_order', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'plan_id', 'bigint(20)', '计划单主表ID', NULL);
+CALL add_table_column('purchase_order', 'plan_id', 'bigint(20)', '????????ID', NULL);
 /
 
 -- purchase_order_entry
-CALL add_table_column('purchase_order_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('purchase_order_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('purchase_order_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('purchase_order_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('purchase_order_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('purchase_order_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('purchase_order_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('purchase_order_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'plan_id', 'bigint(20)', '计划单主表ID', NULL);
+CALL add_table_column('purchase_order_entry', 'plan_id', 'bigint(20)', '????????ID', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'plan_no', 'varchar(64)', '计划单号', NULL);
+CALL add_table_column('purchase_order_entry', 'plan_no', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'plan_entry_id', 'bigint(20)', '计划单明细ID', NULL);
+CALL add_table_column('purchase_order_entry', 'plan_entry_id', 'bigint(20)', '???????????ID', NULL);
 /
 
--- purchase_order：推送 SCM 后对账与幂等（与 scm.scm_order.spd_order_id / order_no 对应）
-CALL add_table_column('purchase_order', 'scm_order_id', 'bigint(20)', '平台采购订单主键 scm_order.order_id（推送成功后回写）', NULL);
+-- purchase_order???????? SCM ?????????????? scm.scm_order.spd_order_id / order_no ?????
+CALL add_table_column('purchase_order', 'scm_order_id', 'bigint(20)', '????????????? scm_order.order_id????????????????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'scm_order_no', 'varchar(64)', '平台订单编号 scm_order.order_no', NULL);
+CALL add_table_column('purchase_order', 'scm_order_no', 'varchar(64)', '???????? scm_order.order_no', NULL);
 /
-CALL add_table_column('purchase_order', 'push_status', 'char(1)', '推送状态 0未推送 1成功 2失败', '0');
+CALL add_table_column('purchase_order', 'push_status', 'char(1)', '???????????? 0????????? 1?????? 2??', '0');
 /
-CALL add_table_column('purchase_order', 'push_time', 'datetime', '最近一次推送时间', NULL);
+CALL add_table_column('purchase_order', 'push_time', 'datetime', '????????????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'push_error_msg', 'varchar(500)', '最近一次推送失败原因', NULL);
+CALL add_table_column('purchase_order', 'push_error_msg', 'varchar(500)', '??????????????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'scm_hospital_code', 'varchar(64)', '推送快照：平台医院编码（与绑定表实时值一致）', NULL);
+CALL add_table_column('purchase_order', 'scm_hospital_code', 'varchar(64)', '???????????????????????????????????????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'scm_supplier_code', 'varchar(64)', '推送快照：平台供应商编码（与绑定表实时值一致）', NULL);
+CALL add_table_column('purchase_order', 'scm_supplier_code', 'varchar(64)', '????????????????????????????????????????????????', NULL);
 /
-CALL add_table_column('purchase_order_entry', 'scm_order_detail_id', 'bigint(20)', '平台订单明细主键 scm_order_detail.detail_id', NULL);
+CALL add_table_column('purchase_order_entry', 'scm_order_detail_id', 'bigint(20)', '?????????????? scm_order_detail.detail_id', NULL);
 /
 
 -- purchase_plan
-CALL add_table_column('purchase_plan', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('purchase_plan', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('purchase_plan', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('purchase_plan', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('purchase_plan', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('purchase_plan', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('purchase_plan', 'plan_entry_mode', 'varchar(20)', '计划明细生成方式：1=按产品档案汇总 2=按申购单明细拆分', '1');
+CALL add_table_column('purchase_plan', 'plan_entry_mode', 'varchar(20)', '?????????????????????1=??????????????? 2=????????????????????', '1');
 /
 
 -- purchase_plan_entry
-CALL add_table_column('purchase_plan_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('purchase_plan_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('purchase_plan_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('purchase_plan_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('purchase_plan_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('purchase_plan_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('purchase_plan_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('purchase_plan_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'supplier_id', 'bigint(20)', '供应商ID（指定明细供应商，审核后按此拆单）', NULL);
+CALL add_table_column('purchase_plan_entry', 'supplier_id', 'bigint(20)', '???????ID????????????????????????????????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'apply_qty', 'decimal(20,4)', '申购数量（引用科室申购单汇总数量）', NULL);
+CALL add_table_column('purchase_plan_entry', 'apply_qty', 'decimal(20,4)', '???????????????????????????????????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'apply_department_id', 'bigint(20)', '申请科室ID（按申购单明细拆分时写入）', NULL);
+CALL add_table_column('purchase_plan_entry', 'apply_department_id', 'bigint(20)', '???????ID?????????????????????????????????', NULL);
 /
 
 -- purchase_plan_entry_dep_apply
-CALL add_table_column('purchase_plan_entry_dep_apply', 'dep_purchase_apply_id', 'bigint(20)', '申购单主表ID', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'dep_purchase_apply_id', 'bigint(20)', '????????ID', NULL);
 /
-CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_bill_no', 'varchar(64)', '申购单号', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_bill_no', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_plan_id', 'bigint(20)', '采购计划主表ID', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'purchase_plan_id', 'bigint(20)', '??????????ID', NULL);
 /
-CALL add_table_column('purchase_plan_entry_dep_apply', 'plan_no', 'varchar(64)', '采购计划单号', NULL);
-/
-
--- sb_work_group（设备侧用 customer_id，若表已有则跳过）
-CALL add_table_column('sb_work_group', 'create_by', 'varchar(64)', '创建者', NULL);
-/
-CALL add_table_column('sb_work_group', 'create_time', 'datetime', '创建时间', NULL);
-/
-CALL add_table_column('sb_work_group', 'update_by', 'varchar(64)', '更新者', NULL);
-/
-CALL add_table_column('sb_work_group', 'update_time', 'datetime', '更新时间', NULL);
-/
-CALL add_table_column('sb_work_group', 'delete_by', 'varchar(64)', '删除者', NULL);
-/
-CALL add_table_column('sb_work_group', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'plan_no', 'varchar(64)', '???????????', NULL);
 /
 
--- stk_initial_import_entry（补 tenant_id）
-CALL add_table_column('stk_initial_import_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- sb_work_group????????? customer_id??????????????????
+CALL add_table_column('sb_work_group', 'create_by', 'varchar(64)', '???????', NULL);
+/
+CALL add_table_column('sb_work_group', 'create_time', 'datetime', '??????????', NULL);
+/
+CALL add_table_column('sb_work_group', 'update_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('sb_work_group', 'update_time', 'datetime', '????????????', NULL);
+/
+CALL add_table_column('sb_work_group', 'delete_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('sb_work_group', 'delete_time', 'datetime', '????????????', NULL);
 /
 
--- stk_io_profit_loss_entry（补 tenant_id）
-CALL add_table_column('stk_io_profit_loss_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'create_by', 'varchar(64)', '创建者', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'create_time', 'datetime', '创建时间', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'update_by', 'varchar(64)', '更新者', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'update_time', 'datetime', '更新时间', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'delete_time', 'datetime', '删除时间', NULL);
-/
-/* stk_io_profit_loss_entry：与 material/table.sql 对齐（早期 create 脚本可能缺少下列列） */
-CALL add_table_column('stk_io_profit_loss_entry', 'paren_id', 'bigint', '盈亏单ID', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'stocktaking_entry_id', 'bigint', '来源盘点明细ID', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'kc_no', 'bigint', '库存明细id', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'material_id', 'bigint', '耗材ID', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'batch_no', 'varchar(100)', '批次号', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'batch_number', 'varchar(100)', '批号', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'book_qty', 'decimal(18,2)', '账面数量', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'stock_qty', 'decimal(18,2)', '盘点数量', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'profit_qty', 'decimal(18,2)', '盈亏数量', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'unit_price', 'decimal(18,2)', '单价', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'profit_amount', 'decimal(18,2)', '盈亏金额', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'begin_time', 'date', '生产日期', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'end_time', 'date', '有效期', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'del_flag', 'int', '删除标志', 0);
+-- stk_initial_import_entry??? tenant_id??
+CALL add_table_column('stk_initial_import_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
--- stk_io_stocktaking_entry（补 tenant_id）
-CALL add_table_column('stk_io_stocktaking_entry', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- stk_io_profit_loss_entry??? tenant_id??
+CALL add_table_column('stk_io_profit_loss_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id', 'bigint', '明细对应供应商ID（盘盈时必填）', NULL);
+/* stk_io_profit_loss_entry???? material/table.sql ?????????? create ??????????????????????? */
+CALL add_table_column('stk_io_profit_loss_entry', 'paren_id', 'bigint', '??????ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'return_warehouse_id', 'bigint', '可退库/所属仓库ID', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'stocktaking_entry_id', 'bigint', '?????????????ID', NULL);
 /
-/* stk_io_stocktaking_entry：数量/金额/批号等与 material/table.sql 对齐 */
-CALL add_table_column('stk_io_stocktaking_entry', 'kc_no', 'bigint', '库存明细id', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'kc_no', 'bigint', '?????????id', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'dep_inventory_id', 'varchar(64)', '科室库存明细id(stk_dep_inventory.id)', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'material_id', 'bigint', '????ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'stock_qty', 'decimal(18,2)', '盘点数量', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'batch_no', 'varchar(100)', '?????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'profit_qty', 'decimal(18,2)', '盈亏数量', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'batch_number', 'varchar(100)', '????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'profit_loss_flag', 'varchar(16)', '盈亏标志(PROFIT/LOSS/EQUAL)', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'book_qty', 'decimal(18,2)', '????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'stock_amount', 'decimal(18,2)', '盘点金额', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'stock_qty', 'decimal(18,2)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'profit_amount', 'decimal(18,2)', '盈亏金额', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'profit_qty', 'decimal(18,2)', '??????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'batch_number', 'varchar(100)', '批号', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'unit_price', 'decimal(18,2)', '???', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'begin_time', 'date', '生产日期', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'profit_amount', 'decimal(18,2)', '????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'end_time', 'date', '有效期', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'begin_time', 'date', '??????????', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'end_time', 'date', '?????????', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'del_flag', 'int', '??????????', 0);
 /
 
--- sys_dept（若需按租户隔离部门则加 tenant_id）
-CALL add_table_column('sys_dept', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- stk_io_stocktaking_entry??? tenant_id??
+CALL add_table_column('stk_io_stocktaking_entry', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('sys_dept', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('sys_dept', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'create_time', 'datetime', '??????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'update_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'update_time', 'datetime', '????????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'delete_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'delete_time', 'datetime', '????????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id', 'bigint', '???????????????ID????????????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'return_warehouse_id', 'bigint', '??????/?????????ID', NULL);
+/
+/* stk_io_stocktaking_entry????????/????/???????? material/table.sql ?? */
+CALL add_table_column('stk_io_stocktaking_entry', 'kc_no', 'bigint', '?????????id', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'dep_inventory_id', 'varchar(64)', '????????????id(stk_dep_inventory.id)', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'stock_qty', 'decimal(18,2)', '????????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'profit_qty', 'decimal(18,2)', '??????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'profit_loss_flag', 'varchar(16)', '????????(PROFIT/LOSS/EQUAL)', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'stock_amount', 'decimal(18,2)', '??????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'profit_amount', 'decimal(18,2)', '????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'batch_number', 'varchar(100)', '????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'begin_time', 'date', '??????????', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'end_time', 'date', '?????????', NULL);
+/
+
+-- sys_dept???????????????????????????????? tenant_id??
+CALL add_table_column('sys_dept', 'tenant_id', 'varchar(36)', '?????ID', NULL);
+/
+CALL add_table_column('sys_dept', 'delete_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('sys_dept', 'delete_time', 'datetime', '????????????', NULL);
 /
 
 -- sys_logininfor
-CALL add_table_column('sys_logininfor', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_logininfor', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- sys_notice
-CALL add_table_column('sys_notice', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_notice', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('sys_notice', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('sys_notice', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('sys_notice', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('sys_notice', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('sys_notice', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('sys_notice', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('sys_notice', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('sys_notice', 'update_time', 'datetime', '????????????', NULL);
 /
 
 -- sys_oper_log
-CALL add_table_column('sys_oper_log', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_oper_log', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
--- sys_post（已有 tenant_id 时跳过）
-CALL add_table_column('sys_post', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- sys_post?????? tenant_id ????????
+CALL add_table_column('sys_post', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('sys_post', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('sys_post', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('sys_post', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('sys_post', 'delete_time', 'datetime', '????????????', NULL);
 /
 
 -- sys_sheet_id
-CALL add_table_column('sys_sheet_id', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('sys_sheet_id', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('sys_sheet_id', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('sys_sheet_id', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('sys_sheet_id', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('sys_sheet_id', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('sys_sheet_id', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('sys_sheet_id', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('sys_sheet_id', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('sys_sheet_id', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('sys_sheet_id', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('sys_sheet_id', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('sys_sheet_id', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_sheet_id', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
 
 -- sys_user_department
-CALL add_table_column('sys_user_department', 'tenant_id', 'varchar(36)', '租户ID(同sys_user.customer_id)', NULL);
+CALL add_table_column('sys_user_department', 'tenant_id', 'varchar(36)', '?????ID(??sys_user.customer_id)', NULL);
 /
-CALL add_table_column('sys_user_department', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('sys_user_department', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('sys_user_department', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('sys_user_department', 'create_time', 'datetime', '??????????', NULL);
 /
 
--- ========== 科室权限表补全 tenant_id（存量数据）==========
-/* sys_user_department：优先 sys_user.customer_id，其次 fd_department.tenant_id */
+-- ========== ????????????? tenant_id?????????????==========
+/* sys_user_department??????? sys_user.customer_id?????? fd_department.tenant_id */
 UPDATE sys_user_department ud
 INNER JOIN sys_user u ON u.user_id = ud.user_id
 SET ud.tenant_id = u.customer_id
@@ -1720,7 +1730,7 @@ SET ud.tenant_id = d.tenant_id
 WHERE (ud.tenant_id IS NULL OR ud.tenant_id = '')
   AND d.tenant_id IS NOT NULL AND TRIM(d.tenant_id) != '';
 /
-/* sys_post_department：优先 sys_post.tenant_id，其次 fd_department.tenant_id */
+/* sys_post_department??????? sys_post.tenant_id?????? fd_department.tenant_id */
 UPDATE sys_post_department pd
 INNER JOIN sys_post p ON p.post_id = pd.post_id
 SET pd.tenant_id = p.tenant_id
@@ -1734,18 +1744,18 @@ WHERE (pd.tenant_id IS NULL OR pd.tenant_id = '')
   AND d.tenant_id IS NOT NULL AND TRIM(d.tenant_id) != '';
 /
 
--- sys_menu：是否仅平台管理（1=是，仅平台显示，不对客户显示）
-CALL add_table_column('sys_menu', 'is_platform', 'char(1)', '是否仅平台管理（0否 1是）', '0');
+-- sys_menu???????????????1=???????????????????????????
+CALL add_table_column('sys_menu', 'is_platform', 'char(1)', '?????????????0? 1?????', '0');
 /
--- sys_menu：耗材功能重置时默认对客户/super/super_01 开放（对齐设备 sb_menu.default_open_to_customer）
-CALL add_table_column('sys_menu', 'default_open_to_customer', 'char(1)', '耗材默认对客户开放（0否 1是）', '0');
+-- sys_menu???????????????????????????/super/super_01 ???????????? sb_menu.default_open_to_customer??
+CALL add_table_column('sys_menu', 'default_open_to_customer', 'char(1)', '???????????????????0? 1?????', '0');
 /
 
--- 可选：将「系统设置」子树下非平台、启用菜单标为默认开放，与旧「递归系统设置」逻辑对齐（执行一次即可）
+-- ??????????????????????????????????????????????????????????????????????????????????????????????
 -- UPDATE sys_menu m
 -- INNER JOIN (
 --   WITH RECURSIVE tree AS (
---     SELECT menu_id FROM sys_menu WHERE menu_name = '系统设置'
+--     SELECT menu_id FROM sys_menu WHERE menu_name = '?????'
 --     UNION ALL
 --     SELECT m2.menu_id FROM sys_menu m2 INNER JOIN tree t ON m2.parent_id = t.menu_id
 --   )
@@ -1755,35 +1765,35 @@ CALL add_table_column('sys_menu', 'default_open_to_customer', 'char(1)', '耗材
 -- WHERE (m.is_platform IS NULL OR m.is_platform != '1') AND IFNULL(m.status,'0') = '0';
 
 -- sys_user_menu
-CALL add_table_column('sys_user_menu', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_user_menu', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('sys_user_menu', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('sys_user_menu', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('sys_user_menu', 'create_time', 'datetime', '创建时间', NULL);
-/
-
--- sys_user_post（已有 create_* 等时跳过）
-CALL add_table_column('sys_user_post', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+CALL add_table_column('sys_user_menu', 'create_time', 'datetime', '??????????', NULL);
 /
 
--- sys_user_role（设备侧部分用 customer_id，此处补 tenant_id 供耗材侧或统一用 tenant_id 时使用）
-CALL add_table_column('sys_user_role', 'tenant_id', 'varchar(36)', '租户ID', NULL);
+-- sys_user_post?????? create_* ??????????
+CALL add_table_column('sys_user_post', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('sys_user_role', 'create_by', 'varchar(64)', '创建者', NULL);
+
+-- sys_user_role??????????????? customer_id?????? tenant_id ????????????????? tenant_id ?????????
+CALL add_table_column('sys_user_role', 'tenant_id', 'varchar(36)', '?????ID', NULL);
 /
-CALL add_table_column('sys_user_role', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('sys_user_role', 'create_by', 'varchar(64)', '???????', NULL);
+/
+CALL add_table_column('sys_user_role', 'create_time', 'datetime', '??????????', NULL);
 /
 
 -- sys_user_warehouse
-CALL add_table_column('sys_user_warehouse', 'tenant_id', 'varchar(36)', '租户ID(同sys_user.customer_id)', NULL);
+CALL add_table_column('sys_user_warehouse', 'tenant_id', 'varchar(36)', '?????ID(??sys_user.customer_id)', NULL);
 /
-CALL add_table_column('sys_user_warehouse', 'create_by', 'varchar(64)', '创建者', NULL);
+CALL add_table_column('sys_user_warehouse', 'create_by', 'varchar(64)', '???????', NULL);
 /
-CALL add_table_column('sys_user_warehouse', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('sys_user_warehouse', 'create_time', 'datetime', '??????????', NULL);
 /
 
--- ========== 仓库权限表补全 tenant_id（存量数据）==========
-/* sys_user_warehouse：优先 sys_user.customer_id，其次 fd_warehouse.tenant_id */
+-- ========== ?????????????? tenant_id?????????????==========
+/* sys_user_warehouse??????? sys_user.customer_id?????? fd_warehouse.tenant_id */
 UPDATE sys_user_warehouse uw
 INNER JOIN sys_user u ON u.user_id = uw.user_id
 SET uw.tenant_id = u.customer_id
@@ -1796,7 +1806,7 @@ SET uw.tenant_id = w.tenant_id
 WHERE (uw.tenant_id IS NULL OR uw.tenant_id = '')
   AND w.tenant_id IS NOT NULL AND TRIM(w.tenant_id) != '';
 /
-/* sys_post_warehouse：优先 sys_post.tenant_id，其次 fd_warehouse.tenant_id */
+/* sys_post_warehouse??????? sys_post.tenant_id?????? fd_warehouse.tenant_id */
 UPDATE sys_post_warehouse pw
 INNER JOIN sys_post p ON p.post_id = pw.post_id
 SET pw.tenant_id = p.tenant_id
@@ -1811,91 +1821,91 @@ WHERE (pw.tenant_id IS NULL OR pw.tenant_id = '')
 /
 
 
-CALL add_table_column('stk_dep_inventory', 'del_flag', 'int', '删除标识', '0');
+CALL add_table_column('stk_dep_inventory', 'del_flag', 'int', '??????????', '0');
 /
-CALL add_table_column('stk_dep_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('stk_dep_inventory', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'delete_time', 'datetime', '删除时间', NULL);
-/
-
-
-CALL add_table_column('stk_inventory', 'del_flag', 'int', '删除标识', '0');
-/
-CALL add_table_column('stk_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
-/
-CALL add_table_column('stk_inventory', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('stk_dep_inventory', 'delete_time', 'datetime', '????????????', NULL);
 /
 
--- 仓库库存明细：审计字段（全量 table.sql 已含；存量库 IF NOT EXISTS 建表时可能缺失，与 StkInventoryMapper.decreaseStkInventoryQty 等一致）
-CALL add_table_column('stk_inventory', 'create_by', 'varchar(64)', '创建者', '');
+
+CALL add_table_column('stk_inventory', 'del_flag', 'int', '??????????', '0');
 /
-CALL add_table_column('stk_inventory', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('stk_inventory', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'update_by', 'varchar(64)', '更新者', '');
-/
-CALL add_table_column('stk_inventory', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('stk_inventory', 'delete_time', 'datetime', '????????????', NULL);
 /
 
--- 仓库库存：HIS/第三方库存明细键（aspt 等线上一致；字长 128 较 varchar(100) 略放宽）
-CALL add_table_column('stk_inventory', 'his_id', 'varchar(128)', 'HIS/第三方系统库存明细唯一标识', NULL);
+-- ???????????????????????????? table.sql ??????????? IF NOT EXISTS ??????????????? StkInventoryMapper.decreaseStkInventoryQty ?????????
+CALL add_table_column('stk_inventory', 'create_by', 'varchar(64)', '???????', '');
+/
+CALL add_table_column('stk_inventory', 'create_time', 'datetime', '??????????', NULL);
+/
+CALL add_table_column('stk_inventory', 'update_by', 'varchar(64)', '?????????', '');
+/
+CALL add_table_column('stk_inventory', 'update_time', 'datetime', '????????????', NULL);
 /
 
--- 科室库存明细：审计字段（部分存量库无此四列，与 BaseEntity、仓库库存 stk_inventory 对齐）
-CALL add_table_column('stk_dep_inventory', 'create_by', 'varchar(64)', '创建者', '');
-/
-CALL add_table_column('stk_dep_inventory', 'create_time', 'datetime', '创建时间', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'update_by', 'varchar(64)', '更新者', '');
-/
-CALL add_table_column('stk_dep_inventory', 'update_time', 'datetime', '更新时间', NULL);
+-- ??????????HIS/????????????????????aspt ????????????????? 128 ?? varchar(100) ?????????
+CALL add_table_column('stk_inventory', 'his_id', 'varchar(128)', 'HIS/???????????????????????????', NULL);
 /
 
--- 存量库与当前 table.sql 对齐：数量/金额精度、日期粒度、字长（已是目标定义时可跳过本段或按需注释）
+-- ???????????????????????????????????????????????? BaseEntity??????????? stk_inventory ????
+CALL add_table_column('stk_dep_inventory', 'create_by', 'varchar(64)', '???????', '');
+/
+CALL add_table_column('stk_dep_inventory', 'create_time', 'datetime', '??????????', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'update_by', 'varchar(64)', '?????????', '');
+/
+CALL add_table_column('stk_dep_inventory', 'update_time', 'datetime', '????????????', NULL);
+/
+
+-- ?????????????? table.sql ??????????/???????????????????????????????????????????????????????????????????
 ALTER TABLE `stk_inventory`
-  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '库存数量',
-  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
-  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '金额',
-  MODIFY COLUMN `material_date` datetime DEFAULT NULL COMMENT '耗材日期',
-  MODIFY COLUMN `warehouse_date` datetime DEFAULT NULL COMMENT '入库日期',
-  MODIFY COLUMN `begin_time` datetime DEFAULT NULL COMMENT '生产日期',
-  MODIFY COLUMN `end_time` datetime DEFAULT NULL COMMENT '有效期',
-  MODIFY COLUMN `receipt_order_no` varchar(100) DEFAULT NULL COMMENT '入库单号',
-  MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '科室库存明细id（反写）',
-  MODIFY COLUMN `batch_no` varchar(100) DEFAULT NULL COMMENT '入库批次号',
-  MODIFY COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
-  MODIFY COLUMN `material_no` varchar(100) DEFAULT NULL COMMENT '耗材批次号';
+  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '??????????',
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '???',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '????',
+  MODIFY COLUMN `material_date` datetime DEFAULT NULL COMMENT '??????????',
+  MODIFY COLUMN `warehouse_date` datetime DEFAULT NULL COMMENT '???????????',
+  MODIFY COLUMN `begin_time` datetime DEFAULT NULL COMMENT '??????????',
+  MODIFY COLUMN `end_time` datetime DEFAULT NULL COMMENT '?????????',
+  MODIFY COLUMN `receipt_order_no` varchar(100) DEFAULT NULL COMMENT '????????',
+  MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '????????????id????????',
+  MODIFY COLUMN `batch_no` varchar(100) DEFAULT NULL COMMENT '??????????',
+  MODIFY COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT '????',
+  MODIFY COLUMN `material_no` varchar(100) DEFAULT NULL COMMENT '?????????';
 /
 
 ALTER TABLE `stk_dep_inventory`
-  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '数量',
-  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
-  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '金额',
-  MODIFY COLUMN `material_date` datetime DEFAULT NULL COMMENT '耗材日期',
-  MODIFY COLUMN `warehouse_date` datetime DEFAULT NULL COMMENT '入库日期',
-  MODIFY COLUMN `supplier_id` varchar(100) DEFAULT NULL COMMENT '供应商ID（与出库一致；可存编码或第三方键）',
-  MODIFY COLUMN `begin_time` datetime DEFAULT NULL COMMENT '生产日期',
-  MODIFY COLUMN `end_time` datetime DEFAULT NULL COMMENT '有效期',
-  MODIFY COLUMN `material_no` varchar(100) DEFAULT NULL COMMENT '耗材批次号',
-  MODIFY COLUMN `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号',
-  MODIFY COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT '批号',
-  MODIFY COLUMN `bill_no` varchar(100) DEFAULT NULL COMMENT '单据号',
-  MODIFY COLUMN `out_order_no` varchar(100) DEFAULT NULL COMMENT '出库单号',
-  MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '关联仓库库存主键 stk_inventory.id（反写）';
+  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '??????',
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '???',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '????',
+  MODIFY COLUMN `material_date` datetime DEFAULT NULL COMMENT '??????????',
+  MODIFY COLUMN `warehouse_date` datetime DEFAULT NULL COMMENT '???????????',
+  MODIFY COLUMN `supplier_id` varchar(100) DEFAULT NULL COMMENT '???????ID????????????????????????????????????',
+  MODIFY COLUMN `begin_time` datetime DEFAULT NULL COMMENT '??????????',
+  MODIFY COLUMN `end_time` datetime DEFAULT NULL COMMENT '?????????',
+  MODIFY COLUMN `material_no` varchar(100) DEFAULT NULL COMMENT '?????????',
+  MODIFY COLUMN `batch_no` varchar(100) DEFAULT NULL COMMENT '?????',
+  MODIFY COLUMN `batch_number` varchar(100) DEFAULT NULL COMMENT '????',
+  MODIFY COLUMN `bill_no` varchar(100) DEFAULT NULL COMMENT '????',
+  MODIFY COLUMN `out_order_no` varchar(100) DEFAULT NULL COMMENT '????????',
+  MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '????????????????? stk_inventory.id????????';
 /
 
--- 出入库明细 stk_io_bill_entry：del_flag 空值修复并强制默认 0（历史/前端未传时 batch insert 曾写入 NULL）
+-- ????????????? stk_io_bill_entry??del_flag ?????????????? 0??????/??????????? batch insert ????????? NULL??
 UPDATE stk_io_bill_entry SET del_flag = 0 WHERE del_flag IS NULL;
 /
 ALTER TABLE `stk_io_bill_entry`
-  MODIFY COLUMN `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）';
+  MODIFY COLUMN `del_flag` int NOT NULL DEFAULT 0 COMMENT '????????????0?? 1????????';
 /
 
--- 出入库明细 stk_io_bill_entry：拆分仓库/科室库存主键（与 table.sql 一致；kc_no 仅作兼容镜像）
-CALL add_table_column('stk_io_bill_entry', 'stk_inventory_id', 'bigint', '仓库库存明细主键 stk_inventory.id', NULL);
+-- ????????????? stk_io_bill_entry????????????/??????????????? table.sql ???????kc_no ????????????????
+CALL add_table_column('stk_io_bill_entry', 'stk_inventory_id', 'bigint', '????????????????? stk_inventory.id', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'dep_inventory_id', 'bigint', '科室库存明细主键 stk_dep_inventory.id', NULL);
+CALL add_table_column('stk_io_bill_entry', 'dep_inventory_id', 'bigint', '???????????????? stk_dep_inventory.id', NULL);
 /
-ALTER TABLE `stk_io_bill_entry` MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '遗留兼容：与 dep_inventory_id 同步（出库审核后）；历史曾混存仓库库存id，请以 stk_inventory_id/dep_inventory_id 为准';
+ALTER TABLE `stk_io_bill_entry` MODIFY COLUMN `kc_no` bigint DEFAULT NULL COMMENT '????????????? dep_inventory_id ????????????????????????????????????id???? stk_inventory_id/dep_inventory_id ????';
 /
 UPDATE stk_io_bill_entry e INNER JOIN stk_io_bill p ON e.paren_id = p.id AND p.bill_type = 101
 SET e.stk_inventory_id = e.kc_no
@@ -1918,71 +1928,71 @@ SET e.dep_inventory_id = d.id
 WHERE e.kc_no IS NOT NULL AND e.dep_inventory_id IS NULL;
 /
 
--- 变更日志表补 tenant_id（多租户隔离）
-CALL add_table_column('fd_department_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+-- ???????????? tenant_id???????????????
+CALL add_table_column('fd_department_change_log', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('fd_supplier_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+CALL add_table_column('fd_supplier_change_log', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
-CALL add_table_column('fd_factory_change_log', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
-/
-
--- 高值科室库存补 tenant_id
-CALL add_table_column('gz_dep_inventory', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'del_flag', 'int', '删除标志', 0);
-/
-CALL add_table_column('gz_dep_inventory', 'master_barcode', 'varchar(200)', '主条码', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'secondary_barcode', 'varchar(200)', '辅条码', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'supplier_id', 'bigint', '供应商ID', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'delete_by', 'varchar(64)', '删除者', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'delete_time', 'datetime', '删除时间', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'create_by', 'varchar(64)', '创建者', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'create_time', 'datetime', '创建时间', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'update_by', 'varchar(64)', '更新者', NULL);
-/
-CALL add_table_column('gz_dep_inventory', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('fd_factory_change_log', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
 
--- 科室批量消耗明细补 tenant_id
-CALL add_table_column('t_hc_ks_xh_entry', 'tenant_id', 'varchar(36)', '租户ID(同sb_customer.customer_id)', NULL);
+-- ????????????? tenant_id
+CALL add_table_column('gz_dep_inventory', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'del_flag', 'int', '??????????', 0);
+/
+CALL add_table_column('gz_dep_inventory', 'master_barcode', 'varchar(200)', '???', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'secondary_barcode', 'varchar(200)', '????', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'supplier_id', 'bigint', '???????ID', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'delete_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'delete_time', 'datetime', '????????????', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'create_by', 'varchar(64)', '???????', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'create_time', 'datetime', '??????????', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'update_by', 'varchar(64)', '?????????', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'update_time', 'datetime', '????????????', NULL);
 /
 
--- 科室档案变更记录表 fd_department_change_log：全量建表见 material/table.sql
-
-ALTER TABLE purchase_plan MODIFY COLUMN plan_status char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '1' NOT NULL COMMENT '计划状态（0未提交1待审核 2已审核 3已执行 4已取消）';
+-- ???????????????????? tenant_id
+CALL add_table_column('t_hc_ks_xh_entry', 'tenant_id', 'varchar(36)', '?????ID(??sb_customer.customer_id)', NULL);
 /
 
--- 采购计划金额精度与产品档案单价一致（避免 0.025 被 decimal(15,2) 存成 0.03）
+-- ??????????????? fd_department_change_log??????????? material/table.sql
+
+ALTER TABLE purchase_plan MODIFY COLUMN plan_status char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '1' NOT NULL COMMENT '????????????0?????1???? 2??? 3?????? 4???????';
+/
+
+-- ????????????????????????????????????? 0.025 ? decimal(15,2) ????? 0.03??
 ALTER TABLE `purchase_plan`
-  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '总金额';
+  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '???????';
 /
 ALTER TABLE `purchase_plan_entry`
-  MODIFY COLUMN `price` decimal(18,6) DEFAULT 0.000000 COMMENT '单价',
-  MODIFY COLUMN `amt` decimal(18,6) DEFAULT 0.000000 COMMENT '金额';
+  MODIFY COLUMN `price` decimal(18,6) DEFAULT 0.000000 COMMENT '???',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT 0.000000 COMMENT '????';
 /
 
--- 采购订单金额精度与计划/产品单价一致
+-- ???????????????????/????????????
 ALTER TABLE `purchase_order`
-  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '总金额';
+  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '???????';
 /
 ALTER TABLE `purchase_order_entry`
-  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT 0.000000 COMMENT '单价',
-  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '金额';
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT 0.000000 COMMENT '???',
+  MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '????';
 /
 
--- 盘盈新增明细/待入账表 stk_profit_loss_pending：全量建表见 material/table.sql
+-- ????????????????/??????? stk_profit_loss_pending??????????? material/table.sql
 
--- ========== sys_print_setting：存量表补 tenant_id 与索引（新库已在 table.sql 全量建表含 idx_tenant_bill）==========
-CALL add_table_column('sys_print_setting', 'tenant_id', 'varchar(64)', '租户/客户ID，NULL表示全库默认模板', NULL);
+-- ========== sys_print_setting????????? tenant_id ???????????????? table.sql ????????? idx_tenant_bill??==========
+CALL add_table_column('sys_print_setting', 'tenant_id', 'varchar(64)', '?????/????ID??NULL????????????', NULL);
 /
--- SqlInitRunner 每条片段单独 execute，须拆成多段（同连接会话变量仍有效）；勿在同一段内写多条分号语句
+-- SqlInitRunner ??????????? execute??????????????????????????????????????????????????????????????????
 SET @idx_ps_exists := (
   SELECT COUNT(*) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'sys_print_setting' AND index_name = 'idx_tenant_bill'
@@ -1999,8 +2009,8 @@ EXECUTE stmt_ps_idx;
 DEALLOCATE PREPARE stmt_ps_idx;
 /
 
--- ========== 基础资料等「导入」按钮：默认对客户开放 ==========
--- 1) sys_menu：保证 default_open_to_customer=1（新租户/功能重置会按此字段下发 hc_customer_menu）
+-- ========== ??????????????????????????????????????????? ==========
+-- 1) sys_menu???? default_open_to_customer=1??????????/??????????????????????? hc_customer_menu??
 UPDATE sys_menu
 SET default_open_to_customer = '1',
     update_time = NOW()
@@ -2017,7 +2027,7 @@ WHERE IFNULL(status, '0') = '0'
   );
 /
 
--- 2) 存量租户：为已启用客户补授权（避免仅改菜单表后老客户仍无「导入」权限）
+-- 2) ??????????????????????????????????????????????????????????????????????????
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
 FROM sb_customer c
@@ -2042,67 +2052,67 @@ WHERE IFNULL(c.hc_status, '0') = '0'
   );
 /
 
--- ========== 库房申请单（科室申领审核按仓拆分）==========
--- 全量建表：wh_warehouse_apply、wh_warehouse_apply_entry、wh_wh_apply_ck_entry_ref 见 material/table.sql
--- 存量库若表已存在但缺少作废/关联相关列，下列 CALL 安全补齐（已存在则跳过）
-CALL add_table_column('wh_warehouse_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '整单作废：0否 1是', '0');
+-- ========== ????????????????????????????????????==========
+-- ??????????wh_warehouse_apply???wh_warehouse_apply_entry???wh_wh_apply_ck_entry_ref ? material/table.sql
+-- ??????????????????????????/????????????????????? CALL ???????????????????????
+CALL add_table_column('wh_warehouse_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '???????????0? 1???', '0');
 /
-CALL add_table_column('wh_warehouse_apply', 'void_whole_by', 'varchar(64)', '整单作废人', NULL);
+CALL add_table_column('wh_warehouse_apply', 'void_whole_by', 'varchar(64)', '??????????', NULL);
 /
-CALL add_table_column('wh_warehouse_apply', 'void_whole_time', 'datetime', '整单作废时间', NULL);
+CALL add_table_column('wh_warehouse_apply', 'void_whole_time', 'datetime', '???????????????', NULL);
 /
-CALL add_table_column('wh_warehouse_apply', 'void_whole_reason', 'varchar(500)', '整单作废原因', NULL);
-/
-
-CALL add_table_column('wh_warehouse_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '明细作废状态：0正常 1已作废', '0');
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '累计作废数量', '0');
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'line_void_by', 'varchar(64)', '明细作废操作人', NULL);
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'line_void_time', 'datetime', '明细作废时间', NULL);
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(500)', '明细作废原因', NULL);
+CALL add_table_column('wh_warehouse_apply', 'void_whole_reason', 'varchar(500)', '???????????????', NULL);
 /
 
--- wh_wh_apply_ck_entry_ref（出库关联表）全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '?????????????????0?? 1?????', '0');
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '????????????', '0');
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_by', 'varchar(64)', '???????????????', NULL);
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_time', 'datetime', '???????????????', NULL);
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_reason', 'varchar(500)', '???????????????', NULL);
 /
 
--- ========== 科室申购单引用出库（dep_pur_apply_ck_entry_ref、作废字段、出库单追溯）==========
-CALL add_table_column('dep_purchase_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '整单作废：0否 1是', '0');
-/
-CALL add_table_column('dep_purchase_apply', 'void_whole_by', 'varchar(64)', '整单作废人', NULL);
-/
-CALL add_table_column('dep_purchase_apply', 'void_whole_time', 'datetime', '整单作废时间', NULL);
-/
-CALL add_table_column('dep_purchase_apply', 'void_whole_reason', 'varchar(500)', '整单作废原因', NULL);
-/
-CALL add_table_column('dep_purchase_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '明细作废状态：0正常 1已作废', '0');
-/
-CALL add_table_column('dep_purchase_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '累计作废数量', '0');
-/
-CALL add_table_column('dep_purchase_apply_entry', 'line_void_by', 'varchar(64)', '明细作废操作人', NULL);
-/
-CALL add_table_column('dep_purchase_apply_entry', 'line_void_time', 'datetime', '明细作废时间', NULL);
-/
-CALL add_table_column('dep_purchase_apply_entry', 'line_void_reason', 'varchar(500)', '明细作废原因', NULL);
-/
--- dep_pur_apply_ck_entry_ref 全量建表见 material/table.sql；存量库若无此表请执行 table.sql 对应 CREATE TABLE 段
-/
-CALL add_table_column('stk_io_bill', 'dep_purchase_apply_id', 'bigint', '科室申购主表ID（dep_purchase_apply.id）', NULL);
-/
-CALL add_table_column('stk_io_bill', 'dep_purchase_apply_bill_no', 'varchar(64)', '科室申购单号（冗余）', NULL);
-/
-CALL add_table_column('stk_io_bill_entry', 'dep_pur_apply_entry_id', 'bigint', '科室申购明细ID（引用出库时回填）', NULL);
+-- wh_wh_apply_ck_entry_ref???????????????????????? material/table.sql??????????????????????? table.sql ??? CREATE TABLE ?
 /
 
-CALL add_table_column('gz_order', 'apply_department_id', 'bigint', '申请科室ID（备货验收）', NULL);
+-- ========== ?????????????????????dep_pur_apply_ck_entry_ref????????????????????????==========
+CALL add_table_column('dep_purchase_apply', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '???????????0? 1???', '0');
 /
-CALL add_table_column('gz_order', 'shipment_ref_status', 'int', '出库引用状态0未1部分2全部(仅备货验收101)', 0);
+CALL add_table_column('dep_purchase_apply', 'void_whole_by', 'varchar(64)', '??????????', NULL);
 /
-CALL add_table_column('gz_shipment', 'ref_acceptance_id', 'varchar(36)', '引用的备货验收单主表ID（varchar36，与引用表外键一致）', NULL);
+CALL add_table_column('dep_purchase_apply', 'void_whole_time', 'datetime', '???????????????', NULL);
 /
--- 存量库若已按 bigint 建列，升级为 varchar(36)（每段一条语句，同连接会话变量仍有效）
+CALL add_table_column('dep_purchase_apply', 'void_whole_reason', 'varchar(500)', '???????????????', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '?????????????????0?? 1?????', '0');
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '????????????', '0');
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_by', 'varchar(64)', '???????????????', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_time', 'datetime', '???????????????', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_reason', 'varchar(500)', '???????????????', NULL);
+/
+-- dep_pur_apply_ck_entry_ref ????????? material/table.sql??????????????????????? table.sql ??? CREATE TABLE ?
+/
+CALL add_table_column('stk_io_bill', 'dep_purchase_apply_id', 'bigint', '?????????ID??dep_purchase_apply.id??', NULL);
+/
+CALL add_table_column('stk_io_bill', 'dep_purchase_apply_bill_no', 'varchar(64)', '???????????????????', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'dep_pur_apply_entry_id', 'bigint', '????????????ID?????????????????????', NULL);
+/
+
+CALL add_table_column('gz_order', 'apply_department_id', 'bigint', '???????ID????????????', NULL);
+/
+CALL add_table_column('gz_order', 'shipment_ref_status', 'int', '????????????????0???1??????2??????(??????????101)', 0);
+/
+CALL add_table_column('gz_shipment', 'ref_acceptance_id', 'varchar(36)', '????????????????????ID??varchar36??????????????????????', NULL);
+/
+-- ?????????????? bigint ?????????? varchar(36)???????????????????????????????????
 SET @ref_acc_col_type := (
   SELECT DATA_TYPE FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gz_shipment' AND COLUMN_NAME = 'ref_acceptance_id'
@@ -2110,7 +2120,7 @@ SET @ref_acc_col_type := (
 );
 /
 SET @ref_acc_ddl := IF(@ref_acc_col_type = 'bigint',
-  'ALTER TABLE gz_shipment MODIFY COLUMN ref_acceptance_id varchar(36) DEFAULT NULL COMMENT ''引用的备货验收单主表ID（varchar36，与引用表外键一致）''',
+  'ALTER TABLE gz_shipment MODIFY COLUMN ref_acceptance_id varchar(36) DEFAULT NULL COMMENT ''????????????????????ID??varchar36??????????????????????''',
   'SELECT 1');
 /
 PREPARE stmt_ref_acc FROM @ref_acc_ddl;
@@ -2120,7 +2130,7 @@ EXECUTE stmt_ref_acc;
 DEALLOCATE PREPARE stmt_ref_acc;
 /
 
--- 出库引用条码唯一（GZ_SHIPMENT 维度，src_barcode_line_id 非空时生效）
+-- ???????????????????GZ_SHIPMENT ????src_barcode_line_id ??????????????
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'gz_order_entry_code_ref' AND index_name = 'uk_gz_code_ref_barcode_kind'
@@ -2137,269 +2147,269 @@ EXECUTE stmt_gz_code_ref;
 DEALLOCATE PREPARE stmt_gz_code_ref;
 /
 
--- gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref 全量建表见 material/table.sql
+-- gz_order_entry_code_ref / gz_shipment_entry_ref / gz_refund_goods_entry_ref ????????? material/table.sql
 /
 
 INSERT INTO sys_menu(menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT '引用单据查询', COALESCE((SELECT parent_id FROM sys_menu WHERE perms = 'gzOrder:apply:list' LIMIT 1), 0), 90, '#', '', 1, 0, 'F', '0', '0', 'gz:refDoc:query', '#', 'admin', NOW(), '高值引用验收/出库低敏感查询'
+SELECT '????????????', COALESCE((SELECT parent_id FROM sys_menu WHERE perms = 'gzOrder:apply:list' LIMIT 1), 0), 90, '#', '', 1, 0, 'F', '0', '0', 'gz:refDoc:query', '#', 'admin', NOW(), '???????????????/?????????????????'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'gz:refDoc:query');
 /
 
--- sys_his_external_db 建表与示例数据见 material/table.sql
+-- sys_his_external_db ???????????? material/table.sql
 /
 
--- ========== HIS 患者计费镜像 / 批次 / 消耗追溯（增量字段）==========
--- 说明：全量建表见 material/table.sql 文末 his_* 与 his_mirror_consume_link；请先执行该段 CREATE 再执行本段 CALL。
--- 退费：HIS 退费/冲账在未建立与镜像行、抓取批次、院内码的稳定关联前，业务与脚本均不做自动冲正或删除，避免串批次、串条码。
-CALL add_table_column('his_charge_item_mirror', 'referred_code', 'varchar(64)', '收费项目拼音简码（首字母）', NULL);
+-- ========== HIS ?????????????? / ???? / ???????????????????==========
+-- ??????????????? material/table.sql ?????? his_* ?? his_mirror_consume_link????????????? CREATE ???????????? CALL???
+-- ??????HIS ????/??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+CALL add_table_column('his_charge_item_mirror', 'referred_code', 'varchar(64)', '??????????????????????????', NULL);
 /
-CALL add_table_column('his_charge_item_mirror', 'value_level', 'char(1)', '收费项目高低值属性：1高值 2低值', '2');
+CALL add_table_column('his_charge_item_mirror', 'value_level', 'char(1)', '??????????????????????1????? 2?????', '2');
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '????UUID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'tenant_id', 'varchar(36) NOT NULL', '?????ID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '?????????ID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id', 'varchar(32) NOT NULL', 'HIS住院计费明细主键', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id', 'varchar(32) NOT NULL', 'HIS???????????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id_tf', 'varchar(32)', '退费记录对应的收费明细ID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'his_inpatient_charge_id_tf', 'varchar(32)', '??????????????????????ID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'patient_id', 'varchar(32)', '??????ID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'patient_name', 'varchar(128)', '?????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'patient_sex', 'varchar(16)', '患者性别', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'patient_sex', 'varchar(16)', '????????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'inpatient_no', 'varchar(64)', '住院号', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'inpatient_no', 'varchar(64)', '?????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'dept_code', 'varchar(32)', '费用科室编码', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'dept_code', 'varchar(32)', '??????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'dept_name', 'varchar(128)', '费用科室名称', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'dept_name', 'varchar(128)', '?????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'doctor_id', 'varchar(32)', '医生ID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'doctor_id', 'varchar(32)', '??????ID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'doctor_name', 'varchar(128)', '医生姓名', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'doctor_name', 'varchar(128)', '?????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'charge_item_id', 'varchar(64)', '收费项目ID', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'charge_item_id', 'varchar(64)', '????????ID', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'item_name', 'varchar(512)', '项目名称', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'item_name', 'varchar(512)', '??????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'spec_model', 'varchar(128)', '规格型号', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'spec_model', 'varchar(128)', '???????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'batch_no', 'varchar(128)', '批号', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'batch_no', 'varchar(128)', '????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'expire_date', 'varchar(64)', '效期', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'expire_date', 'varchar(64)', '??????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'use_date', 'datetime', '使用时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'use_date', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'charge_date', 'datetime', '计费时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'charge_date', 'datetime', '????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'quantity', 'decimal(18,6)', '数量', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'quantity', 'decimal(18,6)', '??????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'unit_price', 'decimal(18,6)', '单价', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'unit_price', 'decimal(18,6)', '???', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'total_amount', 'decimal(18,6)', '金额', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'total_amount', 'decimal(18,6)', '????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'charge_operator', 'varchar(128)', '计费操作员', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'charge_operator', 'varchar(128)', '??????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'remark', 'varchar(512)', '备注', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'remark', 'varchar(512)', '???', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'row_fingerprint', 'varchar(64)', '关键字段指纹', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'row_fingerprint', 'varchar(64)', '?????????????', NULL);
 /
 CALL add_table_column('his_inpatient_charge_mirror', 'process_status', 'varchar(32) NOT NULL', 'PENDING_CONSUME/PARTIALLY_CONSUMED/CONSUMED', 'PENDING_CONSUME');
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'create_by', 'varchar(64)', '创建者', '');
+CALL add_table_column('his_inpatient_charge_mirror', 'create_by', 'varchar(64)', '???????', '');
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'create_time', 'datetime', '本地入库时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'create_time', 'datetime', '?????????????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'update_by', 'varchar(64)', '更新者', '');
+CALL add_table_column('his_inpatient_charge_mirror', 'update_by', 'varchar(64)', '?????????', '');
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'process_type', 'varchar(32)', '处理类型 LOW_VALUE/HIGH_VALUE', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'process_type', 'varchar(32)', '???????? LOW_VALUE/HIGH_VALUE', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'process_time', 'datetime', '处理时间', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'process_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'process_by', 'varchar(64)', '处理人', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'process_by', 'varchar(64)', '?????', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'process_situation', 'varchar(512)', '??????????(??????/????????)', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'process_party', 'varchar(32)', '???????(??????????/??????????)', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'exec_dept_id', 'varchar(12)', '执行科室ID(HIS)', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'exec_dept_id', 'varchar(12)', '????????ID(HIS)', NULL);
 /
-CALL add_table_column('his_inpatient_charge_mirror', 'exec_dept_name', 'varchar(32)', '执行科室名称(HIS)', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'exec_dept_name', 'varchar(32)', '??????????(HIS)', NULL);
 /
 
-CALL add_table_column('his_outpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'id', 'varchar(36) NOT NULL', '????UUID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'tenant_id', 'varchar(36) NOT NULL', '?????ID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'fetch_batch_id', 'varchar(36)', '?????????ID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id', 'varchar(32) NOT NULL', 'HIS门诊计费明细主键', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id', 'varchar(32) NOT NULL', 'HIS????????????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id_tf', 'varchar(32)', '退费记录对应的收费明细ID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'his_outpatient_charge_id_tf', 'varchar(32)', '??????????????????????ID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'patient_id', 'varchar(32)', '患者ID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'patient_id', 'varchar(32)', '??????ID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'patient_name', 'varchar(128)', '患者姓名', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'patient_name', 'varchar(128)', '?????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'patient_sex', 'varchar(16)', '患者性别', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'patient_sex', 'varchar(16)', '????????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'outpatient_no', 'varchar(64)', '门诊号', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'outpatient_no', 'varchar(64)', '??????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'clinic_code', 'varchar(32)', '就诊编码', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'clinic_code', 'varchar(32)', '??????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'clinic_name', 'varchar(128)', '就诊名称', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'clinic_name', 'varchar(128)', '?????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'doctor_id', 'varchar(32)', '医生ID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'doctor_id', 'varchar(32)', '??????ID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'doctor_name', 'varchar(128)', '医生姓名', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'doctor_name', 'varchar(128)', '?????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'charge_item_id', 'varchar(64)', '收费项目ID', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'charge_item_id', 'varchar(64)', '????????ID', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'item_name', 'varchar(512)', '项目名称', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'item_name', 'varchar(512)', '??????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'spec_model', 'varchar(128)', '规格型号', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'spec_model', 'varchar(128)', '???????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'batch_no', 'varchar(128)', '批号', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'batch_no', 'varchar(128)', '????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'expire_date', 'varchar(64)', '效期', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'expire_date', 'varchar(64)', '??????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'charge_date', 'varchar(32)', '计费时间', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'charge_date', 'varchar(32)', '????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'quantity', 'decimal(18,6)', '数量', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'quantity', 'decimal(18,6)', '??????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'unit_price', 'decimal(18,6)', '单价', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'unit_price', 'decimal(18,6)', '???', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'total_amount', 'decimal(18,6)', '金额', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'total_amount', 'decimal(18,6)', '????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'charge_operator', 'varchar(128)', '计费操作员', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'charge_operator', 'varchar(128)', '??????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'payment_type', 'varchar(32)', '支付方式', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'payment_type', 'varchar(32)', '?????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'receipt_no', 'varchar(64)', '收据号', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'receipt_no', 'varchar(64)', '?????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'remark', 'varchar(512)', '备注', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'remark', 'varchar(512)', '???', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'row_fingerprint', 'varchar(64)', '关键字段指纹', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'row_fingerprint', 'varchar(64)', '?????????????', NULL);
 /
 CALL add_table_column('his_outpatient_charge_mirror', 'process_status', 'varchar(32) NOT NULL', 'PENDING_CONSUME/PARTIALLY_CONSUMED/CONSUMED', 'PENDING_CONSUME');
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'create_by', 'varchar(64)', '创建者', '');
+CALL add_table_column('his_outpatient_charge_mirror', 'create_by', 'varchar(64)', '???????', '');
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'create_time', 'datetime', '本地入库时间', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'create_time', 'datetime', '?????????????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'update_by', 'varchar(64)', '更新者', '');
+CALL add_table_column('his_outpatient_charge_mirror', 'update_by', 'varchar(64)', '?????????', '');
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'process_type', 'varchar(32)', '处理类型 LOW_VALUE/HIGH_VALUE', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'process_type', 'varchar(32)', '???????? LOW_VALUE/HIGH_VALUE', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'process_time', 'datetime', '处理时间', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'process_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'process_by', 'varchar(64)', '处理人', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'process_by', 'varchar(64)', '?????', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'process_situation', 'varchar(512)', '处理情况(成功/失败原因)', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'process_situation', 'varchar(512)', '??????????(??????/????????)', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'process_party', 'varchar(32)', '处理方(手动处理/自动处理)', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'process_party', 'varchar(32)', '???????(??????????/??????????)', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'exec_dept_id', 'varchar(12)', '执行科室ID(HIS)', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'exec_dept_id', 'varchar(12)', '????????ID(HIS)', NULL);
 /
-CALL add_table_column('his_outpatient_charge_mirror', 'exec_dept_name', 'varchar(32)', '执行科室名称(HIS)', NULL);
+CALL add_table_column('his_outpatient_charge_mirror', 'exec_dept_name', 'varchar(32)', '??????????(HIS)', NULL);
 /
 
-CALL add_table_column('his_charge_fetch_batch', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'id', 'varchar(36) NOT NULL', '????UUID', NULL);
 /
-CALL add_table_column('his_charge_fetch_batch', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'tenant_id', 'varchar(36) NOT NULL', '?????ID', NULL);
 /
 CALL add_table_column('his_charge_fetch_batch', 'charge_kind', 'varchar(16) NOT NULL', 'INPATIENT/OUTPATIENT', NULL);
 /
-CALL add_table_column('his_charge_fetch_batch', 'window_start', 'datetime NOT NULL', '查询窗口起(含)', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'window_start', 'datetime NOT NULL', '????????(?)', NULL);
 /
-CALL add_table_column('his_charge_fetch_batch', 'window_end', 'datetime NOT NULL', '查询窗口止(不含)', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'window_end', 'datetime NOT NULL', '????????(??)', NULL);
 /
-CALL add_table_column('his_charge_fetch_batch', 'inserted_count', 'int NOT NULL', '本次新增条数', '0');
+CALL add_table_column('his_charge_fetch_batch', 'inserted_count', 'int NOT NULL', '?????????????', '0');
 /
-CALL add_table_column('his_charge_fetch_batch', 'skipped_count', 'int NOT NULL', '跳过条数', '0');
+CALL add_table_column('his_charge_fetch_batch', 'skipped_count', 'int NOT NULL', '???????', '0');
 /
-CALL add_table_column('his_charge_fetch_batch', 'drift_count', 'int NOT NULL', '指纹不一致条数', '0');
+CALL add_table_column('his_charge_fetch_batch', 'drift_count', 'int NOT NULL', '??????????????', '0');
 /
-CALL add_table_column('his_charge_fetch_batch', 'remark', 'varchar(500)', '备注', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'remark', 'varchar(500)', '???', NULL);
 /
-CALL add_table_column('his_charge_fetch_batch', 'create_by', 'varchar(64)', '创建者', '');
+CALL add_table_column('his_charge_fetch_batch', 'create_by', 'varchar(64)', '???????', '');
 /
-CALL add_table_column('his_charge_fetch_batch', 'create_time', 'datetime', '抓取完成时间', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'create_time', 'datetime', '????????????????', NULL);
 /
 
-CALL add_table_column('his_mirror_consume_link', 'id', 'varchar(36) NOT NULL', '主键UUID', NULL);
+CALL add_table_column('his_mirror_consume_link', 'id', 'varchar(36) NOT NULL', '????UUID', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'tenant_id', 'varchar(36) NOT NULL', '租户ID', NULL);
+CALL add_table_column('his_mirror_consume_link', 'tenant_id', 'varchar(36) NOT NULL', '?????ID', NULL);
 /
 CALL add_table_column('his_mirror_consume_link', 'visit_kind', 'varchar(16) NOT NULL', 'INPATIENT/OUTPATIENT', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'mirror_row_id', 'varchar(36) NOT NULL', '镜像表主键', NULL);
+CALL add_table_column('his_mirror_consume_link', 'mirror_row_id', 'varchar(36) NOT NULL', '???????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'fetch_batch_id', 'varchar(36)', '抓取批次ID', NULL);
+CALL add_table_column('his_mirror_consume_link', 'fetch_batch_id', 'varchar(36)', '?????????ID', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'dept_batch_consume_id', 'bigint NOT NULL', '科室批量消耗主表ID', NULL);
+CALL add_table_column('his_mirror_consume_link', 'dept_batch_consume_id', 'bigint NOT NULL', '????????????????ID', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'dept_batch_consume_entry_id', 'bigint NOT NULL', '科室批量消耗明细ID', NULL);
+CALL add_table_column('his_mirror_consume_link', 'dept_batch_consume_entry_id', 'bigint NOT NULL', '???????????????????ID', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'alloc_qty', 'decimal(18,6) NOT NULL', '本行分摊数量', '0');
+CALL add_table_column('his_mirror_consume_link', 'alloc_qty', 'decimal(18,6) NOT NULL', '?????????????????', '0');
 /
-CALL add_table_column('his_mirror_consume_link', 'create_time', 'datetime', '创建时间', NULL);
+CALL add_table_column('his_mirror_consume_link', 'create_time', 'datetime', '??????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'dep_inventory_id', 'bigint', '低值科室库存 stk_dep_inventory.id', NULL);
+CALL add_table_column('his_mirror_consume_link', 'dep_inventory_id', 'bigint', '???????????? stk_dep_inventory.id', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'gz_dep_inventory_id', 'bigint', '高值科室库存 gz_dep_inventory.id', NULL);
+CALL add_table_column('his_mirror_consume_link', 'gz_dep_inventory_id', 'bigint', '???????????? gz_dep_inventory.id', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'stk_dep_end_date', 'date', '低值科室库存有效期快照(退费返还排序)', NULL);
+CALL add_table_column('his_mirror_consume_link', 'stk_dep_end_date', 'date', '?????????????????????????(????????????)', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'in_hospital_code', 'varchar(200)', '高值院内码快照', NULL);
+CALL add_table_column('his_mirror_consume_link', 'in_hospital_code', 'varchar(200)', '????????????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'returned_qty', 'decimal(18,6) NOT NULL', '计费退费已返还数量累计', '0');
+CALL add_table_column('his_mirror_consume_link', 'returned_qty', 'decimal(18,6) NOT NULL', '???????????????????', '0');
 /
-CALL add_table_column('his_mirror_consume_link', 'refundable_remaining_qty', 'decimal(18,6)', '尚可返还数量', NULL);
+CALL add_table_column('his_mirror_consume_link', 'refundable_remaining_qty', 'decimal(18,6)', '?????????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'update_by', 'varchar(64)', '更新者', NULL);
+CALL add_table_column('his_mirror_consume_link', 'update_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'update_time', 'datetime', '更新时间', NULL);
+CALL add_table_column('his_mirror_consume_link', 'update_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'del_flag', 'tinyint NOT NULL', '删除标志 0正常 1删除', '0');
+CALL add_table_column('his_mirror_consume_link', 'del_flag', 'tinyint NOT NULL', '?????????? 0?? 1??????', '0');
 /
-CALL add_table_column('his_mirror_consume_link', 'delete_by', 'varchar(64)', '删除者', NULL);
+CALL add_table_column('his_mirror_consume_link', 'delete_by', 'varchar(64)', '?????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'delete_time', 'datetime', '删除时间', NULL);
+CALL add_table_column('his_mirror_consume_link', 'delete_time', 'datetime', '????????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'confirm_status', 'tinyint NOT NULL', '高值消耗确认 0未确认 1已确认', '0');
+CALL add_table_column('his_mirror_consume_link', 'confirm_status', 'tinyint NOT NULL', '???????????? 0????? 1???', '0');
 /
 CALL add_table_column('his_mirror_consume_link', 'confirm_id', 'varchar(36)', 'gz_high_consume_confirm.id', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'traceability_id', 'bigint', '高值计费单 gz_traceability.id', NULL);
+CALL add_table_column('his_mirror_consume_link', 'traceability_id', 'bigint', '????????? gz_traceability.id', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'traceability_entry_id', 'bigint', '高值计费明细 gz_traceability_entry.id', NULL);
+CALL add_table_column('his_mirror_consume_link', 'traceability_entry_id', 'bigint', '???????????? gz_traceability_entry.id', NULL);
 /
--- 高值 traceability 核销路径不写 dept_batch_consume_*，须允许 NULL（与 table.sql 一致；早期增量脚本曾误设为 NOT NULL）
+-- ????? traceability ??????????? dept_batch_consume_*??????? NULL???? table.sql ?????????????????????????????? NOT NULL??
 ALTER TABLE `his_mirror_consume_link`
-  MODIFY COLUMN `dept_batch_consume_id` bigint DEFAULT NULL COMMENT '科室批量消耗主表 t_hc_ks_xh.id（低值/历史高值）',
-  MODIFY COLUMN `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '科室批量消耗明细 t_hc_ks_xh_entry.id（低值/历史高值）';
+  MODIFY COLUMN `dept_batch_consume_id` bigint DEFAULT NULL COMMENT '???????????????? t_hc_ks_xh.id???????/???????????',
+  MODIFY COLUMN `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '??????????????????? t_hc_ks_xh_entry.id???????/???????????';
 /
-CALL add_table_column('gz_traceability', 'visit_kind', 'varchar(16)', 'INPATIENT/OUTPATIENT（HIS镜像高值计费）', NULL);
+CALL add_table_column('gz_traceability', 'visit_kind', 'varchar(16)', 'INPATIENT/OUTPATIENT??HIS???????????????', NULL);
 /
-CALL add_table_column('gz_traceability', 'mirror_row_id', 'varchar(36)', 'HIS计费镜像行ID', NULL);
+CALL add_table_column('gz_traceability', 'mirror_row_id', 'varchar(36)', 'HIS??????????ID', NULL);
 /
-CALL add_table_column('gz_traceability', 'trace_source', 'varchar(32)', 'HIS_MIRROR_HIGH=HIS高值扫码核销', NULL);
+CALL add_table_column('gz_traceability', 'trace_source', 'varchar(32)', 'HIS_MIRROR_HIGH=HIS?????????????', NULL);
 /
-CALL add_table_column('gz_high_consume_confirm_line', 'traceability_entry_id', 'bigint', '高值计费明细 gz_traceability_entry.id', NULL);
+CALL add_table_column('gz_high_consume_confirm_line', 'traceability_entry_id', 'bigint', '???????????? gz_traceability_entry.id', NULL);
 /
 
--- HIS 高值扫码核销：单独保存核销科室（与计费执行科室区分）
-CALL add_table_column('gz_traceability', 'write_off_dept_id', 'bigint', '核销科室ID（HIS镜像高值扫码实际扣减科室）', NULL);
+-- HIS ????????????????????????????????????????????????????
+CALL add_table_column('gz_traceability', 'write_off_dept_id', 'bigint', '???????ID??HIS???????????????????????????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'write_off_dept_id', 'bigint', '核销科室ID（用户所选实际扣减科室）', NULL);
+CALL add_table_column('his_mirror_consume_link', 'write_off_dept_id', 'bigint', '???????ID??????????????????????????????', NULL);
 /
 UPDATE his_mirror_consume_link l
 INNER JOIN gz_traceability t ON t.id = l.traceability_id
@@ -2419,127 +2429,127 @@ WHERE t.trace_source = 'HIS_MIRROR_HIGH'
 /
 
 CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
-  `confirm_no` varchar(32) NOT NULL COMMENT '确认批次号',
-  `department_id` bigint NOT NULL COMMENT '科室ID',
-  `warehouse_id` bigint NOT NULL COMMENT '高值仓库ID',
-  `confirm_time` datetime NOT NULL COMMENT '确认时间',
-  `confirm_by` varchar(64) DEFAULT NULL COMMENT '确认人',
-  `period_begin` datetime DEFAULT NULL COMMENT '核销时间范围起',
-  `period_end` datetime DEFAULT NULL COMMENT '核销时间范围止',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
+  `confirm_no` varchar(32) NOT NULL COMMENT '???????',
+  `department_id` bigint NOT NULL COMMENT '???ID',
+  `warehouse_id` bigint NOT NULL COMMENT '?????????ID',
+  `confirm_time` datetime NOT NULL COMMENT '????????',
+  `confirm_by` varchar(64) DEFAULT NULL COMMENT '???',
+  `period_begin` datetime DEFAULT NULL COMMENT '?????????????????',
+  `period_end` datetime DEFAULT NULL COMMENT '?????????????????',
+  `remark` varchar(500) DEFAULT NULL COMMENT '???',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '??????????',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '???????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '????????????',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_gz_hcc_confirm_no` (`tenant_id`,`confirm_no`),
   KEY `idx_gz_hcc_dept` (`tenant_id`,`department_id`,`confirm_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值消耗确认批次';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='????????????????';
 /
 
 CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_line` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
   `confirm_id` varchar(36) NOT NULL COMMENT 'gz_high_consume_confirm.id',
   `consume_link_id` varchar(36) NOT NULL COMMENT 'his_mirror_consume_link.id',
-  `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '消耗明细ID（历史）',
-  `traceability_entry_id` bigint DEFAULT NULL COMMENT '高值计费明细 gz_traceability_entry.id',
-  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '??????????ID????????',
+  `traceability_entry_id` bigint DEFAULT NULL COMMENT '???????????? gz_traceability_entry.id',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '??????????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_gz_hccl_link` (`consume_link_id`),
   KEY `idx_gz_hccl_confirm` (`tenant_id`,`confirm_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值消耗确认明细行';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='???????????????????';
 /
 
 CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_bill` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
   `confirm_id` varchar(36) NOT NULL COMMENT 'gz_high_consume_confirm.id',
-  `supplier_id` varchar(128) DEFAULT NULL COMMENT '供应商ID',
-  `bill_type` int NOT NULL COMMENT '101入库 201出库',
+  `supplier_id` varchar(128) DEFAULT NULL COMMENT '???????ID',
+  `bill_type` int NOT NULL COMMENT '101????? 201?????',
   `stk_io_bill_id` bigint NOT NULL COMMENT 'stk_io_bill.id',
-  `bill_no` varchar(64) NOT NULL COMMENT '单号',
-  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `bill_no` varchar(64) NOT NULL COMMENT '???',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '??????????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
   PRIMARY KEY (`id`),
   KEY `idx_gz_hccb_confirm` (`tenant_id`,`confirm_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值消耗确认生成的结算单据';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='????????????????????????????';
 /
 
 CREATE TABLE IF NOT EXISTS `sb_tenant_setting` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID(sb_customer.customer_id)',
-  `setting_key` varchar(128) NOT NULL COMMENT '配置键',
-  `setting_value` varchar(500) DEFAULT NULL COMMENT '配置值',
-  `remark` varchar(500) DEFAULT NULL COMMENT '说明',
-  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
-  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID(sb_customer.customer_id)',
+  `setting_key` varchar(128) NOT NULL COMMENT '???????',
+  `setting_value` varchar(500) DEFAULT NULL COMMENT '???????',
+  `remark` varchar(500) DEFAULT NULL COMMENT '????',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '??????????',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '???????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '????????????',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `delete_time` datetime DEFAULT NULL COMMENT '????????????',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sb_tenant_setting` (`tenant_id`,`setting_key`),
   KEY `idx_sb_tenant_setting_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户级业务开关';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='????????????????';
 /
 
 CREATE TABLE IF NOT EXISTS `his_billing_refund_order` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
   `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
-  `refund_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '退费侧镜像行ID',
-  `origin_charge_detail_id` varchar(64) NOT NULL COMMENT '原收费明细ID(HIS)',
-  `origin_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '原计费镜像行ID',
-  `refund_qty` decimal(18,6) NOT NULL COMMENT '本次退费数量',
-  `value_level` char(1) NOT NULL DEFAULT '2' COMMENT '1高值 2低值',
+  `refund_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '?????????????ID',
+  `origin_charge_detail_id` varchar(64) NOT NULL COMMENT '????????????ID(HIS)',
+  `origin_mirror_row_id` varchar(36) DEFAULT NULL COMMENT '?????????????ID',
+  `refund_qty` decimal(18,6) NOT NULL COMMENT '??????????????',
+  `value_level` char(1) NOT NULL DEFAULT '2' COMMENT '1????? 2?????',
   `process_status` varchar(24) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/DONE/FAILED',
-  `fail_reason` varchar(500) DEFAULT NULL COMMENT '失败原因',
-  `patient_name` varchar(128) DEFAULT NULL COMMENT '患者姓名快照',
-  `department_id` bigint DEFAULT NULL COMMENT '科室ID快照',
-  `department_name` varchar(200) DEFAULT NULL COMMENT '科室名称快照',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
-  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `fail_reason` varchar(500) DEFAULT NULL COMMENT '????????',
+  `patient_name` varchar(128) DEFAULT NULL COMMENT '?????????????',
+  `department_id` bigint DEFAULT NULL COMMENT '???ID????',
+  `department_name` varchar(200) DEFAULT NULL COMMENT '?????????',
+  `remark` varchar(500) DEFAULT NULL COMMENT '???',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '??????????',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '???????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '????????????',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `delete_time` datetime DEFAULT NULL COMMENT '????????????',
   PRIMARY KEY (`id`),
   KEY `idx_hbro_tenant_origin` (`tenant_id`,`origin_charge_detail_id`),
   KEY `idx_hbro_mirror` (`tenant_id`,`origin_mirror_row_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计费退费处理主单';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='?????????????';
 /
 
 CREATE TABLE IF NOT EXISTS `his_billing_refund_order_line` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
-  `refund_order_id` varchar(36) NOT NULL COMMENT '主单 his_billing_refund_order.id',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
+  `refund_order_id` varchar(36) NOT NULL COMMENT '??? his_billing_refund_order.id',
   `consume_link_id` varchar(36) DEFAULT NULL COMMENT 'his_mirror_consume_link.id',
-  `return_qty` decimal(18,6) NOT NULL COMMENT '本行返还数量',
-  `dep_inventory_id` bigint DEFAULT NULL COMMENT '低值返还目标 stk_dep_inventory.id',
-  `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '高值返还目标 gz_dep_inventory.id',
-  `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '高值院内码',
-  `batch_no` varchar(100) DEFAULT NULL COMMENT '批次号快照',
-  `end_date_snapshot` date DEFAULT NULL COMMENT '有效期快照',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
-  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
-  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `return_qty` decimal(18,6) NOT NULL COMMENT '???????????????',
+  `dep_inventory_id` bigint DEFAULT NULL COMMENT '?????????????? stk_dep_inventory.id',
+  `gz_dep_inventory_id` bigint DEFAULT NULL COMMENT '?????????????? gz_dep_inventory.id',
+  `in_hospital_code` varchar(200) DEFAULT NULL COMMENT '????????????',
+  `batch_no` varchar(100) DEFAULT NULL COMMENT '?????????',
+  `end_date_snapshot` date DEFAULT NULL COMMENT '?????????????',
+  `remark` varchar(500) DEFAULT NULL COMMENT '???',
+  `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '??????????',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '???????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '????????????',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '?????????',
+  `delete_time` datetime DEFAULT NULL COMMENT '????????????',
   PRIMARY KEY (`id`),
   KEY `idx_hbrol_refund` (`tenant_id`,`refund_order_id`),
   KEY `idx_hbrol_link` (`consume_link_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计费退费处理明细';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='???????????????';
 /
 
 UPDATE his_mirror_consume_link
@@ -2549,10 +2559,10 @@ WHERE IFNULL(del_flag, 0) = 0
   AND IFNULL(returned_qty, 0) = 0;
 /
 
--- ========== 高值模块最终核对清单（发布后自检 SQL）==========
--- 说明：以下 SQL 为“只读自检”，可在发布完成后执行，快速核验环境一致性。
+-- ========== ???????????????????????????????? SQL??==========
+-- ????????? SQL ?????????????????????????????????????????????????????????????
 
--- 1) 高值核心表是否具备逻辑删除三件套（del_flag/delete_by/delete_time）
+-- 1) ????????????????????????????????????del_flag/delete_by/delete_time??
 SELECT c.table_name,
        MAX(CASE WHEN c.column_name = 'del_flag' THEN 1 ELSE 0 END) AS has_del_flag,
        MAX(CASE WHEN c.column_name = 'delete_by' THEN 1 ELSE 0 END) AS has_delete_by,
@@ -2568,7 +2578,7 @@ GROUP BY c.table_name
 ORDER BY c.table_name;
 /
 
--- 2) 高值明细表条码/供应商字段完整性
+-- 2) ?????????????/??????????????????
 SELECT c.table_name,
        MAX(CASE WHEN c.column_name = 'master_barcode' THEN 1 ELSE 0 END) AS has_master_barcode,
        MAX(CASE WHEN c.column_name = 'secondary_barcode' THEN 1 ELSE 0 END) AS has_secondary_barcode,
@@ -2583,7 +2593,7 @@ GROUP BY c.table_name
 ORDER BY c.table_name;
 /
 
--- 3) gz_order 扩展字段（department_id/is_follow_flag）检查
+-- 3) gz_order ??????????department_id/is_follow_flag???????
 SELECT c.table_name,
        MAX(CASE WHEN c.column_name = 'department_id' THEN 1 ELSE 0 END) AS has_department_id,
        MAX(CASE WHEN c.column_name = 'is_follow_flag' THEN 1 ELSE 0 END) AS has_is_follow_flag
@@ -2593,7 +2603,7 @@ WHERE c.table_schema = DATABASE()
 GROUP BY c.table_name;
 /
 
--- 4) 住院高值扫码/追溯权限菜单检查（应返回完整一组 perms）
+-- 4) ?????????????/?????????????????????????????????? perms??
 SELECT m.menu_id, m.menu_name, m.parent_id, m.perms, m.menu_type, m.status
 FROM sys_menu m
 WHERE m.perms IN (
@@ -2604,42 +2614,42 @@ WHERE m.perms IN (
 ORDER BY m.menu_type, m.menu_id;
 /
 
-CALL add_table_column('stk_io_bill_entry', 'delivery_line_sign', 'varchar(512)', '配送单拆分行签名（与接口LIST分组键一致）', null);
+CALL add_table_column('stk_io_bill_entry', 'delivery_line_sign', 'varchar(512)', '??????????????????????????LIST???????????????', null);
 /
-CALL add_table_column('stk_io_bill_entry', 'delivery_line_qty_cap', 'decimal(18,4)', '该行在配送接口快照中的可入总量上限', null);
+CALL add_table_column('stk_io_bill_entry', 'delivery_line_qty_cap', 'decimal(18,4)', '???????????????????????????????????????', null);
 /
 
 CREATE TABLE IF NOT EXISTS `stk_delivery_line_cap` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
-  `delivery_no` varchar(64) NOT NULL COMMENT '配送单号',
-  `line_sign` varchar(512) NOT NULL COMMENT '配送接口分组行签名',
-  `qty_cap` decimal(18,4) NOT NULL COMMENT '该行可入总量上限（取历次接口快照与历史行的最大值）',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
+  `delivery_no` varchar(64) NOT NULL COMMENT '?????????',
+  `line_sign` varchar(512) NOT NULL COMMENT '???????????????????',
+  `qty_cap` decimal(18,4) NOT NULL COMMENT '??????????????????????????????????????????????????????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '????????????',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_delivery_line_cap` (`tenant_id`, `delivery_no`, `line_sign`(191)),
   KEY `idx_stk_delivery_line_cap_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='配送单行可入数量上限（支持一单多次拆入、按行防超量）';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='????????????????????????????????????????????????????????????????';
 /
 
 CREATE TABLE IF NOT EXISTS `spd_foundation_data_snapshot` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7（36位）',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
-  `entity_type` varchar(32) NOT NULL COMMENT '实体类型：SUPPLIER/FACTORY/DEPARTMENT/WAREHOUSE_CATEGORY/FINANCE_CATEGORY',
-  `entity_id` varchar(64) NOT NULL COMMENT '业务主键（字符串）',
-  `before_json` mediumtext COMMENT '变更前JSON快照',
-  `after_json` mediumtext COMMENT '变更后JSON快照',
-  `create_by` varchar(64) DEFAULT NULL COMMENT '操作人',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7??36???',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
+  `entity_type` varchar(32) NOT NULL COMMENT '??????????SUPPLIER/FACTORY/DEPARTMENT/WAREHOUSE_CATEGORY/FINANCE_CATEGORY',
+  `entity_id` varchar(64) NOT NULL COMMENT '?????????????????',
+  `before_json` mediumtext COMMENT '????????JSON????',
+  `after_json` mediumtext COMMENT '???????JSON????',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '??????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
   PRIMARY KEY (`id`),
   KEY `idx_spd_fd_snap_tenant_entity` (`tenant_id`, `entity_type`, `entity_id`),
   KEY `idx_spd_fd_snap_time` (`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='院内主数据变更整单快照（供应商/厂家/科室/库房分类/财务分类）';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='??????????????????????????????????/????/???/?????????/??????????';
 /
 
--- 5) 高值表 create_by/update_by/delete_by 是否存在“非数字用户ID”残留（按需抽样）
--- 说明：当前约定写 user_id（字符串）。若历史存在 user_name，此处可帮助发现异常数据。
+-- 5) ?????? create_by/update_by/delete_by ?????????????????????????ID??????????????????????
+-- ????????????????? user_id??????????????????????? user_name?????????????????????????
 SELECT 'gz_order' AS table_name, COUNT(*) AS suspect_rows
 FROM gz_order
 WHERE del_flag != 1
@@ -2650,266 +2660,266 @@ WHERE del_flag != 1
   );
 /
 
--- ========== 低值定数包/院内码、仓库开关、高低值条码归属/流通、高值流水快照（与 material/table.sql 对齐） ==========
-CALL add_table_column('stk_io_bill_entry', 'fixed_package_barcode', 'varchar(200)', '定数包条码（低值出库/退库/退货行）', null);
+-- ========== ?????????????/???????????????????????????????????/?????????????????????? material/table.sql ???? ==========
+CALL add_table_column('stk_io_bill_entry', 'fixed_package_barcode', 'varchar(200)', '??????????????????????/?????/????????', null);
 /
-CALL add_table_column('stk_inventory', 'lv_inhospital_package_code', 'varchar(200)', '低值定数包院内码（入库审核生成）', null);
+CALL add_table_column('stk_inventory', 'lv_inhospital_package_code', 'varchar(200)', '?????????????????????????????????????', null);
 /
-CALL add_table_column('stk_dep_inventory', 'lv_inhospital_package_code', 'varchar(200)', '低值定数包院内码（出库审核生成）', null);
+CALL add_table_column('stk_dep_inventory', 'lv_inhospital_package_code', 'varchar(200)', '?????????????????????????????????????', null);
 /
-CALL add_table_column('fd_warehouse', 'lv_audit_gen_inhospital_in', 'tinyint', '低值入库审核是否生成院内码定数包 0否1是', '0');
+CALL add_table_column('fd_warehouse', 'lv_audit_gen_inhospital_in', 'tinyint', '????????????????????????????????????? 0?1???', '0');
 /
-CALL add_table_column('fd_warehouse', 'lv_audit_gen_inhospital_out', 'tinyint', '低值出库审核是否生成院内码定数包 0否1是', '0');
+CALL add_table_column('fd_warehouse', 'lv_audit_gen_inhospital_out', 'tinyint', '????????????????????????????????????? 0?1???', '0');
 /
-CALL add_table_column('gz_depot_inventory', 'material_name', 'varchar(256)', '产品名称快照（直打条码）', null);
+CALL add_table_column('gz_depot_inventory', 'material_name', 'varchar(256)', '??????????????????????', null);
 /
-CALL add_table_column('gz_depot_inventory', 'material_speci', 'varchar(256)', '规格快照', null);
+CALL add_table_column('gz_depot_inventory', 'material_speci', 'varchar(256)', '???????', null);
 /
-CALL add_table_column('gz_depot_inventory', 'material_model', 'varchar(256)', '型号快照', null);
+CALL add_table_column('gz_depot_inventory', 'material_model', 'varchar(256)', '????????', null);
 /
-CALL add_table_column('gz_depot_inventory', 'factory_name', 'varchar(256)', '生产厂家名称快照', null);
+CALL add_table_column('gz_depot_inventory', 'factory_name', 'varchar(256)', '??????????????', null);
 /
-CALL add_table_column('gz_depot_inventory', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+CALL add_table_column('gz_depot_inventory', 'supplier_name', 'varchar(256)', '?????????????', null);
 /
-CALL add_table_column('gz_depot_inventory', 'finance_category_name', 'varchar(200)', '财务分类名称快照', null);
+CALL add_table_column('gz_depot_inventory', 'finance_category_name', 'varchar(200)', '??????????????', null);
 /
-CALL add_table_column('gz_dep_inventory', 'material_name', 'varchar(256)', '产品名称快照（直打条码）', null);
+CALL add_table_column('gz_dep_inventory', 'material_name', 'varchar(256)', '??????????????????????', null);
 /
-CALL add_table_column('gz_dep_inventory', 'material_speci', 'varchar(256)', '规格快照', null);
+CALL add_table_column('gz_dep_inventory', 'material_speci', 'varchar(256)', '???????', null);
 /
-CALL add_table_column('gz_dep_inventory', 'material_model', 'varchar(256)', '型号快照', null);
+CALL add_table_column('gz_dep_inventory', 'material_model', 'varchar(256)', '????????', null);
 /
-CALL add_table_column('gz_dep_inventory', 'factory_name', 'varchar(256)', '生产厂家名称快照', null);
+CALL add_table_column('gz_dep_inventory', 'factory_name', 'varchar(256)', '??????????????', null);
 /
-CALL add_table_column('gz_dep_inventory', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+CALL add_table_column('gz_dep_inventory', 'supplier_name', 'varchar(256)', '?????????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_name', 'varchar(256)', '产品名称快照（备货验收直打）', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_name', 'varchar(256)', '????????????????????????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_speci', 'varchar(256)', '规格快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_speci', 'varchar(256)', '???????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_model', 'varchar(256)', '型号快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_model', 'varchar(256)', '????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_unit_name', 'varchar(64)', '单位名称快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'material_unit_name', 'varchar(64)', '?????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'factory_id', 'bigint', '生产厂家ID快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'factory_id', 'bigint', '????????ID????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'factory_name', 'varchar(256)', '生产厂家名称快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'factory_name', 'varchar(256)', '??????????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'supplier_name', 'varchar(256)', '?????????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'warehouse_name', 'varchar(200)', '仓库名称快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'warehouse_name', 'varchar(200)', '??????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'finance_category_name', 'varchar(200)', '财务分类名称快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'finance_category_name', 'varchar(200)', '??????????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'register_no', 'varchar(128)', '注册证号快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'register_no', 'varchar(128)', '??????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'brand_name', 'varchar(128)', '品牌快照', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'brand_name', 'varchar(128)', '??????????', null);
 /
-CALL add_table_column('gz_order_entry_inhospitalcode_list', 'hc_barcode_master_id', 'varchar(36)', '归属主档 hc_barcode_master.id', null);
+CALL add_table_column('gz_order_entry_inhospitalcode_list', 'hc_barcode_master_id', 'varchar(36)', '?????? hc_barcode_master.id', null);
 /
 
--- ========== 仓库盘点/盈亏：审核不直改库存、盘盈批次与库存追溯 ==========
-CALL add_table_column('stk_io_stocktaking', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
+-- ========== ??????????/???????????????????????????????????????? ==========
+CALL add_table_column('stk_io_stocktaking', 'uuid_id', 'varchar(36)', '?????????UUID7', null);
 /
-CALL add_table_column('stk_io_stocktaking', 'audit_adjusts_inventory', 'tinyint NOT NULL', '0审核不直改库存 1审核直改', '0');
+CALL add_table_column('stk_io_stocktaking', 'audit_adjusts_inventory', 'tinyint NOT NULL', '0????????????? 1????????', '0');
 /
-CALL add_table_column('stk_io_stocktaking', 'reject_reason', 'varchar(500)', '驳回原因', null);
+CALL add_table_column('stk_io_stocktaking', 'reject_reason', 'varchar(500)', '??????????', null);
 /
-CALL add_table_column('stk_io_stocktaking', 'delete_by', 'varchar(64)', '删除者', null);
+CALL add_table_column('stk_io_stocktaking', 'delete_by', 'varchar(64)', '?????????', null);
 /
-CALL add_table_column('stk_io_stocktaking', 'delete_time', 'datetime', '删除时间', null);
+CALL add_table_column('stk_io_stocktaking', 'delete_time', 'datetime', '????????????', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'entry_uuid', 'varchar(36)', '明细UUID7', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'entry_uuid', 'varchar(36)', '?????UUID7', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_id', 'bigint', '账面批次stk_batch.id快照', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_id', 'bigint', '??????stk_batch.id????', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_no_snapshot', 'varchar(100)', '账面批次号快照', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'orig_batch_no_snapshot', 'varchar(100)', '???????????', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'kc_no_str', 'varchar(64)', '仓库库存明细ID(字符串)', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'kc_no_str', 'varchar(64)', '?????????????ID(????)', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID明细快照', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'warehouse_id_str', 'varchar(64)', '????ID?????????', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'department_id_str', 'varchar(64)', '科室ID明细快照', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'department_id_str', 'varchar(64)', '???ID?????????', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id_str', 'varchar(64)', '供应商ID明细快照', null);
+CALL add_table_column('stk_io_stocktaking_entry', 'supplier_id_str', 'varchar(64)', '???????ID?????????', null);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'stock_no', 'varchar(64)', '盘点单号(冗余主表，便于按单号查明细)', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'stock_no', 'varchar(64)', '?????????(??????????????????????????)', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'counted_flag', 'tinyint NOT NULL DEFAULT 0', '是否已盘 0否 1是', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'counted_flag', 'tinyint NOT NULL DEFAULT 0', '???????? 0? 1???', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'his_id', 'varchar(128)', '第三方/HIS系统库存明细ID', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'his_id', 'varchar(128)', '??????/HIS????????????ID', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'third_party_batch_no', 'varchar(128)', '第三方系统批次号', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'third_party_batch_no', 'varchar(128)', '??????????????', NULL);
 /
-CALL add_table_column('stk_inventory', 'third_party_batch_no', 'varchar(128)', '第三方系统批次号', NULL);
+CALL add_table_column('stk_inventory', 'third_party_batch_no', 'varchar(128)', '??????????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss', 'uuid_id', 'varchar(36)', '业务主键UUID7', null);
+CALL add_table_column('stk_io_profit_loss', 'uuid_id', 'varchar(36)', '?????????UUID7', null);
 /
-CALL add_table_column('stk_io_profit_loss', 'stocktaking_uuid', 'varchar(36)', '关联盘点单uuid', null);
+CALL add_table_column('stk_io_profit_loss', 'stocktaking_uuid', 'varchar(36)', '?????????????uuid', null);
 /
-CALL add_table_column('stk_io_profit_loss', 'delete_by', 'varchar(64)', '删除者', null);
+CALL add_table_column('stk_io_profit_loss', 'delete_by', 'varchar(64)', '?????????', null);
 /
-CALL add_table_column('stk_io_profit_loss', 'delete_time', 'datetime', '删除时间', null);
+CALL add_table_column('stk_io_profit_loss', 'delete_time', 'datetime', '????????????', null);
 /
-CALL add_table_column('stk_io_profit_loss', 'biz_scope', 'varchar(16) NOT NULL', 'WH仓库盈亏 DEP科室盈亏', 'WH');
+CALL add_table_column('stk_io_profit_loss', 'biz_scope', 'varchar(16) NOT NULL', 'WH???????? DEP???????', 'WH');
 /
-CALL add_table_column('stk_io_profit_loss', 'department_id', 'bigint', '科室ID', null);
+CALL add_table_column('stk_io_profit_loss', 'department_id', 'bigint', '???ID', null);
 /
-CALL add_table_column('stk_io_profit_loss', 'department_name_snap', 'varchar(200)', '科室名称快照', null);
+CALL add_table_column('stk_io_profit_loss', 'department_name_snap', 'varchar(200)', '?????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'dep_inventory_id', 'bigint', '科室库存明细id盘亏扣减', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'dep_inventory_id', 'bigint', '????????????id??????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'department_name_snap', 'varchar(200)', '科室名称快照', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'department_name_snap', 'varchar(200)', '?????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'return_warehouse_id', 'bigint', '盘盈可退库仓库快照', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'return_warehouse_id', 'bigint', '????????????????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'result_dep_inventory_id', 'bigint', '盘盈生成科室库存id', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'result_dep_inventory_id', 'bigint', '???????????????????id', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'entry_uuid', 'varchar(36)', '明细UUID7', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'entry_uuid', 'varchar(36)', '?????UUID7', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'stocktaking_line_uuid', 'varchar(36)', '来源盘点明细entry_uuid', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'stocktaking_line_uuid', 'varchar(36)', '?????????????entry_uuid', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'orig_batch_no', 'varchar(100)', '原账面批次号快照', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'orig_batch_no', 'varchar(100)', '??????????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'orig_batch_id', 'bigint', '原批次stk_batch.id', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'orig_batch_id', 'bigint', '???????stk_batch.id', null);
 /
 CALL add_table_column('stk_io_profit_loss_entry', 'pl_kind', 'varchar(16)', 'SURPLUS/LOSS', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'material_name_snap', 'varchar(256)', '耗材名称快照', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'material_name_snap', 'varchar(256)', '??????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'material_speci_snap', 'varchar(256)', '规格快照', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'material_speci_snap', 'varchar(256)', '???????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'warehouse_name_snap', 'varchar(200)', '仓库名称快照', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'warehouse_name_snap', 'varchar(200)', '??????????', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'surplus_stk_batch_id', 'bigint', '盘盈生成stk_batch.id', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'surplus_stk_batch_id', 'bigint', '????????????stk_batch.id', null);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'result_stk_inventory_id', 'bigint', '盘盈生成stk_inventory.id', null);
-/
-
--- ========== 出入库明细/流水/高值明细：单号与仓库供应商科室 varchar 快照 ==========
-CALL add_table_column('stk_io_bill_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID快照(varchar)', null);
-/
-CALL add_table_column('stk_io_bill_entry', 'supplier_id_str', 'varchar(64)', '供应商ID快照(varchar)', null);
-/
-CALL add_table_column('stk_io_bill_entry', 'department_id_str', 'varchar(64)', '科室ID快照(varchar)', null);
-/
-CALL add_table_column('t_hc_ck_flow', 'warehouse_id_str', 'varchar(64)', '仓库ID(varchar快照)', null);
-/
-CALL add_table_column('t_hc_ck_flow', 'supplier_id_str', 'varchar(64)', '供应商ID(varchar快照)', null);
-/
-CALL add_table_column('t_hc_ck_flow', 'department_id_str', 'varchar(64)', '科室ID(varchar快照)', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'warehouse_id_str', 'varchar(64)', '仓库ID(varchar快照)', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'department_id_str', 'varchar(64)', '科室ID(varchar快照)', null);
+CALL add_table_column('stk_io_profit_loss_entry', 'result_stk_inventory_id', 'bigint', '????????????stk_inventory.id', null);
 /
 
--- ========== 低值流水 t_hc_ck_flow / t_hc_ks_flow：varchar 形态外键/快照（与高值 gz_*_flow 对账维度对齐）==========
-CALL add_table_column('t_hc_ck_flow', 'bill_no', 'varchar(128)', '业务单号快照', null);
+-- ========== ?????????????/??/??????????????????????????????? varchar ???? ==========
+CALL add_table_column('stk_io_bill_entry', 'warehouse_id_str', 'varchar(64)', '????ID????(varchar)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'bill_id_str', 'varchar(64)', '主单ID varchar（与 bill_id 冗余，兼容非纯数字主键）', null);
+CALL add_table_column('stk_io_bill_entry', 'supplier_id_str', 'varchar(64)', '???????ID????(varchar)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'entry_id_str', 'varchar(64)', '明细ID varchar（与 entry_id 冗余）', null);
+CALL add_table_column('stk_io_bill_entry', 'department_id_str', 'varchar(64)', '???ID????(varchar)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'material_id_str', 'varchar(64)', '耗材ID varchar（与 material_id 冗余）', null);
+CALL add_table_column('t_hc_ck_flow', 'warehouse_id_str', 'varchar(64)', '????ID(varchar????)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'kc_no_str', 'varchar(64)', '仓库库存明细 stk_inventory.id varchar', null);
+CALL add_table_column('t_hc_ck_flow', 'supplier_id_str', 'varchar(64)', '???????ID(varchar????)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'batch_id_str', 'varchar(64)', '批次 stk_batch.id varchar', null);
+CALL add_table_column('t_hc_ck_flow', 'department_id_str', 'varchar(64)', '???ID(varchar????)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'factory_id_str', 'varchar(64)', '生产厂家 fd_factory.factory_id varchar', null);
+CALL add_table_column('t_hc_ks_flow', 'warehouse_id_str', 'varchar(64)', '????ID(varchar????)', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'bill_no', 'varchar(128)', '业务单号快照', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'bill_id_str', 'varchar(64)', '主单ID varchar（与 bill_id 冗余）', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'entry_id_str', 'varchar(64)', '明细ID varchar（与 entry_id 冗余）', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'material_id_str', 'varchar(64)', '耗材ID varchar（与 material_id 冗余）', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'kc_no_str', 'varchar(64)', '科室库存明细 stk_dep_inventory.id varchar', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'batch_id_str', 'varchar(64)', '批次 stk_batch.id varchar', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'factory_id_str', 'varchar(64)', '生产厂家 fd_factory.factory_id varchar', null);
-/
-CALL add_table_column('t_hc_ks_flow', 'supplier_name', 'varchar(256)', '供应商名称快照', null);
-/
-CALL add_table_column('gz_wh_flow', 'department_name', 'varchar(200)', '科室名称快照（与 gz_dep_flow 一致）', null);
+CALL add_table_column('t_hc_ks_flow', 'department_id_str', 'varchar(64)', '???ID(varchar????)', null);
 /
 
--- ========== 低值流水：科室 bigint + 耗材编码/名称快照 ==========
-CALL add_table_column('t_hc_ck_flow', 'department_id', 'bigint', '科室ID（仓库流水按科室统计，可为空）', null);
+-- ========== ??????? t_hc_ck_flow / t_hc_ks_flow??varchar ?????????/????????????? gz_*_flow ????????==========
+CALL add_table_column('t_hc_ck_flow', 'bill_no', 'varchar(128)', '????????????', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'material_code', 'varchar(128)', '耗材编码快照', null);
+CALL add_table_column('t_hc_ck_flow', 'bill_id_str', 'varchar(64)', '???ID varchar???? bill_id ?????????????????????????', null);
 /
-CALL add_table_column('t_hc_ck_flow', 'material_name', 'varchar(256)', '耗材名称快照', null);
+CALL add_table_column('t_hc_ck_flow', 'entry_id_str', 'varchar(64)', '?????ID varchar???? entry_id ???????', null);
 /
-CALL add_table_column('t_hc_ks_flow', 'material_code', 'varchar(128)', '耗材编码快照', null);
+CALL add_table_column('t_hc_ck_flow', 'material_id_str', 'varchar(64)', '????ID varchar???? material_id ???????', null);
 /
-CALL add_table_column('t_hc_ks_flow', 'material_name', 'varchar(256)', '耗材名称快照', null);
+CALL add_table_column('t_hc_ck_flow', 'kc_no_str', 'varchar(64)', '????????????? stk_inventory.id varchar', null);
 /
-CALL add_table_column('gz_order_entry', 'warehouse_id_str', 'varchar(64)', '仓库ID快照(varchar)', null);
+CALL add_table_column('t_hc_ck_flow', 'batch_id_str', 'varchar(64)', '???? stk_batch.id varchar', null);
 /
-CALL add_table_column('gz_order_entry', 'supplier_id_str', 'varchar(64)', '供应商ID快照(varchar)', null);
+CALL add_table_column('t_hc_ck_flow', 'factory_id_str', 'varchar(64)', '???????? fd_factory.factory_id varchar', null);
 /
-CALL add_table_column('gz_order_entry', 'department_id_str', 'varchar(64)', '科室ID快照(varchar)', null);
+CALL add_table_column('t_hc_ck_flow', 'supplier_name', 'varchar(256)', '?????????????', null);
 /
-CALL add_table_column('gz_wh_flow', 'department_id', 'varchar(64)', '科室ID快照', null);
+CALL add_table_column('t_hc_ks_flow', 'bill_no', 'varchar(128)', '????????????', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'bill_id_str', 'varchar(64)', '???ID varchar???? bill_id ???????', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'entry_id_str', 'varchar(64)', '?????ID varchar???? entry_id ???????', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'material_id_str', 'varchar(64)', '????ID varchar???? material_id ???????', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'kc_no_str', 'varchar(64)', '???????????? stk_dep_inventory.id varchar', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'batch_id_str', 'varchar(64)', '???? stk_batch.id varchar', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'factory_id_str', 'varchar(64)', '???????? fd_factory.factory_id varchar', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'supplier_name', 'varchar(256)', '?????????????', null);
+/
+CALL add_table_column('gz_wh_flow', 'department_name', 'varchar(200)', '????????????? gz_dep_flow ???????', null);
 /
 
--- ========== spd_scm_* 绑定表：del_flag 与全局一致（1=删除；历史若为 2 则迁为 1）==========
+-- ========== ???????????? bigint + ???????/?????? ==========
+CALL add_table_column('t_hc_ck_flow', 'department_id', 'bigint', '???ID????????????????????????', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'material_code', 'varchar(128)', '???????????', null);
+/
+CALL add_table_column('t_hc_ck_flow', 'material_name', 'varchar(256)', '??????????', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'material_code', 'varchar(128)', '???????????', null);
+/
+CALL add_table_column('t_hc_ks_flow', 'material_name', 'varchar(256)', '??????????', null);
+/
+CALL add_table_column('gz_order_entry', 'warehouse_id_str', 'varchar(64)', '????ID????(varchar)', null);
+/
+CALL add_table_column('gz_order_entry', 'supplier_id_str', 'varchar(64)', '???????ID????(varchar)', null);
+/
+CALL add_table_column('gz_order_entry', 'department_id_str', 'varchar(64)', '???ID????(varchar)', null);
+/
+CALL add_table_column('gz_wh_flow', 'department_id', 'varchar(64)', '???ID????', null);
+/
+
+-- ========== spd_scm_* ???????del_flag ??????????????1=???????????????? 2 ????? 1??==========
 UPDATE spd_scm_tenant_bind SET del_flag = '1' WHERE del_flag = '2';
 /
 UPDATE spd_scm_supplier_bind SET del_flag = '1' WHERE del_flag = '2';
 /
-ALTER TABLE spd_scm_tenant_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除';
+ALTER TABLE spd_scm_tenant_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0?? 1??????';
 /
-ALTER TABLE spd_scm_supplier_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0正常 1删除';
-/
-
--- ========== 患者计费统一表：列表性能冗余字段 ==========
-CALL add_table_column('his_patient_charge_mirror_unified', 'value_level', 'varchar(8)', '高低值(冗余自收费项镜像,1高2低)', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'varchar(32)', '处理方式（如自动处理、手动处理）', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '处理情况说明（成功/失败原因等）', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'patient_sex', 'varchar(16)', '患者性别', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'patient_name_referred', 'varchar(128)', '患者姓名拼音简码(首字母)', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'exec_dept_id', 'varchar(12)', '执行科室ID(HIS)', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'exec_dept_name', 'varchar(32)', '执行科室名称(HIS)', NULL);
+ALTER TABLE spd_scm_supplier_bind MODIFY COLUMN `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '0?? 1??????';
 /
 
--- ========== 采购链路：高低值标志（1高值 2低值） ==========
-CALL add_table_column('dep_purchase_apply', 'is_gz', 'char(1)', '高低值标志（1高值 2低值）', NULL);
+-- ========== ????????????????????????????????? ==========
+CALL add_table_column('his_patient_charge_mirror_unified', 'value_level', 'varchar(8)', '???????(???????????????????,1??2??)', NULL);
 /
-CALL add_table_column('dep_purchase_apply_agg_entry', 'is_gz', 'char(1)', '高低值标志（1高值 2低值，来自产品档案）', NULL);
+CALL add_table_column('his_patient_charge_mirror_unified', 'process_party', 'varchar(32)', '?????????????????????????????????????', NULL);
 /
-CALL add_table_column('purchase_plan', 'is_gz', 'char(1)', '高低值标志（1高值 2低值）', NULL);
+CALL add_table_column('his_patient_charge_mirror_unified', 'process_situation', 'varchar(512)', '??????????????????????/????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'is_gz', 'char(1)', '高低值标志（1高值 2低值，来自采购计划）', NULL);
+CALL add_table_column('his_patient_charge_mirror_unified', 'patient_sex', 'varchar(16)', '????????????', NULL);
 /
-CALL add_table_column('purchase_order', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '整单作废：0否 1是', '0');
+CALL add_table_column('his_patient_charge_mirror_unified', 'patient_name_referred', 'varchar(128)', '??????????????????(?????)', NULL);
 /
-CALL add_table_column('purchase_order', 'void_whole_by', 'varchar(64)', '整单作废人', NULL);
+CALL add_table_column('his_patient_charge_mirror_unified', 'exec_dept_id', 'varchar(12)', '????????ID(HIS)', NULL);
 /
-CALL add_table_column('purchase_order', 'void_whole_time', 'datetime', '整单作废时间', NULL);
-/
-CALL add_table_column('purchase_order', 'void_whole_reason', 'varchar(500)', '整单作废原因', NULL);
-/
-CALL add_table_column('purchase_order', 'push_by', 'varchar(64)', '发布人（推送成功时回写）', NULL);
+CALL add_table_column('his_patient_charge_mirror_unified', 'exec_dept_name', 'varchar(32)', '??????????(HIS)', NULL);
 /
 
--- HIS 计费镜像高低值展示/核销：以 fd_material.his_charge_item_id 对照 + is_gz 为准（1高值 2低值；未维护为未识别 0）
--- his_charge_item_mirror.value_level / unified.value_level 冗余字段不再作为列表与核销判定依据
+-- ========== ???????????????????????1????? 2??????? ==========
+CALL add_table_column('dep_purchase_apply', 'is_gz', 'char(1)', '?????????????1????? 2???????', NULL);
 /
--- 耗材对照绑定后按收费项目刷新 unified.value_level：存量库补 (tenant_id, charge_item_id) 索引，避免全表扫描超时
+CALL add_table_column('dep_purchase_apply_agg_entry', 'is_gz', 'char(1)', '?????????????1????? 2????????????????????', NULL);
+/
+CALL add_table_column('purchase_plan', 'is_gz', 'char(1)', '?????????????1????? 2???????', NULL);
+/
+CALL add_table_column('purchase_order', 'is_gz', 'char(1)', '?????????????1????? 2?????????????????????', NULL);
+/
+CALL add_table_column('purchase_order', 'void_whole_flag', 'int NOT NULL DEFAULT 0', '???????????0? 1???', '0');
+/
+CALL add_table_column('purchase_order', 'void_whole_by', 'varchar(64)', '??????????', NULL);
+/
+CALL add_table_column('purchase_order', 'void_whole_time', 'datetime', '???????????????', NULL);
+/
+CALL add_table_column('purchase_order', 'void_whole_reason', 'varchar(500)', '???????????????', NULL);
+/
+CALL add_table_column('purchase_order', 'push_by', 'varchar(64)', '??????????????????????????????', NULL);
+/
+
+-- HIS ??????????????????/??????? fd_material.his_charge_item_id ???? + is_gz ??????1????? 2??????????????????????? 0??
+-- his_charge_item_mirror.value_level / unified.value_level ????????????????????????????????
+/
+-- ??????????????????????????????? unified.value_level?????????? (tenant_id, charge_item_id) ??????????????????????
 SET @idx_exists := (
   SELECT COUNT(*) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'his_patient_charge_mirror_unified' AND index_name = 'idx_hpcm_unified_tenant_item'
@@ -2926,15 +2936,15 @@ EXECUTE stmt_hpcm_item_idx;
 DEALLOCATE PREPARE stmt_hpcm_item_idx;
 /
 
--- ========== 众阳 HIS 镜像 → SPD 主数据同步（组合唯一键与对照列） ==========
-CALL add_table_column('fd_material', 'his_spec_packing_id', 'varchar(64)', '众阳HIS产品档案唯一键（drug_spec_packing_id）', NULL);
+-- ========== ????? HIS ?????? ??? SPD ????????????????????????????????? ==========
+CALL add_table_column('fd_material', 'his_spec_packing_id', 'varchar(64)', '?????HIS?????????????????drug_spec_packing_id??', NULL);
 /
-CALL add_table_column('fd_unit', 'his_unit_id', 'varchar(64)', 'HIS计量单位ID', NULL);
+CALL add_table_column('fd_unit', 'his_unit_id', 'varchar(64)', 'HIS???????ID', NULL);
 /
-CALL add_table_column('sys_user', 'his_identity_id', 'varchar(64)', 'HIS用户身份ID（众阳 identity_id）', NULL);
+CALL add_table_column('sys_user', 'his_identity_id', 'varchar(64)', 'HIS????????ID??????? identity_id??', NULL);
 /
 
--- 众阳主数据 UPSERT 组合唯一键（存量库补索引；新库见 material/table.sql 全量建表）
+-- ?????????? UPSERT ????????????????????????????????? material/table.sql ??????????
 SET @idx_exists := (
   SELECT COUNT(*) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'fd_department' AND index_name = 'uk_fd_department_tenant_his'
@@ -3026,7 +3036,7 @@ EXECUTE stmt_idx;
 DEALLOCATE PREPARE stmt_idx;
 /
 
--- 供应商/厂家：租户+HIS 唯一（存量库补建；去重见 cleanup_duplicate_fd_supplier_factory.sql，启动时于 column.sql 前自动执行）
+-- ???????/???????????+HIS ????????????????????????? cleanup_duplicate_fd_supplier_factory.sql??????????? column.sql ????????????????
 SET @idx_exists := (
   SELECT COUNT(*) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'fd_supplier' AND index_name = 'uk_fd_supplier_tenant_his'
@@ -3058,79 +3068,79 @@ EXECUTE stmt_idx;
 DEALLOCATE PREPARE stmt_idx;
 /
 
--- ========== 众阳 HIS 单据推送（枣强 zaoqiang-tcm-001，评估文档 §6）==========
-CALL add_table_column('fd_warehouse', 'his_id', 'varchar(100)', 'his系统仓库ID，或其他第三方系统仓库ID（众阳对接填 storageDeptId）', NULL);
+-- ========== ????? HIS ??????????????? zaoqiang-tcm-001????????? �6??==========
+CALL add_table_column('fd_warehouse', 'his_id', 'varchar(100)', 'his???????ID???????????????????????ID???????????? storageDeptId??', NULL);
 /
 CALL add_table_column('stk_io_bill', 'his_in_stock_status', 'varchar(8)', '2.5.41 inStockStatus', NULL);
 /
-CALL add_table_column('stk_io_bill', 'his_storage_dept_id', 'varchar(128)', '推送快照 storageDeptId', NULL);
+CALL add_table_column('stk_io_bill', 'his_storage_dept_id', 'varchar(128)', '?????????? storageDeptId', NULL);
 /
-CALL add_table_column('stk_io_bill', 'his_pharmacy_dept_id', 'varchar(128)', '推送快照 pharmacyDeptId', NULL);
+CALL add_table_column('stk_io_bill', 'his_pharmacy_dept_id', 'varchar(128)', '?????????? pharmacyDeptId', NULL);
 /
 CALL add_table_column('stk_io_bill', 'his_spd_main_id', 'varchar(64)', '2.5.41 spdMainId', NULL);
 /
-CALL add_table_column('stk_io_bill', 'his_save_correlation_flag', 'char(1)', '2.5.41 saveCorrelationFlag 默认1', '1');
+CALL add_table_column('stk_io_bill', 'his_save_correlation_flag', 'char(1)', '2.5.41 saveCorrelationFlag ???1', '1');
 /
-CALL add_table_column('stk_io_bill', 'his_is_return_to_supplier', 'char(1)', '2.5.42 isReturnToSupplier 默认1', '1');
+CALL add_table_column('stk_io_bill', 'his_is_return_to_supplier', 'char(1)', '2.5.42 isReturnToSupplier ???1', '1');
 /
-CALL add_table_column('stk_io_bill', 'his_push_status', 'varchar(16)', 'HIS推送状态 0未推1推中2成功3失败', NULL);
+CALL add_table_column('stk_io_bill', 'his_push_status', 'varchar(16)', 'HIS???????????? 0??????1????2??????3??', NULL);
 /
-CALL add_table_column('stk_io_bill', 'his_push_time', 'datetime', 'HIS最近推送时间', NULL);
+CALL add_table_column('stk_io_bill', 'his_push_time', 'datetime', 'HIS?????????????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'his_push_msg', 'varchar(500)', 'HIS推送失败原因', NULL);
+CALL add_table_column('stk_io_bill', 'his_push_msg', 'varchar(500)', 'HIS??????????????', NULL);
 /
 CALL add_table_column('stk_io_bill', 'his_trace_id', 'varchar(64)', 'HIS traceId', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_memo', 'varchar(128)', 'HIS明细对照键 memo', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_memo', 'varchar(128)', 'HIS???????????? memo', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_spd_detail_id', 'varchar(64)', '2.5.41 spdDetailId（{billId}:{entryId}，见 MsunHisConstants）', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_spd_detail_id', 'varchar(64)', '2.5.41 spdDetailId??{billId}:{entryId}??? MsunHisConstants??', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_pharmacy_stock_id', 'varchar(64)', '2.5.41回写 pharmacyStockId', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_pharmacy_stock_id', 'varchar(64)', '2.5.41?????? pharmacyStockId', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_storage_stock_id', 'varchar(64)', '药库批次 storageStockId', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_storage_stock_id', 'varchar(64)', '??????? storageStockId', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_stock_query_id', 'varchar(64)', '合并库存 stockQueryId', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_stock_query_id', 'varchar(64)', '??????? stockQueryId', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'buy_price', 'decimal(18,6)', '进价(推送)', NULL);
+CALL add_table_column('stk_io_bill_entry', 'buy_price', 'decimal(18,6)', '???(??????)', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'retail_price', 'decimal(18,6)', '零售价(推送)', NULL);
+CALL add_table_column('stk_io_bill_entry', 'retail_price', 'decimal(18,6)', '???????(??????)', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'invoice_code', 'varchar(128)', '明细发票号', NULL);
+CALL add_table_column('stk_io_bill_entry', 'invoice_code', 'varchar(128)', '?????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_push_status', 'varchar(16)', '行级HIS推送状态', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_push_status', 'varchar(16)', '???HIS????????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_push_msg', 'varchar(500)', '行级HIS推送错误', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_push_msg', 'varchar(500)', '???HIS??????????', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_drug_id', 'varchar(64)', '推送快照 drugId', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_drug_id', 'varchar(64)', '?????????? drugId', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'his_drug_spec_packing_id', 'varchar(64)', '推送快照 drugSpecPackingId', NULL);
+CALL add_table_column('stk_io_bill_entry', 'his_drug_spec_packing_id', 'varchar(64)', '?????????? drugSpecPackingId', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'his_pharmacy_stock_id', 'varchar(128)', '退库权威键 pharmacyStockId', NULL);
+CALL add_table_column('stk_dep_inventory', 'his_pharmacy_stock_id', 'varchar(128)', '??????????? pharmacyStockId', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'his_stock_query_id', 'varchar(128)', 'HIS合并库存ID', NULL);
+CALL add_table_column('stk_dep_inventory', 'his_stock_query_id', 'varchar(128)', 'HIS???????ID', NULL);
 /
-CALL add_table_column('stk_dep_inventory', 'his_storage_stock_id', 'varchar(128)', 'HIS药库批次ID', NULL);
-/
-
--- ========== 机构管理员展示名（原「租户管理员」，与 SaaS 租户技术字段区分）==========
-UPDATE sys_role SET role_name = '机构管理员' WHERE role_key = 'tenant_admin' AND role_name = '租户管理员';
-/
-UPDATE sys_user SET nick_name = '机构管理员' WHERE user_name = 'super_01' AND nick_name = '租户管理员';
-/
--- ========== 机构管理员工作组展示名（原「管理员组」，与平台管理员区分；post_code/group_key 仍为 super）==========
-UPDATE sys_post SET post_name = '机构管理员' WHERE post_code = 'super' AND post_name IN ('管理员组', '管理员');
-/
-UPDATE sb_work_group SET group_name = '机构管理员' WHERE group_key = 'super' AND group_name IN ('管理员组', '管理员');
+CALL add_table_column('stk_dep_inventory', 'his_storage_stock_id', 'varchar(128)', 'HIS???????ID', NULL);
 /
 
--- ========== 高值消耗确认明细：HIS 镜像高值路径无 dept_batch_consume_entry_id，须允许 NULL ==========
+-- ========== ?????????????????????????????????????????? SaaS ??????????????????????==========
+UPDATE sys_role SET role_name = '????????????' WHERE role_key = 'tenant_admin' AND role_name = '???????????';
+/
+UPDATE sys_user SET nick_name = '????????????' WHERE user_name = 'super_01' AND nick_name = '???????????';
+/
+-- ========== ????????????????????????????????????????????????????????????post_code/group_key ?? super??==========
+UPDATE sys_post SET post_name = '????????????' WHERE post_code = 'super' AND post_name IN ('????????', '??????');
+/
+UPDATE sb_work_group SET group_name = '????????????' WHERE group_key = 'super' AND group_name IN ('????????', '??????');
+/
+
+-- ========== ???????????????????HIS ????????????????? dept_batch_consume_entry_id??????? NULL ==========
 ALTER TABLE `gz_high_consume_confirm_line`
-  MODIFY COLUMN `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '消耗明细ID（历史）';
+  MODIFY COLUMN `dept_batch_consume_entry_id` bigint DEFAULT NULL COMMENT '??????????ID????????';
 /
 
--- ========== 高值追溯单：audit_date 须为 datetime 以保留审核时分秒 ==========
+-- ========== ???????????audit_date ?? datetime ??????????????? ==========
 ALTER TABLE `gz_traceability`
-  MODIFY COLUMN `audit_date` datetime DEFAULT NULL COMMENT '审核时间';
+  MODIFY COLUMN `audit_date` datetime DEFAULT NULL COMMENT '????????';
 /
 UPDATE `gz_traceability`
 SET `audit_date` = `create_time`
@@ -3138,17 +3148,17 @@ WHERE `create_time` IS NOT NULL
   AND (`audit_date` IS NULL OR TIME(CAST(`audit_date` AS DATETIME)) = '00:00:00');
 /
 
--- ========== 出入库单打印记录（列表打印状态/打印人/打印日期）==========
-CALL add_table_column('stk_io_bill', 'print_date', 'datetime', '最近打印时间', NULL);
+-- ========== ?????????????????????????????????/?????/????????????==========
+CALL add_table_column('stk_io_bill', 'print_date', 'datetime', '???????????????', NULL);
 /
-CALL add_table_column('stk_io_bill', 'print_person', 'varchar(64)', '最近打印人', NULL);
-/
-
--- 高值核销确认：仓库维护「结算仓库」标识
-CALL add_table_column('fd_warehouse', 'is_settlement_warehouse', 'tinyint', '结算仓库标识 0否1是（高值核销确认可选）', '0');
+CALL add_table_column('stk_io_bill', 'print_person', 'varchar(64)', '??????????', NULL);
 /
 
--- ========== 备货查询（出/退库表）：按租户+时间范围加速 ==========
+-- ???????????????????????????????????????
+CALL add_table_column('fd_warehouse', 'is_settlement_warehouse', 'tinyint', '???????????? 0?1??????????????????????', '0');
+/
+
+-- ========== ????????????/??????????????????+?????????????????? ==========
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.statistics
   WHERE table_schema = DATABASE() AND table_name = 'gz_shipment' AND index_name = 'idx_gz_shipment_tenant_ct'
@@ -3240,18 +3250,18 @@ EXECUTE stmt_gz_rstk_entry_code;
 DEALLOCATE PREPARE stmt_gz_rstk_entry_code;
 /
 
--- ========== HV-B-002 高值即入即出审核状态（确认与建单解耦）==========
-CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_status', 'tinyint NOT NULL', '即入即出审核 0待审核 1已审核 2已冲销', '0');
+-- ========== HV-B-002 ????????????????????????????????????==========
+CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_status', 'tinyint NOT NULL', '?????????? 0???? 1??? 2???????', '0');
 /
-CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_by', 'varchar(64)', '即入即出审核人', NULL);
+CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_by', 'varchar(64)', '???????????', NULL);
 /
-CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_time', 'datetime', '即入即出审核时间', NULL);
+CALL add_table_column('his_mirror_consume_link', 'instant_io_audit_time', 'datetime', '????????????????', NULL);
 /
--- 临床确认不再必选仓库；库房审核时回写
+-- ????????????????????????????????????
 ALTER TABLE `gz_high_consume_confirm`
-  MODIFY COLUMN `warehouse_id` bigint DEFAULT NULL COMMENT '结算仓库ID（库房即入即出审核时写入）';
+  MODIFY COLUMN `warehouse_id` bigint DEFAULT NULL COMMENT '????????ID????????????????????????????';
 /
--- 老数据回填：历史上已确认且已有结算单据 → 视为已审核；审核人/时间取确认批次
+-- ??????????????????????????????????? ??? ???????????/??????????????
 UPDATE his_mirror_consume_link l
 INNER JOIN gz_high_consume_confirm c
   ON c.id = l.confirm_id AND c.tenant_id = l.tenant_id AND ifnull(c.del_flag, 0) = 0
@@ -3270,40 +3280,40 @@ WHERE ifnull(l.del_flag, 0) = 0
   );
 /
 
--- ========== 集采：产品档案挂集采类型 ==========
-CALL add_table_column('fd_material', 'jc_type_id', 'bigint', '集采类型ID（关联 fd_jc_type.id）', NULL);
+-- ========== ???????????????????????????? ==========
+CALL add_table_column('fd_material', 'jc_type_id', 'bigint', '??????????ID??????? fd_jc_type.id??', NULL);
 /
 
--- ========== SPD-F-001：明细/下级明细补全主表单号冗余 ==========
-CALL add_table_column('purchase_order_entry', 'order_no', 'varchar(64)', '订单单号（冗余主表 order_no）', NULL);
+-- ========== SPD-F-001???????/?????????????????????? ==========
+CALL add_table_column('purchase_order_entry', 'order_no', 'varchar(64)', '??????????????? order_no??', NULL);
 /
-CALL add_table_column('purchase_plan_entry', 'plan_no', 'varchar(64)', '计划单号（冗余主表 plan_no）', NULL);
+CALL add_table_column('purchase_plan_entry', 'plan_no', 'varchar(64)', '???????????????? plan_no??', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'apply_bill_no', 'varchar(64)', '申领单号（冗余主表 apply_bill_no）', NULL);
+CALL add_table_column('bas_apply_entry', 'apply_bill_no', 'varchar(64)', '????????????????? apply_bill_no??', NULL);
 /
-CALL add_table_column('dep_purchase_apply_agg_entry', 'purchase_bill_no', 'varchar(64)', '汇总申购单号（冗余）', NULL);
+CALL add_table_column('dep_purchase_apply_agg_entry', 'purchase_bill_no', 'varchar(64)', '?????????????????????', NULL);
 /
-CALL add_table_column('gz_dep_apply_entry', 'apply_bill_no', 'varchar(64)', '申领单号（冗余主表 apply_bill_no）', NULL);
+CALL add_table_column('gz_dep_apply_entry', 'apply_bill_no', 'varchar(64)', '????????????????? apply_bill_no??', NULL);
 /
-CALL add_table_column('gz_traceability_entry', 'trace_no', 'varchar(64)', '追溯单号（冗余主表 trace_no）', NULL);
+CALL add_table_column('gz_traceability_entry', 'trace_no', 'varchar(64)', '?????????????? trace_no??', NULL);
 /
-CALL add_table_column('new_product_apply_entry', 'apply_no', 'varchar(64)', '申购单号（冗余主表 apply_no）', NULL);
+CALL add_table_column('new_product_apply_entry', 'apply_no', 'varchar(64)', '???????????????? apply_no??', NULL);
 /
-CALL add_table_column('new_product_apply_detail', 'apply_no', 'varchar(64)', '申购单号（冗余主表 apply_no）', NULL);
+CALL add_table_column('new_product_apply_detail', 'apply_no', 'varchar(64)', '???????????????? apply_no??', NULL);
 /
-CALL add_table_column('purchase_forecast_entry', 'task_no', 'varchar(64)', '预测任务号（冗余）', NULL);
+CALL add_table_column('purchase_forecast_entry', 'task_no', 'varchar(64)', '??????????????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry_apply', 'purchase_plan_id', 'bigint(20)', '采购计划主表ID', NULL);
+CALL add_table_column('purchase_plan_entry_apply', 'purchase_plan_id', 'bigint(20)', '??????????ID', NULL);
 /
-CALL add_table_column('purchase_plan_entry_apply', 'plan_no', 'varchar(64)', '采购计划单号', NULL);
+CALL add_table_column('purchase_plan_entry_apply', 'plan_no', 'varchar(64)', '???????????', NULL);
 /
-CALL add_table_column('purchase_plan_entry_apply', 'apply_bill_no', 'varchar(64)', '科室申领单号', NULL);
+CALL add_table_column('purchase_plan_entry_apply', 'apply_bill_no', 'varchar(64)', '???????????', NULL);
 /
-CALL add_table_column('stk_initial_import_entry', 'bill_no', 'varchar(64)', '期初单号（冗余主表 bill_no）', NULL);
+CALL add_table_column('stk_initial_import_entry', 'bill_no', 'varchar(64)', '?????????????????? bill_no??', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'bill_no', 'varchar(64)', '盈亏单号（冗余主表 bill_no）', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'bill_no', 'varchar(64)', '???????????????? bill_no??', NULL);
 /
--- 存量回填（幂等：仅填空值）
+-- ??????????????????????????
 UPDATE purchase_order_entry e INNER JOIN purchase_order p ON e.parent_id = p.id
 SET e.order_no = p.order_no
 WHERE (e.order_no IS NULL OR TRIM(e.order_no) = '') AND p.order_no IS NOT NULL AND TRIM(p.order_no) != '';
@@ -3365,11 +3375,11 @@ SET e.bill_no = p.bill_no
 WHERE (e.bill_no IS NULL OR TRIM(e.bill_no) = '') AND p.bill_no IS NOT NULL AND TRIM(p.bill_no) != '';
 /
 
--- ========== 耗材产品维护：公共开放（衡水/枣强等启用客户均可开通）==========
--- 页面 foundation/material/index 已按租户分支（枣强禁手工新增、限改字段）；此处补菜单授权，避免仅衡水 hc_customer_menu 有页
+-- ========== ?????????????????????????????/????????????????????????==========
+-- ?? foundation/material/index ?????????????????????????????????????????????????????????????????????? hc_customer_menu ????
 UPDATE sys_menu m
 INNER JOIN (
-  SELECT menu_id FROM sys_menu WHERE menu_name = '基础资料' AND menu_type = 'M'
+  SELECT menu_id FROM sys_menu WHERE menu_name = '??????????' AND menu_type = 'M'
   UNION
   SELECT menu_id FROM sys_menu WHERE perms = 'foundation:material:list' AND menu_type = 'C'
   UNION
@@ -3386,7 +3396,7 @@ INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by,
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
 FROM sb_customer c
 JOIN (
-  SELECT menu_id FROM sys_menu WHERE menu_name = '基础资料' AND menu_type = 'M'
+  SELECT menu_id FROM sys_menu WHERE menu_name = '??????????' AND menu_type = 'M'
   UNION
   SELECT menu_id FROM sys_menu WHERE perms = 'foundation:material:list' AND menu_type = 'C'
   UNION
@@ -3399,15 +3409,15 @@ WHERE IFNULL(c.hc_status, '0') = '0'
     WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
   );
 /
--- 已有「基础资料」下页面的租户用户：补耗材产品维护页+按钮+目录到 sys_user_menu（登录侧栏读此表）
+-- ??????????????????????????????????????????????????????+??????+???????? sys_user_menu??????????????
 INSERT INTO sys_user_menu (user_id, menu_id, tenant_id)
 SELECT DISTINCT um.user_id, tgt.menu_id, um.tenant_id
 FROM sys_user_menu um
 INNER JOIN sys_menu sibling ON sibling.menu_id = um.menu_id AND sibling.menu_type = 'C'
 INNER JOIN sys_menu foundation ON foundation.menu_id = sibling.parent_id
-  AND foundation.menu_name = '基础资料' AND foundation.menu_type = 'M'
+  AND foundation.menu_name = '??????????' AND foundation.menu_type = 'M'
 INNER JOIN (
-  SELECT menu_id FROM sys_menu WHERE menu_name = '基础资料' AND menu_type = 'M'
+  SELECT menu_id FROM sys_menu WHERE menu_name = '??????????' AND menu_type = 'M'
   UNION
   SELECT menu_id FROM sys_menu WHERE perms = 'foundation:material:list' AND menu_type = 'C'
   UNION
@@ -3420,12 +3430,12 @@ WHERE um.tenant_id IS NOT NULL AND TRIM(um.tenant_id) != ''
     WHERE x.user_id = um.user_id AND x.menu_id = tgt.menu_id
   );
 /
--- 租户 super 工作组：补齐岗位菜单，便于后续用户授权树勾选
+-- ????? super ???????????????????????????????????????????
 INSERT INTO sys_post_menu (post_id, menu_id, tenant_id)
 SELECT p.post_id, m.menu_id, p.tenant_id
 FROM sys_post p
 JOIN (
-  SELECT menu_id FROM sys_menu WHERE menu_name = '基础资料' AND menu_type = 'M'
+  SELECT menu_id FROM sys_menu WHERE menu_name = '??????????' AND menu_type = 'M'
   UNION
   SELECT menu_id FROM sys_menu WHERE perms = 'foundation:material:list' AND menu_type = 'C'
   UNION
@@ -3442,51 +3452,57 @@ WHERE IFNULL(p.status, '0') = '0'
   );
 /
 
--- ========== SYS-F-002：客户金额显示小数位（已生效）+ 审核表 ==========
--- 说明：SqlInitRunner 仅执行 material/*；equipment/table.sql 的 CREATE IF NOT EXISTS 不会给已有 sb_customer 加列。
-CALL add_table_column('sb_customer', 'price_decimal_places', 'tinyint', '单价显示小数位(0-6，已生效)', '3');
+-- ========== SYS-F-002??????????????????????????????+ ??? ==========
+-- ??????SqlInitRunner ??????? material/*??equipment/table.sql ??? CREATE IF NOT EXISTS ????????? sb_customer ?????????
+CALL add_table_column('sb_customer', 'price_decimal_places', 'tinyint', '????????????(0-6?????????)', '3');
 /
-CALL add_table_column('sb_customer', 'amount_decimal_places', 'tinyint', '金额显示小数位(0-6，已生效)', '3');
+CALL add_table_column('sb_customer', 'amount_decimal_places', 'tinyint', '?????????????(0-6?????????)', '3');
 /
-CALL add_table_column('sb_customer', 'money_round_mode', 'varchar(16)', '金额舍入：HALF_UP/HALF_EVEN/DOWN', 'HALF_UP');
+CALL add_table_column('sb_customer', 'money_round_mode', 'varchar(16)', '????????????HALF_UP/HALF_EVEN/DOWN', 'HALF_UP');
 /
 CREATE TABLE IF NOT EXISTS `sb_customer_money_scale_audit` (
-  `audit_id` char(36) NOT NULL COMMENT '主键UUID7',
-  `customer_id` char(36) NOT NULL COMMENT '客户ID',
-  `price_decimal_places` tinyint NOT NULL COMMENT '申请：单价小数位',
-  `amount_decimal_places` tinyint NOT NULL COMMENT '申请：金额小数位',
-  `money_round_mode` varchar(16) NOT NULL DEFAULT 'HALF_UP' COMMENT '申请：舍入模式',
-  `audit_status` char(1) NOT NULL DEFAULT '0' COMMENT '0待审 1通过 2驳回',
-  `apply_by` varchar(64) DEFAULT '' COMMENT '申请人',
-  `apply_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
-  `apply_remark` varchar(500) DEFAULT NULL COMMENT '申请说明',
-  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
-  `audit_time` datetime DEFAULT NULL COMMENT '审核时间',
-  `audit_remark` varchar(500) DEFAULT NULL COMMENT '审核说明/驳回原因',
-  `old_price_decimal_places` tinyint DEFAULT NULL COMMENT '申请时已生效单价位',
-  `old_amount_decimal_places` tinyint DEFAULT NULL COMMENT '申请时已生效金额位',
-  `old_money_round_mode` varchar(16) DEFAULT NULL COMMENT '申请时已生效舍入',
+  `audit_id` char(36) NOT NULL COMMENT '????UUID7',
+  `customer_id` char(36) NOT NULL COMMENT '????ID',
+  `price_decimal_places` tinyint NOT NULL COMMENT '??????????????',
+  `amount_decimal_places` tinyint NOT NULL COMMENT '???????????????',
+  `money_round_mode` varchar(16) NOT NULL DEFAULT 'HALF_UP' COMMENT '??????????????',
+  `audit_status` char(1) NOT NULL DEFAULT '0' COMMENT '0??? 1????? 2????',
+  `apply_by` varchar(64) DEFAULT '' COMMENT '?????',
+  `apply_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '??????????',
+  `apply_remark` varchar(500) DEFAULT NULL COMMENT '????????',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '???',
+  `audit_time` datetime DEFAULT NULL COMMENT '????????',
+  `audit_remark` varchar(500) DEFAULT NULL COMMENT '??????/??????????',
+  `old_price_decimal_places` tinyint DEFAULT NULL COMMENT '??????????????????',
+  `old_amount_decimal_places` tinyint DEFAULT NULL COMMENT '???????????????????',
+  `old_money_round_mode` varchar(16) DEFAULT NULL COMMENT '????????????????????',
   PRIMARY KEY (`audit_id`),
   KEY `idx_money_scale_audit_customer` (`customer_id`),
   KEY `idx_money_scale_audit_status` (`audit_status`, `apply_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户金额小数位变更审核';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='????????????????????';
 /
 
--- ========== PC-F-003：HIS 计费镜像核销操作日志 ==========
+-- ========== PC-F-003??HIS ?????????????????????? ==========
 CREATE TABLE IF NOT EXISTS `his_mirror_process_log` (
-  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
-  `tenant_id` varchar(36) NOT NULL COMMENT '租户ID',
+  `id` varchar(36) NOT NULL COMMENT '????UUID7',
+  `tenant_id` varchar(36) NOT NULL COMMENT '?????ID',
   `visit_kind` varchar(16) NOT NULL COMMENT 'INPATIENT/OUTPATIENT',
-  `mirror_row_id` varchar(36) NOT NULL COMMENT '计费镜像行 his_*_charge_mirror.id',
+  `mirror_row_id` varchar(36) NOT NULL COMMENT '?????????? his_*_charge_mirror.id',
   `operation` varchar(32) NOT NULL COMMENT 'LOW_CONSUME/LOW_WRITE_OFF/HIGH_CONSUME',
   `outcome` varchar(16) NOT NULL COMMENT 'SUCCESS/FAIL',
   `process_type` varchar(16) DEFAULT NULL COMMENT 'LOW_VALUE/HIGH_VALUE',
-  `situation` varchar(500) DEFAULT NULL COMMENT '处理情况/失败原因',
-  `process_party` varchar(32) DEFAULT NULL COMMENT '手动处理/自动处理',
-  `process_by` varchar(64) DEFAULT NULL COMMENT '操作人',
-  `process_time` datetime NOT NULL COMMENT '操作时间',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '落库时间',
+  `situation` varchar(500) DEFAULT NULL COMMENT '??????????/????????',
+  `process_party` varchar(32) DEFAULT NULL COMMENT '??????????/??????????',
+  `process_by` varchar(64) DEFAULT NULL COMMENT '??????',
+  `process_time` datetime NOT NULL COMMENT '???????????',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '?????????',
   PRIMARY KEY (`id`),
   KEY `idx_hmpl_mirror_time` (`tenant_id`, `visit_kind`, `mirror_row_id`, `process_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像核销操作日志';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS??????????????????????';
+/
+
+-- ?????????????????/???????/????????????????? keys??
+CALL add_table_column('sys_user', 'message_reminder_keys', 'varchar(128)', '??????????keys(warehouse,department,data)', NULL);
+/
+CALL add_table_column('sys_post', 'message_reminder_keys', 'varchar(128)', '??????????keys(warehouse,department,data)', NULL);
 /
