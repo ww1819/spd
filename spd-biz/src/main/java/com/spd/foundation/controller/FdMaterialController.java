@@ -642,6 +642,11 @@ public class FdMaterialController extends BaseController
     @GetMapping("/listPurchasePlanPick")
     public TableDataInfo listPurchasePlanPickGet(FdMaterial fdMaterial)
     {
+        if (fdMaterial == null)
+        {
+            fdMaterial = new FdMaterial();
+        }
+        fdMaterial.setSkipWarehouseFixedNumberExists(Boolean.TRUE);
         startPage();
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
         for (FdMaterial m : list)
@@ -661,6 +666,7 @@ public class FdMaterialController extends BaseController
         Integer pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         Integer pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
         FdMaterial query = request.getQuery() != null ? request.getQuery() : new FdMaterial();
+        query.setSkipWarehouseFixedNumberExists(Boolean.TRUE);
         PageHelper.startPage(pageNum, pageSize);
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         for (FdMaterial m : list)

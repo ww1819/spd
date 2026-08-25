@@ -882,13 +882,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billType != null "> and stk.bill_type = #{billType}</if>
     </select>
 
-    <!-- 出退库汇总明细行（未分组）：行单价与明细表 selectCTKStkIoBillList 完全一致：unit_price → amt/qty；price 仅作最后兜底 -->
+    <!-- 出退库行单价：与出库单明细一致，不做两位四舍五入（避免 0.025→0.03）；amt/qty 兜底保留 6 位 -->
     <sql id="ctkSummaryLineUnitPriceExpr">
-        ROUND(COALESCE(
+        COALESCE(
             b.unit_price,
-            CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &gt; 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
+            CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &gt; 0 THEN ROUND(b.amt / b.qty, 6) ELSE NULL END,
             NULLIF(b.price, 0)
-        ), 2)
+        )
+    </sql>
+    <!-- 出退库行金额：优先明细 amt（与出库单一致），否则数量×行单价 -->
+    <sql id="ctkSummaryLineAmtAbsExpr">
+        ABS(IFNULL(
+            b.amt,
+            ABS(IFNULL(b.qty, 0)) * IFNULL((<include refid="ctkSummaryLineUnitPriceExpr"/>), 0)
+        ))
     </sql>
 
     <sql id="ctkSummaryRawLineSelect">
@@ -913,8 +920,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                <include refid="ctkSummaryLineUnitPriceExpr"/> as lineUnitPrice,
                (case when stk.bill_type = 401 then -ABS(IFNULL(b.qty, 0)) else ABS(IFNULL(b.qty, 0)) end) signedQty,
                (case when stk.bill_type = 401 then -1 else 1 end)
-                 * ABS(IFNULL(b.qty, 0))
-                 * IFNULL((<include refid="ctkSummaryLineUnitPriceExpr"/>), 0) signedAmt
+                 * (<include refid="ctkSummaryLineAmtAbsExpr"/>) signedAmt
         from stk_io_bill stk
         inner join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
@@ -1007,21 +1013,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY t.materialCode, MAX(t.materialName), MAX(t.warehouseName), t.lineUnitPrice
     </select>
 
-    <!-- 出退库明细：仅报表所需字段，无嵌套子查询。单价优先明细行再按金额/数量计算，供应商以明细行 suppler_id 为准 -->
+    <!-- 出退库明细：仅报表所需字段，无嵌套子查询。单价/金额与出库单一致（不 ROUND 两位），供应商以明细行 suppler_id 为准 -->
     <select id="selectCTKStkIoBillList" parameterType="StkIoBill" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select stk.id, m.code materialCode, m.name materialName, stk.bill_no billNo, stk.bill_date billDate,
                stk.bill_type billType, b.qty materialQty,
-               ROUND(COALESCE(
-                   b.unit_price,
-                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
-                   NULLIF(b.price, 0)
-               ), 2) unitPrice,
-               (IFNULL(b.qty, 0) * IFNULL(ROUND(COALESCE(
-                   b.unit_price,
-                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
-                   NULLIF(b.price, 0)
-               ), 2), 0)) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
+               (<include refid="ctkSummaryLineUnitPriceExpr"/>) unitPrice,
+               (<include refid="ctkSummaryLineAmtAbsExpr"/>) materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime, b.end_time endTime,
                m.speci materialSpeci, m.model materialModel, u.unit_name unitName,
                f.factory_name factoryName, fc.finance_category_name financeCategoryName,
                s.name supplierName,
@@ -1099,15 +1097,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCTKStkIoBillListTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select SUM(case when stk.bill_type = 401 then -IFNULL(b.qty,0) else IFNULL(b.qty,0) end) totalQty,
-               SUM(case when stk.bill_type = 401 then -(IFNULL(b.qty,0) * IFNULL(ROUND(COALESCE(
-                   b.unit_price,
-                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
-                   NULLIF(b.price, 0)
-               ), 2), 0)) else (IFNULL(b.qty,0) * IFNULL(ROUND(COALESCE(
-                   b.unit_price,
-                   CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty > 0 THEN ROUND(b.amt / b.qty, 2) ELSE NULL END,
-                   NULLIF(b.price, 0)
-               ), 2), 0)) end) totalAmt
+               SUM(case when stk.bill_type = 401 then -(<include refid="ctkSummaryLineAmtAbsExpr"/>)
+                        else (<include refid="ctkSummaryLineAmtAbsExpr"/>) end) totalAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         left join fd_supplier s on s.id = (case when b.suppler_id is not null and trim(b.suppler_id) &lt;&gt; '' then cast(trim(b.suppler_id) as unsigned) else stk.suppler_id end)
