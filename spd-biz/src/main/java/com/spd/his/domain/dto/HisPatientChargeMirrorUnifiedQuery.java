@@ -58,6 +58,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     private String clinicNameLike;
     /** 执行科室名称模糊（住院/门诊/全部） */
     private String execDeptNameLike;
+    /** 开单科室名称/编码模糊（住院/门诊/全部） */
+    private String orderDeptNameLike;
     /** 项目名称模糊 */
     private String itemNameLike;
     /** highValueStockQty / lowValueStockQty：仅用于分页后内存排序 */

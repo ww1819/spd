@@ -1,7 +1,9 @@
 package com.spd.system.service.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,8 +33,10 @@ import com.spd.system.mapper.SysUserWarehouseMapper;
 import com.spd.system.mapper.SysPostMenuMapper;
 import com.spd.system.mapper.SysPostDepartmentMapper;
 import com.spd.system.mapper.SysPostWarehouseMapper;
+import com.spd.system.mapper.SysUserMapper;
 import com.spd.system.service.ISysMenuService;
 import com.spd.system.service.ISysPostService;
+import com.spd.common.core.domain.entity.SysUser;
 
 /**
  * 岗位信息 服务层处理
@@ -76,6 +80,9 @@ public class SysPostServiceImpl implements ISysPostService
 
     @Autowired
     private ISysMenuService menuService;
+
+    @Autowired
+    private SysUserMapper userMapper;
 
     /**
      * 查询岗位信息集合
@@ -621,6 +628,103 @@ public class SysPostServiceImpl implements ISysPostService
             }
         }
         return affected;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncMessageReminderToPostUsers(Long postId, String syncMode)
+    {
+        if (postId == null)
+        {
+            return 0;
+        }
+        SysPost post = postMapper.selectPostById(postId);
+        if (post == null)
+        {
+            return 0;
+        }
+        String postKeysRaw = post.getMessageReminderKeys();
+        if (postKeysRaw == null)
+        {
+            return 0;
+        }
+        String[] postKeys = SysUserServiceImpl.splitMessageReminderKeys(postKeysRaw);
+        String[] postPopup = SysUserServiceImpl.splitMessageReminderKeys(post.getMessageReminderPopupKeys());
+        List<Long> userIds = selectUserIdsByPostId(postId);
+        if (userIds == null || userIds.isEmpty())
+        {
+            return 0;
+        }
+        boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        int affected = 0;
+        for (Long userId : userIds)
+        {
+            String[] nextKeys;
+            String[] nextPopup;
+            if (copyMode)
+            {
+                nextKeys = postKeys;
+                nextPopup = postPopup;
+            }
+            else
+            {
+                SysUser user = userMapper.selectUserById(userId);
+                String[] existingKeys = user != null
+                    ? SysUserServiceImpl.splitMessageReminderKeys(user.getMessageReminderKeys())
+                    : new String[0];
+                String[] existingPopup = user != null
+                    ? SysUserServiceImpl.splitMessageReminderKeys(user.getMessageReminderPopupKeys())
+                    : new String[0];
+                nextKeys = mergeMessageReminderKeys(existingKeys, postKeys);
+                nextPopup = mergeMessageReminderPopupKeys(nextKeys, existingPopup, postPopup);
+            }
+            String keysCsv = SysUserServiceImpl.joinMessageReminderKeys(nextKeys);
+            String popupCsv = SysUserServiceImpl.joinMessageReminderKeys(nextPopup);
+            userMapper.updateUserMessageReminderKeys(userId, keysCsv, popupCsv);
+            affected++;
+        }
+        return affected;
+    }
+
+    private static String[] mergeMessageReminderKeys(String[] existing, String[] post)
+    {
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        if (existing != null)
+        {
+            set.addAll(Arrays.asList(existing));
+        }
+        if (post != null)
+        {
+            set.addAll(Arrays.asList(post));
+        }
+        return set.toArray(new String[0]);
+    }
+
+    private static String[] mergeMessageReminderPopupKeys(String[] mergedAuthKeys, String[] existingPopup, String[] postPopup)
+    {
+        Set<String> auth = new HashSet<>(Arrays.asList(mergedAuthKeys != null ? mergedAuthKeys : new String[0]));
+        LinkedHashSet<String> popup = new LinkedHashSet<>();
+        if (existingPopup != null)
+        {
+            for (String k : existingPopup)
+            {
+                if (auth.contains(k))
+                {
+                    popup.add(k);
+                }
+            }
+        }
+        if (postPopup != null)
+        {
+            for (String k : postPopup)
+            {
+                if (auth.contains(k))
+                {
+                    popup.add(k);
+                }
+            }
+        }
+        return popup.toArray(new String[0]);
     }
 
     @Override

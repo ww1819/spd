@@ -231,6 +231,37 @@
                 )
             )
         </if>
+        <if test="orderDeptNameLike != null and orderDeptNameLike != ''">
+            and (
+                ifnull(m.dept_name, '') like concat('%', #{orderDeptNameLike}, '%')
+                or ifnull(m.dept_code, '') like concat('%', #{orderDeptNameLike}, '%')
+                or ifnull(m.clinic_name, '') like concat('%', #{orderDeptNameLike}, '%')
+                or ifnull(m.clinic_code, '') like concat('%', #{orderDeptNameLike}, '%')
+                or exists (
+                    select 1 from fd_department odkw
+                    where (odkw.del_flag = 0 or odkw.del_flag is null)
+                      and odkw.tenant_id = #{tenantId}
+                      and (
+                          (m.dept_code is not null and trim(m.dept_code) != ''
+                              and (
+                                  (odkw.code is not null and trim(odkw.code) = trim(m.dept_code))
+                                  or (odkw.his_id is not null and trim(odkw.his_id) = trim(m.dept_code))
+                              ))
+                          or (m.clinic_code is not null and trim(m.clinic_code) != ''
+                              and (
+                                  (odkw.code is not null and trim(odkw.code) = trim(m.clinic_code))
+                                  or (odkw.his_id is not null and trim(odkw.his_id) = trim(m.clinic_code))
+                              ))
+                      )
+                      and (
+                          ifnull(odkw.referred_name, '') like concat('%', #{orderDeptNameLike}, '%')
+                          or ifnull(odkw.code, '') like concat('%', #{orderDeptNameLike}, '%')
+                          or ifnull(odkw.name, '') like concat('%', #{orderDeptNameLike}, '%')
+                          or ifnull(odkw.his_id, '') like concat('%', #{orderDeptNameLike}, '%')
+                      )
+                )
+            )
+        </if>
         <if test='execDeptEmpty != null and execDeptEmpty == "Y"'>
             and (m.exec_dept_id is null or trim(m.exec_dept_id) = '')
         </if>

@@ -74,6 +74,8 @@ public class HisOutpatientChargeMirror extends BaseEntity
     private String processed;
     /** 查询：执行科室是否为空 Y=是 N=否；空=全部 */
     private String execDeptEmpty;
+    /** 查询：开单科室名称/编码模糊 */
+    private String orderDeptName;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date beginProcessTime;

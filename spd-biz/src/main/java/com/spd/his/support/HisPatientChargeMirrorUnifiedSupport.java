@@ -171,6 +171,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setBeginProcessTime(q.getBeginProcessTime());
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(StringUtils.trimToNull(q.getDeptName()));
+        u.setOrderDeptNameLike(StringUtils.trimToNull(q.getOrderDeptName()));
         u.setExecDeptNameLike(StringUtils.trimToNull(q.getExecDeptName()));
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
@@ -205,6 +206,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setBeginProcessTime(q.getBeginProcessTime());
         u.setEndProcessTime(q.getEndProcessTime());
         u.setClinicNameLike(StringUtils.trimToNull(q.getClinicName()));
+        u.setOrderDeptNameLike(StringUtils.trimToNull(q.getOrderDeptName()));
         u.setExecDeptNameLike(StringUtils.trimToNull(q.getExecDeptName()));
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
@@ -240,6 +242,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(null);
         u.setClinicNameLike(null);
+        u.setOrderDeptNameLike(StringUtils.trimToNull(q.getOrderDeptName()));
         u.setExecDeptNameLike(StringUtils.trimToNull(q.getExecDeptName()));
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
