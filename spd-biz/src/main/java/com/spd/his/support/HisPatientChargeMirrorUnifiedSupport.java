@@ -170,8 +170,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndChargeDate(q.getEndChargeDate());
         u.setBeginProcessTime(q.getBeginProcessTime());
         u.setEndProcessTime(q.getEndProcessTime());
-        u.setDeptNameLike(q.getDeptName());
-        u.setExecDeptNameLike(q.getExecDeptName());
+        u.setDeptNameLike(StringUtils.trimToNull(q.getDeptName()));
+        u.setOrderDeptNameLike(StringUtils.trimToNull(q.getOrderDeptName()));
+        u.setExecDeptNameLike(StringUtils.trimToNull(q.getExecDeptName()));
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
@@ -204,8 +205,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndChargeDate(q.getEndChargeDate());
         u.setBeginProcessTime(q.getBeginProcessTime());
         u.setEndProcessTime(q.getEndProcessTime());
-        u.setClinicNameLike(q.getClinicName());
-        u.setExecDeptNameLike(q.getExecDeptName());
+        u.setClinicNameLike(StringUtils.trimToNull(q.getClinicName()));
+        u.setOrderDeptNameLike(StringUtils.trimToNull(q.getOrderDeptName()));
+        u.setExecDeptNameLike(StringUtils.trimToNull(q.getExecDeptName()));
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
@@ -240,7 +242,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setEndProcessTime(q.getEndProcessTime());
         u.setDeptNameLike(null);
         u.setClinicNameLike(null);
-        u.setExecDeptNameLike(q.getExecDeptName());
+        u.setOrderDeptNameLike(StringUtils.trimToNull(q.getOrderDeptName()));
+        u.setExecDeptNameLike(StringUtils.trimToNull(q.getExecDeptName()));
         u.setItemNameLike(StringUtils.trimToNull(q.getItemName()));
         u.setOrderByColumn(q.getOrderByColumn());
         u.setIsAsc(q.getIsAsc());
@@ -545,6 +548,10 @@ public final class HisPatientChargeMirrorUnifiedSupport
         if (StringUtils.isNotBlank(u.getItemNameLike()))
         {
             u.setItemNameLike(StringUtils.trim(u.getItemNameLike()));
+        }
+        if (StringUtils.isNotBlank(u.getExecDeptNameLike()))
+        {
+            u.setExecDeptNameLike(StringUtils.trim(u.getExecDeptNameLike()));
         }
         normalizeSortParams(u);
     }

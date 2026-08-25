@@ -121,6 +121,11 @@ public interface ISysPostService
     int syncWarehouseToPostUsers(Long postId, String syncMode);
 
     /**
+     * 异步同步任务：将工作组消息提醒权限同步到组内用户
+     */
+    int syncMessageReminderToPostUsers(Long postId, String syncMode);
+
+    /**
      * 同步任务状态查询
      */
     SyncStatus getMenuSyncStatus(Long postId);

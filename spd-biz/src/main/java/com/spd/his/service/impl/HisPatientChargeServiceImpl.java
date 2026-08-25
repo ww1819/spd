@@ -87,7 +87,9 @@ import com.spd.his.support.HisAutoWriteOffOperatorSupport;
 import com.spd.his.support.HisChargeMirrorAmountSupport;
 import com.spd.his.support.HisInternalRequestContext;
 import com.spd.his.support.HisMirrorValueLevelSupport;
+import com.spd.his.support.HisMirrorProcessUserMessages;
 import com.spd.his.support.HisPatientChargeMirrorUnifiedSupport;
+import com.spd.department.vo.DepartmentConsumeReminderRowVo;
 import com.spd.foundation.service.ISbTenantSettingService;
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.system.mapper.SysUserMapper;
@@ -720,6 +722,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.buildExportUnifiedQuery(
             q, visitKind, inpatientNo, outpatientNo);
         HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
+        applyPatientChargeDepartmentScopeIfNeeded(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
         if (total > MIRROR_EXPORT_MAX_ROWS)
         {
@@ -1842,6 +1845,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private UnifiedMirrorPageSlice selectUnifiedMirrorPageSlice(HisPatientChargeMirrorUnifiedQuery uq)
     {
         HisPatientChargeMirrorUnifiedSupport.normalizeListQueryKeywords(uq);
+        applyPatientChargeDepartmentScopeIfNeeded(uq);
         PageUtils.startPage(false);
         List<HisPatientChargeMirrorUnified> rows = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
@@ -2077,6 +2081,136 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             return null;
         }
+    }
+
+    @Override
+    public List<DepartmentConsumeReminderRowVo> selectDepartmentConsumeReminderMonitorList()
+    {
+        HisPatientChargeMirrorUnifiedQuery uq = buildDepartmentConsumeReminderUnifiedQuery();
+        if (uq == null)
+        {
+            return Collections.emptyList();
+        }
+        ensureUnifiedMirrorBackfill(uq.getTenantId());
+        List<DepartmentConsumeReminderRowVo> list = hisPatientChargeMirrorUnifiedMapper.selectDepartmentConsumeReminderList(uq);
+        if (list == null || list.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        for (DepartmentConsumeReminderRowVo row : list)
+        {
+            if (row == null)
+            {
+                continue;
+            }
+            row.setProcessStatusText(formatConsumeReminderProcessStatusText(row.getProcessStatus()));
+        }
+        return list;
+    }
+
+    @Override
+    public long countDepartmentConsumeReminderMonitor()
+    {
+        HisPatientChargeMirrorUnifiedQuery uq = buildDepartmentConsumeReminderUnifiedQuery();
+        if (uq == null)
+        {
+            return 0L;
+        }
+        ensureUnifiedMirrorBackfill(uq.getTenantId());
+        return hisPatientChargeMirrorUnifiedMapper.countDepartmentConsumeReminder(uq);
+    }
+
+    /**
+     * 消息提醒科室销：与「患者费用明细」相同数据源与低值口径，且 processed=N（仅 PENDING_CONSUME），
+     * 并按当前用户科室数据权限过滤（非机构管理员）。
+     */
+    private HisPatientChargeMirrorUnifiedQuery buildDepartmentConsumeReminderUnifiedQuery()
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(tenantId))
+        {
+            return null;
+        }
+        HisPatientChargeAllQuery q = new HisPatientChargeAllQuery();
+        q.setTenantId(tenantId);
+        q.setProcessed("N");
+        HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
+        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
+        applyPatientChargeDepartmentScopeIfNeeded(uq);
+        return uq;
+    }
+
+    /** 患者费用明细 / 科室销提醒：非机构管理员按授权科室 code 过滤（见 unifiedDepartmentScopeFilter） */
+    private void applyPatientChargeDepartmentScopeIfNeeded(HisPatientChargeMirrorUnifiedQuery uq)
+    {
+        if (uq == null)
+        {
+            return;
+        }
+        uq.setScopeDeptCodes(null);
+        uq.setScopeDeptDenyAll(null);
+        String tenantId = StringUtils.isNotEmpty(uq.getTenantId()) ? uq.getTenantId() : SecurityUtils.getCustomerId();
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null)
+        {
+            uq.setScopeDeptDenyAll(Boolean.TRUE);
+            return;
+        }
+        if (tenantScopeService.isTenantSuper(userId, tenantId))
+        {
+            return;
+        }
+        List<Long> deptIds = tenantScopeService.resolveDepartmentScope(userId, tenantId);
+        if (deptIds == null || deptIds.isEmpty())
+        {
+            uq.setScopeDeptDenyAll(Boolean.TRUE);
+            return;
+        }
+        List<String> deptCodes = resolveScopedDepartmentCodes(userId);
+        if (deptCodes.isEmpty())
+        {
+            uq.setScopeDeptDenyAll(Boolean.TRUE);
+            return;
+        }
+        uq.setScopeDeptCodes(deptCodes);
+    }
+
+    /** 用户授权科室 → fd_department.code（镜像 dept_code / exec_dept_id 存 SPD 科室编码） */
+    private List<String> resolveScopedDepartmentCodes(Long userId)
+    {
+        if (userId == null)
+        {
+            return Collections.emptyList();
+        }
+        List<FdDepartment> depts = fdDepartmentMapper.selectUserDepartmenAll(userId);
+        if (depts == null || depts.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        Set<String> codes = new HashSet<>();
+        for (FdDepartment dept : depts)
+        {
+            if (dept == null)
+            {
+                continue;
+            }
+            String code = StringUtils.trimToNull(dept.getCode());
+            if (code != null)
+            {
+                codes.add(code);
+            }
+        }
+        return new ArrayList<>(codes);
+    }
+
+    /** 科室销提醒展示：未处理 */
+    private static String formatConsumeReminderProcessStatusText(String processStatus)
+    {
+        if ("PENDING_CONSUME".equals(StringUtils.trimToEmpty(processStatus)))
+        {
+            return "未处理";
+        }
+        return HisMirrorProcessUserMessages.processStatusText(processStatus);
     }
 
 }

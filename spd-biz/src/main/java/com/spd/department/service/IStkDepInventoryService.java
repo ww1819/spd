@@ -6,6 +6,7 @@ import com.spd.department.domain.StkDepInventory;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
 import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
+import com.spd.department.vo.DepartmentInventoryAlertReminderRowVo;
 
 /**
  * 科室库存Service接口
@@ -94,4 +95,11 @@ public interface IStkDepInventoryService
     List<DepartmentNearExpiryReminderRowVo> selectDepartmentNearExpiryReminderMonitorList();
 
     long countDepartmentNearExpiryReminderMonitor();
+
+    /**
+     * 消息提醒：科室库存预警明细（按科室+耗材汇总，最多 500 条）
+     */
+    List<DepartmentInventoryAlertReminderRowVo> selectDepartmentInventoryAlertReminderMonitorList();
+
+    long countDepartmentInventoryAlertReminderMonitor();
 }

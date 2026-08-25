@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.spd.his.domain.HisPatientChargeMirrorUnified;
 import com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery;
+import com.spd.department.vo.DepartmentConsumeReminderRowVo;
 
 public interface HisPatientChargeMirrorUnifiedMapper
 {
@@ -50,6 +51,11 @@ public interface HisPatientChargeMirrorUnifiedMapper
     long countList(HisPatientChargeMirrorUnifiedQuery query);
 
     List<HisPatientChargeMirrorUnified> selectList(HisPatientChargeMirrorUnifiedQuery query);
+
+    /** 消息提醒：科室销提醒（待处理低值计费，最多 500 条） */
+    List<DepartmentConsumeReminderRowVo> selectDepartmentConsumeReminderList(HisPatientChargeMirrorUnifiedQuery query);
+
+    long countDepartmentConsumeReminder(HisPatientChargeMirrorUnifiedQuery query);
 
     int updateInpatientExecDeptIfMissing(
         @Param("tenantId") String tenantId,

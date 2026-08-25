@@ -16,6 +16,7 @@ import com.spd.department.service.IStkDepInventoryService;
 import com.spd.department.vo.InventorySummaryVo;
 import com.spd.department.vo.DepartmentInOutDetailVo;
 import com.spd.department.vo.DepartmentNearExpiryReminderRowVo;
+import com.spd.department.vo.DepartmentInventoryAlertReminderRowVo;
 import com.spd.system.service.ITenantScopeService;
 
 /**
@@ -237,6 +238,31 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
             q.setTenantId(SecurityUtils.getCustomerId());
         }
         Long c = stkDepInventoryMapper.countDepartmentNearExpiryReminder(q);
+        return c != null ? c.longValue() : 0L;
+    }
+
+    @Override
+    public List<DepartmentInventoryAlertReminderRowVo> selectDepartmentInventoryAlertReminderMonitorList()
+    {
+        StkDepInventory q = new StkDepInventory();
+        applyDepInvListWarehouseDepartmentScope(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkDepInventoryMapper.selectDepartmentInventoryAlertReminderList(q);
+    }
+
+    @Override
+    public long countDepartmentInventoryAlertReminderMonitor()
+    {
+        StkDepInventory q = new StkDepInventory();
+        applyDepInvListWarehouseDepartmentScope(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        Long c = stkDepInventoryMapper.countDepartmentInventoryAlertReminder(q);
         return c != null ? c.longValue() : 0L;
     }
 }

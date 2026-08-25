@@ -3,41 +3,30 @@
 <mapper namespace="com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper">
 
     <!-- 列表筛选/排序统一用 charge_at（datetime，可走 idx 索引） -->
-    <!-- 科室数据权限：优先执行科室；执行科室为空或未对照时回退开单科室 -->
-    <sql id="unifiedDeptScopeHisIdMatch">
-        (
-            m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
-            and trim(dscope.his_id) = trim(m.exec_dept_id)
-        )
-        or (
-            (
-                m.exec_dept_id is null or trim(m.exec_dept_id) = ''
-                or not exists (
-                    select 1 from fd_department dmap
-                    where (dmap.del_flag = 0 or dmap.del_flag is null)
-                      and dmap.tenant_id = #{tenantId}
-                      and trim(dmap.his_id) = trim(m.exec_dept_id)
-                )
-            )
-            and (
-                (m.visit_kind = 'INPATIENT' and m.dept_code is not null and trim(m.dept_code) != ''
-                    and trim(dscope.his_id) = trim(m.dept_code))
-                or (m.visit_kind = 'OUTPATIENT' and m.clinic_code is not null and trim(m.clinic_code) != ''
-                    and trim(dscope.his_id) = trim(m.clinic_code))
-            )
-        )
-    </sql>
-
+    <!-- 科室数据权限：仅用 fd_department.code 与镜像 dept_code/clinic_code/exec_dept_id 对照；开单或执行任一命中即可见 -->
     <sql id="unifiedDepartmentScopeFilter">
-        <if test="params != null and params.scopeDeptUserId != null">
-            and exists (
-                select 1 from fd_department dscope
-                where (dscope.del_flag = 0 or dscope.del_flag is null)
-                  and dscope.tenant_id = #{tenantId}
-                  and <include refid="unifiedDeptScopeHisIdMatch"/>
-                  and dscope.id in (
-                    <include refid="com.spd.common.mybatis.TenantScopeFragments.scopedDeptIdsSubquery"/>
-                  )
+        <if test="scopeDeptDenyAll != null and scopeDeptDenyAll">
+            and 1=0
+        </if>
+        <if test="scopeDeptDenyAll == null and scopeDeptCodes != null and scopeDeptCodes.size() &gt; 0">
+            and (
+                (
+                    m.exec_dept_id is not null and trim(m.exec_dept_id) != ''
+                    and trim(m.exec_dept_id) in
+                    <foreach collection="scopeDeptCodes" item="scopeDeptCode" open="(" separator="," close=")">#{scopeDeptCode}</foreach>
+                )
+                or (
+                    m.visit_kind = 'INPATIENT'
+                    and m.dept_code is not null and trim(m.dept_code) != ''
+                    and trim(m.dept_code) in
+                    <foreach collection="scopeDeptCodes" item="scopeDeptCode" open="(" separator="," close=")">#{scopeDeptCode}</foreach>
+                )
+                or (
+                    m.visit_kind = 'OUTPATIENT'
+                    and m.clinic_code is not null and trim(m.clinic_code) != ''
+                    and trim(m.clinic_code) in
+                    <foreach collection="scopeDeptCodes" item="scopeDeptCode" open="(" separator="," close=")">#{scopeDeptCode}</foreach>
+                )
             )
         </if>
     </sql>
@@ -191,6 +180,7 @@
         <if test='processed != null and processed == "Y"'>
             and m.process_status != 'PENDING_CONSUME'
         </if>
+        <!-- 未处理：与患者收费查询「是否处理=未处理」一致，仅 PENDING_CONSUME -->
         <if test='processed != null and processed == "N"'>
             and m.process_status = 'PENDING_CONSUME'
         </if>
@@ -237,6 +227,37 @@
                           or ifnull(edkw.code, '') like concat('%', #{execDeptNameLike}, '%')
                           or ifnull(edkw.name, '') like concat('%', #{execDeptNameLike}, '%')
                           or ifnull(edkw.his_id, '') like concat('%', #{execDeptNameLike}, '%')
+                      )
+                )
+            )
+        </if>
+        <if test="orderDeptNameLike != null and orderDeptNameLike != ''">
+            and (
+                ifnull(m.dept_name, '') like concat('%', #{orderDeptNameLike}, '%')
+                or ifnull(m.dept_code, '') like concat('%', #{orderDeptNameLike}, '%')
+                or ifnull(m.clinic_name, '') like concat('%', #{orderDeptNameLike}, '%')
+                or ifnull(m.clinic_code, '') like concat('%', #{orderDeptNameLike}, '%')
+                or exists (
+                    select 1 from fd_department odkw
+                    where (odkw.del_flag = 0 or odkw.del_flag is null)
+                      and odkw.tenant_id = #{tenantId}
+                      and (
+                          (m.dept_code is not null and trim(m.dept_code) != ''
+                              and (
+                                  (odkw.code is not null and trim(odkw.code) = trim(m.dept_code))
+                                  or (odkw.his_id is not null and trim(odkw.his_id) = trim(m.dept_code))
+                              ))
+                          or (m.clinic_code is not null and trim(m.clinic_code) != ''
+                              and (
+                                  (odkw.code is not null and trim(odkw.code) = trim(m.clinic_code))
+                                  or (odkw.his_id is not null and trim(odkw.his_id) = trim(m.clinic_code))
+                              ))
+                      )
+                      and (
+                          ifnull(odkw.referred_name, '') like concat('%', #{orderDeptNameLike}, '%')
+                          or ifnull(odkw.code, '') like concat('%', #{orderDeptNameLike}, '%')
+                          or ifnull(odkw.name, '') like concat('%', #{orderDeptNameLike}, '%')
+                          or ifnull(odkw.his_id, '') like concat('%', #{orderDeptNameLike}, '%')
                       )
                 )
             )
@@ -511,6 +532,38 @@
         <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
         <include refid="unifiedListOrderBy"/>
+    </select>
+
+    <!-- 消息提醒：科室销提醒（待处理低值计费镜像） -->
+    <select id="selectDepartmentConsumeReminderList" parameterType="com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery"
+            resultType="com.spd.department.vo.DepartmentConsumeReminderRowVo">
+        select
+            m.process_status as processStatus,
+            case when m.visit_kind = 'OUTPATIENT' then ifnull(m.clinic_name, '') else ifnull(m.dept_name, '') end as orderDeptName,
+            ifnull(m.exec_dept_name, '') as execDeptName,
+            coalesce(nullif(trim(m.inpatient_no), ''), nullif(trim(m.outpatient_no), '')) as medicalRecordNo,
+            ifnull(m.patient_name, '') as patientName,
+            ifnull(m.charge_item_id, '') as chargeItemId,
+            ifnull(m.item_name, '') as itemName,
+            ifnull(m.spec_model, '') as specModel,
+            ifnull(cim.unit, '') as unitName,
+            m.unit_price as unitPrice
+        from his_patient_charge_mirror_unified m
+        <include refid="unifiedHighMaterialJoin"/>
+        left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
+            and trim(cim.charge_item_id) = trim(m.charge_item_id)
+            and (cim.deleted_flag is null or cim.deleted_flag != 1)
+        <include refid="unifiedListWhere"/>
+        order by m.charge_at desc, m.id desc
+        limit 500
+    </select>
+
+    <select id="countDepartmentConsumeReminder" parameterType="com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery"
+            resultType="long">
+        select count(1)
+        from his_patient_charge_mirror_unified m
+        <include refid="unifiedHighMaterialJoin"/>
+        <include refid="unifiedListWhere"/>
     </select>
 
     <sql id="unifiedListOrderBy">

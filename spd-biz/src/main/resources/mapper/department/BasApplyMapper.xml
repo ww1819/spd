@@ -156,8 +156,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <sql id="basApplyCreateTimeRangeFilter">
-        <if test="beginDate != null"> and DATE(a.create_time) &gt;= DATE(#{beginDate})</if>
-        <if test="endDate != null"> and DATE(a.create_time) &lt;= DATE(#{endDate})</if>
+        <if test="beginDate != null and (dateQueryType == null or dateQueryType == '' or dateQueryType == 'bill')"> and DATE(a.create_time) &gt;= DATE(#{beginDate})</if>
+        <if test="endDate != null and (dateQueryType == null or dateQueryType == '' or dateQueryType == 'bill')"> and DATE(a.create_time) &lt;= DATE(#{endDate})</if>
+        <if test="beginDate != null and dateQueryType == 'audit'"> and DATE(a.audit_date) &gt;= DATE(#{beginDate})</if>
+        <if test="endDate != null and dateQueryType == 'audit'"> and DATE(a.audit_date) &lt;= DATE(#{endDate})</if>
     </sql>
 
     <select id="selectBasApplyList" parameterType="BasApply" resultMap="BasApplyResult">
