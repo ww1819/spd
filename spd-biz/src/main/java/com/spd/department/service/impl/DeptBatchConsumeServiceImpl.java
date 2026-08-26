@@ -21,7 +21,9 @@ import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.department.mapper.HcKsFlowMapper;
 import com.spd.department.mapper.StkDepInventoryMapper;
+import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.mapper.FdDepartmentMapper;
 import com.spd.foundation.mapper.FdMaterialMapper;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
@@ -60,6 +62,8 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     private DeptBatchConsumeMapper deptBatchConsumeMapper;
     @Autowired
     private FdMaterialMapper fdMaterialMapper;
+    @Autowired
+    private FdDepartmentMapper fdDepartmentMapper;
     @Autowired
     private StkDepInventoryMapper stkDepInventoryMapper;
     @Autowired
@@ -108,6 +112,39 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         }
         tenantScopeService.applyDepartmentScopeQueryParams(
             deptBatchConsume.getParams(), SecurityUtils.getUserId(), SecurityUtils.getCustomerId());
+    }
+
+    /**
+     * 检验小组：仅当开单科室名称包含「检验科」时可填，且必须是该科室的直接下级；否则强制置空。
+     * 不影响库存扣减科室（仍用 departmentId）。
+     */
+    private void normalizeInspectTeamDept(DeptBatchConsume bill)
+    {
+        if (bill == null) {
+            return;
+        }
+        Long departmentId = bill.getDepartmentId();
+        if (departmentId == null) {
+            bill.setInspectTeamDeptId(null);
+            return;
+        }
+        FdDepartment dept = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(departmentId));
+        String deptName = dept == null ? null : dept.getName();
+        if (StringUtils.isEmpty(deptName) || !deptName.contains("检验科")) {
+            bill.setInspectTeamDeptId(null);
+            return;
+        }
+        Long teamId = bill.getInspectTeamDeptId();
+        if (teamId == null) {
+            return;
+        }
+        FdDepartment team = fdDepartmentMapper.selectFdDepartmentById(String.valueOf(teamId));
+        if (team == null
+                || (team.getDelFlag() != null && team.getDelFlag() == 1)
+                || team.getParentId() == null
+                || !departmentId.equals(team.getParentId())) {
+            throw new ServiceException("检验小组必须是当前科室的直接下级");
+        }
     }
 
     /**
@@ -176,6 +213,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
         }
+        normalizeInspectTeamDept(deptBatchConsume);
         int rows = deptBatchConsumeMapper.insertDeptBatchConsume(deptBatchConsume);
         int filteredCount = insertDeptBatchConsumeEntry(deptBatchConsume);
         deptBatchConsume.setDedupFilteredCount(filteredCount);
@@ -209,6 +247,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         if (existing != null && existing.getDepartmentId() != null) {
             deptBatchConsume.setDepartmentId(existing.getDepartmentId());
         }
+        normalizeInspectTeamDept(deptBatchConsume);
         MasterDetailValidateUtil.assertHasMaterialLine(
             deptBatchConsume.getDeptBatchConsumeEntryList(), DeptBatchConsumeEntry::getMaterialId, "消耗");
         deptBatchConsume.setUpdateTime(DateUtils.getNowDate());
@@ -566,6 +605,7 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         reverseBill.setConsumeBillDate(DateUtils.getNowDate());
         reverseBill.setWarehouseId(srcBill.getWarehouseId());
         reverseBill.setDepartmentId(srcBill.getDepartmentId());
+        reverseBill.setInspectTeamDeptId(srcBill.getInspectTeamDeptId());
         reverseBill.setUserId(srcBill.getUserId());
         reverseBill.setConsumeBillStatus(2);
         reverseBill.setDelFlag(0);

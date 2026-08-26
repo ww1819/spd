@@ -20,6 +20,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="consumeBillDate"    column="consume_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="departmentId"    column="department_id"    />
+        <result property="inspectTeamDeptId"    column="inspect_team_dept_id"    />
+        <result property="inspectTeamDeptName"    column="inspectTeamDeptName"    />
         <result property="userId"    column="user_id"    />
         <result property="consumeBillStatus"    column="consume_bill_status"    />
         <result property="delFlag"    column="del_flag"    />
@@ -133,11 +135,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectDeptBatchConsumeVo">
-        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id,
+        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.inspect_team_dept_id, a.user_id,
                 a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.reverse_flag, a.reverse_of_consume_id, a.reverse_of_bill_no,
                 a.bill_source, a.disallow_reverse, a.his_fetch_batch_id, a.create_by, a.create_time, a.update_by,
                 a.update_time, a.remark, a.reject_reason, w.id wId,w.code warehouseCode,w.name warehouseName,a.audit_by,a.audit_date,
                 u.user_id userId,u.nick_name nickName,u.user_name userName,d.code departmentCode,d.name departmentName,
+               itd.name as inspectTeamDeptName,
                cu.nick_name createNickName,cu.user_name createUserName,
                au.nick_name auditNickName,au.user_name auditUserName,
                CASE
@@ -158,6 +161,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_warehouse w on a.warehouse_id = w.id
         left join sys_user u on a.user_id = u.user_id
         left join fd_department d on a.department_id = d.id
+        left join fd_department itd on a.inspect_team_dept_id = itd.id
         left join sys_user cu on NULLIF(TRIM(a.create_by), '自动核销') = cu.user_id
         left join sys_user au on NULLIF(TRIM(a.audit_by), '自动核销') = au.user_id
     </sql>
@@ -187,7 +191,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectDeptBatchConsumeById" parameterType="Long" resultMap="DeptBatchConsumeDeptBatchConsumeEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.user_id, a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.reverse_flag, a.reverse_of_consume_id, a.reverse_of_bill_no,
+        select a.id, a.consume_bill_no, a.consume_bill_date, a.warehouse_id, a.department_id, a.inspect_team_dept_id, a.user_id, a.consume_bill_status, a.del_flag, a.delete_by, a.delete_time, a.tenant_id, a.reverse_flag, a.reverse_of_consume_id, a.reverse_of_bill_no,
                 a.bill_source, a.disallow_reverse, a.his_fetch_batch_id,
                 a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.reject_reason,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.unit_price as sub_unit_price,
@@ -216,9 +220,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                    WHEN NULLIF(TRIM(a.audit_by), '') = '自动核销' THEN '自动核销'
                    ELSE COALESCE(NULLIF(TRIM(au.nick_name), ''), au.user_name)
                END AS auditDisplayName,
-               a.audit_by,m.code materialCode,m.name materialName
+               a.audit_by,m.code materialCode,m.name materialName,
+               itd.name as inspectTeamDeptName
         from t_hc_ks_xh a
         left join t_hc_ks_xh_entry b on b.paren_id = a.id and b.del_flag != 1
+        left join fd_department itd on a.inspect_team_dept_id = itd.id
         left join sys_user u on a.user_id = u.user_id
         left join sys_user au on NULLIF(TRIM(a.audit_by), '自动核销') = au.user_id
         left join sys_user cu on NULLIF(TRIM(a.create_by), '自动核销') = cu.user_id
@@ -234,6 +240,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumeBillDate != null">consume_bill_date,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="departmentId != null">department_id,</if>
+            <if test="inspectTeamDeptId != null">inspect_team_dept_id,</if>
             <if test="userId != null">user_id,</if>
             <if test="consumeBillStatus != null">consume_bill_status,</if>
             <if test="delFlag != null">del_flag,</if>
@@ -260,6 +267,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumeBillDate != null">#{consumeBillDate},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="departmentId != null">#{departmentId},</if>
+            <if test="inspectTeamDeptId != null">#{inspectTeamDeptId},</if>
             <if test="userId != null">#{userId},</if>
             <if test="consumeBillStatus != null">#{consumeBillStatus},</if>
             <if test="delFlag != null">#{delFlag},</if>
@@ -291,6 +299,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumeBillDate != null">consume_bill_date = #{consumeBillDate},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="departmentId != null">department_id = #{departmentId},</if>
+            inspect_team_dept_id = #{inspectTeamDeptId,jdbcType=BIGINT},
             <if test="userId != null">user_id = #{userId},</if>
             <if test="consumeBillStatus != null">consume_bill_status = #{consumeBillStatus},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>

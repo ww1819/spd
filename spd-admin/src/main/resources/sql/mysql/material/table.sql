@@ -2321,6 +2321,7 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh` (
   `consume_bill_date` date DEFAULT NULL COMMENT '消耗日期',
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库ID',
   `department_id` bigint DEFAULT NULL COMMENT '科室ID',
+  `inspect_team_dept_id` bigint DEFAULT NULL COMMENT '检验小组科室ID（fd_department.id，当前科室直接下级，可空）',
   `user_id` bigint DEFAULT NULL COMMENT '操作人ID',
   `consume_bill_status` int DEFAULT 1 COMMENT '单据状态 1待审核 2已审核',
   `total_amount` decimal(18,2) DEFAULT 0.00 COMMENT '总金额',

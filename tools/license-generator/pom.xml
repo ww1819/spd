@@ -45,7 +45,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <!-- m2e 工作区构建时 reactor 依赖还是 target/classes 目录，copy-dependencies 会报 MDEP-187；命令行 mvn package 仍会复制 -->
                     <execution>
+                        <?m2e ignore?>
                         <id>copy-dependencies</id>
                         <phase>package</phase>
                         <goals>

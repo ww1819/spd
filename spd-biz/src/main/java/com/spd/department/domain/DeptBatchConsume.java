@@ -41,6 +41,13 @@ public class DeptBatchConsume extends BaseEntity
     @Excel(name = "科室ID")
     private Long departmentId;
 
+    /** 检验小组科室ID（当前科室直接下级，可空） */
+    private Long inspectTeamDeptId;
+
+    /** 检验小组名称（列表/导出） */
+    @Excel(name = "检验小组")
+    private String inspectTeamDeptName;
+
     /** 操作人ID */
     @Excel(name = "操作人ID")
     private Long userId;
@@ -214,6 +221,26 @@ public class DeptBatchConsume extends BaseEntity
     public Long getDepartmentId() 
     {
         return departmentId;
+    }
+
+    public void setInspectTeamDeptId(Long inspectTeamDeptId)
+    {
+        this.inspectTeamDeptId = inspectTeamDeptId;
+    }
+
+    public Long getInspectTeamDeptId()
+    {
+        return inspectTeamDeptId;
+    }
+
+    public void setInspectTeamDeptName(String inspectTeamDeptName)
+    {
+        this.inspectTeamDeptName = inspectTeamDeptName;
+    }
+
+    public String getInspectTeamDeptName()
+    {
+        return inspectTeamDeptName;
     }
 
     public void setUserId(Long userId) 
@@ -508,6 +535,8 @@ public class DeptBatchConsume extends BaseEntity
             .append("deptBatchConsumeEntryList", getDeptBatchConsumeEntryList())
             .append("warehouse", getWarehouse())
             .append("user", getUser())
+            .append("inspectTeamDeptId", getInspectTeamDeptId())
+            .append("inspectTeamDeptName", getInspectTeamDeptName())
             .append("department", getDepartment())
             .append("auditPerson", getAuditPerson())
             .append("creater", getCreater())

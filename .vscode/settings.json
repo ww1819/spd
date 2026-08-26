@@ -4,5 +4,6 @@
     "java.import.maven.enabled": true,
     "java.maven.downloadSources": true,
     "java.project.importOnFirstTimeStartup": "automatic",
-    "maven.pomfile.globPattern": "**/pom.xml"
+    "maven.pomfile.globPattern": "**/pom.xml",
+    "java.debug.settings.onBuildFailureProceed": true
 }
