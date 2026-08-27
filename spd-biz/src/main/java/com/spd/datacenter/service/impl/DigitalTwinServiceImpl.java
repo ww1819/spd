@@ -12,6 +12,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.datacenter.mapper.DigitalTwinMapper;
 import com.spd.datacenter.service.IDigitalTwinService;
 import com.spd.warehouse.domain.StkInventory;
@@ -74,8 +75,8 @@ public class DigitalTwinServiceImpl implements IDigitalTwinService
         List<Map<String, Object>> zones = (List<Map<String, Object>>) shelves.get("zones");
 
         Map<String, Object> body = new HashMap<>(16);
-        body.put("totalQty", toBd(totals.get("totalQty")).setScale(2, RoundingMode.HALF_UP));
-        body.put("totalAmt", toBd(totals.get("totalAmt")).setScale(2, RoundingMode.HALF_UP));
+        body.put("totalQty", toBd(totals.get("totalQty")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        body.put("totalAmt", toBd(totals.get("totalAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
         body.put("materialSkuCount", toLong(totals.get("materialSkuCount")));
         body.put("todayInboundBillCount", toLong(ioCount.get("todayInboundBillCount")));
         body.put("todayOutboundBillCount", toLong(ioCount.get("todayOutboundBillCount")));
@@ -403,8 +404,8 @@ public class DigitalTwinServiceImpl implements IDigitalTwinService
             return;
         }
         BigDecimal qty = toBd(stock.get("qty"));
-        loc.put("qty", qty.setScale(2, RoundingMode.HALF_UP));
-        loc.put("amt", toBd(stock.get("amt")).setScale(2, RoundingMode.HALF_UP));
+        loc.put("qty", qty.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        loc.put("amt", toBd(stock.get("amt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
         loc.put("skuCount", toLong(stock.get("skuCount")));
         loc.put("minDaysToExpiry", stock.get("minDaysToExpiry"));
 

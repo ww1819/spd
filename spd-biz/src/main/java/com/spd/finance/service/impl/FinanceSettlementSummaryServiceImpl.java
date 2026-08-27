@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import com.spd.common.core.domain.entity.SysUser;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.finance.domain.vo.FinanceDeptConsumablePickupRowVo;
 import com.spd.finance.domain.vo.FinanceDeptMonthlyConsumptionRowVo;
@@ -137,9 +138,9 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
                 }
                 dr.setDepartmentName(row.get("departmentName") != null ? row.get("departmentName").toString() : "");
                 dr.setCampus(row.get("campus") != null ? row.get("campus").toString() : "");
-                dr.setPlainConsumablesAmt(toBigDecimal(row.get("plainConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
-                dr.setHighValueConsumablesAmt(toBigDecimal(row.get("highValueConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
-                dr.setReagentAmt(toBigDecimal(row.get("reagentAmt")).setScale(2, RoundingMode.HALF_UP));
+                dr.setPlainConsumablesAmt(toBigDecimal(row.get("plainConsumablesAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+                dr.setHighValueConsumablesAmt(toBigDecimal(row.get("highValueConsumablesAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+                dr.setReagentAmt(toBigDecimal(row.get("reagentAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
                 deptRows.add(dr);
             }
         }
@@ -150,11 +151,11 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
 
         FinanceSettlementSummaryBundleVo bundle = new FinanceSettlementSummaryBundleVo();
         bundle.setMaterialSuppliers(material);
-        bundle.setMaterialWholesaleTotal(materialSum.setScale(2, RoundingMode.HALF_UP));
+        bundle.setMaterialWholesaleTotal(materialSum.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
         bundle.setReagentSuppliers(reagent);
-        bundle.setReagentWholesaleTotal(reagentSum.setScale(2, RoundingMode.HALF_UP));
+        bundle.setReagentWholesaleTotal(reagentSum.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
         bundle.setUnrecognizedSuppliers(unrecognized);
-        bundle.setUnrecognizedWholesaleTotal(unrecognizedSum.setScale(2, RoundingMode.HALF_UP));
+        bundle.setUnrecognizedWholesaleTotal(unrecognizedSum.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
         bundle.setDeptConsumablePickupRows(deptRows);
         bundle.setDeptMonthlyConsumptionRows(deptMonthlyRows);
         return bundle;
@@ -217,8 +218,8 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
                 FinanceDeptMonthlyConsumptionRowVo dr = new FinanceDeptMonthlyConsumptionRowVo();
                 dr.setDepartmentId(deptId);
                 dr.setDepartmentName(row.get("departmentName") != null ? row.get("departmentName").toString() : "");
-                dr.setBillingConsumablesAmt(toBigDecimal(row.get("billingConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
-                dr.setNonBillingConsumablesAmt(toBigDecimal(row.get("nonBillingConsumablesAmt")).setScale(2, RoundingMode.HALF_UP));
+                dr.setBillingConsumablesAmt(toBigDecimal(row.get("billingConsumablesAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+                dr.setNonBillingConsumablesAmt(toBigDecimal(row.get("nonBillingConsumablesAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
                 amountByDeptId.put(deptId, dr);
             }
         }
@@ -252,8 +253,8 @@ public class FinanceSettlementSummaryServiceImpl implements IFinanceSettlementSu
             FinanceDeptMonthlyConsumptionRowVo dr = new FinanceDeptMonthlyConsumptionRowVo();
             dr.setDepartmentId(dept.getId());
             dr.setDepartmentName(StringUtils.nvl(dept.getName(), ""));
-            dr.setBillingConsumablesAmt(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-            dr.setNonBillingConsumablesAmt(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            dr.setBillingConsumablesAmt(BigDecimal.ZERO.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+            dr.setNonBillingConsumablesAmt(BigDecimal.ZERO.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
             rows.add(dr);
         }
 

@@ -19,7 +19,7 @@ public class MedicalOutboundSummaryVo
     @Excel(name = "材料类别", width = 25)
     private String materialCategoryName;
 
-    @Excel(name = "金额", width = 18, cellType = ColumnType.NUMERIC, scale = 2, roundingMode = BigDecimal.ROUND_HALF_UP, isStatistics = true)
+    @Excel(name = "金额", width = 18, cellType = ColumnType.NUMERIC, scale = 3, roundingMode = BigDecimal.ROUND_HALF_UP, isStatistics = true)
     private BigDecimal amount;
 
     @Excel(name = "单位", width = 14)

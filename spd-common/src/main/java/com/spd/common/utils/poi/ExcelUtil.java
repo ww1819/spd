@@ -189,7 +189,7 @@ public class ExcelUtil<T>
     /**
      * 数字格式
      */
-    private static final DecimalFormat DOUBLE_FORMAT = new DecimalFormat("######0.00");
+    private static final DecimalFormat DOUBLE_FORMAT = new DecimalFormat("######0.###");
 
     /**
      * 实体对象

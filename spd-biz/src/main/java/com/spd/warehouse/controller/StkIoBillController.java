@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.common.utils.http.HttpUtils;
 import com.spd.system.service.ISysConfigService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -224,12 +225,12 @@ public class StkIoBillController extends BaseController
         TotalInfo consume = deptBatchConsumeService.selectAuditedConsumeReportTotal(dc);
 
         Map<String, Object> body = new HashMap<>(8);
-        body.put("acceptanceAmount", nzBd(acceptance != null ? acceptance.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
-        body.put("acceptanceQuantity", nzBd(acceptance != null ? acceptance.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
-        body.put("outboundAmount", nzBd(outbound != null ? outbound.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
-        body.put("outboundQuantity", nzBd(outbound != null ? outbound.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
-        body.put("consumptionAmount", nzBd(consume != null ? consume.getTotalAmt() : null).abs().setScale(2, RoundingMode.HALF_UP));
-        body.put("consumptionQuantity", nzBd(consume != null ? consume.getTotalQty() : null).abs().setScale(2, RoundingMode.HALF_UP));
+        body.put("acceptanceAmount", nzBd(acceptance != null ? acceptance.getTotalAmt() : null).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        body.put("acceptanceQuantity", nzBd(acceptance != null ? acceptance.getTotalQty() : null).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        body.put("outboundAmount", nzBd(outbound != null ? outbound.getTotalAmt() : null).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        body.put("outboundQuantity", nzBd(outbound != null ? outbound.getTotalQty() : null).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        body.put("consumptionAmount", nzBd(consume != null ? consume.getTotalAmt() : null).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
+        body.put("consumptionQuantity", nzBd(consume != null ? consume.getTotalQty() : null).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP));
         return success(body);
     }
 

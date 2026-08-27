@@ -45,6 +45,58 @@ BEGIN
 END;
 /
 
+DROP PROCEDURE IF EXISTS `widen_qty_price_amt_decimal`;
+/
+CREATE PROCEDURE `widen_qty_price_amt_decimal`()
+BEGIN
+    DECLARE done INT DEFAULT 0;
+    DECLARE v_table VARCHAR(64);
+    DECLARE v_col VARCHAR(64);
+    DECLARE v_nullable VARCHAR(8);
+    DECLARE v_default VARCHAR(256);
+    DECLARE v_comment VARCHAR(1024);
+    DECLARE cur CURSOR FOR
+        SELECT c.TABLE_NAME, c.COLUMN_NAME, c.IS_NULLABLE, c.COLUMN_DEFAULT, IFNULL(c.COLUMN_COMMENT, '')
+        FROM information_schema.COLUMNS c
+        INNER JOIN information_schema.TABLES t
+            ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_TYPE = 'BASE TABLE'
+        WHERE c.TABLE_SCHEMA = DATABASE()
+          AND c.DATA_TYPE = 'decimal'
+          AND c.NUMERIC_SCALE IS NOT NULL
+          AND c.NUMERIC_SCALE <= 2
+          AND (
+              c.COLUMN_NAME LIKE '%qty%'
+              OR c.COLUMN_NAME LIKE '%quantity%'
+              OR c.COLUMN_NAME LIKE '%price%'
+              OR c.COLUMN_NAME LIKE '%amt%'
+              OR c.COLUMN_NAME LIKE '%amount%'
+          )
+          AND c.TABLE_NAME NOT IN ('sys_print_setting', 'fd_location');
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    OPEN cur;
+    read_loop: LOOP
+        FETCH cur INTO v_table, v_col, v_nullable, v_default, v_comment;
+        IF done = 1 THEN
+            LEAVE read_loop;
+        END IF;
+        SET @dynamic_sql = CONCAT('ALTER TABLE `', v_table, '` MODIFY COLUMN `', v_col, '` decimal(18,6) ');
+        IF v_nullable = 'NO' THEN
+            SET @dynamic_sql = CONCAT(@dynamic_sql, 'NOT NULL ');
+        END IF;
+        IF v_default IS NOT NULL AND v_default != '' THEN
+            SET @dynamic_sql = CONCAT(@dynamic_sql, 'DEFAULT ', v_default, ' ');
+        END IF;
+        SET @dynamic_sql = CONCAT(@dynamic_sql, 'COMMENT ', QUOTE(v_comment));
+        PREPARE stmt FROM @dynamic_sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END LOOP;
+    CLOSE cur;
+END;
+/
+CALL widen_qty_price_amt_decimal();
+/
+
 CALL add_table_column('sys_user', 'message_reminder_keys', 'varchar(128)', 'message reminder keys warehouse department data', NULL);
 /
 CALL add_table_column('sys_post', 'message_reminder_keys', 'varchar(128)', 'message reminder keys warehouse department data', NULL);
@@ -478,9 +530,9 @@ CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_bill_no', 'varchar(64)', 
 /
 CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_entry_id', 'bigint', '?????????????ID(?????????????ID)', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_qty', 'decimal(18,2)', '??????????????????', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_consume_qty', 'decimal(18,6)', '??????????????????', NULL);
 /
-CALL add_table_column('t_hc_ks_xh_entry', 'src_can_reverse_qty', 'decimal(18,2)', '?????????????????????????????', NULL);
+CALL add_table_column('t_hc_ks_xh_entry', 'src_can_reverse_qty', 'decimal(18,6)', '?????????????????????????????', NULL);
 /
 /* ????????????t_hc_ks_xh_entry ?????????? batch_numer????????/??? batch_number */
 SET @__db := DATABASE();
@@ -1575,15 +1627,15 @@ CALL add_table_column('stk_io_profit_loss_entry', 'batch_no', 'varchar(100)', '?
 /
 CALL add_table_column('stk_io_profit_loss_entry', 'batch_number', 'varchar(100)', '????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'book_qty', 'decimal(18,2)', '????????', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'book_qty', 'decimal(18,6)', '????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'stock_qty', 'decimal(18,2)', '????????????', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'stock_qty', 'decimal(18,6)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'profit_qty', 'decimal(18,2)', '??????????', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'profit_qty', 'decimal(18,6)', '??????????', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'unit_price', 'decimal(18,2)', '???', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'unit_price', 'decimal(18,6)', '???', NULL);
 /
-CALL add_table_column('stk_io_profit_loss_entry', 'profit_amount', 'decimal(18,2)', '????????', NULL);
+CALL add_table_column('stk_io_profit_loss_entry', 'profit_amount', 'decimal(18,6)', '????????', NULL);
 /
 CALL add_table_column('stk_io_profit_loss_entry', 'begin_time', 'date', '??????????', NULL);
 /
@@ -1616,15 +1668,15 @@ CALL add_table_column('stk_io_stocktaking_entry', 'kc_no', 'bigint', '?????????i
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'dep_inventory_id', 'varchar(64)', '????????????id(stk_dep_inventory.id)', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'stock_qty', 'decimal(18,2)', '????????????', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'stock_qty', 'decimal(18,6)', '????????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'profit_qty', 'decimal(18,2)', '??????????', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'profit_qty', 'decimal(18,6)', '??????????', NULL);
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'profit_loss_flag', 'varchar(16)', '????????(PROFIT/LOSS/EQUAL)', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'stock_amount', 'decimal(18,2)', '??????????', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'stock_amount', 'decimal(18,6)', '??????????', NULL);
 /
-CALL add_table_column('stk_io_stocktaking_entry', 'profit_amount', 'decimal(18,2)', '????????', NULL);
+CALL add_table_column('stk_io_stocktaking_entry', 'profit_amount', 'decimal(18,6)', '????????', NULL);
 /
 CALL add_table_column('stk_io_stocktaking_entry', 'batch_number', 'varchar(100)', '????', NULL);
 /
@@ -1964,12 +2016,12 @@ ALTER TABLE `purchase_order_entry`
   MODIFY COLUMN `total_amount` decimal(18,6) DEFAULT 0.000000 COMMENT '????';
 /
 
--- 出入库明细：单价/金额须六位小数，避免 0.025 存成 0.03（出退库查询与出库单不一致）
+-- ????????/?????????? 0.025 ?? 0.03??????????????
 ALTER TABLE `stk_io_bill_entry`
-  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '单价',
-  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '数量',
-  MODIFY COLUMN `price` decimal(18,6) DEFAULT NULL COMMENT '价格',
-  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '金额';
+  MODIFY COLUMN `unit_price` decimal(18,6) DEFAULT NULL COMMENT '??',
+  MODIFY COLUMN `qty` decimal(18,6) DEFAULT NULL COMMENT '??',
+  MODIFY COLUMN `price` decimal(18,6) DEFAULT NULL COMMENT '??',
+  MODIFY COLUMN `amt` decimal(18,6) DEFAULT NULL COMMENT '??';
 /
 
 -- ????????????????/??????? stk_profit_loss_pending??????????? material/table.sql
@@ -2051,7 +2103,7 @@ CALL add_table_column('wh_warehouse_apply', 'void_whole_reason', 'varchar(500)',
 
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '?????????????????0?? 1?????', '0');
 /
-CALL add_table_column('wh_warehouse_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '????????????', '0');
+CALL add_table_column('wh_warehouse_apply_entry', 'line_void_qty', 'decimal(18,6) NOT NULL DEFAULT 0', '????????????', '0');
 /
 CALL add_table_column('wh_warehouse_apply_entry', 'line_void_by', 'varchar(64)', '???????????????', NULL);
 /
@@ -2074,7 +2126,7 @@ CALL add_table_column('dep_purchase_apply', 'void_whole_reason', 'varchar(500)',
 /
 CALL add_table_column('dep_purchase_apply_entry', 'line_void_status', 'int NOT NULL DEFAULT 0', '?????????????????0?? 1?????', '0');
 /
-CALL add_table_column('dep_purchase_apply_entry', 'line_void_qty', 'decimal(18,2) NOT NULL DEFAULT 0', '????????????', '0');
+CALL add_table_column('dep_purchase_apply_entry', 'line_void_qty', 'decimal(18,6) NOT NULL DEFAULT 0', '????????????', '0');
 /
 CALL add_table_column('dep_purchase_apply_entry', 'line_void_by', 'varchar(64)', '???????????????', NULL);
 /
