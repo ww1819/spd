@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -57,6 +58,18 @@ public class StkIoRThBillController extends BaseController
             return value.abs().negate();
         }
         return value;
+    }
+
+    private static final int CTK_UNIT_PRICE_SCALE = 6;
+
+    /**
+     * 出退库行单价：优先金额÷数量（与出库单 amt 一致，避免 unit_price 两位小数存成 0.03），再兜底 unit_price。
+     */
+    private BigDecimal resolveCtkLineUnitPrice(BigDecimal unitPrice, BigDecimal materialAmt, BigDecimal materialQty) {
+        if (materialAmt != null && materialQty != null && materialQty.compareTo(BigDecimal.ZERO) != 0) {
+            return materialAmt.abs().divide(materialQty.abs(), CTK_UNIT_PRICE_SCALE, RoundingMode.HALF_UP);
+        }
+        return unitPrice;
     }
 
     private BigDecimal toBigDecimal(Object value) {
@@ -269,13 +282,10 @@ public class StkIoRThBillController extends BaseController
                     BigDecimal materialAmt = normalizeAmountByBillType(billType, (BigDecimal) map.get("materialAmt"));
                     stkCTKVo.setMaterialAmt(materialAmt);
                     stkCTKVo.setUnitName(StringUtils.nvl(map.get("unitName"), "").toString());
-                    // 如果单价为空，但有金额和数量，通过金额/数量计算单价
-                    BigDecimal unitPrice = (BigDecimal) map.get("unitPrice");
-                    if(unitPrice == null) {
-                        if(materialAmt != null && materialQty != null && materialQty.compareTo(BigDecimal.ZERO) > 0) {
-                            unitPrice = materialAmt.divide(materialQty, 2, BigDecimal.ROUND_HALF_UP);
-                        }
-                    }
+                    BigDecimal unitPrice = resolveCtkLineUnitPrice(
+                            (BigDecimal) map.get("unitPrice"),
+                            materialAmt,
+                            materialQty);
                     stkCTKVo.setUnitPrice(unitPrice);
                     stkCTKVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"), "").toString());
                     stkCTKVo.setFactoryName(StringUtils.nvl(map.get("factoryName"), "").toString());
@@ -424,7 +434,10 @@ public class StkIoRThBillController extends BaseController
                 stkCTKVo.setMaterialSpeci(StringUtils.nvl(map.get("materialSpeci"), "").toString());
                 stkCTKVo.setMaterialAmt(materialAmt);
                 stkCTKVo.setUnitName(StringUtils.nvl(map.get("unitName"), "").toString());
-                stkCTKVo.setUnitPrice(toBigDecimal(map.get("unitPrice")));
+                stkCTKVo.setUnitPrice(resolveCtkLineUnitPrice(
+                        toBigDecimal(map.get("unitPrice")),
+                        materialAmt,
+                        materialQty));
                 stkCTKVo.setWarehouseName(StringUtils.nvl(map.get("warehouseName"), "").toString());
                 Object warehouseIdObj = map.get("warehouseId");
                 if (warehouseIdObj instanceof Number) {

@@ -134,12 +134,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.goods_no, a.suppler_id, a.goods_date, a.warehouse_id, a.department_id, a.goods_status, a.goods_type, a.del_flag,
         a.audit_date, a.audit_by, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+        s.id sId, s.code supplierCode, s.name supplierName,
+        w.id wId, w.code warehouseCode, w.name warehouseName,
+        d.id dId, d.code departmentCode, d.name departmentName,
         b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
         b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
         b.master_barcode as sub_master_barcode, b.secondary_barcode as sub_secondary_barcode,
         b.in_hospital_code as sub_in_hospital_code, b.begin_time as sub_begin_time, b.end_time as sub_end_time, b.del_flag as sub_del_flag, b.supplier_id as sub_supplier_id,
         b.warehouse_id as sub_warehouse_id, b.department_id as sub_department_id, b.bill_no as sub_bill_no, b.remark as sub_remark
         from gz_refund_goods a
+        left join fd_supplier s on a.suppler_id = s.id
+        left join fd_warehouse w on a.warehouse_id = w.id
+        left join fd_department d on a.department_id = d.id
         left join gz_refund_goods_entry b on b.paren_id = a.id and b.del_flag != 1
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}
     </select>

@@ -158,12 +158,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectGzOrderById" parameterType="Long" resultMap="GzOrderGzOrderEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id, 
+        select a.id, a.order_no, a.suppler_id, a.order_date, a.warehouse_id,
 				a.department_id, a.apply_department_id,
 				a.order_status, a.order_type, a.del_flag,
                 a.audit_date, a.audit_by,
 				a.is_follow_flag,
 				a.create_by, a.create_time, a.update_by, a.update_time, a.remark, a.tenant_id,
+				s.id sId, s.code supplierCode, s.name supplierName,
+				w.id wId, w.code warehouseCode, w.name warehouseName,
 				ad.id adId, ad.code adCode, ad.name adName,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.material_id as sub_material_id, b.qty as sub_qty,
                 b.price as sub_price, b.amt as sub_amt, b.batch_no as sub_batch_no, b.batch_number as sub_batch_number,
@@ -172,6 +174,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.warehouse_id as sub_warehouse_id, b.bill_no as sub_bill_no,
                 b.warehouse_id_str as sub_warehouse_id_str, b.supplier_id_str as sub_supplier_id_str, b.department_id_str as sub_department_id_str
         from gz_order a
+        left join fd_supplier s on a.suppler_id = s.id
+        left join fd_warehouse w on a.warehouse_id = w.id
         left join fd_department ad on a.apply_department_id = ad.id
         left join gz_order_entry b on b.paren_id = a.id and b.del_flag != 1
         where a.id = #{id} and a.del_flag != 1 and a.tenant_id = #{scopedTenantId}

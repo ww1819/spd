@@ -882,11 +882,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="billType != null "> and stk.bill_type = #{billType}</if>
     </select>
 
-    <!-- 出退库行单价：与出库单明细一致，不做两位四舍五入（避免 0.025→0.03）；amt/qty 兜底保留 6 位 -->
+    <!-- 出退库行单价：优先 amt/qty（金额与出库单一致），再 unit_price / price，保留 6 位避免 0.025→0.03 -->
     <sql id="ctkSummaryLineUnitPriceExpr">
         COALESCE(
-            b.unit_price,
             CASE WHEN b.amt IS NOT NULL AND b.qty IS NOT NULL AND b.qty &gt; 0 THEN ROUND(b.amt / b.qty, 6) ELSE NULL END,
+            b.unit_price,
             NULLIF(b.price, 0)
         )
     </sql>
