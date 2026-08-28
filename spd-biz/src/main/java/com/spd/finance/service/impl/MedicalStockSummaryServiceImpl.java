@@ -9,6 +9,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.finance.domain.vo.MedicalInboundSummaryVo;
 import com.spd.finance.domain.vo.MedicalOutboundSummaryVo;
 import com.spd.finance.service.IMedicalStockSummaryService;
@@ -58,14 +59,14 @@ public class MedicalStockSummaryServiceImpl implements IMedicalStockSummaryServi
     public BigDecimal sumInboundAmount(StkIoBill query)
     {
         BigDecimal v = stkIoBillMapper.sumMedicalInboundSummaryAmount(ensureQuery(query));
-        return v != null ? v.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        return v != null ? v.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
     }
 
     @Override
     public BigDecimal sumOutboundAmount(StkIoBill query)
     {
         BigDecimal v = stkIoBillMapper.sumMedicalOutboundSummaryAmount(ensureQuery(query));
-        return v != null ? v.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        return v != null ? v.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
     }
 
     @Override

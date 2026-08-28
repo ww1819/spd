@@ -16,6 +16,7 @@ import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.common.utils.uuid.UUID7;
 import com.spd.foundation.domain.FdDepartment;
@@ -853,7 +854,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
     private boolean isQtyEqual(BigDecimal a, BigDecimal b) {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
-        return a.setScale(2, RoundingMode.HALF_UP).compareTo(b.setScale(2, RoundingMode.HALF_UP)) == 0;
+        return a.setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP).compareTo(b.setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP)) == 0;
     }
 
     private String generateBatchNo() {

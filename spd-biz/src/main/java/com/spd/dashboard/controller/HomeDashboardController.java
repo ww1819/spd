@@ -28,6 +28,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.department.domain.BasApply;
 import com.spd.department.vo.WarehouseApplyReminderRowVo;
 import com.spd.department.vo.WarehousePurchaseReminderRowVo;
@@ -151,8 +152,8 @@ public class HomeDashboardController extends BaseController
                     ctkQty = nzBig(row.get("ctkQty"));
                     ctkAmt = nzBig(row.get("ctkAmt"));
                 }
-                BigDecimal amount = rthAmt.abs().add(ctkAmt.abs()).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal qty = rthQty.abs().add(ctkQty.abs()).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal amount = rthAmt.abs().add(ctkAmt.abs()).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
+                BigDecimal qty = rthQty.abs().add(ctkQty.abs()).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
                 amtMatrix[wi][mi] = amount;
                 qtyMatrix[wi][mi] = qty;
             }
@@ -231,8 +232,8 @@ public class HomeDashboardController extends BaseController
                 int mi = monthIndexFromAggRow(row.get("monthNum"));
                 if (mi >= 0)
                 {
-                    receiveQty[mi] = nzBig(row.get("receiveQty")).abs().setScale(2, RoundingMode.HALF_UP);
-                    receiveAmt[mi] = nzBig(row.get("receiveAmt")).abs().setScale(2, RoundingMode.HALF_UP);
+                    receiveQty[mi] = nzBig(row.get("receiveQty")).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
+                    receiveAmt[mi] = nzBig(row.get("receiveAmt")).abs().setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
                 }
             }
         }
@@ -247,8 +248,8 @@ public class HomeDashboardController extends BaseController
                 int mi = monthIndexFromAggRow(row.get("monthNum"));
                 if (mi >= 0)
                 {
-                    consumeQty[mi] = nzBig(row.get("consumeQty")).setScale(2, RoundingMode.HALF_UP);
-                    consumeAmt[mi] = nzBig(row.get("consumeAmt")).setScale(2, RoundingMode.HALF_UP);
+                    consumeQty[mi] = nzBig(row.get("consumeQty")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
+                    consumeAmt[mi] = nzBig(row.get("consumeAmt")).setScale(MoneyScaleUtils.DEFAULT_SCALE, RoundingMode.HALF_UP);
                 }
             }
         }

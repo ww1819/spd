@@ -9,6 +9,7 @@ import java.math.RoundingMode;
 public final class MoneyScaleUtils {
 
   public static final int DEFAULT_SCALE = 3;
+  public static final int STORAGE_SCALE = 6;
   public static final int MIN_SCALE = 0;
   public static final int MAX_SCALE = 6;
   public static final String DEFAULT_ROUND_MODE = "HALF_UP";
@@ -48,6 +49,45 @@ public final class MoneyScaleUtils {
       return null;
     }
     return value.setScale(normalizeScale(scale), resolveRoundingMode(roundMode));
+  }
+
+  /** 入库精度（与 decimal(18,6) 对齐），不按展示位截断 */
+  public static BigDecimal toStorage(BigDecimal value) {
+    if (value == null) {
+      return null;
+    }
+    return value.setScale(STORAGE_SCALE, RoundingMode.HALF_UP);
+  }
+
+  /**
+   * 展示用：按租户小数位舍入后去掉末尾 0（0.020 → 0.02；100 保持 100 而非 1E+2）。
+   */
+  public static BigDecimal toDisplay(BigDecimal value, Integer scale, String roundMode) {
+    BigDecimal formatted = format(value, scale, roundMode);
+    if (formatted == null) {
+      return null;
+    }
+    return stripTrailingZerosKeepInt(formatted);
+  }
+
+  /**
+   * 仅去掉末尾 0，不按展示位再舍入（入库 6 位回传表单时避免把 0.123456 截成 0.123）。
+   * 100 保持 100 而非 1E+2。
+   */
+  public static BigDecimal stripTrailingZerosKeepInt(BigDecimal value) {
+    if (value == null) {
+      return null;
+    }
+    BigDecimal stripped = value.stripTrailingZeros();
+    if (stripped.scale() < 0) {
+      return stripped.setScale(0);
+    }
+    return stripped;
+  }
+
+  public static String toPlainStripZeros(BigDecimal value) {
+    BigDecimal stripped = stripTrailingZerosKeepInt(value);
+    return stripped == null ? null : stripped.toPlainString();
   }
 
   public static BigDecimal sumThenFormat(Iterable<? extends Number> values, Integer scale, String roundMode) {

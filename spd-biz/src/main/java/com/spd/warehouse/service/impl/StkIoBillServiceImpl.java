@@ -79,6 +79,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import com.spd.common.utils.StringUtils;
+import com.spd.common.utils.MoneyScaleUtils;
 import com.spd.common.utils.http.HttpUtils;
 import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
@@ -3392,7 +3393,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 BigDecimal up = inv.getUnitPrice() != null ? inv.getUnitPrice() : we.getUnitPrice();
                 stkIoBillEntry.setUnitPrice(up);
                 if (up != null) {
-                    stkIoBillEntry.setAmt(up.multiply(take).setScale(2, RoundingMode.HALF_UP));
+                    stkIoBillEntry.setAmt(up.multiply(take).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
                 } else {
                     stkIoBillEntry.setAmt(null);
                 }
@@ -3508,7 +3509,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 BigDecimal up = inv.getUnitPrice() != null ? inv.getUnitPrice() : pe.getUnitPrice();
                 stkIoBillEntry.setUnitPrice(up);
                 if (up != null) {
-                    stkIoBillEntry.setAmt(up.multiply(take).setScale(2, RoundingMode.HALF_UP));
+                    stkIoBillEntry.setAmt(up.multiply(take).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
                 }
                 stkIoBillEntry.setBatchNo(inv.getBatchNo());
                 stkIoBillEntry.setBatchNumber(inv.getBatchNumber());
@@ -3591,9 +3592,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             }
             ckEntry.setUnitPrice(unitPrice);
             if (unitPrice != null) {
-                ckEntry.setAmt(unitPrice.multiply(refable).setScale(2, RoundingMode.HALF_UP));
+                ckEntry.setAmt(unitPrice.multiply(refable).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else if (rkEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
-                ckEntry.setAmt(rkEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+                ckEntry.setAmt(rkEntry.getAmt().multiply(refable).divide(lineQty, MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else {
                 ckEntry.setAmt(BigDecimal.ZERO);
             }
@@ -3751,7 +3752,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             e.setMaterial(material);
             e.setQty(takeQty);
             e.setUnitPrice(unitPrice);
-            e.setAmt(takeQty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
+            e.setAmt(takeQty.multiply(unitPrice).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             e.setBatchNumber(String.valueOf(row.getOrDefault("batchNumber", "")));
             if (StringUtils.isNotEmpty(lineSign)) {
                 e.setDeliveryLineSign(lineSign);
@@ -4125,9 +4126,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             thEntry.setQty(refable);
             thEntry.setUnitPrice(srcEntry.getUnitPrice());
             if (srcEntry.getUnitPrice() != null) {
-                thEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+                thEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else if (srcEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
-                thEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+                thEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else {
                 thEntry.setAmt(BigDecimal.ZERO);
             }
@@ -4206,9 +4207,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             tkEntry.setQty(refable);
             tkEntry.setUnitPrice(srcEntry.getUnitPrice());
             if (srcEntry.getUnitPrice() != null) {
-                tkEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+                tkEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else if (srcEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
-                tkEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+                tkEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else {
                 tkEntry.setAmt(BigDecimal.ZERO);
             }
@@ -4306,9 +4307,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             thEntry.setQty(refable);
             thEntry.setUnitPrice(srcEntry.getUnitPrice());
             if (srcEntry.getUnitPrice() != null) {
-                thEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(2, RoundingMode.HALF_UP));
+                thEntry.setAmt(srcEntry.getUnitPrice().multiply(refable).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else if (srcEntry.getAmt() != null && lineQty.compareTo(BigDecimal.ZERO) > 0) {
-                thEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, 2, RoundingMode.HALF_UP));
+                thEntry.setAmt(srcEntry.getAmt().multiply(refable).divide(lineQty, MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else {
                 thEntry.setAmt(BigDecimal.ZERO);
             }
@@ -5055,11 +5056,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         CellStyle dataNumPriceAmtStyle = wb.createCellStyle();
         dataNumPriceAmtStyle.cloneStyleFrom(dataStyle);
         dataNumPriceAmtStyle.setAlignment(HorizontalAlignment.RIGHT);
-        dataNumPriceAmtStyle.setDataFormat(wb.createDataFormat().getFormat("#,##0.0000"));
+        dataNumPriceAmtStyle.setDataFormat(wb.createDataFormat().getFormat("#,##0.###"));
         CellStyle dataNumQtyStyle = wb.createCellStyle();
         dataNumQtyStyle.cloneStyleFrom(dataStyle);
         dataNumQtyStyle.setAlignment(HorizontalAlignment.RIGHT);
-        dataNumQtyStyle.setDataFormat(wb.createDataFormat().getFormat("#,##0.00"));
+        dataNumQtyStyle.setDataFormat(wb.createDataFormat().getFormat("#,##0.###"));
         CellStyle totalLabelStyle = wb.createCellStyle();
         totalLabelStyle.cloneStyleFrom(headStyle);
         totalLabelStyle.setAlignment(HorizontalAlignment.LEFT);
@@ -5472,9 +5473,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (need.compareTo(invQty) > 0) {
             target.setQty(invQty);
             if (target.getUnitPrice() != null) {
-                target.setAmt(target.getUnitPrice().multiply(invQty).setScale(2, RoundingMode.HALF_UP));
+                target.setAmt(target.getUnitPrice().multiply(invQty).setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             } else if (target.getAmt() != null && need.compareTo(BigDecimal.ZERO) > 0) {
-                target.setAmt(target.getAmt().multiply(invQty).divide(need, 2, RoundingMode.HALF_UP));
+                target.setAmt(target.getAmt().multiply(invQty).divide(need, MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
             }
         }
         target.setStkInventoryId(inv.getId());
@@ -5516,7 +5517,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 total = total.add(e.getAmt());
             }
         }
-        bill.setTotalAmount(total.setScale(2, RoundingMode.HALF_UP));
+        bill.setTotalAmount(total.setScale(MoneyScaleUtils.STORAGE_SCALE, RoundingMode.HALF_UP));
     }
 
     private void syncBillHeaderSupplerFromUniformEntries(StkIoBill bill) {
