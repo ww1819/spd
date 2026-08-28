@@ -313,7 +313,7 @@ public class DepPurchaseApplyController extends BaseController
     /**
      * 获取科室申购详细信息
      */
-    @PreAuthorize("@ss.hasPermi('department:purchase:query') || @ss.hasPermi('department:purchaseAudit:list')")
+    @PreAuthorize("@ss.hasPermi('department:purchase:query') || @ss.hasPermi('department:purchase:list') || @ss.hasPermi('department:purchaseAudit:list') || @ss.hasPermi('caigou:jihua:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
