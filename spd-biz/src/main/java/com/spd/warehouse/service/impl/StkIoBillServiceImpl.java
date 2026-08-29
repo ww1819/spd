@@ -481,7 +481,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getId() != null) {
             StkIoBill dbBill = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (dbBill != null) {
-                if (dbBill.getBillStatus() != null && dbBill.getBillStatus() == 2) {
+                boolean audited = dbBill.getBillStatus() != null && dbBill.getBillStatus() == 2;
+                if (audited) {
                     if (entryList != null && !entryList.isEmpty()) {
                         throw new ServiceException(stkIoBillDocLabel(dbBill) + "已审核，不能修改明细；如需调整请走退货流程");
                     }
@@ -489,6 +490,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkIoBill.setBillStatus(2);
                     stkIoBill.setAuditDate(dbBill.getAuditDate());
                     stkIoBill.setAuditBy(dbBill.getAuditBy());
+                } else {
+                    // 状态未审但已有审核时间/流水（异常态，与出库 WH-X-003 同类）→ 禁止再改
+                    assertBillMutableForEdit(dbBill, "修改");
                 }
                 if (stkIoBill.getBillType() == null) {
                     stkIoBill.setBillType(dbBill.getBillType());
@@ -593,23 +597,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (bill.getBillStatus() != null && bill.getBillStatus() == 2)
         {
             throw new ServiceException(String.format(
-                "单据「%s」已审核，不能删除。如需冲回请走退库/退货流程，勿直接删除", billNo));
+                "单据「%s」已审核，不能删除。请刷新后查看。如需冲回请走退库/退货流程，勿直接删除", billNo));
         }
-        if (bill.getAuditDate() != null)
-        {
-            throw new ServiceException(String.format(
-                "单据「%s」已有审核时间，不能删除。如需冲回请走退库/退货流程，勿直接删除", billNo));
-        }
-        if (bill.getId() != null)
-        {
-            int flowCnt = hcCkFlowMapper.countAliveByBillId(bill.getId());
-            if (flowCnt > 0)
-            {
-                throw new ServiceException(String.format(
-                    "单据「%s」已产生仓库流水（%d 条），不能删除。如需冲回请走退库/退货流程，勿直接删除",
-                    billNo, flowCnt));
-            }
-        }
+        assertBillNotAlreadyStockPosted(bill, "删除");
     }
 
     /** 已审或已产生流水的单据不可再改明细/回写为未审 */
@@ -625,20 +615,37 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (existing.getBillStatus() != null && existing.getBillStatus() == 2)
         {
             throw new ServiceException(String.format(
-                "单据「%s」已审核，不能%s；如需调整请走退库/退货流程", billNo, act));
+                "单据「%s」已审核，不能%s；请刷新后查看。如需调整请走退库/退货流程", billNo, act));
         }
-        if (existing.getAuditDate() != null)
+        assertBillNotAlreadyStockPosted(existing, act);
+    }
+
+    /**
+     * 已有审核时间或有效仓库流水时禁止再改/再审（覆盖 status 被写回未审的异常态）。
+     */
+    private void assertBillNotAlreadyStockPosted(StkIoBill bill, String action)
+    {
+        if (bill == null)
+        {
+            return;
+        }
+        String billNo = StringUtils.defaultIfBlank(bill.getBillNo(),
+            bill.getId() == null ? "" : String.valueOf(bill.getId()));
+        String act = StringUtils.defaultIfBlank(action, "操作");
+        if (bill.getAuditDate() != null)
         {
             throw new ServiceException(String.format(
-                "单据「%s」已有审核时间，不能%s；如需调整请走退库/退货流程", billNo, act));
+                "单据「%s」已有审核时间，不能%s；请刷新后查看最新状态。如需调整请走退库/退货流程",
+                billNo, act));
         }
-        if (existing.getId() != null)
+        if (bill.getId() != null)
         {
-            int flowCnt = hcCkFlowMapper.countAliveByBillId(existing.getId());
+            int flowCnt = hcCkFlowMapper.countAliveByBillId(bill.getId());
             if (flowCnt > 0)
             {
                 throw new ServiceException(String.format(
-                    "单据「%s」已产生仓库流水，不能%s；如需调整请走退库/退货流程", billNo, act));
+                    "单据「%s」已产生仓库流水（%d 条），不能%s；请刷新后查看最新状态。如需调整请走退库/退货流程",
+                    billNo, flowCnt, act));
             }
         }
     }
@@ -658,6 +665,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         if (stkIoBill.getBillStatus() != null && stkIoBill.getBillStatus() == 2) {
             throw new ServiceException("该单据已审核，不能重复审核");
         }
+        // 状态被误改回未审、但仍有审核痕迹/流水时，禁止再次审核（避免重复扣库存或报「库存不足」误导）
+        assertBillNotAlreadyStockPosted(stkIoBill, "重复审核");
         List<StkIoBillEntry> stkIoBillEntryList = stkIoBill.getStkIoBillEntryList();
 
         Integer auditBillType = stkIoBill.getBillType();
