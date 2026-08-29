@@ -20,7 +20,7 @@ public interface HcCkFlowMapper {
     int insertHcCkFlow(HcCkFlow flow);
 
     /**
-     * 按出库单明细id更新kc_no（收货确认后反写）
+     * 按出入库单统计未删除流水条数（用于拦截误删已发生库存变动的单据）
      */
-    int updateKcNoByEntryId(@Param("entryId") Long entryId, @Param("kcNo") Long kcNo);
+    int countAliveByBillId(@Param("billId") Long billId);
 }

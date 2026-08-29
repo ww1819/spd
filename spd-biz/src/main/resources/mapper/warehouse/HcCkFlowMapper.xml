@@ -105,4 +105,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update t_hc_ck_flow set kc_no = #{kcNo}, update_time = now() where entry_id = #{entryId} and tenant_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null)
     </update>
+
+    <select id="countAliveByBillId" resultType="int">
+        select count(1) from t_hc_ck_flow
+        where bill_id = #{billId} and (del_flag = 0 or del_flag is null)
+    </select>
 </mapper>

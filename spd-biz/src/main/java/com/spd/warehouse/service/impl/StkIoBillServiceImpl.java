@@ -551,6 +551,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format("业务：%s，不存在!", id));
         }
         SecurityUtils.ensureTenantAccess(stkIoBill.getTenantId());
+        assertBillMutableForDelete(stkIoBill);
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 201
             && StringUtils.isNotEmpty(stkIoBill.getTenantId())) {
             whWarehouseApplyService.releaseWhApplyCkRefsForOutboundBill(id, stkIoBill.getTenantId());
@@ -576,6 +577,70 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
 
         return stkIoBillMapper.updateStkIoBill(stkIoBill);
+    }
+
+    /**
+     * 已发生库存变动的单据不可删除：已审 / 有审核时间 / 仍有有效仓库流水。
+     * （避免 status 被误改回未审后，前端露出删除导致结存账与余额脱节）
+     */
+    private void assertBillMutableForDelete(StkIoBill bill)
+    {
+        if (bill == null)
+        {
+            return;
+        }
+        String billNo = StringUtils.defaultIfBlank(bill.getBillNo(), bill.getId() == null ? "" : String.valueOf(bill.getId()));
+        if (bill.getBillStatus() != null && bill.getBillStatus() == 2)
+        {
+            throw new ServiceException(String.format(
+                "单据「%s」已审核，不能删除。如需冲回请走退库/退货流程，勿直接删除", billNo));
+        }
+        if (bill.getAuditDate() != null)
+        {
+            throw new ServiceException(String.format(
+                "单据「%s」已有审核时间，不能删除。如需冲回请走退库/退货流程，勿直接删除", billNo));
+        }
+        if (bill.getId() != null)
+        {
+            int flowCnt = hcCkFlowMapper.countAliveByBillId(bill.getId());
+            if (flowCnt > 0)
+            {
+                throw new ServiceException(String.format(
+                    "单据「%s」已产生仓库流水（%d 条），不能删除。如需冲回请走退库/退货流程，勿直接删除",
+                    billNo, flowCnt));
+            }
+        }
+    }
+
+    /** 已审或已产生流水的单据不可再改明细/回写为未审 */
+    private void assertBillMutableForEdit(StkIoBill existing, String action)
+    {
+        if (existing == null)
+        {
+            return;
+        }
+        String billNo = StringUtils.defaultIfBlank(existing.getBillNo(),
+            existing.getId() == null ? "" : String.valueOf(existing.getId()));
+        String act = StringUtils.defaultIfBlank(action, "修改");
+        if (existing.getBillStatus() != null && existing.getBillStatus() == 2)
+        {
+            throw new ServiceException(String.format(
+                "单据「%s」已审核，不能%s；如需调整请走退库/退货流程", billNo, act));
+        }
+        if (existing.getAuditDate() != null)
+        {
+            throw new ServiceException(String.format(
+                "单据「%s」已有审核时间，不能%s；如需调整请走退库/退货流程", billNo, act));
+        }
+        if (existing.getId() != null)
+        {
+            int flowCnt = hcCkFlowMapper.countAliveByBillId(existing.getId());
+            if (flowCnt > 0)
+            {
+                throw new ServiceException(String.format(
+                    "单据「%s」已产生仓库流水，不能%s；如需调整请走退库/退货流程", billNo, act));
+            }
+        }
     }
 
     /**
@@ -2385,10 +2450,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int updateOutStkIoBill(StkIoBill stkIoBill) {
-        if (stkIoBill.getId() != null && stkIoBill.getBillType() == null) {
+        if (stkIoBill.getId() != null) {
             StkIoBill existing = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (existing != null) {
-                stkIoBill.setBillType(existing.getBillType());
+                assertBillMutableForEdit(existing, "修改");
+                if (stkIoBill.getBillType() == null) {
+                    stkIoBill.setBillType(existing.getBillType());
+                }
             }
         }
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
@@ -2507,6 +2575,12 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     @Transactional
     @Override
     public int updateTKStkIoBill(StkIoBill stkIoBill) {
+        if (stkIoBill.getId() != null) {
+            StkIoBill existing = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+            if (existing != null) {
+                assertBillMutableForEdit(existing, "修改");
+            }
+        }
         syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, stkIoBill.getId());
         // 如果制单日期为空，自动设置为当前日期
