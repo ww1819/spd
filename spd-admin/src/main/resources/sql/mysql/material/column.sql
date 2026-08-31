@@ -22,26 +22,26 @@ BEGIN
         OR p_column_comment IS NULL OR p_column_comment = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'table/column/type/comment required';
-    END IF;
-    SELECT COUNT(*) INTO v_column_exists
+END IF;
+SELECT COUNT(*) INTO v_column_exists
     FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
       AND TABLE_NAME = p_table_name
       AND COLUMN_NAME = p_column_name;
-    IF v_column_exists > 0 THEN
+IF v_column_exists > 0 THEN
         LEAVE add_column_block;
-    END IF;
+END IF;
     SET @dynamic_sql = CONCAT(
             'ALTER TABLE `', p_table_name, '` ADD COLUMN `', p_column_name, '` ', p_column_type, ' '
                        );
     IF p_default_value IS NOT NULL AND p_default_value != '' THEN
         SET @dynamic_sql = CONCAT(@dynamic_sql, 'DEFAULT ', QUOTE(p_default_value), ' ');
-    END IF;
+END IF;
     SET @dynamic_sql = CONCAT(@dynamic_sql, 'COMMENT ', QUOTE(p_column_comment));
     PREPARE stmt FROM @dynamic_sql;
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
-    SET @dynamic_sql = '';
+SET @dynamic_sql = '';
 END;
 /
 
