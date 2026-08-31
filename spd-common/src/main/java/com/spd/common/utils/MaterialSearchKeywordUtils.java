@@ -39,6 +39,11 @@ public final class MaterialSearchKeywordUtils {
         return n == null ? null : escapeLike(n);
     }
 
+    /** 纯拉丁字母（用于简码检索分流；已规范化的关键词） */
+    public static boolean isLetterOnly(String keyword) {
+        return keyword != null && keyword.matches("(?i)^[A-Za-z]+$");
+    }
+
     private static String toHalfWidth(String s) {
         if (s == null || s.isEmpty()) {
             return s;

@@ -335,6 +335,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                 fdMaterial.setTenantId(tid);
             }
         }
+        normalizeMaterialListNameFilters(fdMaterial);
         return fdMaterialMapper.selectFdMaterialList(fdMaterial);
     }
 
@@ -348,7 +349,60 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                 fdMaterial.setTenantId(tid);
             }
         }
+        normalizeMaterialListNameFilters(fdMaterial);
         return fdMaterialMapper.countFdMaterialList(fdMaterial != null ? fdMaterial : new FdMaterial());
+    }
+
+    /**
+     * 列表名称条件规范化：中文/混合走 name；纯字母走 nameSearch（简码首尾包含模糊），并转义 LIKE 通配符。
+     * 兼容旧前端/缓存包只传 name=xsy：纯字母 name 自动升为 nameSearch，避免走名称分支后条件形同未筛选或刷屏。
+     */
+    private void normalizeMaterialListNameFilters(FdMaterial fdMaterial)
+    {
+        if (fdMaterial == null)
+        {
+            return;
+        }
+        String nName = com.spd.common.utils.MaterialSearchKeywordUtils.normalize(fdMaterial.getName());
+        String nSearch = com.spd.common.utils.MaterialSearchKeywordUtils.normalize(fdMaterial.getNameSearch());
+
+        // 纯字母 name → nameSearch（兼容只传 name=xsy）
+        if (com.spd.common.utils.MaterialSearchKeywordUtils.isLetterOnly(nName) && StringUtils.isEmpty(nSearch))
+        {
+            nSearch = nName.toUpperCase();
+            nName = null;
+        }
+        // 中文 name 与 nameSearch 同时存在：丢弃 nameSearch，避免「稀释液」误扩到简码含 XSY
+        // 若 name 也是纯字母且同时带了 nameSearch：以字母简码为准
+        if (StringUtils.isNotEmpty(nName) && StringUtils.isNotEmpty(nSearch))
+        {
+            if (com.spd.common.utils.MaterialSearchKeywordUtils.isLetterOnly(nName))
+            {
+                nSearch = nName.toUpperCase();
+                nName = null;
+            }
+            else
+            {
+                nSearch = null;
+            }
+        }
+
+        if (StringUtils.isEmpty(nName))
+        {
+            fdMaterial.setName(null);
+        }
+        else
+        {
+            fdMaterial.setName(com.spd.common.utils.MaterialSearchKeywordUtils.escapeLike(nName));
+        }
+        if (StringUtils.isEmpty(nSearch))
+        {
+            fdMaterial.setNameSearch(null);
+        }
+        else
+        {
+            fdMaterial.setNameSearch(com.spd.common.utils.MaterialSearchKeywordUtils.escapeLike(nSearch.toUpperCase()));
+        }
     }
 
     /**

@@ -86,10 +86,15 @@ public class FdMaterialController extends BaseController
         int pageNum = pageDomain.getPageNum() == null || pageDomain.getPageNum() < 1 ? 1 : pageDomain.getPageNum();
         int pageSize = clampMaterialListPageSize(pageDomain.getPageSize());
         PageHelper.startPage(pageNum, pageSize, false).setReasonable(pageDomain.getReasonable());
-        String orderBy = com.spd.common.utils.sql.SqlUtil.escapeOrderBySql(pageDomain.getOrderBy());
-        if (com.spd.common.utils.StringUtils.isNotEmpty(orderBy))
+        // 简码检索时由 SQL 相关度排序，避免被表头默认 updateTime 盖住导致「有简码却像搜不到」
+        boolean nameSearchMode = fdMaterial != null && com.spd.common.utils.StringUtils.isNotEmpty(fdMaterial.getNameSearch());
+        if (!nameSearchMode)
         {
-            PageHelper.orderBy(orderBy);
+            String orderBy = com.spd.common.utils.sql.SqlUtil.escapeOrderBySql(pageDomain.getOrderBy());
+            if (com.spd.common.utils.StringUtils.isNotEmpty(orderBy))
+            {
+                PageHelper.orderBy(orderBy);
+            }
         }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(fdMaterial);
         TableDataInfo data = getDataTable(list);
@@ -109,6 +114,17 @@ public class FdMaterialController extends BaseController
         FdMaterial query = request.getQuery() != null ? request.getQuery() : new FdMaterial();
         long total = fdMaterialService.countFdMaterialList(query);
         PageHelper.startPage(pageNum, pageSize, false);
+        // count 已规范化：纯字母 name 会升为 nameSearch；此时勿再套表头排序
+        boolean nameSearchMode = com.spd.common.utils.StringUtils.isNotEmpty(query.getNameSearch());
+        if (!nameSearchMode)
+        {
+            com.spd.common.core.page.PageDomain pageDomain = com.spd.common.core.page.TableSupport.buildPageRequest();
+            String orderBy = com.spd.common.utils.sql.SqlUtil.escapeOrderBySql(pageDomain.getOrderBy());
+            if (com.spd.common.utils.StringUtils.isNotEmpty(orderBy))
+            {
+                PageHelper.orderBy(orderBy);
+            }
+        }
         List<FdMaterial> list = fdMaterialService.selectFdMaterialList(query);
         TableDataInfo data = getDataTable(list);
         data.setTotal(total);

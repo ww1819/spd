@@ -263,18 +263,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         <if test="code != null  and code != ''"> and m.code like concat('%', #{code}, '%') escape '\\'</if>
-        <!-- 耗材名称：中文与拼音简码为 OR（旧逻辑 AND 会导致「发光法」比「fgf」更少） -->
+        <!-- 耗材名称：纯字母优先 nameSearch（简码首/尾/包含）；中文/混合走 name 模糊。nameSearch 放前，避免与 name 同时残留时误走名称分支 -->
         <choose>
-            <when test="name != null and name != '' and nameSearch != null and nameSearch != ''">
+            <when test="nameSearch != null and nameSearch != ''">
                 and (
-                    m.code like concat('%', #{name}, '%') escape '\\'
-                    OR m.name like concat('%', #{name}, '%') escape '\\'
-                    OR m.referred_name like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
-                    OR m.referred_name like concat('%', #{nameSearch}, '%')
+                    upper(ifnull(m.referred_name, '')) like concat(upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.referred_name, '')) like concat('%', upper(#{nameSearch})) escape '\\'
+                    OR upper(ifnull(m.referred_name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.code, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.use_name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.brand, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.speci, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.model, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                )
+                <!-- 短简码（≤3）排除「一次性使用」(YCXSY…) 对 xsy 等的夹心误命中；YBXSY(样本稀释液)仍保留 -->
+                and not (
+                    char_length(#{nameSearch}) &lt;= 3
+                    and m.name like '一次性使用%'
+                    and upper(ifnull(m.referred_name, '')) like 'YCXSY%'
+                    and locate(upper(#{nameSearch}), 'YCXSY') &gt; 0
                 )
             </when>
             <when test="name != null and name != ''">
@@ -287,9 +295,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
                     OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
                 )
-            </when>
-            <when test="nameSearch != null and nameSearch != ''">
-                and m.referred_name like concat('%', #{nameSearch}, '%')
             </when>
         </choose>
         <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%') escape '\\'</if>
@@ -374,6 +379,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <include refid="selectFdMaterialListVo"/>
         <include refid="fdMaterialListWhere"/>
+        <!-- 纯字母简码：相关度排序，短简码（如 YBXSY）优先于长串中夹杂命中（如 YCXSY…一次性使用） -->
+        <if test="nameSearch != null and nameSearch != ''">
+            order by
+                case
+                    when upper(ifnull(m.referred_name, '')) = upper(#{nameSearch}) then 0
+                    when upper(ifnull(m.referred_name, '')) like concat(upper(#{nameSearch}), '%') escape '\\' then 1
+                    when upper(ifnull(m.referred_name, '')) like concat('%', upper(#{nameSearch})) escape '\\' then 2
+                    when upper(ifnull(m.referred_name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\' then 3
+                    else 4
+                end,
+                char_length(ifnull(m.referred_name, '')) asc,
+                m.update_time desc
+        </if>
     </select>
 
     <select id="selectFdMaterialById" parameterType="Long" resultMap="FdMaterialResult">
@@ -749,18 +767,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </otherwise>
         </choose>
         <if test="code != null  and code != ''"> and m.code like concat('%', #{code}, '%') escape '\\'</if>
-        <!-- 耗材名称：中文与拼音简码为 OR（旧逻辑 AND 会导致「发光法」比「fgf」更少） -->
+        <!-- 耗材名称：纯字母优先 nameSearch（简码首/尾/包含）；中文/混合走 name 模糊。nameSearch 放前，避免与 name 同时残留时误走名称分支 -->
         <choose>
-            <when test="name != null and name != '' and nameSearch != null and nameSearch != ''">
+            <when test="nameSearch != null and nameSearch != ''">
                 and (
-                    m.code like concat('%', #{name}, '%') escape '\\'
-                    OR m.name like concat('%', #{name}, '%') escape '\\'
-                    OR m.referred_name like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.use_name, '') like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.brand, '') like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
-                    OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
-                    OR m.referred_name like concat('%', #{nameSearch}, '%')
+                    upper(ifnull(m.referred_name, '')) like concat(upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.referred_name, '')) like concat('%', upper(#{nameSearch})) escape '\\'
+                    OR upper(ifnull(m.referred_name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.code, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.use_name, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.brand, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.speci, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                    OR upper(ifnull(m.model, '')) like concat('%', upper(#{nameSearch}), '%') escape '\\'
+                )
+                <!-- 短简码（≤3）排除「一次性使用」(YCXSY…) 对 xsy 等的夹心误命中；YBXSY(样本稀释液)仍保留 -->
+                and not (
+                    char_length(#{nameSearch}) &lt;= 3
+                    and m.name like '一次性使用%'
+                    and upper(ifnull(m.referred_name, '')) like 'YCXSY%'
+                    and locate(upper(#{nameSearch}), 'YCXSY') &gt; 0
                 )
             </when>
             <when test="name != null and name != ''">
@@ -773,9 +799,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     OR ifnull(m.speci, '') like concat('%', #{name}, '%') escape '\\'
                     OR ifnull(m.model, '') like concat('%', #{name}, '%') escape '\\'
                 )
-            </when>
-            <when test="nameSearch != null and nameSearch != ''">
-                and m.referred_name like concat('%', #{nameSearch}, '%')
             </when>
         </choose>
         <if test="speci != null and speci != ''"> and m.speci like concat('%', #{speci}, '%') escape '\\'</if>
