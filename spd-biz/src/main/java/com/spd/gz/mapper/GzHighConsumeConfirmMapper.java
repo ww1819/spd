@@ -14,6 +14,9 @@ public interface GzHighConsumeConfirmMapper
 
     long selectConfirmListCount(GzHighChargeConfirmQuery query);
 
+    /** 分页第一步：仅返回本页 linkId */
+    List<String> selectConfirmListIds(GzHighChargeConfirmQuery query);
+
     List<GzHighChargeConfirmRowVo> selectConfirmLineDetailsByLinkIds(@Param("tenantId") String tenantId,
         @Param("linkIds") List<String> linkIds);
 

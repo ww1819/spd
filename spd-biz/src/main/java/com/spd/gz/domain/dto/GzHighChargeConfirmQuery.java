@@ -42,6 +42,9 @@ public class GzHighChargeConfirmQuery
     /** 供应商 ID */
     private Long supplierId;
 
+    /** 按 linkId 精确补全（两阶段分页第二步，非前端传入） */
+    private java.util.List<String> linkIds;
+
     /** 表头排序字段（白名单校验） */
     private String sortField;
     /** asc / desc */

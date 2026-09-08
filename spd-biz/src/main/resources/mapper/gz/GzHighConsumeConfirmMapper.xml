@@ -130,9 +130,12 @@
             </when>
         </choose>
         <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
+            <!-- 宽表/导出仍按展示核销时间精确过滤 -->
+            and t.create_time &gt;= date_sub(#{beginConsumeAuditTime}, interval 1 day)
             and (<include refid="traceConsumeAuditTimeExpr"/>) &gt;= #{beginConsumeAuditTime}
         </if>
         <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
+            and t.create_time &lt;= date_add(#{endConsumeAuditTime}, interval 1 day)
             and (<include refid="traceConsumeAuditTimeExpr"/>) &lt;= #{endConsumeAuditTime}
         </if>
         <if test="patientName != null and patientName != ''">
@@ -164,6 +167,12 @@
         </if>
         <if test="supplierId != null">
             and te.supplier_id = #{supplierId}
+        </if>
+        <if test="linkIds != null and linkIds.size() &gt; 0">
+            and l.id in
+            <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
         </if>
     </sql>
 
@@ -252,10 +261,10 @@
             </when>
         </choose>
         <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
-            and (<include refid="legacyConsumeAuditTimeExpr"/>) &gt;= #{beginConsumeAuditTime}
+            and coalesce(h.audit_date, h.create_time, h.consume_bill_date) &gt;= #{beginConsumeAuditTime}
         </if>
         <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
-            and (<include refid="legacyConsumeAuditTimeExpr"/>) &lt;= #{endConsumeAuditTime}
+            and coalesce(h.audit_date, h.create_time, h.consume_bill_date) &lt;= #{endConsumeAuditTime}
         </if>
         <if test="patientName != null and patientName != ''">
             and coalesce(inp.patient_name, outp.patient_name) like concat('%', #{patientName}, '%')
@@ -287,6 +296,351 @@
         <if test="supplierId != null">
             and e.supplier_id = #{supplierId}
         </if>
+        <if test="linkIds != null and linkIds.size() &gt; 0">
+            and l.id in
+            <foreach collection="linkIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </sql>
+
+    <!--
+      分页 Count/ID 专用日期条件：只用 create_time，避免 TIME(audit_date) 表达式导致无法走索引、全表计算。
+      列表展示时间仍由宽表 hydrate 的核销时间表达式提供。
+    -->
+    <sql id="confirmListIdTraceFilters">
+        <if test="departmentId != null">
+            and <include refid="writeOffDeptIdExpr"/> = #{departmentId}
+        </if>
+        <if test="orderingDepartmentId != null">
+            and (
+                t.apply_dept_id = #{orderingDepartmentId}
+                or exists (
+                    select 1 from fd_department od
+                    where od.id = #{orderingDepartmentId}
+                      and od.tenant_id = l.tenant_id
+                      and (
+                        (l.visit_kind = 'INPATIENT' and inp.id is not null and trim(od.his_id) = trim(inp.dept_code))
+                        or (l.visit_kind = 'OUTPATIENT' and outp.id is not null and trim(od.his_id) = trim(outp.clinic_code))
+                      )
+                )
+            )
+        </if>
+        <if test="execDepartmentId != null">
+            and (
+                t.exec_dept_id = #{execDepartmentId}
+                or exists (
+                    select 1 from fd_department xd
+                    where xd.id = #{execDepartmentId}
+                      and xd.tenant_id = l.tenant_id
+                      and trim(xd.his_id) = trim(coalesce(inp.exec_dept_id, outp.exec_dept_id))
+                )
+            )
+        </if>
+        <if test="confirmStatus != null and confirmStatus != ''">
+            and ifnull(l.confirm_status, 0) = #{confirmStatus}
+        </if>
+        <choose>
+            <when test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+                and ifnull(l.confirm_status, 0) = 1
+                and ifnull(l.instant_io_audit_status, 0) = 1
+                and ifnull(l.returned_qty, 0) &gt; 0
+                and th_bill.id is null
+                and tk_bill.id is null
+            </when>
+            <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
+                and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
+            </when>
+        </choose>
+        <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
+            and t.create_time &gt;= #{beginConsumeAuditTime}
+        </if>
+        <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
+            and t.create_time &lt;= #{endConsumeAuditTime}
+        </if>
+        <if test="patientName != null and patientName != ''">
+            and coalesce(inp.patient_name, outp.patient_name) like concat('%', #{patientName}, '%')
+        </if>
+        <if test="visitNo != null and visitNo != ''">
+            and coalesce(inp.inpatient_no, outp.outpatient_no) like concat('%', #{visitNo}, '%')
+        </if>
+        <if test="hisChargeId != null and hisChargeId != ''">
+            and (
+                (l.visit_kind = 'INPATIENT' and inp.his_inpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+                or (l.visit_kind = 'OUTPATIENT' and outp.his_outpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+            )
+        </if>
+        <if test="chargeItemId != null and chargeItemId != ''">
+            and coalesce(inp.charge_item_id, outp.charge_item_id) like concat('%', #{chargeItemId}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            and te.material_name like concat('%', #{materialName}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and coalesce(nullif(trim(te.specification), ''), m.speci) like concat('%', #{materialSpeci}, '%')
+        </if>
+        <if test="materialModel != null and materialModel != ''">
+            and coalesce(nullif(trim(te.model), ''), m.model) like concat('%', #{materialModel}, '%')
+        </if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and <include refid="traceInHospitalCodeExpr"/> like concat('%', #{inHospitalCode}, '%')
+        </if>
+        <if test="supplierId != null">
+            and te.supplier_id = #{supplierId}
+        </if>
+    </sql>
+
+    <sql id="confirmListIdLegacyFilters">
+        <if test="departmentId != null">
+            and <include refid="legacyWriteOffDeptIdExpr"/> = #{departmentId}
+        </if>
+        <if test="orderingDepartmentId != null">
+            and exists (
+                select 1 from fd_department od
+                where od.id = #{orderingDepartmentId}
+                  and od.tenant_id = l.tenant_id
+                  and (
+                    (l.visit_kind = 'INPATIENT' and inp.id is not null and trim(od.his_id) = trim(inp.dept_code))
+                    or (l.visit_kind = 'OUTPATIENT' and outp.id is not null and trim(od.his_id) = trim(outp.clinic_code))
+                  )
+            )
+        </if>
+        <if test="execDepartmentId != null">
+            and exists (
+                select 1 from fd_department xd
+                where xd.id = #{execDepartmentId}
+                  and xd.tenant_id = l.tenant_id
+                  and trim(xd.his_id) = trim(coalesce(inp.exec_dept_id, outp.exec_dept_id))
+            )
+        </if>
+        <if test="confirmStatus != null and confirmStatus != ''">
+            and ifnull(l.confirm_status, 0) = #{confirmStatus}
+        </if>
+        <choose>
+            <when test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+                and ifnull(l.confirm_status, 0) = 1
+                and ifnull(l.instant_io_audit_status, 0) = 1
+                and ifnull(l.returned_qty, 0) &gt; 0
+                and th_bill.id is null
+                and tk_bill.id is null
+            </when>
+            <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
+                and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
+            </when>
+        </choose>
+        <if test="beginConsumeAuditTime != null and beginConsumeAuditTime != ''">
+            and h.create_time &gt;= #{beginConsumeAuditTime}
+        </if>
+        <if test="endConsumeAuditTime != null and endConsumeAuditTime != ''">
+            and h.create_time &lt;= #{endConsumeAuditTime}
+        </if>
+        <if test="patientName != null and patientName != ''">
+            and coalesce(inp.patient_name, outp.patient_name) like concat('%', #{patientName}, '%')
+        </if>
+        <if test="visitNo != null and visitNo != ''">
+            and coalesce(inp.inpatient_no, outp.outpatient_no) like concat('%', #{visitNo}, '%')
+        </if>
+        <if test="hisChargeId != null and hisChargeId != ''">
+            and (
+                (l.visit_kind = 'INPATIENT' and inp.his_inpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+                or (l.visit_kind = 'OUTPATIENT' and outp.his_outpatient_charge_id like concat('%', #{hisChargeId}, '%'))
+            )
+        </if>
+        <if test="chargeItemId != null and chargeItemId != ''">
+            and coalesce(inp.charge_item_id, outp.charge_item_id) like concat('%', #{chargeItemId}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            and e.material_name like concat('%', #{materialName}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and coalesce(nullif(trim(e.material_speci), ''), m.speci) like concat('%', #{materialSpeci}, '%')
+        </if>
+        <if test="materialModel != null and materialModel != ''">
+            and coalesce(nullif(trim(e.material_model), ''), m.model) like concat('%', #{materialModel}, '%')
+        </if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and <include refid="legacyInHospitalCodeExpr"/> like concat('%', #{inHospitalCode}, '%')
+        </if>
+        <if test="supplierId != null">
+            and e.supplier_id = #{supplierId}
+        </if>
+    </sql>
+
+    <!--
+      分页/Count 瘦查询：按条件动态 JOIN；默认「状态+日期」不连镜像大表。
+      宽表仅在「按 linkId 补全」或导出时使用。
+    -->
+    <sql id="confirmListIdTraceFrom">
+        from his_mirror_consume_link l
+        inner join gz_traceability t on t.id = l.traceability_id
+            and t.tenant_id = l.tenant_id
+            and ifnull(t.del_flag, 0) = 0
+            and t.trace_source = 'HIS_MIRROR_HIGH'
+            and t.order_status = 2
+        <if test="(sortField != null and sortField != '')
+            or (materialName != null and materialName != '')
+            or (materialSpeci != null and materialSpeci != '')
+            or (materialModel != null and materialModel != '')
+            or supplierId != null
+            or (inHospitalCode != null and inHospitalCode != '')">
+            inner join gz_traceability_entry te on te.id = l.traceability_entry_id
+                and te.tenant_id = l.tenant_id
+                and ifnull(te.del_flag, 0) = 0
+        </if>
+        <if test="(sortField != null and sortField != '')
+            or (inHospitalCode != null and inHospitalCode != '')">
+            left join gz_dep_inventory gdi on gdi.id = l.gz_dep_inventory_id and gdi.tenant_id = l.tenant_id
+        </if>
+        <if test="(sortField != null and sortField != '')
+            or (materialSpeci != null and materialSpeci != '')
+            or (materialModel != null and materialModel != '')">
+            left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
+        </if>
+        <if test="(sortField != null and sortField != '')
+            or (patientName != null and patientName != '')
+            or (visitNo != null and visitNo != '')
+            or (hisChargeId != null and hisChargeId != '')
+            or (chargeItemId != null and chargeItemId != '')
+            or orderingDepartmentId != null
+            or execDepartmentId != null">
+            left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
+            left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
+        </if>
+        <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+            inner join gz_traceability_entry te_bill on te_bill.id = l.traceability_entry_id
+                and te_bill.tenant_id = l.tenant_id
+                and ifnull(te_bill.del_flag, 0) = 0
+            left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
+                and th_bill.tenant_id = l.tenant_id
+                and th_bill.bill_type = 301
+                and ifnull(th_bill.del_flag, 0) = 0
+                and th_bill.supplier_id = cast(te_bill.supplier_id as char)
+            left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
+                and tk_bill.tenant_id = l.tenant_id
+                and tk_bill.bill_type = 401
+                and ifnull(tk_bill.del_flag, 0) = 0
+                and tk_bill.supplier_id = cast(te_bill.supplier_id as char)
+        </if>
+        where l.tenant_id = #{tenantId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.gz_dep_inventory_id is not null
+          and l.traceability_id is not null
+    </sql>
+
+    <sql id="confirmListIdLegacyFrom">
+        from his_mirror_consume_link l
+        inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
+            and h.tenant_id = l.tenant_id
+            and ifnull(h.del_flag, 0) = 0
+            and ifnull(h.reverse_flag, 0) = 0
+            and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
+            and h.consume_bill_status = 2
+        <if test="(sortField != null and sortField != '')
+            or (materialName != null and materialName != '')
+            or (materialSpeci != null and materialSpeci != '')
+            or (materialModel != null and materialModel != '')
+            or supplierId != null
+            or (inHospitalCode != null and inHospitalCode != '')">
+            inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
+                and ifnull(e.del_flag, 0) = 0
+        </if>
+        <if test="(sortField != null and sortField != '')
+            or (inHospitalCode != null and inHospitalCode != '')">
+            left join gz_dep_inventory gzi on gzi.id = l.gz_dep_inventory_id and gzi.tenant_id = l.tenant_id
+        </if>
+        <if test="(sortField != null and sortField != '')
+            or (materialSpeci != null and materialSpeci != '')
+            or (materialModel != null and materialModel != '')">
+            left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
+        </if>
+        <if test="(sortField != null and sortField != '')
+            or (patientName != null and patientName != '')
+            or (visitNo != null and visitNo != '')
+            or (hisChargeId != null and hisChargeId != '')
+            or (chargeItemId != null and chargeItemId != '')
+            or orderingDepartmentId != null
+            or execDepartmentId != null">
+            left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
+            left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
+        </if>
+        <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+            inner join t_hc_ks_xh_entry e_bill on e_bill.id = l.dept_batch_consume_entry_id
+                and ifnull(e_bill.del_flag, 0) = 0
+            left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
+                and th_bill.tenant_id = l.tenant_id
+                and th_bill.bill_type = 301
+                and ifnull(th_bill.del_flag, 0) = 0
+                and th_bill.supplier_id = cast(e_bill.supplier_id as char)
+            left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
+                and tk_bill.tenant_id = l.tenant_id
+                and tk_bill.bill_type = 401
+                and ifnull(tk_bill.del_flag, 0) = 0
+                and tk_bill.supplier_id = cast(e_bill.supplier_id as char)
+        </if>
+        where l.tenant_id = #{tenantId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.gz_dep_inventory_id is not null
+          and l.traceability_id is null
+          and l.dept_batch_consume_id is not null
+    </sql>
+
+    <!-- 默认排序：linkId + create_time（可走索引；展示核销时间仍由宽表补全） -->
+    <sql id="confirmListIdUnionQueryDefault">
+        select
+            l.id as linkId,
+            t.create_time as consumeAuditTime
+        <include refid="confirmListIdTraceFrom"/>
+        <include refid="confirmListIdTraceFilters"/>
+
+        union all
+
+        select
+            l.id as linkId,
+            h.create_time as consumeAuditTime
+        <include refid="confirmListIdLegacyFrom"/>
+        <include refid="confirmListIdLegacyFilters"/>
+    </sql>
+
+    <sql id="confirmListIdUnionQuery">
+        select
+            l.id as linkId,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            t.create_time as consumeAuditTime,
+            coalesce(inp.patient_name, outp.patient_name) as patientName,
+            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
+            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(nullif(trim(inp.spec_model), ''), nullif(trim(outp.spec_model), ''), m.speci) as itemSpec,
+            te.material_name as materialName,
+            coalesce(nullif(trim(te.specification), ''), m.speci) as materialSpeci,
+            <include refid="traceInHospitalCodeExpr"/> as inHospitalCode,
+            te.charge_price as unitPrice,
+            case when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
+                then te.charge_price * coalesce(l.alloc_qty, te.quantity) else null end as amt,
+            coalesce(nullif(trim(gdi.material_no), ''), te.batch_no) as batchNumber
+        <include refid="confirmListIdTraceFrom"/>
+        <include refid="confirmListIdTraceFilters"/>
+
+        union all
+
+        select
+            l.id as linkId,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            h.create_time as consumeAuditTime,
+            coalesce(inp.patient_name, outp.patient_name) as patientName,
+            coalesce(inp.inpatient_no, outp.outpatient_no) as visitNo,
+            coalesce(inp.charge_item_id, outp.charge_item_id) as chargeItemId,
+            coalesce(inp.item_name, outp.item_name) as itemName,
+            coalesce(nullif(trim(inp.spec_model), ''), nullif(trim(outp.spec_model), ''), nullif(trim(e.material_speci), ''), m.speci) as itemSpec,
+            e.material_name as materialName,
+            coalesce(nullif(trim(e.material_speci), ''), m.speci) as materialSpeci,
+            <include refid="legacyInHospitalCodeExpr"/> as inHospitalCode,
+            e.unit_price as unitPrice,
+            case when e.unit_price is not null and coalesce(l.alloc_qty, e.qty) is not null
+                then e.unit_price * coalesce(l.alloc_qty, e.qty) else e.amt end as amt,
+            coalesce(nullif(trim(e.material_no), ''), e.batch_number, nullif(trim(gzi.material_no), '')) as batchNumber
+        <include refid="confirmListIdLegacyFrom"/>
+        <include refid="confirmListIdLegacyFilters"/>
     </sql>
 
     <sql id="confirmListUnionQuery">
@@ -460,20 +814,38 @@
         select * from (
             <include refid="confirmListUnionQuery"/>
         ) confirm_union
+        <if test="linkIds == null or linkIds.size() == 0">
+            <include refid="confirmListOrderBy"/>
+        </if>
+        limit #{offset}, #{limitSize}
+    </select>
+
+    <!-- 分页第一步：只查本页 linkId（瘦 JOIN；默认排序走最瘦 SQL） -->
+    <select id="selectConfirmListIds" resultType="java.lang.String">
+        select linkId from (
+            <choose>
+                <when test="sortField != null and sortField != ''">
+                    <include refid="confirmListIdUnionQuery"/>
+                </when>
+                <otherwise>
+                    <include refid="confirmListIdUnionQueryDefault"/>
+                </otherwise>
+            </choose>
+        ) confirm_union
         <include refid="confirmListOrderBy"/>
         limit #{offset}, #{limitSize}
     </select>
 
-    <!-- count 只取 linkId，避免对完整宽表 SELECT 再包一层 count（此前会把重表达式算两遍） -->
+    <!-- count 使用瘦 JOIN + create_time 条件，避免单据四连表与 TIME(audit_date) -->
     <select id="selectConfirmListCount" resultType="long">
         select count(0) from (
             select l.id as linkId
-            <include refid="confirmListFrom"/>
-            <include refid="confirmListTraceFilters"/>
+            <include refid="confirmListIdTraceFrom"/>
+            <include refid="confirmListIdTraceFilters"/>
             union all
             select l.id as linkId
-            <include refid="confirmListLegacyFrom"/>
-            <include refid="confirmListLegacyFilters"/>
+            <include refid="confirmListIdLegacyFrom"/>
+            <include refid="confirmListIdLegacyFilters"/>
         ) confirm_union
     </select>
 
