@@ -55,6 +55,9 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
     /** 展示用，非表字段 */
     private String warehouseName;
 
+    /** 展示用：生产厂家名称（来自产品档案 fd_factory） */
+    private String producer;
+
     /** 展示用：审核拆分后对应的科室申购单号 */
     private String splitDepPurchaseBillNo;
 
@@ -216,6 +219,14 @@ public class DepPurchaseApplyAggEntry extends BaseEntity {
 
     public void setWarehouseName(String warehouseName) {
         this.warehouseName = warehouseName;
+    }
+
+    public String getProducer() {
+        return producer;
+    }
+
+    public void setProducer(String producer) {
+        this.producer = producer;
     }
 
     public String getSplitDepPurchaseBillNo() {
