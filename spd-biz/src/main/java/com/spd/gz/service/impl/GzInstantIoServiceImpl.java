@@ -459,8 +459,16 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
             e.setAmt(row.getUnitPrice().multiply(qty));
         }
         e.setBatchNo(row.getBatchNo());
-        e.setBatchNumber(row.getBatchNumber());
-        e.setBeginTime(row.getBeginTime());
+        // 页面「批号」取 batchNumber（厂家批号/库存 material_no），勿与系统 batchNo 混淆
+        String lotNo = StringUtils.isNotBlank(row.getBatchNumber()) ? row.getBatchNumber().trim() : null;
+        if (lotNo == null && StringUtils.isNotBlank(row.getBatchNo()))
+        {
+            lotNo = row.getBatchNo().trim();
+        }
+        e.setBatchNumber(lotNo);
+        // 列表 SQL 曾用 productionDate；建单以 beginTime 为准，二者兜底
+        Date beginTime = row.getBeginTime() != null ? row.getBeginTime() : row.getProductionDate();
+        e.setBeginTime(beginTime);
         e.setEndTime(row.getEndTime());
         e.setMainBarcode(row.getMainBarcode());
         e.setSubBarcode(row.getSubBarcode());
