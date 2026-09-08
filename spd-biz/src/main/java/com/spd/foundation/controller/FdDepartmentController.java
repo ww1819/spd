@@ -67,7 +67,7 @@ public class FdDepartmentController extends BaseController
 
     /**
      * 查询科室列表（租户非 super：耗材端按 sys_user_department，设备端按 sb_user_permission_dept，见 {@link ITenantScopeService#resolveDepartmentScope}）；
-     * 可选 treeParentId：仅查该上级下的直接子科室；不传则与点击客户根节点一致，为当前用户可见的全部科室。
+     * 可选 treeParentId：查该节点自身及其直接子科室；不传则与点击客户根节点一致，为当前用户可见的全部科室。
      */
     @PreAuthorize("@ss.hasPermi('foundation:depart:list')")
     @GetMapping("/list")
