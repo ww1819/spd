@@ -21,7 +21,7 @@
 | 科室 / 供应商 / 厂家等 | **禁止手工新增**，提示从 HIS 同步；隐藏新增/导入按钮 | `ZqTcmMasterDataGuard`；各 `foundation/*/index.vue`；`ZQ_TCM_MANUAL_ADD_DENIED_MSG` |
 | 耗材档案 | 禁止手工新增；**编辑已有档案**时仅允许改：财务分类、厂家、供应商、单价；菜单按公共开放回填 | `FdMaterialServiceImpl`；`material/index.vue`（`isZqTcmTenant`）；`column.sql` 公共菜单回填 |
 | 库房 | 展示 **HIS药库科室ID** | `warehouse/index.vue` |
-| 用户管理 | 隐藏部分新增 / 新增导入 | `system/user/index.vue` |
+| 用户管理 | **公共共享页**；隐藏手工新增 / 新增导入，走 HIS 人员同步；菜单公共回填 | `system/user/index.vue`（`isZqTcmTenant`）；`open_system_user_menu_to_customers.sql` |
 | 众阳主数据同步 | 同步按钮、联调探针页 | `MsunHisSyncButton`；`foundation/msunProbe`；`MsunHisTenantRegistry` |
 
 ### 2. 仓储业务
