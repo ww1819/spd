@@ -318,6 +318,9 @@ public class FdMaterial extends BaseEntity
     /** 查询参数：是否HIS对照（1=已对照，0=未对照） */
     private String hisBindStatus;
 
+    /** 查询参数：供应商名称模糊搜索（非表字段） */
+    private String supplierName;
+
     /** 查询参数：库房分类多选 */
     private Long[] storeroomIds;
 
