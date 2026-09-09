@@ -29,7 +29,7 @@
 
 | 菜单/功能 | 差异说明 | 关键实现 |
 |-----------|----------|----------|
-| 入库申请（到货验收） | 弹窗内可 **直接审核**（其他租户走入库审核菜单） | `inWarehouse/apply/index.vue` → `isZqTenant` |
+| 入库申请（到货验收） | 弹窗内可 **直接审核**（其他租户走入库审核菜单）；审核按钮后提供 **打印**（仅已审核可点） | `inWarehouse/apply/index.vue` → `isZqTenant` / `handleModalPrint` |
 | 出库申请 | 弹窗内可直接审核 | `outWarehouse/apply/index.vue` |
 | 出库审核通过后 | **自动收货确认** | `StkIoBillServiceImpl.AUTO_OUTBOUND_RECEIPT_TENANT_IDS` |
 | 出入库/退货/退库打印 | **Zq 专属版式** | `*PrintZq.vue`；`isZqInboundPrintTenant` |
