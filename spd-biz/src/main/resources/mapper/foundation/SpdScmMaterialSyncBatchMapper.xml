@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SpdScmMaterialSyncBatchMapper">
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.SpdScmMaterialSyncBatch">
+        insert into spd_scm_material_sync_batch(
+          id, tenant_id, hospital_code, sync_by, sync_time, item_count, result_status, result_msg, create_time
+        ) values (
+          #{id}, #{tenantId}, #{hospitalCode}, #{syncBy}, now(), #{itemCount}, #{resultStatus}, #{resultMsg}, now()
+        )
+    </insert>
+</mapper>

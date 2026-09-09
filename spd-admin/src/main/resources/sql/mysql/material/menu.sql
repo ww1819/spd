@@ -1,5 +1,5 @@
 -- ========== 耗材模块 菜单与权限（由 sys_menu 扫描刷新）==========
--- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(含 caigou:scmBind:remove 删除；path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
+-- 文末含：采购订单(caigou/dingdan)、订单审查(caigou/shenhe)、订单发布(caigou/publish)、云平台编码绑定(含 caigou:scmBind:remove 删除；path=scmBind，组件 caigou/scmBind/index)、平台供应商信息(foundation/scmSupplier)、供应链产品档案(foundation/scmMaterialArchive)、主数据变更快照(foundation/masterSnapshot)、到货验收(inWarehouse/audit)、盘点入库(stocktaking/in)、定数监测(monitoring/fixedNumber)、科室新品申购申请/审批、转科申请(department/departmentTransfer/apply)、调拨、hc_customer_menu 回填
 -- maintenance/add_warehouse_stocktaking_in_menus.sql 与本段一致，可单独补执行
 -- 生成说明：mysqldump 条件 menu_id IN (1594–1597,2100–2105,3103–3107,2201–2207,2210–2216,2220,2222–2223,2230–2237,2240–2247,2250–2257,2260–2265,2270–2275,2298,2280–2287,2290–2297,2300–2304)
 --           及 perms LIKE 'warehouse:initialStockImport%' / 'hc:system:%'
@@ -7944,6 +7944,81 @@ CROSS JOIN (
   UNION ALL SELECT 3911 UNION ALL SELECT 3912 UNION ALL SELECT 3913 UNION ALL SELECT 3914 UNION ALL SELECT 3915 UNION ALL SELECT 3916
   UNION ALL SELECT 3921 UNION ALL SELECT 3922 UNION ALL SELECT 3923 UNION ALL SELECT 3924 UNION ALL SELECT 3925 UNION ALL SELECT 3926
   UNION ALL SELECT 3931 UNION ALL SELECT 3932
+) m
+WHERE c.hc_status = '0'
+  AND NOT EXISTS (
+    SELECT 1 FROM hc_customer_menu h
+    WHERE h.tenant_id = c.customer_id AND h.menu_id = m.menu_id
+  );
+/
+
+-- ---------- MAT-F-001 供应链产品档案（基础资料；menu_id 3940–3945）----------
+SET @foundation_root := (
+  SELECT m.menu_id FROM sys_menu m WHERE m.menu_name = '基础资料' AND m.menu_type = 'M' ORDER BY m.menu_id LIMIT 1
+);
+/
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, `query`,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT
+  3940, '供应链产品档案', COALESCE(@foundation_root, 1),
+  (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@foundation_root, 1)),
+  'scmMaterialArchive', 'foundation/scmMaterialArchive/index', NULL,
+  1, 0, 'C', '0', '0', 'foundation:scmMaterial:list', 'link',
+  'admin', NOW(), '1', NOW(), '推送/同步/应用平台产品档案；SpdScmMaterialArchiveController',
+  '0', '1'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'foundation/scmMaterialArchive/index')
+   OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3940)
+ON DUPLICATE KEY UPDATE
+  menu_name = VALUES(menu_name),
+  parent_id = VALUES(parent_id),
+  path = VALUES(path),
+  component = VALUES(component),
+  perms = VALUES(perms),
+  remark = VALUES(remark),
+  update_time = NOW();
+/
+SET @fd_scm_mat_menu_id := (
+  SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND (menu_id = 3940 OR component = 'foundation/scmMaterialArchive/index') ORDER BY menu_id DESC LIMIT 1
+);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3941, '供应链产品档案查询', @fd_scm_mat_menu_id, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:scmMaterial:list', '#', 'admin', NOW(), '1', NOW(), '', '0', '1'
+FROM DUAL WHERE @fd_scm_mat_menu_id IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_mat_menu_id AND perms = 'foundation:scmMaterial:list' AND menu_type = 'F') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3941))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = NOW();
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3942, '推送到平台', @fd_scm_mat_menu_id, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:scmMaterial:push', '#', 'admin', NOW(), '1', NOW(), 'POST /foundation/scmMaterialArchive/push', '0', '1'
+FROM DUAL WHERE @fd_scm_mat_menu_id IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_mat_menu_id AND perms = 'foundation:scmMaterial:push') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3942))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = NOW();
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3943, '从平台同步', @fd_scm_mat_menu_id, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:scmMaterial:sync', '#', 'admin', NOW(), '1', NOW(), 'POST /foundation/scmMaterialArchive/sync', '0', '1'
+FROM DUAL WHERE @fd_scm_mat_menu_id IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_mat_menu_id AND perms = 'foundation:scmMaterial:sync') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3943))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = NOW();
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3944, '应用平台档案', @fd_scm_mat_menu_id, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:scmMaterial:apply', '#', 'admin', NOW(), '1', NOW(), 'POST /foundation/scmMaterialArchive/apply', '0', '1'
+FROM DUAL WHERE @fd_scm_mat_menu_id IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_mat_menu_id AND perms = 'foundation:scmMaterial:apply') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3944))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = NOW();
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3945, '推送字段配置', @fd_scm_mat_menu_id, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'foundation:scmMaterial:config', '#', 'admin', NOW(), '1', NOW(), 'GET/PUT /foundation/scmMaterialArchive/fieldCfg', '0', '1'
+FROM DUAL WHERE @fd_scm_mat_menu_id IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @fd_scm_mat_menu_id AND perms = 'foundation:scmMaterial:config') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3945))
+ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), perms = VALUES(perms), update_time = NOW();
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES
+ (1, 3940), (1, 3941), (1, 3942), (1, 3943), (1, 3944), (1, 3945);
+/
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
+FROM sb_customer c
+CROSS JOIN (
+  SELECT 3940 AS menu_id UNION ALL SELECT 3941 UNION ALL SELECT 3942 UNION ALL SELECT 3943 UNION ALL SELECT 3944 UNION ALL SELECT 3945
 ) m
 WHERE c.hc_status = '0'
   AND NOT EXISTS (

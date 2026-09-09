@@ -1,0 +1,86 @@
+CREATE TABLE IF NOT EXISTS `spd_scm_material_archive` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `tenant_id` varchar(64) NOT NULL,
+  `scm_archive_id` varchar(36) NOT NULL,
+  `hospital_code` varchar(64) NOT NULL,
+  `scm_supplier_code` varchar(64) NOT NULL,
+  `spd_material_id` varchar(64) DEFAULT NULL,
+  `spd_supplier_id` varchar(64) DEFAULT NULL,
+  `material_name` varchar(200) NOT NULL,
+  `pinyin_code` varchar(100) DEFAULT NULL,
+  `specification` varchar(200) DEFAULT NULL,
+  `model` varchar(200) DEFAULT NULL,
+  `unit_name` varchar(64) DEFAULT NULL,
+  `price` decimal(18,6) DEFAULT NULL,
+  `sale_price` decimal(18,6) DEFAULT NULL,
+  `register_no` varchar(128) DEFAULT NULL,
+  `register_name` varchar(200) DEFAULT NULL,
+  `manufacturer_name` varchar(200) DEFAULT NULL,
+  `udi_code` varchar(128) DEFAULT NULL,
+  `medical_name` varchar(200) DEFAULT NULL,
+  `medical_no` varchar(128) DEFAULT NULL,
+  `brand` varchar(100) DEFAULT NULL,
+  `payload_json` mediumtext,
+  `scm_update_time` datetime DEFAULT NULL,
+  `last_sync_batch_id` varchar(36) DEFAULT NULL,
+  `apply_status` char(1) NOT NULL DEFAULT '0',
+  `last_apply_log_id` varchar(36) DEFAULT NULL,
+  `del_flag` char(1) NOT NULL DEFAULT '0',
+  `create_by` varchar(64) DEFAULT '',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_by` varchar(64) DEFAULT '',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `remark` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ssma_tenant_scm_arch` (`tenant_id`, `scm_archive_id`),
+  KEY `idx_ssma_spd_mat` (`spd_material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SPD侧供应链产品档案镜像';
+/
+CREATE TABLE IF NOT EXISTS `spd_scm_material_push_field_cfg` (
+  `id` varchar(36) NOT NULL,
+  `tenant_id` varchar(64) NOT NULL,
+  `field_code` varchar(64) NOT NULL,
+  `field_label` varchar(100) DEFAULT NULL,
+  `push_enabled` char(1) NOT NULL DEFAULT '1',
+  `apply_enabled` char(1) NOT NULL DEFAULT '1',
+  `sort_no` int NOT NULL DEFAULT 0,
+  `del_flag` char(1) NOT NULL DEFAULT '0',
+  `create_by` varchar(64) DEFAULT '',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_by` varchar(64) DEFAULT '',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_smpfc_tenant_field` (`tenant_id`, `field_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='产品档案推送/应用字段配置';
+/
+CREATE TABLE IF NOT EXISTS `spd_scm_material_sync_batch` (
+  `id` varchar(36) NOT NULL,
+  `tenant_id` varchar(64) NOT NULL,
+  `hospital_code` varchar(64) DEFAULT NULL,
+  `sync_by` varchar(64) DEFAULT NULL,
+  `sync_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `item_count` int NOT NULL DEFAULT 0,
+  `result_status` char(1) NOT NULL DEFAULT '1',
+  `result_msg` varchar(500) DEFAULT NULL,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_smsb_tenant_time` (`tenant_id`, `sync_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SPD拉取供应链档案批次';
+/
+CREATE TABLE IF NOT EXISTS `spd_scm_material_apply_log` (
+  `id` varchar(36) NOT NULL,
+  `tenant_id` varchar(64) NOT NULL,
+  `sync_batch_id` varchar(36) DEFAULT NULL,
+  `mirror_id` varchar(36) NOT NULL,
+  `scm_archive_id` varchar(36) NOT NULL,
+  `spd_material_id` varchar(64) NOT NULL,
+  `applied_fields_json` varchar(2000) DEFAULT NULL,
+  `before_json` mediumtext,
+  `after_json` mediumtext,
+  `apply_by` varchar(64) DEFAULT NULL,
+  `apply_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `remark` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_smal_material_time` (`spd_material_id`, `apply_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SPD应用供应链档案留痕';
+/

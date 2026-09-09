@@ -14,4 +14,6 @@ public final class SpdBridgeActions
     public static final String DELIVERY_QUERY = "delivery.query";
     public static final String DELIVERY_DOWNLOAD = "delivery.download";
     public static final String ORDER_PUBLISH_PAYLOAD = "order.publishPayload";
+    public static final String MATERIAL_ARCHIVE_PUSH = "material.archive.push";
+    public static final String MATERIAL_ARCHIVE_PULL = "material.archive.pull";
 }

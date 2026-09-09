@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SpdScmMaterialPushFieldCfgMapper">
+
+    <select id="selectByTenantId" resultType="com.spd.foundation.domain.SpdScmMaterialPushFieldCfg">
+        select id, tenant_id as tenantId, field_code as fieldCode, field_label as fieldLabel,
+               push_enabled as pushEnabled, apply_enabled as applyEnabled, sort_no as sortNo,
+               del_flag as delFlag, create_by as createBy, create_time as createTime,
+               update_by as updateBy, update_time as updateTime
+        from spd_scm_material_push_field_cfg
+        where tenant_id = #{tenantId}
+          and (del_flag is null or del_flag = '' or del_flag = '0')
+        order by sort_no asc, field_code asc
+    </select>
+
+    <select id="selectByTenantAndField" resultType="com.spd.foundation.domain.SpdScmMaterialPushFieldCfg">
+        select id, tenant_id as tenantId, field_code as fieldCode, field_label as fieldLabel,
+               push_enabled as pushEnabled, apply_enabled as applyEnabled, sort_no as sortNo,
+               del_flag as delFlag, create_by as createBy, create_time as createTime,
+               update_by as updateBy, update_time as updateTime
+        from spd_scm_material_push_field_cfg
+        where tenant_id = #{tenantId} and field_code = #{fieldCode}
+          and (del_flag is null or del_flag = '' or del_flag = '0')
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.SpdScmMaterialPushFieldCfg">
+        insert into spd_scm_material_push_field_cfg(
+          id, tenant_id, field_code, field_label, push_enabled, apply_enabled, sort_no,
+          del_flag, create_by, create_time
+        ) values (
+          #{id}, #{tenantId}, #{fieldCode}, #{fieldLabel}, #{pushEnabled}, #{applyEnabled}, #{sortNo},
+          '0', #{createBy}, now()
+        )
+    </insert>
+
+    <update id="updateByTenantAndField" parameterType="com.spd.foundation.domain.SpdScmMaterialPushFieldCfg">
+        update spd_scm_material_push_field_cfg
+        set field_label = #{fieldLabel},
+            push_enabled = #{pushEnabled},
+            apply_enabled = #{applyEnabled},
+            sort_no = #{sortNo},
+            update_by = #{updateBy},
+            update_time = now()
+        where tenant_id = #{tenantId} and field_code = #{fieldCode}
+          and (del_flag is null or del_flag = '' or del_flag = '0')
+    </update>
+</mapper>
