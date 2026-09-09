@@ -25,6 +25,8 @@ import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.mapper.FdSupplierMapper;
 import com.spd.foundation.service.IFdScmSupplierSpdService;
 import com.spd.foundation.service.IFdSupplierService;
+import com.spd.foundation.service.bridge.SpdScmBridgeClient;
+import com.spd.common.bridge.SpdBridgeActions;
 import com.spd.system.service.ISysConfigService;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +53,9 @@ public class FdScmSupplierSpdServiceImpl implements IFdScmSupplierSpdService
 
     @Autowired
     private IFdSupplierService fdSupplierService;
+
+    @Autowired
+    private SpdScmBridgeClient spdScmBridgeClient;
 
     private String tenantId()
     {
@@ -112,9 +117,25 @@ public class FdScmSupplierSpdServiceImpl implements IFdScmSupplierSpdService
     @Override
     public List<Map<String, Object>> listScmSuppliersForTenantHospital()
     {
+        String hospitalCode = hospitalCodeOrThrow();
+        if (spdScmBridgeClient.isBridgeEnabled())
+        {
+            try
+            {
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("hospitalCode", hospitalCode);
+                Object data = spdScmBridgeClient.invoke(SpdBridgeActions.SUPPLIER_LIST_BY_HOSPITAL, hospitalCode,
+                    tenantId(), payload);
+                return toMapList(data);
+            }
+            catch (Exception e)
+            {
+                // 旧前置机无 bridge 时回退专用接口
+            }
+        }
         try
         {
-            String hc = URLEncoder.encode(hospitalCodeOrThrow(), StandardCharsets.UTF_8.name());
+            String hc = URLEncoder.encode(hospitalCode, StandardCharsets.UTF_8.name());
             JSONObject root = httpGetJson("/api/spd/scmSupplier/listByHospital?hospitalCode=" + hc);
             com.alibaba.fastjson2.JSONArray arr = root.getJSONArray("data");
             List<Map<String, Object>> out = new ArrayList<>();
@@ -148,9 +169,35 @@ public class FdScmSupplierSpdServiceImpl implements IFdScmSupplierSpdService
         {
             throw new ServiceException("平台供应商编码不能为空");
         }
+        String hospitalCode = hospitalCodeOrThrow();
+        if (spdScmBridgeClient.isBridgeEnabled())
+        {
+            try
+            {
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("hospitalCode", hospitalCode);
+                payload.put("supplierCode", scmSupplierCode.trim());
+                payload.put("spdTenantId", tenantId());
+                Object data = spdScmBridgeClient.invoke(SpdBridgeActions.SUPPLIER_PROFILE, hospitalCode, tenantId(),
+                    payload);
+                if (data instanceof JSONObject)
+                {
+                    return (JSONObject) data;
+                }
+                if (data instanceof Map)
+                {
+                    return new JSONObject((Map<String, Object>) data);
+                }
+                return data != null ? JSON.parseObject(JSON.toJSONString(data)) : new JSONObject();
+            }
+            catch (Exception e)
+            {
+                // 回退旧接口
+            }
+        }
         try
         {
-            String hc = URLEncoder.encode(hospitalCodeOrThrow(), StandardCharsets.UTF_8.name());
+            String hc = URLEncoder.encode(hospitalCode, StandardCharsets.UTF_8.name());
             String sc = URLEncoder.encode(scmSupplierCode.trim(), StandardCharsets.UTF_8.name());
             String tid = URLEncoder.encode(tenantId(), StandardCharsets.UTF_8.name());
             JSONObject root = httpGetJson("/api/spd/scmSupplier/profile?hospitalCode=" + hc + "&supplierCode=" + sc
@@ -166,6 +213,42 @@ public class FdScmSupplierSpdServiceImpl implements IFdScmSupplierSpdService
         {
             throw new ServiceException("拉取平台供应商档案失败：" + e.getMessage());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> toMapList(Object data)
+    {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (data == null)
+        {
+            return out;
+        }
+        com.alibaba.fastjson2.JSONArray arr;
+        if (data instanceof com.alibaba.fastjson2.JSONArray)
+        {
+            arr = (com.alibaba.fastjson2.JSONArray) data;
+        }
+        else if (data instanceof List)
+        {
+            arr = JSON.parseArray(JSON.toJSONString(data));
+        }
+        else
+        {
+            arr = JSON.parseArray(JSON.toJSONString(data));
+        }
+        if (arr == null)
+        {
+            return out;
+        }
+        for (int i = 0; i < arr.size(); i++)
+        {
+            JSONObject o = arr.getJSONObject(i);
+            if (o != null)
+            {
+                out.add(new LinkedHashMap<>(o));
+            }
+        }
+        return out;
     }
 
     @Override

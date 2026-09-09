@@ -22,6 +22,7 @@ import com.spd.caigou.mapper.SpdScmSupplierBindMapper;
 import com.spd.caigou.mapper.SpdScmTenantBindMapper;
 import com.spd.caigou.service.IPremiseOrderPublishService;
 import com.spd.caigou.service.IPurchaseOrderService;
+import com.spd.common.bridge.SpdBridgeActions;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
@@ -29,6 +30,7 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.http.HttpUtils;
 import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdMaterial;
+import com.spd.foundation.service.bridge.SpdScmBridgeClient;
 import com.spd.system.domain.SbCustomer;
 import com.spd.system.service.ISbCustomerService;
 import com.spd.system.service.ISysConfigService;
@@ -37,7 +39,8 @@ import com.spd.system.service.ISysConfigService;
  * 推送模式 {@value #CONFIG_PUSH_MODE}：<br>
  * {@code ids} — 仅 POST /api/spd/order/publish（前置机连 SPD 库组装）；<br>
  * {@code payload} — 仅 POST /api/spd/order/publishPayload（SPD 组装 JSON）；<br>
- * {@code auto} — 先试 payload，失败再试 ids（默认，兼顾无库前置机与兼容旧环境）。
+ * {@code bridge} — 仅稳态桥 action order.publishPayload；<br>
+ * {@code auto} — 先试 bridge（若开启），再 payload，失败再 ids（默认）。
  */
 @Service
 public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishService
@@ -48,6 +51,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
 
     private static final String MODE_IDS = "ids";
     private static final String MODE_PAYLOAD = "payload";
+    private static final String MODE_BRIDGE = "bridge";
     private static final String MODE_AUTO = "auto";
 
     private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
@@ -70,6 +74,9 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
 
     @Autowired
     private PurchaseOrderMapper purchaseOrderMapper;
+
+    @Autowired
+    private SpdScmBridgeClient spdScmBridgeClient;
 
     @Override
     public AjaxResult publish(List<Long> ids)
@@ -105,11 +112,37 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             {
                 r = postPublishPayload(base, buildOrderPayloads(ids));
             }
+            else if (MODE_BRIDGE.equals(mode))
+            {
+                r = postPublishViaBridge(buildOrderPayloads(ids));
+            }
             else if (MODE_AUTO.equals(mode))
             {
+                r = null;
+                if (spdScmBridgeClient.isBridgeEnabled())
+                {
+                    try
+                    {
+                        r = postPublishViaBridge(buildOrderPayloads(ids));
+                        if (isSuccess(r))
+                        {
+                            applyPushOutcomeToOrders(ids, r);
+                            return r;
+                        }
+                        log.warn("bridge 推送未成功，回退 payload: {}", r != null ? r.get(AjaxResult.MSG_TAG) : null);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.warn("bridge 推送异常，回退 payload: {}", ex.getMessage());
+                        r = null;
+                    }
+                }
                 try
                 {
-                    r = postPublishPayload(base, buildOrderPayloads(ids));
+                    if (r == null || !isSuccess(r))
+                    {
+                        r = postPublishPayload(base, buildOrderPayloads(ids));
+                    }
                     if (isSuccess(r))
                     {
                         applyPushOutcomeToOrders(ids, r);
@@ -129,7 +162,7 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
             }
             else
             {
-                return AjaxResult.error("未知的 spd.order.push.mode：" + mode + "，请配置为 ids、payload 或 auto");
+                return AjaxResult.error("未知的 spd.order.push.mode：" + mode + "，请配置为 ids、payload、bridge 或 auto");
             }
             applyPushOutcomeToOrders(ids, r);
             return r;
@@ -250,6 +283,38 @@ public class PremiseOrderPublishServiceImpl implements IPremiseOrderPublishServi
         String jsonData = JSON.toJSONString(orders);
         String result = HttpUtils.sendPost(url, jsonData, "application/json;charset=UTF-8");
         return parseRemoteAjax(result);
+    }
+
+    private AjaxResult postPublishViaBridge(List<Map<String, Object>> orders)
+    {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("orders", orders);
+        String hospitalCode = null;
+        if (orders != null && !orders.isEmpty() && orders.get(0) != null)
+        {
+            Object hc = orders.get(0).get("scmHospitalCode");
+            hospitalCode = hc != null ? String.valueOf(hc) : null;
+        }
+        Object data = spdScmBridgeClient.invoke(SpdBridgeActions.ORDER_PUBLISH_PAYLOAD, hospitalCode, tenantIdForBridge(),
+            payload);
+        return AjaxResult.success(data);
+    }
+
+    private String tenantIdForBridge()
+    {
+        try
+        {
+            String tid = SecurityUtils.getCustomerId();
+            if (StringUtils.isEmpty(tid))
+            {
+                tid = SecurityUtils.requiredScopedTenantIdForSql();
+            }
+            return tid;
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     private static AjaxResult parseRemoteAjax(String result)
