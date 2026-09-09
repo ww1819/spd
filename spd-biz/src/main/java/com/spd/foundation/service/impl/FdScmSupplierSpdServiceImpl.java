@@ -177,26 +177,34 @@ public class FdScmSupplierSpdServiceImpl implements IFdScmSupplierSpdService
             throw new ServiceException("未找到该供应商的平台编码绑定，无法下载");
         }
         JSONObject profile = loadScmSupplierProfile(scmCode);
+        boolean downloadable = profile.getBooleanValue("downloadable");
         boolean bound = profile.getBooleanValue("hospitalSupplierBound");
+        String relationStatus = profile.getString("relationStatus");
         @SuppressWarnings("unchecked")
         Map<String, Object> supplier = profile.getObject("supplier", Map.class);
         if (supplier == null || supplier.isEmpty())
         {
             throw new ServiceException("平台未返回供应商数据");
         }
-        if (!bound)
+        boolean full = downloadable || bound;
+        if (!full)
         {
             int n = purchaseOrderMapper.countOrderWithScmSupplierSnapshot(tenantId(), spdSupplierId, scmCode);
             if (n <= 0)
             {
-                throw new ServiceException("该供应商与医院在平台无供货绑定，且本院无带平台供应商编码的采购订单记录，不允许下载");
+                throw new ServiceException("该供应商与医院在平台无可下载供货关系（待审/未绑定），且本院无带平台供应商编码的采购订单记录，不允许下载");
             }
         }
         JSONObject out = new JSONObject();
-        out.put("exportScope", bound ? "FULL" : "LIMITED");
+        out.put("exportScope", full ? "FULL" : "LIMITED");
+        out.put("downloadable", downloadable || full);
+        out.put("relationStatus", relationStatus);
+        out.put("relationStatusLabel", profile.getString("relationStatusLabel"));
+        out.put("hospitalSupplierBound", bound);
+        out.put("hospitalRelation", profile.get("hospitalRelation"));
         out.put("scmSupplierCode", scmCode);
         out.put("spdSupplierId", spdSupplierId);
-        out.put("supplier", bound ? supplier : stripLimitedSupplier(supplier));
+        out.put("supplier", full ? supplier : stripLimitedSupplier(supplier));
         return out;
     }
 
