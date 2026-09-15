@@ -1018,6 +1018,7 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg_entry` (
   `supplier_name` varchar(255) DEFAULT NULL COMMENT '建议供应商',
   `brand` varchar(128) DEFAULT NULL COMMENT '品牌',
   `model` varchar(128) DEFAULT NULL COMMENT '型号',
+  `producer` varchar(255) DEFAULT NULL COMMENT '生产厂家名称（选品快照）',
   `line_no` int DEFAULT NULL COMMENT '行号',
   `warehouse_id` varchar(36) DEFAULT NULL COMMENT '所属仓库ID(来自仓库定数)',
   `is_gz` char(1) DEFAULT NULL COMMENT '高低值标志（1高值 2低值，来自产品档案）',

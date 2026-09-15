@@ -301,6 +301,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="model != null and model != ''"> and ifnull(m.model, '') like concat('%', #{model}, '%') escape '\\'</if>
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
+        <if test="supplierName != null and supplierName != ''"> and ifnull(s.name, '') like concat('%', #{supplierName}, '%') escape '\\'</if>
         <if test="id != null "> and m.id = #{id}</if>
         <if test="udiNo != null and udiNo != ''"> and ifnull(m.udi_no, '') like concat('%', #{udiNo}, '%') escape '\\'</if>
         <if test="factoryKeyword != null and factoryKeyword != ''"> and (
@@ -371,6 +372,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from fd_material m
         <if test="factoryKeyword != null and factoryKeyword != ''">
             left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+        <if test="supplierName != null and supplierName != ''">
+            left join fd_supplier s on m.supplier_id = s.id
         </if>
         <include refid="fdMaterialListWhere"/>
     </select>
@@ -805,6 +809,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="model != null and model != ''"> and ifnull(m.model, '') like concat('%', #{model}, '%') escape '\\'</if>
         <if test="referredName != null and referredName != ''"> and m.referred_name like concat('%', #{referredName}, '%')</if>
         <if test="supplierId != null "> and m.supplier_id = #{supplierId}</if>
+        <if test="supplierName != null and supplierName != ''"> and ifnull(s.name, '') like concat('%', #{supplierName}, '%') escape '\\'</if>
         <if test="id != null "> and m.id = #{id}</if>
         <if test="udiNo != null and udiNo != ''"> and ifnull(m.udi_no, '') like concat('%', #{udiNo}, '%') escape '\\'</if>
         <if test="factoryKeyword != null and factoryKeyword != ''"> and (
@@ -871,6 +876,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectFdMaterialIdList" parameterType="FdMaterial" resultType="java.lang.Long">
         select m.id from fd_material m
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+        <if test="supplierName != null and supplierName != ''">
+            left join fd_supplier s on m.supplier_id = s.id
+        </if>
         where m.del_flag != 1
         <include refid="fdMaterialListWhereAnd"/>
     </select>

@@ -77,7 +77,48 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         try
         {
             total = gzHighConsumeConfirmMapper.selectConfirmListCount(query);
-            rows = gzHighConsumeConfirmMapper.selectConfirmList(query);
+            if (total <= 0)
+            {
+                rows = Collections.emptyList();
+            }
+            else
+            {
+                List<String> pageIds = gzHighConsumeConfirmMapper.selectConfirmListIds(query);
+                if (pageIds == null || pageIds.isEmpty())
+                {
+                    rows = Collections.emptyList();
+                }
+                else
+                {
+                    // 第二步：仅对本页 ID 拉宽表（含入出库单号等展示字段）
+                    GzHighChargeConfirmQuery detailQuery = new GzHighChargeConfirmQuery();
+                    detailQuery.setTenantId(query.getTenantId());
+                    detailQuery.setLinkIds(pageIds);
+                    detailQuery.setOffset(0);
+                    detailQuery.setLimitSize(pageIds.size());
+                    List<GzHighChargeConfirmRowVo> detailRows = gzHighConsumeConfirmMapper.selectConfirmList(detailQuery);
+                    Map<String, GzHighChargeConfirmRowVo> byId = new LinkedHashMap<>();
+                    if (detailRows != null)
+                    {
+                        for (GzHighChargeConfirmRowVo r : detailRows)
+                        {
+                            if (r != null && StringUtils.isNotBlank(r.getLinkId()))
+                            {
+                                byId.put(r.getLinkId(), r);
+                            }
+                        }
+                    }
+                    rows = new ArrayList<>(pageIds.size());
+                    for (String id : pageIds)
+                    {
+                        GzHighChargeConfirmRowVo hit = byId.get(id);
+                        if (hit != null)
+                        {
+                            rows.add(hit);
+                        }
+                    }
+                }
+            }
         }
         finally
         {

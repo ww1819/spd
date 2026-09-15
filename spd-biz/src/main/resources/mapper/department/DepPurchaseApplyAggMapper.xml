@@ -72,6 +72,7 @@
         <result property="warehouseId" column="sub_warehouse_id"/>
         <result property="isGz" column="sub_is_gz"/>
         <result property="warehouseName" column="sub_warehouse_name"/>
+        <result property="producer" column="sub_producer"/>
         <result property="splitDepPurchaseBillNo" column="sub_split_dep_purchase_bill_no"/>
         <result property="delFlag" column="sub_del_flag"/>
         <result property="deleteBy" column="sub_delete_by"/>
@@ -85,6 +86,10 @@
             <result property="id" column="m_id"/>
             <result property="code" column="m_code"/>
             <result property="name" column="m_name"/>
+            <association property="fdFactory" javaType="FdFactory">
+                <result property="factoryId" column="f_id"/>
+                <result property="factoryName" column="f_name"/>
+            </association>
         </association>
     </resultMap>
 
@@ -207,11 +212,17 @@
                coalesce(nullif(trim(e.brand), ''), mat.brand) as sub_brand,
                e.model as sub_model, e.line_no as sub_line_no,
                e.warehouse_id as sub_warehouse_id, e.is_gz as sub_is_gz, wh.name as sub_warehouse_name,
+               coalesce(
+                   nullif(trim(e.producer), ''),
+                   nullif(trim(f.factory_name), ''),
+                   nullif(trim(mat.producer), '')
+               ) as sub_producer,
                dpa_split.purchase_bill_no as sub_split_dep_purchase_bill_no,
                e.del_flag as sub_del_flag, e.delete_by as sub_delete_by, e.delete_time as sub_delete_time,
                e.create_by as sub_create_by, e.create_time as sub_create_time, e.update_by as sub_update_by,
                e.update_time as sub_update_time, e.remark as sub_remark,
-               mat.id as m_id, mat.code as m_code, mat.name as m_name
+               mat.id as m_id, mat.code as m_code, mat.name as m_name,
+               f.factory_id as f_id, f.factory_name as f_name
         from dep_purchase_apply_agg m
         left join fd_department d on m.department_id = d.id
         left join sys_user u on u.user_id = coalesce(
@@ -237,6 +248,7 @@
             and dpa_split.tenant_id = #{scopedTenantId}
             and (dpa_split.del_flag = 0 or dpa_split.del_flag is null)
         left join fd_material mat on e.material_id = mat.id
+        left join fd_factory f on mat.factory_id = f.factory_id
         where m.id = #{id} and m.tenant_id = #{scopedTenantId}
           and (m.del_flag = 0 or m.del_flag is null)
     </select>
@@ -322,6 +334,7 @@
             supplier_name = #{supplierName},
             brand = #{brand},
             model = #{model},
+            producer = #{producer},
             line_no = #{lineNo},
             warehouse_id = #{warehouseId},
             is_gz = #{isGz},
@@ -337,13 +350,13 @@
     <insert id="batchInsertDepPurchaseApplyAggEntry">
         insert into dep_purchase_apply_agg_entry (
             id, parent_id, tenant_id, material_id, material_name, material_spec, unit, unit_price, qty, amt,
-            reason, supplier_name, brand, model, line_no, warehouse_id, is_gz, del_flag, create_by, create_time, remark
+            reason, supplier_name, brand, model, producer, line_no, warehouse_id, is_gz, del_flag, create_by, create_time, remark
         ) values
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.id}, #{item.parentId}, #{item.tenantId}, #{item.materialId}, #{item.materialName},
                 #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt},
-                #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.lineNo},
+                #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.producer}, #{item.lineNo},
                 #{item.warehouseId}, #{item.isGz}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.remark}
             )
         </foreach>

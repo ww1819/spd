@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SpdScmMaterialArchiveMapper">
+
+    <sql id="ArchiveColumns">
+        id, tenant_id as tenantId, scm_archive_id as scmArchiveId, hospital_code as hospitalCode,
+        scm_supplier_code as scmSupplierCode, spd_material_id as spdMaterialId, spd_supplier_id as spdSupplierId,
+        material_name as materialName, pinyin_code as pinyinCode, specification, model, unit_name as unitName,
+        price, sale_price as salePrice, register_no as registerNo, register_name as registerName,
+        manufacturer_name as manufacturerName, udi_code as udiCode, medical_name as medicalName,
+        medical_no as medicalNo, brand, payload_json as payloadJson, scm_update_time as scmUpdateTime,
+        last_sync_batch_id as lastSyncBatchId, apply_status as applyStatus, last_apply_log_id as lastApplyLogId,
+        del_flag as delFlag, create_by as createBy, create_time as createTime, update_by as updateBy,
+        update_time as updateTime, remark
+    </sql>
+
+    <select id="selectById" resultType="com.spd.foundation.domain.SpdScmMaterialArchive">
+        select <include refid="ArchiveColumns"/>
+        from spd_scm_material_archive
+        where id = #{id} and (del_flag is null or del_flag = '' or del_flag = '0')
+        limit 1
+    </select>
+
+    <select id="selectByTenantAndScmArchiveId" resultType="com.spd.foundation.domain.SpdScmMaterialArchive">
+        select <include refid="ArchiveColumns"/>
+        from spd_scm_material_archive
+        where tenant_id = #{tenantId} and scm_archive_id = #{scmArchiveId}
+          and (del_flag is null or del_flag = '' or del_flag = '0')
+        limit 1
+    </select>
+
+    <select id="selectList" resultType="com.spd.foundation.domain.SpdScmMaterialArchive">
+        select <include refid="ArchiveColumns"/>
+        from spd_scm_material_archive
+        where tenant_id = #{tenantId}
+          and (del_flag is null or del_flag = '' or del_flag = '0')
+        <if test="applyStatus != null and applyStatus != ''">
+            and apply_status = #{applyStatus}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            and (
+              material_name like concat('%', #{keyword}, '%')
+              or ifnull(pinyin_code,'') like concat('%', #{keyword}, '%')
+              or ifnull(spd_material_id,'') like concat('%', #{keyword}, '%')
+              or ifnull(scm_supplier_code,'') like concat('%', #{keyword}, '%')
+              or ifnull(specification,'') like concat('%', #{keyword}, '%')
+            )
+        </if>
+        order by scm_update_time desc, update_time desc, create_time desc
+    </select>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.SpdScmMaterialArchive">
+        insert into spd_scm_material_archive(
+          id, tenant_id, scm_archive_id, hospital_code, scm_supplier_code, spd_material_id, spd_supplier_id,
+          material_name, pinyin_code, specification, model, unit_name, price, sale_price,
+          register_no, register_name, manufacturer_name, udi_code, medical_name, medical_no, brand,
+          payload_json, scm_update_time, last_sync_batch_id, apply_status, last_apply_log_id,
+          del_flag, create_by, create_time, remark
+        ) values (
+          #{id}, #{tenantId}, #{scmArchiveId}, #{hospitalCode}, #{scmSupplierCode}, #{spdMaterialId}, #{spdSupplierId},
+          #{materialName}, #{pinyinCode}, #{specification}, #{model}, #{unitName}, #{price}, #{salePrice},
+          #{registerNo}, #{registerName}, #{manufacturerName}, #{udiCode}, #{medicalName}, #{medicalNo}, #{brand},
+          #{payloadJson}, #{scmUpdateTime}, #{lastSyncBatchId}, #{applyStatus}, #{lastApplyLogId},
+          '0', #{createBy}, now(), #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.spd.foundation.domain.SpdScmMaterialArchive">
+        update spd_scm_material_archive
+        <set>
+            <if test="hospitalCode != null">hospital_code = #{hospitalCode},</if>
+            <if test="scmSupplierCode != null">scm_supplier_code = #{scmSupplierCode},</if>
+            <if test="spdMaterialId != null">spd_material_id = #{spdMaterialId},</if>
+            <if test="spdSupplierId != null">spd_supplier_id = #{spdSupplierId},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="pinyinCode != null">pinyin_code = #{pinyinCode},</if>
+            <if test="specification != null">specification = #{specification},</if>
+            <if test="model != null">model = #{model},</if>
+            <if test="unitName != null">unit_name = #{unitName},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="salePrice != null">sale_price = #{salePrice},</if>
+            <if test="registerNo != null">register_no = #{registerNo},</if>
+            <if test="registerName != null">register_name = #{registerName},</if>
+            <if test="manufacturerName != null">manufacturer_name = #{manufacturerName},</if>
+            <if test="udiCode != null">udi_code = #{udiCode},</if>
+            <if test="medicalName != null">medical_name = #{medicalName},</if>
+            <if test="medicalNo != null">medical_no = #{medicalNo},</if>
+            <if test="brand != null">brand = #{brand},</if>
+            <if test="payloadJson != null">payload_json = #{payloadJson},</if>
+            <if test="scmUpdateTime != null">scm_update_time = #{scmUpdateTime},</if>
+            <if test="lastSyncBatchId != null">last_sync_batch_id = #{lastSyncBatchId},</if>
+            <if test="applyStatus != null">apply_status = #{applyStatus},</if>
+            <if test="lastApplyLogId != null">last_apply_log_id = #{lastApplyLogId},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="selectPushCandidates" resultType="java.util.HashMap">
+        select m.id as materialId,
+               m.code as materialCode,
+               m.name as materialName,
+               m.speci as specification,
+               m.model as model,
+               m.price as price,
+               m.sale_price as salePrice,
+               m.supplier_id as supplierId,
+               s.name as supplierName,
+               b.scm_supplier_code as scmSupplierCode,
+               m.referred_name as pinyinCode,
+               m.register_no as registerNo,
+               m.is_gz as isGz,
+               m.is_billing as isBilling
+        from fd_material m
+        inner join spd_scm_supplier_bind b
+            on b.tenant_id = m.tenant_id
+           and b.supplier_id = concat('', m.supplier_id)
+           and (b.del_flag is null or b.del_flag = '' or b.del_flag = '0')
+           and b.scm_supplier_code is not null and trim(b.scm_supplier_code) != ''
+        left join fd_supplier s on s.id = m.supplier_id and s.tenant_id = m.tenant_id
+        where m.tenant_id = #{tenantId}
+          and (m.del_flag = 0 or m.del_flag is null)
+          and m.supplier_id is not null
+        <if test="keyword != null and keyword != ''">
+            and (
+              m.name like concat('%', #{keyword}, '%')
+              or ifnull(m.code,'') like concat('%', #{keyword}, '%')
+              or ifnull(m.referred_name,'') like concat('%', #{keyword}, '%')
+              or ifnull(m.speci,'') like concat('%', #{keyword}, '%')
+              or ifnull(s.name,'') like concat('%', #{keyword}, '%')
+            )
+        </if>
+        order by m.update_time desc, m.id desc
+        limit 500
+    </select>
+</mapper>

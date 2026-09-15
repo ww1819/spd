@@ -51,7 +51,7 @@ public class FdDepartment extends BaseEntity
     /** 上级科室ID（NULL 表示客户下顶级） */
     private Long parentId;
 
-    /** 列表/导出：按直接上级筛选（非表字段，请求参数） */
+    /** 列表/导出：左侧树选中节点（非表字段；查该节点自身及直接子科室） */
     private Long treeParentId;
 
     /** 备注（表字段 fd_department.remark，与基类 remark 区分，避免全局基类加 Excel 注解） */

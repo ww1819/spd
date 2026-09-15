@@ -119,6 +119,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="withoutWorkgroup != null and withoutWorkgroup == true">
 			AND NOT EXISTS (SELECT 1 FROM sys_user_post up WHERE up.user_id = u.user_id)
 		</if>
+		<if test="departmentId != null">
+			AND EXISTS (
+				SELECT 1 FROM sys_user_department sud
+				WHERE sud.user_id = u.user_id
+				  AND sud.department_id = #{departmentId}
+				  AND (sud.status = 0 OR sud.status = '0' OR sud.status IS NULL)
+			)
+		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
     </sql>

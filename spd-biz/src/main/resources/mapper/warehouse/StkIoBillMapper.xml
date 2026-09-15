@@ -718,7 +718,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <choose>
+            <when test="warehouseIds != null and warehouseIds.length > 0">
+                and stk.warehouse_id in
+                <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                    #{wId}
+                </foreach>
+            </when>
+            <when test="warehouseId != null">
+                and stk.warehouse_id = #{warehouseId}
+            </when>
+        </choose>
         <if test="materialId != null "> and m.id = #{materialId}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
@@ -791,7 +801,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <choose>
+            <when test="warehouseIds != null and warehouseIds.length > 0">
+                and stk.warehouse_id in
+                <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                    #{wId}
+                </foreach>
+            </when>
+            <when test="warehouseId != null">
+                and stk.warehouse_id = #{warehouseId}
+            </when>
+        </choose>
         <if test="materialId != null "> and m.id = #{materialId}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
@@ -841,7 +861,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
         <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
         <if test="factoryKeyword != null and factoryKeyword != ''"> and (f.factory_code like concat('%', #{factoryKeyword}, '%') or f.factory_name like concat('%', #{factoryKeyword}, '%') or f.factory_referred_code like concat('%', #{factoryKeyword}, '%'))</if>
-        <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
+        <choose>
+            <when test="warehouseIds != null and warehouseIds.length > 0">
+                and stk.warehouse_id in
+                <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                    #{wId}
+                </foreach>
+            </when>
+            <when test="warehouseId != null">
+                and stk.warehouse_id = #{warehouseId}
+            </when>
+        </choose>
         <if test="materialId != null "> and m.id = #{materialId}</if>
         <if test="materialNameLike != null and materialNameLike != ''"> and (m.name like concat('%', #{materialNameLike}, '%') or m.code like concat('%', #{materialNameLike}, '%') or m.referred_name like concat('%', #{materialNameLike}, '%'))</if>
         <if test="materialSpeciLike != null and materialSpeciLike != ''"> and m.speci like concat('%', #{materialSpeciLike}, '%')</if>
@@ -2539,7 +2569,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE 1 = 1
           AND vsadj.tenant_id = #{scopedTenantId}
           AND vsadj.audit_date &lt;= #{endDate}
-          <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
+          <choose>
+            <when test="warehouseIds != null and warehouseIds.length &gt; 0">
+              AND vsadj.warehouse_id in
+              <foreach collection="warehouseIds" item="wId" open="(" separator="," close=")">
+                #{wId}
+              </foreach>
+            </when>
+            <when test="warehouseId != null">
+              AND vsadj.warehouse_id = #{warehouseId}
+            </when>
+          </choose>
           <if test="supplerId != null"> AND vsadj.suppler_id = #{supplerId}</if>
           <if test="supplierKeyword != null and supplierKeyword != ''">
               AND (

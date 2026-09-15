@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.SpdScmMaterialApplyLogMapper">
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.SpdScmMaterialApplyLog">
+        insert into spd_scm_material_apply_log(
+          id, tenant_id, sync_batch_id, mirror_id, scm_archive_id, spd_material_id,
+          applied_fields_json, before_json, after_json, apply_by, apply_time, remark
+        ) values (
+          #{id}, #{tenantId}, #{syncBatchId}, #{mirrorId}, #{scmArchiveId}, #{spdMaterialId},
+          #{appliedFieldsJson}, #{beforeJson}, #{afterJson}, #{applyBy}, now(), #{remark}
+        )
+    </insert>
+</mapper>

@@ -39,6 +39,7 @@ public class SqlInitRunner implements ApplicationRunner
         "table.sql",
         "cleanup_duplicate_fd_supplier_factory.sql",
         "column.sql",
+        "mat_scm_archive.sql",
         "view.sql",
         "trigger.sql",
         "procedure.sql",

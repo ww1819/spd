@@ -24,14 +24,14 @@
 | 财务分类 | 新增须填 HIS ID | `FdFinanceCategory*` |
 | 库房分类 | 新增须填 HIS ID | `FdWarehouseCategory*` |
 | 耗材档案 | 编码由系统按分类前缀生成：**GZ / DZ / SJ + 5 位**，前端禁用手改；产品档案 is_gz 变更可同步 HIS 收费镜像 | `FdMaterialServiceImpl`；`material/index.vue` |
-| 耗材对照 / HIS对照 | 绑定只写 `fd_material.his_charge_item_id`（与解绑同路径，请求内不刷计费镜像大表） | `FdMaterialController.bindHisChargeItem`；`bindMaterialHisChargeItem` |
+| 耗材对照 / HIS对照 | **公共共享页样式**（与枣强同一 `materialCompare/index`）；绑定只写 `fd_material.his_charge_item_id`（与解绑同路径，请求内不刷计费镜像大表） | `foundation/materialCompare/index.vue`；`FdMaterialController.bindHisChargeItem`；`bindMaterialHisChargeItem` |
 
 ### 2. 仓储业务
 
 | 菜单/功能 | 差异说明 | 关键实现 |
 |-----------|----------|----------|
 | 出库审核通过后 | **自动收货确认**（与枣强相同集合） | `StkIoBillServiceImpl.AUTO_OUTBOUND_RECEIPT_TENANT_IDS` |
-| 入库/出库/退货/退库打印 | 默认 **Hs 版式**（非枣强走 Hs） | `*PrintHs.vue`；入口按 `isZqInboundPrintTenant` 反向选择 |
+| 入库/出库/退货/退库打印 | 默认 **Hs 版式**（非枣强走 Hs）；四类单据页码标题区内收，避免针式右不可打区裁掉 | `orderPrintHs` / `outOrderPrintHs` / `refundGoodsOrderPrintHs` / `refundDepotOrderPrintHs` / `lodopOutOrderHsText`；入口按 `isZqInboundPrintTenant` 反向选择 |
 | 科室盘点 | 缺省退库仓时有衡水特殊处理 | `DeptStocktakingServiceImpl` |
 
 ### 3. HIS 计费 / 患者收费（衡水特色）

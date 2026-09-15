@@ -109,6 +109,9 @@ public class SysUser extends BaseEntity
     /** 科室组 */
     private Long[] departmentIds;
 
+    /** 列表筛选：用户所属科室（sys_user_department.department_id） */
+    private Long departmentId;
+
     /**
      * 消息提醒权限 keys（逗号分隔）：warehouse=仓库预警, department=科室预警, data=数据异常预警
      */
@@ -402,6 +405,14 @@ public class SysUser extends BaseEntity
 
     public void setDepartmentIds(Long[] departmentIds) {
         this.departmentIds = departmentIds;
+    }
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
     }
 
     public String getMessageReminderKeys() {
