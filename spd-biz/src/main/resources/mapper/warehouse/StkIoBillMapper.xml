@@ -2605,6 +2605,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             resultType="com.spd.warehouse.domain.StkMaterialUsageRankVo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select m.id as materialId,
+               max(m.code) as materialCode,
                m.name as materialName,
                m.speci as specification,
                m.model as model,
