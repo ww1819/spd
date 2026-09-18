@@ -331,6 +331,15 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     @Override
+    public TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill)
+    {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return stkIoBillMapper.selectStkIoBillTotal(stkIoBill);
+    }
+
+    @Override
     public int recordStkIoBillPrint(Long id)
     {
         if (id == null)

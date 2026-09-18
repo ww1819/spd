@@ -61,7 +61,16 @@ public class StkIoBillController extends BaseController
     {
         startPage();
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
-        return getDataTable(list);
+        Long total = new com.github.pagehelper.PageInfo<>(list).getTotal();
+        // PageHelper 仅拦截紧随 startPage 的第一条查询；合计需在列表之后单独查
+        TotalInfo totalInfo = stkIoBillService.selectStkIoBillTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        if (totalInfo.getTotalAmt() == null) {
+            totalInfo.setTotalAmt(java.math.BigDecimal.ZERO);
+        }
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
