@@ -54,6 +54,8 @@
 - `orderPrintZq.vue`、`outOrderPrintZq.vue`、`refundGoodsOrderPrintZq.vue`、`refundDepotOrderPrintZq.vue`
 - 共享业务页内大量 `isZqTcmTenant` 分支；若某菜单差异继续扩大，应拆 `indexZq.vue` 并由菜单或入口映射
 
+数据中心菜单已公共精简（与衡水同库）：决策性报表仅耗材三项；BI（耗材）/效能分析/数字孪生保留；设备类与医院医疗设备平台已移除。见 `trim_datacenter_menus_public.sql`。
+
 ### 6. 与衡水对比（避免串改）
 
 | 点 | 枣强 | 衡水 |

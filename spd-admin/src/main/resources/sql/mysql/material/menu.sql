@@ -6208,10 +6208,25 @@ ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent
 /
 
 -- 23.3.1 患者收费查询（HIS 镜像抓取与查询 HisPatientChargeController）
+-- 挂在科室消耗(1559)下；若目录不存在则回退科室一级
+SET @dept_consume_for_charge := (
+  SELECT menu_id FROM sys_menu
+  WHERE menu_id = 1559 OR (menu_type = 'M' AND menu_name = '科室消耗')
+  ORDER BY CASE WHEN menu_id = 1559 THEN 0 ELSE 1 END, menu_id
+  LIMIT 1
+);
+/
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
-SELECT 3601, '患者收费查询', COALESCE(@department_root, 1), (SELECT IFNULL(MAX(order_num), 0) + 1 FROM sys_menu WHERE parent_id = COALESCE(@department_root, 1)), 'patientCharge', 'department/patientCharge/index', NULL, 1, 0, 'C', '0', '0', 'department:patientCharge:list', 'money', 'admin', NOW(), '1', NOW(), 'HIS计费镜像', '0', '1'
+SELECT 3601, '患者收费查询', COALESCE(@dept_consume_for_charge, @department_root, 1), 4, 'patientCharge', 'department/patientCharge/index', NULL, 1, 0, 'C', '0', '0', 'department:patientCharge:list', 'money', 'admin', NOW(), '1', NOW(), 'HIS计费镜像', '0', '1'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'C' AND component = 'department/patientCharge/index') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3601)
 ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), path = VALUES(path), component = VALUES(component), perms = VALUES(perms), update_time = VALUES(update_time);
+/
+UPDATE sys_menu
+SET parent_id = COALESCE(@dept_consume_for_charge, parent_id),
+    order_num = 4,
+    update_by = '1',
+    update_time = NOW()
+WHERE menu_id = 3601 AND @dept_consume_for_charge IS NOT NULL;
 /
 SET @patient_charge_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'department/patientCharge/index' ORDER BY menu_id DESC LIMIT 1);
 /

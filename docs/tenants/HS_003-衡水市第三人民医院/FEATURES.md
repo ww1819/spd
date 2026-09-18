@@ -38,7 +38,7 @@
 
 | 菜单/功能 | 差异说明 | 关键实现 |
 |-----------|----------|----------|
-| 患者收费查询 | HIS 计费镜像抓取与查询 | `department/patientCharge`；权限 `department:patientCharge:*` |
+| 患者收费查询 | HIS 计费镜像抓取与查询；菜单挂在 **科室消耗** 下 | `department/patientCharge`；`move_patient_charge_to_consume_public.sql` |
 | 高值扫描核销 | HIS 计费镜像高值扫码核销 | `gz/highChargeScan` |
 | HIS 计费自动处理 | 抓取后自动低值消耗 / 自动退费开关 | `HisBillingTenantConstants`；`sb_tenant_setting`；菜单「衡水计费自动消耗开关」 |
 | 众阳 HIS 单据推送 | **未接入**（与枣强不同） | `MSUN_INTEGRATED_TENANT_IDS` 不含本租户 |
@@ -48,6 +48,8 @@
 通过 `hc_customer_menu` 开通；与计费相关的菜单/按钮（患者收费、计费自动处理等）主要为衡水场景设计，开通时注意勿误开给无需该能力的租户。
 
 高值「退库审核」(3858/`goodsAudit`) 已下线（与备货退库重复），统一用备货管理 → 备货退库。
+
+数据中心菜单已公共精简：决策性报表仅保留耗材三项；叶子保留 BI（耗材）/效能分析/数字孪生；已移除医院医疗设备平台与 BI（设备）。见 `trim_datacenter_menus_public.sql`。
 
 ### 5. 前端专属/优先组件
 
