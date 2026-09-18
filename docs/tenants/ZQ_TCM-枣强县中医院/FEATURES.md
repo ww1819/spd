@@ -34,6 +34,7 @@
 | 出库审核通过后 | **自动收货确认** | `StkIoBillServiceImpl.AUTO_OUTBOUND_RECEIPT_TENANT_IDS` |
 | 出入库/退货/退库打印 | **Zq 专属版式** | `*PrintZq.vue`；`isZqInboundPrintTenant` |
 | 出库/退库审核 | 众阳推送状态列、失败可重推 | `msunHis.js`；`pushMsunOutbound` / `pushMsunReturn` |
+| 高值退库入口 | 不用「退库审核」(3858)，统一「备货退库」 | 公共下线，见 `remove_gz_goods_audit_menu_3858_public.sql` |
 
 ### 3. 众阳 HIS 集成（枣强特色）
 

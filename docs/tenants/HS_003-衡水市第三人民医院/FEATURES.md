@@ -47,6 +47,8 @@
 
 通过 `hc_customer_menu` 开通；与计费相关的菜单/按钮（患者收费、计费自动处理等）主要为衡水场景设计，开通时注意勿误开给无需该能力的租户。
 
+高值「退库审核」(3858/`goodsAudit`) 已下线（与备货退库重复），统一用备货管理 → 备货退库。
+
 ### 5. 前端专属/优先组件
 
 - `orderPrintHs.vue`、`outOrderPrintHs.vue`、`refundGoodsOrderPrintHs.vue`、`refundDepotOrderPrintHs.vue`
