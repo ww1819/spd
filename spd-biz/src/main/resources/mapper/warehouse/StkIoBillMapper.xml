@@ -442,9 +442,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.id desc, b.id
     </select>
 
-    <select id="selectStkIoBillTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+    <!-- 返回 BigDecimal，避免 PageHelper/自动映射导致 TotalInfo.totalAmt 落空 -->
+    <select id="selectStkIoBillTotal" parameterType="StkIoBill" resultType="java.math.BigDecimal">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select IFNULL(SUM(IFNULL(stk.total_amount, 0)), 0) AS totalAmt
+        select IFNULL(SUM(IFNULL(stk.total_amount, 0)), 0)
         from stk_io_bill stk
         where stk.del_flag != 1
         and stk.tenant_id = #{scopedTenantId}
