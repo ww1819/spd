@@ -34,6 +34,7 @@
 | 出库审核通过后 | **自动收货确认** | `StkIoBillServiceImpl.AUTO_OUTBOUND_RECEIPT_TENANT_IDS` |
 | 出入库/退货/退库打印 | **Zq 专属版式** | `*PrintZq.vue`；`isZqInboundPrintTenant` |
 | 出库/退库审核 | 众阳推送状态列、失败可重推 | `msunHis.js`；`pushMsunOutbound` / `pushMsunReturn` |
+| 高值退库入口 | 不用「退库审核」(3858)，统一「备货退库」 | 公共下线，见 `remove_gz_goods_audit_menu_3858_public.sql` |
 
 ### 3. 众阳 HIS 集成（枣强特色）
 
@@ -52,6 +53,8 @@
 
 - `orderPrintZq.vue`、`outOrderPrintZq.vue`、`refundGoodsOrderPrintZq.vue`、`refundDepotOrderPrintZq.vue`
 - 共享业务页内大量 `isZqTcmTenant` 分支；若某菜单差异继续扩大，应拆 `indexZq.vue` 并由菜单或入口映射
+
+数据中心菜单已公共精简（与衡水同库）：决策性报表仅耗材三项；BI（耗材）/效能分析/数字孪生保留；设备类与医院医疗设备平台已移除。见 `trim_datacenter_menus_public.sql`。
 
 ### 6. 与衡水对比（避免串改）
 

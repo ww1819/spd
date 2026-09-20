@@ -10,7 +10,10 @@ public class StkMaterialUsageRankVo
 {
     private Long materialId;
 
-    @Excel(name = "耗材名称")
+    @Excel(name = "产品编码")
+    private String materialCode;
+
+    @Excel(name = "产品名称")
     private String materialName;
 
     @Excel(name = "规格")
@@ -54,6 +57,16 @@ public class StkMaterialUsageRankVo
     public void setMaterialId(Long materialId)
     {
         this.materialId = materialId;
+    }
+
+    public String getMaterialCode()
+    {
+        return materialCode;
+    }
+
+    public void setMaterialCode(String materialCode)
+    {
+        this.materialCode = materialCode;
     }
 
     public String getMaterialName()

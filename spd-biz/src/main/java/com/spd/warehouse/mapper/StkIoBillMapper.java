@@ -46,12 +46,12 @@ public interface StkIoBillMapper
     List<StkOutBillExportFlatRow> selectOutBillGroupedExportRows(@Param("q") StkIoBill q, @Param("billIds") List<Long> billIds);
 
     /**
-     * 查询出入库汇总
+     * 查询出入库列表总金额（与列表同条件，不分页）
      *
      * @param stkIoBill 出入库
-     * @return 出入库集合
+     * @return 总金额
      */
-    public TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill);
+    BigDecimal selectStkIoBillTotal(StkIoBill stkIoBill);
 
     /**
      * 按科室汇总当月出退库金额与数量（bill_type 201/401，已审核；大屏科室排名等）

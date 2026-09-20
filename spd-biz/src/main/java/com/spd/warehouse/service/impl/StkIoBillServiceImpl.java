@@ -30,6 +30,7 @@ import com.spd.common.exception.DocRefQtyValidationException;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.MasterDetailValidateUtil;
+import com.spd.common.utils.PageUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.department.domain.BasApply;
@@ -328,6 +329,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setTenantId(SecurityUtils.getCustomerId());
         }
         return stkIoBillMapper.selectStkIoBillList(stkIoBill);
+    }
+
+    @Override
+    public TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill)
+    {
+        if (stkIoBill != null && StringUtils.isEmpty(stkIoBill.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+            stkIoBill.setTenantId(SecurityUtils.getCustomerId());
+        }
+        // 再次清分页，防止 ThreadLocal 残留导致聚合被 OFFSET 成空结果
+        PageUtils.clearPage();
+        TotalInfo totalInfo = new TotalInfo();
+        BigDecimal totalAmt = stkIoBillMapper.selectStkIoBillTotal(stkIoBill);
+        totalInfo.setTotalAmt(totalAmt != null ? totalAmt : BigDecimal.ZERO);
+        return totalInfo;
     }
 
     @Override

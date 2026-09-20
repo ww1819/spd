@@ -35,6 +35,11 @@ public interface IStkIoBillService
     public List<StkIoBill> selectStkIoBillList(StkIoBill stkIoBill);
 
     /**
+     * 入库/出入库主表列表合计（总金额等）
+     */
+    TotalInfo selectStkIoBillTotal(StkIoBill stkIoBill);
+
+    /**
      * 新增出入库
      *
      * @param stkIoBill 出入库

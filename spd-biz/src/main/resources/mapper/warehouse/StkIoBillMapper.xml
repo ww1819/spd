@@ -442,19 +442,43 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by stk.id desc, b.id
     </select>
 
-    <select id="selectStkIoBillTotal" parameterType="StkIoBill" resultType="com.spd.common.core.page.TotalInfo">
+    <!-- 返回 BigDecimal，避免 PageHelper/自动映射导致 TotalInfo.totalAmt 落空 -->
+    <select id="selectStkIoBillTotal" parameterType="StkIoBill" resultType="java.math.BigDecimal">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        <include refid="selectStkIoBillTotalVo"/>
+        select IFNULL(SUM(IFNULL(stk.total_amount, 0)), 0)
+        from stk_io_bill stk
         where stk.del_flag != 1
         and stk.tenant_id = #{scopedTenantId}
+        <include refid="stkIoBillDepartmentScopeFilter"/>
         <if test="billNo != null  and billNo != ''"> and stk.bill_no like concat('%', #{billNo}, '%')</if>
-        <if test="supplerId != null "> and stk.suppler_id = #{supplerId}</if>
+        <if test="refBillNo != null and refBillNo != ''"> and stk.ref_bill_no like concat('%', #{refBillNo}, '%')</if>
+        <if test="supplerId != null ">
+            <choose>
+                <when test="billType != null and (billType == 101 or billType == '101' or billType == 301 or billType == '301')">
+                    and stk.suppler_id = #{supplerId}
+                </when>
+                <otherwise>
+                    and (
+                        stk.suppler_id = #{supplerId}
+                        or exists (
+                            select 1 from stk_io_bill_entry e
+                            where e.paren_id = stk.id
+                              and (e.del_flag is null or e.del_flag != 1)
+                              and e.suppler_id is not null and trim(e.suppler_id) != ''
+                              and cast(trim(e.suppler_id) as unsigned) = #{supplerId}
+                        )
+                    )
+                </otherwise>
+            </choose>
+        </if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId}</if>
         <if test="departmentId != null "> and stk.department_id = #{departmentId}</if>
         <if test="billStatus != null "> and stk.bill_status = #{billStatus}</if>
         <if test="userId != null "> and stk.user_id = #{userId}</if>
-        <if test="billType != null "> and stk.bill_type = #{billType}</if>
-
+        <if test="billType != null ">
+            and stk.bill_type = #{billType}
+            <if test="billType == 501"> and stk.bill_no not like 'JS%'</if>
+        </if>
         <choose>
             <when test="dateQueryType != null and dateQueryType == 'bill'">
                 <if test="beginDate != null "> and stk.bill_date &gt;= #{beginDate}</if>
@@ -465,6 +489,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="endDate != null "> and stk.audit_date &lt;= #{endDate}</if>
             </otherwise>
         </choose>
+        <if test="auditBeginDate != null "> and stk.audit_date &gt;= #{auditBeginDate}</if>
+        <if test="auditEndDate != null "> and DATE(stk.audit_date) &lt;= DATE(#{auditEndDate})</if>
+        <if test="receiptConfirmStatus != null "> and stk.receipt_confirm_status = #{receiptConfirmStatus}</if>
+        <if test="materialId != null and materialId != ''"> and exists (select 1 from stk_io_bill_entry e where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and e.material_id = #{materialId})</if>
+        <if test="materialName != null and materialName != ''"> and exists (select 1 from stk_io_bill_entry e inner join fd_material m on e.material_id = m.id where e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1) and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%')))</if>
+        <if test="params != null and params.docRefStatus != null and params.docRefStatus != ''">
+            and <include refid="docRefStatusScalarExpr"/> = #{params.docRefStatus}
+        </if>
         <if test="params != null and params.uniformTkEntrySupplierOnly != null and params.uniformTkEntrySupplierOnly == '1'">
             and (
                 select count(distinct nullif(trim(e.suppler_id), ''))
@@ -473,7 +505,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                   and e.suppler_id is not null and trim(e.suppler_id) != ''
             ) &lt;= 1
         </if>
-        order by stk.bill_date desc
     </select>
 
     <!-- 数据可视化大屏：单据日期落在 yearMonth（yyyy-MM）自然月内；未传时等同当月 -->
@@ -2605,6 +2636,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             resultType="com.spd.warehouse.domain.StkMaterialUsageRankVo">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select m.id as materialId,
+               max(m.code) as materialCode,
                m.name as materialName,
                m.speci as specification,
                m.model as model,

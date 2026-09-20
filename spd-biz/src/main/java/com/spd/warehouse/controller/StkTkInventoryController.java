@@ -5,6 +5,7 @@ import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.warehouse.domain.StkIoBill;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -37,9 +39,18 @@ public class StkTkInventoryController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo list(StkIoBill stkIoBill)
     {
+        clearPage();
+        TotalInfo totalInfo = stkIoBillService.selectStkIoBillTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        if (totalInfo.getTotalAmt() == null) {
+            totalInfo.setTotalAmt(BigDecimal.ZERO);
+        }
         startPage();
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
-        return getDataTable(list);
+        Long total = new com.github.pagehelper.PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
