@@ -17,7 +17,13 @@
             "request": "launch",
             "mainClass": "com.spd.SPDApplication",
             "projectName": "spd-admin",
-            "shortenCommandLine": "classpath"
+            "shortenCommandLine": "classpath",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "spd-admin-process-resources",
+            "args": [
+                "--spring.profiles.active=dev",
+                "--spring.config.additional-location=optional:file:./spd-admin/src/main/resources/"
+            ]
         },
         {
             "type": "java",

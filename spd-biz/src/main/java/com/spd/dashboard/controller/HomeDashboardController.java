@@ -19,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,6 +47,7 @@ import com.spd.his.service.IHisPatientChargeService;
 import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.foundation.domain.FdWarehouse;
 import com.spd.foundation.support.TenantScopeHelper;
+import com.spd.dashboard.service.HomeUserWorkspaceService;
 import com.spd.warehouse.domain.StkInventory;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkInventoryService;
@@ -81,6 +85,83 @@ public class HomeDashboardController extends BaseController
 
     @Autowired
     private IHisPatientChargeService hisPatientChargeService;
+
+    @Autowired
+    private HomeUserWorkspaceService homeUserWorkspaceService;
+
+    /**
+     * 个人默认首页视角。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/pref")
+    public AjaxResult homePref()
+    {
+        Map<String, Object> body = new HashMap<String, Object>(2);
+        body.put("homeView", homeUserWorkspaceService.currentHomeView());
+        return success(body);
+    }
+
+    /**
+     * 保存个人默认首页视角。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/pref")
+    public AjaxResult saveHomePref(@RequestBody Map<String, String> body)
+    {
+        String view = body == null ? null : body.get("homeView");
+        homeUserWorkspaceService.saveHomeView(view);
+        Map<String, Object> res = new HashMap<String, Object>(2);
+        res.put("homeView", homeUserWorkspaceService.currentHomeView());
+        return success(res);
+    }
+
+    /**
+     * 记录当前用户菜单点击（常用菜单统计）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/menuHit")
+    public AjaxResult menuHit(@RequestBody Map<String, String> body)
+    {
+        String path = body == null ? null : body.get("path");
+        String title = body == null ? null : body.get("title");
+        homeUserWorkspaceService.recordMenuHit(path, title);
+        return success();
+    }
+
+    /**
+     * 当前用户最常用菜单。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/frequentMenus")
+    public AjaxResult frequentMenus(@RequestParam(value = "limit", required = false) Integer limit)
+    {
+        return success(homeUserWorkspaceService.topMenus(limit == null ? 8 : limit.intValue()));
+    }
+
+    /**
+     * 近 N 日 KPI 趋势（轻量按日聚合，供首页 sparkline / 较昨日）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/kpiTrend")
+    public AjaxResult kpiTrend(@RequestParam(value = "days", required = false) Integer days)
+    {
+        return success(homeUserWorkspaceService.kpiTrend(days == null ? 7 : days.intValue()));
+    }
+
+    /**
+     * 科室待办计数（不拉明细列表）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/departmentReminderCounts")
+    public AjaxResult departmentReminderCounts()
+    {
+        Map<String, Object> body = new HashMap<String, Object>(8);
+        body.put("unreceivedBillCount", stkIoBillService.countDepartmentUnreceivedReceiptReminder());
+        body.put("nearExpiryLineCount", stkDepInventoryService.countDepartmentNearExpiryReminderMonitor());
+        body.put("inventoryAlertLineCount", stkDepInventoryService.countDepartmentInventoryAlertReminderMonitor());
+        body.put("consumeLineCount", hisPatientChargeService.countDepartmentConsumeReminderMonitor());
+        return success(body);
+    }
 
     /**
      * 仓库采购情况图：按仓库、按月的入退货金额合计 + 出退库金额合计（与首页原逻辑一致：纯日期区间）。

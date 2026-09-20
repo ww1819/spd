@@ -2,6 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "spd-admin-process-resources",
+            "type": "shell",
+            "command": "mvn",
+            "args": ["-pl", "spd-admin", "process-resources", "-q"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        },
+        {
             "label": "spd-maven-install",
             "type": "shell",
             "command": "mvn",

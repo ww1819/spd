@@ -3914,3 +3914,33 @@ CREATE TABLE IF NOT EXISTS `fd_focus18` (
   KEY `idx_fd_focus18_generic` (`tenant_id`, `generic_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='18类重点耗材维护';
 /
+
+-- 用户首页默认视角（每人每租户一条）
+CREATE TABLE IF NOT EXISTS `sys_user_home_pref` (
+  `id` char(36) NOT NULL COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `tenant_id` varchar(36) NOT NULL DEFAULT '' COMMENT '租户ID',
+  `home_view` varchar(32) NOT NULL DEFAULT 'dept' COMMENT '默认首页视角: dept/warehouse/global',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_home_pref` (`user_id`, `tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户首页默认视角';
+/
+
+-- 用户菜单点击统计（常用菜单按频率排序）
+CREATE TABLE IF NOT EXISTS `sys_user_menu_hit` (
+  `id` char(36) NOT NULL COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `tenant_id` varchar(36) NOT NULL DEFAULT '' COMMENT '租户ID',
+  `path` varchar(255) NOT NULL COMMENT '菜单路由',
+  `title` varchar(64) DEFAULT NULL COMMENT '菜单标题',
+  `hit_count` int NOT NULL DEFAULT 1 COMMENT '点击次数',
+  `last_hit_time` datetime DEFAULT NULL COMMENT '最近点击时间',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_menu_hit` (`user_id`, `tenant_id`, `path`),
+  KEY `idx_user_menu_hit_rank` (`user_id`, `tenant_id`, `hit_count`, `last_hit_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户菜单点击统计';
+/

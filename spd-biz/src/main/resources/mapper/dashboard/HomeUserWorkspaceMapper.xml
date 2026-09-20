@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.dashboard.mapper.HomeUserWorkspaceMapper">
+
+    <select id="selectHomeView" resultType="java.lang.String">
+        select home_view
+        from sys_user_home_pref
+        where user_id = #{userId} and tenant_id = #{tenantId}
+        limit 1
+    </select>
+
+    <insert id="upsertHomeView">
+        insert into sys_user_home_pref (id, user_id, tenant_id, home_view, create_time, update_time)
+        values (#{id}, #{userId}, #{tenantId}, #{homeView}, now(), now())
+        on duplicate key update
+            home_view = values(home_view),
+            update_time = now()
+    </insert>
+
+    <insert id="upsertMenuHit">
+        insert into sys_user_menu_hit (id, user_id, tenant_id, path, title, hit_count, last_hit_time, create_time, update_time)
+        values (#{id}, #{userId}, #{tenantId}, #{path}, #{title}, 1, now(), now(), now())
+        on duplicate key update
+            hit_count = hit_count + 1,
+            title = if(values(title) is null or values(title) = '', title, values(title)),
+            last_hit_time = now(),
+            update_time = now()
+    </insert>
+
+    <select id="selectTopMenus" resultType="java.util.HashMap">
+        select path, title, hit_count as hitCount
+        from sys_user_menu_hit
+        where user_id = #{userId} and tenant_id = #{tenantId}
+        order by hit_count desc, last_hit_time desc
+        limit #{limit}
+    </select>
+
+    <select id="selectHomeIoQtyTrendByDay" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select date_format(stk.audit_date, '%Y-%m-%d') as dayStr,
+               coalesce(sum(case when stk.bill_type = 101 then ifnull(b.qty, 0) else 0 end), 0) as inCount,
+               coalesce(sum(case when stk.bill_type = 201 then ifnull(b.qty, 0) else 0 end), 0) as outCount,
+               coalesce(sum(case when stk.bill_type = 401 then abs(ifnull(b.qty, 0)) else 0 end), 0) as returnCount
+        from stk_io_bill stk
+        left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and stk.tenant_id = #{scopedTenantId}
+          and stk.bill_status = 2
+          and stk.bill_type in (101, 201, 401)
+          and stk.audit_date &gt;= #{beginDate}
+          and stk.audit_date &lt;= #{endDate}
+        group by date_format(stk.audit_date, '%Y-%m-%d')
+    </select>
+
+    <select id="selectHomeApplyQtyTrendByDay" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select date_format(a.apply_bill_date, '%Y-%m-%d') as dayStr,
+               coalesce(sum(e.qty), 0) as applyCount
+        from bas_apply a
+        inner join bas_apply_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId}
+          and (e.del_flag is null or e.del_flag != 1)
+        where a.tenant_id = #{scopedTenantId}
+          and (a.del_flag = 0 or a.del_flag is null)
+          and a.apply_bill_status = 2
+          and coalesce(a.bill_type, 1) = 1
+          and a.apply_bill_date &gt;= #{beginDate}
+          and a.apply_bill_date &lt;= #{endDate}
+        group by date_format(a.apply_bill_date, '%Y-%m-%d')
+    </select>
+
+    <select id="selectHomePurchaseQtyTrendByDay" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select date_format(dpa.purchase_bill_date, '%Y-%m-%d') as dayStr,
+               coalesce(sum(e.qty), 0) as purchaseCount
+        from dep_purchase_apply dpa
+        inner join dep_purchase_apply_entry e on e.parent_id = dpa.id and e.tenant_id = #{scopedTenantId}
+          and (e.del_flag is null or e.del_flag != 1)
+        where dpa.tenant_id = #{scopedTenantId}
+          and (dpa.del_flag = 0 or dpa.del_flag is null)
+          and dpa.purchase_bill_status = 2
+          and dpa.purchase_bill_date &gt;= #{beginDate}
+          and dpa.purchase_bill_date &lt;= #{endDate}
+        group by date_format(dpa.purchase_bill_date, '%Y-%m-%d')
+    </select>
+</mapper>

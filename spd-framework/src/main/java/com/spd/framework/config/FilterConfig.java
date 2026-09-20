@@ -20,16 +20,12 @@ import com.spd.common.utils.StringUtils;
 @Configuration
 public class FilterConfig
 {
-    @Value("${xss.excludes}")
-    private String excludes;
-
-    @Value("${xss.urlPatterns}")
-    private String urlPatterns;
-
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Bean
     @ConditionalOnProperty(value = "xss.enabled", havingValue = "true")
-    public FilterRegistrationBean xssFilterRegistration()
+    public FilterRegistrationBean xssFilterRegistration(
+            @Value("${xss.excludes:}") String excludes,
+            @Value("${xss.urlPatterns:/system/*,/monitor/*,/tool/*}") String urlPatterns)
     {
         FilterRegistrationBean registration = new FilterRegistrationBean();
         registration.setDispatcherTypes(DispatcherType.REQUEST);
