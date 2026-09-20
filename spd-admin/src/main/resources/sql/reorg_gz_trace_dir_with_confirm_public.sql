@@ -1,5 +1,5 @@
--- 公共：高值分栏底部假分组「高值管理」改为真实目录「高值追溯」
--- 1) 建/复用二级目录 3960「高值追溯」
+-- 公共：高值分栏底部假分组「高值管理」改为真实目录「追溯管理」
+-- 1) 建/复用二级目录 3960「追溯管理」
 -- 2) 迁入：高值核销确认(3850)、高值追溯页(1238)
 -- 影响：全部租户（含 hengsui-third-001、zaoqiang-tcm-001）
 
@@ -17,7 +17,7 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  @trace_dir, '高值追溯', @gz_root, 5, 'gzTraceMgmt', NULL, NULL,
+  @trace_dir, '追溯管理', @gz_root, 5, 'gzTraceMgmt', NULL, NULL,
   1, 0, 'M', '0', '0', '', 'search',
   'admin', NOW(), '1', NOW(), '高值核销确认/高值追溯',
   '0', '1'
@@ -28,7 +28,7 @@ WHERE @gz_root IS NOT NULL
 UPDATE sys_menu
 SET parent_id = @gz_root,
     order_num = 5,
-    menu_name = '高值追溯',
+    menu_name = '追溯管理',
     path = 'gzTraceMgmt',
     menu_type = 'M',
     component = NULL,

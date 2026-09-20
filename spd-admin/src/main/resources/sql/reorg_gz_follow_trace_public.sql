@@ -1,7 +1,7 @@
 -- 高值管理分栏调整（公共）：
 -- 1) 备货管理后新建「跟台管理」，迁入跟台管理菜单(1526)
 -- 2) 高值备货库存(1194) → 备货管理(1192)
--- 3) 「高值追溯」目录(3960) + 核销确认/追溯页：见 reorg_gz_trace_dir_with_confirm_public.sql
+-- 3) 「追溯管理」目录(3960) + 核销确认/追溯页：见 reorg_gz_trace_dir_with_confirm_public.sql
 -- 4) 退库审核(3858) 已废弃（与备货退库 1197 重复），见 remove_gz_goods_audit_menu_3858_public.sql
 
 SET @gz_root := (

@@ -1,5 +1,6 @@
 package com.spd.warehouse.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.service.IStkIoBillService;
@@ -40,9 +42,18 @@ public class WarehouseTransferController extends BaseController
     {
         // 设置单据类型为调拨单
         stkIoBill.setBillType(501);
+        clearPage();
+        TotalInfo totalInfo = stkIoBillService.selectStkIoBillTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        if (totalInfo.getTotalAmt() == null) {
+            totalInfo.setTotalAmt(BigDecimal.ZERO);
+        }
         startPage();
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
-        return getDataTable(list);
+        Long total = new com.github.pagehelper.PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**

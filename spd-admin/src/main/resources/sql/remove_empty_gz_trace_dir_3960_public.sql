@@ -1,4 +1,4 @@
--- 公共：仅当「高值追溯」目录(3960)仍为空时才删除（历史修复脚本）
+-- 公共：仅当「追溯管理」目录(3960)仍为空时才删除（历史修复脚本）
 -- 当前正式结构见 reorg_gz_trace_dir_with_confirm_public.sql（3960 下挂 3850/1238），勿误删。
 
 DELETE FROM sys_role_menu
