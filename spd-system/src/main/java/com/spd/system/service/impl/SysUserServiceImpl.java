@@ -870,6 +870,20 @@ public class SysUserServiceImpl implements ISysUserService
         log.debug("仅更新用户消息提醒权限 - userId: {}, keys: {}, popupKeys: {}", userId, keys, popupKeys);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserHomePageKeysOnly(Long userId, String[] homePageKeys) {
+        checkUserDataScope(userId);
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+        checkUserAllowed(user);
+        String keys = joinHomePageKeys(homePageKeys);
+        userMapper.updateUserHomePageKeys(userId, keys);
+        log.debug("仅更新用户首页设置权限 - userId: {}, keys: {}", userId, keys);
+    }
+
     /** 规范化并拼接消息提醒 keys；空数组存空串表示明确未授权任何项 */
     public static String joinMessageReminderKeys(String[] keys) {
         if (keys == null || keys.length == 0) {
@@ -908,6 +922,49 @@ public class SysUserServiceImpl implements ISysUserService
             String k = p.trim().toLowerCase();
             if ("warehouse".equals(k) || "department".equals(k) || "data".equals(k)) {
                 set.add(k);
+            }
+        }
+        return set.toArray(new String[0]);
+    }
+
+    /** 规范化并拼接首页 keys；空数组存空串表示未单独授权（前端默认完整） */
+    public static String joinHomePageKeys(String[] keys) {
+        if (keys == null || keys.length == 0) {
+            return "";
+        }
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (String k : keys) {
+            if (k == null) {
+                continue;
+            }
+            String t = k.trim().toLowerCase();
+            if ("simple".equals(t) || "full".equals(t) || "complete".equals(t)) {
+                set.add("complete".equals(t) ? "full" : t);
+            }
+        }
+        if (set.isEmpty()) {
+            return "";
+        }
+        return String.join(",", set);
+    }
+
+    public static String[] splitHomePageKeys(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String t = raw.trim();
+        if (t.isEmpty()) {
+            return new String[0];
+        }
+        String[] parts = t.split(",");
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (String p : parts) {
+            if (p == null) {
+                continue;
+            }
+            String k = p.trim().toLowerCase();
+            if ("simple".equals(k) || "full".equals(k) || "complete".equals(k)) {
+                set.add("complete".equals(k) ? "full" : k);
             }
         }
         return set.toArray(new String[0]);

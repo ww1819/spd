@@ -41,6 +41,7 @@ import com.spd.system.dto.BatchPasswordRequest;
 import com.spd.system.dto.BatchWorkgroupRequest;
 import com.spd.system.dto.UserImportUpdateDto;
 import com.spd.web.dto.UserDeptGrantBody;
+import com.spd.web.dto.UserHomePageGrantBody;
 import com.spd.web.dto.UserMenuGrantBody;
 import com.spd.web.dto.UserMessageReminderGrantBody;
 import com.spd.web.dto.UserWarehouseGrantBody;
@@ -467,6 +468,8 @@ public class SysUserController extends BaseController
             ajax.put("messageReminderKeys", reminderKeys);
             String[] popupKeys = com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(sysUser.getMessageReminderPopupKeys());
             ajax.put("messageReminderPopupKeys", popupKeys);
+            // null：从未配置→首页默认完整；空数组：未单独授权→同样默认完整
+            ajax.put("homePageKeys", com.spd.system.service.impl.SysUserServiceImpl.splitHomePageKeys(sysUser.getHomePageKeys()));
             List<Long> midLongs = userService.selectMenuListByUserId(userId);
             List<String> menuStr = new ArrayList<>();
             if (midLongs != null) {
@@ -646,12 +649,36 @@ public class SysUserController extends BaseController
         String[] keys = body != null ? body.getMessageReminderKeys() : new String[0];
         String[] popupKeys = body != null ? body.getMessageReminderPopupKeys() : new String[0];
         userService.updateUserMessageReminderKeysOnly(userId, keys, popupKeys);
+        // 首页设置与消息提醒同接口保存，避免新路径未部署时 404
+        if (body != null && body.getHomePageKeys() != null)
+        {
+            userService.updateUserHomePageKeysOnly(userId, body.getHomePageKeys());
+        }
         SysUser saved = userService.selectUserById(userId);
         AjaxResult ajax = success();
         ajax.put("messageReminderKeys", com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
                 saved != null ? saved.getMessageReminderKeys() : null));
         ajax.put("messageReminderPopupKeys", com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
                 saved != null ? saved.getMessageReminderPopupKeys() : null));
+        ajax.put("homePageKeys", com.spd.system.service.impl.SysUserServiceImpl.splitHomePageKeys(
+                saved != null ? saved.getHomePageKeys() : null));
+        return ajax;
+    }
+
+    /**
+     * 仅更新用户首页设置权限（simple / full）
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.GRANT)
+    @PutMapping("/{userId}/homePages")
+    public AjaxResult grantUserHomePages(@PathVariable("userId") Long userId, @RequestBody UserHomePageGrantBody body)
+    {
+        String[] keys = body != null ? body.getHomePageKeys() : new String[0];
+        userService.updateUserHomePageKeysOnly(userId, keys);
+        SysUser saved = userService.selectUserById(userId);
+        AjaxResult ajax = success();
+        ajax.put("homePageKeys", com.spd.system.service.impl.SysUserServiceImpl.splitHomePageKeys(
+                saved != null ? saved.getHomePageKeys() : null));
         return ajax;
     }
 

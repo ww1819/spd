@@ -33,6 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"       column="remark"       />
         <result property="messageReminderKeys" column="message_reminder_keys" />
         <result property="messageReminderPopupKeys" column="message_reminder_popup_keys" />
+        <result property="homePageKeys" column="home_page_keys" />
         <result property="postName"     column="post_name"    />
         <result property="departmentNames" column="department_names" />
         <association property="dept"    column="dept_id" javaType="SysDept" resultMap="deptResult" />
@@ -59,7 +60,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 	
 	<sql id="selectUserVo">
-        select u.user_id, u.dept_id, u.customer_id, u.his_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, u.message_reminder_keys, u.message_reminder_popup_keys,
+        select u.user_id, u.dept_id, u.customer_id, u.his_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, u.message_reminder_keys, u.message_reminder_popup_keys, u.home_page_keys,
         d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.status as dept_status,
         r.role_id, r.role_name, r.role_key, r.role_sort, r.data_scope, r.status as role_status
         from sys_user u
@@ -321,6 +322,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
  			<if test="remark != null">remark = #{remark},</if>
  			<if test="messageReminderKeys != null">message_reminder_keys = #{messageReminderKeys},</if>
+ 			<if test="homePageKeys != null">home_page_keys = #{homePageKeys},</if>
  			update_time = sysdate()
  		</set>
  		where user_id = #{userId}
@@ -330,6 +332,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		update sys_user
 		set message_reminder_keys = #{messageReminderKeys},
 		    message_reminder_popup_keys = #{messageReminderPopupKeys},
+		    update_time = sysdate()
+		where user_id = #{userId}
+	</update>
+
+	<update id="updateUserHomePageKeys">
+		update sys_user
+		set home_page_keys = #{homePageKeys},
 		    update_time = sysdate()
 		where user_id = #{userId}
 	</update>

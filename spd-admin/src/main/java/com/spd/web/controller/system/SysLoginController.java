@@ -140,6 +140,7 @@ public class SysLoginController
             {
                 user.setMessageReminderKeys(dbUser.getMessageReminderKeys());
                 user.setMessageReminderPopupKeys(dbUser.getMessageReminderPopupKeys());
+                user.setHomePageKeys(dbUser.getHomePageKeys());
             }
         }
         Set<String> roles = permissionService.getRolePermission(user);
@@ -156,6 +157,8 @@ public class SysLoginController
         String[] popupKeys = com.spd.system.service.impl.SysUserServiceImpl.splitMessageReminderKeys(
             user != null ? user.getMessageReminderPopupKeys() : null);
         ajax.put("messageReminderPopupKeys", popupKeys);
+        ajax.put("homePageKeys", com.spd.system.service.impl.SysUserServiceImpl.splitHomePageKeys(
+            user != null ? user.getHomePageKeys() : null));
         putTenantIfPresent(ajax, user.getCustomerId());
         putTenantSuperFlag(ajax, user);
         return ajax;

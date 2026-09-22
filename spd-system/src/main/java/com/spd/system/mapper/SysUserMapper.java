@@ -114,6 +114,11 @@ public interface SysUserMapper
     int updateUserMessageReminderKeys(@Param("userId") Long userId, @Param("messageReminderKeys") String messageReminderKeys, @Param("messageReminderPopupKeys") String messageReminderPopupKeys);
 
     /**
+     * 仅更新首页设置权限 keys
+     */
+    int updateUserHomePageKeys(@Param("userId") Long userId, @Param("homePageKeys") String homePageKeys);
+
+    /**
      * 修改用户头像
      * 
      * @param userName 用户名

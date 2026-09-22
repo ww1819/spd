@@ -122,6 +122,11 @@ public class SysUser extends BaseEntity
      */
     private String messageReminderPopupKeys;
 
+    /**
+     * 首页设置授权 keys（逗号分隔）：simple=简洁，full=完整；空/未配置时前端默认显示完整
+     */
+    private String homePageKeys;
+
     /** 菜单组（平台为数字字符串，设备系统为 UUID 字符串） */
     private String[] menuIds;
 
@@ -429,6 +434,14 @@ public class SysUser extends BaseEntity
 
     public void setMessageReminderPopupKeys(String messageReminderPopupKeys) {
         this.messageReminderPopupKeys = messageReminderPopupKeys;
+    }
+
+    public String getHomePageKeys() {
+        return homePageKeys;
+    }
+
+    public void setHomePageKeys(String homePageKeys) {
+        this.homePageKeys = homePageKeys;
     }
 
     public String[] getMenuIds() {

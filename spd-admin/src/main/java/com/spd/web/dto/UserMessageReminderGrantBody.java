@@ -15,6 +15,9 @@ public class UserMessageReminderGrantBody implements Serializable {
     /** warehouse / department / data：登录后自动弹窗（须为 keys 子集） */
     private String[] messageReminderPopupKeys;
 
+    /** simple / full：首页设置；空表示未单独授权（前端默认完整） */
+    private String[] homePageKeys;
+
     public String[] getMessageReminderKeys() {
         return messageReminderKeys;
     }
@@ -29,5 +32,13 @@ public class UserMessageReminderGrantBody implements Serializable {
 
     public void setMessageReminderPopupKeys(String[] messageReminderPopupKeys) {
         this.messageReminderPopupKeys = messageReminderPopupKeys;
+    }
+
+    public String[] getHomePageKeys() {
+        return homePageKeys;
+    }
+
+    public void setHomePageKeys(String[] homePageKeys) {
+        this.homePageKeys = homePageKeys;
     }
 }
